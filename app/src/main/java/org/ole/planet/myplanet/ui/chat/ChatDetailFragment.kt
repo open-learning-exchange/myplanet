@@ -1,15 +1,28 @@
 package org.ole.planet.myplanet.ui.chat
 
+import android.content.Context
+import android.content.SharedPreferences
+import android.graphics.Typeface
+import android.net.Uri
 import android.os.Bundle
 import android.text.*
+import android.util.Log
 import android.view.*
+import android.widget.Button
+import android.widget.TableRow
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.*
 import com.google.gson.*
+import com.google.gson.reflect.TypeToken
 import io.realm.Realm
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.*
+import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.datamanager.*
@@ -17,11 +30,14 @@ import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
+import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.util.Date
+import java.util.Locale
 
 class ChatDetailFragment : Fragment() {
     lateinit var fragmentChatDetailBinding: FragmentChatDetailBinding
@@ -34,6 +50,7 @@ class ChatDetailFragment : Fragment() {
     private lateinit var mRealm: Realm
     var user: RealmUserModel? = null
     private var newsId: String? = null
+    lateinit var settings: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,6 +58,7 @@ class ChatDetailFragment : Fragment() {
     }
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentChatDetailBinding = FragmentChatDetailBinding.inflate(inflater, container, false)
+        settings = requireActivity().getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
         return fragmentChatDetailBinding.root
     }
 
@@ -68,8 +86,7 @@ class ChatDetailFragment : Fragment() {
             fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
             if (TextUtils.isEmpty("${fragmentChatDetailBinding.editGchatMessage.text}".trim())) {
                 fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
-                fragmentChatDetailBinding.textGchatIndicator.text =
-                    getString(R.string.kindly_enter_message)
+                fragmentChatDetailBinding.textGchatIndicator.text = getString(R.string.kindly_enter_message)
             } else {
                 val message = "${fragmentChatDetailBinding.editGchatMessage.text}".replace("\n", " ")
                 mAdapter.addQuery(message)
@@ -158,124 +175,129 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun checkAiProviders() {
-        val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
-        apiInterface?.checkAiProviders("${Utilities.hostUrl}/checkproviders")?.enqueue(object : Callback<ResponseBody> {
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                if (response.isSuccessful) {
-                    response.body()?.let { responseBody ->
-                        try {
-                            val gson = Gson()
-                            val aiProvidersResponse = gson.fromJson(responseBody.string(), AiProvidersResponse::class.java)
-                            if (aiProvidersResponse.openai) {
-                                fragmentChatDetailBinding.tvOpenai.visibility = View.VISIBLE
-                                fragmentChatDetailBinding.view1.visibility = View.VISIBLE
+        val updateUrl = "${settings.getString("serverURL", "")}"
+        val serverUrlMapper = ServerUrlMapper(requireContext())
+        val mapping = serverUrlMapper.processUrl(updateUrl)
 
-                                fragmentChatDetailBinding.tvPerplexity.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
-                                fragmentChatDetailBinding.tvPerplexity.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+        CoroutineScope(Dispatchers.IO).launch {
+            val primaryAvailable = isServerReachable(mapping.primaryUrl)
+            val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
 
-                                fragmentChatDetailBinding.tvGemini.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
-                                fragmentChatDetailBinding.tvGemini.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
+            if (!primaryAvailable && alternativeAvailable) {
+                mapping.alternativeUrl.let { alternativeUrl ->
+                    val uri = Uri.parse(updateUrl)
+                    val editor = settings.edit()
 
-                                if (isAdded) {
-                                    aiName = getString(R.string.openai)
-                                    aiModel = "gpt-3.5-turbo"
-                                    fragmentChatDetailBinding.tvOpenai.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.mainColor))
-                                    fragmentChatDetailBinding.tvOpenai.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
-
-                                    fragmentChatDetailBinding.tvOpenai.setOnClickListener {
-                                        fragmentChatDetailBinding.tvOpenai.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.mainColor))
-                                        fragmentChatDetailBinding.tvOpenai.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
-
-                                        fragmentChatDetailBinding.tvPerplexity.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
-                                        fragmentChatDetailBinding.tvPerplexity.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
-
-                                        fragmentChatDetailBinding.tvGemini.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
-                                        fragmentChatDetailBinding.tvGemini.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
-                                        clearChatDetail()
-                                        fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
-                                        aiName = getString(R.string.openai)
-                                        aiModel = "gpt-3.5-turbo"
-                                    }
-                                }
-                            } else {
-                                fragmentChatDetailBinding.tvOpenai.visibility = View.GONE
-                                fragmentChatDetailBinding.view1.visibility = View.GONE
-                            }
-
-                            if (aiProvidersResponse.perplexity) {
-                                fragmentChatDetailBinding.tvPerplexity.visibility = View.VISIBLE
-                                fragmentChatDetailBinding.view2.visibility = View.VISIBLE
-
-                                if (isAdded) {
-                                    if (!aiProvidersResponse.openai) {
-                                        aiName = getString(R.string.perplexity)
-                                        aiModel = "pplx-7b-online"
-                                        fragmentChatDetailBinding.tvPerplexity.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.mainColor))
-                                        fragmentChatDetailBinding.tvPerplexity.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
-                                    }
-
-                                    fragmentChatDetailBinding.tvPerplexity.setOnClickListener {
-                                        fragmentChatDetailBinding.tvPerplexity.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.mainColor))
-                                        fragmentChatDetailBinding.tvPerplexity.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
-
-                                        fragmentChatDetailBinding.tvOpenai.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
-                                        fragmentChatDetailBinding.tvOpenai.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
-
-                                        fragmentChatDetailBinding.tvGemini.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
-                                        fragmentChatDetailBinding.tvGemini.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
-
-                                        clearChatDetail()
-                                        fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
-                                        aiName = getString(R.string.perplexity)
-                                        aiModel = "pplx-7b-online"
-                                    }
-                                }
-                            } else {
-                                fragmentChatDetailBinding.tvPerplexity.visibility = View.GONE
-                                fragmentChatDetailBinding.view2.visibility = View.GONE
-                            }
-
-                            if (aiProvidersResponse.gemini) {
-                                if (!aiProvidersResponse.openai && !aiProvidersResponse.perplexity) {
-                                    if (isAdded) {
-                                        aiName = getString(R.string.gemini)
-                                        aiModel = "gemini-pro"
-                                        fragmentChatDetailBinding.tvGemini.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.mainColor))
-                                        fragmentChatDetailBinding.tvGemini.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
-                                    }
-                                }
-
-                                fragmentChatDetailBinding.tvGemini.visibility = View.VISIBLE
-
-                                fragmentChatDetailBinding.tvGemini.setOnClickListener {
-                                    fragmentChatDetailBinding.tvGemini.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.mainColor))
-                                    fragmentChatDetailBinding.tvGemini.setTextColor(ContextCompat.getColor(requireContext(), R.color.textColorPrimary))
-
-                                    fragmentChatDetailBinding.tvPerplexity.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
-                                    fragmentChatDetailBinding.tvPerplexity.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
-
-                                    fragmentChatDetailBinding.tvOpenai.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.disable_color))
-                                    fragmentChatDetailBinding.tvOpenai.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_black_1000))
-
-                                    clearChatDetail()
-                                    fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
-                                    aiName = getString(R.string.gemini)
-                                    aiModel = "gemini-pro"
-                                }
-                            } else {
-                                fragmentChatDetailBinding.tvGemini.visibility = View.GONE
-                            }
-                        } catch (e: JsonSyntaxException) {
-                            onFailError()
-                        }
-                    }
+                    serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
                 }
             }
 
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                onFailError()
+            withContext(Dispatchers.Main) {
+                val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
+                Log.d("ChatDetailFragment", "checkAiProviders: ${Utilities.hostUrl}checkproviders")
+                apiInterface?.checkAiProviders("${Utilities.hostUrl}checkproviders")?.enqueue(object : Callback<ResponseBody> {
+                    override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                        if (response.isSuccessful) {
+                            response.body()?.let { responseBody ->
+                                try {
+                                    val responseString = responseBody.string()
+                                    val gson = Gson()
+                                    val aiProvidersResponse = gson.fromJson(responseString, AiProvidersResponse::class.java)
+                                    updateAIButtons(aiProvidersResponse)
+
+                                } catch (e: JsonSyntaxException) {
+                                    e.printStackTrace()
+                                    onFailError()
+                                }
+                            }
+                        }
+                    }
+
+                    override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                        onFailError()
+                    }
+                })
             }
-        })
+        }
+    }
+
+    private fun updateAIButtons(aiProvidersResponse: AiProvidersResponse) {
+        if (!isAdded || context == null) {
+            return
+        }
+
+        val aiTableRow = fragmentChatDetailBinding.aiTableRow
+        aiTableRow.removeAllViews()
+
+        val currentContext = requireContext()
+        val modelsString = settings.getString("ai_models", null)
+        val modelsMap: Map<String, String> = if (modelsString != null) {
+            Gson().fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type)
+        } else {
+            emptyMap()
+        }
+
+        val providersMap = aiProvidersResponse::class.java.declaredFields
+            .associate { field ->
+                field.isAccessible = true
+                field.name to (field.get(aiProvidersResponse) as? Boolean == true)
+            }
+            .filter { it.value }
+
+        if (providersMap.isEmpty()) return
+
+        providersMap.keys.forEachIndexed { index, providerName ->
+            val modelName = modelsMap[providerName.lowercase()] ?: "default-model"
+
+            val button = Button(currentContext).apply {
+                text = providerName.lowercase(Locale.getDefault())
+                setTextColor(ContextCompat.getColor(currentContext, R.color.md_black_1000))
+                textSize = 18f
+                setTypeface(null, Typeface.BOLD)
+                setPadding(16, 8, 16, 8)
+                isAllCaps = false
+                setBackgroundColor(ContextCompat.getColor(currentContext, R.color.disable_color))
+                setOnClickListener { selectAI(this, providerName, modelName) }
+            }
+
+            aiTableRow.addView(button)
+
+            if (index < providersMap.size - 1) {
+                val divider = View(currentContext).apply {
+                    layoutParams = TableRow.LayoutParams(1, TableRow.LayoutParams.MATCH_PARENT).apply {
+                        setMargins(8, 0, 8, 0)
+                    }
+                    setBackgroundColor(ContextCompat.getColor(currentContext, R.color.hint_color))
+                }
+                aiTableRow.addView(divider)
+            }
+        }
+
+        aiTableRow.getChildAt(0)?.performClick()
+    }
+
+    private fun selectAI(selectedButton: Button, providerName: String, modelName: String) {
+        val aiTableRow = fragmentChatDetailBinding.aiTableRow
+        val context = requireContext()
+
+        for (i in 0 until aiTableRow.childCount) {
+            val view = aiTableRow.getChildAt(i)
+            if (view is Button) {
+                if (view == selectedButton) {
+                    view.setBackgroundColor(ContextCompat.getColor(context, R.color.mainColor))
+                    view.setTextColor(ContextCompat.getColor(context, R.color.textColorPrimary))
+                } else {
+                    view.setBackgroundColor(ContextCompat.getColor(context, R.color.disable_color))
+                    view.setTextColor(ContextCompat.getColor(context, R.color.md_black_1000))
+                }
+            }
+        }
+
+        aiName = providerName
+        aiModel = modelName
+
+        clearChatDetail()
+        fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
     }
 
     private fun onFailError() {
@@ -286,133 +308,120 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun makePostRequest(content: RequestBody, query: String) {
-        fragmentChatDetailBinding.buttonGchatSend.isEnabled = false
-        fragmentChatDetailBinding.editGchatMessage.isEnabled = false
-        fragmentChatDetailBinding.imageGchatLoading.visibility = View.VISIBLE
-
-        val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
-        apiInterface?.chatGpt(Utilities.hostUrl, content)?.enqueue(object : Callback<ChatModel> {
-            override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
-                val responseBody = response.body()
-                if (response.isSuccessful && responseBody != null) {
-                    val jsonObject = JsonObject()
-                    if (responseBody.status == "Success") {
-                        val chatResponse = response.body()?.chat
-                        if (chatResponse != null) {
-                            mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_NETWORK
-                            mAdapter.addResponse(chatResponse)
-                            _id = "${response.body()?.couchDBResponse?.id}"
-                            _rev = "${response.body()?.couchDBResponse?.rev}"
-                            jsonObject.addProperty("_rev", "${response.body()?.couchDBResponse?.rev}")
-                            jsonObject.addProperty("_id", "${response.body()?.couchDBResponse?.id}")
-                            jsonObject.addProperty("aiProvider", aiName)
-                            jsonObject.addProperty("user", user?.name)
-                            jsonObject.addProperty("title", query)
-                            jsonObject.addProperty("createdTime", Date().time)
-                            jsonObject.addProperty("updatedDate", "")
-
-                            val conversationsArray = JsonArray()
-                            val conversationObject = JsonObject()
-                            conversationObject.addProperty("query", query)
-                            conversationObject.addProperty("response", chatResponse)
-                            conversationsArray.add(conversationObject)
-
-                            jsonObject.add("conversations", conversationsArray)
-
-                            requireActivity().runOnUiThread {
-                                RealmChatHistory.insert(mRealm, jsonObject)
-                            }
-                            (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
-                        }
-                    } else {
-                        fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
-                        fragmentChatDetailBinding.textGchatIndicator.text = context?.getString(R.string.message_placeholder, responseBody.message)
-                        jsonObject.addProperty("_rev", "")
-                        jsonObject.addProperty("_id", "")
-                        jsonObject.addProperty("aiProvider", aiName)
-                        jsonObject.addProperty("user", user?.name)
-                        jsonObject.addProperty("title", query)
-                        jsonObject.addProperty("createdTime", Date().time)
-                        jsonObject.addProperty("updatedDate", "")
-
-                        val conversationsArray = JsonArray()
-                        val conversationObject = JsonObject()
-                        conversationObject.addProperty("query", query)
-                        conversationObject.addProperty("response", "")
-                        conversationsArray.add(conversationObject)
-
-                        jsonObject.add("conversations", conversationsArray)
-                        requireActivity().runOnUiThread {
-                            RealmChatHistory.insert(mRealm, jsonObject)
-                        }
-                        (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
-                    }
-                } else {
-                    fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
-                    fragmentChatDetailBinding.textGchatIndicator.text = if (response.message() == "null"){
-                        getString(R.string.request_failed_please_retry)
-                    } else {
-                        response.message()
-                    }
-                }
-
-                fragmentChatDetailBinding.buttonGchatSend.isEnabled = true
-                fragmentChatDetailBinding.editGchatMessage.isEnabled = true
-                fragmentChatDetailBinding.imageGchatLoading.visibility = View.INVISIBLE
-            }
-
-            override fun onFailure(call: Call<ChatModel>, t: Throwable) {
-                fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
-                fragmentChatDetailBinding.textGchatIndicator.text = context?.getString(R.string.message_placeholder, t.message)
-                fragmentChatDetailBinding.buttonGchatSend.isEnabled = true
-                fragmentChatDetailBinding.editGchatMessage.isEnabled = true
-                fragmentChatDetailBinding.imageGchatLoading.visibility = View.INVISIBLE
-            }
-        })
+        disableUI()
+        val mapping = processServerUrl()
+        handleServerReachability(mapping)
+        sendChatRequest(content, query, null)
     }
 
     private fun continueChatRequest(content: RequestBody, id: String, query: String) {
+        disableUI()
+        val mapping = processServerUrl()
+        handleServerReachability(mapping)
+        sendChatRequest(content, query, id)
+    }
+
+    private fun disableUI() {
         fragmentChatDetailBinding.buttonGchatSend.isEnabled = false
         fragmentChatDetailBinding.editGchatMessage.isEnabled = false
         fragmentChatDetailBinding.imageGchatLoading.visibility = View.VISIBLE
+    }
 
-        val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
-        apiInterface?.chatGpt(Utilities.hostUrl, content)?.enqueue(object : Callback<ChatModel> {
-            override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
-                val responseBody = response.body()
-                if (response.isSuccessful && responseBody != null) {
-                    if (responseBody.status == "Success") {
-                        val chatResponse = response.body()?.chat
-                        if (chatResponse != null) {
-                            mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_NETWORK
-                            mAdapter.addResponse(chatResponse)
-                            _rev = "${response.body()?.couchDBResponse?.rev}"
-                            continueConversationRealm(id, query, chatResponse)
-                        }
-                    } else {
-                        fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
-                        fragmentChatDetailBinding.textGchatIndicator.text = context?.getString(R.string.message_placeholder, responseBody.message)
-                    }
-                } else {
-                    fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
-                    fragmentChatDetailBinding.textGchatIndicator.text = getString(R.string.request_failed_please_retry)
-                    continueConversationRealm(id, query, "")
+    private fun enableUI() {
+        fragmentChatDetailBinding.buttonGchatSend.isEnabled = true
+        fragmentChatDetailBinding.editGchatMessage.isEnabled = true
+        fragmentChatDetailBinding.imageGchatLoading.visibility = View.INVISIBLE
+    }
+
+    private fun processServerUrl(): ServerUrlMapper.UrlMapping {
+        val updateUrl = settings.getString("serverURL", "") ?: ""
+        val serverUrlMapper = ServerUrlMapper(requireContext())
+        return serverUrlMapper.processUrl(updateUrl)
+    }
+
+    private fun handleServerReachability(mapping: ServerUrlMapper.UrlMapping) {
+        CoroutineScope(Dispatchers.IO).launch {
+            val primaryAvailable = isServerReachable(mapping.primaryUrl)
+            val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
+
+            if (!primaryAvailable && alternativeAvailable) {
+                mapping.alternativeUrl.let { alternativeUrl ->
+                    val uri = Uri.parse(settings.getString("serverURL", ""))
+                    val editor = settings.edit()
+                    ServerUrlMapper(requireContext()).updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
+                }
+            }
+        }
+    }
+
+    private fun sendChatRequest(content: RequestBody, query: String, id: String?) {
+        CoroutineScope(Dispatchers.Main).launch {
+            val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
+            apiInterface?.chatGpt(Utilities.hostUrl, content)?.enqueue(object : Callback<ChatModel> {
+                override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
+                    handleResponse(response, query, id)
                 }
 
-                fragmentChatDetailBinding.buttonGchatSend.isEnabled = true
-                fragmentChatDetailBinding.editGchatMessage.isEnabled = true
-                fragmentChatDetailBinding.imageGchatLoading.visibility = View.INVISIBLE
-            }
+                override fun onFailure(call: Call<ChatModel>, t: Throwable) {
+                    handleFailure(t.message, query, id)
+                }
+            })
+        }
+    }
 
-            override fun onFailure(call: Call<ChatModel>, t: Throwable) {
-                continueConversationRealm(id, query, "")
-                fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
-                fragmentChatDetailBinding.textGchatIndicator.text = context?.getString(R.string.message_placeholder, t.message)
-                fragmentChatDetailBinding.buttonGchatSend.isEnabled = true
-                fragmentChatDetailBinding.editGchatMessage.isEnabled = true
-                fragmentChatDetailBinding.imageGchatLoading.visibility = View.INVISIBLE
+    private fun handleResponse(response: Response<ChatModel>, query: String, id: String?) {
+        val responseBody = response.body()
+        if (response.isSuccessful && responseBody != null) {
+            if (responseBody.status == "Success") {
+                responseBody.chat?.let { chatResponse ->
+                    mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_NETWORK
+                    mAdapter.addResponse(chatResponse)
+                    id?.let { continueConversationRealm(it, query, chatResponse) } ?: saveNewChat(query, chatResponse, responseBody)
+                }
+            } else {
+                showError(responseBody.message)
             }
-        })
+        } else {
+            showError(response.message() ?: getString(R.string.request_failed_please_retry))
+            id?.let { continueConversationRealm(it, query, "") }
+        }
+        enableUI()
+    }
+
+    private fun handleFailure(errorMessage: String?, query: String, id: String?) {
+        showError(errorMessage)
+        id?.let { continueConversationRealm(it, query, "") }
+        enableUI()
+    }
+
+    private fun showError(message: String?) {
+        fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
+        fragmentChatDetailBinding.textGchatIndicator.text = context?.getString(R.string.message_placeholder, message)
+    }
+
+    private fun saveNewChat(query: String, chatResponse: String, responseBody: ChatModel) {
+        val jsonObject = JsonObject().apply {
+            addProperty("_rev", responseBody.couchDBResponse?.rev ?: "")
+            addProperty("_id", responseBody.couchDBResponse?.id ?: "")
+            addProperty("aiProvider", aiName)
+            addProperty("user", user?.name)
+            addProperty("title", query)
+            addProperty("createdTime", Date().time)
+            addProperty("updatedDate", "")
+
+            val conversationsArray = JsonArray()
+            val conversationObject = JsonObject().apply {
+                addProperty("query", query)
+                addProperty("response", chatResponse)
+            }
+            conversationsArray.add(conversationObject)
+            add("conversations", conversationsArray)
+        }
+
+        requireActivity().runOnUiThread {
+            RealmChatHistory.insert(mRealm, jsonObject)
+        }
+        (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
     }
 
     private fun continueConversationRealm(id:String, query:String, chatResponse:String) {
