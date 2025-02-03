@@ -1137,7 +1137,6 @@
     <string name="sync_embakasi">🇰🇪 planet embakasi</string>
     <string name="sync_cambridge">🇺🇸 planet cambridge</string>
     <string name="sync_egdirbmac">🇺🇸 planet egdirbmac</string>
-    <string name="sync_palmbay">🇺🇸 planet palmbay</string>
     <string name="surveys_to_complete">Vous avez %1$d %2$s à compléter</string>
     <string name="show_less">montrer moins</string>
     <string name="show_more">montrer plus</string>
@@ -1227,5 +1226,6 @@
     <string name="local_resource">ressource locale</string>
     <string name="no_survey_submissions">aucune soumission de sondage</string>
     <string name="no_exam_submissions">aucune soumission d\'examen</string>
+    <string name="no_reports">Aucun rapport disponible</string>
 
 </resources>

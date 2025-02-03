@@ -191,14 +191,13 @@ abstract class BaseResourceFragment : Fragment() {
                 return
             }
 
-            resourceNotFoundDialog = AlertDialog.Builder(requireContext())
+            resourceNotFoundDialog = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
                 .setTitle(R.string.resource_not_found)
                 .setMessage(R.string.resource_not_found_message)
                 .setNegativeButton(R.string.close) { dialog, _ ->
                     dialog.dismiss()
                 }
                 .create()
-
             resourceNotFoundDialog?.setOnDismissListener {
                 resourceNotFoundDialog = null
             }
@@ -242,6 +241,13 @@ abstract class BaseResourceFragment : Fragment() {
             prgDialog.dismiss()
         }
         prgDialog.setNegativeButton("disabling", isVisible = false){ prgDialog.dismiss() }
+
+        if (settings?.getBoolean("isAlternativeUrl", false) == true) {
+            editor?.putString("alternativeUrl", "")
+            editor?.putString("processedAlternativeUrl", "")
+            editor?.putBoolean("isAlternativeUrl", false)
+            editor?.apply()
+        }
     }
 
     fun createListView(dbMyLibrary: List<RealmMyLibrary?>, alertDialog: AlertDialog) {
