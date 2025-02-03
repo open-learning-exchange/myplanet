@@ -41,6 +41,7 @@ import org.ole.planet.myplanet.utilities.NetworkUtils.initialize
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.ThemeMode
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
@@ -120,6 +121,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
 
         suspend fun isServerReachable(urlString: String): Boolean {
+            val serverUrlMapper = ServerUrlMapper(context)
+            val mapping = serverUrlMapper.processUrl(urlString)
+
+            val urlsToTry = mutableListOf(urlString)
+            mapping.alternativeUrl?.let { urlsToTry.add(it) }
+
             return try {
                 if (urlString.isBlank()) return false
 

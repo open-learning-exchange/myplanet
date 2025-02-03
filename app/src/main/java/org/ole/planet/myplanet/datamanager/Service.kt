@@ -6,6 +6,7 @@ import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.net.Uri
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -168,19 +169,45 @@ class Service(private val context: Context) {
     }
 
     fun isPlanetAvailable(callback: PlanetAvailableListener?) {
-        retrofitInterface?.isPlanetAvailable(Utilities.getUpdateUrl(preferences))?.enqueue(object : Callback<ResponseBody?> {
-            override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
-                if (callback != null && response.code() == 200) {
-                    callback.isAvailable()
-                } else {
-                    callback?.notAvailable()
+        val updateUrl = "${preferences.getString("serverURL", "")}"
+        Log.d("ServerCheck", "Initial Update URL: $updateUrl")
+
+        val serverUrlMapper = ServerUrlMapper(context)
+        val mapping = serverUrlMapper.processUrl(updateUrl)
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val primaryAvailable = isServerReachable(mapping.primaryUrl)
+            val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
+
+            Log.d("ServerCheck", "Primary URL: ${mapping.primaryUrl}, Reachable: $primaryAvailable")
+            Log.d("ServerCheck", "Alternative URL: ${mapping.alternativeUrl}, Reachable: $alternativeAvailable")
+
+            if (!primaryAvailable && alternativeAvailable) {
+                mapping.alternativeUrl.let { alternativeUrl ->
+                    val uri = Uri.parse(updateUrl)
+                    val editor = preferences.edit()
+
+                    serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, preferences)
                 }
             }
 
-            override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
-                callback?.notAvailable()
+            withContext(Dispatchers.Main) {
+                retrofitInterface?.isPlanetAvailable(Utilities.getUpdateUrl(preferences))
+                    ?.enqueue(object : Callback<ResponseBody?> {
+                        override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
+                            if (callback != null && response.code() == 200) {
+                                callback.isAvailable()
+                            } else {
+                                callback?.notAvailable()
+                            }
+                        }
+
+                        override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
+                            callback?.notAvailable()
+                        }
+                    })
             }
-        })
+        }
     }
 
     fun becomeMember(realm: Realm, obj: JsonObject, callback: CreateUserCallback) {
