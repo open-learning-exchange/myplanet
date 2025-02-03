@@ -21,6 +21,7 @@ object ApiClient {
                         GsonConverterFactory.create(
                             GsonBuilder()
                                 .excludeFieldsWithModifiers(Modifier.FINAL, Modifier.TRANSIENT, Modifier.STATIC)
+                                .setLenient()
                                 .serializeNulls().create()
                         )
                     ).build()

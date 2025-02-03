@@ -408,6 +408,7 @@ class Service(private val context: Context) {
 
                                         if (configResponse?.isSuccessful == true) {
                                             val rows = configResponse.body()?.getAsJsonArray("rows")
+                                            Log.d("okuro", "configs: ${configResponse.body()}")
                                             if (rows != null && rows.size() > 0) {
                                                 val firstRow = rows.get(0).asJsonObject
                                                 val id = firstRow.getAsJsonPrimitive("id").asString
@@ -415,6 +416,21 @@ class Service(private val context: Context) {
                                                 val code = doc.getAsJsonPrimitive("code").asString
                                                 val parentCode = doc.getAsJsonPrimitive("parentCode").asString
                                                 preferences.edit().putString("parentCode", parentCode).apply()
+                                                if (doc.has("models")) {
+                                                    val modelsJsonObject = doc.getAsJsonObject("models")  // Extract models object
+                                                    val modelsMap = mutableMapOf<String, String>()
+
+                                                    // Convert models object to a Map<String, String>
+                                                    for ((key, value) in modelsJsonObject.entrySet()) {
+                                                        modelsMap[key] = value.asString
+                                                    }
+
+                                                    val modelsString = Gson().toJson(modelsMap)  // Convert to JSON string
+
+                                                    // Save models JSON string to SharedPreferences
+                                                    preferences.edit().putString("ai_models", modelsString).apply()
+                                                    Log.d("okuro", "Saved AI Models: $modelsString")
+                                                }
                                                 return@async UrlCheckResult.Success(id, code, currentUrl)
                                             }
                                         }
