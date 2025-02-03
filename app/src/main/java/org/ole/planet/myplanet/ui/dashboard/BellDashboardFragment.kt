@@ -227,7 +227,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun declareElements() {
-        fragmentHomeBellBinding.homeCardTeams.llHomeTeam.setOnClickListener { homeItemClickListener?.openCallFragment(TeamFragment()) }
+        fragmentHomeBellBinding.homeCardTeams.llHomeTeam.setOnClickListener { homeItemClickListener?.openMyFragment(TeamFragment()) }
         fragmentHomeBellBinding.homeCardLibrary.myLibraryImageButton.setOnClickListener {
             if (user?.id?.startsWith("guest") == true) {
                 guestDialog(requireContext())
