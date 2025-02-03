@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationT
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Call
@@ -50,6 +51,7 @@ class ChatDetailFragment : Fragment() {
     var user: RealmUserModel? = null
     private var newsId: String? = null
     lateinit var settings: SharedPreferences
+    lateinit var customProgressDialog: DialogUtils.CustomProgressDialog
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,6 +61,7 @@ class ChatDetailFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentChatDetailBinding = FragmentChatDetailBinding.inflate(inflater, container, false)
         settings = requireActivity().getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
         return fragmentChatDetailBinding.root
     }
 
@@ -193,6 +196,8 @@ class ChatDetailFragment : Fragment() {
             }
 
             withContext(Dispatchers.Main) {
+                customProgressDialog.setText(getString(R.string.fetching_ai_providers))
+                customProgressDialog.show()
                 val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
                 apiInterface?.checkAiProviders("${Utilities.hostUrl}checkproviders")?.enqueue(object : Callback<ResponseBody> {
                     override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
@@ -209,11 +214,13 @@ class ChatDetailFragment : Fragment() {
                                     onFailError()
                                 }
                             }
+                            customProgressDialog.dismiss()
                         }
                     }
 
                     override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
                         onFailError()
+                        customProgressDialog.dismiss()
                     }
                 })
             }
