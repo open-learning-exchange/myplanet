@@ -6,7 +6,6 @@ import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
 import android.text.*
-import android.util.Log
 import android.view.*
 import android.widget.Button
 import android.widget.TableRow
@@ -56,6 +55,7 @@ class ChatDetailFragment : Fragment() {
         super.onCreate(savedInstanceState)
         sharedViewModel = ViewModelProvider(requireActivity())[ChatViewModel::class.java]
     }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentChatDetailBinding = FragmentChatDetailBinding.inflate(inflater, container, false)
         settings = requireActivity().getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
@@ -194,7 +194,6 @@ class ChatDetailFragment : Fragment() {
 
             withContext(Dispatchers.Main) {
                 val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
-                Log.d("ChatDetailFragment", "checkAiProviders: ${Utilities.hostUrl}checkproviders")
                 apiInterface?.checkAiProviders("${Utilities.hostUrl}checkproviders")?.enqueue(object : Callback<ResponseBody> {
                     override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                         if (response.isSuccessful) {
@@ -445,6 +444,17 @@ class ChatDetailFragment : Fragment() {
                 _id = ""
                 _rev = ""
             }
+        }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        val editor = settings.edit()
+        if (settings.getBoolean("isAlternativeUrl", false)) {
+            editor.putString("alternativeUrl", "")
+            editor.putString("processedAlternativeUrl", "")
+            editor.putBoolean("isAlternativeUrl", false)
+            editor.apply()
         }
     }
 }
