@@ -1226,5 +1226,6 @@
     <string name="local_resource">kheyraadka deegaanka</string>
     <string name="no_survey_submissions">ma jiro soo gudbinta sahanka</string>
     <string name="no_exam_submissions">ma jiro soo gudbinta imtixaan</string>
+    <string name="no_reports">Warbixin la heli karo ma jirto</string>
 
 </resources>

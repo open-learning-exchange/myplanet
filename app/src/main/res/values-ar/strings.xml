@@ -1226,5 +1226,6 @@
     <string name="local_resource">مورد محلي</string>
     <string name="no_survey_submissions">لا توجد استجابات للاستبيان</string>
     <string name="no_exam_submissions">لا توجد استجابات للامتحان</string>
+    <string name="no_reports">لا توجد تقارير متاحة</string>
 
 </resources>
