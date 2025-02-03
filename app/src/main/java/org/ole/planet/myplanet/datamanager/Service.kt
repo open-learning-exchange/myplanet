@@ -168,19 +168,40 @@ class Service(private val context: Context) {
     }
 
     fun isPlanetAvailable(callback: PlanetAvailableListener?) {
-        retrofitInterface?.isPlanetAvailable(Utilities.getUpdateUrl(preferences))?.enqueue(object : Callback<ResponseBody?> {
-            override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
-                if (callback != null && response.code() == 200) {
-                    callback.isAvailable()
-                } else {
-                    callback?.notAvailable()
+        val updateUrl = "${preferences.getString("serverURL", "")}"
+        val serverUrlMapper = ServerUrlMapper(context)
+        val mapping = serverUrlMapper.processUrl(updateUrl)
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val primaryAvailable = isServerReachable(mapping.primaryUrl)
+            val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
+
+            if (!primaryAvailable && alternativeAvailable) {
+                mapping.alternativeUrl.let { alternativeUrl ->
+                    val uri = Uri.parse(updateUrl)
+                    val editor = preferences.edit()
+
+                    serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, preferences)
                 }
             }
 
-            override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
-                callback?.notAvailable()
+            withContext(Dispatchers.Main) {
+                retrofitInterface?.isPlanetAvailable(Utilities.getUpdateUrl(preferences))
+                    ?.enqueue(object : Callback<ResponseBody?> {
+                        override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
+                            if (callback != null && response.code() == 200) {
+                                callback.isAvailable()
+                            } else {
+                                callback?.notAvailable()
+                            }
+                        }
+
+                        override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
+                            callback?.notAvailable()
+                        }
+                    })
             }
-        })
+        }
     }
 
     fun becomeMember(realm: Realm, obj: JsonObject, callback: CreateUserCallback) {
