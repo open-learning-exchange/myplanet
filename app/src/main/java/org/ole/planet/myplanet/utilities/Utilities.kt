@@ -142,32 +142,24 @@ object Utilities {
     val hostUrl: String
         get() {
             val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val url: String?
             var scheme = settings.getString("url_Scheme", "")
             var hostIp = settings.getString("url_Host", "")
             val isAlternativeUrl = settings.getBoolean("isAlternativeUrl", false)
 
             val alternativeUrl = settings.getString("processedAlternativeUrl", "")
 
-            Log.d("ServerUrlMapper", "hostIp: $hostIp, scheme: $scheme")
-            Log.d("ServerUrlMapper", "alternativeUrl: $alternativeUrl")
-            Log.d("ServerUrlMapper", "isAlternativeUrl: $isAlternativeUrl")
-
-            // If alternative URL is set, extract host and scheme from it
             if (isAlternativeUrl && !alternativeUrl.isNullOrEmpty()) {
                 try {
                     val uri = Uri.parse(alternativeUrl)
-                    hostIp = uri.host ?: hostIp  // Use extracted host if available
-                    scheme = uri.scheme ?: scheme  // Use extracted scheme if available
-
-                    Log.d("ServerUrlMapper", "Extracted from alternative URL -> hostIp: $hostIp, scheme: $scheme")
+                    hostIp = uri.host ?: hostIp
+                    scheme = uri.scheme ?: scheme
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
             }
 
             return if (hostIp?.endsWith(".org") == true || hostIp?.endsWith(".gt") == true) {
-                "$scheme://$hostIp/ml"
+                "$scheme://$hostIp/ml/"
             } else {
                 "$scheme://$hostIp:5000"
             }
