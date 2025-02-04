@@ -71,10 +71,10 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
                     startSurvey.visibility = View.GONE
                 }
 
-                startSurvey.text = if (exam.isFromNation) {
-                    context.getString(R.string.take_survey)
-                } else {
-                    context.getString(R.string.record_survey)
+                startSurvey.text = when {
+                    exam.isTeamShareAllowed -> context.getString(R.string.adopt_survey)
+                    exam.isFromNation -> context.getString(R.string.take_survey)
+                    else -> context.getString(R.string.record_survey)
                 }
 
                 if (userId.startsWith("guest") == true) {

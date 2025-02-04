@@ -1227,5 +1227,6 @@
     <string name="no_survey_submissions">कुनै सर्वेक्षण प्रस्तुति छैन</string>
     <string name="no_exam_submissions">कुनै परीक्षा प्रस्तुति छैन</string>
     <string name="no_reports">कुनै प्रतिवेदन उपलब्ध छैन</string>
+    <string name="adopt_survey">सर्वेक्षण अपनाउनुहोस्</string>
 
 </resources>

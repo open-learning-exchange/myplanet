@@ -47,7 +47,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
         initializeViews(view)
         setupRecyclerView()
         setupListeners()
-        updateAdapterData()
+        updateAdapterData(isTeamShareAllowed = false)
         showHideRadioButton()
     }
 
@@ -77,8 +77,8 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
         spn.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
                 when (i) {
-                    0 -> updateAdapterData(Sort.ASCENDING, "createdDate")
-                    1 -> updateAdapterData(Sort.DESCENDING, "createdDate")
+                    0 -> updateAdapterData(Sort.ASCENDING, "createdDate", isTeamShareAllowed = false)
+                    1 -> updateAdapterData(Sort.DESCENDING, "createdDate", isTeamShareAllowed = false)
                     2 -> toggleTitleSortOrder()
                 }
             }
@@ -95,20 +95,26 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         })
-    }
 
-    private fun updateAdapterData(sort: Sort = Sort.ASCENDING, field: String = "name") {
-        val query = mRealm.where(RealmStepExam::class.java)
-
-        val surveys = if (teamId != null && isTeam) {
-            query.equalTo("teamId", teamId)
-                .sort(field, sort)
-                .findAll()
-        } else {
-            query.sort(field, sort)
-                .findAll()
+        rbAdoptSurvey.setOnClickListener {
+            updateAdapterData(isTeamShareAllowed = true)
         }
 
+        rbTeamSurvey.setOnClickListener {
+            updateAdapterData(isTeamShareAllowed = false)
+        }
+    }
+
+    private fun updateAdapterData(sort: Sort = Sort.ASCENDING, field: String = "name", isTeamShareAllowed: Boolean) {
+        val query = mRealm.where(RealmStepExam::class.java)
+
+        if (isTeamShareAllowed) {
+            query.equalTo("isTeamShareAllowed", true)
+        } else if (!teamId.isNullOrEmpty() && isTeam) {
+            query.equalTo("teamId", teamId)
+        }
+
+        val surveys = query.sort(field, sort).findAll()
         adapter.updateData(safeCastList(surveys, RealmStepExam::class.java))
         updateUIState()
     }
@@ -122,7 +128,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
     fun toggleTitleSortOrder() {
         isTitleAscending = !isTitleAscending
         val sort = if (isTitleAscending) Sort.ASCENDING else Sort.DESCENDING
-        updateAdapterData(sort, "name")
+        updateAdapterData(sort, "name", isTeamShareAllowed = false)
     }
 
     private fun <T> safeCastList(items: List<Any?>, clazz: Class<T>): List<T> {
