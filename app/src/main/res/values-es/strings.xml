@@ -1227,5 +1227,6 @@
     <string name="no_survey_submissions">no hay envíos de encuestas</string>
     <string name="no_exam_submissions">no hay envíos de exámenes</string>
     <string name="no_reports">No hay informes disponibles</string>
+    <string name="adopt_survey">Adoptar encuesta</string>
 
 </resources>
