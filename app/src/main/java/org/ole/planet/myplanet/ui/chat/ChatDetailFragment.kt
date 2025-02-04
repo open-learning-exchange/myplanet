@@ -199,21 +199,26 @@ class ChatDetailFragment : Fragment() {
                 customProgressDialog.setText(getString(R.string.fetching_ai_providers))
                 customProgressDialog.show()
                 val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
-                apiInterface?.checkAiProviders("${Utilities.hostUrl}checkproviders")?.enqueue(object : Callback<ResponseBody> {
+                apiInterface?.checkAiProviders("${Utilities.hostUrl}checkProviders/")?.enqueue(object : Callback<ResponseBody> {
                     override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                         if (response.isSuccessful) {
                             response.body()?.let { responseBody ->
                                 try {
                                     val responseString = responseBody.string()
-                                    val gson = Gson()
-                                    val aiProvidersResponse = gson.fromJson(responseString, AiProvidersResponse::class.java)
+                                    val aiProvidersResponse: Map<String, Boolean> = Gson().fromJson(
+                                        responseString,
+                                        object : TypeToken<Map<String, Boolean>>() {}.type
+                                    )
                                     updateAIButtons(aiProvidersResponse)
-
                                 } catch (e: JsonSyntaxException) {
                                     e.printStackTrace()
                                     onFailError()
+                                } finally {
+                                    customProgressDialog.dismiss()
                                 }
                             }
+                        } else {
+                            onFailError()
                             customProgressDialog.dismiss()
                         }
                     }
@@ -227,10 +232,8 @@ class ChatDetailFragment : Fragment() {
         }
     }
 
-    private fun updateAIButtons(aiProvidersResponse: AiProvidersResponse) {
-        if (!isAdded || context == null) {
-            return
-        }
+    private fun updateAIButtons(aiProvidersResponse: Map<String, Boolean>) {
+        if (!isAdded || context == null) return
 
         val aiTableRow = fragmentChatDetailBinding.aiTableRow
         aiTableRow.removeAllViews()
@@ -243,12 +246,7 @@ class ChatDetailFragment : Fragment() {
             emptyMap()
         }
 
-        val providersMap = aiProvidersResponse::class.java.declaredFields
-            .associate { field ->
-                field.isAccessible = true
-                field.name to (field.get(aiProvidersResponse) as? Boolean == true)
-            }
-            .filter { it.value }
+        val providersMap = aiProvidersResponse.filter { it.value }
 
         if (providersMap.isEmpty()) return
 
