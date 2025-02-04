@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.View
 import android.widget.AdapterView
+import android.widget.RadioButton
+import android.widget.RadioGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import io.realm.Sort
@@ -19,6 +21,9 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
     private lateinit var adapter: AdapterSurvey
     private var isTeam: Boolean = false
     private var teamId: String? = null
+    lateinit var rbTeamSurvey: RadioButton
+    lateinit var rbAdoptSurvey: RadioButton
+    lateinit var rgSurvey: RadioGroup
 
     override fun getLayout(): Int {
         return R.layout.fragment_survey
@@ -43,11 +48,22 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
         setupRecyclerView()
         setupListeners()
         updateAdapterData()
+        showHideRadioButton()
+    }
+
+    private fun showHideRadioButton() {
+        if (isTeam) {
+            rgSurvey.visibility = View.VISIBLE
+            rbTeamSurvey.isChecked = true
+        }
     }
 
     private fun initializeViews(view: View) {
         spn = view.findViewById(R.id.spn_sort)
         addNewSurvey = view.findViewById(R.id.fab_add_new_survey)
+        rbTeamSurvey = view.findViewById(R.id.rbTeamSurvey)
+        rbAdoptSurvey = view.findViewById(R.id.rbAdoptSurvey)
+        rgSurvey = view.findViewById(R.id.rgSurvey)
     }
 
     private fun setupRecyclerView() {
