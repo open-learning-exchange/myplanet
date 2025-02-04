@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities.toast
+import java.text.Normalizer
 import java.util.Locale
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
@@ -188,9 +189,15 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 searchAndMatch(item, c, queryParts)
             }
         } else {
-            mRealm.where(c)
-                .contains(fieldName, s, Case.INSENSITIVE)
-                .findAll()
+            mRealm.where(c).findAll().filter { item ->
+                val title = when {
+                    c.isAssignableFrom(RealmMyLibrary::class.java) -> (item as RealmMyLibrary).title
+                    else -> (item as RealmMyCourse).courseTitle
+                }
+                title?.let {
+                    normalizeText(it).contains(normalizeText(s))
+                } ?: false
+            }
         }
     }
 
@@ -198,14 +205,15 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         val title = when {
             c.isAssignableFrom(RealmMyLibrary::class.java) -> (item as RealmMyLibrary).title
             else -> (item as RealmMyCourse).courseTitle
-        }?.lowercase(Locale.getDefault()) ?: return false
+        }?.let { normalizeText(it) } ?: return false
 
         return queryParts.all { queryPart ->
-            title.contains(queryPart.lowercase(Locale.getDefault()))
+            title.contains(normalizeText(queryPart))
         }
     }
 
     fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
+        val normalizedSearchTerm = normalizeText(s)
         var list = getData(s, RealmMyLibrary::class.java)
         list = if (isMyCourseLib) {
             getMyLibraryByUserId(model?.id, list)
@@ -224,10 +232,16 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
 
         return libraries.sortedWith(compareBy<RealmMyLibrary> { library ->
-            !library.title?.lowercase()?.startsWith(s.lowercase())!! ?: true
+            val normalizedTitle = normalizeText(library.title ?: "")
+            !normalizedTitle.contains(normalizedSearchTerm)
         }.thenBy { library ->
-            library.title?.lowercase() ?: ""
+            normalizeText(library.title ?: "")
         })
+    }
+
+    fun normalizeText(str: String): String {
+        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
+            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
     }
 
     fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
@@ -321,6 +335,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 "enterprise" -> (v as TextView).setText(R.string.no_enterprise)
                 "chatHistory" -> (v as TextView).setText(R.string.no_chats)
                 "feedback" -> (v as TextView).setText(R.string.no_feedback)
+                "reports" -> (v as TextView).setText(R.string.no_reports)
                 else -> (v as TextView).setText(R.string.no_data_available_please_check_and_try_again)
             }
         }
