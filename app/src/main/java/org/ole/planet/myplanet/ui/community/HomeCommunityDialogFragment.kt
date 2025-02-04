@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.tabs.TabLayoutMediator
 import org.ole.planet.myplanet.R
@@ -16,6 +17,7 @@ import java.util.Date
 
 class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
+    private var bottomSheetBehavior: BottomSheetBehavior<View>? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTeamDetailBinding = FragmentTeamDetailBinding.inflate(inflater, container, false)
@@ -24,7 +26,27 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        initCommunityTab()
+         view.post {
+            val parent = view.parent as View
+            bottomSheetBehavior = BottomSheetBehavior.from(parent)
+
+            bottomSheetBehavior?.isFitToContents = false
+            bottomSheetBehavior?.peekHeight = BottomSheetBehavior.PEEK_HEIGHT_AUTO
+            bottomSheetBehavior?.state = BottomSheetBehavior.STATE_COLLAPSED
+
+            parent.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+            parent.layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT
+
+        }
+                initCommunityTab()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        dialog?.let { d ->
+            val bottomSheet = d.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
+            bottomSheet?.layoutParams?.height = ViewGroup.LayoutParams.WRAP_CONTENT
+        }
     }
 
     private fun initCommunityTab() {
