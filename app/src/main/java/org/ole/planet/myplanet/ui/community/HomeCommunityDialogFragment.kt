@@ -26,26 +26,51 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-         view.post {
+        view.post {
             val parent = view.parent as View
             bottomSheetBehavior = BottomSheetBehavior.from(parent)
 
             bottomSheetBehavior?.isFitToContents = false
-            bottomSheetBehavior?.peekHeight = BottomSheetBehavior.PEEK_HEIGHT_AUTO
+            bottomSheetBehavior?.peekHeight = resources.displayMetrics.heightPixels / 7
+
             bottomSheetBehavior?.state = BottomSheetBehavior.STATE_COLLAPSED
+            bottomSheetBehavior?.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
+                override fun onStateChanged(bottomSheet: View, newState: Int) {
 
-            parent.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
-            parent.layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT
+                    when (newState) {
+                        BottomSheetBehavior.STATE_HIDDEN -> {
+                            dismiss()
+                        }
+                    }
+                }
 
+                override fun onSlide(bottomSheet: View, slideOffset: Float) {
+                    val screenHeight = resources.displayMetrics.heightPixels
+                    val newHeight = (screenHeight * (0.25f + (0.75f * slideOffset))).toInt()
+
+                    bottomSheet.layoutParams.height = newHeight
+                    bottomSheet.requestLayout()
+
+                    when {
+                        slideOffset > 0.5f -> bottomSheetBehavior?.state = BottomSheetBehavior.STATE_EXPANDED
+                        slideOffset > 0.2f -> bottomSheetBehavior?.state = BottomSheetBehavior.STATE_HALF_EXPANDED
+                        slideOffset < -0.3f -> bottomSheetBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
+                    }
+                }
+            })
         }
-                initCommunityTab()
+
+        initCommunityTab()
     }
 
     override fun onStart() {
         super.onStart()
         dialog?.let { d ->
             val bottomSheet = d.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
-            bottomSheet?.layoutParams?.height = ViewGroup.LayoutParams.WRAP_CONTENT
+            bottomSheet?.let {
+                it.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                it.requestLayout()
+            }
         }
     }
 
