@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.survey
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.AdapterView
 import android.widget.RadioButton
@@ -12,6 +13,7 @@ import io.realm.Sort
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.utilities.CustomSpinner
 
 class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
@@ -49,6 +51,9 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
         setupListeners()
         updateAdapterData(isTeamShareAllowed = false)
         showHideRadioButton()
+
+        val submission = mRealm.where(RealmSubmission::class.java).findAll()
+        Log.d("okuro", "onViewCreated: $submission")
     }
 
     private fun showHideRadioButton() {
@@ -115,6 +120,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
         }
 
         val surveys = query.sort(field, sort).findAll()
+        Log.d("SurveyFragment", "updateAdapterData: $surveys")
         adapter.updateData(safeCastList(surveys, RealmStepExam::class.java))
         updateUIState()
     }

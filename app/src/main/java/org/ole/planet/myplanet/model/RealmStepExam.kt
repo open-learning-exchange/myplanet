@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.JsonObject
 import com.opencsv.CSVWriter
 import io.realm.Realm
@@ -42,6 +43,7 @@ open class RealmStepExam : RealmObject() {
 
         @JvmStatic
         fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, parentId: String?, mRealm: Realm) {
+            Log.d("RealmStepExam", "StepsExams: $exam")
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }

@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.model
 
 import android.content.Context
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -44,6 +45,7 @@ open class RealmSubmission : RealmObject() {
     var source: String? = null
     var parentCode: String? = null
     var parent: String? = null
+    var membershipDoc: String? = null
 
     companion object {
         private val submissionDataList: MutableList<Array<String>> = mutableListOf()
