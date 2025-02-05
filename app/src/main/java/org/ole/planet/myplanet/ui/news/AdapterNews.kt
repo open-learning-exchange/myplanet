@@ -208,7 +208,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     mRealm.beginTransaction()
                 }
                 news?.addLabel(Constants.LABELS["${menuItem.title}"])
-                Utilities.toast(context, R.string.label_added.toString())
+                Utilities.toast(context, context.getString(R.string.label_added))
                 mRealm.commitTransaction()
                 news?.let { it1 -> showChips(holder, it1) }
                 false
@@ -351,6 +351,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun showEditAlert(id: String?, isEdit: Boolean) {
         val v = LayoutInflater.from(context).inflate(R.layout.alert_input, null)
+        val tlInput = v.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.tl_input)
         val et = v.findViewById<EditText>(R.id.et_input)
         v.findViewById<View>(R.id.ll_image).visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, context)) View.VISIBLE else View.GONE
         val llImage = v.findViewById<LinearLayout>(R.id.ll_alert_image)
@@ -364,20 +365,26 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         if (isEdit) et.setText(context.getString(R.string.message_placeholder, news?.message))
         val dialog = AlertDialog.Builder(context, R.style.CustomAlertDialog)
             .setView(v)
-            .setPositiveButton(R.string.button_submit) { _: DialogInterface?, _: Int ->
-                val s = et.text.toString()
-                if (isEdit) {
-                    editPost(s, news)
-                } else {
-                    postReply(s, news)
-                }
-            }.setNegativeButton(R.string.cancel) { dialog, _ ->
+            .setPositiveButton(R.string.button_submit, null)
+            .setNegativeButton(R.string.cancel) { dialog, _ ->
                 listener?.clearImages()
                 dialog.dismiss()
             }
             .create()
-
         dialog.show()
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener{
+            val s = et.text.toString().trim()
+            if (s.isEmpty()) {
+                tlInput.error = context.getString(R.string.please_enter_message)
+                return@setOnClickListener
+            }
+            if (isEdit) {
+                editPost(s, news)
+            } else {
+                postReply(s, news)
+            }
+            dialog.dismiss()
+        }
     }
 
     private fun postReply(s: String?, news: RealmNews?) {
@@ -397,7 +404,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun editPost(s: String, news: RealmNews?) {
         if (s.isEmpty()) {
-            Utilities.toast(context, R.string.please_enter_message.toString())
+            Utilities.toast(context, context.getString(R.string.please_enter_message))
             return
         }
         if (!mRealm.isInTransaction) mRealm.beginTransaction()

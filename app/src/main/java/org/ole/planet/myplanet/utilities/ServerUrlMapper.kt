@@ -49,10 +49,12 @@ class ServerUrlMapper(private val context: Context, private val settings: Shared
             urlPwd = settings.getString("serverPin", "") ?: ""
         }
 
+        val altUri = Uri.parse(alternativeUrl)
+
         val couchdbURL = if (alternativeUrl.contains("@")) {
             alternativeUrl
         } else {
-            "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
+            "${altUri.scheme}://$urlUser:$urlPwd@${altUri.host}:${if (altUri.port == -1) (if (altUri.scheme == "http") 80 else 443) else altUri.port}"
         }
 
         editor.apply {
@@ -76,45 +78,5 @@ class ServerUrlMapper(private val context: Context, private val settings: Shared
         } else {
             defaultInfo
         }
-    }
-
-    sealed class ConnectionResult {
-        data class Success(val url: String) : ConnectionResult()
-        data class Failure(val primaryUrl: String, val alternativeUrl: String? = null) : ConnectionResult()
-    }
-
-    suspend fun performUrlSync(url: String, onStartSync: () -> Unit, onLogSync: () -> Unit): ConnectionResult {
-        val mapping = processUrl(url)
-
-        val isPrimaryReachable = MainApplication.isServerReachable(url)
-
-        if (isPrimaryReachable) {
-            onStartSync()
-            onLogSync()
-            return ConnectionResult.Success(url)
-        }
-
-        if (mapping.alternativeUrl != null) {
-
-            val uri = Uri.parse(mapping.alternativeUrl)
-            updateUrlPreferences(editor, uri, mapping.alternativeUrl, url, settings)
-
-            val processedUrl = settings.getString("processedAlternativeUrl", "")
-            if (!processedUrl.isNullOrEmpty()) {
-                val isAlternativeReachable = MainApplication.isServerReachable(processedUrl)
-
-                if (isAlternativeReachable) {
-                    onStartSync()
-                    onLogSync()
-                    return ConnectionResult.Success(processedUrl)
-                }
-            }
-
-            return ConnectionResult.Failure(url, mapping.alternativeUrl)
-        }
-
-        onStartSync()
-        onLogSync()
-        return ConnectionResult.Success(url)
     }
 }

@@ -36,6 +36,8 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import java.util.Calendar
 import java.util.UUID
+import android.content.Context
+import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener {
 
@@ -96,6 +98,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         userModel = UserProfileDbHandler(requireContext()).userModel
         searchTags = ArrayList()
         initializeView()
+        updateCheckBoxState(false)
         if (isMyCourseLib) {
             btnRemove.visibility = View.VISIBLE
             btnArchive.visibility = View.VISIBLE
@@ -177,6 +180,13 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                         .commit()
                 }
             }
+        }
+    }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        if (context is OnHomeItemClickListener) {
+            homeItemClickListener = context
         }
     }
 
@@ -308,7 +318,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 if (userModel?.id?.startsWith("guest") == true) {
                     DialogUtils.guestDialog(requireContext())
                 } else {
-                    redirectToMyCourses()
+                    homeItemClickListener?.openMyFragment(CoursesFragment())
                 }
             }
             .setNegativeButton(R.string.ok) { dialog: DialogInterface, _: Int ->
@@ -318,15 +328,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
 
         return builder.create()
-    }
-
-    fun redirectToMyCourses() {
-        val fragment = newInstance(isMyCourseLib = true)
-
-        parentFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, fragment)
-            .addToBackStack(null)
-            .commit()
     }
 
     override fun onSelectedListChange(list: MutableList<RealmMyCourse?>) {

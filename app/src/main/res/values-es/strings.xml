@@ -163,6 +163,7 @@
     <string name="search_user">Buscar usuario</string>
     <string name="get_started">EMPEZAR</string>
     <string name="enter_password">Ingresar contraseña</string>
+    <string name="managerial_login">Inicio de Sesión del Gerente</string>
     <string name="year">Año</string>
     <string name="publisher">Editor</string>
     <string name="link_to_license">Enlace a la licencia</string>
@@ -1225,5 +1226,6 @@
     <string name="local_resource">recurso local</string>
     <string name="no_survey_submissions">no hay envíos de encuestas</string>
     <string name="no_exam_submissions">no hay envíos de exámenes</string>
+    <string name="no_reports">No hay informes disponibles</string>
 
 </resources>
