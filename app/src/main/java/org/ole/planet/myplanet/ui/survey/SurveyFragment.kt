@@ -52,8 +52,22 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
         updateAdapterData(isTeamShareAllowed = false)
         showHideRadioButton()
 
-        val submission = mRealm.where(RealmSubmission::class.java).findAll()
-        Log.d("okuro", "onViewCreated: $submission")
+        val submissions = mRealm.where(RealmSubmission::class.java)
+            .findAll()
+
+        for (submission in submissions) {
+            Log.d("okuro", "Submission ID: ${submission._id}")
+            Log.d("okuro", "User ID: ${submission.userId}")
+            Log.d("okuro", "Status: ${submission.status}")
+
+            // Fetch membershipDoc if it exists
+            val membershipDoc = submission.membershipDoc
+            if (membershipDoc != null) {
+                Log.d("okuro", "Membership Team ID: ${membershipDoc.teamId}")
+            } else {
+                Log.d("okuro", "No membershipDoc found for this submission")
+            }
+        }
     }
 
     private fun showHideRadioButton() {

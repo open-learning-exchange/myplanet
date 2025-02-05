@@ -45,15 +45,23 @@ open class RealmSubmission : RealmObject() {
     var source: String? = null
     var parentCode: String? = null
     var parent: String? = null
-    var membershipDoc: String? = null
+    var membershipDoc: RealmMembershipDoc? = null
 
     companion object {
         private val submissionDataList: MutableList<Array<String>> = mutableListOf()
 
         @JvmStatic
         fun insert(mRealm: Realm, submission: JsonObject) {
+            Log.d("okuro", "insert: $submission")
+
             if (submission.has("_attachments")) {
                 return
+            }
+
+            val shouldStartTransaction = !mRealm.isInTransaction
+
+            if (shouldStartTransaction) {
+                mRealm.beginTransaction() // ✅ Start a transaction only if needed
             }
 
             try {
@@ -78,41 +86,46 @@ open class RealmSubmission : RealmObject() {
                 sub?.parent = Gson().toJson(JsonUtils.getJsonObject("parent", submission))
                 sub?.user = Gson().toJson(JsonUtils.getJsonObject("user", submission))
 
-                val csvRow = arrayOf(
-                    JsonUtils.getString("_id", submission),
-                    JsonUtils.getString("parentId", submission),
-                    JsonUtils.getString("type", submission),
-                    JsonUtils.getString("status", submission),
-                    JsonUtils.getString("grade", submission),
-                    JsonUtils.getString("startTime", submission),
-                    JsonUtils.getString("lastUpdateTime", submission),
-                    JsonUtils.getString("sender", submission),
-                    JsonUtils.getString("source", submission),
-                    JsonUtils.getString("parentCode", submission),
-                    JsonUtils.getString("user", submission)
-                )
-                submissionDataList.add(csvRow)
+                // Handle membershipDoc safely
+                val userJson = JsonUtils.getJsonObject("user", submission)
+                Log.d("okuro", "userJson: $userJson")
+                if (userJson.has("membershipDoc")) {
+                    val membershipJson = JsonUtils.getJsonObject("membershipDoc", userJson)
+                    Log.d("kuro", "membershipJson: $membershipJson")
+                    if (membershipJson != null) {
+                        val membership = mRealm.createObject(RealmMembershipDoc::class.java)
+                        membership.teamId = JsonUtils.getString("teamId", membershipJson)
+                        sub?.membershipDoc = membership
+                    }
+                }
 
-                RealmStepExam.insertCourseStepsExams("", "", JsonUtils.getJsonObject("parent", submission), JsonUtils.getString("parentId", submission), mRealm)
+                // Assign userId
                 val userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission))
                 if (userId.contains("@")) {
                     val us = userId.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                    if (us[0].startsWith("org.couchdb.user:")) {
-                        if (sub != null) {
-                            sub.userId = us[0]
-                        }
+                    sub?.userId = if (us[0].startsWith("org.couchdb.user:")) {
+                        us[0]
                     } else {
-                        if (sub != null) {
-                            sub.userId = "org.couchdb.user:" + us[0]
-                        }
+                        "org.couchdb.user:${us[0]}"
                     }
                 } else {
-                    if (sub != null) {
-                        sub.userId = userId
-                    }
+                    sub?.userId = userId
                 }
+
+                Log.d("okuro", "✅ Successfully inserted/updated submission with ID: $id")
+
+                // ✅ Commit the transaction if we started it
+                if (shouldStartTransaction) {
+                    mRealm.commitTransaction()
+                }
+
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("okuro", "🔥 Exception occurred in insert(): ${e.message}")
+
+                // ❌ Rollback transaction in case of an error
+                if (shouldStartTransaction && mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
             }
         }
 
@@ -277,4 +290,8 @@ open class RealmSubmission : RealmObject() {
             return parentId != null && parentId.contains("@")
         }
     }
+}
+
+open class RealmMembershipDoc : RealmObject() {
+    var teamId: String? = null
 }
