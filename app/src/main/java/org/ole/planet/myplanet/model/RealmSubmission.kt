@@ -54,13 +54,16 @@ open class RealmSubmission : RealmObject() {
                 return
             }
 
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
+
             try {
                 val id = JsonUtils.getString("_id", submission)
                 var sub = mRealm.where(RealmSubmission::class.java).equalTo("_id", id).findFirst()
                 if (sub == null) {
                     sub = mRealm.createObject(RealmSubmission::class.java, id)
                 }
-
                 sub?._id = id
                 sub?.status = JsonUtils.getString("status", submission)
                 sub?._rev = JsonUtils.getString("_rev", submission)
@@ -95,22 +98,23 @@ open class RealmSubmission : RealmObject() {
                 val userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission))
                 if (userId.contains("@")) {
                     val us = userId.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                    if (us[0].startsWith("org.couchdb.user:")) {
-                        if (sub != null) {
-                            sub.userId = us[0]
-                        }
+                    sub?.userId = if (us[0].startsWith("org.couchdb.user:")) {
+                        us[0]
                     } else {
-                        if (sub != null) {
-                            sub.userId = "org.couchdb.user:" + us[0]
-                        }
+                        "org.couchdb.user:${us[0]}"
                     }
                 } else {
-                    if (sub != null) {
-                        sub.userId = userId
-                    }
+                    sub?.userId = userId
+                }
+
+                if (!mRealm.isInTransaction) {
+                    mRealm.commitTransaction()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                if (!mRealm.isInTransaction && mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
             }
         }
 
