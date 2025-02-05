@@ -68,15 +68,17 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
             .filter { it.isNotEmpty() }
             .toSet()
 
+
+
         fun bind(exam: RealmStepExam) {
             binding.apply {
+                Log.d("okuro", "FilteredParentIds: $filteredParentIds")
                 tvTitle.text = exam.name
                 startSurvey.setOnClickListener {
                     when {
-                        exam.id !in filteredParentIds && exam.isTeamShareAllowed -> Log.d("okuro", "adopt survey")
+                        exam.id !in filteredParentIds && exam.isTeamShareAllowed -> adoptSurvey(exam, teamId)
                         else -> AdapterMySubmission.openSurvey(listener, exam.id, false, isTeam, teamId)
                     }
-
                 }
 
                 val questions = mRealm.where(RealmExamQuestion::class.java)
@@ -101,6 +103,19 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
                 tvNoSubmissions.text = getNoOfSubmissionByUser(exam.id, exam.courseId, userId, mRealm)
                 tvDateCompleted.text = getRecentSubmissionDate(exam.id, exam.courseId, userId, mRealm)
                 tvDate.text = formatDate(RealmStepExam.getSurveyCreationTime(exam.id!!, mRealm)!!, "MMM dd, yyyy")
+            }
+        }
+
+        fun adoptSurvey(exam: RealmStepExam, teamId: String?) {
+            Log.d("okuro", "Adopting survey")
+            val submissions = mRealm.where(RealmSubmission::class.java)
+                .`in`("parentId", filteredParentIds.toTypedArray())
+                .findAll()
+
+            Log.d("okuro", "Total matching submissions: ${submissions.size}")
+
+            submissions.forEach { submission ->
+                Log.d("okuro", "Submission: ID=${submission}")
             }
         }
     }
