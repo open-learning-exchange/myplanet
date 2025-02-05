@@ -41,6 +41,7 @@ class AddResourceActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
         activityAddResourceBinding = ActivityAddResourceBinding.inflate(layoutInflater)
         setContentView(activityAddResourceBinding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -172,7 +173,22 @@ class AddResourceActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == android.R.id.home) finish()
-        return super.onOptionsItemSelected(item)
+        return when (item.itemId) {
+            android.R.id.home -> {
+                showExitConfirmationDialog()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+    private fun showExitConfirmationDialog() {
+        AlertDialog.Builder(this,R.style.AlertDialogTheme)
+            .setTitle("Confirm Exit")
+            .setMessage("Are you sure you want to go back? Any unsaved changes will be lost.")
+            .setPositiveButton("Yes") { _, _ ->
+                finish()
+            }
+            .setNegativeButton("No", null)
+            .show()
     }
 }
