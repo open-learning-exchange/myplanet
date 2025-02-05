@@ -326,7 +326,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 val newFragment = CoursesFragment()
                 recreateFragment(newFragment)
             }
-
+           .setOnDismissListener {
+               val newFragment = CoursesFragment()
+               recreateFragment(newFragment)
+           }
+        
         return builder.create()
     }
 
