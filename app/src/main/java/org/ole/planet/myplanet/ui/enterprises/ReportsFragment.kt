@@ -16,6 +16,7 @@ import com.google.gson.JsonObject
 import io.realm.RealmResults
 import io.realm.Sort
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.FragmentReportsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -218,7 +219,7 @@ class ReportsFragment : BaseTeamFragment() {
         list = mRealm.where(RealmMyTeam::class.java)
             .equalTo("teamId", teamId)
             .equalTo("docType", "report")
-            .notEqualTo("status", "archived")  // Add this line
+            .notEqualTo("status", "archived")
             .sort("date", Sort.DESCENDING)
             .findAll()
         updatedReportsList(list as RealmResults<RealmMyTeam>)
@@ -238,6 +239,13 @@ class ReportsFragment : BaseTeamFragment() {
             fragmentReportsBinding.rvReports.layoutManager = LinearLayoutManager(activity)
             fragmentReportsBinding.rvReports.adapter = adapterReports
             adapterReports.notifyDataSetChanged()
+
+            if (results.isEmpty()) {
+                fragmentReportsBinding.exportCSV.visibility = View.GONE
+                BaseRecyclerFragment.showNoData(fragmentReportsBinding.tvMessage, results.count(), "reports")
+            } else {
+                fragmentReportsBinding.exportCSV.visibility = View.VISIBLE
+            }
         }
     }
 }

@@ -22,6 +22,9 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import io.realm.Realm
 import io.realm.Sort
 import org.ole.planet.myplanet.utilities.Utilities
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class AdapterJoinedMember(
     private val context: Context,
@@ -46,13 +49,23 @@ class AdapterJoinedMember(
         val member = list[position]
         val binding = holder.binding
 
+        val lastVisitTimestamp = RealmTeamLog.getLastVisit(mRealm, member.name, teamId)
+        val lastVisitDate = if (lastVisitTimestamp != null) {
+            val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+            sdf.format(Date(lastVisitTimestamp))
+        } else {
+            context.getString(R.string.no_visit)
+        }
         binding.tvTitle.text = if (member.toString() == " ") member.name else member.toString()
         binding.tvDescription.text = context.getString(
             R.string.member_description,
             member.getRoleAsString(),
             RealmTeamLog.getVisitCount(mRealm, member.name, teamId)
         )
-
+        binding.tvLastVisit.text = context.getString(
+            R.string.last_visit,
+            lastVisitDate
+        )
         Glide.with(context)
             .load(member.userImage)
             .placeholder(R.drawable.profile)

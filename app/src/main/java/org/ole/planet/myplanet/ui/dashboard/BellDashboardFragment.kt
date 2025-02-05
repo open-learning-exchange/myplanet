@@ -133,6 +133,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
                     homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
                     dialog.dismiss()
                 }
+                .setNegativeButton(getString(R.string.cancel)) { dialog, _->
+                    dialog.dismiss()
+                }
                 .create()
 
             val adapter = SurveyAdapter(surveyTitles, { position ->
@@ -213,7 +216,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun declareElements() {
-        fragmentHomeBellBinding.homeCardTeams.llHomeTeam.setOnClickListener { homeItemClickListener?.openCallFragment(TeamFragment()) }
+        fragmentHomeBellBinding.homeCardTeams.llHomeTeam.setOnClickListener { homeItemClickListener?.openMyFragment(TeamFragment()) }
         fragmentHomeBellBinding.homeCardLibrary.myLibraryImageButton.setOnClickListener {
             if (user?.id?.startsWith("guest") == true) {
                 guestDialog(requireContext())
