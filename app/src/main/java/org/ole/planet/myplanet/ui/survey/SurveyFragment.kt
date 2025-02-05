@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.survey
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.widget.AdapterView
 import android.widget.RadioButton
@@ -10,6 +9,7 @@ import android.widget.RadioGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import io.realm.Sort
+import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.model.RealmStepExam
@@ -51,23 +51,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
         setupListeners()
         updateAdapterData(isTeamShareAllowed = false)
         showHideRadioButton()
-
-        val submissions = mRealm.where(RealmSubmission::class.java)
-            .findAll()
-
-        for (submission in submissions) {
-            Log.d("okuro", "Submission ID: ${submission._id}")
-            Log.d("okuro", "User ID: ${submission.userId}")
-            Log.d("okuro", "Status: ${submission.status}")
-
-            // Fetch membershipDoc if it exists
-            val membershipDoc = submission.membershipDoc
-            if (membershipDoc != null) {
-                Log.d("okuro", "Membership Team ID: ${membershipDoc.teamId}")
-            } else {
-                Log.d("okuro", "No membershipDoc found for this submission")
-            }
-        }
     }
 
     private fun showHideRadioButton() {
@@ -125,16 +108,45 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
     }
 
     private fun updateAdapterData(sort: Sort = Sort.ASCENDING, field: String = "name", isTeamShareAllowed: Boolean) {
+        val submissionQuery = mRealm.where(RealmSubmission::class.java)
+            .isNotNull("membershipDoc")
+            .findAll()
+
         val query = mRealm.where(RealmStepExam::class.java)
 
         if (isTeamShareAllowed) {
-            query.equalTo("isTeamShareAllowed", true)
+            val filteredParentIds = submissionQuery
+                .mapNotNull { submission ->
+                    val parentJson = JSONObject(submission.parent ?: "{}")
+                    parentJson.optString("_id")
+                }
+                .filter { it.isNotEmpty() }
+                .toSet()
+
+            query.beginGroup()
+                .equalTo("isTeamShareAllowed", true)
+                .and()
+                .not()
+                .`in`("id", filteredParentIds.toTypedArray())
+            query.endGroup()
         } else if (!teamId.isNullOrEmpty() && isTeam) {
-            query.equalTo("teamId", teamId)
+            val teamSpecificExams = submissionQuery
+                .filter { it.membershipDoc?.teamId == teamId }
+                .mapNotNull { submission ->
+                    val parentJson = JSONObject(submission.parent ?: "{}")
+                    parentJson.optString("_id")
+                }
+                .filter { it.isNotEmpty() }
+                .toSet()
+
+            query.beginGroup()
+                .equalTo("teamId", teamId)
+                .or()
+                .`in`("id", teamSpecificExams.toTypedArray())
+            query.endGroup()
         }
 
         val surveys = query.sort(field, sort).findAll()
-        Log.d("SurveyFragment", "updateAdapterData: $surveys")
         adapter.updateData(safeCastList(surveys, RealmStepExam::class.java))
         updateUIState()
     }

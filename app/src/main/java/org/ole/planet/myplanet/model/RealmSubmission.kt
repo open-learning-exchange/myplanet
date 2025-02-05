@@ -52,16 +52,12 @@ open class RealmSubmission : RealmObject() {
 
         @JvmStatic
         fun insert(mRealm: Realm, submission: JsonObject) {
-            Log.d("okuro", "insert: $submission")
-
             if (submission.has("_attachments")) {
                 return
             }
 
-            val shouldStartTransaction = !mRealm.isInTransaction
-
-            if (shouldStartTransaction) {
-                mRealm.beginTransaction() // ✅ Start a transaction only if needed
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
             }
 
             try {
@@ -86,7 +82,6 @@ open class RealmSubmission : RealmObject() {
                 sub?.parent = Gson().toJson(JsonUtils.getJsonObject("parent", submission))
                 sub?.user = Gson().toJson(JsonUtils.getJsonObject("user", submission))
 
-                // Handle membershipDoc safely
                 val userJson = JsonUtils.getJsonObject("user", submission)
                 Log.d("okuro", "userJson: $userJson")
                 if (userJson.has("membershipDoc")) {
@@ -115,7 +110,7 @@ open class RealmSubmission : RealmObject() {
                 Log.d("okuro", "✅ Successfully inserted/updated submission with ID: $id")
 
                 // ✅ Commit the transaction if we started it
-                if (shouldStartTransaction) {
+                if (!mRealm.isInTransaction) {
                     mRealm.commitTransaction()
                 }
 
@@ -123,7 +118,7 @@ open class RealmSubmission : RealmObject() {
                 Log.e("okuro", "🔥 Exception occurred in insert(): ${e.message}")
 
                 // ❌ Rollback transaction in case of an error
-                if (shouldStartTransaction && mRealm.isInTransaction) {
+                if (!mRealm.isInTransaction && mRealm.isInTransaction) {
                     mRealm.cancelTransaction()
                 }
             }
