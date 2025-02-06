@@ -1092,6 +1092,7 @@
     <string name="message_placeholder">%s</string>
     <string name="reports">التقارير</string>
     <string name="number_placeholder">%d</string>
+    <string name="float_placeholder">%.1f</string>
     <string name="date_range">%1$s إلى %2$s</string>
     <string name="string_range">%1$s - %2$s</string>
     <string name="team_financial_report">%s تقرير مالي لـ</string>
