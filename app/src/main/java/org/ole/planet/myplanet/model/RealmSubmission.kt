@@ -293,8 +293,14 @@ open class RealmSubmission : RealmObject() {
             val jsonObject = JsonObject()
 
             try {
-                jsonObject.addProperty("_id", submission._id ?: "")
-                jsonObject.addProperty("_rev", submission._rev ?: "")
+                // ✅ Add _id only if it's not empty
+                if (!submission._id.isNullOrEmpty()) {
+                    jsonObject.addProperty("_id", submission._id)
+                }
+                if (!submission._rev.isNullOrEmpty()) {
+                    jsonObject.addProperty("_rev", submission._rev)
+                }
+
                 jsonObject.addProperty("parentId", submission.parentId ?: "")
                 jsonObject.addProperty("type", submission.type ?: "survey")
                 jsonObject.addProperty("userId", submission.userId ?: "")
@@ -307,32 +313,35 @@ open class RealmSubmission : RealmObject() {
                 jsonObject.addProperty("lastUpdateTime", submission.lastUpdateTime)
                 jsonObject.addProperty("grade", submission.grade)
 
-                // Convert parent JSON string back to JsonObject
+                // ✅ Convert parent JSON string back to JsonObject
                 if (!submission.parent.isNullOrEmpty()) {
                     jsonObject.add("parent", JsonParser.parseString(submission.parent))
                 }
 
-                // Convert user JSON string back to JsonObject
+                // ✅ Convert user JSON string back to JsonObject and ensure membershipDoc stays inside
                 if (!submission.user.isNullOrEmpty()) {
-                    jsonObject.add("user", JsonParser.parseString(submission.user))
+                    val userJson = JsonParser.parseString(submission.user).asJsonObject
+
+                    // ✅ Ensure membershipDoc is inside user and remove it from the root object
+                    if (submission.membershipDoc != null) {
+                        val membershipJson = JsonObject()
+                        membershipJson.addProperty("teamId", submission.membershipDoc?.teamId ?: "")
+
+                        userJson.add("membershipDoc", membershipJson)
+                    }
+
+                    jsonObject.add("user", userJson)
                 }
 
-                // Serialize answers if not null
+                // ✅ Serialize answers if not null
                 val answersArray = JsonArray()
                 submission.answers?.forEach { answer ->
                     answersArray.add(gson.toJsonTree(answer))
                 }
                 jsonObject.add("answers", answersArray)
 
-                // Serialize membershipDoc if it exists
-                submission.membershipDoc?.let {
-                    val membershipJson = JsonObject()
-                    membershipJson.addProperty("teamId", it.teamId ?: "")
-                    jsonObject.add("membershipDoc", membershipJson)
-                }
-
             } catch (e: Exception) {
-                Log.e("Serialization", "Error serializing submission: ${e.message}")
+                Log.e("Serialization", "🔥 Error serializing submission: ${e.message}")
             }
 
             return jsonObject

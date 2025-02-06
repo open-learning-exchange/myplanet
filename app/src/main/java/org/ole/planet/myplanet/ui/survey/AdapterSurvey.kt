@@ -164,6 +164,7 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
                     parentCode = sParentCode ?: ""
                     startTime = System.currentTimeMillis()
                     lastUpdateTime = System.currentTimeMillis()
+                    isUpdated = true
 
                     if (isTeam && teamId != null) {
                         membershipDoc = realm.createObject(RealmMembershipDoc::class.java).apply {
