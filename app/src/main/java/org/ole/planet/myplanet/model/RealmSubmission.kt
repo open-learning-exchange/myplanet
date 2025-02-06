@@ -46,6 +46,7 @@ open class RealmSubmission : RealmObject() {
     var parentCode: String? = null
     var parent: String? = null
     var membershipDoc: RealmMembershipDoc? = null
+    var isUpdated = false
 
     companion object {
         private val submissionDataList: MutableList<Array<String>> = mutableListOf()
@@ -107,7 +108,7 @@ open class RealmSubmission : RealmObject() {
                     sub?.userId = userId
                 }
 
-                Log.d("okuro", "✅ Successfully inserted/updated submission with ID: $id")
+                Log.d("okuro", "✅ Successfully inserted/updated submission with ID: $sub")
 
                 // ✅ Commit the transaction if we started it
                 if (!mRealm.isInTransaction) {

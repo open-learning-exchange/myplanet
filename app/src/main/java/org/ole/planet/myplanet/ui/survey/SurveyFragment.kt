@@ -107,7 +107,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
         }
     }
 
-    private fun updateAdapterData(sort: Sort = Sort.ASCENDING, field: String = "name", isTeamShareAllowed: Boolean) {
+    fun updateAdapterData(sort: Sort = Sort.ASCENDING, field: String = "name", isTeamShareAllowed: Boolean) {
         val submissionQuery = mRealm.where(RealmSubmission::class.java)
             .isNotNull("membershipDoc")
             .findAll()
