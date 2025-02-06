@@ -1112,6 +1112,8 @@
     <string name="three_strings">%1$s %2$s %3$s</string>
     <string name="download_sync_files">soo dejiso faylalka is-waafajinta</string>
     <string name="member_description">%1$s (%2$d booqasho)</string>
+    <string name="last_visit">Booqashadii ugu dambeysay: %1$s</string>
+    <string name="no_visit">Booqasho la\'aan</string>
     <string name="dark_mode">Habka Hodan</string>
     <string name="dark_mode_off">Dami</string>
     <string name="dark_mode_on">Shidi</string>
@@ -1226,5 +1228,6 @@
     <string name="local_resource">kheyraadka deegaanka</string>
     <string name="no_survey_submissions">ma jiro soo gudbinta sahanka</string>
     <string name="no_exam_submissions">ma jiro soo gudbinta imtixaan</string>
+    <string name="no_reports">Warbixin la heli karo ma jirto</string>
 
 </resources>

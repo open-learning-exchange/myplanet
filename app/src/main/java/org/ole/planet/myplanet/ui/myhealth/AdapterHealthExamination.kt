@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.myhealth
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.graphics.drawable.ColorDrawable
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -89,10 +90,12 @@ class AdapterHealthExamination(private val context: Context, private val list: L
         }
         showConditions(alertExaminationBinding.tvCondition, realmExamination)
         showEncryptedData(alertExaminationBinding.tvOtherNotes, encrypted)
-        val dialog = AlertDialog.Builder(context)
+        val dialog = AlertDialog.Builder(context, R.style.CustomAlertDialog)
             .setTitle(realmExamination?.let { formatDate(it.date, "MMM dd, yyyy") })
             .setView(alertExaminationBinding.root)
             .setPositiveButton("OK", null).create()
+        val backgroundColor = ContextCompat.getColor(context, R.color.multi_select_grey)
+        dialog.window?.setBackgroundDrawable(ColorDrawable(backgroundColor))
         val time = Date().time - 5000 * 60
         if (realmExamination != null) {
             if (realmExamination.date >= time) { dialog.setButton(DialogInterface.BUTTON_NEUTRAL, context.getString(R.string.edit)) { _: DialogInterface?, _: Int ->

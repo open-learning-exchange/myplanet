@@ -241,6 +241,13 @@ abstract class BaseResourceFragment : Fragment() {
             prgDialog.dismiss()
         }
         prgDialog.setNegativeButton("disabling", isVisible = false){ prgDialog.dismiss() }
+
+        if (settings?.getBoolean("isAlternativeUrl", false) == true) {
+            editor?.putString("alternativeUrl", "")
+            editor?.putString("processedAlternativeUrl", "")
+            editor?.putBoolean("isAlternativeUrl", false)
+            editor?.apply()
+        }
     }
 
     fun createListView(dbMyLibrary: List<RealmMyLibrary?>, alertDialog: AlertDialog) {
