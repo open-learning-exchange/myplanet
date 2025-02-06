@@ -111,8 +111,17 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
-                showNoData(tvMessage, adapterCourses.itemCount, "courses")
+                if (!etSearch.isFocused) return
+                val query = s.toString().trim()
+                if (query.isEmpty()) {
+                    val courseList = filterCourseByTag(query, searchTags)
+                    val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
+                    adapterCourses.setOriginalCourseList(sortedCourseList)
+                }
+                else {
+                    adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags),1)
+                    showNoData(tvMessage, adapterCourses.itemCount, "courses")
+                }
             }
 
             override fun afterTextChanged(s: Editable) {}
@@ -279,7 +288,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             gradeLevel = if (spnGrade.selectedItem.toString() == "All") "" else spnGrade.selectedItem.toString()
             subjectLevel = if (spnSubject.selectedItem.toString() == "All") "" else spnSubject.selectedItem.toString()
-            adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
+            adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags),2)
             showNoFilter(tvMessage, adapterCourses.itemCount)
         }
 
@@ -291,7 +300,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             searchTags.clear()
             etSearch.setText(R.string.empty_text)
             tvSelected.text = context?.getString(R.string.empty_text)
-            adapterCourses.setCourseList(filterCourseByTag("", searchTags))
+            adapterCourses.setCourseList(filterCourseByTag("", searchTags),3)
             showNoData(tvMessage, adapterCourses.itemCount, "courses")
             spnGrade.setSelection(0)
             spnSubject.setSelection(0)
@@ -343,7 +352,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (!searchTags.contains(tag)) {
             tag?.let { searchTags.add(it) }
         }
-        adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
+        adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags),4)
         showTagText(searchTags, tvSelected)
         showNoData(tvMessage, adapterCourses.itemCount, "courses")
     }
@@ -370,14 +379,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         li.add(tag)
         searchTags = li
         tvSelected.text = context?.getString(R.string.tag_selected, tag.name)
-        adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), li))
+        adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), li),5)
         showNoData(tvMessage, adapterCourses.itemCount, "courses")
     }
 
     override fun onOkClicked(list: List<RealmTag>?) {
         if (list?.isEmpty() == true) {
             searchTags.clear()
-            adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
+            adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags),6)
             showNoData(tvMessage, adapterCourses.itemCount, "courses")
         } else {
             for (tag in list ?: emptyList()) {
