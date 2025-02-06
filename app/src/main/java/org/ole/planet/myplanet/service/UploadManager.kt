@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.service
 import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
-import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -336,66 +335,32 @@ class UploadManager(var context: Context) : FileUploadService() {
     }
 
     fun uploadSubmissions() {
-        Log.d("UploadSubmissions", "Starting upload process...")
-
         mRealm = DatabaseService(context).realmInstance
         val apiInterface = client?.create(ApiInterface::class.java)
 
-        mRealm.executeTransactionAsync(
-            { realm: Realm ->
-                val list: List<RealmSubmission> = realm.where(RealmSubmission::class.java)
-                    .equalTo("isUpdated", true)
-                    .or()
-                    .isEmpty("_id")
-                    .findAll()
+        mRealm.executeTransactionAsync { realm: Realm ->
+            val list: List<RealmSubmission> = realm.where(RealmSubmission::class.java)
+                .equalTo("isUpdated", true).or().isEmpty("_id").findAll()
+            for (submission in list) {
+                var jsonObject: JsonObject?
+                try {
+                    val requestJson = serialize(submission)
+                    val response = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/submissions", requestJson)?.execute()
+                    jsonObject = response?.body()
 
-                Log.d("UploadSubmissions", "Found ${list.size} submissions to upload")
+                    if (jsonObject != null) {
+                        val rev = getString("rev", jsonObject)
+                        val id = getString("id", jsonObject)
 
-                for (submission in list) {
-                    var jsonObject: JsonObject?
-                    try {
-                        val requestJson = serialize(submission)
-
-                        Log.d("UploadSubmissions", "Uploading submission ID: ${submission._id ?: "New Submission"}")
-                        Log.d("UploadSubmissions", "Request JSON: $requestJson")
-                        Log.d("UploadSubmissions", "Request URL: ${Utilities.getUrl() + "/submissions"}")
-                        Log.d("UploadSubmissions", "Request Header: ${Utilities.header}")
-
-                        val response = apiInterface?.postDoc(
-                            Utilities.header,
-                            "application/json",
-                            Utilities.getUrl() + "/submissions",
-                            requestJson
-                        )?.execute()
-
-                        Log.d("UploadSubmissions", "Raw Response: $response")
-                        jsonObject = response?.body()
-
-                        if (jsonObject != null) {
-                            val rev = getString("rev", jsonObject)
-                            val id = getString("id", jsonObject)
-
-                            submission._rev = rev
-                            submission._id = id
-                            submission.isUpdated = false
-
-                            Log.d("UploadSubmissions", "✅ Successfully uploaded submission ID: $id, Rev: $rev")
-                        } else {
-                            Log.e("UploadSubmissions", "❌ Server returned null response for submission: ${submission._id}")
-                        }
-                    } catch (e: IOException) {
-                        Log.e("UploadSubmissions", "🔥 Error uploading submission ID: ${submission._id}. Exception: ${e.message}")
-                        e.printStackTrace()
+                        submission._rev = rev
+                        submission._id = id
+                        submission.isUpdated = false
                     }
+                } catch (e: IOException) {
+                    e.printStackTrace()
                 }
-            },
-            {
-                Log.d("UploadSubmissions", "✅ All submissions uploaded successfully!")
-            },
-            { error ->
-                Log.e("UploadSubmissions", "🔥 Transaction failed: ${error.message}")
             }
-        )
+        }
     }
 
     fun uploadTeams() {

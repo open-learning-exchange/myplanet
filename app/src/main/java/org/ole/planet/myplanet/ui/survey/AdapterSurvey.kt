@@ -64,8 +64,7 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
         }
 
         val filteredParentIds = mRealm.where(RealmSubmission::class.java)
-            .isNotNull("membershipDoc")
-            .findAll()
+            .isNotNull("membershipDoc").findAll()
             .mapNotNull { submission ->
                 val parentJson = JSONObject(submission.parent ?: "{}")
                 parentJson.optString("_id")
@@ -174,7 +173,7 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
                 }
             }
 
-            Snackbar.make(binding.root, "Survey adopted successfully!", Snackbar.LENGTH_LONG).show()
+            Snackbar.make(binding.root, context.getString(R.string.survey_adopted_successfully), Snackbar.LENGTH_LONG).show()
             surveyAdoptListener.onSurveyAdopted()
         }
     }
@@ -186,6 +185,7 @@ class SurveyDiffCallback(private val oldList: List<RealmStepExam>, private val n
     override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
         return oldList[oldItemPosition].id == newList[newItemPosition].id
     }
+
     override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
         return oldList[oldItemPosition] == newList[newItemPosition]
     }

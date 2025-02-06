@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.model
 
 import android.content.Context
 import android.text.TextUtils
-import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -85,10 +84,8 @@ open class RealmSubmission : RealmObject() {
                 sub?.user = Gson().toJson(JsonUtils.getJsonObject("user", submission))
 
                 val userJson = JsonUtils.getJsonObject("user", submission)
-                Log.d("okuro", "userJson: $userJson")
                 if (userJson.has("membershipDoc")) {
                     val membershipJson = JsonUtils.getJsonObject("membershipDoc", userJson)
-                    Log.d("kuro", "membershipJson: $membershipJson")
                     if (membershipJson != null) {
                         val membership = mRealm.createObject(RealmMembershipDoc::class.java)
                         membership.teamId = JsonUtils.getString("teamId", membershipJson)
@@ -96,7 +93,6 @@ open class RealmSubmission : RealmObject() {
                     }
                 }
 
-                // Assign userId
                 val userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission))
                 if (userId.contains("@")) {
                     val us = userId.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
@@ -109,17 +105,11 @@ open class RealmSubmission : RealmObject() {
                     sub?.userId = userId
                 }
 
-                Log.d("okuro", "✅ Successfully inserted/updated submission with ID: $sub")
-
-                // ✅ Commit the transaction if we started it
                 if (!mRealm.isInTransaction) {
                     mRealm.commitTransaction()
                 }
-
             } catch (e: Exception) {
-                Log.e("okuro", "🔥 Exception occurred in insert(): ${e.message}")
-
-                // ❌ Rollback transaction in case of an error
+                e.printStackTrace()
                 if (!mRealm.isInTransaction && mRealm.isInTransaction) {
                     mRealm.cancelTransaction()
                 }
@@ -293,7 +283,6 @@ open class RealmSubmission : RealmObject() {
             val jsonObject = JsonObject()
 
             try {
-                // ✅ Add _id only if it's not empty
                 if (!submission._id.isNullOrEmpty()) {
                     jsonObject.addProperty("_id", submission._id)
                 }
@@ -313,27 +302,21 @@ open class RealmSubmission : RealmObject() {
                 jsonObject.addProperty("lastUpdateTime", submission.lastUpdateTime)
                 jsonObject.addProperty("grade", submission.grade)
 
-                // ✅ Convert parent JSON string back to JsonObject
                 if (!submission.parent.isNullOrEmpty()) {
                     jsonObject.add("parent", JsonParser.parseString(submission.parent))
                 }
 
-                // ✅ Convert user JSON string back to JsonObject and ensure membershipDoc stays inside
                 if (!submission.user.isNullOrEmpty()) {
                     val userJson = JsonParser.parseString(submission.user).asJsonObject
-
-                    // ✅ Ensure membershipDoc is inside user and remove it from the root object
                     if (submission.membershipDoc != null) {
                         val membershipJson = JsonObject()
                         membershipJson.addProperty("teamId", submission.membershipDoc?.teamId ?: "")
 
                         userJson.add("membershipDoc", membershipJson)
                     }
-
                     jsonObject.add("user", userJson)
                 }
 
-                // ✅ Serialize answers if not null
                 val answersArray = JsonArray()
                 submission.answers?.forEach { answer ->
                     answersArray.add(gson.toJsonTree(answer))
@@ -341,9 +324,8 @@ open class RealmSubmission : RealmObject() {
                 jsonObject.add("answers", answersArray)
 
             } catch (e: Exception) {
-                Log.e("Serialization", "🔥 Error serializing submission: ${e.message}")
+                e.printStackTrace()
             }
-
             return jsonObject
         }
     }
