@@ -93,6 +93,23 @@ open class RealmSubmission : RealmObject() {
                     }
                 }
 
+                val csvRow = arrayOf(
+                    JsonUtils.getString("_id", submission),
+                    JsonUtils.getString("parentId", submission),
+                    JsonUtils.getString("type", submission),
+                    JsonUtils.getString("status", submission),
+                    JsonUtils.getString("grade", submission),
+                    JsonUtils.getString("startTime", submission),
+                    JsonUtils.getString("lastUpdateTime", submission),
+                    JsonUtils.getString("sender", submission),
+                    JsonUtils.getString("source", submission),
+                    JsonUtils.getString("parentCode", submission),
+                    JsonUtils.getString("user", submission)
+                )
+                submissionDataList.add(csvRow)
+
+                RealmStepExam.insertCourseStepsExams("", "", JsonUtils.getJsonObject("parent", submission), JsonUtils.getString("parentId", submission), mRealm)
+
                 val userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission))
                 if (userId.contains("@")) {
                     val us = userId.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
