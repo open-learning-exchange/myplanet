@@ -25,62 +25,9 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <TableRow
+            android:id="@+id/aiTableRow"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
-
-            <Button
-                android:id="@+id/tvOpenai"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/openai"
-                android:textAllCaps="false"
-                android:textColor="@color/md_black_1000"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:visibility="gone" />
-            <View
-                android:id="@+id/view1"
-                android:layout_width="1dp"
-                android:layout_height="match_parent"
-                android:layout_marginStart="2dp"
-                android:layout_marginEnd="2dp"
-                android:background="#e0e0e0"
-                android:visibility="gone"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-            <Button
-                android:id="@+id/tvPerplexity"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/perplexity"
-                android:textAllCaps="false"
-                android:textColor="@color/md_black_1000"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:visibility="gone" />
-            <View
-                android:id="@+id/view2"
-                android:layout_width="1dp"
-                android:layout_height="match_parent"
-                android:layout_marginStart="@dimen/_2dp"
-                android:layout_marginEnd="@dimen/_2dp"
-                android:background="#e0e0e0"
-                android:visibility="gone"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-            <Button
-                android:id="@+id/tvGemini"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/gemini"
-                android:textAllCaps="false"
-                android:textColor="@color/md_black_1000"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:visibility="gone" />
-        </TableRow>
+            android:layout_height="wrap_content"/>
     </TableLayout>
 
     <androidx.recyclerview.widget.RecyclerView
