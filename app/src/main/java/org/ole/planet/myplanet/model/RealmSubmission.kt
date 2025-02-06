@@ -4,6 +4,7 @@ import android.content.Context
 import android.text.TextUtils
 import android.util.Log
 import com.google.gson.Gson
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.opencsv.CSVWriter
@@ -284,6 +285,57 @@ open class RealmSubmission : RealmObject() {
 
         private fun checkParentId(parentId: String?): Boolean {
             return parentId != null && parentId.contains("@")
+        }
+
+        @JvmStatic
+        fun serialize(submission: RealmSubmission): JsonObject {
+            val gson = Gson()
+            val jsonObject = JsonObject()
+
+            try {
+                jsonObject.addProperty("_id", submission._id ?: "")
+                jsonObject.addProperty("_rev", submission._rev ?: "")
+                jsonObject.addProperty("parentId", submission.parentId ?: "")
+                jsonObject.addProperty("type", submission.type ?: "survey")
+                jsonObject.addProperty("userId", submission.userId ?: "")
+                jsonObject.addProperty("status", submission.status ?: "pending")
+                jsonObject.addProperty("uploaded", submission.uploaded)
+                jsonObject.addProperty("sender", submission.sender ?: "")
+                jsonObject.addProperty("source", submission.source ?: "")
+                jsonObject.addProperty("parentCode", submission.parentCode ?: "")
+                jsonObject.addProperty("startTime", submission.startTime)
+                jsonObject.addProperty("lastUpdateTime", submission.lastUpdateTime)
+                jsonObject.addProperty("grade", submission.grade)
+
+                // Convert parent JSON string back to JsonObject
+                if (!submission.parent.isNullOrEmpty()) {
+                    jsonObject.add("parent", JsonParser.parseString(submission.parent))
+                }
+
+                // Convert user JSON string back to JsonObject
+                if (!submission.user.isNullOrEmpty()) {
+                    jsonObject.add("user", JsonParser.parseString(submission.user))
+                }
+
+                // Serialize answers if not null
+                val answersArray = JsonArray()
+                submission.answers?.forEach { answer ->
+                    answersArray.add(gson.toJsonTree(answer))
+                }
+                jsonObject.add("answers", answersArray)
+
+                // Serialize membershipDoc if it exists
+                submission.membershipDoc?.let {
+                    val membershipJson = JsonObject()
+                    membershipJson.addProperty("teamId", it.teamId ?: "")
+                    jsonObject.add("membershipDoc", membershipJson)
+                }
+
+            } catch (e: Exception) {
+                Log.e("Serialization", "Error serializing submission: ${e.message}")
+            }
+
+            return jsonObject
         }
     }
 }

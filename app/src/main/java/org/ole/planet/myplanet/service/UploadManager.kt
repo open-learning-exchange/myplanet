@@ -46,6 +46,7 @@ import org.ole.planet.myplanet.model.RealmResourceActivity.Companion.serializeRe
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.continueResultUpload
+import org.ole.planet.myplanet.model.RealmSubmission.Companion.serialize
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmSubmitPhotos.Companion.serializeRealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
@@ -328,6 +329,42 @@ class UploadManager(var context: Context) : FileUploadService() {
                     } catch (e: IOException) {
                         e.printStackTrace()
                     }
+                }
+            }
+        }
+    }
+
+    fun uploadSubmissions() {
+        mRealm = DatabaseService(context).realmInstance
+        val apiInterface = client?.create(ApiInterface::class.java)
+
+        mRealm.executeTransactionAsync { realm: Realm ->
+            val list: List<RealmSubmission> = realm.where(RealmSubmission::class.java)
+                .equalTo("isUpdated", true) // ✅ Only pick submissions that are updated
+                .or()
+                .isEmpty("_id") // ✅ Also upload if _id is empty
+                .findAll()
+
+            for (submission in list) {
+                var jsonObject: JsonObject?
+                try {
+                    jsonObject = apiInterface?.postDoc(
+                        Utilities.header,
+                        "application/json",
+                        Utilities.getUrl() + "/submissions",
+                        serialize(submission) // ✅ Convert submission to JSON
+                    )?.execute()?.body()
+
+                    if (jsonObject != null) {
+                        val rev = getString("rev", jsonObject)
+                        val id = getString("id", jsonObject)
+
+                        submission._rev = rev
+                        submission._id = id
+                        submission.isUpdated = false // ✅ Mark as synced
+                    }
+                } catch (e: IOException) {
+                    e.printStackTrace()
                 }
             }
         }

@@ -12,11 +12,12 @@ import io.realm.Sort
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
+import org.ole.planet.myplanet.callback.SurveyAdoptListener
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.utilities.CustomSpinner
 
-class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
+class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListener {
     private lateinit var addNewSurvey: FloatingActionButton
     private lateinit var spn: CustomSpinner
     private var isTitleAscending = true
@@ -35,7 +36,12 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
         super.onCreate(savedInstanceState)
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
-        adapter = AdapterSurvey(requireActivity(), mRealm, model?.id ?: "", isTeam, teamId)
+        adapter = AdapterSurvey(requireActivity(), mRealm, model?.id ?: "", isTeam, teamId, this)
+    }
+
+    override fun onSurveyAdopted() {
+        updateAdapterData(isTeamShareAllowed = false)
+        rbTeamSurvey.isChecked = true
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
