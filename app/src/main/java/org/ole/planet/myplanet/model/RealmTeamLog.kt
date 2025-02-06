@@ -37,6 +37,15 @@ open class RealmTeamLog : RealmObject() {
         }
 
         @JvmStatic
+        fun getLastVisit(realm: Realm, userName: String?, teamId: String?): Long? {
+            return realm.where(RealmTeamLog::class.java)
+                .equalTo("type", "teamVisit")
+                .equalTo("user", userName)
+                .equalTo("teamId", teamId)
+                .max("time")?.toLong()
+        }
+
+        @JvmStatic
         fun getVisitByTeam(realm: Realm, teamId: String?): Long {
             val calendar = Calendar.getInstance()
             calendar.add(Calendar.DAY_OF_YEAR, -30)
