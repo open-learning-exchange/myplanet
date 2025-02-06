@@ -363,7 +363,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
         val news = mRealm.where(RealmNews::class.java).equalTo("id", id).findFirst()
         if (isEdit) et.setText(context.getString(R.string.message_placeholder, news?.message))
-        val dialog = AlertDialog.Builder(context, R.style.CustomAlertDialog)
+        val dialog = AlertDialog.Builder(context, R.style.ReplyAlertDialog)
             .setView(v)
             .setPositiveButton(R.string.button_submit, null)
             .setNegativeButton(R.string.cancel) { dialog, _ ->
