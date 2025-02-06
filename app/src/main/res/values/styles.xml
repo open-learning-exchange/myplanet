@@ -182,6 +182,14 @@
         <item name="android:textColor">@color/colorAccent</item>
     </style>
 
+    <style name="ReplyAlertDialog" parent="ThemeOverlay.MaterialComponents.Dialog.Alert">
+        <item name="android:background">@color/daynight_grey</item>
+        <item name="android:textColorPrimary">@color/daynight_textColor</item>
+        <item name="android:textColor">@color/daynight_textColor</item>
+        <item name="buttonBarNegativeButtonStyle">@style/NegativeButtonStyleHealth</item>
+        <item name="buttonBarPositiveButtonStyle">@style/NegativeButtonStyleHealth</item>
+    </style>
+
     <style name="NegativeButtonStyleHealth" parent="Widget.MaterialComponents.Button.TextButton.Dialog">
         <item name="android:textColor">@color/colorAccent</item>
         <item name="android:textSize">16sp</item>

@@ -73,7 +73,15 @@ class MyHealthFragment : Fragment() {
         profileDbHandler = UserProfileDbHandler(alertMyPersonalBinding.root.context)
         userId = if (TextUtils.isEmpty(profileDbHandler?.userModel?._id)) profileDbHandler?.userModel?.id else profileDbHandler?.userModel?._id
         getHealthRecords(userId)
+        val isHealthProvider = userModel?.rolesList?.contains("health") ?: false
+        fragmentVitalSignBinding.btnnewPatient.visibility =
+            if (isHealthProvider) View.VISIBLE else View.GONE
 
+        fragmentVitalSignBinding.btnnewPatient.setOnClickListener {
+            if (isHealthProvider) {
+                selectPatient()
+            }
+        }
         fragmentVitalSignBinding.updateHealth.visibility = View.VISIBLE
 
         fragmentVitalSignBinding.updateHealth.setOnClickListener {

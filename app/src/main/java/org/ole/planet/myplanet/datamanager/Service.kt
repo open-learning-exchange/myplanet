@@ -168,19 +168,40 @@ class Service(private val context: Context) {
     }
 
     fun isPlanetAvailable(callback: PlanetAvailableListener?) {
-        retrofitInterface?.isPlanetAvailable(Utilities.getUpdateUrl(preferences))?.enqueue(object : Callback<ResponseBody?> {
-            override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
-                if (callback != null && response.code() == 200) {
-                    callback.isAvailable()
-                } else {
-                    callback?.notAvailable()
+        val updateUrl = "${preferences.getString("serverURL", "")}"
+        val serverUrlMapper = ServerUrlMapper(context)
+        val mapping = serverUrlMapper.processUrl(updateUrl)
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val primaryAvailable = isServerReachable(mapping.primaryUrl)
+            val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
+
+            if (!primaryAvailable && alternativeAvailable) {
+                mapping.alternativeUrl.let { alternativeUrl ->
+                    val uri = Uri.parse(updateUrl)
+                    val editor = preferences.edit()
+
+                    serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, preferences)
                 }
             }
 
-            override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
-                callback?.notAvailable()
+            withContext(Dispatchers.Main) {
+                retrofitInterface?.isPlanetAvailable(Utilities.getUpdateUrl(preferences))
+                    ?.enqueue(object : Callback<ResponseBody?> {
+                        override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
+                            if (callback != null && response.code() == 200) {
+                                callback.isAvailable()
+                            } else {
+                                callback?.notAvailable()
+                            }
+                        }
+
+                        override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
+                            callback?.notAvailable()
+                        }
+                    })
             }
-        })
+        }
     }
 
     fun becomeMember(realm: Realm, obj: JsonObject, callback: CreateUserCallback) {
@@ -388,6 +409,18 @@ class Service(private val context: Context) {
                                                 val code = doc.getAsJsonPrimitive("code").asString
                                                 val parentCode = doc.getAsJsonPrimitive("parentCode").asString
                                                 preferences.edit().putString("parentCode", parentCode).apply()
+                                                if (doc.has("models")) {
+                                                    val modelsJsonObject = doc.getAsJsonObject("models")
+                                                    val modelsMap = mutableMapOf<String, String>()
+
+                                                    for ((key, value) in modelsJsonObject.entrySet()) {
+                                                        modelsMap[key] = value.asString
+                                                    }
+
+                                                    val modelsString = Gson().toJson(modelsMap)
+
+                                                    preferences.edit().putString("ai_models", modelsString).apply()
+                                                }
                                                 return@async UrlCheckResult.Success(id, code, currentUrl)
                                             }
                                         }
@@ -407,7 +440,7 @@ class Service(private val context: Context) {
                 when (result) {
                     is UrlCheckResult.Success -> {
                         val isAlternativeUrl = result.url != url
-                        listener?.onConfigurationIdReceived(result.id, result.code, result.url, isAlternativeUrl, callerActivity)
+                        listener?.onConfigurationIdReceived(result.id, result.code, result.url, url, isAlternativeUrl, callerActivity)
                         activity.setSyncFailed(false)
                     }
                     is UrlCheckResult.Failure -> {
@@ -521,6 +554,6 @@ class Service(private val context: Context) {
     }
 
     interface ConfigurationIdListener {
-        fun onConfigurationIdReceived(id: String, code: String, url: String, isAlternativeUrl: Boolean, callerActivity: String)
+        fun onConfigurationIdReceived(id: String, code: String, url: String, defaultUrl: String, isAlternativeUrl: Boolean, callerActivity: String)
     }
 }

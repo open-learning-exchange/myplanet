@@ -40,28 +40,32 @@ class DictionaryActivity : BaseActivity() {
     }
 
     private fun insertDictionary() {
-        if (list?.size == 0) {
-            val data = FileUtils.getStringFromFile(FileUtils.getSDPathFromUrl(Constants.DICTIONARY_URL))
-            val json = Gson().fromJson(data, JsonArray::class.java)
-            mRealm.executeTransactionAsync {
-                json.forEach { js ->
-                    val doc = js.asJsonObject
-                    var dict = it.where(RealmDictionary::class.java)
-                        ?.equalTo("id", UUID.randomUUID().toString())?.findFirst()
-                    if (dict == null) {
-                        dict = it.createObject(
-                            RealmDictionary::class.java, UUID.randomUUID().toString()
-                        )
+        if (list.isNullOrEmpty()) {
+            try {
+                val data = FileUtils.getStringFromFile(FileUtils.getSDPathFromUrl(Constants.DICTIONARY_URL))
+                val json = Gson().fromJson(data, JsonArray::class.java)
+                mRealm.executeTransactionAsync {
+                    json?.forEach { js ->
+                        val doc = js.asJsonObject
+                        var dict = it.where(RealmDictionary::class.java)
+                            ?.equalTo("id", UUID.randomUUID().toString())?.findFirst()
+                        if (dict == null) {
+                            dict = it.createObject(
+                                RealmDictionary::class.java, UUID.randomUUID().toString()
+                            )
+                        }
+                        dict?.code = JsonUtils.getString("code", doc)
+                        dict?.language = JsonUtils.getString("language", doc)
+                        dict?.advanceCode = JsonUtils.getString("advance_code", doc)
+                        dict?.word = JsonUtils.getString("word", doc)
+                        dict?.meaning = JsonUtils.getString("meaning", doc)
+                        dict?.definition = JsonUtils.getString("definition", doc)
+                        dict?.synonym = JsonUtils.getString("synonym", doc)
+                        dict?.antonym = JsonUtils.getString("antonoym", doc)
                     }
-                    dict?.code = JsonUtils.getString("code", doc)
-                    dict?.language = JsonUtils.getString("language", doc)
-                    dict?.advanceCode = JsonUtils.getString("advance_code", doc)
-                    dict?.word = JsonUtils.getString("word", doc)
-                    dict?.meaning = JsonUtils.getString("meaning", doc)
-                    dict?.definition = JsonUtils.getString("definition", doc)
-                    dict?.synonym = JsonUtils.getString("synonym", doc)
-                    dict?.antonym = JsonUtils.getString("antonoym", doc)
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         } else {
             setClickListener()
