@@ -183,12 +183,11 @@ class AddResourceActivity : AppCompatActivity() {
     }
     private fun showExitConfirmationDialog() {
         AlertDialog.Builder(this,R.style.AlertDialogTheme)
-            .setTitle("Confirm Exit")
-            .setMessage("Are you sure you want to go back? Any unsaved changes will be lost.")
-            .setPositiveButton("Yes") { _, _ ->
+            .setMessage(R.string.are_you_sure_you_want_to_exit_your_data_will_be_lost)
+            .setPositiveButton(R.string.yes_i_want_to_exit) { _, _ ->
                 finish()
             }
-            .setNegativeButton("No", null)
+            .setNegativeButton(R.string.no, null)
             .show()
     }
 }
