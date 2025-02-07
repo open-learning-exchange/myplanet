@@ -181,34 +181,27 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         if (s.isEmpty()) return mRealm.where(c).findAll()
 
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
-        val fieldName = if (c == RealmMyLibrary::class.java) "title" else "courseTitle"
+        val data: RealmResults<LI> = mRealm.where(c).findAll()
+        val normalizedQuery = normalizeText(s)
+        val startsWithQuery = mutableListOf<LI>()
+        val containsQuery = mutableListOf<LI>()
 
-        return if (queryParts.size > 1) {
-            val data: RealmResults<LI> = mRealm.where(c).findAll()
-            data.filter { item ->
-                searchAndMatch(item, c, queryParts)
-            }
-        } else {
-            mRealm.where(c).findAll().filter { item ->
-                val title = when {
-                    c.isAssignableFrom(RealmMyLibrary::class.java) -> (item as RealmMyLibrary).title
-                    else -> (item as RealmMyCourse).courseTitle
-                }
-                title?.let {
-                    normalizeText(it).contains(normalizeText(s))
-                } ?: false
+        for (item in data) {
+            val title = getTitle(item, c)?.let { normalizeText(it) } ?: continue
+
+            if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+                startsWithQuery.add(item)
+            } else if (queryParts.all { title.contains(normalizeText(it), ignoreCase = true) }) {
+                containsQuery.add(item)
             }
         }
+        return startsWithQuery + containsQuery
     }
 
-    private fun <LI : RealmModel> searchAndMatch(item: LI, c: Class<out RealmModel>, queryParts: List<String>): Boolean {
-        val title = when {
+    private fun <LI : RealmModel> getTitle(item: LI, c: Class<LI>): String? {
+        return when {
             c.isAssignableFrom(RealmMyLibrary::class.java) -> (item as RealmMyLibrary).title
             else -> (item as RealmMyCourse).courseTitle
-        }?.let { normalizeText(it) } ?: return false
-
-        return queryParts.all { queryPart ->
-            title.contains(normalizeText(queryPart))
         }
     }
 
@@ -231,12 +224,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             list
         }
 
-        return libraries.sortedWith(compareBy<RealmMyLibrary> { library ->
-            val normalizedTitle = normalizeText(library.title ?: "")
-            !normalizedTitle.contains(normalizedSearchTerm)
-        }.thenBy { library ->
-            normalizeText(library.title ?: "")
-        })
+        return libraries
     }
 
     fun normalizeText(str: String): String {
