@@ -95,6 +95,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
 
         adapter.updateData(safeCastList(surveys, RealmStepExam::class.java))
         updateUIState()
+        recyclerView.scrollToPosition(0)
     }
 
     private fun updateUIState() {
