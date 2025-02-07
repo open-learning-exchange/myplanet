@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -642,6 +643,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
         dialogServerUrlBinding.clearData.setOnClickListener {
             clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data), false)
+        }
+
+        val isFastSync = settings.getBoolean("fastSync", false)
+        Log.d("SyncActivity", "isFastSync: $isFastSync")
+        dialogServerUrlBinding.fastSync.isChecked = isFastSync
+        dialogServerUrlBinding.fastSync.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
+            editor.putBoolean("fastSync", b).apply()
         }
 
         neutralAction.setOnClickListener {
