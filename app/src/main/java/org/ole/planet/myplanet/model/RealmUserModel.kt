@@ -172,17 +172,27 @@ open class RealmUserModel : RealmObject() {
             try {
                 val id = JsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: UUID.randomUUID().toString()
 
-                // Use transactions for better Realm performance
                 var user: RealmUserModel? = null
-                mRealm.executeTransaction { realm ->
-                    user = realm.where(RealmUserModel::class.java).equalTo("_id", id).findFirst()
-                        ?: realm.createObject(RealmUserModel::class.java, id)
-                    user?.let {
-                        insertIntoUsers(jsonDoc, it, settings)
+
+                if (!mRealm.isInTransaction) {
+                    mRealm.executeTransaction { realm ->
+                        user = realm.where(RealmUserModel::class.java)
+                            .equalTo("_id", id)
+                            .findFirst() ?: realm.createObject(RealmUserModel::class.java, id)
+
+                        insertIntoUsers(jsonDoc, user!!, settings)
                     }
+                } else {
+                    user = mRealm.where(RealmUserModel::class.java)
+                        .equalTo("_id", id)
+                        .findFirst() ?: mRealm.createObject(RealmUserModel::class.java, id)
+
+                    insertIntoUsers(jsonDoc, user!!, settings)
                 }
+
                 return user
             } catch (err: Exception) {
+                err.printStackTrace()
                 Log.e("okuro", "Error: ${err.message}", err)
             }
             return null
