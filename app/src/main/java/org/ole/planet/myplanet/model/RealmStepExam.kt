@@ -30,6 +30,7 @@ open class RealmStepExam : RealmObject() {
     var noOfQuestions = 0
     var isFromNation = false
     var teamId: String? = null
+    var isTeamShareAllowed = false
 
     companion object {
         val examDataList: MutableList<Array<String>> = mutableListOf()
@@ -68,6 +69,7 @@ open class RealmStepExam : RealmObject() {
             myExam?.noOfQuestions = JsonUtils.getJsonArray("questions", exam).size()
             myExam?.isFromNation = !TextUtils.isEmpty(parentId)
             myExam.teamId = JsonUtils.getString("teamId", exam)
+            myExam.isTeamShareAllowed = JsonUtils.getBoolean("teamShareAllowed", exam)
             val oldQuestions: RealmResults<*>? = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", JsonUtils.getString("_id", exam)).findAll()
             if (oldQuestions == null || oldQuestions.isEmpty()) {
                 RealmExamQuestion.insertExamQuestions(JsonUtils.getJsonArray("questions", exam), JsonUtils.getString("_id", exam), mRealm)

@@ -46,6 +46,7 @@ import org.ole.planet.myplanet.model.RealmResourceActivity.Companion.serializeRe
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.continueResultUpload
+import org.ole.planet.myplanet.model.RealmSubmission.Companion.serialize
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmSubmitPhotos.Companion.serializeRealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
@@ -328,6 +329,35 @@ class UploadManager(var context: Context) : FileUploadService() {
                     } catch (e: IOException) {
                         e.printStackTrace()
                     }
+                }
+            }
+        }
+    }
+
+    fun uploadSubmissions() {
+        mRealm = DatabaseService(context).realmInstance
+        val apiInterface = client?.create(ApiInterface::class.java)
+
+        mRealm.executeTransactionAsync { realm: Realm ->
+            val list: List<RealmSubmission> = realm.where(RealmSubmission::class.java)
+                .equalTo("isUpdated", true).or().isEmpty("_id").findAll()
+            for (submission in list) {
+                var jsonObject: JsonObject?
+                try {
+                    val requestJson = serialize(submission)
+                    val response = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/submissions", requestJson)?.execute()
+                    jsonObject = response?.body()
+
+                    if (jsonObject != null) {
+                        val rev = getString("rev", jsonObject)
+                        val id = getString("id", jsonObject)
+
+                        submission._rev = rev
+                        submission._id = id
+                        submission.isUpdated = false
+                    }
+                } catch (e: IOException) {
+                    e.printStackTrace()
                 }
             }
         }
