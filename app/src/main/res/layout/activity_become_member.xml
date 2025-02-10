@@ -286,7 +286,8 @@
                         android:entries="@array/level"
                         android:contentDescription="@string/skill_level"
                         android:padding="@dimen/padding_small"
-                        android:popupBackground="@color/secondary_bg" />
+                        android:popupBackground="@color/secondary_bg"
+                        app:backgroundTint="@color/daynight_textColor" />
                 </RelativeLayout>
             </LinearLayout>
 
