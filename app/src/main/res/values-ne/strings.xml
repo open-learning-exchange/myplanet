@@ -1231,5 +1231,6 @@
     <string name="no_exam_submissions">कुनै परीक्षा प्रस्तुति छैन</string>
     <string name="no_reports">कुनै प्रतिवेदन उपलब्ध छैन</string>
     <string name="fetching_ai_providers">एआई प्रदायकहरू प्राप्त गर्दै…</string>
+    <string name="beta_fast_sync">बेटा फास्ट सिंक</string>
 
 </resources>

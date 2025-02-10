@@ -1231,5 +1231,6 @@
     <string name="no_exam_submissions">ma jiro soo gudbinta imtixaan</string>
     <string name="no_reports">Warbixin la heli karo ma jirto</string>
     <string name="fetching_ai_providers">Helitaanka bixiyeyaasha AI…</string>
+    <string name="beta_fast_sync">beta sinkron degdeg ah</string>
 
 </resources>

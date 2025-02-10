@@ -54,11 +54,14 @@ open class RealmSubmission : RealmObject() {
                 return
             }
 
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
+            var transactionStarted = false
 
             try {
+                if (!mRealm.isInTransaction) {
+                    mRealm.beginTransaction()
+                    transactionStarted = true
+                }
+
                 val id = JsonUtils.getString("_id", submission)
                 var sub = mRealm.where(RealmSubmission::class.java).equalTo("_id", id).findFirst()
                 if (sub == null) {
@@ -94,25 +97,20 @@ open class RealmSubmission : RealmObject() {
                 )
                 submissionDataList.add(csvRow)
 
-                RealmStepExam.insertCourseStepsExams("", "", JsonUtils.getJsonObject("parent", submission), JsonUtils.getString("parentId", submission), mRealm)
                 val userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission))
-                if (userId.contains("@")) {
+                sub?.userId = if (userId.contains("@")) {
                     val us = userId.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                    sub?.userId = if (us[0].startsWith("org.couchdb.user:")) {
-                        us[0]
-                    } else {
-                        "org.couchdb.user:${us[0]}"
-                    }
+                    if (us[0].startsWith("org.couchdb.user:")) us[0] else "org.couchdb.user:${us[0]}"
                 } else {
-                    sub?.userId = userId
+                    userId
                 }
 
-                if (!mRealm.isInTransaction) {
+                if (transactionStarted) {
                     mRealm.commitTransaction()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                if (!mRealm.isInTransaction && mRealm.isInTransaction) {
+                if (transactionStarted && mRealm.isInTransaction) {
                     mRealm.cancelTransaction()
                 }
             }

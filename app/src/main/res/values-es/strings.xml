@@ -1231,5 +1231,6 @@
     <string name="no_exam_submissions">no hay envíos de exámenes</string>
     <string name="no_reports">No hay informes disponibles</string>
     <string name="fetching_ai_providers">Obteniendo proveedores de IA…</string>
+    <string name="beta_fast_sync">sincronización rápida beta</string>
 
 </resources>
