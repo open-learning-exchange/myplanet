@@ -173,9 +173,7 @@ class UserProfileFragment : Fragment() {
             val levels = resources.getStringArray(subject_level).toMutableList()
             levels.remove("All")
             levels.add(0, "Select Level")
-
             var selectedLevel = Utilities.checkNA("${model?.level}")
-
             val levelAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, levels)
             levelAdapter.setDropDownViewResource(R.layout.spinner_item)
             editProfileDialogBinding.level.adapter = levelAdapter
@@ -199,8 +197,7 @@ class UserProfileFragment : Fragment() {
                 override fun onNothingSelected(parent: AdapterView<*>?) {
                 }
             }
-
-
+            
             if ("male".equals(model?.gender, ignoreCase = true)) {
                 editProfileDialogBinding.rbMale.isChecked = true
             } else if ("female".equals(model?.gender, ignoreCase = true)) {
