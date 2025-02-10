@@ -219,18 +219,20 @@ open class RealmSubmission : RealmObject() {
         }
 
         @JvmStatic
-        fun getNoOfSubmissionByUser(id: String?, courseId:String?, userId: String?, mRealm: Realm): String {
+        fun getNoOfSubmissionByUser(id: String?, courseId: String?, userId: String?, mRealm: Realm): String {
             if (id == null || userId == null) return "No Submissions Found"
-            val submissionParentId= generateParentId(courseId, id)
-            if(submissionParentId.isNullOrEmpty())  return "No Submissions Found"
+
+            val submissionParentId = generateParentId(courseId, id)
+            if (submissionParentId.isNullOrEmpty()) return "No Submissions Found"
+
             val submissionCount = mRealm.where(RealmSubmission::class.java)
                 .equalTo("parentId", submissionParentId)
                 .equalTo("userId", userId)
-                .equalTo("status", "complete")
+                .`in`("status", arrayOf("complete", "pending"))
                 .count().toInt()
 
             val pluralizedString = if (submissionCount == 1) "time" else "times"
-            return context.getString(R.string.survey_taken) + " " + submissionCount + " " + pluralizedString
+            return "${context.getString(R.string.survey_taken)} $submissionCount $pluralizedString"
         }
 
         @JvmStatic

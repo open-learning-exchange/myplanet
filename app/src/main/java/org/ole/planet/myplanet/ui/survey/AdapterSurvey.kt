@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.ui.team.BaseTeamFragment.Companion.settings
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import java.util.UUID
 
-class AdapterSurvey(private val context: Context, private val mRealm: Realm, private val userId: String, private val isTeam: Boolean, val teamId: String?, private val surveyAdoptListener: SurveyAdoptListener) : RecyclerView.Adapter<AdapterSurvey.ViewHolderSurvey>() {
+class AdapterSurvey(private val context: Context, private val mRealm: Realm, private val userId: String?, private val isTeam: Boolean, val teamId: String?, private val surveyAdoptListener: SurveyAdoptListener) : RecyclerView.Adapter<AdapterSurvey.ViewHolderSurvey>() {
     private var examList: List<RealmStepExam> = emptyList()
     private var listener: OnHomeItemClickListener? = null
     private val adoptedSurveyIds = mutableSetOf<String>()
@@ -77,9 +77,13 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
             binding.apply {
                 tvTitle.text = exam.name
                 startSurvey.setOnClickListener {
-                    when {
-                        exam.id !in filteredParentIds && exam.isTeamShareAllowed -> adoptSurvey(exam, teamId)
-                        else -> AdapterMySubmission.openSurvey(listener, exam.id, false, isTeam, teamId)
+                    val isSurveyAdopted = adoptedSurveyIds.contains(exam.id)
+                    if (isSurveyAdopted) {
+                        AdapterMySubmission.openSurvey(listener, exam.id, false, isTeam, teamId)
+                    } else if (exam.id !in filteredParentIds && exam.isTeamShareAllowed) {
+                        adoptSurvey(exam, teamId)
+                    } else {
+                        AdapterMySubmission.openSurvey(listener, exam.id, false, isTeam, teamId)
                     }
                 }
 
@@ -102,7 +106,7 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
                     }
                 }
 
-                if (userId.startsWith("guest") == true) {
+                if (userId?.startsWith("guest") == true) {
                     startSurvey.visibility = View.GONE
                 }
 
@@ -162,7 +166,7 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
                     userId = userModel?.id
                     user = userJsonString
                     type = "survey"
-                    status = "pending"
+                    status = ""
                     uploaded = false
                     source = planetCode ?: ""
                     parentCode = sParentCode ?: ""
