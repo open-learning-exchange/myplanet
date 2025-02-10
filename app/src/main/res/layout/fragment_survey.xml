@@ -35,7 +35,6 @@
                 android:text="Team surveys"
                 android:textColor="@color/toggle_text_color"
                 android:textSize="18sp" />
-
             <RadioButton
                 android:id="@+id/rbAdoptSurvey"
                 android:layout_width="wrap_content"
