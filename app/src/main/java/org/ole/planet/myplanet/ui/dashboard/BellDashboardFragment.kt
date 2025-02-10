@@ -5,7 +5,6 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.AnimationUtils
 import android.widget.ImageView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
@@ -53,7 +52,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
         initView(view)
         declareElements()
         onLoaded(view)
-        startBorderAnimation()
         return fragmentHomeBellBinding.root
     }
 
@@ -117,15 +115,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(context, R.color.green)
             }
         }
-    }
-
-    fun startBorderAnimation() {
-        val rotateAnimation = AnimationUtils.loadAnimation(requireContext(), R.anim.rotate_animation)
-        fragmentHomeBellBinding.cardProfileBell.imageView.startAnimation(rotateAnimation)
-    }
-
-    fun stopBorderAnimation() {
-        fragmentHomeBellBinding.cardProfileBell.imageView.clearAnimation()
     }
 
     private fun checkPendingSurveys() {
