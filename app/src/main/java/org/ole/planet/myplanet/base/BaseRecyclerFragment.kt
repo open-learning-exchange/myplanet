@@ -25,9 +25,9 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.createMyCourse
+import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getAllCourses
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseByUserId
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getOurCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createFromResource
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getMyLibraryByUserId
@@ -240,7 +240,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         list = if (isMyCourseLib) {
             getMyCourseByUserId(model?.id, list)
         } else {
-            getOurCourse(model?.id, list)
+            getAllCourses(model?.id, list)
         }
         if (tags.isEmpty()) {
             return list

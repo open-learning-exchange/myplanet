@@ -253,6 +253,16 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
+        fun getAllCourses(userId: String?, libs: List<RealmMyCourse>): List<RealmMyCourse> {
+            val libraries: MutableList<RealmMyCourse> = ArrayList()
+            for (item in libs) {
+                item.isMyCourse = item.userId?.contains(userId)!!
+                libraries.add(item)
+            }
+            return libraries
+        }
+
+        @JvmStatic
         fun getOurCourse(userId: String?, libs: List<RealmMyCourse>): List<RealmMyCourse> {
             val libraries: MutableList<RealmMyCourse> = ArrayList()
             for (item in libs) {
