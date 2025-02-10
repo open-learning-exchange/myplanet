@@ -28,6 +28,7 @@ import java.util.UUID
 class AdapterSurvey(private val context: Context, private val mRealm: Realm, private val userId: String, private val isTeam: Boolean, val teamId: String?, private val surveyAdoptListener: SurveyAdoptListener) : RecyclerView.Adapter<AdapterSurvey.ViewHolderSurvey>() {
     private var examList: List<RealmStepExam> = emptyList()
     private var listener: OnHomeItemClickListener? = null
+    private val adoptedSurveyIds = mutableSetOf<String>()
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -91,10 +92,14 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
                     startSurvey.visibility = View.GONE
                 }
 
-                startSurvey.text = when {
-                    exam.id !in filteredParentIds && exam.isTeamShareAllowed -> context.getString(R.string.adopt_survey)
-                    exam.isFromNation -> context.getString(R.string.take_survey)
-                    else -> context.getString(R.string.record_survey)
+                if (adoptedSurveyIds.contains(exam.id)) {
+                    startSurvey.text = context.getString(R.string.record_survey)
+                } else {
+                    startSurvey.text = when {
+                        exam.id !in filteredParentIds && exam.isTeamShareAllowed -> context.getString(R.string.adopt_survey)
+                        exam.isFromNation -> context.getString(R.string.take_survey)
+                        else -> context.getString(R.string.record_survey)
+                    }
                 }
 
                 if (userId.startsWith("guest") == true) {
@@ -171,6 +176,13 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
                         }
                     }
                 }
+            }
+
+            adoptedSurveyIds.add("${exam.id}")
+
+            val position = examList.indexOfFirst { it.id == exam.id }
+            if (position != -1) {
+                notifyItemChanged(position)
             }
 
             Snackbar.make(binding.root, context.getString(R.string.survey_adopted_successfully), Snackbar.LENGTH_LONG).show()
