@@ -158,6 +158,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         val surveys = query.sort(field, sort).findAll()
         adapter.updateData(safeCastList(surveys, RealmStepExam::class.java))
         updateUIState()
+        recyclerView.scrollToPosition(0)
     }
 
     private fun updateUIState() {

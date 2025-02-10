@@ -67,7 +67,6 @@ open class RealmSubmission : RealmObject() {
                 if (sub == null) {
                     sub = mRealm.createObject(RealmSubmission::class.java, id)
                 }
-
                 sub?._id = id
                 sub?.status = JsonUtils.getString("status", submission)
                 sub?._rev = JsonUtils.getString("_rev", submission)
@@ -109,7 +108,6 @@ open class RealmSubmission : RealmObject() {
                 submissionDataList.add(csvRow)
 
                 RealmStepExam.insertCourseStepsExams("", "", JsonUtils.getJsonObject("parent", submission), JsonUtils.getString("parentId", submission), mRealm)
-
                 val userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission))
                 if (userId.contains("@")) {
                     val us = userId.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
