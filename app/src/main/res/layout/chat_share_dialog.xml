@@ -24,6 +24,7 @@
         android:divider="@android:color/darker_gray"
         android:dividerHeight="0.5dp"
         android:indicatorLeft="?android:attr/expandableListPreferredItemIndicatorLeft"
+        android:groupIndicator="@null"
         app:layout_constraintTop_toBottomOf="@+id/title" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
