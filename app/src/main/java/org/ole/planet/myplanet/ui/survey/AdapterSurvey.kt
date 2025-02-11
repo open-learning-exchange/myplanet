@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getRecentSubmissionDate
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import java.util.Collections
 
 class AdapterSurvey(private val context: Context, private val mRealm: Realm, private val userId: String, private val isTeam: Boolean, val teamId: String?) : RecyclerView.Adapter<AdapterSurvey.ViewHolderSurvey>() {
     private var examList: List<RealmStepExam> = emptyList()
@@ -32,6 +33,21 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
         val diffResult = DiffUtil.calculateDiff(diffCallback)
         examList = newList
         diffResult.dispatchUpdatesTo(this)
+    }
+
+    private fun SortSurveyList(isAscend: Boolean){
+        Collections.sort(examList) { survey1, survey2 ->
+            if (isAscend) {
+                survey1?.createdDate!!.compareTo(survey2?.createdDate!!)
+            } else {
+                survey2?.createdDate!!.compareTo(survey1?.createdDate!!)
+            }
+        }
+    }
+
+    fun SortByDate(isAscend: Boolean){
+        SortSurveyList(isAscend)
+        notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderSurvey {

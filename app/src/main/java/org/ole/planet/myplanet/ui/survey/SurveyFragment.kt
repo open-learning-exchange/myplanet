@@ -2,8 +2,11 @@ package org.ole.planet.myplanet.ui.survey
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.widget.AdapterView
+import android.widget.EditText
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import io.realm.Sort
@@ -16,6 +19,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
     private lateinit var addNewSurvey: FloatingActionButton
     private lateinit var spn: CustomSpinner
     private var isTitleAscending = true
+    private lateinit var etSearch: EditText
     private lateinit var adapter: AdapterSurvey
     private var isTeam: Boolean = false
     private var teamId: String? = null
@@ -40,6 +44,15 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
         super.onViewCreated(view, savedInstanceState)
 
         initializeViews(view)
+        etSearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+                adapter.updateData(filterSurvey(etSearch.text.toString()))
+            }
+
+            override fun afterTextChanged(s: Editable) {}
+        })
+
         setupRecyclerView()
         setupListeners()
         updateAdapterData()
@@ -47,6 +60,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
 
     private fun initializeViews(view: View) {
         spn = view.findViewById(R.id.spn_sort)
+        etSearch = requireView().findViewById(R.id.et_search)
         addNewSurvey = view.findViewById(R.id.fab_add_new_survey)
     }
 
@@ -61,8 +75,8 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>() {
         spn.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
                 when (i) {
-                    0 -> updateAdapterData(Sort.ASCENDING, "createdDate")
-                    1 -> updateAdapterData(Sort.DESCENDING, "createdDate")
+                    0 -> adapter.SortByDate(true)
+                    1 -> adapter.SortByDate(false)
                     2 -> toggleTitleSortOrder()
                 }
             }
