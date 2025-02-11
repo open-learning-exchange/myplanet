@@ -1233,5 +1233,6 @@
     <string name="fetching_ai_providers">Helitaanka bixiyeyaasha AI…</string>
     <string name="adopt_survey">Sahaminta qaado</string>
     <string name="survey_adopted_successfully">Sahanka si guul ah ayaa la qaatay!</string>
+    <string name="more">inbadan</string>
 
 </resources>

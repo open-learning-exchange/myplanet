@@ -1233,5 +1233,6 @@
     <string name="fetching_ai_providers">Fetching AI providers…</string>
     <string name="adopt_survey">Adopt survey</string>
     <string name="survey_adopted_successfully">Survey adopted successfully!</string>
+    <string name="more">more</string>
 
 </resources>
