@@ -1231,6 +1231,9 @@
     <string name="no_exam_submissions">لا توجد استجابات للامتحان</string>
     <string name="no_reports">لا توجد تقارير متاحة</string>
     <string name="fetching_ai_providers">جلب مزودي الذكاء الاصطناعي…</string>
+    <string name="adopt_survey">تبنَّى الاستبيان</string>
+    <string name="survey_adopted_successfully">تم تبني الاستبيان بنجاح!</string>
     <string name="beta_fast_sync">مزامنة سريعة بيتا</string>
+    <string name="user_verification_in_progress">جارٍ التحقق من المستخدم. يرجى الانتظار أثناء معالجة البيانات.</string>
 
 </resources>
