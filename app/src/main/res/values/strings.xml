@@ -820,7 +820,7 @@
     <string name="planet_server_not_reachable">Planet server not reachable.</string>
     <string name="select_language">select language</string>
     <string name="thank_you">Thank You!</string>
-    <string name="please_wait">Please wait....</string>
+    <string name="please_wait">Please wait...</string>
     <string name="update_later">Update Later</string>
     <string name="checking_version">Checking version....</string>
     <string name="please_enter_your_password">Please enter your password</string>
@@ -1233,6 +1233,8 @@
     <string name="fetching_ai_providers">Fetching AI providers…</string>
     <string name="adopt_survey">Adopt survey</string>
     <string name="survey_adopted_successfully">Survey adopted successfully!</string>
+    <string name="beta_fast_sync">beta fast sync</string>
+    <string name="user_verification_in_progress">User verification in progress. Please wait while we process the data.</string>
     <string name="go_to_mylibrary">Go To MyLibrary</string>
 
 </resources>

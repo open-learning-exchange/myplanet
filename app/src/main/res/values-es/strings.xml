@@ -820,7 +820,7 @@
     <string name="planet_server_not_reachable">Servidor de Planet no accesible.</string>
     <string name="select_language">Seleccionar Idioma</string>
     <string name="thank_you">¡Gracias!</string>
-    <string name="please_wait">Por favor espera....</string>
+    <string name="please_wait">Por favor espera…</string>
     <string name="update_later">Actualizar Más Tarde</string>
     <string name="checking_version">Verificando versión....</string>
     <string name="please_enter_your_password">Por favor ingresa tu contraseña</string>
@@ -1233,6 +1233,8 @@
     <string name="fetching_ai_providers">Obteniendo proveedores de IA…</string>
     <string name="adopt_survey">Adoptar encuesta</string>
     <string name="survey_adopted_successfully">¡Encuesta adoptada con éxito!</string>
+    <string name="beta_fast_sync">sincronización rápida beta</string>
+    <string name="user_verification_in_progress">Verificación de usuario en progreso. Por favor, espere mientras procesamos los datos.</string>
     <string name="go_to_mylibrary">Ir a Mi Biblioteca</string>
 
 </resources>

@@ -1233,6 +1233,8 @@
     <string name="fetching_ai_providers">एआई प्रदायकहरू प्राप्त गर्दै…</string>
     <string name="adopt_survey">सर्वेक्षण अपनाउनुहोस्</string>
     <string name="survey_adopted_successfully">सर्वेक्षण सफलतापूर्वक अपनाइयो!</string>
+    <string name="beta_fast_sync">बेटा फास्ट सिंक</string>
+    <string name="user_verification_in_progress">प्रयोगकर्ता प्रमाणीकरण प्रक्रिया भइरहेको छ। कृपया डेटा प्रशोधन भइरहेसम्म प्रतीक्षा गर्नुहोस्।</string>
     <string name="go_to_mylibrary">मेरो पुस्तकालयमा जानुहोस्</string>
 
 </resources>
