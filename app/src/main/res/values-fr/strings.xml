@@ -1233,5 +1233,6 @@
     <string name="fetching_ai_providers">Récupération des fournisseurs d\'IA…</string>
     <string name="adopt_survey">Adopter le sondage</string>
     <string name="survey_adopted_successfully">Enquête adoptée avec succès !</string>
+    <string name="go_to_mylibrary">Aller à Ma Bibliothèque</string>
 
 </resources>
