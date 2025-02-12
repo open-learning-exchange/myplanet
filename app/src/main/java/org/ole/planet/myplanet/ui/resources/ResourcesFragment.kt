@@ -35,6 +35,8 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import android.content.Context
+import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.Utilities
@@ -76,6 +78,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
         userModel = UserProfileDbHandler(requireContext()).userModel
         searchTags = ArrayList()
         config = Utilities.getCloudConfig().showClose(R.color.black_overlay)
@@ -175,6 +178,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        if (context is OnHomeItemClickListener) {
+            homeItemClickListener = context
+        }
+    }
     private fun updateTvDelete(){
         tvDelete?.isEnabled = selectedItems?.size!! != 0
     }
@@ -215,7 +224,19 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         msg += getString(R.string.return_to_the_home_tab_to_access_mylibrary) + getString(R.string.note_you_may_still_need_to_download_the_newly_added_resources)
         builder.setMessage(msg)
         builder.setCancelable(true)
-        builder.setPositiveButton(getString(R.string.ok)) { dialog: DialogInterface, _: Int ->
+        .setPositiveButton("Go To MyLibrary") { dialog: DialogInterface, _: Int ->
+                if (userModel?.id?.startsWith("guest") == true) {
+                    guestDialog(requireContext())
+                } else {
+                    val fragment = ResourcesFragment().apply {
+                        arguments = Bundle().apply {
+                            putBoolean("isMyCourseLib", true)
+                        }
+                    }
+                    homeItemClickListener?.openMyFragment(fragment)
+                }
+        }
+        builder.setNegativeButton(getString(R.string.ok)) { dialog: DialogInterface, _: Int ->
             dialog.cancel()
             val newFragment = ResourcesFragment()
             recreateFragment(newFragment)

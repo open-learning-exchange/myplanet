@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.model
 import android.content.Context
 import android.text.TextUtils
 import com.google.gson.Gson
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.opencsv.CSVWriter
@@ -44,72 +45,88 @@ open class RealmSubmission : RealmObject() {
     var source: String? = null
     var parentCode: String? = null
     var parent: String? = null
+    var membershipDoc: RealmMembershipDoc? = null
+    var isUpdated = false
 
     companion object {
         private val submissionDataList: MutableList<Array<String>> = mutableListOf()
 
         @JvmStatic
         fun insert(mRealm: Realm, submission: JsonObject) {
+            if (submission.has("_attachments")) {
+                return
+            }
+
             if (!mRealm.isInTransaction) {
-                mRealm.executeTransaction { realm ->
-                    if (submission.has("_attachments")) {
-                        return@executeTransaction
-                    }
-                    val id = JsonUtils.getString("_id", submission)
-                    var sub = realm.where(RealmSubmission::class.java).equalTo("_id", id).findFirst()
-                    if (sub == null) {
-                        sub = realm.createObject(RealmSubmission::class.java, id)
-                    }
-                    if (sub != null) {
-                        sub._id = JsonUtils.getString("_id", submission)
-                        sub.status = JsonUtils.getString("status", submission)
-                        sub._rev = JsonUtils.getString("_rev", submission)
-                        sub.grade = JsonUtils.getLong("grade", submission)
-                        sub.type = JsonUtils.getString("type", submission)
-                        sub.uploaded = JsonUtils.getString("status", submission) == "graded"
-                        sub.startTime = JsonUtils.getLong("startTime", submission)
-                        sub.lastUpdateTime = JsonUtils.getLong("lastUpdateTime", submission)
-                        sub.parentId = JsonUtils.getString("parentId", submission)
-                        sub.sender = JsonUtils.getString("sender", submission)
-                        sub.source = JsonUtils.getString("source", submission)
-                        sub.parentCode = JsonUtils.getString("parentCode", submission)
-                        sub.parent = Gson().toJson(JsonUtils.getJsonObject("parent", submission))
-                        sub.user = Gson().toJson(JsonUtils.getJsonObject("user", submission))
-                    }
+                mRealm.beginTransaction()
+            }
 
-                    val csvRow = arrayOf(
-                        JsonUtils.getString("_id", submission),
-                        JsonUtils.getString("parentId", submission),
-                        JsonUtils.getString("type", submission),
-                        JsonUtils.getString("status", submission),
-                        JsonUtils.getString("grade", submission),
-                        JsonUtils.getString("startTime", submission),
-                        JsonUtils.getString("lastUpdateTime", submission),
-                        JsonUtils.getString("sender", submission),
-                        JsonUtils.getString("source", submission),
-                        JsonUtils.getString("parentCode", submission),
-                        JsonUtils.getString("user", submission)
-                    )
-                    submissionDataList.add(csvRow)
+            try {
+                val id = JsonUtils.getString("_id", submission)
+                var sub = mRealm.where(RealmSubmission::class.java).equalTo("_id", id).findFirst()
+                if (sub == null) {
+                    sub = mRealm.createObject(RealmSubmission::class.java, id)
+                }
+                sub?._id = id
+                sub?.status = JsonUtils.getString("status", submission)
+                sub?._rev = JsonUtils.getString("_rev", submission)
+                sub?.grade = JsonUtils.getLong("grade", submission)
+                sub?.type = JsonUtils.getString("type", submission)
+                sub?.uploaded = JsonUtils.getString("status", submission) == "graded"
+                sub?.startTime = JsonUtils.getLong("startTime", submission)
+                sub?.lastUpdateTime = JsonUtils.getLong("lastUpdateTime", submission)
+                sub?.parentId = JsonUtils.getString("parentId", submission)
+                sub?.sender = JsonUtils.getString("sender", submission)
+                sub?.source = JsonUtils.getString("source", submission)
+                sub?.parentCode = JsonUtils.getString("parentCode", submission)
+                sub?.parent = Gson().toJson(JsonUtils.getJsonObject("parent", submission))
+                sub?.user = Gson().toJson(JsonUtils.getJsonObject("user", submission))
 
-                    RealmStepExam.insertCourseStepsExams("", "", JsonUtils.getJsonObject("parent", submission), JsonUtils.getString("parentId", submission), realm)
-                    val userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission))
-                    if (userId.contains("@")) {
-                        val us = userId.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                        if (us[0].startsWith("org.couchdb.user:")) {
-                            if (sub != null) {
-                                sub.userId = us[0]
-                            }
-                        } else {
-                            if (sub != null) {
-                                sub.userId = "org.couchdb.user:" + us[0]
-                            }
-                        }
+                val userJson = JsonUtils.getJsonObject("user", submission)
+                if (userJson.has("membershipDoc")) {
+                    val membershipJson = JsonUtils.getJsonObject("membershipDoc", userJson)
+                    if (membershipJson != null) {
+                        val membership = mRealm.createObject(RealmMembershipDoc::class.java)
+                        membership.teamId = JsonUtils.getString("teamId", membershipJson)
+                        sub?.membershipDoc = membership
+                    }
+                }
+
+                val csvRow = arrayOf(
+                    JsonUtils.getString("_id", submission),
+                    JsonUtils.getString("parentId", submission),
+                    JsonUtils.getString("type", submission),
+                    JsonUtils.getString("status", submission),
+                    JsonUtils.getString("grade", submission),
+                    JsonUtils.getString("startTime", submission),
+                    JsonUtils.getString("lastUpdateTime", submission),
+                    JsonUtils.getString("sender", submission),
+                    JsonUtils.getString("source", submission),
+                    JsonUtils.getString("parentCode", submission),
+                    JsonUtils.getString("user", submission)
+                )
+                submissionDataList.add(csvRow)
+
+                RealmStepExam.insertCourseStepsExams("", "", JsonUtils.getJsonObject("parent", submission), JsonUtils.getString("parentId", submission), mRealm)
+                val userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission))
+                if (userId.contains("@")) {
+                    val us = userId.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                    sub?.userId = if (us[0].startsWith("org.couchdb.user:")) {
+                        us[0]
                     } else {
-                        if (sub != null) {
-                            sub.userId = userId
-                        }
+                        "org.couchdb.user:${us[0]}"
                     }
+                } else {
+                    sub?.userId = userId
+                }
+
+                if (!mRealm.isInTransaction) {
+                    mRealm.commitTransaction()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                if (!mRealm.isInTransaction && mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
                 }
             }
         }
@@ -217,18 +234,20 @@ open class RealmSubmission : RealmObject() {
         }
 
         @JvmStatic
-        fun getNoOfSubmissionByUser(id: String?, courseId:String?, userId: String?, mRealm: Realm): String {
+        fun getNoOfSubmissionByUser(id: String?, courseId: String?, userId: String?, mRealm: Realm): String {
             if (id == null || userId == null) return "No Submissions Found"
-            val submissionParentId= generateParentId(courseId, id)
-            if(submissionParentId.isNullOrEmpty())  return "No Submissions Found"
+
+            val submissionParentId = generateParentId(courseId, id)
+            if (submissionParentId.isNullOrEmpty()) return "No Submissions Found"
+
             val submissionCount = mRealm.where(RealmSubmission::class.java)
                 .equalTo("parentId", submissionParentId)
                 .equalTo("userId", userId)
-                .equalTo("status", "complete")
+                .`in`("status", arrayOf("complete", "pending"))
                 .count().toInt()
 
             val pluralizedString = if (submissionCount == 1) "time" else "times"
-            return context.getString(R.string.survey_taken) + " " + submissionCount + " " + pluralizedString
+            return "${context.getString(R.string.survey_taken)} $submissionCount $pluralizedString"
         }
 
         @JvmStatic
@@ -274,5 +293,61 @@ open class RealmSubmission : RealmObject() {
         private fun checkParentId(parentId: String?): Boolean {
             return parentId != null && parentId.contains("@")
         }
+
+        @JvmStatic
+        fun serialize(submission: RealmSubmission): JsonObject {
+            val gson = Gson()
+            val jsonObject = JsonObject()
+
+            try {
+                if (!submission._id.isNullOrEmpty()) {
+                    jsonObject.addProperty("_id", submission._id)
+                }
+                if (!submission._rev.isNullOrEmpty()) {
+                    jsonObject.addProperty("_rev", submission._rev)
+                }
+
+                jsonObject.addProperty("parentId", submission.parentId ?: "")
+                jsonObject.addProperty("type", submission.type ?: "survey")
+                jsonObject.addProperty("userId", submission.userId ?: "")
+                jsonObject.addProperty("status", submission.status ?: "pending")
+                jsonObject.addProperty("uploaded", submission.uploaded)
+                jsonObject.addProperty("sender", submission.sender ?: "")
+                jsonObject.addProperty("source", submission.source ?: "")
+                jsonObject.addProperty("parentCode", submission.parentCode ?: "")
+                jsonObject.addProperty("startTime", submission.startTime)
+                jsonObject.addProperty("lastUpdateTime", submission.lastUpdateTime)
+                jsonObject.addProperty("grade", submission.grade)
+
+                if (!submission.parent.isNullOrEmpty()) {
+                    jsonObject.add("parent", JsonParser.parseString(submission.parent))
+                }
+
+                if (!submission.user.isNullOrEmpty()) {
+                    val userJson = JsonParser.parseString(submission.user).asJsonObject
+                    if (submission.membershipDoc != null) {
+                        val membershipJson = JsonObject()
+                        membershipJson.addProperty("teamId", submission.membershipDoc?.teamId ?: "")
+
+                        userJson.add("membershipDoc", membershipJson)
+                    }
+                    jsonObject.add("user", userJson)
+                }
+
+                val answersArray = JsonArray()
+                submission.answers?.forEach { answer ->
+                    answersArray.add(gson.toJsonTree(answer))
+                }
+                jsonObject.add("answers", answersArray)
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            return jsonObject
+        }
     }
+}
+
+open class RealmMembershipDoc : RealmObject() {
+    var teamId: String? = null
 }

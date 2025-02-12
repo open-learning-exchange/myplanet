@@ -12,6 +12,44 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
+        <RadioGroup
+            android:id="@+id/rgSurvey"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/submission_toggle"
+            android:layout_gravity="center"
+            android:visibility="gone"
+            android:orientation="horizontal"
+            android:padding="10dp">
+
+            <RadioButton
+                android:id="@+id/rbTeamSurvey"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="5dp"
+                android:background="@drawable/bg_submission_toggle_button"
+                android:button="@null"
+                android:gravity="center"
+                android:paddingHorizontal="30dp"
+                android:paddingVertical="3dp"
+                android:text="Team surveys"
+                android:textColor="@color/toggle_text_color"
+                android:textSize="18sp" />
+            <RadioButton
+                android:id="@+id/rbAdoptSurvey"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:background="@drawable/bg_submission_toggle_button"
+                android:button="@null"
+                android:gravity="center"
+                android:paddingHorizontal="30dp"
+                android:paddingVertical="3dp"
+                android:text="Adopt a survey"
+                android:textColor="@color/toggle_text_color"
+                android:textSize="18sp" />
+        </RadioGroup>
+
         <org.ole.planet.myplanet.utilities.CustomSpinner
             android:id="@+id/spn_sort"
             android:layout_width="wrap_content"

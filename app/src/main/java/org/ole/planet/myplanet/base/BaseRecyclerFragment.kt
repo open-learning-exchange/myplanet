@@ -25,9 +25,9 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.createMyCourse
+import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getAllCourses
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseByUserId
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getOurCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createFromResource
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getMyLibraryByUserId
@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities.toast
+import java.text.Normalizer
 import java.util.Locale
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
@@ -180,32 +181,32 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         if (s.isEmpty()) return mRealm.where(c).findAll()
 
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
-        val fieldName = if (c == RealmMyLibrary::class.java) "title" else "courseTitle"
+        val data: RealmResults<LI> = mRealm.where(c).findAll()
+        val normalizedQuery = normalizeText(s)
+        val startsWithQuery = mutableListOf<LI>()
+        val containsQuery = mutableListOf<LI>()
 
-        return if (queryParts.size > 1) {
-            val data: RealmResults<LI> = mRealm.where(c).findAll()
-            data.filter { item ->
-                searchAndMatch(item, c, queryParts)
+        for (item in data) {
+            val title = getTitle(item, c)?.let { normalizeText(it) } ?: continue
+
+            if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+                startsWithQuery.add(item)
+            } else if (queryParts.all { title.contains(normalizeText(it), ignoreCase = true) }) {
+                containsQuery.add(item)
             }
-        } else {
-            mRealm.where(c)
-                .contains(fieldName, s, Case.INSENSITIVE)
-                .findAll()
         }
+        return startsWithQuery + containsQuery
     }
 
-    private fun <LI : RealmModel> searchAndMatch(item: LI, c: Class<out RealmModel>, queryParts: List<String>): Boolean {
-        val title = when {
+    private fun <LI : RealmModel> getTitle(item: LI, c: Class<LI>): String? {
+        return when {
             c.isAssignableFrom(RealmMyLibrary::class.java) -> (item as RealmMyLibrary).title
             else -> (item as RealmMyCourse).courseTitle
-        }?.lowercase(Locale.getDefault()) ?: return false
-
-        return queryParts.all { queryPart ->
-            title.contains(queryPart.lowercase(Locale.getDefault()))
         }
     }
 
     fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
+        val normalizedSearchTerm = normalizeText(s)
         var list = getData(s, RealmMyLibrary::class.java)
         list = if (isMyCourseLib) {
             getMyLibraryByUserId(model?.id, list)
@@ -223,11 +224,12 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             list
         }
 
-        return libraries.sortedWith(compareBy<RealmMyLibrary> { library ->
-            !library.title?.lowercase()?.startsWith(s.lowercase())!! ?: true
-        }.thenBy { library ->
-            library.title?.lowercase() ?: ""
-        })
+        return libraries
+    }
+
+    fun normalizeText(str: String): String {
+        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
+            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
     }
 
     fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
@@ -238,7 +240,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         list = if (isMyCourseLib) {
             getMyCourseByUserId(model?.id, list)
         } else {
-            getOurCourse(model?.id, list)
+            getAllCourses(model?.id, list)
         }
         if (tags.isEmpty()) {
             return list
@@ -321,6 +323,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 "enterprise" -> (v as TextView).setText(R.string.no_enterprise)
                 "chatHistory" -> (v as TextView).setText(R.string.no_chats)
                 "feedback" -> (v as TextView).setText(R.string.no_feedback)
+                "reports" -> (v as TextView).setText(R.string.no_reports)
                 else -> (v as TextView).setText(R.string.no_data_available_please_check_and_try_again)
             }
         }
