@@ -1235,5 +1235,6 @@
     <string name="survey_adopted_successfully">Survey adopted successfully!</string>
     <string name="beta_fast_sync">beta fast sync</string>
     <string name="user_verification_in_progress">User verification in progress. Please wait while we process the data.</string>
+    <string name="go_to_mylibrary">Go To MyLibrary</string>
 
 </resources>

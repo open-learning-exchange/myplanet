@@ -1235,5 +1235,6 @@
     <string name="survey_adopted_successfully">تم تبني الاستبيان بنجاح!</string>
     <string name="beta_fast_sync">مزامنة سريعة بيتا</string>
     <string name="user_verification_in_progress">جارٍ التحقق من المستخدم. يرجى الانتظار أثناء معالجة البيانات.</string>
+    <string name="go_to_mylibrary">انتقل إلى مكتبتي</string>
 
 </resources>
