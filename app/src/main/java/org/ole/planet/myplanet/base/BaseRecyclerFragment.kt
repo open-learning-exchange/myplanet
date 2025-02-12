@@ -25,9 +25,9 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.createMyCourse
+import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getAllCourses
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseByUserId
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getOurCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createFromResource
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getMyLibraryByUserId
@@ -205,17 +205,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    private fun <LI : RealmModel> searchAndMatch(item: LI, c: Class<out RealmModel>, queryParts: List<String>): Boolean {
-        val title = when {
-            c.isAssignableFrom(RealmMyLibrary::class.java) -> (item as RealmMyLibrary).title
-            else -> (item as RealmMyCourse).courseTitle
-        }?.let { normalizeText(it) } ?: return false
-
-        return queryParts.all { queryPart ->
-            title.contains(normalizeText(queryPart))
-        }
-    }
-
     fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
         val normalizedSearchTerm = normalizeText(s)
         var list = getData(s, RealmMyLibrary::class.java)
@@ -235,12 +224,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             list
         }
 
-        return libraries.sortedWith(compareBy<RealmMyLibrary> { library ->
-            val normalizedTitle = normalizeText(library.title ?: "")
-            !normalizedTitle.contains(normalizedSearchTerm)
-        }.thenBy { library ->
-            normalizeText(library.title ?: "")
-        })
+        return libraries
     }
 
     fun normalizeText(str: String): String {
@@ -256,7 +240,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         list = if (isMyCourseLib) {
             getMyCourseByUserId(model?.id, list)
         } else {
-            getOurCourse(model?.id, list)
+            getAllCourses(model?.id, list)
         }
         if (tags.isEmpty()) {
             return list
