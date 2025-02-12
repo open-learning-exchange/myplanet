@@ -47,7 +47,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        val inflater = LayoutInflater.from(requireContext())
         fragmentTeamBinding = FragmentTeamBinding.inflate(inflater, container, false)
         mRealm = DatabaseService(requireContext()).realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
@@ -73,7 +72,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         return fragmentTeamBinding.root
     }
 
-     fun createTeamAlert(team: RealmMyTeam?) {
+    private fun createTeamAlert(team: RealmMyTeam?) {
         alertCreateTeamBinding = AlertCreateTeamBinding.inflate(LayoutInflater.from(context))
         if (TextUtils.equals(type, "enterprise")) {
             alertCreateTeamBinding.spnTeamType.visibility = View.GONE
@@ -133,6 +132,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                         fragmentTeamBinding.tableTitle.visibility = View.VISIBLE
                         Utilities.toast(activity, getString(R.string.team_created))
                         setTeamList()
+                        // dialog won't close by default
                         dialog.dismiss()
                     }
                 }
