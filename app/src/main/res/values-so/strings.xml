@@ -1092,6 +1092,7 @@
     <string name="message_placeholder">%s</string>
     <string name="reports">warbixino</string>
     <string name="number_placeholder">%d</string>
+    <string name="float_placeholder">%.1f</string>
     <string name="date_range">%1$s ilaa %2$s</string>
     <string name="string_range">%1$s - %2$s</string>
     <string name="team_financial_report">Warbixin lacagta ee %s</string>
@@ -1229,5 +1230,8 @@
     <string name="no_survey_submissions">ma jiro soo gudbinta sahanka</string>
     <string name="no_exam_submissions">ma jiro soo gudbinta imtixaan</string>
     <string name="no_reports">Warbixin la heli karo ma jirto</string>
+    <string name="fetching_ai_providers">Helitaanka bixiyeyaasha AI…</string>
+    <string name="adopt_survey">Sahaminta qaado</string>
+    <string name="survey_adopted_successfully">Sahanka si guul ah ayaa la qaatay!</string>
 
 </resources>

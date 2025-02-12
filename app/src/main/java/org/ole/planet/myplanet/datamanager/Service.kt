@@ -409,6 +409,18 @@ class Service(private val context: Context) {
                                                 val code = doc.getAsJsonPrimitive("code").asString
                                                 val parentCode = doc.getAsJsonPrimitive("parentCode").asString
                                                 preferences.edit().putString("parentCode", parentCode).apply()
+                                                if (doc.has("models")) {
+                                                    val modelsJsonObject = doc.getAsJsonObject("models")
+                                                    val modelsMap = mutableMapOf<String, String>()
+
+                                                    for ((key, value) in modelsJsonObject.entrySet()) {
+                                                        modelsMap[key] = value.asString
+                                                    }
+
+                                                    val modelsString = Gson().toJson(modelsMap)
+
+                                                    preferences.edit().putString("ai_models", modelsString).apply()
+                                                }
                                                 return@async UrlCheckResult.Success(id, code, currentUrl)
                                             }
                                         }

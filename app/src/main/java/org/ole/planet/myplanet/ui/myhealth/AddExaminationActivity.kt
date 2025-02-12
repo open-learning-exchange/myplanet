@@ -97,11 +97,11 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     private fun initExamination() {
         if (intent.hasExtra("id")) {
             examination = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", intent.getStringExtra("id")).findFirst()!!
-            activityAddExaminationBinding.etTemperature.setText(getString(R.string.number_placeholder, examination?.temperature))
+            activityAddExaminationBinding.etTemperature.setText(getString(R.string.float_placeholder, examination?.temperature))
             activityAddExaminationBinding.etPulseRate.setText(getString(R.string.number_placeholder, examination?.pulse))
             activityAddExaminationBinding.etBloodpressure.setText(getString(R.string.message_placeholder, examination?.bp))
-            activityAddExaminationBinding.etHeight.setText(getString(R.string.number_placeholder, examination?.height))
-            activityAddExaminationBinding.etWeight.setText(getString(R.string.number_placeholder, examination?.weight))
+            activityAddExaminationBinding.etHeight.setText(getString(R.string.float_placeholder, examination?.height))
+            activityAddExaminationBinding.etWeight.setText(getString(R.string.float_placeholder, examination?.weight))
             activityAddExaminationBinding.etVision.setText(examination?.vision)
             activityAddExaminationBinding.etHearing.setText(examination?.hearing)
             val encrypted = user?.let { examination?.getEncryptedDataAsJson(it) }

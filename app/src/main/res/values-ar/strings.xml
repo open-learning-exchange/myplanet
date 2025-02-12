@@ -1092,6 +1092,7 @@
     <string name="message_placeholder">%s</string>
     <string name="reports">التقارير</string>
     <string name="number_placeholder">%d</string>
+    <string name="float_placeholder">%.1f</string>
     <string name="date_range">%1$s إلى %2$s</string>
     <string name="string_range">%1$s - %2$s</string>
     <string name="team_financial_report">%s تقرير مالي لـ</string>
@@ -1229,5 +1230,8 @@
     <string name="no_survey_submissions">لا توجد استجابات للاستبيان</string>
     <string name="no_exam_submissions">لا توجد استجابات للامتحان</string>
     <string name="no_reports">لا توجد تقارير متاحة</string>
+    <string name="fetching_ai_providers">جلب مزودي الذكاء الاصطناعي…</string>
+    <string name="adopt_survey">تبنَّى الاستبيان</string>
+    <string name="survey_adopted_successfully">تم تبني الاستبيان بنجاح!</string>
 
 </resources>

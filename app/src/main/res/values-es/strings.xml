@@ -1092,6 +1092,7 @@
     <string name="message_placeholder">%s</string>
     <string name="reports">informes</string>
     <string name="number_placeholder">%d</string>
+    <string name="float_placeholder">%.1f</string>
     <string name="date_range">%1$s a %2$s</string>
     <string name="string_range">%1$s - %2$s</string>
     <string name="team_financial_report">Informe financiero de %s</string>
@@ -1229,5 +1230,8 @@
     <string name="no_survey_submissions">no hay envíos de encuestas</string>
     <string name="no_exam_submissions">no hay envíos de exámenes</string>
     <string name="no_reports">No hay informes disponibles</string>
+    <string name="fetching_ai_providers">Obteniendo proveedores de IA…</string>
+    <string name="adopt_survey">Adoptar encuesta</string>
+    <string name="survey_adopted_successfully">¡Encuesta adoptada con éxito!</string>
 
 </resources>
