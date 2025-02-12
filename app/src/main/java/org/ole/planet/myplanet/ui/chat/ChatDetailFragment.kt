@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.text.*
 import android.view.*
 import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.TableRow
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
@@ -241,8 +242,8 @@ class ChatDetailFragment : Fragment() {
     private fun updateAIButtons(aiProvidersResponse: Map<String, Boolean>, primaryModel: String) {
         if (!isAdded || context == null) return
 
-        val aiTableRow = fragmentChatDetailBinding.aiTableRow
-        aiTableRow.removeAllViews()
+        val aiContainer = fragmentChatDetailBinding.aiContainer
+        aiContainer.removeAllViews()
 
         val currentContext = requireContext()
         val modelsString = settings.getString("ai_models", null)
@@ -256,22 +257,21 @@ class ChatDetailFragment : Fragment() {
         val providersMap = aiProvidersResponse.filter { it.value }
         if (providersMap.isEmpty()) return
 
-        val showMoreButton = providersMap.size > 1
         val displayedProviders = listOf(primaryModel)
         val hiddenProviders = providersMap.keys.filter { it != primaryModel }
 
         displayedProviders.forEach { providerName ->
             val modelName = modelsMap[providerName.lowercase()] ?: ""
             val button = createStyledAIButton(providerName.lowercase(), modelName.lowercase(), currentContext)
-            aiTableRow.addView(button)
+            aiContainer.addView(button)
         }
 
-        if (showMoreButton) {
-            val moreButton = createDropdownMenu(hiddenProviders, modelsMap, currentContext, aiTableRow)
-            aiTableRow.addView(moreButton)
+        if (hiddenProviders.isNotEmpty()) {
+            val moreButton = createDropdownMenu(hiddenProviders, modelsMap, currentContext, aiContainer)
+            aiContainer.addView(moreButton)
         }
 
-        aiTableRow.getChildAt(0)?.performClick()
+        aiContainer.getChildAt(0)?.performClick()
     }
 
     private fun createStyledAIButton(providerName: String, modelName: String, context: Context): MaterialButton {
@@ -301,7 +301,7 @@ class ChatDetailFragment : Fragment() {
         }
     }
 
-     private fun createDropdownMenu(hiddenProviders: List<String>, modelsMap: Map<String, String>, context: Context, aiTableRow: TableRow): MaterialButton {
+    private fun createDropdownMenu(hiddenProviders: List<String>, modelsMap: Map<String, String>, context: Context, aiContainer: LinearLayout): MaterialButton {
         return MaterialButton(context, null, R.attr.materialButtonOutlinedStyle).apply {
             text = context.getString(R.string.more)
             textSize = 18f
@@ -310,9 +310,9 @@ class ChatDetailFragment : Fragment() {
             setPadding(25, 21, 25, 21)
             setBackgroundColor(ContextCompat.getColor(context, R.color.disable_color))
 
-            layoutParams = TableRow.LayoutParams(
-                TableRow.LayoutParams.WRAP_CONTENT,
-                TableRow.LayoutParams.WRAP_CONTENT
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
                 setMargins(12, 4, 12, 4)
             }
@@ -327,9 +327,9 @@ class ChatDetailFragment : Fragment() {
                     val selectedProvider = menuItem.title.toString().lowercase()
                     val selectedModel = modelsMap[selectedProvider] ?: ""
 
-                    if (!isButtonAlreadyAdded(aiTableRow, selectedProvider)) {
+                    if (!isButtonAlreadyAdded(aiContainer, selectedProvider)) {
                         val button = createStyledAIButton(selectedProvider, selectedModel.lowercase(), context)
-                        aiTableRow.addView(button, aiTableRow.childCount - 1)
+                        aiContainer.addView(button, aiContainer.childCount - 1)
                     }
 
                     true
@@ -340,9 +340,9 @@ class ChatDetailFragment : Fragment() {
         }
     }
 
-    private fun isButtonAlreadyAdded(aiTableRow: TableRow, providerName: String): Boolean {
-        for (i in 0 until aiTableRow.childCount) {
-            val view = aiTableRow.getChildAt(i)
+    private fun isButtonAlreadyAdded(aiContainer: LinearLayout, providerName: String): Boolean {
+        for (i in 0 until aiContainer.childCount) {
+            val view = aiContainer.getChildAt(i)
             if (view is MaterialButton && view.text.toString().equals(providerName, ignoreCase = true)) {
                 return true
             }
@@ -351,7 +351,7 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun selectAI(selectedButton: Button, providerName: String, modelName: String) {
-        val aiTableRow = fragmentChatDetailBinding.aiTableRow
+        val aiTableRow = fragmentChatDetailBinding.aiContainer
         val context = requireContext()
 
         for (i in 0 until aiTableRow.childCount) {
