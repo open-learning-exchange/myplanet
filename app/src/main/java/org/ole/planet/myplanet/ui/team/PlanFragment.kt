@@ -16,6 +16,7 @@ class PlanFragment : BaseTeamFragment() {
     private var missionText: String? = null
     private var servicesText: String? = null
     private var rulesText = ""
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentPlanBinding = FragmentPlanBinding.inflate(inflater, container, false)
         return fragmentPlanBinding.root
@@ -24,30 +25,59 @@ class PlanFragment : BaseTeamFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         if (TextUtils.equals(team?.type, "enterprise")) {
-            missionText = if (team?.description?.trim { it <= ' ' }?.isEmpty() == true) {
+            missionText = if (team?.description?.trim()?.isEmpty() == true) {
                 ""
             } else {
-                "<b>" + getString(R.string.entMission) + "</b><br/>" + team?.description + "<br/><br/>"
+                "<b>${getString(R.string.entMission)}</b><br/>${team?.description}<br/><br/>"
             }
-            servicesText = if (team?.services?.trim { it <= ' ' }?.isEmpty() == true) {
+            servicesText = if (team?.services?.trim()?.isEmpty() == true) {
                 ""
             } else {
-                "<b>" + getString(R.string.entServices) + "</b><br/>" + team?.services + "<br/><br/>"
+                "<b>${getString(R.string.entServices)}</b><br/>${team?.services}<br/><br/>"
             }
-            rulesText = if (team?.rules?.trim { it <= ' ' }?.isEmpty() == true) {
+            rulesText = if (team?.rules?.trim()?.isEmpty() == true) {
                 ""
             } else {
-                "<b>" + getString(R.string.entRules) + "</b><br/>" + team?.rules
+                "<b>${getString(R.string.entRules)}</b><br/>${team?.rules}"
             }
             fragmentPlanBinding.tvDescription.text = Html.fromHtml(missionText + servicesText + rulesText, Html.FROM_HTML_MODE_LEGACY)
-            if (fragmentPlanBinding.tvDescription.text.toString().isEmpty()) {
-                fragmentPlanBinding.tvDescription.text = Html.fromHtml("<br/>" + getString(R.string.entEmptyDescription) + "<br/>", Html.FROM_HTML_MODE_LEGACY)
+            if (fragmentPlanBinding.tvDescription.text.isEmpty()) {
+                fragmentPlanBinding.tvDescription.text = Html.fromHtml("<br/>${getString(R.string.entEmptyDescription)}<br/>", Html.FROM_HTML_MODE_LEGACY)
             }
         } else {
             fragmentPlanBinding.tvDescription.text = team?.description
         }
         fragmentPlanBinding.tvDate.text = getString(R.string.two_strings, getString(R.string.created_on), team?.createdDate?.let { formatDate(it) })
+
+        fragmentPlanBinding.btnAddPlan.setOnClickListener {
+            editTeam()
+        }
     }
+
+    private fun editTeam() {
+        if (!isAdded) {
+            return
+        }
+
+        val existingTeamFragment = parentFragmentManager.findFragmentByTag("TeamFragment") as? TeamFragment
+
+        if (existingTeamFragment != null) {
+            team?.let { existingTeamFragment.createTeamAlert(it) }
+        } else {
+            val newTeamFragment = TeamFragment()
+            parentFragmentManager.beginTransaction()
+                .add(newTeamFragment, "TeamFragment")
+                .commit()
+
+            parentFragmentManager.executePendingTransactions()
+
+            newTeamFragment.view?.post {
+                team?.let { newTeamFragment.createTeamAlert(it) }
+
+            }
+        }
+    }
+
 
     override fun onNewsItemClick(news: RealmNews?) {}
     override fun clearImages() {
