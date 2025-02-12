@@ -16,6 +16,7 @@ class PlanFragment : BaseTeamFragment() {
     private var missionText: String? = null
     private var servicesText: String? = null
     private var rulesText = ""
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentPlanBinding = FragmentPlanBinding.inflate(inflater, container, false)
         return fragmentPlanBinding.root
@@ -47,7 +48,36 @@ class PlanFragment : BaseTeamFragment() {
             fragmentPlanBinding.tvDescription.text = team?.description
         }
         fragmentPlanBinding.tvDate.text = getString(R.string.two_strings, getString(R.string.created_on), team?.createdDate?.let { formatDate(it) })
+
+        fragmentPlanBinding.btnAddPlan.setOnClickListener {
+            editTeam()
+        }
     }
+
+    private fun editTeam() {
+        if (!isAdded) {
+            return
+        }
+
+        val existingTeamFragment = parentFragmentManager.findFragmentByTag("TeamFragment") as? TeamFragment
+
+        if (existingTeamFragment != null) {
+            team?.let { existingTeamFragment.createTeamAlert(it) }
+        } else {
+            val newTeamFragment = TeamFragment()
+            parentFragmentManager.beginTransaction()
+                .add(newTeamFragment, "TeamFragment")
+                .commit()
+
+            parentFragmentManager.executePendingTransactions()
+
+            newTeamFragment.view?.post {
+                team?.let { newTeamFragment.createTeamAlert(it) }
+
+            }
+        }
+    }
+
 
     override fun onNewsItemClick(news: RealmNews?) {}
     override fun clearImages() {
