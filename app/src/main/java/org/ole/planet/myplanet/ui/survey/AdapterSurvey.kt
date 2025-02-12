@@ -30,6 +30,7 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
     private var examList: List<RealmStepExam> = emptyList()
     private var listener: OnHomeItemClickListener? = null
     private val adoptedSurveyIds = mutableSetOf<String>()
+    private var isTitleAscending = true
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -45,7 +46,6 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
     }
 
     private fun SortSurveyList(isAscend: Boolean){
-        println("hi")
         val list = examList.toList()
         Collections.sort(list) { survey1, survey2 ->
             if (isAscend) {
@@ -59,6 +59,24 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
 
     fun SortByDate(isAscend: Boolean){
         SortSurveyList(isAscend)
+        notifyDataSetChanged()
+    }
+
+    private fun SortSurveyListByName(isAscend: Boolean){
+        val list = examList.toList()
+        Collections.sort(list) { survey1, survey2 ->
+            if (isAscend) {
+                survey1?.name!!.compareTo(survey2?.name!!)
+            } else {
+                survey2?.name!!.compareTo(survey1?.name!!)
+            }
+        }
+        examList = list
+    }
+
+    fun toggleTitleSortOrder() {
+        isTitleAscending = !isTitleAscending
+        SortSurveyListByName(isTitleAscending)
         notifyDataSetChanged()
     }
 

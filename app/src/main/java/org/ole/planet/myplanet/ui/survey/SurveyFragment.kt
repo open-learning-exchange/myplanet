@@ -63,7 +63,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                adapter.updateData(filterSurvey(etSearch.text.toString()))
+                updateAdapterData(isTeamShareAllowed = false)
                 recyclerView.scrollToPosition(0)
             }
 
@@ -104,7 +104,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
                 when (i) {
                     0 -> adapter.SortByDate(true)
                     1 -> adapter.SortByDate(false)
-                    2 -> toggleTitleSortOrder()
+                    2 -> adapter.toggleTitleSortOrder()
                 }
             }
 
@@ -114,7 +114,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         spn.onSameItemSelected(object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
                 if (i == 2) {
-                    toggleTitleSortOrder()
+                    adapter.toggleTitleSortOrder()
                 }
             }
 
@@ -128,6 +128,24 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         rbTeamSurvey.setOnClickListener {
             updateAdapterData(isTeamShareAllowed = false)
         }
+    }
+
+    private fun search(s: String, list: List<RealmStepExam>): List<RealmStepExam> {
+        val queryParts = s.split(" ").filterNot { it.isEmpty() }
+        val normalizedQuery = normalizeText(s)
+        val startsWithQuery = mutableListOf<RealmStepExam>()
+        val containsQuery = mutableListOf<RealmStepExam>()
+
+        for (item in list) {
+            val title = item.name?.let { normalizeText(it) }
+            if(title == null) continue
+            if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+                startsWithQuery.add(item)
+            } else if (queryParts.all { title.contains(normalizeText(it), ignoreCase = true) }) {
+                containsQuery.add(item)
+            }
+        }
+        return startsWithQuery + containsQuery
     }
 
     fun updateAdapterData(sort: Sort = Sort.ASCENDING, field: String = "name", isTeamShareAllowed: Boolean) {
@@ -168,9 +186,14 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
                 .`in`("id", teamSpecificExams.toTypedArray())
             query.endGroup()
         }
+        if(etSearch.text.toString().isNotEmpty()){
+            val surveys = query.findAll()
+            adapter.updateData(safeCastList(search(etSearch.text.toString(), surveys), RealmStepExam::class.java))
+        } else {
+            val surveys = query.sort(field, sort).findAll()
+            adapter.updateData(safeCastList(surveys, RealmStepExam::class.java))
+        }
 
-        val surveys = query.sort(field, sort).findAll()
-        adapter.updateData(safeCastList(surveys, RealmStepExam::class.java))
         updateUIState()
         recyclerView.scrollToPosition(0)
     }

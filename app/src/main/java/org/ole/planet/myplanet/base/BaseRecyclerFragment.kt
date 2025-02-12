@@ -201,13 +201,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     private fun <LI : RealmModel> getTitle(item: LI, c: Class<LI>): String? {
         return when {
             c.isAssignableFrom(RealmMyLibrary::class.java) -> (item as RealmMyLibrary).title
-            c.isAssignableFrom(RealmMyCourse::class.java) -> (item as RealmMyCourse).courseTitle
-            else -> (item as RealmStepExam).name
+            else -> (item as RealmMyCourse).courseTitle
         }
-    }
-
-    fun filterSurvey(s: String): List<RealmStepExam> {
-        return getData(s, RealmStepExam::class.java)
     }
 
     private fun <LI : RealmModel> searchAndMatch(item: LI, c: Class<out RealmModel>, queryParts: List<String>): Boolean {
