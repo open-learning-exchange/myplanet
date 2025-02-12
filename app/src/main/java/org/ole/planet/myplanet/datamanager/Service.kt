@@ -388,7 +388,6 @@ class Service(private val context: Context) {
 
                                         if (configResponse.isSuccessful) {
                                             val rows = configResponse.body()?.getAsJsonArray("rows")
-
                                             if (rows != null && rows.size() > 0) {
                                                 val firstRow = rows[0].asJsonObject
                                                 val id = firstRow.getAsJsonPrimitive("id").asString
@@ -396,12 +395,10 @@ class Service(private val context: Context) {
                                                 val code = doc.getAsJsonPrimitive("code").asString
                                                 val parentCode = doc.getAsJsonPrimitive("parentCode").asString
 
-                                                // Store parent code in preferences
                                                 withContext(Dispatchers.IO) {
                                                     preferences.edit().putString("parentCode", parentCode).apply()
                                                 }
 
-                                                // Process AI models (store asynchronously)
                                                 if (doc.has("models")) {
                                                     val modelsMap = doc.getAsJsonObject("models").entrySet()
                                                         .associate { it.key to it.value.asString }
@@ -410,7 +407,6 @@ class Service(private val context: Context) {
                                                         preferences.edit().putString("ai_models", Gson().toJson(modelsMap)).apply()
                                                     }
                                                 }
-
                                                 return@async UrlCheckResult.Success(id, code, currentUrl)
                                             }
                                         }
