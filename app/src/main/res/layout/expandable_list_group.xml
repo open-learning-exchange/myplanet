@@ -24,5 +24,4 @@
         android:textColor="@color/daynight_textColor"
         android:textStyle="bold" />
 
-
 </LinearLayout>
