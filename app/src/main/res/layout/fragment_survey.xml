@@ -65,7 +65,6 @@
                 android:popupBackground="@color/secondary_bg"
                 android:backgroundTint="@color/daynight_textColor"
                 android:theme="@style/SpinnerItemStyle" />
-
             <include
                 layout="@layout/layout_search"
                 android:layout_width="0dp"
