@@ -39,7 +39,6 @@ import org.ole.planet.myplanet.datamanager.*
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.Service.*
 import org.ole.planet.myplanet.model.*
-import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.service.*
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
@@ -114,13 +113,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         processedUrl = Utilities.getUrl()
     }
 
-    override fun onConfigurationIdReceived(id: String, code: String, url: String, isAlternativeUrl: Boolean, callerActivity:String) {
+    override fun onConfigurationIdReceived(id: String, code: String, url: String, defaultUrl: String, isAlternativeUrl: Boolean, callerActivity: String) {
         val savedId = settings.getString("configurationId", null)
 
         when (callerActivity) {
             "LoginActivity", "DashboardActivity"-> {
                 if (isAlternativeUrl) {
-                    processAlternativeUrl(url, settings, editor)
+                    processAlternativeUrl(url, settings, editor, defaultUrl)
                 }
                 isSync = false
                 forceSync = true
@@ -132,18 +131,18 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         editor.putString("configurationId", id).apply()
                         editor.putString("communityName", code).apply()
                         currentDialog?.let {
-                            continueSync(it, url, isAlternativeUrl)
+                            continueSync(it, url, isAlternativeUrl, defaultUrl)
                         }
                     } else if (id == savedId) {
                         currentDialog?.let {
-                            continueSync(it, url, isAlternativeUrl)
+                            continueSync(it, url, isAlternativeUrl, defaultUrl)
                         }
                     } else {
                         clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
                     }
                 } else if (serverConfigAction == "save") {
                     if (savedId == null || id == savedId) {
-                        currentDialog?.let { saveConfigAndContinue(it) }
+                        currentDialog?.let { saveConfigAndContinue(it, "", false, defaultUrl) }
                     } else {
                         clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
                     }
@@ -152,7 +151,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    fun processAlternativeUrl(url: String, settings: SharedPreferences, editor: SharedPreferences.Editor): String {
+    fun processAlternativeUrl(url: String, settings: SharedPreferences, editor: SharedPreferences.Editor, defaultUrl: String): String {
         val password = "${settings.getString("serverPin", "")}"
         val uri = Uri.parse(url)
         val couchdbURL: String
@@ -367,17 +366,57 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         SyncManager.instance?.start(this@SyncActivity)
     }
 
-    private fun saveConfigAndContinue(dialog: MaterialDialog): String {
+    private fun saveConfigAndContinue(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String): String {
         dialog.dismiss()
         saveSyncInfoToPreference()
-        var processedUrl = ""
-        val protocol = settings.getString("serverProtocol", "")
-        var url = "${(dialog.customView?.findViewById<View>(R.id.input_server_url) as EditText).text}"
-        val pin = "${(dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text}"
-        editor.putString("customDeviceName", "${(dialog.customView?.findViewById<View>(R.id.deviceName) as EditText).text}").apply()
-        url = protocol + url
-        if (isUrlValid(url)) processedUrl = setUrlParts(url, pin)
-        return processedUrl
+
+        return if (isAlternativeUrl) {
+            val password = if (settings.getString("serverPin", "") != "") {
+                settings.getString("serverPin", "")!!
+            } else {
+                (dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text.toString()
+            }
+
+            val uri = Uri.parse(url)
+            val couchdbURL: String
+            val urlUser: String
+            val urlPwd: String
+
+            if (url.contains("@")) {
+                val userinfo = getUserInfo(uri)
+                urlUser = userinfo[0]
+                urlPwd = userinfo[1]
+                couchdbURL = url
+            } else {
+                urlUser = "satellite"
+                urlPwd = password
+                couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
+            }
+
+            editor.putString("serverPin", password)
+            editor.putString("url_user", urlUser)
+            editor.putString("url_pwd", urlPwd)
+            editor.putString("url_Scheme", uri.scheme)
+            editor.putString("url_Host", uri.host)
+            editor.putString("alternativeUrl", url)
+            editor.putString("processedAlternativeUrl", couchdbURL)
+            editor.putBoolean("isAlternativeUrl", true)
+            editor.apply()
+
+            if (isUrlValid(url)) setUrlParts(defaultUrl, urlPwd) else ""
+
+            couchdbURL
+        } else {
+            val protocol = settings.getString("serverProtocol", "")
+            var url = (dialog.customView?.findViewById<View>(R.id.input_server_url) as EditText).text.toString()
+            val pin = (dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text.toString()
+
+            editor.putString("customDeviceName", (dialog.customView?.findViewById<View>(R.id.deviceName) as EditText).text.toString()).apply()
+
+            url = protocol + url
+
+            if (isUrlValid(url)) setUrlParts(url, pin) else ""
+        }
     }
 
     override fun onSyncStarted() {
@@ -605,6 +644,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data), false)
         }
 
+        val isFastSync = settings.getBoolean("fastSync", false)
+        dialogServerUrlBinding.fastSync.isChecked = isFastSync
+        dialogServerUrlBinding.fastSync.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
+            editor.putBoolean("fastSync", b).apply()
+        }
+
         neutralAction.setOnClickListener {
             if (!prefData.getManualConfig()) {
                 showAdditionalServers = !showAdditionalServers
@@ -809,43 +854,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         return modifiedUrl
     }
 
-    fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean) {
-        if (isAlternativeUrl) {
-            val password = if (settings.getString("serverPin", "") != ""){
-                "${settings.getString("serverPin", "")}"
-            } else {
-                "${(dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text}"
-            }
-
-            val uri = Uri.parse(url)
-            var couchdbURL: String
-            val urlUser: String
-            val urlPwd: String
-            if (url.contains("@")) {
-                val userinfo = getUserInfo(uri)
-                urlUser = userinfo[0]
-                urlPwd = userinfo[1]
-                couchdbURL = url
-            } else {
-                urlUser = "satellite"
-                urlPwd = password
-                couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
-            }
-            editor.putString("serverPin", password)
-            editor.putString("url_user", urlUser)
-            editor.putString("url_pwd", urlPwd)
-            editor.putString("url_Scheme", uri.scheme)
-            editor.putString("url_Host", uri.host)
-            editor.putString("alternativeUrl", url)
-            editor.putString("processedAlternativeUrl", couchdbURL)
-            editor.putBoolean("isAlternativeUrl", true)
-            editor.apply()
-
-            processedUrl = couchdbURL
-        } else {
-            processedUrl = saveConfigAndContinue(dialog)
-        }
-
+    fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
+        processedUrl = saveConfigAndContinue(dialog, url, isAlternativeUrl, defaultUrl)
         if (TextUtils.isEmpty(processedUrl)) return
         isSync = true
         if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && settings.getBoolean("firstRun", true)) {

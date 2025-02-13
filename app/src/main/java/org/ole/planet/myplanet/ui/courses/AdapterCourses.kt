@@ -73,8 +73,6 @@ class AdapterCourses(private val context: Context, private var courseList: List<
 
     fun setCourseList(courseList: List<RealmMyCourse?>) {
         this.courseList = courseList
-        sortCourseList()
-        sortCourseListByTitle()
         notifyDataSetChanged()
     }
 

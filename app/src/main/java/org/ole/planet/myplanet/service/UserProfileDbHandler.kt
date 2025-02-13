@@ -49,13 +49,18 @@ class UserProfileDbHandler(context: Context) {
         if (!mRealm.isInTransaction) {
             mRealm.beginTransaction()
         }
-        val offlineActivities = mRealm.copyToRealm(createUser())
-        offlineActivities.type = KEY_LOGIN
-        offlineActivities._rev = null
-        offlineActivities._id = null
-        offlineActivities.description = "Member login on offline application"
-        offlineActivities.loginTime = Date().time
-        mRealm.commitTransaction()
+        try {
+            val offlineActivities = mRealm.copyToRealm(createUser())
+            offlineActivities.type = KEY_LOGIN
+            offlineActivities._rev = null
+            offlineActivities._id = null
+            offlineActivities.description = "Member login on offline application"
+            offlineActivities.loginTime = Date().time
+            mRealm.commitTransaction()
+        } catch (e: Exception) {
+            mRealm.cancelTransaction()
+            throw e
+        }
     }
 
     suspend fun onLogout() {
@@ -101,11 +106,9 @@ class UserProfileDbHandler(context: Context) {
 
     fun getLastVisit(m: RealmUserModel): String {
         val realm = Realm.getDefaultInstance()
-        realm.beginTransaction()
         val lastLogoutTimestamp = realm.where(RealmOfflineActivity::class.java)
             .equalTo("userName", m.name)
             .max("loginTime") as Long?
-        realm.commitTransaction()
         return if (lastLogoutTimestamp != null) {
             val date = Date(lastLogoutTimestamp)
             SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(date)

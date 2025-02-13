@@ -15,50 +15,42 @@
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
             android:text="@string/vitals"
-            android:textColor="@color/colorPrimaryDark"
+            android:textColor="@color/daynight_textColor"
             android:textStyle="bold" />
-
         <TextView
             android:id="@+id/tv_vitals"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:lineSpacingMultiplier="1.3"
             android:padding="@dimen/padding_normal"
-            android:textColor="@color/md_black_1000" />
-
-
+            android:textColor="@color/daynight_textColor" />
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
             android:text="@string/condition_and_treatment"
-            android:textColor="@color/colorPrimaryDark"
+            android:textColor="@color/daynight_textColor"
             android:textStyle="bold" />
-
         <TextView
             android:id="@+id/tv_condition"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:lineSpacingMultiplier="1.3"
             android:padding="@dimen/padding_normal"
-            android:textColor="@color/md_black_1000" />
-
+            android:textColor="@color/daynight_textColor" />
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
             android:text="@string/other_notes"
-            android:textColor="@color/colorPrimaryDark"
+            android:textColor="@color/daynight_textColor"
             android:textStyle="bold" />
-
         <TextView
             android:id="@+id/tv_other_notes"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:lineSpacingMultiplier="1.3"
             android:padding="@dimen/padding_normal"
-            android:textColor="@color/md_black_1000" />
-
-
+            android:textColor="@color/daynight_textColor" />
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

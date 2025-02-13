@@ -170,34 +170,34 @@ class UserProfileFragment : Fragment() {
                 override fun onNothingSelected(parent: AdapterView<*>?) {
                 }
             }
-            val levels = resources.getStringArray(subject_level)
-            val levelList: MutableList<String?> = ArrayList(listOf(*levels))
-            levelList.remove("All")
-            levelList.add(0, "Level")
-            val levelAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, levelList)
+            val levels = resources.getStringArray(subject_level).toMutableList()
+            levels.remove("All")
+            levels.add(0, "Select Level")
+            var selectedLevel = Utilities.checkNA("${model?.level}")
+            val levelAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, levels)
             levelAdapter.setDropDownViewResource(R.layout.spinner_item)
             editProfileDialogBinding.level.adapter = levelAdapter
-            if (model?.level != null) {
-                val level = resources.getStringArray(subject_level)
-                val leveList = level.filter { it != "All" }
-                val levelPosition = leveList.indexOf(model?.level)
-                if (levelPosition >= 0) {
-                    editProfileDialogBinding.level.setSelection(levelPosition + 1)
-                } else {
-                    editProfileDialogBinding.level.setSelection(0)
-                }
+
+            val levelPosition = levels.indexOf(selectedLevel)
+            if (levelPosition > 0) {
+                editProfileDialogBinding.level.setSelection(levelPosition)
             } else {
                 editProfileDialogBinding.level.setSelection(0)
             }
 
             editProfileDialogBinding.level.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(parent: AdapterView<*>, view: View, position: Int, id: Long) {
-                    selectedLevel = parent.getItemAtPosition(position).toString()
+                override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                    if (position == 0) {
+                        selectedLevel = ""
+                    } else {
+                        selectedLevel = levels[position]
+                    }
                 }
 
                 override fun onNothingSelected(parent: AdapterView<*>?) {
                 }
             }
+            
             if ("male".equals(model?.gender, ignoreCase = true)) {
                 editProfileDialogBinding.rbMale.isChecked = true
             } else if ("female".equals(model?.gender, ignoreCase = true)) {
