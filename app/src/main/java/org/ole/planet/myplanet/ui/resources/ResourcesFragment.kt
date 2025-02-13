@@ -224,7 +224,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         msg += getString(R.string.return_to_the_home_tab_to_access_mylibrary) + getString(R.string.note_you_may_still_need_to_download_the_newly_added_resources)
         builder.setMessage(msg)
         builder.setCancelable(true)
-        .setPositiveButton("Go To MyLibrary") { dialog: DialogInterface, _: Int ->
+        .setPositiveButton(R.string.go_to_mylibrary) { dialog: DialogInterface, _: Int ->
                 if (userModel?.id?.startsWith("guest") == true) {
                     guestDialog(requireContext())
                 } else {
@@ -238,6 +238,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
         builder.setNegativeButton(getString(R.string.ok)) { dialog: DialogInterface, _: Int ->
             dialog.cancel()
+            val newFragment = ResourcesFragment()
+            recreateFragment(newFragment)
+        }
+        builder.setOnDismissListener{
             val newFragment = ResourcesFragment()
             recreateFragment(newFragment)
         }
