@@ -61,7 +61,7 @@ class ChatHistoryListFragment : Fragment() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                (fragmentChatHistoryListBinding.recyclerView.adapter as? ChatHistoryListAdapter)?.filter(s.toString())
+                (fragmentChatHistoryListBinding.recyclerView.adapter as? ChatHistoryListAdapter)?.search(s.toString())
             }
 
             override fun afterTextChanged(s: Editable?) {}
