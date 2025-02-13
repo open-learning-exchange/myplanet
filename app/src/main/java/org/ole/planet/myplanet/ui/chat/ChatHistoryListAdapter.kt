@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
 import org.ole.planet.myplanet.ui.news.GrandChildAdapter
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment.Companion.settings
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.osmdroid.views.overlay.gridlines.LatLonGridlineOverlay.backgroundColor
 import java.util.Date
 
 class ChatHistoryListAdapter(var context: Context, private var chatHistory: List<RealmChatHistory>, private val fragment: ChatHistoryListFragment) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -185,12 +186,13 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
         grandChildDialogBinding.recyclerView.layoutManager = LinearLayoutManager(context)
         grandChildDialogBinding.recyclerView.adapter = grandChildAdapter
 
-        val builder = AlertDialog.Builder(context)
+        val builder = AlertDialog.Builder(context,R.style.CustomAlertDialog)
         builder.setView(grandChildDialogBinding.root)
         builder.setPositiveButton(context.getString(R.string.close)) { _, _ ->
             dialog?.dismiss()
         }
         dialog = builder.create()
+        dialog.window?.setBackgroundDrawable(ColorDrawable(backgroundColor))
         dialog.show()
     }
 
