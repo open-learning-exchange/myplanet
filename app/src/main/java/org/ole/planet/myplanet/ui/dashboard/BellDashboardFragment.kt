@@ -62,9 +62,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
         setupNetworkStatusMonitoring()
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         showBadges()
-        if((user?.id?.startsWith("guest") != true))
-        checkPendingSurveys()
-
+        if((user?.id?.startsWith("guest") != true)) {
+            checkPendingSurveys()
+        }
         if (model?.id?.startsWith("guest") == false && TextUtils.isEmpty(model?.key)) {
             syncKeyId()
         }
