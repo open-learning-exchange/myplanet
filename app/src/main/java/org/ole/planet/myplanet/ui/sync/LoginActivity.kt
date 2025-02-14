@@ -432,7 +432,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         editor.putString("loginUserPassword", password)
         val isLoggedIn = authenticateUser(settings, name, password, false)
         if (isLoggedIn) {
-            Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
+            Toast.makeText(applicationContext, getString(R.string.welcome_to_myPlanet), Toast.LENGTH_SHORT).show()
             onLogin()
             saveUsers(activityLoginBinding.inputName.text.toString(), activityLoginBinding.inputPassword.text.toString(), "member")
         } else {
