@@ -16,7 +16,6 @@
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
     <ExpandableListView
         android:id="@+id/listView"
         android:layout_width="match_parent"
@@ -26,5 +25,4 @@
         android:indicatorLeft="?android:attr/expandableListPreferredItemIndicatorLeft"
         android:groupIndicator="@null"
         app:layout_constraintTop_toBottomOf="@+id/title" />
-
 </androidx.constraintlayout.widget.ConstraintLayout>
