@@ -1233,5 +1233,8 @@
     <string name="fetching_ai_providers">Helitaanka bixiyeyaasha AI…</string>
     <string name="adopt_survey">Sahaminta qaado</string>
     <string name="survey_adopted_successfully">Sahanka si guul ah ayaa la qaatay!</string>
+    <string name="beta_fast_sync">beta sinkron degdeg ah</string>
+    <string name="user_verification_in_progress">Hubinta isticmaalaha ayaa socota. Fadlan sug inta aan xogta ka shaqeynayno.</string>
+    <string name="go_to_mylibrary">Tag Maktabaddayda</string>
 
 </resources>
