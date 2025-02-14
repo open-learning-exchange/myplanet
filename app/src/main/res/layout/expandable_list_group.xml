@@ -14,7 +14,6 @@
         android:scaleType="center"
         android:layout_gravity="center_vertical"
         app:tint="@color/daynight_textColor" />
-
     <TextView
         android:id="@+id/listTitle"
         android:layout_width="0dp"
@@ -24,5 +23,4 @@
         android:textColor="@color/daynight_textColor"
         android:textStyle="bold"
         android:paddingBottom="@dimen/_10dp" />
-
 </LinearLayout>
