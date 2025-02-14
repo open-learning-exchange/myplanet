@@ -14,7 +14,6 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.text.TextUtils
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,6 +22,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -301,17 +301,27 @@ class UserProfileFragment : Fragment() {
         }
         return fragmentUserProfileBinding.root
     }
+
     private fun searchForPhoto() {
         val options = arrayOf(getString(R.string.capture_image), getString(R.string.select_gallery))
-        val builder = AlertDialog.Builder(requireContext())
+        val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
         builder.setTitle(getString(R.string.choose_an_option))
-        builder.setItems(options) { _, which ->
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, options)
+        builder.setAdapter(adapter) { _, which ->
             when (which) {
                 0 -> takePhoto()
                 1 -> pickFromGallery()
             }
         }
-        builder.show()
+
+        val dialog = builder.create()
+        dialog.setOnShowListener {
+            dialog.listView.children.forEach { item ->
+                (item as TextView).setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+            }
+        }
+
+        dialog.show()
     }
 
     private fun pickFromGallery() {
