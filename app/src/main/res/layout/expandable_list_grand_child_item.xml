@@ -13,5 +13,4 @@
         android:textSize="16sp"
         android:paddingBottom="10dp"
         android:textColor="@color/daynight_textColor" />
-
 </LinearLayout>
