@@ -241,7 +241,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     }
 
     private fun showResourceListDialog(prevList: List<String?>) {
-        val builder = AlertDialog.Builder(requireActivity())
+        val builder = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
         builder.setTitle(R.string.select_resources)
         val list: List<RealmMyLibrary> = aRealm.where(RealmMyLibrary::class.java).findAll()
         myLibraryAlertdialogBinding = MyLibraryAlertdialogBinding.inflate(LayoutInflater.from(activity))
