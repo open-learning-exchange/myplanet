@@ -30,7 +30,10 @@ import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
 import org.ole.planet.myplanet.ui.news.GrandChildAdapter
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment.Companion.settings
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.osmdroid.views.overlay.gridlines.LatLonGridlineOverlay.backgroundColor
+import java.text.Normalizer
 import java.util.Date
+import java.util.Locale
 
 class ChatHistoryListAdapter(var context: Context, private var chatHistory: List<RealmChatHistory>, private val fragment: ChatHistoryListFragment) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
@@ -65,6 +68,35 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
                 chat.title?.contains(query, ignoreCase = true) ==true
             }
         }
+        notifyDataSetChanged()
+    }
+
+    private fun normalizeText(str: String): String {
+        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
+            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+    }
+
+    fun search(s: String) {
+        var title: String?
+        val queryParts = s.split(" ").filterNot { it.isEmpty() }
+        val normalizedQuery = normalizeText(s)
+        val startsWithQuery = mutableListOf<RealmChatHistory>()
+        val containsQuery = mutableListOf<RealmChatHistory>()
+
+        for (chat in chatHistory) {
+            if(chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
+                title = chat.conversations?.get(0)?.query?.let { normalizeText(it) }
+            } else {
+                title = chat.title?.let { normalizeText(it) }
+            }
+            if(title == null) continue
+            if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+                startsWithQuery.add(chat)
+            } else if (queryParts.all { title.contains(normalizeText(it), ignoreCase = true) }) {
+                containsQuery.add(chat)
+            }
+        }
+        filteredChatHistory = startsWithQuery + containsQuery
         notifyDataSetChanged()
     }
 
@@ -185,12 +217,13 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
         grandChildDialogBinding.recyclerView.layoutManager = LinearLayoutManager(context)
         grandChildDialogBinding.recyclerView.adapter = grandChildAdapter
 
-        val builder = AlertDialog.Builder(context)
+        val builder = AlertDialog.Builder(context,R.style.CustomAlertDialog)
         builder.setView(grandChildDialogBinding.root)
         builder.setPositiveButton(context.getString(R.string.close)) { _, _ ->
             dialog?.dismiss()
         }
         dialog = builder.create()
+        dialog.window?.setBackgroundDrawable(ColorDrawable(backgroundColor))
         dialog.show()
     }
 
