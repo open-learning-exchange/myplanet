@@ -23,12 +23,14 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment.Companion.settings
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import java.util.Collections
 import java.util.UUID
 
 class AdapterSurvey(private val context: Context, private val mRealm: Realm, private val userId: String?, private val isTeam: Boolean, val teamId: String?, private val surveyAdoptListener: SurveyAdoptListener) : RecyclerView.Adapter<AdapterSurvey.ViewHolderSurvey>() {
     private var examList: List<RealmStepExam> = emptyList()
     private var listener: OnHomeItemClickListener? = null
     private val adoptedSurveyIds = mutableSetOf<String>()
+    private var isTitleAscending = true
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -41,6 +43,41 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
         val diffResult = DiffUtil.calculateDiff(diffCallback)
         examList = newList
         diffResult.dispatchUpdatesTo(this)
+    }
+
+    private fun SortSurveyList(isAscend: Boolean){
+        val list = examList.toList()
+        Collections.sort(list) { survey1, survey2 ->
+            if (isAscend) {
+                survey1?.createdDate!!.compareTo(survey2?.createdDate!!)
+            } else {
+                survey2?.createdDate!!.compareTo(survey1?.createdDate!!)
+            }
+        }
+        examList = list
+    }
+
+    fun SortByDate(isAscend: Boolean){
+        SortSurveyList(isAscend)
+        notifyDataSetChanged()
+    }
+
+    private fun SortSurveyListByName(isAscend: Boolean){
+        val list = examList.toList()
+        Collections.sort(list) { survey1, survey2 ->
+            if (isAscend) {
+                survey1?.name!!.compareTo(survey2?.name!!)
+            } else {
+                survey2?.name!!.compareTo(survey1?.name!!)
+            }
+        }
+        examList = list
+    }
+
+    fun toggleTitleSortOrder() {
+        isTitleAscending = !isTitleAscending
+        SortSurveyListByName(isTitleAscending)
+        notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderSurvey {

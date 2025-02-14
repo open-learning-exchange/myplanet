@@ -347,9 +347,7 @@ class Service(private val context: Context) {
     fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity, callerActivity: String) {
         val serverUrlMapper = ServerUrlMapper(context)
         val mapping = serverUrlMapper.processUrl(url)
-
-        val urlsToTry = mutableListOf(url)
-        mapping.alternativeUrl?.let { urlsToTry.add(it) }
+        val urlsToTry = mutableListOf(url).apply { mapping.alternativeUrl?.let { add(it) } }
 
         MainApplication.applicationScope.launch {
             val customProgressDialog = withContext(Dispatchers.Main) {
@@ -361,28 +359,14 @@ class Service(private val context: Context) {
 
             try {
                 val result = withContext(Dispatchers.IO) {
-                    val deferredResults = urlsToTry.map { currentUrl ->
+                    urlsToTry.map { currentUrl ->
                         async {
                             try {
-                                val versionsResponse =
-                                    try {
-                                        val response = retrofitInterface?.getConfiguration("$currentUrl/versions")?.execute()
-                                        response
-                                    } catch (e: java.net.ConnectException) {
-                                        e.printStackTrace()
-                                        null
-                                    } catch (e: java.net.SocketTimeoutException) {
-                                        e.printStackTrace()
-                                        null
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                        null
-                                    }
-
+                                val versionsResponse = retrofitInterface?.getConfiguration("$currentUrl/versions")?.execute()
                                 if (versionsResponse?.isSuccessful == true) {
                                     val jsonObject = versionsResponse.body()
-                                    val currentVersion = "${context.resources.getText(R.string.app_version)}"
                                     val minApkVersion = jsonObject?.get("minapk")?.asString
+                                    val currentVersion = context.getString(R.string.app_version)
 
                                     if (minApkVersion != null && isVersionAllowed(currentVersion, minApkVersion)) {
                                         val uri = Uri.parse(currentUrl)
@@ -398,28 +382,30 @@ class Service(private val context: Context) {
                                             customProgressDialog.setText(context.getString(R.string.checking_server))
                                         }
 
-                                        val configResponse = retrofitInterface?.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true")?.execute()
+                                        val configResponse = withContext(Dispatchers.IO) {
+                                            retrofitInterface.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true").execute()
+                                        }
 
-                                        if (configResponse?.isSuccessful == true) {
+                                        if (configResponse.isSuccessful) {
                                             val rows = configResponse.body()?.getAsJsonArray("rows")
                                             if (rows != null && rows.size() > 0) {
-                                                val firstRow = rows.get(0).asJsonObject
+                                                val firstRow = rows[0].asJsonObject
                                                 val id = firstRow.getAsJsonPrimitive("id").asString
                                                 val doc = firstRow.getAsJsonObject("doc")
                                                 val code = doc.getAsJsonPrimitive("code").asString
                                                 val parentCode = doc.getAsJsonPrimitive("parentCode").asString
-                                                preferences.edit().putString("parentCode", parentCode).apply()
+
+                                                withContext(Dispatchers.IO) {
+                                                    preferences.edit().putString("parentCode", parentCode).apply()
+                                                }
+
                                                 if (doc.has("models")) {
-                                                    val modelsJsonObject = doc.getAsJsonObject("models")
-                                                    val modelsMap = mutableMapOf<String, String>()
+                                                    val modelsMap = doc.getAsJsonObject("models").entrySet()
+                                                        .associate { it.key to it.value.asString }
 
-                                                    for ((key, value) in modelsJsonObject.entrySet()) {
-                                                        modelsMap[key] = value.asString
+                                                    withContext(Dispatchers.IO) {
+                                                        preferences.edit().putString("ai_models", Gson().toJson(modelsMap)).apply()
                                                     }
-
-                                                    val modelsString = Gson().toJson(modelsMap)
-
-                                                    preferences.edit().putString("ai_models", modelsString).apply()
                                                 }
                                                 return@async UrlCheckResult.Success(id, code, currentUrl)
                                             }
@@ -432,9 +418,7 @@ class Service(private val context: Context) {
                                 return@async UrlCheckResult.Failure(currentUrl)
                             }
                         }
-                    }
-                    val result = deferredResults.awaitFirst { it is UrlCheckResult.Success }
-                    result
+                    }.awaitFirst { it is UrlCheckResult.Success }
                 }
 
                 when (result) {
