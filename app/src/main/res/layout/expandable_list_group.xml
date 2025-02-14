@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="horizontal">
@@ -10,19 +11,18 @@
         android:layout_height="24dp"
         android:layout_marginStart="8dp"
         android:src="@drawable/ic_keyboard_arrow_down_black_24dp"
-        android:tint="@color/daynight_textColor"
         android:scaleType="center"
-        android:layout_gravity="center_vertical" />
+        android:layout_gravity="center_vertical"
+        app:tint="@color/daynight_textColor" />
 
     <TextView
         android:id="@+id/listTitle"
-        android:layout_width="fill_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:paddingStart="?android:attr/expandableListPreferredItemPaddingLeft"
         android:paddingTop="10dp"
         android:textColor="@color/daynight_textColor"
         android:textStyle="bold"
-        android:padding="10dp"/>
+        android:paddingBottom="@dimen/_10dp" />
 
 </LinearLayout>
