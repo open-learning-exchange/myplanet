@@ -71,6 +71,11 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         return courseList
     }
 
+    fun setOriginalCourseList(courseList: List<RealmMyCourse?>){
+        this.courseList = courseList
+        notifyDataSetChanged()
+    }
+
     fun setCourseList(courseList: List<RealmMyCourse?>) {
         this.courseList = courseList
         notifyDataSetChanged()

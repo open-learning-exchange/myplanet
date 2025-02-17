@@ -500,7 +500,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         cal_last_Sync = Calendar.getInstance(Locale.ENGLISH)
         cal_last_Sync.timeInMillis = settings.getLong("LastSync", 0)
         cal_today.timeInMillis = Date().time
-        val msDiff = Calendar.getInstance().timeInMillis - cal_last_Sync.timeInMillis
+        val msDiff = cal_today.timeInMillis - cal_last_Sync.timeInMillis
         val daysDiff = TimeUnit.MILLISECONDS.toDays(msDiff)
         return if (daysDiff >= maxDays) {
             val alertDialogBuilder = AlertDialog.Builder(this, R.style.AlertDialogTheme)

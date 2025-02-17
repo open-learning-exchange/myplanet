@@ -241,6 +241,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             val newFragment = ResourcesFragment()
             recreateFragment(newFragment)
         }
+        builder.setOnDismissListener{
+            val newFragment = ResourcesFragment()
+            recreateFragment(newFragment)
+        }
         return builder.create()
     }
 
