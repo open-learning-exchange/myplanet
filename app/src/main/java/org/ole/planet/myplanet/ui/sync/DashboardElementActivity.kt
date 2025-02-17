@@ -233,8 +233,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         }
     }
 
-
-
     override fun finish() {
         if (doubleBackToExitPressedOnce) {
             super.finish()
