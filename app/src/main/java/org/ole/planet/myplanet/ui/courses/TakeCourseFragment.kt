@@ -247,25 +247,20 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun addRemoveCourse() {
-        Realm.getDefaultInstance().executeTransactionAsync({ backgroundRealm ->
-            val detachedCourse = backgroundRealm.where(RealmMyCourse::class.java)
-                .equalTo("courseId", courseId)
-                .findFirst()
-
-            if (detachedCourse != null) {
-                if (detachedCourse.userId?.contains(userModel?.id) == true) {
-                    detachedCourse.removeUserId(userModel?.id)
-                    onRemove(backgroundRealm, "courses", userModel?.id, courseId)
-                } else {
-                    detachedCourse.setUserId(userModel?.id)
-                    onAdd(backgroundRealm, "courses", userModel?.id, courseId)
-                }
-            }
-        }, {
-            setCourseData()
-        }, { error ->
-            error.printStackTrace()
-        })
+        if (!mRealm.isInTransaction) mRealm.beginTransaction()
+        if (currentCourse?.userId?.contains(userModel?.id) == true) {
+            currentCourse?.removeUserId(userModel?.id)
+            onRemove(mRealm, "courses", userModel?.id, courseId)
+        } else {
+            currentCourse?.setUserId(userModel?.id)
+            onAdd(mRealm, "courses", userModel?.id, courseId)
+        }
+        Utilities.toast(activity, "course ${(if (currentCourse?.userId?.contains(userModel?.id) == true) {
+            getString(R.string.added_to)
+        } else {
+            getString(R.string.removed_from)
+        })} ${getString(R.string.my_courses)}")
+        setCourseData()
     }
 
     private fun getCourseProgress(): Int {
