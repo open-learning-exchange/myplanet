@@ -514,6 +514,7 @@
     <string name="use_phone_number_as_password">استخدام رقم الهاتف ككلمة مرور</string>
     <string name="feedback">تغذية راجعة</string>
     <string name="add_member">إضافة عضو</string>
+    <string name="exit">"تأكيد الخروج"</string>
     <string name="confirm_exit">هل أنت متأكد أنك تريد مغادرة هذا الفريق؟</string>
     <string name="update_profile_alert">يرجى استكمال ملف التعريف الخاص بك للاستمتاع بجميع الميزات</string>
     <string name="other_notes">ملاحظات أخرى</string>

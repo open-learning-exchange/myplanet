@@ -514,6 +514,7 @@
     <string name="use_phone_number_as_password">Utiliser le numéro de téléphone comme mot de passe</string>
     <string name="feedback">Retour d\'information</string>
     <string name="add_member">Ajouter un membre</string>
+    <string name="exit">"Confirmer la sortie"</string>
     <string name="confirm_exit">Êtes-vous sûr de vouloir quitter cette équipe ?</string>
     <string name="update_profile_alert">Veuillez compléter votre profil pour profiter de toutes les fonctionnalités</string>
     <string name="other_notes">Autres notes</string>
