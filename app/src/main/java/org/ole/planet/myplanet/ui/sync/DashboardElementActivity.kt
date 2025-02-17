@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.Menu
@@ -218,9 +219,28 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
 
     fun logout() {
         CoroutineScope(Dispatchers.Main).launch {
+            // Check the value before logout (optional)
+            if (settings.getBoolean(Constants.KEY_REMIND_ME_LATER, false)) {
+                Log.d("pref", "remind me later is true before resetting")
+            }
+
+            // Perform the logout actions
             profileDbHandler.onLogout()
-            settings.edit().putBoolean(Constants.KEY_LOGIN, false).apply()
-            settings.edit().putBoolean(Constants.KEY_NOTIFICATION_SHOWN, false).apply()
+
+            // Reset the preferences
+            settings.edit().apply {
+                putBoolean(Constants.KEY_LOGIN, false)
+                putBoolean(Constants.KEY_NOTIFICATION_SHOWN, false)
+                putBoolean(Constants.KEY_REMIND_ME_LATER, false)  // Reset "Remind me later"
+                apply()
+            }
+
+            // Check the value after logout (this is now correct)
+            if (!settings.getBoolean(Constants.KEY_REMIND_ME_LATER, false)) {
+                Log.d("pref", "remind me later is false at logout")
+            }
+
+            // Navigate to Login Activity
             val loginScreen = Intent(this@DashboardElementActivity, LoginActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(loginScreen)
@@ -228,6 +248,8 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             finish()
         }
     }
+
+
 
     override fun finish() {
         if (doubleBackToExitPressedOnce) {

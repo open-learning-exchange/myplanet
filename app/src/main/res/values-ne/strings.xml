@@ -1236,5 +1236,6 @@
     <string name="beta_fast_sync">बेटा फास्ट सिंक</string>
     <string name="user_verification_in_progress">प्रयोगकर्ता प्रमाणीकरण प्रक्रिया भइरहेको छ। कृपया डेटा प्रशोधन भइरहेसम्म प्रतीक्षा गर्नुहोस्।</string>
     <string name="go_to_mylibrary">मेरो पुस्तकालयमा जानुहोस्</string>
+    <string name="remind_me_later">मलाई पछि सम्झाउनुहोस्</string>
 
 </resources>

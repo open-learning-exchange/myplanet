@@ -42,6 +42,7 @@ object Constants {
     var LABELS = HashMap<String, String>()
     const val KEY_NOTIFICATION_SHOWN = "notification_shown"
     const val SELECTED_LANGUAGE = "app_language"
+    const val KEY_REMIND_ME_LATER = "remind_me_later"
 
     init {
         initClasses()

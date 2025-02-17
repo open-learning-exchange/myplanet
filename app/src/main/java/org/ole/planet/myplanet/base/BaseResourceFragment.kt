@@ -10,6 +10,7 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,6 +18,7 @@ import android.widget.ArrayAdapter
 import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity.MODE_PRIVATE
 import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import io.realm.Realm
@@ -44,6 +46,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.utilities.CheckboxListView
+import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.getProgressDialog
@@ -100,6 +103,11 @@ abstract class BaseResourceFragment : Fragment() {
 
     protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
         if (!isAdded) return
+        val settings = requireActivity().getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+        if (settings.getBoolean(Constants.KEY_REMIND_ME_LATER, false)) {
+            return
+        }
+
         Service(MainApplication.context).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 if (!isAdded) return
@@ -128,7 +136,9 @@ abstract class BaseResourceFragment : Fragment() {
                                 addAllToLibrary(dbMyLibrary)
                             }
                             startDownload(downloadAllFiles(dbMyLibrary))
-                        }.setNegativeButton(R.string.txt_cancel, null)
+                        }.setNegativeButton(R.string.remind_me_later) { _, _ ->
+                            settings.edit().putBoolean(Constants.KEY_REMIND_ME_LATER, true).apply()
+                        }
                     val alertDialog = alertDialogBuilder.create()
                     createListView(dbMyLibrary, alertDialog)
                     alertDialog.show()
