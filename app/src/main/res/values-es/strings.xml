@@ -1237,5 +1237,6 @@
     <string name="user_verification_in_progress">Verificación de usuario en progreso. Por favor, espere mientras procesamos los datos.</string>
     <string name="go_to_mylibrary">Ir a Mi Biblioteca</string>
     <string name="choose_an_option">Elige una opción</string>
+    <string name="welcome_back">Bienvenido de nuevo %1$s</string>
 
 </resources>
