@@ -784,7 +784,7 @@
     <string name="invalid_input_must_be_between_1_and_250">Entrée invalide, doit être entre 1 et 250</string>
     <string name="invalid_input_must_be_between_1_and_150">Entrée invalide, doit être entre 1 et 150</string>
     <string name="unable_to_add_health_record">Impossible d\'ajouter un dossier de santé.</string>
-    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">Êtes-vous sûr de vouloir quitter ? Vos données seront perdues.</string>
+    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">Êtes-vous sûr de vouloir annuler l\'ajout de cette ressource ? Vos données seront perdues</string>
     <string name="yes_i_want_to_exit">"Oui, je veux quitter. "</string>
     <string name="my_health_saved_successfully">Mon dossier de santé enregistré avec succès</string>
     <string name="health_record_not_available">Dossier de santé non disponible.</string>

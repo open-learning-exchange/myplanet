@@ -784,7 +784,7 @@
     <string name="invalid_input_must_be_between_1_and_250">Galin waajib ah, waa in lagu jiro 1 ilaa 250</string>
     <string name="invalid_input_must_be_between_1_and_150">Galin waajib ah, waa in lagu jiro 1 ilaa 150</string>
     <string name="unable_to_add_health_record">Lama helayno diiwaan caafimaad</string>
-    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">Ma hubtaa in aad ka cabsato? Waxaad kala baxaysaan macluumaadkaaga.</string>
+    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">Ma hubtaa inaad rabto inaad tirtirto ku darista kheyraadkan? Xogtaadu way lumi doontaa</string>
     <string name="yes_i_want_to_exit">"Haa, waxaan rabaa inaan ka cabsado. "</string>
     <string name="my_health_saved_successfully">Caafimaadkaygii ayaa si guul ah lagu kayd geliyey</string>
     <string name="health_record_not_available">Diiwaanada Caafimaadka ma helayo.</string>

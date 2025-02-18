@@ -784,7 +784,7 @@
     <string name="invalid_input_must_be_between_1_and_250">إدخال غير صالح، يجب أن يكون بين 1 و 250</string>
     <string name="invalid_input_must_be_between_1_and_150">إدخال غير صالح، يجب أن يكون بين 1 و 150</string>
     <string name="unable_to_add_health_record">غير قادر على إضافة سجل صحي</string>
-    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">هل أنت متأكد أنك ترغب في الخروج؟ سيتم فقدان البيانات الخاصة بك.</string>
+    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">هل أنت متأكد أنك تريد إلغاء إضافة هذا المورد؟ سيتم فقدان البيانات الخاصة بك</string>
     <string name="yes_i_want_to_exit">"نعم، أرغب في الخروج. "</string>
     <string name="my_health_saved_successfully">تم حفظ صحتي بنجاح</string>
     <string name="health_record_not_available">سجل الصحة غير متاح.</string>
