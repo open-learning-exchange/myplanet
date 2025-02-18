@@ -778,10 +778,10 @@
     <string name="bp_must_be_between_60_40_and_300_200">रक्तचाप ६०/४० र ३००/२०० को बीचमा हुनुपर्छ</string>
     <string name="systolic_and_diastolic_must_be_numbers">सिस्टोलिक र डायस्टोलिक अंशांकीय हुनुपर्छ</string>
     <string name="added_successfully">सफलतापूर्वक थपियो</string>
-    <string name="invalid_input_must_be_between_30_and_40">अमान्य इनपुट, ३० र ४० को बीचमा हुनुपर्छ</string>
-    <string name="invalid_input_must_be_between_40_and_120">अमान्य इनपुट, ४० र १२० को बीचमा हुनुपर्छ</string>
-    <string name="invalid_input_must_be_between_1_and_250">अमान्य इनपुट, १ र २५० को बीचमा हुनुपर्छ</string>
-    <string name="invalid_input_must_be_between_1_and_150">अमान्य इनपुट, १ र १५० को बीचमा हुनुपर्छ</string>
+    <string name="invalid_input_must_be_between_30_and_40">शरीरको तापमान, ३० र ४० को बीचमा हुनुपर्छ</string>
+    <string name="invalid_input_must_be_between_40_and_120">पल्स दर, ४० र १२० को बीचमा हुनुपर्छ</string>
+    <string name="invalid_input_must_be_between_1_and_250">उचाइ, १ र २५० को बीचमा हुनुपर्छ</string>
+    <string name="invalid_input_must_be_between_1_and_150">वजन, १ र १५० को बीचमा हुनुपर्छ</string>
     <string name="unable_to_add_health_record">स्वास्थ्य रेकर्ड थप्न सकिएन।</string>
     <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">के तपाईं निश्चित हुनुहुन्छ कि तपाईं बाहिर निस्कन चाहनुहुन्छ? तपाईंको डाटा हराइनेछ।</string>
     <string name="yes_i_want_to_exit">"हो, म बाहिर निस्कन चाहन्छु। "</string>
