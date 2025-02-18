@@ -123,7 +123,7 @@
     <string name="inactive_message">प्रयोगकर्ता सक्रिय गरिएको छैन, कृपया प्रशासक वा प्रबन्धकलाई सम्पर्क गर्नुहोस् तपाईंको खाता सक्रिय गर्नको लागि।</string>
     <string name="archive_mycourse">मेरो पाठ्यक्रम आर्काइभ गर्नुहोस्</string>
     <string name="menu_achievement">साधारणता</string>
-    <string name="edit_achievement">साधारणता सम्पादन गर्नुहोस्</string>
+    <string name="edit_achievement">उपलब्धिहरू सम्पादन गर्नुहोस्</string>
     <string name="add_resources">स्रोतहरू थप्नुहोस्</string>
     <string name="description">वर्णन</string>
     <string name="title_asterisk">शीर्षक *</string>
@@ -1236,6 +1236,7 @@
     <string name="beta_fast_sync">बेटा फास्ट सिंक</string>
     <string name="user_verification_in_progress">प्रयोगकर्ता प्रमाणीकरण प्रक्रिया भइरहेको छ। कृपया डेटा प्रशोधन भइरहेसम्म प्रतीक्षा गर्नुहोस्।</string>
     <string name="go_to_mylibrary">मेरो पुस्तकालयमा जानुहोस्</string>
+    <string name="choose_an_option">एउटा विकल्प छान्नुहोस्</string>
     <string name="welcome_back">स्वागतम् %1$s</string>
 
 </resources>

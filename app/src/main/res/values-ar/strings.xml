@@ -123,7 +123,7 @@
     <string name="inactive_message">المستخدم غير مفعل، يرجى التواصل مع المسؤول أو المدير لتفعيل حسابك.</string>
     <string name="archive_mycourse">أرشفة دورتي</string>
     <string name="menu_achievement">الإنجازات</string>
-    <string name="edit_achievement">تعديل الإنجاز</string>
+    <string name="edit_achievement">تحرير الإنجازات</string>
     <string name="add_resources">إضافة موارد</string>
     <string name="description">الوصف</string>
     <string name="title_asterisk">العنوان *</string>
@@ -1236,6 +1236,7 @@
     <string name="beta_fast_sync">مزامنة سريعة بيتا</string>
     <string name="user_verification_in_progress">جارٍ التحقق من المستخدم. يرجى الانتظار أثناء معالجة البيانات.</string>
     <string name="go_to_mylibrary">انتقل إلى مكتبتي</string>
+    <string name="choose_an_option">اختر خيارًا</string>
     <string name="welcome_back">مرحبًا بعودتك %1$s</string>
 
 </resources>

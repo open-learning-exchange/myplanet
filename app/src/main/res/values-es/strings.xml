@@ -123,7 +123,7 @@
     <string name="inactive_message">El usuario no está activado. Por favor, ponte en contacto con el administrador o el responsable para activar tu cuenta.</string>
     <string name="archive_mycourse">Archivar miCurso</string>
     <string name="menu_achievement">Logros</string>
-    <string name="edit_achievement">Editar logro</string>
+    <string name="edit_achievement">Editar logros</string>
     <string name="add_resources">Agregar recursos</string>
     <string name="description">Descripción</string>
     <string name="title_asterisk">Título *</string>
@@ -1236,6 +1236,7 @@
     <string name="beta_fast_sync">sincronización rápida beta</string>
     <string name="user_verification_in_progress">Verificación de usuario en progreso. Por favor, espere mientras procesamos los datos.</string>
     <string name="go_to_mylibrary">Ir a Mi Biblioteca</string>
+    <string name="choose_an_option">Elige una opción</string>
     <string name="welcome_back">Bienvenido de nuevo %1$s</string>
 
 </resources>
