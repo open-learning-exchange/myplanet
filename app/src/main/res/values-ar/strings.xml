@@ -123,7 +123,7 @@
     <string name="inactive_message">المستخدم غير مفعل، يرجى التواصل مع المسؤول أو المدير لتفعيل حسابك.</string>
     <string name="archive_mycourse">أرشفة دورتي</string>
     <string name="menu_achievement">الإنجازات</string>
-    <string name="edit_achievement">تعديل الإنجاز</string>
+    <string name="edit_achievement">تحرير الإنجازات</string>
     <string name="add_resources">إضافة موارد</string>
     <string name="description">الوصف</string>
     <string name="title_asterisk">العنوان *</string>

@@ -123,7 +123,7 @@
     <string name="inactive_message">User not activated, please contact administrator or manager to activate your account.</string>
     <string name="archive_mycourse">Archive myCourse</string>
     <string name="menu_achievement">Achievements</string>
-    <string name="edit_achievement">Edit Achievement</string>
+    <string name="edit_achievement">Edit Achievements</string>
     <string name="add_resources">Add Resources</string>
     <string name="description">Description</string>
     <string name="title_asterisk">Title *</string>
