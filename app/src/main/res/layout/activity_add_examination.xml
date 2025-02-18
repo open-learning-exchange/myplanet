@@ -41,7 +41,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/body_temperature"
-                            android:nextFocusDown="@id/et_pulse_rate"
+                        android:nextFocusDown="@id/et_pulse_rate"
                         android:inputType="numberDecimal"
                         android:textColor="@color/daynight_textColor"
                         android:backgroundTint="@color/daynight_textColor" />
@@ -59,7 +59,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/pulse_rate"
-                            android:nextFocusDown="@id/et_bloodpressure"
+                        android:nextFocusDown="@id/et_bloodpressure"
                         android:inputType="number"
                         android:textColor="@color/daynight_textColor"
                         android:backgroundTint="@color/daynight_textColor" />
@@ -99,8 +99,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/height"
-                            android:nextFocusDown="@id/et_weight"
-                            android:inputType="numberDecimal"
+                        android:nextFocusDown="@id/et_weight"
+                        android:inputType="numberDecimal"
                         android:textColor="@color/daynight_textColor"
                         android:backgroundTint="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
@@ -117,7 +117,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/weight"
-                            android:nextFocusDown="@id/et_vision"
+                        android:nextFocusDown="@id/et_vision"
                         android:inputType="numberDecimal"
                         android:textColor="@color/daynight_textColor"
                         android:backgroundTint="@color/daynight_textColor" />
