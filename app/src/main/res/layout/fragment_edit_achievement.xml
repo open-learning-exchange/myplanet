@@ -23,6 +23,7 @@
                 android:layout_height="wrap_content"
                 android:background="@color/colorPrimary"
                 android:padding="@dimen/padding_large">
+
                 <androidx.appcompat.widget.Toolbar
                     android:id="@+id/toolbar"
                     android:layout_width="wrap_content"
