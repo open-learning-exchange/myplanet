@@ -1236,5 +1236,7 @@
     <string name="beta_fast_sync">synchronisation rapide bêta</string>
     <string name="user_verification_in_progress">Vérification de l\'utilisateur en cours. Veuillez patienter pendant que nous traitons les données.</string>
     <string name="go_to_mylibrary">Aller à Ma Bibliothèque</string>
+    <string name="choose_an_option">Choisissez une option</string>
+    <string name="welcome_back">Bienvenue %1$s</string>
 
 </resources>

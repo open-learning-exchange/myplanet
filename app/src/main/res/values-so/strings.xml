@@ -1236,5 +1236,7 @@
     <string name="beta_fast_sync">beta sinkron degdeg ah</string>
     <string name="user_verification_in_progress">Hubinta isticmaalaha ayaa socota. Fadlan sug inta aan xogta ka shaqeynayno.</string>
     <string name="go_to_mylibrary">Tag Maktabaddayda</string>
+    <string name="choose_an_option">Dooro ikhtiyaar</string>
+    <string name="welcome_back">Soo dhawoow %1$s</string>
 
 </resources>
