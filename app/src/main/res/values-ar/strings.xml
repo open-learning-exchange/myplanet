@@ -1236,6 +1236,7 @@
     <string name="beta_fast_sync">مزامنة سريعة بيتا</string>
     <string name="user_verification_in_progress">جارٍ التحقق من المستخدم. يرجى الانتظار أثناء معالجة البيانات.</string>
     <string name="go_to_mylibrary">انتقل إلى مكتبتي</string>
+    <string name="choose_an_option">اختر خيارًا</string>
     <string name="welcome_back">مرحبًا بعودتك %1$s</string>
 
 </resources>
