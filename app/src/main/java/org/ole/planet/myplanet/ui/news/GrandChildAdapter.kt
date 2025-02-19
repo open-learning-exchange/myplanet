@@ -9,12 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyTeam
 
-class GrandChildAdapter(
-    private val items: List<RealmMyTeam>,
-    private val section: String,
-    private val onClick: (RealmMyTeam) -> Unit
-) : RecyclerView.Adapter<GrandChildAdapter.GrandChildViewHolder>() {
-
+class GrandChildAdapter(private val items: List<RealmMyTeam>, private val section: String, private val onClick: (RealmMyTeam) -> Unit) : RecyclerView.Adapter<GrandChildAdapter.GrandChildViewHolder>() {
     inner class GrandChildViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val textView: TextView = itemView.findViewById(R.id.textView)
         private val teamIcon: ImageView = itemView.findViewById(R.id.teamIcon)
