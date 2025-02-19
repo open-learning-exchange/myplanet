@@ -85,8 +85,10 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         }
         initExamination()
         validateFields()
+        checkSubmissionState()
+        setFieldListeners()
         findViewById<View>(R.id.btn_save).setOnClickListener {
-            if (!isValidInput || !allowSubmission) {
+            if (!isValidInput || !allowSubmission || !isAtLeastOneFieldFilled()) {
                 Utilities.toast(this, getString(R.string.invalid_input))
                 return@setOnClickListener
             }
@@ -304,8 +306,6 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             return isValidTemp && isValidHeight && isValidPulse && isValidWeight
         }
 
-    //    private float getFloat(String trim) {
-    //    }
     private fun getInt(trim: String): Int {
         return try {
             trim.toInt()
@@ -354,5 +354,61 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     override fun onCheckedChanged(compoundButton: CompoundButton, b: Boolean) {
         val text = "${compoundButton.text}".trim { it <= ' ' }
         mapConditions?.set(text, b)
+    }
+
+    private fun isAtLeastOneFieldFilled(): Boolean {
+        val binding = activityAddExaminationBinding
+
+        return listOf(
+            binding.etTemperature.text.toString().trim(),
+            binding.etPulseRate.text.toString().trim(),
+            binding.etBloodpressure.text.toString().trim(),
+            binding.etHeight.text.toString().trim(),
+            binding.etWeight.text.toString().trim(),
+            binding.etVision.text.toString().trim(),
+            binding.etHearing.text.toString().trim(),
+            binding.etObservation.text.toString().trim(),
+            binding.etDiag.text.toString().trim(),
+            binding.etTreatments.text.toString().trim(),
+            binding.etMedications.text.toString().trim(),
+            binding.etImmunization.text.toString().trim(),
+            binding.etAllergies.text.toString().trim(),
+            binding.etXray.text.toString().trim(),
+            binding.etLabtest.text.toString().trim(),
+            binding.etReferrals.text.toString().trim()
+        ).any { it.isNotBlank() }
+    }
+
+    private fun checkSubmissionState() {
+        activityAddExaminationBinding.btnSave.isEnabled = isAtLeastOneFieldFilled()
+    }
+
+    private fun setFieldListeners() {
+        val fields = listOf(
+            activityAddExaminationBinding.etTemperature,
+            activityAddExaminationBinding.etPulseRate,
+            activityAddExaminationBinding.etBloodpressure,
+            activityAddExaminationBinding.etHeight,
+            activityAddExaminationBinding.etWeight,
+            activityAddExaminationBinding.etVision,
+            activityAddExaminationBinding.etHearing,
+            activityAddExaminationBinding.etObservation,
+            activityAddExaminationBinding.etDiag,
+            activityAddExaminationBinding.etTreatments,
+            activityAddExaminationBinding.etMedications,
+            activityAddExaminationBinding.etImmunization,
+            activityAddExaminationBinding.etAllergies,
+            activityAddExaminationBinding.etXray,
+            activityAddExaminationBinding.etLabtest,
+            activityAddExaminationBinding.etReferrals
+        )
+
+        for (field in fields) {
+            field.addTextChangedListener(object : TextWatcher {
+                override fun afterTextChanged(s: Editable?) { checkSubmissionState() }
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            })
+        }
     }
 }
