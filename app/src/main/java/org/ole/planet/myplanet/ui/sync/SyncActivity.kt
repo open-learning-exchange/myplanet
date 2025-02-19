@@ -450,7 +450,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 syncIconDrawable.selectDrawable(0)
                 syncIcon.invalidateDrawable(syncIconDrawable)
                 MainApplication.applicationScope.launch {
-                    createLog("synced successfully")
+                    createLog("synced successfully", "")
                 }
                 showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed))
                 val syncEndTime = System.currentTimeMillis() // End timing

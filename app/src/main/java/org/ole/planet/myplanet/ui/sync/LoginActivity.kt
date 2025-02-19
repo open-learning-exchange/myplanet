@@ -16,6 +16,7 @@ import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import io.realm.Realm
 import org.ole.planet.myplanet.*
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.*
 import org.ole.planet.myplanet.datamanager.*
@@ -209,7 +210,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             }
             setUpLanguageButton()
             if (NetworkUtils.isNetworkConnected) {
-                service.syncPlanetServers(mRealm) { success: String? ->
+                service.syncPlanetServers { success: String? ->
                     toast(this, success)
                 }
             }
@@ -432,7 +433,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         editor.putString("loginUserPassword", password)
         val isLoggedIn = authenticateUser(settings, name, password, false)
         if (isLoggedIn) {
-            Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, getString(R.string.welcome_back, name), Toast.LENGTH_SHORT).show()
             onLogin()
             saveUsers(activityLoginBinding.inputName.text.toString(), activityLoginBinding.inputPassword.text.toString(), "member")
         } else {

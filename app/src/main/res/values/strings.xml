@@ -123,7 +123,7 @@
     <string name="inactive_message">User not activated, please contact administrator or manager to activate your account.</string>
     <string name="archive_mycourse">Archive myCourse</string>
     <string name="menu_achievement">Achievements</string>
-    <string name="edit_achievement">Edit Achievement</string>
+    <string name="edit_achievement">Edit Achievements</string>
     <string name="add_resources">Add Resources</string>
     <string name="description">Description</string>
     <string name="title_asterisk">Title *</string>
@@ -514,6 +514,7 @@
     <string name="use_phone_number_as_password">Use phone number as password</string>
     <string name="feedback">Feedback</string>
     <string name="add_member">Add member</string>
+    <string name="exit">Confirm Exit</string>
     <string name="confirm_exit">Are you sure you want to leave this team?</string>
     <string name="update_profile_alert">Please complete your profile to enjoy full features</string>
     <string name="other_notes">Other Notes</string>
@@ -783,7 +784,7 @@
     <string name="invalid_input_must_be_between_1_and_250">Invalid input , must be between 1 and 250</string>
     <string name="invalid_input_must_be_between_1_and_150">Invalid input , must be between 1 and 150</string>
     <string name="unable_to_add_health_record">Unable to add health record.</string>
-    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">Are you sure you want to exit? Your data will be lost.</string>
+    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">Are you sure you want to cancel adding this resource? Your data will be lost</string>
     <string name="yes_i_want_to_exit">"Yes, I want to exit. "</string>
     <string name="my_health_saved_successfully">My health saved successfully</string>
     <string name="health_record_not_available">Health Record not available.</string>
@@ -1236,5 +1237,7 @@
     <string name="beta_fast_sync">beta fast sync</string>
     <string name="user_verification_in_progress">User verification in progress. Please wait while we process the data.</string>
     <string name="go_to_mylibrary">Go To MyLibrary</string>
+    <string name="choose_an_option">Choose an option</string>
+    <string name="welcome_back">Welcome back %1$s !</string>
 
 </resources>
