@@ -292,14 +292,18 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         get() {
             val scrollView = activityAddExaminationBinding.rootScrollView
 
-            val isValidTemp = getFloat("${activityAddExaminationBinding.etTemperature.text}".trim { it <= ' ' }) in 30.0..40.0 ||
-                        getFloat("${activityAddExaminationBinding.etTemperature.text}".trim { it <= ' ' }) == 0f
-            val isValidPulse = getInt("${activityAddExaminationBinding.etPulseRate.text}".trim { it <= ' ' }) in 40..120 ||
-                    getFloat("${activityAddExaminationBinding.etPulseRate.text}".trim { it <= ' ' }) == 0f
-            val isValidHeight = getFloat("${activityAddExaminationBinding.etHeight.text}".trim { it <= ' ' }) in 1.0..250.0 ||
-                    getFloat("${activityAddExaminationBinding.etHeight.text}".trim { it <= ' ' }) == 0f
-            val isValidWeight = getFloat("${activityAddExaminationBinding.etWeight.text}".trim { it <= ' ' }) in 1.0..150.0 ||
-                    getFloat("${activityAddExaminationBinding.etWeight.text}".trim { it <= ' ' }) == 0f
+            val isValidTemp = (getFloat("${activityAddExaminationBinding.etTemperature.text}".trim { it <= ' ' }) in 30.0..40.0 ||
+                        getFloat("${activityAddExaminationBinding.etTemperature.text}".trim { it <= ' ' }) == 0f) &&
+                    "${activityAddExaminationBinding.etTemperature.text}".trim { it <= ' ' }.isNotEmpty()
+            val isValidPulse = (getInt("${activityAddExaminationBinding.etPulseRate.text}".trim { it <= ' ' }) in 40..120 ||
+                    getFloat("${activityAddExaminationBinding.etPulseRate.text}".trim { it <= ' ' }) == 0f) &&
+                    "${activityAddExaminationBinding.etPulseRate.text}".trim { it <= ' ' }.isNotEmpty()
+            val isValidHeight = (getFloat("${activityAddExaminationBinding.etHeight.text}".trim { it <= ' ' }) in 1.0..250.0 ||
+                    getFloat("${activityAddExaminationBinding.etHeight.text}".trim { it <= ' ' }) == 0f) &&
+                    "${activityAddExaminationBinding.etHeight.text}".trim { it <= ' ' }.isNotEmpty()
+            val isValidWeight = (getFloat("${activityAddExaminationBinding.etWeight.text}".trim { it <= ' ' }) in 1.0..150.0 ||
+                    getFloat("${activityAddExaminationBinding.etWeight.text}".trim { it <= ' ' }) == 0f) &&
+                    "${activityAddExaminationBinding.etWeight.text}".trim { it <= ' ' }.isNotEmpty()
             if (!isValidTemp) {
                 activityAddExaminationBinding.etTemperature.error = getString(R.string.invalid_input_must_be_between_30_and_40)
                 scrollToView(activityAddExaminationBinding.etTemperature)
