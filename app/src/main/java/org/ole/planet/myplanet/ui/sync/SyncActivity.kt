@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -97,6 +98,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private var showAdditionalServers = false
     private var serverAddressAdapter : ServerAddressAdapter? = null
     private lateinit var serverListAddresses: List<ServerAddressesModel>
+    private var syncStartTime: Long = 0L
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -420,6 +422,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onSyncStarted() {
+        syncStartTime = System.currentTimeMillis() // Start timing
+        Log.d("SYNC", "Sync started at: $syncStartTime")
         customProgressDialog?.setText(getString(R.string.syncing_data_please_wait))
         customProgressDialog?.show()
     }
@@ -446,9 +450,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 syncIconDrawable.selectDrawable(0)
                 syncIcon.invalidateDrawable(syncIconDrawable)
                 MainApplication.applicationScope.launch {
-                    createLog("synced successfully")
+                    createLog("synced successfully", "")
                 }
                 showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed))
+                val syncEndTime = System.currentTimeMillis() // End timing
+                val totalSyncDuration = syncEndTime - syncStartTime
+                Log.d("SYNC", "Sync completed at: $syncEndTime")
+                Log.d("SYNC", "Total sync duration: $totalSyncDuration ms")
+
                 if (settings.getBoolean("isAlternativeUrl", false)) {
                     editor.putString("alternativeUrl", "")
                     editor.putString("processedAlternativeUrl", "")

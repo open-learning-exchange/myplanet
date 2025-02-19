@@ -111,8 +111,17 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
-                showNoData(tvMessage, adapterCourses.itemCount, "courses")
+                if (!etSearch.isFocused) return
+                val query = s.toString().trim()
+                if (query.isEmpty()) {
+                    val courseList = filterCourseByTag(query, searchTags)
+                    val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
+                    adapterCourses.setOriginalCourseList(sortedCourseList)
+                }
+                else {
+                    adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
+                    showNoData(tvMessage, adapterCourses.itemCount, "courses")
+                }
             }
 
             override fun afterTextChanged(s: Editable) {}
@@ -326,7 +335,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 val newFragment = CoursesFragment()
                 recreateFragment(newFragment)
             }
-
+           .setOnDismissListener {
+               val newFragment = CoursesFragment()
+               recreateFragment(newFragment)
+           }
+        
         return builder.create()
     }
 
