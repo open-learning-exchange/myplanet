@@ -210,7 +210,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             }
             setUpLanguageButton()
             if (NetworkUtils.isNetworkConnected) {
-                service.syncPlanetServers(mRealm) { success: String? ->
+                service.syncPlanetServers { success: String? ->
                     toast(this, success)
                 }
             }
