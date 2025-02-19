@@ -255,8 +255,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             currentCourse?.setUserId(userModel?.id)
             onAdd(mRealm, "courses", userModel?.id, courseId)
         }
-        Utilities.toast(activity, "course ${(if (currentCourse?.userId?.contains(userModel?.id) == true) { 
-            getString(R.string.added_to) 
+        Utilities.toast(activity, "course ${(if (currentCourse?.userId?.contains(userModel?.id) == true) {
+            getString(R.string.added_to)
         } else {
             getString(R.string.removed_from)
         })} ${getString(R.string.my_courses)}")

@@ -7,6 +7,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
@@ -82,7 +83,7 @@ class ManagerSync private constructor(context: Context) {
             populateUsersTable(jsonDoc, realm, settings)
             listener.onSyncComplete()
         } else {
-            listener.onSyncFailed("The user is not a manager.")
+            listener.onSyncFailed(MainApplication.context.getString(R.string.user_verification_in_progress))
         }
     }
 

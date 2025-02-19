@@ -116,7 +116,8 @@
                     android:layout_height="wrap_content"
                     android:inputType="numberPassword"
                     android:textColor="@color/daynight_textColor"
-                    android:textColorHint="@color/hint_color"/>
+                    android:textColorHint="@color/hint_color"
+                    android:maxLength="4"/>
             </com.google.android.material.textfield.TextInputLayout>
 
             <androidx.appcompat.widget.SwitchCompat
@@ -226,5 +227,16 @@
                 android:visibility="gone"
                 app:switchPadding="20dp" />
         </LinearLayout>
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/fastSync"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:padding="8dp"
+            android:text="@string/beta_fast_sync"
+            android:textColor="@color/daynight_textColor"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/linearLayout2" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

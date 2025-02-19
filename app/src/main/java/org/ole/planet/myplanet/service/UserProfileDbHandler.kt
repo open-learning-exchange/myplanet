@@ -8,7 +8,6 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmOfflineActivity
-import org.ole.planet.myplanet.model.RealmOfflineActivity.Companion.getRecentLogin
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -46,16 +45,33 @@ class UserProfileDbHandler(context: Context) {
     }
 
     fun onLogin() {
+        if (mRealm.isClosed) {
+            mRealm = realmService.realmInstance
+        }
+
         if (!mRealm.isInTransaction) {
             mRealm.beginTransaction()
+        } else {
+            try {
+                mRealm.commitTransaction()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                mRealm.cancelTransaction()
+            }
+            mRealm.beginTransaction()
         }
-        val offlineActivities = mRealm.copyToRealm(createUser())
-        offlineActivities.type = KEY_LOGIN
-        offlineActivities._rev = null
-        offlineActivities._id = null
-        offlineActivities.description = "Member login on offline application"
-        offlineActivities.loginTime = Date().time
-        mRealm.commitTransaction()
+        try {
+            val offlineActivities = mRealm.copyToRealm(createUser())
+            offlineActivities.type = KEY_LOGIN
+            offlineActivities._rev = null
+            offlineActivities._id = null
+            offlineActivities.description = "Member login on offline application"
+            offlineActivities.loginTime = Date().time
+            mRealm.commitTransaction()
+        } catch (e: Exception) {
+            mRealm.cancelTransaction()
+            throw e
+        }
     }
 
     suspend fun onLogout() {
@@ -63,7 +79,7 @@ class UserProfileDbHandler(context: Context) {
             val realm = realmService.realmInstance
             try {
                 realm.executeTransaction {
-                    val offlineActivities = getRecentLogin(it)
+                    val offlineActivities = RealmOfflineActivity.getRecentLogin(it)
                     offlineActivities?.logoutTime = Date().time
                 }
             } finally {
@@ -101,11 +117,9 @@ class UserProfileDbHandler(context: Context) {
 
     fun getLastVisit(m: RealmUserModel): String {
         val realm = Realm.getDefaultInstance()
-        realm.beginTransaction()
         val lastLogoutTimestamp = realm.where(RealmOfflineActivity::class.java)
             .equalTo("userName", m.name)
             .max("loginTime") as Long?
-        realm.commitTransaction()
         return if (lastLogoutTimestamp != null) {
             val date = Date(lastLogoutTimestamp)
             SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(date)

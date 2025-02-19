@@ -123,7 +123,7 @@
     <string name="inactive_message">المستخدم غير مفعل، يرجى التواصل مع المسؤول أو المدير لتفعيل حسابك.</string>
     <string name="archive_mycourse">أرشفة دورتي</string>
     <string name="menu_achievement">الإنجازات</string>
-    <string name="edit_achievement">تعديل الإنجاز</string>
+    <string name="edit_achievement">تحرير الإنجازات</string>
     <string name="add_resources">إضافة موارد</string>
     <string name="description">الوصف</string>
     <string name="title_asterisk">العنوان *</string>
@@ -1093,6 +1093,7 @@
     <string name="message_placeholder">%s</string>
     <string name="reports">التقارير</string>
     <string name="number_placeholder">%d</string>
+    <string name="float_placeholder">%.1f</string>
     <string name="date_range">%1$s إلى %2$s</string>
     <string name="string_range">%1$s - %2$s</string>
     <string name="team_financial_report">%s تقرير مالي لـ</string>
@@ -1113,6 +1114,8 @@
     <string name="three_strings">%1$s %2$s %3$s</string>
     <string name="download_sync_files">تنزيل ملفات المزامنة</string>
     <string name="member_description"><![CDATA[(\u200E%2$d زيارة) \u200E%1$s]]></string>
+    <string name="last_visit">الزيارة الأخيرة: %1$s</string>
+    <string name="no_visit">لا زيارة</string>
     <string name="dark_mode">الوضع الداكن</string>
     <string name="dark_mode_off">إيقاف</string>
     <string name="dark_mode_on">تشغيل</string>
@@ -1228,5 +1231,13 @@
     <string name="no_survey_submissions">لا توجد استجابات للاستبيان</string>
     <string name="no_exam_submissions">لا توجد استجابات للامتحان</string>
     <string name="no_reports">لا توجد تقارير متاحة</string>
+    <string name="fetching_ai_providers">جلب مزودي الذكاء الاصطناعي…</string>
+    <string name="adopt_survey">تبنَّى الاستبيان</string>
+    <string name="survey_adopted_successfully">تم تبني الاستبيان بنجاح!</string>
+    <string name="beta_fast_sync">مزامنة سريعة بيتا</string>
+    <string name="user_verification_in_progress">جارٍ التحقق من المستخدم. يرجى الانتظار أثناء معالجة البيانات.</string>
+    <string name="go_to_mylibrary">انتقل إلى مكتبتي</string>
+    <string name="choose_an_option">اختر خيارًا</string>
+    <string name="welcome_back">مرحبًا بعودتك %1$s</string>
 
 </resources>

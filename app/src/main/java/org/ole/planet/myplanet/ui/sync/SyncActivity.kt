@@ -446,7 +446,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 syncIconDrawable.selectDrawable(0)
                 syncIcon.invalidateDrawable(syncIconDrawable)
                 MainApplication.applicationScope.launch {
-                    createLog("synced successfully")
+                    createLog("synced successfully", "")
                 }
                 showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed))
                 if (settings.getBoolean("isAlternativeUrl", false)) {
@@ -500,7 +500,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         cal_last_Sync = Calendar.getInstance(Locale.ENGLISH)
         cal_last_Sync.timeInMillis = settings.getLong("LastSync", 0)
         cal_today.timeInMillis = Date().time
-        val msDiff = Calendar.getInstance().timeInMillis - cal_last_Sync.timeInMillis
+        val msDiff = cal_today.timeInMillis - cal_last_Sync.timeInMillis
         val daysDiff = TimeUnit.MILLISECONDS.toDays(msDiff)
         return if (daysDiff >= maxDays) {
             val alertDialogBuilder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
@@ -642,6 +642,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
         dialogServerUrlBinding.clearData.setOnClickListener {
             clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data), false)
+        }
+
+        val isFastSync = settings.getBoolean("fastSync", false)
+        dialogServerUrlBinding.fastSync.isChecked = isFastSync
+        dialogServerUrlBinding.fastSync.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
+            editor.putBoolean("fastSync", b).apply()
         }
 
         neutralAction.setOnClickListener {

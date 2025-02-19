@@ -3,11 +3,15 @@ package org.ole.planet.myplanet.ui.userprofile
 import android.app.Activity.RESULT_OK
 import android.app.DatePickerDialog
 import android.app.Dialog
+import android.content.ContentValues
 import android.content.Context.MODE_PRIVATE
 import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.drawable.Drawable
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.provider.MediaStore
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -16,7 +20,9 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -58,6 +64,8 @@ class UserProfileFragment : Fragment() {
     var selectedLevel: String? = null
     var selectedLanguage: String? = null
     var date: String? = null
+    private var photoURI: Uri? = null
+    private lateinit var captureImageLauncher: ActivityResultLauncher<Uri>
 
     override fun onDestroy() {
         super.onDestroy()
@@ -73,16 +81,16 @@ class UserProfileFragment : Fragment() {
                 val url = result.data?.data
                 imageUrl = url.toString()
 
-                mRealm.let {
-                    if (!it.isInTransaction) {
-                        it.beginTransaction()
-                    }
-                    val path = FileUtils.getRealPathFromURI(requireActivity(), url)
-                    model?.userImage = path
-                    model?.isUpdated = true
-                    it.commitTransaction()
-                }
+                val path = FileUtils.getRealPathFromURI(requireActivity(), url)
+                photoURI = Uri.parse(path)
+                startIntent(photoURI)
                 fragmentUserProfileBinding.image.setImageURI(url)
+            }
+        }
+
+        captureImageLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
+            if (isSuccess) {
+                startIntent(photoURI)
             }
         }
     }
@@ -170,34 +178,34 @@ class UserProfileFragment : Fragment() {
                 override fun onNothingSelected(parent: AdapterView<*>?) {
                 }
             }
-            val levels = resources.getStringArray(subject_level)
-            val levelList: MutableList<String?> = ArrayList(listOf(*levels))
-            levelList.remove("All")
-            levelList.add(0, "Level")
-            val levelAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, levelList)
+            val levels = resources.getStringArray(subject_level).toMutableList()
+            levels.remove("All")
+            levels.add(0, "Select Level")
+            var selectedLevel = Utilities.checkNA("${model?.level}")
+            val levelAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, levels)
             levelAdapter.setDropDownViewResource(R.layout.spinner_item)
             editProfileDialogBinding.level.adapter = levelAdapter
-            if (model?.level != null) {
-                val level = resources.getStringArray(subject_level)
-                val leveList = level.filter { it != "All" }
-                val levelPosition = leveList.indexOf(model?.level)
-                if (levelPosition >= 0) {
-                    editProfileDialogBinding.level.setSelection(levelPosition + 1)
-                } else {
-                    editProfileDialogBinding.level.setSelection(0)
-                }
+
+            val levelPosition = levels.indexOf(selectedLevel)
+            if (levelPosition > 0) {
+                editProfileDialogBinding.level.setSelection(levelPosition)
             } else {
                 editProfileDialogBinding.level.setSelection(0)
             }
 
             editProfileDialogBinding.level.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(parent: AdapterView<*>, view: View, position: Int, id: Long) {
-                    selectedLevel = parent.getItemAtPosition(position).toString()
+                override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                    if (position == 0) {
+                        selectedLevel = ""
+                    } else {
+                        selectedLevel = levels[position]
+                    }
                 }
 
                 override fun onNothingSelected(parent: AdapterView<*>?) {
                 }
             }
+            
             if ("male".equals(model?.gender, ignoreCase = true)) {
                 editProfileDialogBinding.rbMale.isChecked = true
             } else if ("female".equals(model?.gender, ignoreCase = true)) {
@@ -291,13 +299,60 @@ class UserProfileFragment : Fragment() {
                 return keys.size
             }
         }
-
         return fragmentUserProfileBinding.root
     }
 
     private fun searchForPhoto() {
+        val options = arrayOf(getString(R.string.capture_image), getString(R.string.select_gallery))
+        val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+        builder.setTitle(getString(R.string.choose_an_option))
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, options)
+        builder.setAdapter(adapter) { _, which ->
+            when (which) {
+                0 -> takePhoto()
+                1 -> pickFromGallery()
+            }
+        }
+
+        val dialog = builder.create()
+        dialog.setOnShowListener {
+            dialog.listView.children.forEach { item ->
+                (item as TextView).setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+            }
+        }
+
+        dialog.show()
+    }
+
+    private fun pickFromGallery() {
         val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
         pickImageLauncher.launch(intent)
+    }
+
+    private fun takePhoto() {
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.TITLE, "Photo_${UUID.randomUUID()}")
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/ole/photo")
+            }
+        }
+        photoURI = requireActivity().contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+        photoURI?.let { captureImageLauncher.launch(it) }
+    }
+
+    private fun startIntent(uri: Uri?) {
+        var path: String? = null
+        path = uri?.toString()
+
+        mRealm.let {
+            if (!it.isInTransaction) {
+                it.beginTransaction()
+            }
+            model?.userImage = path
+            model?.isUpdated = true
+            it.commitTransaction()
+        }
     }
 
     private fun updateUIWithUserData(model: RealmUserModel?) {

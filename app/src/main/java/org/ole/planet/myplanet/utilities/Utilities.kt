@@ -142,18 +142,26 @@ object Utilities {
     val hostUrl: String
         get() {
             val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val url: String?
-            val scheme = settings.getString("url_Scheme", "")
-            val hostIp = settings.getString("url_Host", "")
-            if (settings.contains("url_Host")) {
-                url = if (settings.getString("url_Host", "")?.endsWith(".org") == true) {
-                    "$scheme://$hostIp/ml/"
-                } else {
-                    "$scheme://$hostIp:5000"
+            var scheme = settings.getString("url_Scheme", "")
+            var hostIp = settings.getString("url_Host", "")
+            val isAlternativeUrl = settings.getBoolean("isAlternativeUrl", false)
+            val alternativeUrl = settings.getString("processedAlternativeUrl", "")
+
+            if (isAlternativeUrl && !alternativeUrl.isNullOrEmpty()) {
+                try {
+                    val uri = Uri.parse(alternativeUrl)
+                    hostIp = uri.host ?: hostIp
+                    scheme = uri.scheme ?: scheme
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-                return url
             }
-            return ""
+
+            return if (hostIp?.endsWith(".org") == true || hostIp?.endsWith(".gt") == true) {
+                "$scheme://$hostIp/ml/"
+            } else {
+                "$scheme://$hostIp:5000/"
+            }
         }
 
     fun getUpdateUrl(settings: SharedPreferences): String {
