@@ -72,7 +72,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         return fragmentTeamBinding.root
     }
 
-    private fun createTeamAlert(team: RealmMyTeam?) {
+     fun createTeamAlert(team: RealmMyTeam?) {
         alertCreateTeamBinding = AlertCreateTeamBinding.inflate(LayoutInflater.from(context))
         if (TextUtils.equals(type, "enterprise")) {
             alertCreateTeamBinding.spnTeamType.visibility = View.GONE

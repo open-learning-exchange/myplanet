@@ -18,6 +18,13 @@
             android:padding="@dimen/padding_normal"
             android:textColor="@color/daynight_textColor"
             android:textSize="@dimen/text_size_large" />
+        <Button
+            android:id="@+id/btn_add_plan"
+            style="@style/YellowButtons"
+            android:background="@drawable/buttonyellow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Add Plan" />
         <TextView
             android:id="@+id/tv_date"
             android:layout_width="match_parent"
