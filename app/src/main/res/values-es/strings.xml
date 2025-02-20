@@ -123,7 +123,7 @@
     <string name="inactive_message">El usuario no está activado. Por favor, ponte en contacto con el administrador o el responsable para activar tu cuenta.</string>
     <string name="archive_mycourse">Archivar miCurso</string>
     <string name="menu_achievement">Logros</string>
-    <string name="edit_achievement">Editar logro</string>
+    <string name="edit_achievement">Editar logros</string>
     <string name="add_resources">Agregar recursos</string>
     <string name="description">Descripción</string>
     <string name="title_asterisk">Título *</string>
@@ -514,6 +514,7 @@
     <string name="use_phone_number_as_password">Usar número de teléfono como contraseña</string>
     <string name="feedback">Comentarios</string>
     <string name="add_member">Agregar miembro</string>
+    <string name="exit">"Potrdite izhod"</string>
     <string name="confirm_exit">¿Estás seguro/a de que quieres abandonar este equipo?</string>
     <string name="update_profile_alert">Por favor, completa tu perfil para disfrutar de todas las funciones</string>
     <string name="other_notes">Otras Notas</string>
@@ -783,7 +784,7 @@
     <string name="invalid_input_must_be_between_1_and_250">altura, debe estar entre 1 y 250</string>
     <string name="invalid_input_must_be_between_1_and_150">Peso, debe estar entre 1 y 150</string>
     <string name="unable_to_add_health_record">No se puede agregar el registro de salud.</string>
-    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">¿Estás seguro de que quieres salir? Se perderán tus datos.</string>
+    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">¿Está seguro de que desea cancelar la adición de este recurso? Tus datos se perderán</string>
     <string name="yes_i_want_to_exit">"Sí, quiero salir. "</string>
     <string name="my_health_saved_successfully">Mi salud guardada correctamente</string>
     <string name="health_record_not_available">Registro de salud no disponible.</string>
@@ -1236,6 +1237,7 @@
     <string name="beta_fast_sync">sincronización rápida beta</string>
     <string name="user_verification_in_progress">Verificación de usuario en progreso. Por favor, espere mientras procesamos los datos.</string>
     <string name="go_to_mylibrary">Ir a Mi Biblioteca</string>
+    <string name="choose_an_option">Elige una opción</string>
     <string name="welcome_back">Bienvenido de nuevo %1$s</string>
 
 </resources>

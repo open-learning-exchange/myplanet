@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
+import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.utilities.FileUtils.availableExternalMemorySize
@@ -87,6 +88,15 @@ class MyDownloadService : Service() {
                 else -> {
                     val message = if (response.code() == 404) "File Not Found" else "Connection failed (${response.code()})"
                     downloadFailed(message, fromSync)
+
+                    val responseString = response.toString()
+                    val regex = Regex("url=([^}]*)")
+                    val matchResult = regex.find(responseString)
+
+                    val url = matchResult?.groupValues?.get(1)
+                    if (response.code() == 404) {
+                        createLog("File Not Found", "$url")
+                    }
                 }
             }
         } catch (e: IOException) {
@@ -105,9 +115,11 @@ class MyDownloadService : Service() {
         }
         sendIntent(download, fromSync)
 
-        if (message == "File Not Found") {
-            val intent = Intent(RESOURCE_NOT_FOUND_ACTION)
-            LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+        if (!fromSync) {
+            if (message == "File Not Found") {
+                val intent = Intent(RESOURCE_NOT_FOUND_ACTION)
+                LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+            }
         }
     }
 
