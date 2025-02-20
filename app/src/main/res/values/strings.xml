@@ -779,10 +779,10 @@
     <string name="bp_must_be_between_60_40_and_300_200">Bp must be between 60/40 and 300/200</string>
     <string name="systolic_and_diastolic_must_be_numbers">Systolic and diastolic must be numbers</string>
     <string name="added_successfully">Added successfully</string>
-    <string name="invalid_input_must_be_between_30_and_40">Invalid input , must be between 30 and 40</string>
-    <string name="invalid_input_must_be_between_40_and_120">Invalid input , must be between 40 and 120</string>
-    <string name="invalid_input_must_be_between_1_and_250">Invalid input , must be between 1 and 250</string>
-    <string name="invalid_input_must_be_between_1_and_150">Invalid input , must be between 1 and 150</string>
+    <string name="invalid_input_must_be_between_30_and_40">Body temperature, must be between 30 and 40</string>
+    <string name="invalid_input_must_be_between_40_and_120">Pulse rate, must be between 40 and 120</string>
+    <string name="invalid_input_must_be_between_1_and_250">Height, must be between 1 and 250</string>
+    <string name="invalid_input_must_be_between_1_and_150">Weight, must be between 1 and 150</string>
     <string name="unable_to_add_health_record">Unable to add health record.</string>
     <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">Are you sure you want to cancel adding this resource? Your data will be lost</string>
     <string name="yes_i_want_to_exit">"Yes, I want to exit. "</string>

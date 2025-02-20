@@ -779,10 +779,10 @@
     <string name="bp_must_be_between_60_40_and_300_200">يجب أن يكون ضغط الدم بين 60/40 و 300/200</string>
     <string name="systolic_and_diastolic_must_be_numbers">يجب أن تكون القيم النبضية والانبساطية أرقام</string>
     <string name="added_successfully">تمت الإضافة بنجاح</string>
-    <string name="invalid_input_must_be_between_30_and_40">إدخال غير صالح، يجب أن يكون بين 30 و 40</string>
-    <string name="invalid_input_must_be_between_40_and_120">إدخال غير صالح، يجب أن يكون بين 40 و 120</string>
-    <string name="invalid_input_must_be_between_1_and_250">إدخال غير صالح، يجب أن يكون بين 1 و 250</string>
-    <string name="invalid_input_must_be_between_1_and_150">إدخال غير صالح، يجب أن يكون بين 1 و 150</string>
+    <string name="invalid_input_must_be_between_30_and_40">يجب أن تكون درجة حرارة الجسم بين 30 و40</string>
+    <string name="invalid_input_must_be_between_40_and_120">معدل النبض يجب أن يكون بين 40 و120</string>
+    <string name="invalid_input_must_be_between_1_and_250">يجب أن يكون الارتفاع بين 1 و 250</string>
+    <string name="invalid_input_must_be_between_1_and_150">الوزن يجب أن يكون بين 1 و 150</string>
     <string name="unable_to_add_health_record">غير قادر على إضافة سجل صحي</string>
     <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">هل أنت متأكد أنك تريد إلغاء إضافة هذا المورد؟ سيتم فقدان البيانات الخاصة بك</string>
     <string name="yes_i_want_to_exit">"نعم، أرغب في الخروج. "</string>
