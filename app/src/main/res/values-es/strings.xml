@@ -514,6 +514,7 @@
     <string name="use_phone_number_as_password">Usar número de teléfono como contraseña</string>
     <string name="feedback">Comentarios</string>
     <string name="add_member">Agregar miembro</string>
+    <string name="exit">"Potrdite izhod"</string>
     <string name="confirm_exit">¿Estás seguro/a de que quieres abandonar este equipo?</string>
     <string name="update_profile_alert">Por favor, completa tu perfil para disfrutar de todas las funciones</string>
     <string name="other_notes">Otras Notas</string>
@@ -778,12 +779,12 @@
     <string name="bp_must_be_between_60_40_and_300_200">La presión arterial debe estar entre 60/40 y 300/200</string>
     <string name="systolic_and_diastolic_must_be_numbers">Sistólica y diastólica deben ser números</string>
     <string name="added_successfully">Agregado exitosamente</string>
-    <string name="invalid_input_must_be_between_30_and_40">Entrada inválida, debe estar entre 30 y 40</string>
-    <string name="invalid_input_must_be_between_40_and_120">Entrada inválida, debe estar entre 40 y 120</string>
-    <string name="invalid_input_must_be_between_1_and_250">Entrada inválida, debe estar entre 1 y 250</string>
-    <string name="invalid_input_must_be_between_1_and_150">Entrada inválida, debe estar entre 1 y 150</string>
+    <string name="invalid_input_must_be_between_30_and_40">La temperatura corporal, debe estar entre 30 y 40</string>
+    <string name="invalid_input_must_be_between_40_and_120">frecuencia del pulso, debe estar entre 40 y 120</string>
+    <string name="invalid_input_must_be_between_1_and_250">altura, debe estar entre 1 y 250</string>
+    <string name="invalid_input_must_be_between_1_and_150">Peso, debe estar entre 1 y 150</string>
     <string name="unable_to_add_health_record">No se puede agregar el registro de salud.</string>
-    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">¿Estás seguro de que quieres salir? Se perderán tus datos.</string>
+    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">¿Está seguro de que desea cancelar la adición de este recurso? Tus datos se perderán</string>
     <string name="yes_i_want_to_exit">"Sí, quiero salir. "</string>
     <string name="my_health_saved_successfully">Mi salud guardada correctamente</string>
     <string name="health_record_not_available">Registro de salud no disponible.</string>

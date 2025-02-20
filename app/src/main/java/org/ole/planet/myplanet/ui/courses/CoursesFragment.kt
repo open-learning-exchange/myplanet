@@ -107,7 +107,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             btnRemove.visibility = View.GONE
             btnArchive.visibility = View.GONE
         }
-
+        setArchiveAndRemoveButtonState()
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
@@ -254,6 +254,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 isCheckboxChangedByCode = false
                 return@setOnCheckedChangeListener
             }
+            setArchiveAndRemoveButtonState()
             if (isChecked) {
                 adapterCourses.selectAllItems(true)
                 selectAll.text = getString(R.string.unselect_all)
@@ -264,6 +265,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
 
         checkList()
+    }
+
+    private fun setArchiveAndRemoveButtonState(){
+        btnArchive.isEnabled = selectedItems?.size!! != 0
+        btnRemove.isEnabled = selectedItems?.size!! != 0
     }
 
     private fun checkList() {
@@ -346,6 +352,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     override fun onSelectedListChange(list: MutableList<RealmMyCourse?>) {
         selectedItems = list
         changeButtonStatus()
+        setArchiveAndRemoveButtonState()
     }
 
     override fun onTagClicked(tag: RealmTag?) {

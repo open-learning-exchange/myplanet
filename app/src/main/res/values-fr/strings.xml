@@ -514,6 +514,7 @@
     <string name="use_phone_number_as_password">Utiliser le numéro de téléphone comme mot de passe</string>
     <string name="feedback">Retour d\'information</string>
     <string name="add_member">Ajouter un membre</string>
+    <string name="exit">"Confirmer la sortie"</string>
     <string name="confirm_exit">Êtes-vous sûr de vouloir quitter cette équipe ?</string>
     <string name="update_profile_alert">Veuillez compléter votre profil pour profiter de toutes les fonctionnalités</string>
     <string name="other_notes">Autres notes</string>
@@ -778,12 +779,12 @@
     <string name="bp_must_be_between_60_40_and_300_200">La tension artérielle doit être entre 60/40 et 300/200</string>
     <string name="systolic_and_diastolic_must_be_numbers">La systolique et la diastolique doivent être des nombres</string>
     <string name="added_successfully">Ajouté avec succès</string>
-    <string name="invalid_input_must_be_between_30_and_40">Entrée invalide, doit être entre 30 et 40</string>
-    <string name="invalid_input_must_be_between_40_and_120">Entrée invalide, doit être entre 40 et 120</string>
-    <string name="invalid_input_must_be_between_1_and_250">Entrée invalide, doit être entre 1 et 250</string>
-    <string name="invalid_input_must_be_between_1_and_150">Entrée invalide, doit être entre 1 et 150</string>
+    <string name="invalid_input_must_be_between_30_and_40">la température corporelle, doit être entre 30 et 40</string>
+    <string name="invalid_input_must_be_between_40_and_120">fréquence du pouls, doit être entre 40 et 120</string>
+    <string name="invalid_input_must_be_between_1_and_250">Hauteur, doit être entre 1 et 250</string>
+    <string name="invalid_input_must_be_between_1_and_150">Poids, doit être entre 1 et 150</string>
     <string name="unable_to_add_health_record">Impossible d\'ajouter un dossier de santé.</string>
-    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">Êtes-vous sûr de vouloir quitter ? Vos données seront perdues.</string>
+    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">Êtes-vous sûr de vouloir annuler l\'ajout de cette ressource ? Vos données seront perdues</string>
     <string name="yes_i_want_to_exit">"Oui, je veux quitter. "</string>
     <string name="my_health_saved_successfully">Mon dossier de santé enregistré avec succès</string>
     <string name="health_record_not_available">Dossier de santé non disponible.</string>
