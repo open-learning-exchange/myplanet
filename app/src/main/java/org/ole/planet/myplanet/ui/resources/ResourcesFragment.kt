@@ -97,7 +97,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             tvSelected.visibility = View.VISIBLE
         }
         initArrays()
-        updateTvDelete()
+        hideButton()
 
         if(userModel?.isGuest() == true){
             tvAddToLib.visibility = View.GONE
@@ -157,7 +157,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         checkList()
 
         selectAll.setOnClickListener {
-            updateTvDelete()
+            hideButton()
             val allSelected = selectedItems?.size == adapterLibrary.getLibraryList().size
             adapterLibrary.selectAllItems(!allSelected)
             if (allSelected) {
@@ -184,8 +184,18 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             homeItemClickListener = context
         }
     }
-    private fun updateTvDelete(){
+
+    private fun hideButton(){
         tvDelete?.isEnabled = selectedItems?.size!! != 0
+        tvAddToLib.isEnabled = selectedItems?.size!! != 0
+        if(selectedItems?.size!! != 0){
+            if(isMyCourseLib) tvDelete?.visibility = View.VISIBLE
+            else tvAddToLib.visibility = View.VISIBLE
+        } else {
+            if(isMyCourseLib) tvDelete?.visibility = View.GONE
+            else tvAddToLib.visibility = View.GONE
+        }
+
     }
 
     private fun checkList() {
@@ -266,7 +276,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun onSelectedListChange(list: MutableList<RealmMyLibrary?>) {
         selectedItems = list
         changeButtonStatus()
-        updateTvDelete()
+        hideButton()
     }
 
     override fun onTagClicked(realmTag: RealmTag) {
