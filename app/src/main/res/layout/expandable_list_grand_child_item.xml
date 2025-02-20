@@ -27,7 +27,6 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent" />
-
         <TextView
                 android:id="@+id/textView"
                 android:layout_width="0dp"
@@ -41,6 +40,5 @@
                 app:layout_constraintStart_toEndOf="@id/teamIcon"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintBottom_toBottomOf="parent" />
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>
