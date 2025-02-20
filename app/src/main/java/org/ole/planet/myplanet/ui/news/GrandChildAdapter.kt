@@ -19,7 +19,7 @@ class GrandChildAdapter(private val items: List<RealmMyTeam>, private val sectio
             if (section == itemView.context.getString(R.string.teams)) {
                 teamIcon.setImageResource(R.drawable.team)
             } else {
-                teamIcon.setImageResource(R.drawable.enterprises)
+                teamIcon.setImageResource(R.drawable.business)
             }
             itemView.setOnClickListener { onClick(item) }
         }
