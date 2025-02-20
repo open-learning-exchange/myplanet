@@ -123,7 +123,7 @@
     <string name="inactive_message">Isticmalahu ma hawlgelin, fadlan la xidhiidh maamulaha ama maareeyaha si aad u hawlgeliso akoonkaaga.</string>
     <string name="archive_mycourse">Kaydi myCourse</string>
     <string name="menu_achievement">Guulaha</string>
-    <string name="edit_achievement">wax ka beddel guul </string>
+    <string name="edit_achievement">Wax ka beddel guulaha</string>
     <string name="add_resources">Kudar Khayraadka</string>
     <string name="description">Sharaxaad</string>
     <string name="title_asterisk">Cuqaal *</string>
@@ -514,6 +514,7 @@
     <string name="use_phone_number_as_password">Isticmaal Lambarka Taleefonka Sirta</string>
     <string name="feedback">Rajayn</string>
     <string name="add_member">Ku Dar Xubin</string>
+    <string name="exit">"Xaqiiji Bixinta"</string>
     <string name="confirm_exit">Ma hubtaa inaad ka tashato kooxan?</string>
     <string name="update_profile_alert">Fadlan Buuxi Profaylkaaga si aad u hesho tallaabooyin oo dhan</string>
     <string name="other_notes">Fikirro Kale</string>
@@ -783,7 +784,7 @@
     <string name="invalid_input_must_be_between_1_and_250">Galin waajib ah, waa in lagu jiro 1 ilaa 250</string>
     <string name="invalid_input_must_be_between_1_and_150">Galin waajib ah, waa in lagu jiro 1 ilaa 150</string>
     <string name="unable_to_add_health_record">Lama helayno diiwaan caafimaad</string>
-    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">Ma hubtaa in aad ka cabsato? Waxaad kala baxaysaan macluumaadkaaga.</string>
+    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">Ma hubtaa inaad rabto inaad tirtirto ku darista kheyraadkan? Xogtaadu way lumi doontaa</string>
     <string name="yes_i_want_to_exit">"Haa, waxaan rabaa inaan ka cabsado. "</string>
     <string name="my_health_saved_successfully">Caafimaadkaygii ayaa si guul ah lagu kayd geliyey</string>
     <string name="health_record_not_available">Diiwaanada Caafimaadka ma helayo.</string>
@@ -1236,5 +1237,7 @@
     <string name="beta_fast_sync">beta sinkron degdeg ah</string>
     <string name="user_verification_in_progress">Hubinta isticmaalaha ayaa socota. Fadlan sug inta aan xogta ka shaqeynayno.</string>
     <string name="go_to_mylibrary">Tag Maktabaddayda</string>
+    <string name="choose_an_option">Dooro ikhtiyaar</string>
+    <string name="welcome_back">Soo dhawoow %1$s</string>
 
 </resources>
