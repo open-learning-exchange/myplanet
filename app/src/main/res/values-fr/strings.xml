@@ -123,7 +123,7 @@
     <string name="inactive_message">Utilisateur non activé, veuillez contacter l\'administrateur ou le responsable pour activer votre compte.</string>
     <string name="archive_mycourse">Archiver monCours</string>
     <string name="menu_achievement">Réalisations</string>
-    <string name="edit_achievement">Modifier la réalisation</string>
+    <string name="edit_achievement">Modifier les réalisations</string>
     <string name="add_resources">Ajouter des ressources</string>
     <string name="description">Description</string>
     <string name="title_asterisk">Titre *</string>
@@ -514,6 +514,7 @@
     <string name="use_phone_number_as_password">Utiliser le numéro de téléphone comme mot de passe</string>
     <string name="feedback">Retour d\'information</string>
     <string name="add_member">Ajouter un membre</string>
+    <string name="exit">"Confirmer la sortie"</string>
     <string name="confirm_exit">Êtes-vous sûr de vouloir quitter cette équipe ?</string>
     <string name="update_profile_alert">Veuillez compléter votre profil pour profiter de toutes les fonctionnalités</string>
     <string name="other_notes">Autres notes</string>
@@ -783,7 +784,7 @@
     <string name="invalid_input_must_be_between_1_and_250">Entrée invalide, doit être entre 1 et 250</string>
     <string name="invalid_input_must_be_between_1_and_150">Entrée invalide, doit être entre 1 et 150</string>
     <string name="unable_to_add_health_record">Impossible d\'ajouter un dossier de santé.</string>
-    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">Êtes-vous sûr de vouloir quitter ? Vos données seront perdues.</string>
+    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">Êtes-vous sûr de vouloir annuler l\'ajout de cette ressource ? Vos données seront perdues</string>
     <string name="yes_i_want_to_exit">"Oui, je veux quitter. "</string>
     <string name="my_health_saved_successfully">Mon dossier de santé enregistré avec succès</string>
     <string name="health_record_not_available">Dossier de santé non disponible.</string>
@@ -1236,6 +1237,7 @@
     <string name="beta_fast_sync">synchronisation rapide bêta</string>
     <string name="user_verification_in_progress">Vérification de l\'utilisateur en cours. Veuillez patienter pendant que nous traitons les données.</string>
     <string name="go_to_mylibrary">Aller à Ma Bibliothèque</string>
+    <string name="choose_an_option">Choisissez une option</string>
     <string name="welcome_back">Bienvenue %1$s</string>
 
 </resources>

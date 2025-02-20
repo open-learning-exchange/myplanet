@@ -41,6 +41,7 @@ class AddResourceActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
         activityAddResourceBinding = ActivityAddResourceBinding.inflate(layoutInflater)
         setContentView(activityAddResourceBinding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -185,7 +186,21 @@ class AddResourceActivity : AppCompatActivity() {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == android.R.id.home) finish()
-        return super.onOptionsItemSelected(item)
+        return when (item.itemId) {
+            android.R.id.home -> {
+                showExitConfirmationDialog()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+    private fun showExitConfirmationDialog() {
+        AlertDialog.Builder(this,R.style.AlertDialogTheme)
+            .setMessage(R.string.are_you_sure_you_want_to_exit_your_data_will_be_lost)
+            .setPositiveButton(R.string.yes_i_want_to_exit) { _, _ ->
+                finish()
+            }
+            .setNegativeButton(R.string.no, null)
+            .show()
     }
 }
