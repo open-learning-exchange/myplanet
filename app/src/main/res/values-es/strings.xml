@@ -735,7 +735,7 @@
     <string name="level_is_required">Se requiere nivel</string>
     <string name="subject_is_required">Se requiere asignatura</string>
     <string name="enter_resource_detail">Ingresa los detalles del recurso</string>
-    <string name="resource_saved_to_my_personal">Recurso guardado en miPersonal</string>
+    <string name="resource_saved_to_my_personal">Recurso guardado en myPersonal</string>
     <string name="invalid_resource_url">URL de recurso no válida</string>
     <string name="my_library">" mi biblioteca"</string>
     <string name="link_not_available">Enlace no disponible</string>

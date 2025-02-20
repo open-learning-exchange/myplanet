@@ -735,7 +735,7 @@
     <string name="level_is_required">Heerka waa loo baahan yahay</string>
     <string name="subject_is_required">Mawduuca waa loo baahan yahay</string>
     <string name="enter_resource_detail">Geli faahfaahinta khadka</string>
-    <string name="resource_saved_to_my_personal">Khadi laga keydiyey shakhsi</string>
+    <string name="resource_saved_to_my_personal">Khayraadka waxaa lagu keydiyay myPersonal</string>
     <string name="invalid_resource_url">url kheyraad aan sax ahayn</string>
     <string name="my_library">"Maktabaddayda"</string>
     <string name="link_not_available">Xogta lama helin</string>
