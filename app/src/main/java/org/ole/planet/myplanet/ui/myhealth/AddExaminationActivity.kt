@@ -162,7 +162,11 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         activityAddExaminationBinding.containerOtherDiagnosis.removeAllViews()
         val chipCloud = ChipCloud(this, activityAddExaminationBinding.containerOtherDiagnosis, config)
         for (s in customDiag?: emptySet()) {
-            chipCloud.addChip(s)
+            if (s.isNullOrBlank()) {
+                    continue
+            } else {
+                    chipCloud.addChip(s)
+            }
         }
         chipCloud.setDeleteListener { _: Int, s1: String? -> customDiag?.remove(s1) }
         preloadCustomDiagnosis(chipCloud)
