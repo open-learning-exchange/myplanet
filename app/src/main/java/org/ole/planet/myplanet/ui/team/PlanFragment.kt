@@ -1,15 +1,24 @@
 package org.ole.planet.myplanet.ui.team
 
+import android.app.AlertDialog
+import android.content.Context
 import android.os.Bundle
 import android.text.Html
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.FragmentActivity
+import io.realm.Realm
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import org.ole.planet.myplanet.utilities.Utilities
 
 class PlanFragment : BaseTeamFragment() {
     private lateinit var fragmentPlanBinding: FragmentPlanBinding
@@ -53,30 +62,88 @@ class PlanFragment : BaseTeamFragment() {
             editTeam()
         }
     }
-
     private fun editTeam() {
         if (!isAdded) {
+            Log.d("EditTeam", "Fragment is not added, returning.")
             return
         }
+        Log.d("EditTeam", "Existing TeamFragment found, invoking createTeamAlert.")
+        team?.let { showCreateTeamDialog(requireContext(), requireActivity(), mRealm, it) }
 
-        val existingTeamFragment = parentFragmentManager.findFragmentByTag("TeamFragment") as? TeamFragment
+    }
 
-        if (existingTeamFragment != null) {
-            team?.let { existingTeamFragment.createTeamAlert(it) }
+    fun showCreateTeamDialog(context: Context, activity: FragmentActivity, realm: Realm, team: RealmMyTeam?) {
+        Log.d("ShowCreateTeamDialog", "Opening dialog for team: ${team?.name}")
+
+        val alertCreateTeamBinding = AlertCreateTeamBinding.inflate(LayoutInflater.from(context))
+        val type = if (team?.type == "enterprise") "enterprise" else "team"
+
+        if (type == "enterprise") {
+            alertCreateTeamBinding.spnTeamType.visibility = View.GONE
+            alertCreateTeamBinding.etDescription.hint = context.getString(R.string.entMission)
+            alertCreateTeamBinding.etName.hint = context.getString(R.string.enter_enterprise_s_name)
         } else {
-            val newTeamFragment = TeamFragment()
-            parentFragmentManager.beginTransaction()
-                .add(newTeamFragment, "TeamFragment")
-                .commit()
+            alertCreateTeamBinding.etServices.visibility = View.GONE
+            alertCreateTeamBinding.etRules.visibility = View.GONE
+            alertCreateTeamBinding.etDescription.hint = context.getString(R.string.what_is_your_team_s_plan)
+            alertCreateTeamBinding.etName.hint = context.getString(R.string.enter_team_s_name)
+        }
 
-            parentFragmentManager.executePendingTransactions()
+        team?.let {
+            Log.d("ShowCreateTeamDialog", "Populating fields with existing team data.")
+            alertCreateTeamBinding.etServices.setText(it.services)
+            alertCreateTeamBinding.etRules.setText(it.rules)
+            alertCreateTeamBinding.etDescription.setText(it.description)
+            alertCreateTeamBinding.etName.setText(it.name)
+        }
 
-            newTeamFragment.view?.post {
-                team?.let { newTeamFragment.createTeamAlert(it) }
+        val builder = AlertDialog.Builder(activity, R.style.AlertDialogTheme)
+            .setTitle(String.format(context.getString(R.string.enter) + "%s " + context.getString(R.string.detail), type))
+            .setView(alertCreateTeamBinding.root)
+            .setPositiveButton(context.getString(R.string.save), null)
+            .setNegativeButton(context.getString(R.string.cancel), null)
 
+        val dialog = builder.create()
+
+        dialog.setOnShowListener {
+            val okButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            okButton.setOnClickListener {
+                val name = alertCreateTeamBinding.etName.text.toString().trim()
+                if (name.isEmpty()) {
+                    Log.d("ShowCreateTeamDialog", "Validation failed: Team name is empty.")
+                    Utilities.toast(activity, context.getString(R.string.name_is_required))
+                    alertCreateTeamBinding.etName.error = context.getString(R.string.please_enter_a_name)
+                } else {
+                    val userId = UserProfileDbHandler(activity).userModel?._id
+                    if (team != null) {
+                        Log.d("ShowCreateTeamDialog", "Updating team details in Realm.")
+                        realm.executeTransaction {
+                            team.name = name
+                            team.services = alertCreateTeamBinding.etServices.text.toString()
+                            team.rules = alertCreateTeamBinding.etRules.text.toString()
+                            team.description = alertCreateTeamBinding.etDescription.text.toString()
+                            team.createdBy = userId
+                            team.updated = true
+                        }
+                        updateUIWithTeamData(team)
+                    }
+                    Log.d("ShowCreateTeamDialog", "Team details updated successfully.")
+                    Utilities.toast(activity, context.getString(R.string.added_successfully))
+                    dialog.dismiss()
+                }
             }
         }
+        dialog.show()
     }
+
+    fun updateUIWithTeamData(updatedTeam: RealmMyTeam) {
+        Log.d("TeamFragment", "Updating UI with new team data: ${updatedTeam.name}")
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, this)
+            .setReorderingAllowed(true)  // Optionally allow reordering of fragments
+            .commit()
+    }
+
 
 
     override fun onNewsItemClick(news: RealmNews?) {}
