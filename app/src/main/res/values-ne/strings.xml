@@ -123,7 +123,7 @@
     <string name="inactive_message">प्रयोगकर्ता सक्रिय गरिएको छैन, कृपया प्रशासक वा प्रबन्धकलाई सम्पर्क गर्नुहोस् तपाईंको खाता सक्रिय गर्नको लागि।</string>
     <string name="archive_mycourse">मेरो पाठ्यक्रम आर्काइभ गर्नुहोस्</string>
     <string name="menu_achievement">साधारणता</string>
-    <string name="edit_achievement">साधारणता सम्पादन गर्नुहोस्</string>
+    <string name="edit_achievement">उपलब्धिहरू सम्पादन गर्नुहोस्</string>
     <string name="add_resources">स्रोतहरू थप्नुहोस्</string>
     <string name="description">वर्णन</string>
     <string name="title_asterisk">शीर्षक *</string>
@@ -514,6 +514,7 @@
     <string name="use_phone_number_as_password">फोन नम्बरलाई पासवर्डको रूपमा प्रयोग गर्नुहोस्</string>
     <string name="feedback">प्रतिक्रिया</string>
     <string name="add_member">सदस्य थप्नुहोस्</string>
+    <string name="exit">"निकास पुष्टि गर्नुहोस्"</string>
     <string name="confirm_exit">के तपाईं यस टिमबाट बाहिर निस्कन चाहानुहुन्छ?</string>
     <string name="update_profile_alert">कृपया पूर्ण फिचर प्रयोग गर्नका लागि तपाईंको प्रोफाइल पूरा गर्नुहोस्</string>
     <string name="other_notes">अन्य नोट</string>
@@ -734,7 +735,7 @@
     <string name="level_is_required">स्तर आवश्यक छ</string>
     <string name="subject_is_required">विषय आवश्यक छ</string>
     <string name="enter_resource_detail">स्रोत विवरण राख्नुहोस्</string>
-    <string name="resource_saved_to_my_personal">स्रोत मेरो व्यक्तिगतमा सुरक्षित गरियो</string>
+    <string name="resource_saved_to_my_personal">स्रोत myPersonal मा सुरक्षित गरियो।</string>
     <string name="invalid_resource_url">अवैध स्रोत url</string>
     <string name="my_library">" मेरो पुस्तकालय"</string>
     <string name="link_not_available">लिंक उपलब्ध छैन</string>
@@ -778,12 +779,12 @@
     <string name="bp_must_be_between_60_40_and_300_200">रक्तचाप ६०/४० र ३००/२०० को बीचमा हुनुपर्छ</string>
     <string name="systolic_and_diastolic_must_be_numbers">सिस्टोलिक र डायस्टोलिक अंशांकीय हुनुपर्छ</string>
     <string name="added_successfully">सफलतापूर्वक थपियो</string>
-    <string name="invalid_input_must_be_between_30_and_40">अमान्य इनपुट, ३० र ४० को बीचमा हुनुपर्छ</string>
-    <string name="invalid_input_must_be_between_40_and_120">अमान्य इनपुट, ४० र १२० को बीचमा हुनुपर्छ</string>
-    <string name="invalid_input_must_be_between_1_and_250">अमान्य इनपुट, १ र २५० को बीचमा हुनुपर्छ</string>
-    <string name="invalid_input_must_be_between_1_and_150">अमान्य इनपुट, १ र १५० को बीचमा हुनुपर्छ</string>
+    <string name="invalid_input_must_be_between_30_and_40">शरीरको तापमान, ३० र ४० को बीचमा हुनुपर्छ</string>
+    <string name="invalid_input_must_be_between_40_and_120">पल्स दर, ४० र १२० को बीचमा हुनुपर्छ</string>
+    <string name="invalid_input_must_be_between_1_and_250">उचाइ, १ र २५० को बीचमा हुनुपर्छ</string>
+    <string name="invalid_input_must_be_between_1_and_150">वजन, १ र १५० को बीचमा हुनुपर्छ</string>
     <string name="unable_to_add_health_record">स्वास्थ्य रेकर्ड थप्न सकिएन।</string>
-    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">के तपाईं निश्चित हुनुहुन्छ कि तपाईं बाहिर निस्कन चाहनुहुन्छ? तपाईंको डाटा हराइनेछ।</string>
+    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">के तपाईं यो स्रोत थप्न रद्द गर्न निश्चित हुनुहुन्छ? तपाईंको डाटा हराउनेछ</string>
     <string name="yes_i_want_to_exit">"हो, म बाहिर निस्कन चाहन्छु। "</string>
     <string name="my_health_saved_successfully">मेरो स्वास्थ्य सफलतापूर्वक सुरक्षित गरियो</string>
     <string name="health_record_not_available">स्वास्थ्य रेकर्ड उपलब्ध छैन।</string>
@@ -1233,6 +1234,11 @@
     <string name="fetching_ai_providers">एआई प्रदायकहरू प्राप्त गर्दै…</string>
     <string name="adopt_survey">सर्वेक्षण अपनाउनुहोस्</string>
     <string name="survey_adopted_successfully">सर्वेक्षण सफलतापूर्वक अपनाइयो!</string>
+    <string name="beta_fast_sync">बेटा फास्ट सिंक</string>
+    <string name="user_verification_in_progress">प्रयोगकर्ता प्रमाणीकरण प्रक्रिया भइरहेको छ। कृपया डेटा प्रशोधन भइरहेसम्म प्रतीक्षा गर्नुहोस्।</string>
+    <string name="go_to_mylibrary">मेरो पुस्तकालयमा जानुहोस्</string>
+    <string name="choose_an_option">एउटा विकल्प छान्नुहोस्</string>
+    <string name="welcome_back">स्वागतम् %1$s</string>
     <string name="more">थप</string>
 
 </resources>

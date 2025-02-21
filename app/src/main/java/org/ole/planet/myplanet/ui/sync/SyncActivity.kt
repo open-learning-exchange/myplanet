@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -97,6 +98,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private var showAdditionalServers = false
     private var serverAddressAdapter : ServerAddressAdapter? = null
     private lateinit var serverListAddresses: List<ServerAddressesModel>
+    private var syncStartTime: Long = 0L
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -420,6 +422,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onSyncStarted() {
+        syncStartTime = System.currentTimeMillis() // Start timing
+        Log.d("SYNC", "Sync started at: $syncStartTime")
         customProgressDialog?.setText(getString(R.string.syncing_data_please_wait))
         customProgressDialog?.show()
     }
@@ -446,9 +450,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 syncIconDrawable.selectDrawable(0)
                 syncIcon.invalidateDrawable(syncIconDrawable)
                 MainApplication.applicationScope.launch {
-                    createLog("synced successfully")
+                    createLog("synced successfully", "")
                 }
                 showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed))
+                val syncEndTime = System.currentTimeMillis() // End timing
+                val totalSyncDuration = syncEndTime - syncStartTime
+                Log.d("SYNC", "Sync completed at: $syncEndTime")
+                Log.d("SYNC", "Total sync duration: $totalSyncDuration ms")
+
                 if (settings.getBoolean("isAlternativeUrl", false)) {
                     editor.putString("alternativeUrl", "")
                     editor.putString("processedAlternativeUrl", "")
@@ -500,7 +509,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         cal_last_Sync = Calendar.getInstance(Locale.ENGLISH)
         cal_last_Sync.timeInMillis = settings.getLong("LastSync", 0)
         cal_today.timeInMillis = Date().time
-        val msDiff = Calendar.getInstance().timeInMillis - cal_last_Sync.timeInMillis
+        val msDiff = cal_today.timeInMillis - cal_last_Sync.timeInMillis
         val daysDiff = TimeUnit.MILLISECONDS.toDays(msDiff)
         return if (daysDiff >= maxDays) {
             val alertDialogBuilder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
@@ -642,6 +651,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
         dialogServerUrlBinding.clearData.setOnClickListener {
             clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data), false)
+        }
+
+        val isFastSync = settings.getBoolean("fastSync", false)
+        dialogServerUrlBinding.fastSync.isChecked = isFastSync
+        dialogServerUrlBinding.fastSync.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
+            editor.putBoolean("fastSync", b).apply()
         }
 
         neutralAction.setOnClickListener {

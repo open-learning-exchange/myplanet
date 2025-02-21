@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.net.Uri
+import android.os.*
 import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -50,6 +51,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.io.IOException
+import java.util.concurrent.Executors
 import kotlin.math.min
 
 class Service(private val context: Context) {
@@ -306,40 +308,46 @@ class Service(private val context: Context) {
         }
     }
 
-    fun syncPlanetServers(realm: Realm, callback: SuccessListener) {
+    fun syncPlanetServers(callback: SuccessListener) {
         retrofitInterface?.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true")?.enqueue(object : Callback<JsonObject?> {
             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                 if (response.body() != null) {
                     val arr = JsonUtils.getJsonArray("rows", response.body())
-                    if (!realm.isClosed) {
-                        realm.executeTransactionAsync({ realm1: Realm ->
-                            realm1.delete(RealmCommunity::class.java)
-                            for (j in arr) {
-                                var jsonDoc = j.asJsonObject
-                                jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-                                val id = JsonUtils.getString("_id", jsonDoc)
-                                val community = realm1.createObject(RealmCommunity::class.java, id)
-                                if (JsonUtils.getString("name", jsonDoc) == "learning") {
-                                    community.weight = 0
+
+                    Executors.newSingleThreadExecutor().execute {
+                        val backgroundRealm = Realm.getDefaultInstance()
+                        try {
+                            backgroundRealm.executeTransaction { realm1 ->
+                                realm1.delete(RealmCommunity::class.java)
+                                for (j in arr) {
+                                    var jsonDoc = j.asJsonObject
+                                    jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+                                    val id = JsonUtils.getString("_id", jsonDoc)
+                                    val community = realm1.createObject(RealmCommunity::class.java, id)
+                                    if (JsonUtils.getString("name", jsonDoc) == "learning") {
+                                        community.weight = 0
+                                    }
+                                    community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
+                                    community.name = JsonUtils.getString("name", jsonDoc)
+                                    community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
+                                    community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
                                 }
-                                community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
-                                community.name = JsonUtils.getString("name", jsonDoc)
-                                community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
-                                community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
                             }
-                        }, {
-                            realm.close()
-                            callback.onSuccess("Server sync successfully")
-                        }) { error: Throwable ->
-                            realm.close()
-                            error.printStackTrace()
+
+                            Handler(Looper.getMainLooper()).post {
+                                callback.onSuccess("Server sync successful")
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        } finally {
+                            backgroundRealm.close()
                         }
                     }
                 }
             }
 
             override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                realm.close()
+                callback.onSuccess("Server sync failed")
             }
         })
     }
@@ -347,9 +355,7 @@ class Service(private val context: Context) {
     fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity, callerActivity: String) {
         val serverUrlMapper = ServerUrlMapper(context)
         val mapping = serverUrlMapper.processUrl(url)
-
-        val urlsToTry = mutableListOf(url)
-        mapping.alternativeUrl?.let { urlsToTry.add(it) }
+        val urlsToTry = mutableListOf(url).apply { mapping.alternativeUrl?.let { add(it) } }
 
         MainApplication.applicationScope.launch {
             val customProgressDialog = withContext(Dispatchers.Main) {
@@ -361,28 +367,14 @@ class Service(private val context: Context) {
 
             try {
                 val result = withContext(Dispatchers.IO) {
-                    val deferredResults = urlsToTry.map { currentUrl ->
+                    urlsToTry.map { currentUrl ->
                         async {
                             try {
-                                val versionsResponse =
-                                    try {
-                                        val response = retrofitInterface?.getConfiguration("$currentUrl/versions")?.execute()
-                                        response
-                                    } catch (e: java.net.ConnectException) {
-                                        e.printStackTrace()
-                                        null
-                                    } catch (e: java.net.SocketTimeoutException) {
-                                        e.printStackTrace()
-                                        null
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                        null
-                                    }
-
+                                val versionsResponse = retrofitInterface?.getConfiguration("$currentUrl/versions")?.execute()
                                 if (versionsResponse?.isSuccessful == true) {
                                     val jsonObject = versionsResponse.body()
-                                    val currentVersion = "${context.resources.getText(R.string.app_version)}"
                                     val minApkVersion = jsonObject?.get("minapk")?.asString
+                                    val currentVersion = context.getString(R.string.app_version)
 
                                     if (minApkVersion != null && isVersionAllowed(currentVersion, minApkVersion)) {
                                         val uri = Uri.parse(currentUrl)
@@ -398,28 +390,30 @@ class Service(private val context: Context) {
                                             customProgressDialog.setText(context.getString(R.string.checking_server))
                                         }
 
-                                        val configResponse = retrofitInterface?.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true")?.execute()
+                                        val configResponse = withContext(Dispatchers.IO) {
+                                            retrofitInterface.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true").execute()
+                                        }
 
-                                        if (configResponse?.isSuccessful == true) {
+                                        if (configResponse.isSuccessful) {
                                             val rows = configResponse.body()?.getAsJsonArray("rows")
                                             if (rows != null && rows.size() > 0) {
-                                                val firstRow = rows.get(0).asJsonObject
+                                                val firstRow = rows[0].asJsonObject
                                                 val id = firstRow.getAsJsonPrimitive("id").asString
                                                 val doc = firstRow.getAsJsonObject("doc")
                                                 val code = doc.getAsJsonPrimitive("code").asString
                                                 val parentCode = doc.getAsJsonPrimitive("parentCode").asString
-                                                preferences.edit().putString("parentCode", parentCode).apply()
+
+                                                withContext(Dispatchers.IO) {
+                                                    preferences.edit().putString("parentCode", parentCode).apply()
+                                                }
+
                                                 if (doc.has("models")) {
-                                                    val modelsJsonObject = doc.getAsJsonObject("models")
-                                                    val modelsMap = mutableMapOf<String, String>()
+                                                    val modelsMap = doc.getAsJsonObject("models").entrySet()
+                                                        .associate { it.key to it.value.asString }
 
-                                                    for ((key, value) in modelsJsonObject.entrySet()) {
-                                                        modelsMap[key] = value.asString
+                                                    withContext(Dispatchers.IO) {
+                                                        preferences.edit().putString("ai_models", Gson().toJson(modelsMap)).apply()
                                                     }
-
-                                                    val modelsString = Gson().toJson(modelsMap)
-
-                                                    preferences.edit().putString("ai_models", modelsString).apply()
                                                 }
                                                 return@async UrlCheckResult.Success(id, code, currentUrl)
                                             }
@@ -432,9 +426,7 @@ class Service(private val context: Context) {
                                 return@async UrlCheckResult.Failure(currentUrl)
                             }
                         }
-                    }
-                    val result = deferredResults.awaitFirst { it is UrlCheckResult.Success }
-                    result
+                    }.awaitFirst { it is UrlCheckResult.Success }
                 }
 
                 when (result) {

@@ -76,7 +76,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         lateinit var defaultPref: SharedPreferences
 
-        fun createLog(type: String) {
+        fun createLog(type: String, error: String) {
             runBlocking {
                 withContext(Dispatchers.IO) {
                     val realm = Realm.getDefaultInstance()
@@ -92,7 +92,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                             log.time = "${Date().time}"
                             log.page = ""
                             log.version = getVersionName(context)
-                            log.type = type
+                            if (type == "File Not Found") {
+                                log.type = type
+                                log.error = error
+                            } else {
+                                log.type = type
+                            }
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -335,7 +340,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             isFirstLaunch = false
         } else {
             applicationScope.launch {
-                createLog("foreground")
+                createLog("foreground", "")
             }
         }
     }
@@ -344,7 +349,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     private fun onAppStarted() {
         applicationScope.launch {
-            createLog("new login")
+            createLog("new login", "")
         }
     }
 
