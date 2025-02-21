@@ -100,9 +100,9 @@ class AdapterHealthExamination(private val context: Context, private val list: L
         if (realmExamination != null) {
             if (realmExamination.date >= time) { dialog.setButton(DialogInterface.BUTTON_NEUTRAL, context.getString(R.string.edit)) { _: DialogInterface?, _: Int ->
                 context.startActivity(Intent(context, AddExaminationActivity::class.java)
-                    .putExtra("id", list[position]._id)
+                    .putExtra("id", list!![position]._id)
                     .putExtra("userId", mh._id))
-            }
+                }
             }
         }
         dialog.show()
