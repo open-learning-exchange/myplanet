@@ -208,6 +208,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 R.id.action_disclaimer -> openCallFragment(DisclaimerFragment(), DisclaimerFragment::class.java.simpleName)
                 R.id.action_about -> openCallFragment(AboutFragment(), AboutFragment::class.java.simpleName)
                 R.id.action_logout -> logout()
+                R.id.change_language -> {
+                    SettingActivity.SettingFragment.languageChanger(this)
+                }
                 else -> {}
             }
             true

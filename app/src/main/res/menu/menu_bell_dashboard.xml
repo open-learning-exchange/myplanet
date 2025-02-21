@@ -34,6 +34,12 @@
         app:actionLayout="@layout/custom_notification_badge"
         app:showAsAction="always"/>
     <item
+            android:id="@+id/change_language"
+            android:icon="@drawable/translate"
+            android:title="@string/language"
+            android:contentDescription="@string/language"
+            app:showAsAction="always" />
+    <item
         android:id="@+id/action_about"
         android:icon="@drawable/ic_my_survey"
         android:contentDescription="@string/action_about"
