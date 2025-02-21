@@ -107,7 +107,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             btnRemove.visibility = View.GONE
             btnArchive.visibility = View.GONE
         }
-        setArchiveAndRemoveButtonState()
+        hideButtons()
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
@@ -254,7 +254,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 isCheckboxChangedByCode = false
                 return@setOnCheckedChangeListener
             }
-            setArchiveAndRemoveButtonState()
+            hideButtons()
             if (isChecked) {
                 adapterCourses.selectAllItems(true)
                 selectAll.text = getString(R.string.unselect_all)
@@ -267,9 +267,24 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         checkList()
     }
 
-    private fun setArchiveAndRemoveButtonState(){
+    private fun hideButtons() {
         btnArchive.isEnabled = selectedItems?.size!! != 0
         btnRemove.isEnabled = selectedItems?.size!! != 0
+        if (selectedItems?.size!! != 0) {
+            if (isMyCourseLib) {
+                btnArchive.visibility = View.VISIBLE
+                btnRemove.visibility = View.VISIBLE
+            } else {
+                tvAddToLib.visibility = View.VISIBLE
+            }
+        } else {
+            if (isMyCourseLib) {
+                btnArchive.visibility = View.GONE
+                btnRemove.visibility = View.GONE
+            } else {
+                tvAddToLib.visibility = View.GONE
+            }
+        }
     }
 
     private fun checkList() {
@@ -352,7 +367,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     override fun onSelectedListChange(list: MutableList<RealmMyCourse?>) {
         selectedItems = list
         changeButtonStatus()
-        setArchiveAndRemoveButtonState()
+        hideButtons()
     }
 
     override fun onTagClicked(tag: RealmTag?) {
