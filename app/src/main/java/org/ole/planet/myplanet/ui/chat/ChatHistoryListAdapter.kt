@@ -205,19 +205,20 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
         val grandChildDialogBinding = GrandChildRecyclerviewDialogBinding.inflate(LayoutInflater.from(context))
         var dialog: AlertDialog? = null
 
-        if (section == context.getString(R.string.teams)) {
-            grandChildDialogBinding.title.text = context.getString(R.string.team)
+        grandChildDialogBinding.title.text = if (section == context.getString(R.string.teams)) {
+            context.getString(R.string.team)
         } else {
-            grandChildDialogBinding.title.text = context.getString(R.string.enterprises)
+            context.getString(R.string.enterprises)
         }
-        val grandChildAdapter = GrandChildAdapter(items) { selectedItem ->
-            showEditTextAndShareButton(selectedItem, context.getString(R.string.teams), realmChatHistory)
+
+        val grandChildAdapter = GrandChildAdapter(items, section) { selectedItem ->
+            showEditTextAndShareButton(selectedItem, section, realmChatHistory)
             dialog?.dismiss()
         }
         grandChildDialogBinding.recyclerView.layoutManager = LinearLayoutManager(context)
         grandChildDialogBinding.recyclerView.adapter = grandChildAdapter
 
-        val builder = AlertDialog.Builder(context,R.style.CustomAlertDialog)
+        val builder = AlertDialog.Builder(context, R.style.CustomAlertDialog)
         builder.setView(grandChildDialogBinding.root)
         builder.setPositiveButton(context.getString(R.string.close)) { _, _ ->
             dialog?.dismiss()
