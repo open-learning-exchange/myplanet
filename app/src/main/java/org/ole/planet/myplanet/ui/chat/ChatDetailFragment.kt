@@ -2,17 +2,19 @@ package org.ole.planet.myplanet.ui.chat
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
 import android.text.*
 import android.view.*
 import android.widget.Button
+import android.widget.LinearLayout
 import android.widget.TableRow
+import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.*
+import com.google.android.material.button.MaterialButton
 import com.google.gson.*
 import com.google.gson.reflect.TypeToken
 import io.realm.Realm
@@ -85,7 +87,7 @@ class ChatDetailFragment : Fragment() {
         }
 
         fragmentChatDetailBinding.buttonGchatSend.setOnClickListener {
-            val aiProvider = AiProvider(name = aiName, model = aiModel)
+            val aiProvider = AiProvider(name = aiName.lowercase(), model = aiModel)
             fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
             if (TextUtils.isEmpty("${fragmentChatDetailBinding.editGchatMessage.text}".trim())) {
                 fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
@@ -178,7 +180,7 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun checkAiProviders() {
-        val updateUrl = "${settings.getString("serverURL", "")}"
+        val updateUrl = settings.getString("serverURL", "") ?: ""
         val serverUrlMapper = ServerUrlMapper(requireContext())
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
@@ -190,7 +192,6 @@ class ChatDetailFragment : Fragment() {
                 mapping.alternativeUrl.let { alternativeUrl ->
                     val uri = Uri.parse(updateUrl)
                     val editor = settings.edit()
-
                     serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
                 }
             }
@@ -206,10 +207,16 @@ class ChatDetailFragment : Fragment() {
                                 try {
                                     val responseString = responseBody.string()
                                     val aiProvidersResponse: Map<String, Boolean> = Gson().fromJson(
-                                        responseString,
-                                        object : TypeToken<Map<String, Boolean>>() {}.type
+                                        responseString, object : TypeToken<Map<String, Boolean>>() {}.type
                                     )
-                                    updateAIButtons(aiProvidersResponse)
+
+                                    val primaryModel = if (aiProvidersResponse.containsKey("openai")) {
+                                        "openai"
+                                    } else {
+                                        aiProvidersResponse.keys.firstOrNull() ?: "openai"
+                                    }
+
+                                    updateAIButtons(aiProvidersResponse, primaryModel)
                                 } catch (e: JsonSyntaxException) {
                                     e.printStackTrace()
                                     onFailError()
@@ -232,14 +239,15 @@ class ChatDetailFragment : Fragment() {
         }
     }
 
-    private fun updateAIButtons(aiProvidersResponse: Map<String, Boolean>) {
+    private fun updateAIButtons(aiProvidersResponse: Map<String, Boolean>, primaryModel: String) {
         if (!isAdded || context == null) return
 
-        val aiTableRow = fragmentChatDetailBinding.aiTableRow
-        aiTableRow.removeAllViews()
+        val aiContainer = fragmentChatDetailBinding.aiContainer
+        aiContainer.removeAllViews()
 
         val currentContext = requireContext()
         val modelsString = settings.getString("ai_models", null)
+
         val modelsMap: Map<String, String> = if (modelsString != null) {
             Gson().fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type)
         } else {
@@ -247,41 +255,103 @@ class ChatDetailFragment : Fragment() {
         }
 
         val providersMap = aiProvidersResponse.filter { it.value }
-
         if (providersMap.isEmpty()) return
 
-        providersMap.keys.forEachIndexed { index, providerName ->
-            val modelName = modelsMap[providerName.lowercase()] ?: "default-model"
+        val displayedProviders = listOf(primaryModel)
+        val hiddenProviders = providersMap.keys.filter { it != primaryModel }
 
-            val button = Button(currentContext).apply {
-                text = providerName.lowercase(Locale.getDefault())
-                setTextColor(ContextCompat.getColor(currentContext, R.color.md_black_1000))
-                textSize = 18f
-                setTypeface(null, Typeface.BOLD)
-                setPadding(16, 8, 16, 8)
-                isAllCaps = false
-                setBackgroundColor(ContextCompat.getColor(currentContext, R.color.disable_color))
-                setOnClickListener { selectAI(this, providerName, modelName) }
-            }
-
-            aiTableRow.addView(button)
-
-            if (index < providersMap.size - 1) {
-                val divider = View(currentContext).apply {
-                    layoutParams = TableRow.LayoutParams(1, TableRow.LayoutParams.MATCH_PARENT).apply {
-                        setMargins(8, 0, 8, 0)
-                    }
-                    setBackgroundColor(ContextCompat.getColor(currentContext, R.color.hint_color))
-                }
-                aiTableRow.addView(divider)
-            }
+        displayedProviders.forEach { providerName ->
+            val modelName = modelsMap[providerName.lowercase()] ?: ""
+            val button = createStyledAIButton(providerName.lowercase(), modelName.lowercase(), currentContext)
+            aiContainer.addView(button)
         }
 
-        aiTableRow.getChildAt(0)?.performClick()
+        if (hiddenProviders.isNotEmpty()) {
+            val moreButton = createDropdownMenu(hiddenProviders, modelsMap, currentContext, aiContainer)
+            aiContainer.addView(moreButton)
+        }
+
+        aiContainer.getChildAt(0)?.performClick()
+    }
+
+    private fun createStyledAIButton(providerName: String, modelName: String, context: Context): MaterialButton {
+        return MaterialButton(context, null, R.attr.materialButtonOutlinedStyle).apply {
+            text = providerName.capitalize(Locale.getDefault())
+            setTextColor(ContextCompat.getColor(context, R.color.md_black_1000))
+            textSize = 18f
+            cornerRadius = 20
+            strokeWidth = 2
+            setPadding(25, 21, 25, 21)
+            setBackgroundColor(ContextCompat.getColor(context, R.color.disable_color))
+
+            layoutParams = TableRow.LayoutParams(
+                TableRow.LayoutParams.WRAP_CONTENT,
+                TableRow.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(14, 6, 14, 6)
+            }
+            setOnClickListener {
+                selectAI(this, providerName, modelName)
+            }
+
+            setOnLongClickListener {
+                (parent as? TableRow)?.removeView(this)
+                true
+            }
+        }
+    }
+
+    private fun createDropdownMenu(hiddenProviders: List<String>, modelsMap: Map<String, String>, context: Context, aiContainer: LinearLayout): MaterialButton {
+        return MaterialButton(context, null, R.attr.materialButtonOutlinedStyle).apply {
+            text = context.getString(R.string.more)
+            textSize = 18f
+            cornerRadius = 20
+            strokeWidth = 2
+            setPadding(25, 21, 25, 21)
+            setBackgroundColor(ContextCompat.getColor(context, R.color.disable_color))
+
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                setMargins(12, 4, 12, 4)
+            }
+
+            setOnClickListener { view ->
+                val popupMenu = PopupMenu(context, view)
+                hiddenProviders.forEach { providerName ->
+                    popupMenu.menu.add(providerName.capitalize(Locale.getDefault()))
+                }
+
+                popupMenu.setOnMenuItemClickListener { menuItem ->
+                    val selectedProvider = menuItem.title.toString().lowercase()
+                    val selectedModel = modelsMap[selectedProvider] ?: ""
+
+                    if (!isButtonAlreadyAdded(aiContainer, selectedProvider)) {
+                        val button = createStyledAIButton(selectedProvider, selectedModel.lowercase(), context)
+                        aiContainer.addView(button, aiContainer.childCount - 1)
+                    }
+
+                    true
+                }
+
+                popupMenu.show()
+            }
+        }
+    }
+
+    private fun isButtonAlreadyAdded(aiContainer: LinearLayout, providerName: String): Boolean {
+        for (i in 0 until aiContainer.childCount) {
+            val view = aiContainer.getChildAt(i)
+            if (view is MaterialButton && view.text.toString().equals(providerName, ignoreCase = true)) {
+                return true
+            }
+        }
+        return false
     }
 
     private fun selectAI(selectedButton: Button, providerName: String, modelName: String) {
-        val aiTableRow = fragmentChatDetailBinding.aiTableRow
+        val aiTableRow = fragmentChatDetailBinding.aiContainer
         val context = requireContext()
 
         for (i in 0 until aiTableRow.childCount) {
@@ -297,7 +367,7 @@ class ChatDetailFragment : Fragment() {
             }
         }
 
-        aiName = providerName
+        aiName = providerName.lowercase()
         aiModel = modelName
 
         clearChatDetail()
