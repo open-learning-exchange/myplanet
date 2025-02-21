@@ -1,0 +1,9 @@
+<!-- divider_spinner_item.xml -->
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+        android:insetLeft="16dp"
+        android:insetRight="16dp">
+    <shape>
+        <size android:height="1dp"/>
+        <solid android:color="@color/black_overlay" />
+    </shape>
+</inset>
