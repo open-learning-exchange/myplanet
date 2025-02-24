@@ -735,7 +735,7 @@
     <string name="level_is_required">Heerka waa loo baahan yahay</string>
     <string name="subject_is_required">Mawduuca waa loo baahan yahay</string>
     <string name="enter_resource_detail">Geli faahfaahinta khadka</string>
-    <string name="resource_saved_to_my_personal">Khadi laga keydiyey shakhsi</string>
+    <string name="resource_saved_to_my_personal">Khayraadka waxaa lagu keydiyay myPersonal</string>
     <string name="invalid_resource_url">url kheyraad aan sax ahayn</string>
     <string name="my_library">"Maktabaddayda"</string>
     <string name="link_not_available">Xogta lama helin</string>
@@ -779,10 +779,10 @@
     <string name="bp_must_be_between_60_40_and_300_200">Dhacdo dheecaan waa in uu ka dhiman yahay 60/40 ilaa 300/200</string>
     <string name="systolic_and_diastolic_must_be_numbers">Dhacdo dheecaanka iyo dheecaanku waa in ay yihiin lambarka</string>
     <string name="added_successfully">Ku daray si guul ah</string>
-    <string name="invalid_input_must_be_between_30_and_40">Galin waajib ah, waa in lagu jiro 30 ilaa 40</string>
-    <string name="invalid_input_must_be_between_40_and_120">Galin waajib ah, waa in lagu jiro 40 ilaa 120</string>
-    <string name="invalid_input_must_be_between_1_and_250">Galin waajib ah, waa in lagu jiro 1 ilaa 250</string>
-    <string name="invalid_input_must_be_between_1_and_150">Galin waajib ah, waa in lagu jiro 1 ilaa 150</string>
+    <string name="invalid_input_must_be_between_30_and_40">heerkulka jidhka, waa in lagu jiro 30 ilaa 40</string>
+    <string name="invalid_input_must_be_between_40_and_120">heerka garaaca garaaca, waa in lagu jiro 40 ilaa 120</string>
+    <string name="invalid_input_must_be_between_1_and_250">Dhererka, waa in lagu jiro 1 ilaa 250</string>
+    <string name="invalid_input_must_be_between_1_and_150">Miisaanka, waa in lagu jiro 1 ilaa 150</string>
     <string name="unable_to_add_health_record">Lama helayno diiwaan caafimaad</string>
     <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">Ma hubtaa inaad rabto inaad tirtirto ku darista kheyraadkan? Xogtaadu way lumi doontaa</string>
     <string name="yes_i_want_to_exit">"Haa, waxaan rabaa inaan ka cabsado. "</string>

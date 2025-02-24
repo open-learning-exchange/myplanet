@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.*
-import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -23,6 +22,7 @@ import com.afollestad.materialdialogs.*
 import io.realm.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -98,7 +98,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private var showAdditionalServers = false
     private var serverAddressAdapter : ServerAddressAdapter? = null
     private lateinit var serverListAddresses: List<ServerAddressesModel>
-    private var syncStartTime: Long = 0L
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -422,8 +421,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onSyncStarted() {
-        syncStartTime = System.currentTimeMillis() // Start timing
-        Log.d("SYNC", "Sync started at: $syncStartTime")
         customProgressDialog?.setText(getString(R.string.syncing_data_please_wait))
         customProgressDialog?.show()
     }
@@ -442,36 +439,76 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onSyncComplete() {
-        customProgressDialog?.dismiss()
-        if (::syncIconDrawable.isInitialized) {
-            runOnUiThread {
-                syncIconDrawable = syncIcon.drawable as AnimationDrawable
-                syncIconDrawable.stop()
-                syncIconDrawable.selectDrawable(0)
-                syncIcon.invalidateDrawable(syncIconDrawable)
-                MainApplication.applicationScope.launch {
-                    createLog("synced successfully", "")
-                }
-                showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed))
-                val syncEndTime = System.currentTimeMillis() // End timing
-                val totalSyncDuration = syncEndTime - syncStartTime
-                Log.d("SYNC", "Sync completed at: $syncEndTime")
-                Log.d("SYNC", "Total sync duration: $totalSyncDuration ms")
+        val activityContext = this@SyncActivity
 
-                if (settings.getBoolean("isAlternativeUrl", false)) {
-                    editor.putString("alternativeUrl", "")
-                    editor.putString("processedAlternativeUrl", "")
-                    editor.putBoolean("isAlternativeUrl", false)
-                    editor.apply()
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                var attempt = 0
+
+                while (true) {
+                    val realm = Realm.getDefaultInstance()
+                    var dataInserted = false
+
+                    try {
+                        realm.refresh()
+                        val realmResults = realm.where(RealmUserModel::class.java).findAll()
+                        if (!realmResults.isEmpty()) {
+                            dataInserted = true
+                            break
+                        }
+                    } finally {
+                        realm.close()
+                    }
+                    attempt++
+                    delay(1000)
                 }
-                downloadAdditionalResources()
-                if (defaultPref.getBoolean("beta_auto_download", false)) {
-                    backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
+
+                withContext(Dispatchers.Main) {
+                    customProgressDialog?.dismiss()
+
+                    if (::syncIconDrawable.isInitialized) {
+                        syncIconDrawable = syncIcon.drawable as AnimationDrawable
+                        syncIconDrawable.stop()
+                        syncIconDrawable.selectDrawable(0)
+                        syncIcon.invalidateDrawable(syncIconDrawable)
+                    }
+
+                    lifecycleScope.launch {
+                        createLog("synced successfully", "")
+                    }
+
+                    showSnack(activityContext.findViewById(android.R.id.content), getString(R.string.sync_completed))
+
+                    if (settings.getBoolean("isAlternativeUrl", false)) {
+                        editor.putString("alternativeUrl", "")
+                        editor.putString("processedAlternativeUrl", "")
+                        editor.putBoolean("isAlternativeUrl", false)
+                        editor.apply()
+                    }
+
+                    downloadAdditionalResources()
+
+                    val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
+                    if (betaAutoDownload) {
+                        withContext(Dispatchers.IO) {
+                            val downloadRealm = Realm.getDefaultInstance()
+                            try {
+                                backgroundDownload(downloadAllFiles(getAllLibraryList(downloadRealm)))
+                            } finally {
+                                downloadRealm.close()
+                            }
+                        }
+                    }
+
+                    cancelAll(activityContext)
+
+                    if (activityContext is LoginActivity) {
+                        activityContext.updateTeamDropdown()
+                    }
                 }
-                cancelAll(this)
-                if (this is LoginActivity) {
-                    this.updateTeamDropdown()
-                }
+
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }

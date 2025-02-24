@@ -186,17 +186,6 @@
                     android:textStyle="italic" />
             </LinearLayout>
 
-            <Button
-                android:id="@+id/clearData"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:background="@color/mainColor"
-                android:text="@string/clear_data"
-                android:textAllCaps="false"
-                android:textColor="@android:color/white"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/ltDeviceName" />
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <LinearLayout
@@ -238,5 +227,16 @@
             android:textColor="@color/daynight_textColor"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/linearLayout2" />
+        <Button
+            android:id="@+id/clearData"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="@color/mainColor"
+            android:text="@string/clear_data"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/fastSync" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>
