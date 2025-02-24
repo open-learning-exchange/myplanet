@@ -333,7 +333,12 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 if (userModel?.id?.startsWith("guest") == true) {
                     DialogUtils.guestDialog(requireContext())
                 } else {
-                    homeItemClickListener?.openMyFragment(CoursesFragment())
+                    val fragment = CoursesFragment().apply {
+                        arguments = Bundle().apply {
+                            putBoolean("isMyCourseLib", true)
+                        }
+                    }
+                    homeItemClickListener?.openMyFragment(fragment)
                 }
             }
             .setNegativeButton(R.string.ok) { dialog: DialogInterface, _: Int ->
@@ -432,21 +437,23 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun recreateFragment(fragment: Fragment) {
-        if (isMyCourseLib) {
-            val args = Bundle()
-            args.putBoolean("isMyCourseLib", true)
-            args.putString("courseLib", courseLib)
-            args.putSerializable("resources", resources?.let { ArrayList(it) })
-            fragment.arguments = args
-            val transaction = parentFragmentManager.beginTransaction()
-            transaction.replace(R.id.fragment_container, fragment)
-            transaction.addToBackStack(null)
-            transaction.commitAllowingStateLoss()
-        } else {
-            val transaction = parentFragmentManager.beginTransaction()
-            transaction.replace(R.id.fragment_container, fragment)
-            transaction.addToBackStack(null)
-            transaction.commitAllowingStateLoss()
+        if (isAdded && activity != null && !requireActivity().isFinishing) {
+            if (isMyCourseLib) {
+                val args = Bundle()
+                args.putBoolean("isMyCourseLib", true)
+                args.putString("courseLib", courseLib)
+                args.putSerializable("resources", resources?.let { ArrayList(it) })
+                fragment.arguments = args
+                val transaction = parentFragmentManager.beginTransaction()
+                transaction.replace(R.id.fragment_container, fragment)
+                transaction.addToBackStack(null)
+                transaction.commitAllowingStateLoss()
+            } else {
+                val transaction = parentFragmentManager.beginTransaction()
+                transaction.replace(R.id.fragment_container, fragment)
+                transaction.addToBackStack(null)
+                transaction.commitAllowingStateLoss()
+            }
         }
     }
 }
