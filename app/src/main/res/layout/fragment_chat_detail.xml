@@ -16,19 +16,26 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-    <TableLayout
-        android:id="@+id/aiTbLayout"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
 
-        <TableRow
-            android:id="@+id/aiTableRow"
+    <HorizontalScrollView
+        android:id="@+id/aiScrollView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fillViewport="true"
+        android:scrollbars="horizontal"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="10dp">
+
+        <LinearLayout
+            android:id="@+id/aiContainer"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
-    </TableLayout>
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="8dp" />
+    </HorizontalScrollView>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_gchat"
@@ -42,7 +49,7 @@
         app:layout_constraintBottom_toTopOf="@+id/text_gchat_indicator"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/aiTbLayout" />
+        app:layout_constraintTop_toBottomOf="@+id/aiScrollView" />
     <TextView
         android:id="@+id/text_gchat_indicator"
         android:layout_width="wrap_content"
