@@ -1,19 +1,24 @@
 package org.ole.planet.myplanet.ui.onBoarding
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.viewpager.widget.ViewPager
+import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityOnBoardingBinding
+import org.ole.planet.myplanet.model.ServerAddressesModel
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.DeepLinkManager
 import org.ole.planet.myplanet.utilities.FileUtils.copyAssets
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
@@ -85,7 +90,53 @@ class OnBoardingActivity : AppCompatActivity() {
         }
 
         setUiPageViewController()
+
+//        val deepLinkManager = DeepLinkManager(this)
+//        deepLinkManager.saveAllowedHosts(
+//            listOf(
+//                BuildConfig.PLANET_LEARNING_URL,
+//                BuildConfig.PLANET_GUATEMALA_URL,
+//                BuildConfig.PLANET_SANPABLO_URL,
+//                BuildConfig.PLANET_EARTH_URL,
+//                BuildConfig.PLANET_SOMALIA_URL,
+//                BuildConfig.PLANET_VI_URL,
+//                BuildConfig.PLANET_XELA_URL,
+//                BuildConfig.PLANET_URIUR_URL,
+//                BuildConfig.PLANET_RUIRU_URL,
+//                BuildConfig.PLANET_EMBAKASI_URL,
+//                BuildConfig.PLANET_CAMBRIDGE_URL,
+//                "192.168.1.202"
+//            )
+//        )
+//
+//        handleDeepLink(intent)
     }
+
+//    override fun onNewIntent(intent: Intent?) {
+//        super.onNewIntent(intent)
+//        handleDeepLink(intent)
+//    }
+//
+//    private fun handleDeepLink(intent: Intent?) {
+//        if (intent != null && Intent.ACTION_VIEW == intent.action) {
+//            val deepLinkUri: Uri? = intent.data
+//            if (deepLinkUri != null) {
+//                val host = deepLinkUri.host // e.g., "planet.embakasi.ole.org"
+//
+//                val deepLinkManager = DeepLinkManager(this)
+//                val allowedHosts = deepLinkManager.getAllowedHosts()
+//
+//                if (allowedHosts.contains(host)) {
+//                    Log.d("DeepLink", "✅ Valid deep link: $deepLinkUri")
+//                    // Handle valid deep link (e.g., navigate to a specific screen)
+//                } else {
+//                    Log.e("DeepLink", "❌ Invalid deep link host: $host")
+//                    // Close the app if the deep link is invalid
+//                    finishAffinity()
+//                }
+//            }
+//        }
+//    }
 
     private fun loadData() {
         val descArrayPage1 = intArrayOf(R.string.ob_desc1)
