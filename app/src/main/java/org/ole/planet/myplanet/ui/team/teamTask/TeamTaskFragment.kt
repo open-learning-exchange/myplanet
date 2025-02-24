@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.team.teamTask
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.DialogInterface
+import android.content.res.Configuration
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -14,10 +15,12 @@ import android.widget.TextView
 import android.widget.TimePicker
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.nex3z.togglebuttongroup.SingleSelectToggleGroup
+import com.nex3z.togglebuttongroup.button.LabelToggle
 import io.realm.RealmResults
 import io.realm.Sort
 import org.ole.planet.myplanet.R
@@ -162,17 +165,31 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         list = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId).findAll()
         setAdapter()
         showNoData(fragmentTeamTaskBinding.tvNodata, list?.size,"tasks")
+        val isDarkMode = (context?.resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES)
+
+        fragmentTeamTaskBinding.btnAll.setTextColor(ContextCompat.getColor(requireContext(),
+            if (isDarkMode) R.color.md_white_1000 else R.color.md_black_1000)
+        )
         fragmentTeamTaskBinding.taskToggle.setOnCheckedChangeListener { _: SingleSelectToggleGroup?, checkedId: Int ->
             currentTab = checkedId
             when (checkedId) {
                 R.id.btn_my -> {
                     myTasks()
+                    fragmentTeamTaskBinding.btnMy.setTextColor(ContextCompat.getColor(requireContext(),
+                        if (isDarkMode) R.color.md_white_1000 else R.color.md_black_1000)
+                    )
                 }
                 R.id.btn_completed -> {
                     completedTasks()
+                    fragmentTeamTaskBinding.btnCompleted.setTextColor(ContextCompat.getColor(requireContext(),
+                        if (isDarkMode) R.color.md_white_1000 else R.color.md_black_1000)
+                    )
                 }
                 else -> {
                     allTasks()
+                    fragmentTeamTaskBinding.btnAll.setTextColor(ContextCompat.getColor(requireContext(),
+                        if (isDarkMode) R.color.md_white_1000 else R.color.md_black_1000)
+                    )
                 }
             }
             setAdapter()
@@ -203,19 +220,29 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     }
 
     private fun setAdapter() {
+        val isDarkMode = (context?.resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES)
         if (isAdded) {
             when (currentTab) {
                 R.id.btn_my -> {
                     myTasks()
+                    fragmentTeamTaskBinding.btnMy.setTextColor(ContextCompat.getColor(requireContext(),
+                        if (isDarkMode) R.color.md_white_1000 else R.color.md_black_1000)
+                    )
                 }
                 R.id.btn_completed -> {
                     completedTasks()
+                    fragmentTeamTaskBinding.btnCompleted.setTextColor(ContextCompat.getColor(requireContext(),
+                        if (isDarkMode) R.color.md_white_1000 else R.color.md_black_1000)
+                    )
                 }
                 R.id.btn_all -> {
                     allTasks()
+                    fragmentTeamTaskBinding.btnAll.setTextColor(ContextCompat.getColor(requireContext(),
+                        if (isDarkMode) R.color.md_white_1000 else R.color.md_black_1000)
+                    )
                 }
             }
-            if (list!!.isEmpty()){
+            if (list?.isEmpty() == true){
                 showNoData(fragmentTeamTaskBinding.tvNodata, list?.size, "tasks")
             }
             else {
