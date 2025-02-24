@@ -24,7 +24,7 @@
             android:background="@drawable/buttonyellow"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Add Plan" />
+            android:text="@string/edit_plan" />
         <TextView
             android:id="@+id/tv_date"
             android:layout_width="match_parent"
