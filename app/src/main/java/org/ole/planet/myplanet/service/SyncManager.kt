@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.net.wifi.SupplicantState
 import android.net.wifi.WifiManager
 import android.text.TextUtils
+import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -38,6 +39,7 @@ import org.ole.planet.myplanet.utilities.NotificationUtil.create
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.IOException
 import java.util.Date
+import kotlin.system.measureTimeMillis
 
 class SyncManager private constructor(private val context: Context) {
     private var td: Thread? = null
@@ -108,25 +110,33 @@ class SyncManager private constructor(private val context: Context) {
             isSyncing = true
             create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")
             mRealm = dbService.realmInstance
-            TransactionSyncManager.syncDb(mRealm, "tablet_users")
-            myLibraryTransactionSync()
-            TransactionSyncManager.syncDb(mRealm, "courses")
-            TransactionSyncManager.syncDb(mRealm, "exams")
-            TransactionSyncManager.syncDb(mRealm, "ratings")
-            TransactionSyncManager.syncDb(mRealm, "courses_progress")
-            TransactionSyncManager.syncDb(mRealm, "achievements")
-            TransactionSyncManager.syncDb(mRealm, "tags")
-            TransactionSyncManager.syncDb(mRealm, "submissions")
-            TransactionSyncManager.syncDb(mRealm, "news")
-            TransactionSyncManager.syncDb(mRealm, "feedback")
-            TransactionSyncManager.syncDb(mRealm, "teams")
-            TransactionSyncManager.syncDb(mRealm, "tasks")
-            TransactionSyncManager.syncDb(mRealm, "login_activities")
-            TransactionSyncManager.syncDb(mRealm, "meetups")
-            TransactionSyncManager.syncDb(mRealm, "health")
-            TransactionSyncManager.syncDb(mRealm, "certifications")
-            TransactionSyncManager.syncDb(mRealm, "team_activities")
-            TransactionSyncManager.syncDb(mRealm, "chat_history")
+
+            runBlocking {
+                val syncJobs = listOf(
+                    async { TransactionSyncManager.syncDb(mRealm, "tablet_users") },
+                    async { myLibraryTransactionSync() },
+                    async { TransactionSyncManager.syncDb(mRealm, "courses") },
+                    async { TransactionSyncManager.syncDb(mRealm, "exams") },
+                    async { TransactionSyncManager.syncDb(mRealm, "ratings") },
+                    async { TransactionSyncManager.syncDb(mRealm, "courses_progress") },
+                    async { TransactionSyncManager.syncDb(mRealm, "achievements") },
+                    async { TransactionSyncManager.syncDb(mRealm, "tags") },
+                    async { TransactionSyncManager.syncDb(mRealm, "submissions") },
+                    async { TransactionSyncManager.syncDb(mRealm, "news") },
+                    async { TransactionSyncManager.syncDb(mRealm, "feedback") },
+                    async { TransactionSyncManager.syncDb(mRealm, "teams") },
+                    async { TransactionSyncManager.syncDb(mRealm, "tasks") },
+                    async { TransactionSyncManager.syncDb(mRealm, "login_activities") },
+                    async { TransactionSyncManager.syncDb(mRealm, "meetups") },
+                    async { TransactionSyncManager.syncDb(mRealm, "health") },
+                    async { TransactionSyncManager.syncDb(mRealm, "certifications") },
+                    async { TransactionSyncManager.syncDb(mRealm, "team_activities") },
+                    async { TransactionSyncManager.syncDb(mRealm, "chat_history") }
+                )
+
+                syncJobs.awaitAll()
+            }
+
             ManagerSync.instance?.syncAdmin()
             resourceTransactionSync()
             onSynced(mRealm, settings)
@@ -188,42 +198,81 @@ class SyncManager private constructor(private val context: Context) {
     private fun startBackgroundSync() {
         _syncState.postValue(true)
         backgroundSync = MainApplication.applicationScope.launch(Dispatchers.IO) {
-            val backgroundRealm = Realm.getDefaultInstance()
-
             try {
-                // Regular database syncs
+                Log.d("SYNC", "Starting parallel background sync...")
+
                 val remainingDatabases = listOf(
                     "teams", "news", "team_activities", "courses", "courses_progress", "exams", "tasks",
                     "chat_history", "ratings", "achievements", "tags", "submissions", "feedback",
                     "meetups", "health", "certifications", "login_activities"
                 )
 
-                remainingDatabases.forEach { database ->
-                    try {
-                        TransactionSyncManager.syncDb(backgroundRealm, database)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                // Measure the total sync time
+                val totalTime = measureTimeMillis {
+                    // Launch sync operations in parallel
+                    val syncJobs = remainingDatabases.map { database ->
+                        async(Dispatchers.IO) { // Ensure each coroutine runs on IO thread
+                            try {
+                                // Create a new Realm instance for this coroutine
+                                val realmInstance = Realm.getDefaultInstance()
+                                val timeTaken = measureTimeMillis {
+                                    TransactionSyncManager.syncDb(realmInstance, database)
+                                }
+                                Log.d("SYNC", "Sync for $database completed in $timeTaken ms")
+                                realmInstance.close() // Close the Realm instance to avoid leaks
+                            } catch (e: Exception) {
+                                Log.e("SYNC", "Error syncing $database: ${e.message}", e)
+                            }
+                        }
                     }
+
+                    // Wait for all sync jobs to complete
+                    syncJobs.awaitAll()
                 }
 
-                try {
-                    myLibraryTransactionSync(backgroundRealm)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                Log.d("SYNC", "All database syncs completed in $totalTime ms")
 
-                try {
-                    resourceTransactionSync(backgroundRealm)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-                onSynced(mRealm, settings)
+                // Run additional sync tasks in parallel
+                val extraSyncJobs = listOf(
+                    async(Dispatchers.IO) {
+                        try {
+                            val realmInstance = Realm.getDefaultInstance()
+                            val timeTaken = measureTimeMillis {
+                                myLibraryTransactionSync(realmInstance)
+                            }
+                            Log.d("SYNC", "Library sync completed in $timeTaken ms")
+                            realmInstance.close()
+                        } catch (e: Exception) {
+                            Log.e("SYNC", "Error syncing library: ${e.message}", e)
+                        }
+                    },
+                    async(Dispatchers.IO) {
+                        try {
+                            val realmInstance = Realm.getDefaultInstance()
+                            val timeTaken = measureTimeMillis {
+                                resourceTransactionSync(realmInstance)
+                            }
+                            Log.d("SYNC", "Resource sync completed in $timeTaken ms")
+                            realmInstance.close()
+                        } catch (e: Exception) {
+                            Log.e("SYNC", "Error syncing resources: ${e.message}", e)
+                        }
+                    }
+                )
+
+                extraSyncJobs.awaitAll()
+
+                // Final sync completion
+                val finalRealm = Realm.getDefaultInstance()
+                onSynced(finalRealm, settings)
+                finalRealm.close()
+
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("SYNC", "Error during background sync: ${e.message}", e)
             } finally {
-                backgroundRealm.close()
                 _syncState.postValue(false)
                 cleanupBackgroundSync()
+                Log.d("SYNC", "Background sync completed.")
             }
         }
     }
