@@ -1239,5 +1239,28 @@
     <string name="go_to_mylibrary">Go To MyLibrary</string>
     <string name="choose_an_option">Choose an option</string>
     <string name="welcome_back">Welcome back %1$s !</string>
+    <string name="remind_later">Remind Later</string>
+    <string name="remind_me_later">Remind Me Later</string>
+    <string name="remind_me_in">Remind me in:</string>
+    <string name="minutes">Minutes</string>
+    <string name="days">Days</string>
+    <string name="set_reminder">Set Reminder</string>
+    <string name="reminder_set_for">Reminder set for %1$s from now</string>
+    <string name="reminder_surveys_to_complete">Reminder: You have %1$d %2$s to complete</string>
+
+    <plurals name="minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
+
+    <plurals name="hours">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+
+    <plurals name="days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
 
 </resources>
