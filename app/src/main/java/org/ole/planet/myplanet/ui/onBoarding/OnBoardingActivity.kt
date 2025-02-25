@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.onBoarding
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -104,6 +105,9 @@ class OnBoardingActivity : AppCompatActivity() {
                 BuildConfig.PLANET_CAMBRIDGE_URL
             )
         )
+
+        val allowedHosts = deepLinkManager.getAllowedHosts()
+        Log.d("okuro", "Allowed hosts: $allowedHosts")
     }
 
     private fun loadData() {

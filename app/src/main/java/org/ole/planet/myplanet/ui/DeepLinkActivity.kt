@@ -21,16 +21,22 @@ class DeepLinkActivity : AppCompatActivity() {
         if (allowedHosts.contains(host)) {
             Log.d("DeepLink", "✅ Valid deep link: $deepLinkUri")
 
-            // Redirect to OnBoardingActivity with deep link data
             val mainIntent = Intent(this, OnBoardingActivity::class.java).apply {
                 data = deepLinkUri
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             }
             startActivity(mainIntent)
+
         } else {
             Log.e("DeepLink", "❌ Invalid deep link host: $host")
+
+            if (!isTaskRoot) {
+                moveTaskToBack(true)
+            } else {
+                finishAffinity()
+            }
         }
 
-        finish() // Close DeepLinkActivity immediately
+        finish()
     }
 }
