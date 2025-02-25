@@ -73,7 +73,7 @@ class MyDownloadService : Service() {
         val retrofitInterface = ApiClient.client?.create(ApiInterface::class.java)
         try {
             request = retrofitInterface?.downloadFile(header, url)
-            val response = request?.execute()
+            val response = request?.clone()?.execute()
 
             when {
                 response == null -> {

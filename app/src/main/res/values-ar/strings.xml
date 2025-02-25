@@ -713,7 +713,7 @@
     <string name="date_is_required">التاريخ مطلوب</string>
     <string name="transaction_added">تمت إضافة المعاملة</string>
     <string name="thank_you_for_taking_this">"شكرًا لك على إجراء هذا "</string>
-    <string name="we_wish_you_all_the_best">. نتمنى لك كل التوفيق</string>
+    <string name="we_wish_you_all_the_best">نتمنى لك كل التوفيق.</string>
     <string name="thank_you_for_taking_this_survey">شكرًا لك على إجراء هذا الاستبيان.</string>
     <string name="complete">اكتمل</string>
     <string name="no_questions_available">لا تتوفر أسئلة</string>

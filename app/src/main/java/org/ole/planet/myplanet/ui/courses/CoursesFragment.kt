@@ -107,7 +107,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             btnRemove.visibility = View.GONE
             btnArchive.visibility = View.GONE
         }
-        setArchiveAndRemoveButtonState()
+        hideButtons()
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
@@ -254,7 +254,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 isCheckboxChangedByCode = false
                 return@setOnCheckedChangeListener
             }
-            setArchiveAndRemoveButtonState()
+            hideButtons()
             if (isChecked) {
                 adapterCourses.selectAllItems(true)
                 selectAll.text = getString(R.string.unselect_all)
@@ -267,9 +267,24 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         checkList()
     }
 
-    private fun setArchiveAndRemoveButtonState(){
+    private fun hideButtons() {
         btnArchive.isEnabled = selectedItems?.size!! != 0
         btnRemove.isEnabled = selectedItems?.size!! != 0
+        if (selectedItems?.size!! != 0) {
+            if (isMyCourseLib) {
+                btnArchive.visibility = View.VISIBLE
+                btnRemove.visibility = View.VISIBLE
+            } else {
+                tvAddToLib.visibility = View.VISIBLE
+            }
+        } else {
+            if (isMyCourseLib) {
+                btnArchive.visibility = View.GONE
+                btnRemove.visibility = View.GONE
+            } else {
+                tvAddToLib.visibility = View.GONE
+            }
+        }
     }
 
     private fun checkList() {
@@ -333,7 +348,12 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 if (userModel?.id?.startsWith("guest") == true) {
                     DialogUtils.guestDialog(requireContext())
                 } else {
-                    homeItemClickListener?.openMyFragment(CoursesFragment())
+                    val fragment = CoursesFragment().apply {
+                        arguments = Bundle().apply {
+                            putBoolean("isMyCourseLib", true)
+                        }
+                    }
+                    homeItemClickListener?.openMyFragment(fragment)
                 }
             }
             .setNegativeButton(R.string.ok) { dialog: DialogInterface, _: Int ->
@@ -352,7 +372,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     override fun onSelectedListChange(list: MutableList<RealmMyCourse?>) {
         selectedItems = list
         changeButtonStatus()
-        setArchiveAndRemoveButtonState()
+        hideButtons()
     }
 
     override fun onTagClicked(tag: RealmTag?) {
@@ -432,21 +452,23 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun recreateFragment(fragment: Fragment) {
-        if (isMyCourseLib) {
-            val args = Bundle()
-            args.putBoolean("isMyCourseLib", true)
-            args.putString("courseLib", courseLib)
-            args.putSerializable("resources", resources?.let { ArrayList(it) })
-            fragment.arguments = args
-            val transaction = parentFragmentManager.beginTransaction()
-            transaction.replace(R.id.fragment_container, fragment)
-            transaction.addToBackStack(null)
-            transaction.commitAllowingStateLoss()
-        } else {
-            val transaction = parentFragmentManager.beginTransaction()
-            transaction.replace(R.id.fragment_container, fragment)
-            transaction.addToBackStack(null)
-            transaction.commitAllowingStateLoss()
+        if (isAdded && activity != null && !requireActivity().isFinishing) {
+            if (isMyCourseLib) {
+                val args = Bundle()
+                args.putBoolean("isMyCourseLib", true)
+                args.putString("courseLib", courseLib)
+                args.putSerializable("resources", resources?.let { ArrayList(it) })
+                fragment.arguments = args
+                val transaction = parentFragmentManager.beginTransaction()
+                transaction.replace(R.id.fragment_container, fragment)
+                transaction.addToBackStack(null)
+                transaction.commitAllowingStateLoss()
+            } else {
+                val transaction = parentFragmentManager.beginTransaction()
+                transaction.replace(R.id.fragment_container, fragment)
+                transaction.addToBackStack(null)
+                transaction.commitAllowingStateLoss()
+            }
         }
     }
 }
