@@ -7,6 +7,7 @@ import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentActivity
 import io.realm.Realm
 import org.ole.planet.myplanet.R
@@ -20,6 +21,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 class PlanFragment : BaseTeamFragment() {
     private lateinit var fragmentPlanBinding: FragmentPlanBinding
+    private var isEnterprise: Boolean = false
+
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentPlanBinding = FragmentPlanBinding.inflate(inflater, container, false)
@@ -30,10 +33,23 @@ class PlanFragment : BaseTeamFragment() {
         super.onViewCreated(view, savedInstanceState)
         updateUIWithTeamData(team)
 
+        val isMyTeam = RealmMyTeam.isTeamLeader(team?._id, user?.id, mRealm)
+        isEnterprise = team?.type?.equals("enterprise", ignoreCase = true) == true
+
+
+        fragmentPlanBinding.btnAddPlan.text = if (isEnterprise) "Edit Mission and Services"
+        else getString(R.string.edit_plan)
+
+        fragmentPlanBinding.btnAddPlan.isVisible = isMyTeam
+        fragmentPlanBinding.btnAddPlan.isEnabled = isMyTeam
+
         fragmentPlanBinding.btnAddPlan.setOnClickListener {
-            editTeam()
+            if (isMyTeam) {
+                editTeam()
+            }
         }
     }
+
 
     private fun editTeam() {
         if (!isAdded) {
@@ -47,7 +63,7 @@ class PlanFragment : BaseTeamFragment() {
     private fun showCreateTeamDialog(context: Context, activity: FragmentActivity, realm: Realm, team: RealmMyTeam) {
 
         val alertCreateTeamBinding = AlertCreateTeamBinding.inflate(LayoutInflater.from(context))
-        setupDialogFields(alertCreateTeamBinding, context, team)
+        setupDialogFields(alertCreateTeamBinding, team)
 
         val dialog = AlertDialog.Builder(activity, R.style.AlertDialogTheme)
             .setTitle("${context.getString(R.string.enter)} ${team.type} ${context.getString(R.string.detail)}")
@@ -64,14 +80,16 @@ class PlanFragment : BaseTeamFragment() {
         dialog.show()
     }
 
-    private fun setupDialogFields(binding: AlertCreateTeamBinding, context: Context, team: RealmMyTeam) {
-        val isEnterprise = team.type == "enterprise"
+    private fun setupDialogFields(binding: AlertCreateTeamBinding, team: RealmMyTeam) {
         binding.spnTeamType.visibility = if (isEnterprise) View.GONE else View.VISIBLE
         binding.etServices.visibility = if (isEnterprise) View.VISIBLE else View.GONE
         binding.etRules.visibility = if (isEnterprise) View.VISIBLE else View.GONE
-
-        binding.etDescription.hint = context.getString(if (isEnterprise) R.string.entMission else R.string.what_is_your_team_s_plan)
-        binding.etName.hint = context.getString(if (isEnterprise) R.string.enter_enterprise_s_name else R.string.enter_team_s_name)
+        binding.etDescription.hint = requireContext().getString(
+            if (isEnterprise) R.string.entMission else R.string.what_is_your_team_s_plan
+        )
+        binding.etName.hint = requireContext().getString(
+            if (isEnterprise) R.string.enter_enterprise_s_name else R.string.enter_team_s_name
+        )
 
         binding.etServices.setText(team.services)
         binding.etRules.setText(team.rules)
@@ -110,24 +128,36 @@ class PlanFragment : BaseTeamFragment() {
 
     private fun updateUIWithTeamData(updatedTeam: RealmMyTeam?) {
         if (updatedTeam == null) return
+        isEnterprise=  team?.type?.equals("enterprise", ignoreCase = true) == true
 
-        val missionText = formatTeamDetail(updatedTeam.description, getString(R.string.entMission))
-        val servicesText = formatTeamDetail(updatedTeam.services, getString(R.string.entServices))
-        val rulesText = formatTeamDetail(updatedTeam.rules, getString(R.string.entRules))
+        val missionText = formatTeamDetail(
+            updatedTeam.description,
+            getString(if (isEnterprise) R.string.entMission else R.string.what_is_your_team_s_plan)
+        )
+        val servicesText = formatTeamDetail(
+            updatedTeam.services,
+            if (isEnterprise) getString(R.string.entServices) else ""
+        )
+        val rulesText = formatTeamDetail(
+            updatedTeam.rules,
+            if (isEnterprise) getString(R.string.entRules) else ""
+        )
 
         val finalText = if (missionText.isEmpty() && servicesText.isEmpty() && rulesText.isEmpty()) {
-            "<br/>${getString(R.string.entEmptyDescription)}<br/>"
+            "<br/>" + (if (isEnterprise) getString(R.string.entEmptyDescription) else "This Team has no description defined") + "<br/>"
         } else {
             missionText + servicesText + rulesText
         }
 
         fragmentPlanBinding.tvDescription.text = Html.fromHtml(finalText, Html.FROM_HTML_MODE_LEGACY)
+
         fragmentPlanBinding.tvDate.text = getString(
             R.string.two_strings,
             getString(R.string.created_on),
             updatedTeam.createdDate?.let { formatDate(it) }
         )
     }
+
 
     private fun formatTeamDetail(detail: String?, title: String): String {
         return if (detail?.trim().isNullOrEmpty()) "" else "<b>$title</b><br/>$detail<br/><br/>"
