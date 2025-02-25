@@ -2,10 +2,15 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.ImageView
+import android.widget.NumberPicker
+import android.widget.RadioGroup
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -20,12 +25,7 @@ import io.realm.Realm
 import kotlinx.coroutines.*
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
-import org.ole.planet.myplanet.model.RealmCertification
-import org.ole.planet.myplanet.model.RealmCourseProgress
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
@@ -38,13 +38,19 @@ import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.TimeUtils
-import java.util.Date
+import java.util.*
+import java.util.concurrent.TimeUnit
 
 class BellDashboardFragment : BaseDashboardFragment() {
     private lateinit var fragmentHomeBellBinding: FragmentHomeBellBinding
     private var networkStatusJob: Job? = null
     private val viewModel: BellDashboardViewModel by viewModels()
     var user: RealmUserModel? = null
+    private var surveyReminderJob: Job? = null
+
+    companion object {
+        private const val PREF_SURVEY_REMINDERS = "survey_reminders"
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentHomeBellBinding = FragmentHomeBellBinding.inflate(inflater, container, false)
@@ -131,14 +137,23 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun checkPendingSurveys() {
+        if (checkScheduledReminders()) {
+            return
+        }
         val pendingSurveys = getPendingSurveys(user?.id, mRealm)
 
         if (pendingSurveys.isNotEmpty()) {
+            val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
+            val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
+            if (preferences.contains("reminder_time_$surveyIds")) {
+                return
+            }
             val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)
 
             val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
             val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
             recyclerView.layoutManager = LinearLayoutManager(requireActivity())
+
             val alertDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                 .setTitle(getString(R.string.surveys_to_complete, pendingSurveys.size, if (pendingSurveys.size > 1) "surveys" else "survey"))
                 .setView(dialogView)
@@ -146,7 +161,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
                     homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
                     dialog.dismiss()
                 }
-                .setNegativeButton(getString(R.string.cancel)) { dialog, _->
+                .setNeutralButton(getString(R.string.remind_later)) { _, _ ->
+                }
+                .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
                     dialog.dismiss()
                 }
                 .create()
@@ -159,6 +176,173 @@ class BellDashboardFragment : BaseDashboardFragment() {
             recyclerView.adapter = adapter
             alertDialog.show()
             alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
+
+            alertDialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
+                showRemindLaterDialog(pendingSurveys)
+            }
+        } else {
+            checkScheduledReminders()
+        }
+    }
+
+    private fun showRemindLaterDialog(pendingSurveys: List<RealmSubmission>) {
+        val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_remind_later, null)
+        val radioGroup: RadioGroup = dialogView.findViewById(R.id.radioGroupRemindOptions)
+        val numberPicker: NumberPicker = dialogView.findViewById(R.id.numberPickerTime)
+        val unitTextView: TextView = dialogView.findViewById(R.id.textViewTimeUnit)
+
+        numberPicker.minValue = 1
+        numberPicker.maxValue = 60
+        numberPicker.wrapSelectorWheel = false
+
+        radioGroup.check(R.id.radioButtonMinutes)
+        unitTextView.text = getString(R.string.minutes)
+
+        radioGroup.setOnCheckedChangeListener { _, checkedId ->
+            when (checkedId) {
+                R.id.radioButtonMinutes -> {
+                    numberPicker.maxValue = 60
+                    unitTextView.text = getString(R.string.minutes)
+                }
+                R.id.radioButtonHours -> {
+                    numberPicker.maxValue = 24
+                    unitTextView.text = getString(R.string.hours)
+                }
+                R.id.radioButtonDays -> {
+                    numberPicker.maxValue = 30
+                    unitTextView.text = getString(R.string.days)
+                }
+            }
+        }
+
+        AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+            .setTitle(getString(R.string.remind_me_later))
+            .setView(dialogView)
+            .setPositiveButton(getString(R.string.set_reminder)) { dialog, _ ->
+                val value = numberPicker.value
+                val timeUnit = when (radioGroup.checkedRadioButtonId) {
+                    R.id.radioButtonMinutes -> TimeUnit.MINUTES
+                    R.id.radioButtonHours -> TimeUnit.HOURS
+                    R.id.radioButtonDays -> TimeUnit.DAYS
+                    else -> TimeUnit.MINUTES
+                }
+
+                scheduleReminder(pendingSurveys, value, timeUnit)
+                dialog.dismiss()
+            }
+            .setNegativeButton(getString(R.string.cancel), null)
+            .show()
+            .window?.setBackgroundDrawableResource(R.color.card_bg)
+    }
+
+    private fun scheduleReminder(pendingSurveys: List<RealmSubmission>, value: Int, timeUnit: TimeUnit) {
+        val currentTime = System.currentTimeMillis()
+        val reminderTime = currentTime + timeUnit.toMillis(value.toLong())
+
+        val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
+        val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
+        preferences.edit()
+            .putLong("reminder_time_$surveyIds", reminderTime)
+            .putString("reminder_surveys_$surveyIds", surveyIds)
+            .apply()
+
+        val unitString = when (timeUnit) {
+            TimeUnit.MINUTES -> resources.getQuantityString(R.plurals.minutes, value, value)
+            TimeUnit.HOURS -> resources.getQuantityString(R.plurals.hours, value, value)
+            TimeUnit.DAYS -> resources.getQuantityString(R.plurals.days, value, value)
+            else -> "$value ${timeUnit.name.lowercase()}"
+        }
+
+        startReminderCheck()
+    }
+
+    private fun startReminderCheck() {
+        surveyReminderJob?.cancel()
+        surveyReminderJob = lifecycleScope.launch {
+            while (isActive) {
+                checkScheduledReminders()
+                delay(60000)
+            }
+        }
+    }
+
+    private fun checkScheduledReminders(): Boolean {
+        val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
+        val currentTime = System.currentTimeMillis()
+
+        val remindersToShow = mutableListOf<String>()
+        val remindersToRemove = mutableListOf<String>()
+
+        for (entry in preferences.all) {
+            if (entry.key.startsWith("reminder_time_")) {
+                val surveyIds = entry.key.removePrefix("reminder_time_")
+                val reminderTime = preferences.getLong(entry.key, 0)
+
+                if (reminderTime <= currentTime) {
+                    remindersToShow.add(surveyIds)
+                    remindersToRemove.add(surveyIds)
+                }
+            }
+        }
+
+        for (surveyIds in remindersToShow) {
+            val surveyIdList = surveyIds.split(",")
+            val pendingSurveys = surveyIdList.mapNotNull { id ->
+                mRealm.where(RealmSubmission::class.java)
+                    .equalTo("id", id)
+                    .findFirst()
+            }
+
+            if (pendingSurveys.isNotEmpty()) {
+                showPendingSurveysReminder(pendingSurveys)
+            }
+        }
+
+        val editor = preferences.edit()
+        for (surveyIds in remindersToRemove) {
+            editor.remove("reminder_time_$surveyIds")
+            editor.remove("reminder_surveys_$surveyIds")
+        }
+        editor.apply()
+
+        return remindersToShow.isNotEmpty()
+
+    }
+
+    private fun showPendingSurveysReminder(pendingSurveys: List<RealmSubmission>) {
+        val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)
+
+        val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
+        val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
+        recyclerView.layoutManager = LinearLayoutManager(requireActivity())
+
+        val alertDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+            .setTitle(getString(R.string.reminder_surveys_to_complete, pendingSurveys.size,
+                if (pendingSurveys.size > 1) "surveys" else "survey"))
+            .setView(dialogView)
+            .setPositiveButton(getString(R.string.ok)) { dialog, _ ->
+                homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
+                dialog.dismiss()
+            }
+            .setNeutralButton(getString(R.string.remind_later)) { _, _ ->
+            }
+            .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+
+        val adapter = SurveyAdapter(surveyTitles, { position ->
+            val selectedSurvey = pendingSurveys[position].id
+            AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
+        }, alertDialog)
+
+        recyclerView.adapter = adapter
+        alertDialog.show()
+        alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
+
+        alertDialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
+            showRemindLaterDialog(pendingSurveys)
+            alertDialog.dismiss()
         }
     }
 
@@ -258,6 +442,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     override fun onDestroyView() {
         networkStatusJob?.cancel()
+        surveyReminderJob?.cancel()
         super.onDestroyView()
     }
 }
