@@ -1239,5 +1239,6 @@
     <string name="go_to_mylibrary">Aller à Ma Bibliothèque</string>
     <string name="choose_an_option">Choisissez une option</string>
     <string name="welcome_back">Bienvenue %1$s</string>
+    <string name="edit_plan">Modifier le plan</string>
 
 </resources>
