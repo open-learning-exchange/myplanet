@@ -15,6 +15,7 @@ import android.widget.TextView
 import android.widget.TimePicker
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
@@ -23,7 +24,9 @@ import com.nex3z.togglebuttongroup.SingleSelectToggleGroup
 import com.nex3z.togglebuttongroup.button.LabelToggle
 import io.realm.RealmResults
 import io.realm.Sort
+import org.ole.planet.myplanet.MainApplication.Companion.mRealm
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.AlertTaskBinding
 import org.ole.planet.myplanet.databinding.AlertUsersSpinnerBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamTaskBinding
@@ -167,6 +170,53 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         showNoData(fragmentTeamTaskBinding.tvNodata, list?.size,"tasks")
         val isDarkMode = (context?.resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES)
 
+        val defaultTextColor = ContextCompat.getColor(requireContext(), if (isDarkMode) R.color.md_white_1000 else R.color.md_black_1000)
+        val selectedTextColor = ContextCompat.getColor(requireContext(), R.color.md_white_1000) // white for selected buttons
+
+        //Set correct default text colors at startup (Only All Task is selected)
+        fragmentTeamTaskBinding.btnAll.setTextColor(selectedTextColor) //selected
+        fragmentTeamTaskBinding.btnMy.setTextColor(defaultTextColor) // not selected is black
+        fragmentTeamTaskBinding.btnCompleted.setTextColor(defaultTextColor)
+
+        fragmentTeamTaskBinding.taskToggle.setOnCheckedChangeListener { _: SingleSelectToggleGroup?, checkedId: Int ->
+            currentTab = checkedId
+
+            //Reset all buttons to default color before applying new selection
+            fragmentTeamTaskBinding.btnAll.setTextColor(defaultTextColor)
+            fragmentTeamTaskBinding.btnMy.setTextColor(defaultTextColor)
+            fragmentTeamTaskBinding.btnCompleted.setTextColor(defaultTextColor)
+
+            //Apply white text color ONLY to the selected button
+            when (checkedId) {
+                R.id.btn_my -> {
+                    myTasks()
+                    Toast.makeText(requireContext(), "Clicked on My Task", Toast.LENGTH_SHORT).show()
+                    fragmentTeamTaskBinding.btnMy.setTextColor(selectedTextColor)
+                }
+                R.id.btn_completed -> {
+                    completedTasks()
+                    Toast.makeText(requireContext(), "Clicked on Completed", Toast.LENGTH_SHORT).show()
+                    fragmentTeamTaskBinding.btnCompleted.setTextColor(selectedTextColor)
+                }
+                else -> {
+                    allTasks()
+                    Toast.makeText(requireContext(), "Clicked on All Task", Toast.LENGTH_SHORT).show()
+                    fragmentTeamTaskBinding.btnAll.setTextColor(selectedTextColor)
+
+            }
+        }
+            setAdapter()
+        }
+    }
+    /* previous version
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        fragmentTeamTaskBinding.rvTask.layoutManager = LinearLayoutManager(activity)
+        list = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId).findAll()
+        setAdapter()
+        showNoData(fragmentTeamTaskBinding.tvNodata, list?.size,"tasks")
+        val isDarkMode = (context?.resources?.configuration?.uiMode?.and(Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES)
+
         fragmentTeamTaskBinding.btnAll.setTextColor(ContextCompat.getColor(requireContext(),
             if (isDarkMode) R.color.md_white_1000 else R.color.md_black_1000)
         )
@@ -195,6 +245,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             setAdapter()
         }
     }
+     */
 
     private fun allTasks() {
        list = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId)
