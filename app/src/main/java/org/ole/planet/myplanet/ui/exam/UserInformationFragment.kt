@@ -4,7 +4,6 @@ import android.app.DatePickerDialog
 import android.content.DialogInterface
 import android.os.Bundle
 import android.text.TextUtils
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -113,75 +112,11 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         fragmentUserInformationBinding.ltAge.visibility = if (isAdditionalFieldsVisible) View.VISIBLE else View.GONE
     }
 
-//    private fun submitForm() {
-//        var fname = ""
-//        var lname = ""
-//        var mName = ""
-//        var phone = ""
-//        var email = ""
-//        var gender = ""
-//
-//        if (fragmentUserInformationBinding.llNames.visibility == View.VISIBLE) {
-//            fname = "${fragmentUserInformationBinding.etFname.text}".trim { it <= ' ' }
-//            lname = "${fragmentUserInformationBinding.etLname.text}".trim { it <= ' ' }
-//            mName = "${fragmentUserInformationBinding.etMname.text}".trim { it <= ' ' }
-//        }
-//        phone = "${fragmentUserInformationBinding.etPhone.text}".trim { it <= ' ' }
-//        email = "${fragmentUserInformationBinding.etEmail.text}".trim { it <= ' ' }
-//
-//        val rbSelected = requireView().findViewById<RadioButton>(fragmentUserInformationBinding.rbGender.checkedRadioButtonId)
-//        if (rbSelected != null) {
-//            gender = rbSelected.text.toString()
-//        }
-//        val level = "${fragmentUserInformationBinding.spnLevel.selectedItem}"
-//        val lang = "${fragmentUserInformationBinding.spnLang.selectedItem}"
-//        if (TextUtils.isEmpty(id)) {
-//            val userId = userModel?.id
-//            val finalGender = gender
-//            mRealm.executeTransactionAsync({ realm: Realm ->
-//                val model = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
-//                if (model != null) {
-//                    if (!TextUtils.isEmpty(fname)) model.firstName = fname
-//                    if (!TextUtils.isEmpty(lname)) model.lastName = lname
-//                    if (!TextUtils.isEmpty(email)) model.email = email
-//                    if (!TextUtils.isEmpty(lang)) model.language = lang
-//                    if (!TextUtils.isEmpty(phone)) model.phoneNumber = phone
-//                    if (!TextUtils.isEmpty(dob)) model.birthPlace = dob
-//                    if (!TextUtils.isEmpty(level)) model.level = level
-//                    if (!TextUtils.isEmpty(finalGender)) model.gender = finalGender
-//                    model.isUpdated = true
-//                }
-//            }, {
-//                Utilities.toast(MainApplication.context, getString(R.string.user_profile_updated))
-//                if (isAdded) {
-//                    dialog?.dismiss()
-//                }
-//            }) {
-//                Utilities.toast(MainApplication.context, getString(R.string.unable_to_update_user))
-//                if (isAdded) {
-//                    dialog?.dismiss()
-//                }
-//            }
-//        } else {
-//            val user = JsonObject()
-//            user.addProperty("name", "$fname $lname")
-//            user.addProperty("firstName", fname)
-//            user.addProperty("middleName", mName)
-//            user.addProperty("lastName", lname)
-//            user.addProperty("email", email)
-//            user.addProperty("language", lang)
-//            user.addProperty("phoneNumber", phone)
-//            user.addProperty("birthDate", dob)
-//            user.addProperty("gender", gender)
-//            user.addProperty("level", level)
-//            saveSubmission(user)
-//        }
-//    }
-
     private fun submitForm() {
         var fname = ""
         var lname = ""
         var mName = ""
+        var age = ""
 
         if (fragmentUserInformationBinding.llNames.visibility == View.VISIBLE) {
             fname = fragmentUserInformationBinding.etFname.text.toString().trim()
@@ -190,6 +125,15 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         }
 
         val user = JsonObject()
+
+        if (fragmentUserInformationBinding.ltAge.visibility == View.VISIBLE) {
+            val age = fragmentUserInformationBinding.etAge.text.toString().trim()
+
+            if (age.isNotEmpty()) {
+                user.addProperty("age", age)
+            }
+        }
+
 
         if (fname.isNotEmpty() || lname.isNotEmpty()) {
             user.addProperty("name", "$fname $lname")
@@ -241,6 +185,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                             "birthDate" -> model.birthPlace = user.get(key).asString
                             "level" -> model.level = user.get(key).asString
                             "gender" -> model.gender = user.get(key).asString
+                            "age" -> model.age = user.get(key).asString
                         }
                     }
                     model.isUpdated = true
@@ -302,7 +247,6 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     companion object {
         fun getInstance(id: String?, teamId: String?, shouldHideElements: Boolean): UserInformationFragment {
-            Log.d("UserInformationFragment", "shouldHideElements: $shouldHideElements")
             val f = UserInformationFragment()
             setArgs(f, id, teamId, shouldHideElements)
             return f
