@@ -315,7 +315,7 @@
                         android:padding="@dimen/padding_normal"
                         android:text="@string/language"
                         android:textColor="@android:color/white"
-                            android:background="@color/mainColor"
+                        android:background="@color/mainColor"
                         android:elevation="1dp"
                         android:outlineProvider="bounds"
                         android:strokeColor="@color/daynight_textColor"
