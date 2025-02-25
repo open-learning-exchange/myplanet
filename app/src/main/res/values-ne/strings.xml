@@ -1239,5 +1239,7 @@
     <string name="go_to_mylibrary">मेरो पुस्तकालयमा जानुहोस्</string>
     <string name="choose_an_option">एउटा विकल्प छान्नुहोस्</string>
     <string name="welcome_back">स्वागतम् %1$s</string>
+    <string name="show_additional_fields">थप क्षेत्रहरू देखाउनुहोस्</string>
+    <string name="hide_additional_fields">थप क्षेत्रहरू लुकाउनुहोस्</string>
 
 </resources>
