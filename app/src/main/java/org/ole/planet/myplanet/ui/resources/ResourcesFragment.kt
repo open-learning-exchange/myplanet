@@ -78,7 +78,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
+        isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) == true
         userModel = UserProfileDbHandler(requireContext()).userModel
         searchTags = ArrayList()
         config = Utilities.getCloudConfig().showClose(R.color.black_overlay)
@@ -97,6 +97,22 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             tvSelected.visibility = View.VISIBLE
         }
         initArrays()
+        view.post {
+            if (shouldRestoreSelection && lastSelectionState.isNotEmpty()) {
+                adapterLibrary.restoreSelectionState(lastSelectionState)
+
+                if (wasAllSelected) {
+                    selectAll.isChecked = true
+                    selectAll.text = getString(R.string.unselect_all)
+                } else {
+                    selectAll.isChecked = false
+                    selectAll.text = getString(R.string.select_all)
+                }
+            } else {
+                selectAll.isChecked = false
+                selectAll.text = getString(R.string.select_all)
+            }
+        }
         hideButton()
 
         if(userModel?.isGuest() == true){
@@ -234,16 +250,16 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         builder.setMessage(msg)
         builder.setCancelable(true)
         .setPositiveButton(R.string.go_to_mylibrary) { dialog: DialogInterface, _: Int ->
-                if (userModel?.id?.startsWith("guest") == true) {
-                    guestDialog(requireContext())
-                } else {
-                    val fragment = ResourcesFragment().apply {
-                        arguments = Bundle().apply {
-                            putBoolean("isMyCourseLib", true)
-                        }
+            if (userModel?.id?.startsWith("guest") == true) {
+                guestDialog(requireContext())
+            } else {
+                val fragment = ResourcesFragment().apply {
+                    arguments = Bundle().apply {
+                        putBoolean("isMyCourseLib", true)
                     }
-                    homeItemClickListener?.openMyFragment(fragment)
                 }
+                homeItemClickListener?.openMyFragment(fragment)
+            }
         }
         builder.setNegativeButton(getString(R.string.ok)) { dialog: DialogInterface, _: Int ->
             dialog.cancel()
@@ -274,6 +290,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun onSelectedListChange(list: MutableList<RealmMyLibrary?>) {
         selectedItems = list
+        lastSelectionState.clear()
+        for (item in list) {
+            item?.id?.let { lastSelectionState.add(it) }
+        }
+        wasAllSelected = list.size == adapterLibrary.getLibraryList().size
+
         changeButtonStatus()
         hideButton()
     }
@@ -421,5 +443,21 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
         orderByDate.setOnClickListener { adapterLibrary.toggleSortOrder() }
         orderByTitle.setOnClickListener { adapterLibrary.toggleTitleSortOrder() }
+    }
+
+    companion object {
+        var lastSelectionState: MutableList<String> = mutableListOf()
+        var wasAllSelected = false
+        var shouldRestoreSelection = true
+
+        fun clearSelectionState() {
+            lastSelectionState.clear()
+            wasAllSelected = false
+            shouldRestoreSelection = false
+        }
+
+        fun enableSelectionRestoration() {
+            shouldRestoreSelection = true
+        }
     }
 }

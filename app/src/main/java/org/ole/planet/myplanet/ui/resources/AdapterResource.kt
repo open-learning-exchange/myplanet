@@ -109,8 +109,7 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
 
             if (userModel?.isGuest() == false) {
                 holder.rowLibraryBinding.checkbox.setOnClickListener { view: View ->
-                    holder.rowLibraryBinding.checkbox.contentDescription =
-                        context.getString(R.string.select_res_course, libraryList[position]?.title)
+                    holder.rowLibraryBinding.checkbox.contentDescription = context.getString(R.string.select_res_course, libraryList[position]?.title)
                     Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, libraryList)
                     if (listener != null) listener?.onSelectedListChange(selectedItems)
                 }
@@ -129,9 +128,16 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
         if (selectAll) {
             selectedItems.clear()
             selectedItems.addAll(libraryList)
+            ResourcesFragment.wasAllSelected = true
         } else {
             selectedItems.clear()
+            ResourcesFragment.wasAllSelected = false
         }
+        ResourcesFragment.lastSelectionState.clear()
+        for (item in selectedItems) {
+            item?.id?.let { ResourcesFragment.lastSelectionState.add(it) }
+        }
+
         notifyDataSetChanged()
         if (listener != null) {
             listener?.onSelectedListChange(selectedItems)
@@ -139,6 +145,7 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
     }
 
     private fun openLibrary(library: RealmMyLibrary?) {
+        ResourcesFragment.enableSelectionRestoration()
         homeItemClickListener?.openLibraryDetailFragment(library)
     }
 
@@ -193,6 +200,22 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
 
     override fun getItemCount(): Int {
         return libraryList.size
+    }
+
+    fun restoreSelectionState(itemIds: List<String>) {
+        selectedItems.clear()
+        for (id in itemIds) {
+            for (currentItem in libraryList) {
+                if (currentItem?.id == id) {
+                    selectedItems.add(currentItem)
+                    break
+                }
+            }
+        }
+        notifyDataSetChanged()
+        if (listener != null) {
+            listener?.onSelectedListChange(selectedItems)
+        }
     }
 
     internal inner class ViewHolderLibrary(val rowLibraryBinding: RowLibraryBinding) :

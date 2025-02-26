@@ -37,6 +37,7 @@ import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.rating.RatingFragment.Companion.newInstance
+import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.Constants
@@ -86,6 +87,10 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun openCallFragment(newFragment: Fragment, tag: String?) {
+        if (newFragment !is ResourceDetailFragment) {
+            ResourcesFragment.clearSelectionState()
+        }
+
         val fragmentManager = supportFragmentManager
         if(c<2){
             c=0
