@@ -1239,5 +1239,7 @@
     <string name="go_to_mylibrary">मेरो पुस्तकालयमा जानुहोस्</string>
     <string name="choose_an_option">एउटा विकल्प छान्नुहोस्</string>
     <string name="welcome_back">स्वागतम् %1$s</string>
+    <string name="preparing_download">डाउनलोडको तयारी गर्दै…</string>
+    <string name="downloading_files">फाइलहरू डाउनलोड हुँदैछन्</string>
 
 </resources>

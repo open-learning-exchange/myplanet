@@ -1239,5 +1239,7 @@
     <string name="go_to_mylibrary">Aller à Ma Bibliothèque</string>
     <string name="choose_an_option">Choisissez une option</string>
     <string name="welcome_back">Bienvenue %1$s</string>
+    <string name="preparing_download">Préparation du téléchargement…</string>
+    <string name="downloading_files">Téléchargement des fichiers</string>
 
 </resources>
