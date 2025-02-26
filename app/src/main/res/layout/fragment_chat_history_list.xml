@@ -27,7 +27,6 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
-
         <LinearLayout
             android:id="@+id/search_layout"
             android:layout_width="match_parent"
@@ -52,7 +51,6 @@
                     android:textColor="@color/hint_color"
                     android:layout_marginTop="20dp"
                     android:text="Full conversation search"/>
-
                 <com.google.android.material.button.MaterialButtonToggleGroup
                     android:id="@+id/toggleGroup"
                     android:layout_width="wrap_content"
@@ -79,7 +77,6 @@
                         app:strokeColor="@color/hint_color"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
                 </com.google.android.material.button.MaterialButtonToggleGroup>
-
             </LinearLayout>
 
             <EditText
@@ -94,6 +91,7 @@
                 android:textColorHint="@color/hint_color"
                 android:backgroundTint="@color/hint_color" />
         </LinearLayout>
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerView"
             android:layout_width="match_parent"
