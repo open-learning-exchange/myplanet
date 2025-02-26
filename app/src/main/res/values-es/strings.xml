@@ -1239,5 +1239,8 @@
     <string name="go_to_mylibrary">Ir a Mi Biblioteca</string>
     <string name="choose_an_option">Elige una opción</string>
     <string name="welcome_back">Bienvenido de nuevo %1$s</string>
+    <string name="show_additional_fields">mostrar campos adicionales</string>
+    <string name="hide_additional_fields">ocultar campos adicionales</string>
+    <string name="age">Edad</string>
 
 </resources>
