@@ -76,7 +76,49 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
             .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
     }
 
-    fun search(s: String) {
+    fun search(s: String, isFullSearch: Boolean, isQuestion: Boolean){
+        if(isFullSearch){
+            FullConvoSearch(s, isQuestion)
+        } else {
+            searchByTitle(s)
+        }
+        notifyDataSetChanged()
+    }
+
+    private fun FullConvoSearch(s: String, isQuestion: Boolean){
+        var conversation: String?
+        val queryParts = s.split(" ").filterNot { it.isEmpty() }
+        val normalizedQuery = normalizeText(s)
+        val inTitleStartQuery = mutableListOf<RealmChatHistory>()
+        val inTitleContainsQuery = mutableListOf<RealmChatHistory>()
+        val startsWithQuery = mutableListOf<RealmChatHistory>()
+        val containsQuery = mutableListOf<RealmChatHistory>()
+
+        for (chat in chatHistory) {
+            if(chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
+                for (i in 0 until chat.conversations!!.size) {
+                    conversation = if(isQuestion){
+                        chat.conversations?.get(i)?.query?.let { normalizeText(it) }
+                    } else{
+                        chat.conversations?.get(i)?.response?.let { normalizeText(it) }
+                    }
+                    if(conversation == null) continue
+                    if (conversation.startsWith(normalizedQuery, ignoreCase = true)) {
+                        if(i == 0) inTitleStartQuery.add(chat)
+                        else startsWithQuery.add(chat)
+                        break
+                    } else if (queryParts.all { conversation.contains(normalizeText(it), ignoreCase = true) }) {
+                        if(i == 0) inTitleContainsQuery.add(chat)
+                        else containsQuery.add(chat)
+                        break
+                    }
+                }
+            }
+        }
+        filteredChatHistory = inTitleStartQuery+ inTitleContainsQuery + startsWithQuery + containsQuery
+    }
+
+    private fun searchByTitle(s: String) {
         var title: String?
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQuery = normalizeText(s)
@@ -97,7 +139,6 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
             }
         }
         filteredChatHistory = startsWithQuery + containsQuery
-        notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {

@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.chat
 
+import android.content.res.ColorStateList
+import android.content.res.Resources
 import android.os.Bundle
 import android.text.*
 import android.view.*
@@ -19,6 +21,8 @@ class ChatHistoryListFragment : Fragment() {
     private lateinit var fragmentChatHistoryListBinding: FragmentChatHistoryListBinding
     private lateinit var sharedViewModel: ChatViewModel
     var user: RealmUserModel? = null
+    private var isFullSearch: Boolean = false
+    private var isQuestion: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,6 +41,7 @@ class ChatHistoryListFragment : Fragment() {
         slidingPaneLayout.lockMode = SlidingPaneLayout.LOCK_MODE_LOCKED
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, ChatHistoryListOnBackPressedCallback(slidingPaneLayout))
 
+        fragmentChatHistoryListBinding.toggleGroup.visibility = View.GONE
         fragmentChatHistoryListBinding.newChat.setOnClickListener {
             if (resources.getBoolean(R.bool.isLargeScreen)) {
                 val chatHistoryListFragment = ChatHistoryListFragment()
@@ -61,11 +66,49 @@ class ChatHistoryListFragment : Fragment() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                (fragmentChatHistoryListBinding.recyclerView.adapter as? ChatHistoryListAdapter)?.search(s.toString())
+                (fragmentChatHistoryListBinding.recyclerView.adapter as? ChatHistoryListAdapter)?.search(s.toString(), isFullSearch, isQuestion)
             }
 
             override fun afterTextChanged(s: Editable?) {}
         })
+
+        fragmentChatHistoryListBinding.fullSearch.setOnCheckedChangeListener { _, isChecked ->
+            val density = Resources.getSystem().displayMetrics.density
+            val params = fragmentChatHistoryListBinding.fullSearch.layoutParams as ViewGroup.MarginLayoutParams
+            if (isChecked) {
+                isFullSearch = true
+                fragmentChatHistoryListBinding.toggleGroup.visibility = View.VISIBLE
+                params.topMargin = (0 * density).toInt()
+            } else {
+                isFullSearch = false
+                fragmentChatHistoryListBinding.toggleGroup.visibility = View.GONE
+                params.topMargin = (20 * density).toInt()
+            }
+            fragmentChatHistoryListBinding.fullSearch.layoutParams = params
+        }
+
+        fragmentChatHistoryListBinding.toggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if(isChecked){
+                when (checkedId) {
+                    R.id.btnQuestions -> {
+                        isQuestion = true
+                        fragmentChatHistoryListBinding.btnQuestions.strokeColor = ColorStateList.valueOf(resources.getColor(R.color.mainColor))
+                        fragmentChatHistoryListBinding.btnResponses.strokeColor = ColorStateList.valueOf(resources.getColor(R.color.hint_color))
+
+                        fragmentChatHistoryListBinding.btnQuestions.setTextColor(resources.getColor(R.color.mainColor))
+                        fragmentChatHistoryListBinding.btnResponses.setTextColor(resources.getColor(R.color.hint_color))
+                    }
+                    R.id.btnResponses -> {
+                        isQuestion = false
+                        fragmentChatHistoryListBinding.btnResponses.strokeColor = ColorStateList.valueOf(resources.getColor(R.color.mainColor))
+                        fragmentChatHistoryListBinding.btnQuestions.strokeColor = ColorStateList.valueOf(resources.getColor(R.color.hint_color))
+
+                        fragmentChatHistoryListBinding.btnResponses.setTextColor(resources.getColor(R.color.mainColor))
+                        fragmentChatHistoryListBinding.btnQuestions.setTextColor(resources.getColor(R.color.hint_color))
+                    }
+                }
+            }
+        }
     }
 
     fun refreshChatHistoryList() {
