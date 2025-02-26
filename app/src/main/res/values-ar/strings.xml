@@ -1239,5 +1239,7 @@
     <string name="go_to_mylibrary">انتقل إلى مكتبتي</string>
     <string name="choose_an_option">اختر خيارًا</string>
     <string name="welcome_back">مرحبًا بعودتك %1$s</string>
+    <string name="preparing_download">جارٍ تحضير التنزيل…</string>
+    <string name="downloading_files">جارٍ تنزيل الملفات</string>
 
 </resources>

@@ -39,6 +39,7 @@
     <uses-permission
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <uses-feature
         android:name="android.hardware.camera"
@@ -131,7 +132,10 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-        <service android:name=".datamanager.MyDownloadService"
-            android:exported="false" />
+        <service
+            android:name=".datamanager.MyDownloadService"
+            android:foregroundServiceType="dataSync"
+            android:permission="android.permission.FOREGROUND_SERVICE"
+            android:exported="false"/>
     </application>
 </manifest>
