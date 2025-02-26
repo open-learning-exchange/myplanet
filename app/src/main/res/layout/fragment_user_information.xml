@@ -193,17 +193,17 @@
             android:id="@+id/ltAge"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="gone"
-            android:textColorHint="@color/hint_color">
+            android:textColorHint="@color/hint_color"
+            android:visibility="gone">
 
             <EditText
                 android:id="@+id/etAge"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Age"
+                android:backgroundTint="@color/hint_color"
+                android:hint="@string/age"
                 android:inputType="number"
-                android:textColor="@color/daynight_textColor"
-                android:backgroundTint="@color/hint_color" />
+                android:textColor="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <LinearLayout
@@ -231,38 +231,45 @@
                 app:backgroundTint="@color/daynight_textColor" />
         </LinearLayout>
 
-        <Button
-            android:id="@+id/btnAdditionalFields"
-            style="@style/GreyButtons"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:visibility="gone"
-            android:padding="12dp"
-            android:background="@drawable/buttongrey"
-            android:text="show additional fields" />
 
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="right">
+            android:orientation="horizontal"
+            android:gravity="end">
 
             <Button
-                android:id="@+id/btn_submit"
+                android:id="@+id/btnAdditionalFields"
                 style="@style/GreyButtons"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="10dp"
                 android:background="@drawable/buttongrey"
-                android:text="@string/button_update" />
+                android:text="@string/show_additional_fields" />
 
-            <Button
-                android:id="@+id/btn_cancel"
-                style="@style/GreyButtons"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/buttongrey"
-                android:text="@string/button_cancel" />
+                android:orientation="horizontal"
+                android:gravity="end">
+
+                <Button
+                    android:id="@+id/btn_submit"
+                    style="@style/GreyButtons"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="10dp"
+                    android:background="@drawable/buttongrey"
+                    android:text="@string/button_update" />
+
+                <Button
+                    android:id="@+id/btn_cancel"
+                    style="@style/GreyButtons"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/buttongrey"
+                    android:text="@string/button_cancel" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </FrameLayout>

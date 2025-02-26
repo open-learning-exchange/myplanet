@@ -1241,5 +1241,6 @@
     <string name="welcome_back">مرحبًا بعودتك %1$s</string>
     <string name="show_additional_fields">عرض الحقول الإضافية</string>
     <string name="hide_additional_fields">إخفاء الحقول الإضافية</string>
+    <string name="age">العمر</string>
 
 </resources>

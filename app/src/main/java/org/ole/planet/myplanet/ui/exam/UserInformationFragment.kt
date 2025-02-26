@@ -79,14 +79,10 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 //        fragmentUserInformationBinding.etPhone.setText(getString(R.string.message_placeholder, userModel?.phoneNumber))
 //        fragmentUserInformationBinding.txtDob.text = getString(R.string.message_placeholder, userModel?.dob)
 //        dob = userModel?.dob
-            if (teamId != null) {
-                fragmentUserInformationBinding.btnCancel.visibility = View.GONE
-            } else {
-                fragmentUserInformationBinding.btnCancel.setOnClickListener(this)
-            }
             fragmentUserInformationBinding.txtDob.setOnClickListener(this)
         }
 
+        fragmentUserInformationBinding.btnCancel.setOnClickListener(this)
         fragmentUserInformationBinding.btnSubmit.setOnClickListener(this)
     }
 
@@ -127,7 +123,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         val user = JsonObject()
 
         if (fragmentUserInformationBinding.ltAge.visibility == View.VISIBLE) {
-            val age = fragmentUserInformationBinding.etAge.text.toString().trim()
+            age = fragmentUserInformationBinding.etAge.text.toString().trim()
 
             if (age.isNotEmpty()) {
                 user.addProperty("age", age)

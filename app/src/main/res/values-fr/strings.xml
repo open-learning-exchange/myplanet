@@ -1241,5 +1241,6 @@
     <string name="welcome_back">Bienvenue %1$s</string>
     <string name="show_additional_fields">afficher les champs supplémentaires</string>
     <string name="hide_additional_fields">masquer les champs supplémentaires</string>
+    <string name="age">Âge</string>
 
 </resources>
