@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools">
+
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW" />
@@ -19,7 +20,8 @@
             <data android:mimeType="audio/*" />
         </intent>
     </queries>
-<!--    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>-->
+
+<!--    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />-->
     <uses-permission
         android:name="android.permission.BLUETOOTH"
         android:required="false" />
@@ -62,10 +64,26 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".ui.DeepLinkActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <!-- Wildcard host to allow all dynamic hosts -->
+                <data android:scheme="https" android:host="*" android:pathPrefix="/" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name=".ui.sync.LoginActivity"
             android:exported="false"
-            android:configChanges="screenSize|screenLayout|orientation|keyboardHidden|keyboard"/>
+            android:configChanges="screenSize|screenLayout|orientation|keyboardHidden|keyboard" />
 
         <activity
             android:name=".ui.userprofile.BecomeMemberActivity"
@@ -91,7 +109,8 @@
         <activity
             android:name=".ui.resources.AddResourceActivity"
             android:theme="@style/AppTheme" />
-        <activity android:name=".ui.viewer.AudioPlayerActivity"
+        <activity
+            android:name=".ui.viewer.AudioPlayerActivity"
             android:configChanges="orientation|screenSize" />
         <activity
             android:name=".ui.feedback.FeedbackDetailActivity"
@@ -102,19 +121,26 @@
             android:label="@string/title_activity_dashboard"
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/FullscreenTheme" />
-        <activity android:name=".ui.viewer.PDFReaderActivity"
+        <activity
+            android:name=".ui.viewer.PDFReaderActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.WebViewActivity"
+        <activity
+            android:name=".ui.viewer.WebViewActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.VideoPlayerActivity"
+        <activity
+            android:name=".ui.viewer.VideoPlayerActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.ImageViewerActivity"
+        <activity
+            android:name=".ui.viewer.ImageViewerActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.TextFileViewerActivity"
+        <activity
+            android:name=".ui.viewer.TextFileViewerActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.MarkdownViewerActivity"
+        <activity
+            android:name=".ui.viewer.MarkdownViewerActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.CSVViewerActivity"
+        <activity
+            android:name=".ui.viewer.CSVViewerActivity"
             android:configChanges="orientation|screenSize" />
         <activity
             android:name=".ui.dictionary.DictionaryActivity"
@@ -122,6 +148,7 @@
         <activity
             android:name=".ui.SettingActivity"
             android:theme="@style/AppTheme" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="org.ole.planet.myplanet.fileprovider"
@@ -131,7 +158,8 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
-        <service android:name=".datamanager.MyDownloadService"
+        <service
+            android:name=".datamanager.MyDownloadService"
             android:exported="false" />
     </application>
 </manifest>

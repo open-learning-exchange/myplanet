@@ -2,18 +2,21 @@ package org.ole.planet.myplanet.ui.onBoarding
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.viewpager.widget.ViewPager
+import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityOnBoardingBinding
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.DeepLinkManager
 import org.ole.planet.myplanet.utilities.FileUtils.copyAssets
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
@@ -85,6 +88,26 @@ class OnBoardingActivity : AppCompatActivity() {
         }
 
         setUiPageViewController()
+
+        val deepLinkManager = DeepLinkManager(this)
+        deepLinkManager.saveAllowedHosts(
+            listOf(
+                BuildConfig.PLANET_LEARNING_URL,
+                BuildConfig.PLANET_GUATEMALA_URL,
+                BuildConfig.PLANET_SANPABLO_URL,
+                BuildConfig.PLANET_EARTH_URL,
+                BuildConfig.PLANET_SOMALIA_URL,
+                BuildConfig.PLANET_VI_URL,
+                BuildConfig.PLANET_XELA_URL,
+                BuildConfig.PLANET_URIUR_URL,
+                BuildConfig.PLANET_RUIRU_URL,
+                BuildConfig.PLANET_EMBAKASI_URL,
+                BuildConfig.PLANET_CAMBRIDGE_URL
+            )
+        )
+
+        val allowedHosts = deepLinkManager.getAllowedHosts()
+        Log.d("okuro", "Allowed hosts: $allowedHosts")
     }
 
     private fun loadData() {
