@@ -102,7 +102,6 @@
                     android:padding="@dimen/padding_small"
                     android:text="@string/language"
                     android:textColor="@color/hint_color" />
-
                 <Spinner
                     android:id="@+id/spn_lang"
                     android:layout_width="match_parent"
@@ -165,7 +164,6 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp"
                 android:textStyle="bold" />
-
             <RadioGroup
                 android:id="@+id/rb_gender"
                 android:layout_width="match_parent"
@@ -179,7 +177,6 @@
                     android:buttonTint="@color/daynight_textColor"
                     android:text="@string/male"
                     android:textColor="@color/daynight_textColor" />
-
                 <RadioButton
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -220,7 +217,6 @@
                 android:padding="@dimen/padding_small"
                 android:text="@string/level"
                 android:textColor="@color/hint_color" />
-
             <Spinner
                 android:id="@+id/spn_level"
                 android:layout_width="match_parent"
@@ -230,7 +226,6 @@
                 android:padding="@dimen/padding_small"
                 app:backgroundTint="@color/daynight_textColor" />
         </LinearLayout>
-
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -246,7 +241,6 @@
                 android:layout_marginEnd="10dp"
                 android:background="@drawable/buttongrey"
                 android:text="@string/show_additional_fields" />
-
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -261,7 +255,6 @@
                     android:layout_marginEnd="10dp"
                     android:background="@drawable/buttongrey"
                     android:text="@string/button_update" />
-
                 <Button
                     android:id="@+id/btn_cancel"
                     style="@style/GreyButtons"
