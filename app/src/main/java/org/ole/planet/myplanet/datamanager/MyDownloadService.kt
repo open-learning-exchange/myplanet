@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.datamanager
 
+import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
@@ -7,6 +8,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import io.realm.Realm
 import kotlinx.coroutines.CoroutineScope
@@ -14,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.utilities.FileUtils.availableExternalMemorySize
@@ -48,6 +51,8 @@ class MyDownloadService : Service() {
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
+        startForegroundServiceWithNotification()
+
         val urlsKey = intent?.getStringExtra("urls_key") ?: "url_list_key"
         val urlSet = preferences.getStringSet(urlsKey, emptySet()) ?: emptySet()
 
@@ -67,6 +72,20 @@ class MyDownloadService : Service() {
         }
 
         return START_STICKY
+    }
+
+    private fun startForegroundServiceWithNotification() {
+        val channelId = "DownloadChannel"
+        val channel = NotificationChannel(channelId, "Download Service", NotificationManager.IMPORTANCE_LOW)
+        notificationManager?.createNotificationChannel(channel)
+
+        notificationBuilder = NotificationCompat.Builder(this, channelId)
+            .setContentTitle(getString(R.string.downloading_files))
+            .setContentText(getString(R.string.preparing_download))
+            .setSmallIcon(R.drawable.ic_download)
+            .setProgress(100, 0, true)
+
+        startForeground(1, notificationBuilder!!.build())
     }
 
     private fun initDownload(url: String, fromSync: Boolean) {
@@ -256,7 +275,7 @@ class MyDownloadService : Service() {
                 putExtra("urls_key", urlsKey)
                 putExtra("fromSync", fromSync)
             }
-            context.startService(intent)
+            ContextCompat.startForegroundService(context, intent)
         }
     }
 }

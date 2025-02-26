@@ -1242,5 +1242,7 @@
     <string name="show_additional_fields">थप क्षेत्रहरू देखाउनुहोस्</string>
     <string name="hide_additional_fields">थप क्षेत्रहरू लुकाउनुहोस्</string>
     <string name="age">उमेर</string>
+    <string name="preparing_download">डाउनलोडको तयारी गर्दै…</string>
+    <string name="downloading_files">फाइलहरू डाउनलोड हुँदैछन्</string>
 
 </resources>

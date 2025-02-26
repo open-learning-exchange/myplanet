@@ -1242,5 +1242,7 @@
     <string name="show_additional_fields">afficher les champs supplémentaires</string>
     <string name="hide_additional_fields">masquer les champs supplémentaires</string>
     <string name="age">Âge</string>
+    <string name="preparing_download">Préparation du téléchargement…</string>
+    <string name="downloading_files">Téléchargement des fichiers</string>
 
 </resources>
