@@ -29,12 +29,6 @@ abstract class PermissionActivity : AppCompatActivity() {
         }
     }
 
-    fun requestPermission(strPermission: String?, perCode: Int) {
-        if (!checkPermission(strPermission)) {
-            ActivityCompat.requestPermissions(this, arrayOf(strPermission), perCode)
-        }
-    }
-
     fun getUsagesPermission(context: Context): Boolean {
         val appOps = context.getSystemService(APP_OPS_SERVICE) as AppOpsManager
         var mode = -1
@@ -56,7 +50,7 @@ abstract class PermissionActivity : AppCompatActivity() {
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     fun requestAllPermissions() {
         val permissions = ArrayList<String>()
         if (!checkPermission(Manifest.permission.RECORD_AUDIO)) {
@@ -83,17 +77,25 @@ abstract class PermissionActivity : AppCompatActivity() {
                 permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
             }
         }
-        if (permissions.isNotEmpty() && !checkPermission(Manifest.permission.RECORD_AUDIO) &&!checkPermission(Manifest.permission.CAMERA)) {
-            val permissionsArray = permissions.toTypedArray<String>()
-            ActivityCompat.requestPermissions(this, permissionsArray, PERMISSION_REQUEST_CODE_FILE)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (!checkPermission(Manifest.permission.POST_NOTIFICATIONS)) {
+                permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
+        if (permissions.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, permissions.toTypedArray(), PERMISSION_REQUEST_CODE_FILE)
         }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == PERMISSION_REQUEST_CODE_FILE) {
-            if (grantResults.isNotEmpty() && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, R.string.permissions_denied, Toast.LENGTH_SHORT).show()
+            permissions.forEachIndexed { index, permission ->
+                if (grantResults[index] != PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, getString(R.string.permissions_denied), Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
