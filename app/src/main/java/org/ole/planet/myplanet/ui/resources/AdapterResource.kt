@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.resources
 
 import android.content.Context
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -87,7 +88,10 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
                 }
             holder.rowLibraryBinding.tvDate.text = libraryList[position]?.createdDate?.let { formatDate(it, "MMM dd, yyyy") }
             displayTagCloud(holder.rowLibraryBinding.flexboxDrawable, position)
-            holder.itemView.setOnClickListener { openLibrary(libraryList[position]) }
+            holder.itemView.setOnClickListener {
+                Log.d("okuro", "AdapterResource onBindViewHolder: ${libraryList[position]?.id}")
+                openLibrary(libraryList[position])
+            }
             userModel = UserProfileDbHandler(context).userModel
             if (libraryList[position]?.isResourceOffline() == true) {
                 holder.rowLibraryBinding.ivDownloaded.visibility = View.INVISIBLE
