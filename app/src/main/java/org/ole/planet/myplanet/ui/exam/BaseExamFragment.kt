@@ -121,7 +121,6 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             showUserInfoDialog()
         } else {
             saveCourseProgress()
-            var isButtonClicked = false
             val titleView = TextView(requireContext()).apply {
                 text = "${getString(R.string.thank_you_for_taking_this)}$type! ${getString(R.string.we_wish_you_all_the_best)}"
                 textSize = 18f
@@ -131,15 +130,13 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
                 setPadding(20, 25, 20, 0)
             }
 
-            AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+            val dialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                 .setCustomTitle(titleView)
                 .setPositiveButton(getString(R.string.finish)) { _: DialogInterface?, _: Int ->
-                    isButtonClicked = true
                     parentFragmentManager.popBackStack()
-                }
-                .setOnDismissListener{
-                    if(!isButtonClicked) parentFragmentManager.popBackStack()
-                }.show()
+                }.create()
+            dialog.setCanceledOnTouchOutside(false)
+            dialog.show()
         }
     }
 
