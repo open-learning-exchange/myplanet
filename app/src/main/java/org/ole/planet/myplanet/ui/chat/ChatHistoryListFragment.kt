@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.text.*
 import android.view.*
 import androidx.activity.OnBackPressedCallback
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
@@ -92,19 +93,19 @@ class ChatHistoryListFragment : Fragment() {
                 when (checkedId) {
                     R.id.btnQuestions -> {
                         isQuestion = true
-                        fragmentChatHistoryListBinding.btnQuestions.strokeColor = ColorStateList.valueOf(resources.getColor(R.color.mainColor))
-                        fragmentChatHistoryListBinding.btnResponses.strokeColor = ColorStateList.valueOf(resources.getColor(R.color.hint_color))
+                        fragmentChatHistoryListBinding.btnQuestions.strokeColor = ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.mainColor))
+                        fragmentChatHistoryListBinding.btnResponses.strokeColor = ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.hint_color))
 
-                        fragmentChatHistoryListBinding.btnQuestions.setTextColor(resources.getColor(R.color.mainColor))
-                        fragmentChatHistoryListBinding.btnResponses.setTextColor(resources.getColor(R.color.hint_color))
+                        fragmentChatHistoryListBinding.btnQuestions.setTextColor(ContextCompat.getColor(requireContext(), R.color.mainColor))
+                        fragmentChatHistoryListBinding.btnResponses.setTextColor(ContextCompat.getColor(requireContext(), R.color.hint_color))
                     }
                     R.id.btnResponses -> {
                         isQuestion = false
-                        fragmentChatHistoryListBinding.btnResponses.strokeColor = ColorStateList.valueOf(resources.getColor(R.color.mainColor))
-                        fragmentChatHistoryListBinding.btnQuestions.strokeColor = ColorStateList.valueOf(resources.getColor(R.color.hint_color))
+                        fragmentChatHistoryListBinding.btnResponses.strokeColor = ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.mainColor))
+                        fragmentChatHistoryListBinding.btnQuestions.strokeColor = ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.hint_color))
 
-                        fragmentChatHistoryListBinding.btnResponses.setTextColor(resources.getColor(R.color.mainColor))
-                        fragmentChatHistoryListBinding.btnQuestions.setTextColor(resources.getColor(R.color.hint_color))
+                        fragmentChatHistoryListBinding.btnResponses.setTextColor(ContextCompat.getColor(requireContext(), R.color.mainColor))
+                        fragmentChatHistoryListBinding.btnQuestions.setTextColor(ContextCompat.getColor(requireContext(), R.color.hint_color))
                     }
                 }
             }
