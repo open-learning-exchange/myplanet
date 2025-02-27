@@ -641,7 +641,6 @@
     <string name="added_to_my_library">lagu daray myLibrary</string>
     <string name="added_to_my_courses">lagu daray myCourses</string>
     <string name="do_you_want_to_stay_online">Ma rabtid inaad joogto internetka?</string>
-    <string name="no_resources_to_download">Ma jiro khadka ay la diyaariyaan.</string>
     <string name="planet_not_available">Geedka aan la helin</string>
     <string name="device_not_connected_to_planet">Qalabka aan la xidhiidhin Geedka.</string>
     <string name="all_files_downloaded_successfully">Dhammaan faylashu waa la degsanayaa si guul ah.</string>
