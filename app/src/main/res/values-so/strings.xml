@@ -713,7 +713,7 @@
     <string name="date_is_required">Taariikhdu waa loo baahan yahay</string>
     <string name="transaction_added">Hawlasha lagu daray</string>
     <string name="thank_you_for_taking_this">"Mahadsanid in aad la qaato "</string>
-    <string name="we_wish_you_all_the_best">. Waxaan kugu rajaynaynaa dhammaan khayrka</string>
+    <string name="we_wish_you_all_the_best">Waxaan kuu rajaynaynaa wanaag oo dhan.</string>
     <string name="thank_you_for_taking_this_survey">Mahadsanid in aad iska soo qaatay suuragal</string>
     <string name="complete">Buuxi</string>
     <string name="no_questions_available">Suuqyada ma haysano</string>
@@ -1240,5 +1240,8 @@
     <string name="choose_an_option">Dooro ikhtiyaar</string>
     <string name="welcome_back">Soo dhawoow %1$s</string>
     <string name="edit_plan">Wax ka beddel qorshaha</string>
+    <string name="show_additional_fields">muuji beeraha dheeraadka ah</string>
+    <string name="hide_additional_fields">qari beeraha dheeraadka ah</string>
+    <string name="age">Da\'da</string>
 
 </resources>

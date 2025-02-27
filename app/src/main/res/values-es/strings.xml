@@ -713,7 +713,7 @@
     <string name="date_is_required">Se requiere una fecha</string>
     <string name="transaction_added">Transacción agregada</string>
     <string name="thank_you_for_taking_this">"Gracias por realizar este "</string>
-    <string name="we_wish_you_all_the_best">. Te deseamos lo mejor</string>
+    <string name="we_wish_you_all_the_best">Te deseamos todo lo mejor.</string>
     <string name="thank_you_for_taking_this_survey">Gracias por completar esta encuesta.</string>
     <string name="complete">completa</string>
     <string name="no_questions_available">No hay preguntas disponibles</string>
@@ -1240,5 +1240,8 @@
     <string name="choose_an_option">Elige una opción</string>
     <string name="welcome_back">Bienvenido de nuevo %1$s</string>
     <string name="edit_plan">Editar plan</string>
+    <string name="show_additional_fields">mostrar campos adicionales</string>
+    <string name="hide_additional_fields">ocultar campos adicionales</string>
+    <string name="age">Edad</string>
 
 </resources>

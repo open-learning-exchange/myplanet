@@ -713,7 +713,7 @@
     <string name="date_is_required">التاريخ مطلوب</string>
     <string name="transaction_added">تمت إضافة المعاملة</string>
     <string name="thank_you_for_taking_this">"شكرًا لك على إجراء هذا "</string>
-    <string name="we_wish_you_all_the_best">. نتمنى لك كل التوفيق</string>
+    <string name="we_wish_you_all_the_best">نتمنى لك كل التوفيق.</string>
     <string name="thank_you_for_taking_this_survey">شكرًا لك على إجراء هذا الاستبيان.</string>
     <string name="complete">اكتمل</string>
     <string name="no_questions_available">لا تتوفر أسئلة</string>
@@ -1240,5 +1240,8 @@
     <string name="choose_an_option">اختر خيارًا</string>
     <string name="welcome_back">مرحبًا بعودتك %1$s</string>
     <string name="edit_plan">تعديل الخطة</string>
+    <string name="show_additional_fields">عرض الحقول الإضافية</string>
+    <string name="hide_additional_fields">إخفاء الحقول الإضافية</string>
+    <string name="age">العمر</string>
 
 </resources>
