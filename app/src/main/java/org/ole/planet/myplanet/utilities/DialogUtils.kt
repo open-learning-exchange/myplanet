@@ -88,8 +88,18 @@ object DialogUtils {
             pd.setCancelable(false)
             val d = pd.create()
             d.show()
+            d.getButton(AlertDialog.BUTTON_POSITIVE)?.apply {
+                textSize = 14f
+                setPadding(20,20,20,20)
+            }
+            d.getButton(AlertDialog.BUTTON_NEGATIVE)?.apply {
+                textSize = 14f
+                setPadding(20,20,20,20)
+            }
         }
     }
+
+
 
     @JvmStatic
     fun showSnack(v: View?, s: String?) {
