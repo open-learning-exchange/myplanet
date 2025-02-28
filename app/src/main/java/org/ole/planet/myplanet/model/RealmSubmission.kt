@@ -293,7 +293,7 @@ open class RealmSubmission : RealmObject() {
         }
 
         @JvmStatic
-        fun serialize(submission: RealmSubmission): JsonObject {
+        fun serialize(mRealm: Realm, submission: RealmSubmission): JsonObject {
             val gson = Gson()
             val jsonObject = JsonObject()
 
@@ -332,12 +332,17 @@ open class RealmSubmission : RealmObject() {
                     jsonObject.add("user", userJson)
                 }
 
+                val questions = mRealm.where(RealmExamQuestion::class.java)
+                    .equalTo("examId", submission.parentId)
+                    .findAll()
+                val serializedQuestions = RealmExamQuestion.serializeQuestions(questions)
+                jsonObject.add("questions", serializedQuestions)
+
                 val answersArray = JsonArray()
                 submission.answers?.forEach { answer ->
                     answersArray.add(gson.toJsonTree(answer))
                 }
                 jsonObject.add("answers", answersArray)
-
             } catch (e: Exception) {
                 e.printStackTrace()
             }
