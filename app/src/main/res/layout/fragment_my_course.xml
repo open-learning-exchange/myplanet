@@ -32,7 +32,7 @@
                 <TextView
                     android:id="@+id/tv_fragment_info"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="40dp"
                     android:layout_gravity="center_vertical"
                     android:layout_margin="@dimen/_10dp"
                     android:layout_weight="1"
@@ -43,10 +43,11 @@
                     android:textSize="@dimen/text_size_large"
                     android:textStyle="bold"
                     android:minWidth="150dp" />
+
                 <Button
                     android:id="@+id/btn_remove"
                     android:layout_width="70dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="35dp"
                     android:layout_gravity="center"
                     android:layout_margin="@dimen/padding_small"
                     android:background="@drawable/buttonblue"
@@ -55,11 +56,12 @@
                     android:textColor="@color/md_white_1000"
                     android:textSize="13sp"
                     android:visibility="gone" />
+
                 <TextView
                     android:id="@+id/tv_add"
                     style="@style/Widget.AppCompat.Button.Borderless.Colored"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="40dp"
                     android:layout_gravity="center"
                     android:layout_margin="@dimen/padding_small"
                     android:drawablePadding="4dp"
@@ -70,10 +72,11 @@
                     android:textSize="@dimen/text_size_mid"
                     app:drawableLeftCompat="@drawable/ic_add_library"
                     android:width="180dp" />
+
                 <TextView
                     android:id="@+id/tv_selected"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_height="40dp"
                     android:layout_gravity="center"
                     android:layout_margin="@dimen/_10dp"
                     android:background="?attr/selectableItemBackground"
@@ -85,10 +88,11 @@
                     app:drawableLeftCompat="@drawable/ic_delete"
                     app:drawableTint="@color/daynight_textColor"
                     android:minWidth="120dp" />
+
                 <Button
                     android:id="@+id/btn_archive"
                     android:layout_width="95dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="35dp"
                     android:layout_gravity="center"
                     android:layout_margin="@dimen/_10dp"
                     android:background="?attr/selectableItemBackground"
@@ -99,6 +103,7 @@
                     android:visibility="gone"
                     app:drawableLeftCompat="@drawable/ic_delete"
                     app:drawableTint="@color/daynight_textColor" />
+
                 <ImageButton
                     android:id="@+id/filter"
                     style="@style/YellowButtons"
