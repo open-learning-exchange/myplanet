@@ -15,6 +15,7 @@ import io.realm.Sort
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.settings
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
@@ -172,8 +173,8 @@ open class RealmSubmission : RealmObject() {
             `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
             `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
             `object`.addProperty("sender", sub.sender)
-            `object`.addProperty("source", sub.source)
-            `object`.addProperty("parentCode", sub.parentCode)
+            `object`.addProperty("source", settings?.getString("planetCode", ""))
+            `object`.addProperty("parentCode", settings?.getString("parentCode", ""))
             val parent = Gson().fromJson(sub.parent, JsonObject::class.java)
             `object`.add("parent", parent)
             `object`.add("answers", RealmAnswer.serializeRealmAnswer(sub.answers!!))
