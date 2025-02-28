@@ -12,6 +12,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.*
+import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import io.realm.Realm
 import org.ole.planet.myplanet.*
@@ -177,10 +178,23 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             syncIcon.scaleType
             syncIconDrawable = syncIcon.drawable as AnimationDrawable
             syncIcon.setOnClickListener {
+                val protocol = settings.getString("serverProtocol", "")
+                val serverUrl = "${settings.getString("serverURL", "")}"
+                val serverPin = "${settings.getString("serverPin", "")}"
+
+                val url = if (serverUrl.startsWith("http://") || serverUrl.startsWith("https://")) {
+                    serverUrl
+                } else {
+                    "$protocol$serverUrl"
+                }
                 syncIconDrawable.start()
-                isSync = false
-                forceSync = true
-                service.checkVersion(this, settings)
+
+                val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
+                val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
+                val builder = MaterialDialog.Builder(contextWrapper).customView(dialogServerUrlBinding.root, true)
+                val dialog = builder.build()
+                currentDialog = dialog
+                service.getMinApk(this, url, serverPin, this, "LoginActivity")
             }
             declareHideKeyboardElements()
             activityLoginBinding.lblVersion.text = getString(R.string.version, resources.getText(R.string.app_version))
@@ -194,10 +208,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 false
             }
             setUpLanguageButton()
-            if (defaultPref.getBoolean("saveUsernameAndPassword", false)) {
-                activityLoginBinding.inputName.setText(settings.getString(getString(R.string.login_user), ""))
-                activityLoginBinding.inputPassword.setText(settings.getString(getString(R.string.login_password), ""))
-            }
             if (NetworkUtils.isNetworkConnected) {
                 service.syncPlanetServers(mRealm) { success: String? ->
                     toast(this, success)
@@ -236,7 +246,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         if (!teams.isNullOrEmpty()) {
             activityLoginBinding.team.visibility = View.VISIBLE
             teamAdapter = ArrayAdapter(this, R.layout.spinner_item_white, teamList)
-            teamAdapter?.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            teamAdapter?.setDropDownViewResource(R.layout.custom_simple_list_item_1)
             teamList.clear()
             teamList.add(getString(R.string.select_team))
             for (team in teams) {

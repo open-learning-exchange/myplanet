@@ -7,6 +7,7 @@
     tools:context=".ui.enterprises.FinanceFragment">
 
     <LinearLayout
+        android:id="@+id/data_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
@@ -18,22 +19,93 @@
             android:paddingLeft="@dimen/padding_normal"
             android:paddingRight="@dimen/padding_normal">
 
-            <Button
-                android:id="@+id/btn_filter"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:id="@+id/llFromDate"
+                android:orientation="horizontal"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_gravity="left"
-                android:padding="@dimen/padding_normal"
-                android:text="@string/filter_by_date"
-                android:textSize="18sp"
-                android:theme="@style/GuestStyle" />
+                android:layout_weight="1"
+                android:gravity="center_vertical">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="From Date"
+                    android:textColorHint="@color/hint_color">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/tvFromDateCalendar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:focusable="false"
+                        android:inputType="none"
+                        android:padding="@dimen/padding_normal"
+                        android:textColor="@color/daynight_textColor"
+                        android:textSize="16sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <ImageView
+                    android:id="@+id/tvFromDateCalendarIcon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/ic_date"
+                    app:tint="@color/daynight_textColor"
+                    android:contentDescription="Select From Date"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="@dimen/padding_small" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/llToDate"
+                android:orientation="horizontal"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center_vertical">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:hint="To Date"
+                    android:textColorHint="@color/hint_color">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etToDate"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:focusable="false"
+                        android:inputType="none"
+                        android:padding="@dimen/padding_normal"
+                        android:textColor="@color/daynight_textColor"
+                        android:textSize="16sp" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <ImageView
+                    android:id="@+id/tvToDateCalendarIcon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/ic_date"
+                    app:tint="@color/daynight_textColor"
+                    android:contentDescription="Select To Date"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:padding="@dimen/padding_small" />
+            </LinearLayout>
+
             <Button
                 android:id="@+id/btn_reset"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:layout_marginStart="16dp"
+                android:background="@color/mainColor"
                 android:layout_gravity="left"
                 android:padding="@dimen/padding_normal"
                 android:text="@string/date_reset"
+                android:textColor="@android:color/white"
                 android:textSize="18sp"
                 android:theme="@style/GuestStyle" />
         </LinearLayout>
@@ -97,7 +169,6 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/credit"
                 android:layout_width="0dp"
@@ -108,7 +179,6 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/debit"
                 android:layout_width="0dp"
@@ -119,8 +189,6 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_mid"
                 android:textStyle="bold" />
-
-
             <TextView
                 android:id="@+id/balance"
                 android:layout_width="0dp"

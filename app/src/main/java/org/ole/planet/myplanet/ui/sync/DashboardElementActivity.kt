@@ -10,6 +10,8 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
+import android.view.ContextThemeWrapper
+import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
@@ -17,17 +19,15 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
-import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import com.afollestad.materialdialogs.MaterialDialog
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import io.realm.Realm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
+import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
@@ -36,14 +36,13 @@ import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
-import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.rating.RatingFragment.Companion.newInstance
+import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.Utilities
 
 abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBackStackChangedListener {
     lateinit var navigationView: BottomNavigationView
@@ -56,6 +55,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         profileDbHandler = UserProfileDbHandler(this)
         settings = applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         prefData = SharedPrefManager(this)
+        supportFragmentManager.addOnBackStackChangedListener(this)
     }
 
     fun onClickTabItems(position: Int) {
@@ -151,26 +151,26 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun logSyncInSharedPrefs() {
-        lifecycleScope.launch(Dispatchers.IO + SupervisorJob()) {
-            try {
-                val isReachable = isServerReachable(Utilities.getUrl())
-                if (isReachable) {
-                    withContext(Dispatchers.Main) {
-                        startUpload("dashboard")
-                    }
+        val protocol = settings.getString("serverProtocol", "")
+        val serverUrl = "${settings.getString("serverURL", "")}"
+        val serverPin = "${settings.getString("serverPin", "")}"
 
-                    withContext(Dispatchers.IO) {
-                        Realm.getDefaultInstance().use { realm ->
-                            realm.executeTransaction {
-                                createAction(realm, "${profileDbHandler.userModel?.id}", null, "sync")
-                            }
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+        val url = if (serverUrl.startsWith("http://") || serverUrl.startsWith("https://")) {
+            serverUrl
+        } else {
+            "$protocol$serverUrl"
         }
+
+        val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
+        val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
+
+        val builder = MaterialDialog.Builder(contextWrapper)
+            .customView(dialogServerUrlBinding.root, true)
+
+        val dialog = builder.build()
+        currentDialog = dialog
+        service.getMinApk(this, url, serverPin, this, "DashboardActivity")
+        createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
     }
 
     @SuppressLint("RestrictedApi")
@@ -249,13 +249,13 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         val f = supportFragmentManager.findFragmentById(R.id.fragment_container)
         val fragmentTag = f?.tag
         if (f is CoursesFragment) {
-            if ("shelf" == fragmentTag) {
+            if ("MyCoursesFragment" == fragmentTag) {
                 navigationView.menu.findItem(R.id.menu_mycourses).isChecked = true
             } else {
                 navigationView.menu.findItem(R.id.menu_courses).isChecked = true
             }
         } else if (f is ResourcesFragment) {
-            if ("shelf" == fragmentTag) {
+            if ("MyResourcesFragment" == fragmentTag) {
                 navigationView.menu.findItem(R.id.menu_mylibrary).isChecked = true
             } else {
                 navigationView.menu.findItem(R.id.menu_library).isChecked = true

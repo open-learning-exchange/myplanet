@@ -163,9 +163,12 @@ class ReportsFragment : BaseTeamFragment() {
             createFileLauncher.launch(intent)
         }
 
-        list = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
+        list = mRealm.where(RealmMyTeam::class.java)
+            .equalTo("teamId", teamId)
             .equalTo("docType", "report")
-            .sort("date", Sort.DESCENDING).findAllAsync()
+            .notEqualTo("status", "archived")
+            .sort("date", Sort.DESCENDING)
+            .findAllAsync()
 
         list?.addChangeListener { results ->
             updatedReportsList(results)
@@ -176,9 +179,12 @@ class ReportsFragment : BaseTeamFragment() {
                 val uri = result.data?.data
                 if (uri != null) {
                     try {
-                        val reports = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
+                        val reports = mRealm.where(RealmMyTeam::class.java)
+                            .equalTo("teamId", teamId)
                             .equalTo("docType", "report")
-                            .sort("date", Sort.DESCENDING).findAll()
+                            .notEqualTo("status", "archived")
+                            .sort("date", Sort.DESCENDING)
+                            .findAll()
                         val csvBuilder = StringBuilder()
                         csvBuilder.append("${prefData.getTeamName()} Financial Report Summary\n\n")
                         csvBuilder.append("Start Date, End Date, Created Date, Updated Date, Beginning Balance, Sales, Other Income, Wages, Other Expenses, Profit/Loss, Ending Balance\n")
@@ -209,9 +215,12 @@ class ReportsFragment : BaseTeamFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        list = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
+        list = mRealm.where(RealmMyTeam::class.java)
+            .equalTo("teamId", teamId)
             .equalTo("docType", "report")
-            .sort("date", Sort.DESCENDING).findAll()
+            .notEqualTo("status", "archived")  // Add this line
+            .sort("date", Sort.DESCENDING)
+            .findAll()
         updatedReportsList(list as RealmResults<RealmMyTeam>)
     }
 
@@ -222,13 +231,19 @@ class ReportsFragment : BaseTeamFragment() {
         llImage?.removeAllViews()
     }
 
-    private fun updatedReportsList(results: RealmResults<RealmMyTeam>) {
+    fun updatedReportsList(results: RealmResults<RealmMyTeam>) {
         activity?.runOnUiThread {
             adapterReports = AdapterReports(requireContext(), results)
             adapterReports.setNonTeamMember(!isMember())
             fragmentReportsBinding.rvReports.layoutManager = LinearLayoutManager(activity)
             fragmentReportsBinding.rvReports.adapter = adapterReports
             adapterReports.notifyDataSetChanged()
+
+            if (results.isEmpty()) {
+                fragmentReportsBinding.exportCSV.visibility = View.GONE
+            } else {
+                fragmentReportsBinding.exportCSV.visibility = View.VISIBLE
+            }
         }
     }
 }

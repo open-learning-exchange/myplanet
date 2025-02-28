@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import android.os.Bundle
+import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -61,7 +62,12 @@ class BellDashboardFragment : BaseDashboardFragment() {
         setupNetworkStatusMonitoring()
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         showBadges()
+        if((user?.id?.startsWith("guest") != true))
         checkPendingSurveys()
+
+        if (model?.id?.startsWith("guest") == false && TextUtils.isEmpty(model?.key)) {
+            syncKeyId()
+        }
     }
 
     private fun setupNetworkStatusMonitoring() {
@@ -120,7 +126,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
             val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
             val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
             recyclerView.layoutManager = LinearLayoutManager(requireActivity())
-
             val alertDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                 .setTitle(getString(R.string.surveys_to_complete, pendingSurveys.size, if (pendingSurveys.size > 1) "surveys" else "survey"))
                 .setView(dialogView)
@@ -128,11 +133,14 @@ class BellDashboardFragment : BaseDashboardFragment() {
                     homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
                     dialog.dismiss()
                 }
+                .setNegativeButton(getString(R.string.cancel)) { dialog, _->
+                    dialog.dismiss()
+                }
                 .create()
 
             val adapter = SurveyAdapter(surveyTitles, { position ->
                 val selectedSurvey = pendingSurveys[position].id
-                AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true)
+                AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
             }, alertDialog)
 
             recyclerView.adapter = adapter
@@ -213,14 +221,14 @@ class BellDashboardFragment : BaseDashboardFragment() {
             if (user?.id?.startsWith("guest") == true) {
                 guestDialog(requireContext())
             } else {
-                openHelperFragment(ResourcesFragment())
+                homeItemClickListener?.openMyFragment(ResourcesFragment())
             }
         }
         fragmentHomeBellBinding.homeCardCourses.myCoursesImageButton.setOnClickListener {
             if (user?.id?.startsWith("guest") == true) {
                 guestDialog(requireContext())
             } else {
-                openHelperFragment(CoursesFragment())
+                homeItemClickListener?.openMyFragment(CoursesFragment())
             }
         }
         fragmentHomeBellBinding.fabMyActivity.setOnClickListener { openHelperFragment(MyActivityFragment()) }

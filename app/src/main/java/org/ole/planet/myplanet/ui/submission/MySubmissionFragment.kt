@@ -72,6 +72,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         } else {
             fragmentMySubmissionBinding.rbSurvey.visibility = View.GONE
             fragmentMySubmissionBinding.rbExam.visibility = View.GONE
+            fragmentMySubmissionBinding.rgSubmission.visibility = View.GONE
         }
     }
 
@@ -104,12 +105,29 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
 
         val adapter = AdapterMySubmission(requireActivity(), submissions, exams)
         val itemCount = adapter.itemCount
-        showNoData(fragmentMySubmissionBinding.tvMessage, itemCount, "submission")
 
-        if (itemCount == 0) {
-            fragmentMySubmissionBinding.llSearch.visibility = View.GONE
-            fragmentMySubmissionBinding.title.visibility = View.GONE
+        if (s.isEmpty()) {
+            fragmentMySubmissionBinding.llSearch.visibility = View.VISIBLE
+            fragmentMySubmissionBinding.title.visibility = View.VISIBLE
+            if (fragmentMySubmissionBinding.rbSurvey.isChecked || type == "survey") {
+                fragmentMySubmissionBinding.tvFragmentInfo.text = "mySurveys"
+                showNoData(fragmentMySubmissionBinding.tvMessage, itemCount, "survey_submission")
+
+            } else {
+                fragmentMySubmissionBinding.tvFragmentInfo.text = "mySubmissions"
+                showNoData(fragmentMySubmissionBinding.tvMessage, itemCount, "exam_submission")
+            }
+
+            if (itemCount == 0) {
+                fragmentMySubmissionBinding.title.visibility = View.GONE
+                fragmentMySubmissionBinding.tlSearch.visibility = View.GONE
+            } else {
+                fragmentMySubmissionBinding.tvMessage.visibility = View.GONE
+                fragmentMySubmissionBinding.title.visibility = View.VISIBLE
+                fragmentMySubmissionBinding.tlSearch.visibility = View.VISIBLE
+            }
         }
+
         adapter.setmRealm(mRealm)
         adapter.setType(type)
         fragmentMySubmissionBinding.rvMysurvey.adapter = adapter

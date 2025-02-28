@@ -17,14 +17,11 @@ object ApiClient {
                 .readTimeout(30, TimeUnit.SECONDS).writeTimeout(30, TimeUnit.SECONDS).build()
             if (retrofit == null) {
                 retrofit = Retrofit.Builder()
-                    .baseUrl(BASE_URL)
-                    .client(client)
-                    .addConverterFactory(
+                    .baseUrl(BASE_URL).client(client).addConverterFactory(
                         GsonConverterFactory.create(
                             GsonBuilder()
                                 .excludeFieldsWithModifiers(Modifier.FINAL, Modifier.TRANSIENT, Modifier.STATIC)
-                                .serializeNulls()
-                                .create()
+                                .serializeNulls().create()
                         )
                     ).build()
             }

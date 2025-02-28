@@ -164,7 +164,6 @@
     <string name="get_started">GET STARTED</string>
     <string name="enter_password">Enter Password</string>
     <string name="managerial_login">Manager Login</string>
-    <string name="save_username_and_password">save username and password</string>
     <string name="year">Year</string>
     <string name="publisher">Publisher</string>
     <string name="link_to_license">Link to license</string>
@@ -744,6 +743,9 @@
     <string name="return_to_the_home_tab_to_access_mylibrary">\n\nReturn to the Home tab to access myLibrary.\n</string>
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nNote: You may still need to download the newly added resources.</string>
     <string name="self_examination">%s\nSelf Examination</string>
+    <string name="pending_survey_notification">you have a pending survey:</string>
+    <string name="task_notification">%1$s is due in %2$s</string>
+    <string name="resource_notification">You have %1$d resources not downloaded</string>
     <string name="vitals_format">
         Temperature: %1$s\n
         Pulse: %2$s\n
@@ -1084,7 +1086,6 @@
     <string name="add_note">add a note (optional)</string>
     <string name="no_teams">teams not available</string>
     <string name="planet_name">%s\'s Planet</string>
-    <string name="no_submissions">submissions not available</string>
     <string name="no_chats">no previous chats</string>
     <string name="no_feedback">no feedback available</string>
     <string name="empty_text" />
@@ -1136,7 +1137,6 @@
     <string name="sync_embakasi">🇰🇪 planet embakasi</string>
     <string name="sync_cambridge">🇺🇸 planet cambridge</string>
     <string name="sync_egdirbmac">🇺🇸 planet egdirbmac</string>
-    <string name="sync_palmbay">🇺🇸 planet palmbay</string>
     <string name="surveys_to_complete">You have %1$d %2$s to complete</string>
     <string name="show_less">show less</string>
     <string name="show_more">show more</string>
@@ -1224,5 +1224,7 @@
     <string name="community">community</string>
     <string name="no_enterprise">enteprises not available</string>
     <string name="local_resource">local resource</string>
+    <string name="no_survey_submissions">no survey submissions</string>
+    <string name="no_exam_submissions">no exam submissions</string>
 
 </resources>

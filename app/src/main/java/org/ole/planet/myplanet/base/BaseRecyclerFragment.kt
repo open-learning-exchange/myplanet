@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities.toast
+import java.text.Normalizer
 import java.util.Locale
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
@@ -177,43 +178,70 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     private fun <LI : RealmModel> getData(s: String, c: Class<LI>): List<LI> {
+        if (s.isEmpty()) return mRealm.where(c).findAll()
+
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
-        return if (s.contains(" ")) {
+        val fieldName = if (c == RealmMyLibrary::class.java) "title" else "courseTitle"
+
+        return if (queryParts.size > 1) {
             val data: RealmResults<LI> = mRealm.where(c).findAll()
             data.filter { item ->
                 searchAndMatch(item, c, queryParts)
             }
         } else {
-            mRealm.where(c).contains(if (c == RealmMyLibrary::class.java) "title" else "courseTitle", s, Case.INSENSITIVE).findAll()
+            mRealm.where(c).findAll().filter { item ->
+                val title = when {
+                    c.isAssignableFrom(RealmMyLibrary::class.java) -> (item as RealmMyLibrary).title
+                    else -> (item as RealmMyCourse).courseTitle
+                }
+                title?.let {
+                    normalizeText(it).contains(normalizeText(s))
+                } ?: false
+            }
         }
     }
 
     private fun <LI : RealmModel> searchAndMatch(item: LI, c: Class<out RealmModel>, queryParts: List<String>): Boolean {
-        val title = if (c.isAssignableFrom(RealmMyLibrary::class.java)) {
-            (item as RealmMyLibrary).title
-        } else {
-            (item as RealmMyCourse).courseTitle
-        }
+        val title = when {
+            c.isAssignableFrom(RealmMyLibrary::class.java) -> (item as RealmMyLibrary).title
+            else -> (item as RealmMyCourse).courseTitle
+        }?.let { normalizeText(it) } ?: return false
+
         return queryParts.all { queryPart ->
-            title?.lowercase(Locale.getDefault())?.contains(queryPart.lowercase(Locale.getDefault())) == true
+            title.contains(normalizeText(queryPart))
         }
     }
 
     fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
+        val normalizedSearchTerm = normalizeText(s)
         var list = getData(s, RealmMyLibrary::class.java)
         list = if (isMyCourseLib) {
             getMyLibraryByUserId(model?.id, list)
         } else {
             getOurLibrary(model?.id, list)
         }
-        if (tags.isEmpty()) {
-            return list
+
+        val libraries = if (tags.isNotEmpty()) {
+            val filteredLibraries = mutableListOf<RealmMyLibrary>()
+            for (library in list) {
+                filter(tags, library, filteredLibraries)
+            }
+            filteredLibraries
+        } else {
+            list
         }
-        val libraries = mutableListOf<RealmMyLibrary>()
-        for (library in list) {
-            filter(tags, library, libraries)
-        }
-        return libraries
+
+        return libraries.sortedWith(compareBy<RealmMyLibrary> { library ->
+            val normalizedTitle = normalizeText(library.title ?: "")
+            !normalizedTitle.contains(normalizedSearchTerm)
+        }.thenBy { library ->
+            normalizeText(library.title ?: "")
+        })
+    }
+
+    fun normalizeText(str: String): String {
+        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
+            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
     }
 
     fun filterCourseByTag(s: String, tags: List<RealmTag>): List<RealmMyCourse> {
@@ -301,7 +329,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                 "members" -> (v as TextView).setText(R.string.no_join_request_available)
                 "discussions" -> (v as TextView).setText(R.string.no_news)
                 "survey" -> (v as TextView).setText(R.string.no_surveys)
-                "submission" -> (v as TextView).setText(R.string.no_submissions)
+                "survey_submission" -> (v as TextView).setText(R.string.no_survey_submissions)
+                "exam_submission" -> (v as TextView).setText(R.string.no_exam_submissions)
                 "team" -> (v as TextView).setText(R.string.no_teams)
                 "enterprise" -> (v as TextView).setText(R.string.no_enterprise)
                 "chatHistory" -> (v as TextView).setText(R.string.no_chats)

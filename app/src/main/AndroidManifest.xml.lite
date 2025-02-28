@@ -69,6 +69,7 @@
 
         <activity
             android:name=".ui.userprofile.BecomeMemberActivity"
+            android:windowSoftInputMode="adjustResize|stateHidden"
             android:theme="@style/AppTheme" />
         <activity
             android:name=".ui.courses.CourseProgressActivity"

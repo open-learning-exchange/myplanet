@@ -164,7 +164,6 @@
     <string name="get_started">البدء</string>
     <string name="enter_password">أدخل كلمة المرور</string>
     <string name="managerial_login">تسجيل الدخول كمدير</string>
-    <string name="save_username_and_password">حفظ اسم المستخدم وكلمة المرور</string>
     <string name="year">السنة</string>
     <string name="publisher">الناشر</string>
     <string name="link_to_license">رابط الترخيص</string>
@@ -744,6 +743,9 @@
     <string name="return_to_the_home_tab_to_access_mylibrary">\n\nعودة إلى علامة التبويب الرئيسية للوصول إلى "مكتبتي".\n</string>
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nملاحظة: قد تحتاج لاستكمال تنزيل الموارد المضافة حديثًا.</string>
     <string name="self_examination">%s\nالفحص الذاتي</string>
+    <string name="pending_survey_notification">لديك استطلاع قيد الانتظار:</string>
+    <string name="task_notification">%1$s مستحق في %2$s</string>
+    <string name="resource_notification">لديك %1$d موارد لم يتم تنزيلها</string>
     <string name="vitals_format">
     درجة الحرارة: %1$s\n
     النبض: %2$s\n
@@ -1084,7 +1086,6 @@
     <string name="add_note">إضافة ملاحظة (اختياري)</string>
     <string name="no_teams">الفرق غير متوفرة</string>
     <string name="planet_name">كوكب %s</string>
-    <string name="no_submissions">التقديمات غير متاحة</string>
     <string name="no_chats">لا توجد محادثات سابقة</string>
     <string name="no_feedback">لا توجد تعليقات متاحة</string>
     <string name="empty_text" />
@@ -1136,7 +1137,6 @@
     <string name="sync_embakasi">🇰🇪 planet embakasi</string>
     <string name="sync_cambridge">🇺🇸 planet cambridge</string>
     <string name="sync_egdirbmac">🇺🇸 planet egdirbmac</string>
-    <string name="sync_palmbay">🇺🇸 planet palmbay</string>
     <string name="surveys_to_complete">لديك %1$d %2$s لإكماله</string>
     <string name="show_less">عرض أقل</string>
     <string name="show_more">عرض المزيد</string>
@@ -1224,5 +1224,7 @@
     <string name="community">مجتمع</string>
     <string name="no_enterprise">المؤسسات غير متوفرة</string>
     <string name="local_resource">مورد محلي</string>
+    <string name="no_survey_submissions">لا توجد استجابات للاستبيان</string>
+    <string name="no_exam_submissions">لا توجد استجابات للامتحان</string>
 
 </resources>

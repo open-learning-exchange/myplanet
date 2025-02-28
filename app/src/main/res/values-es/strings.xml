@@ -163,8 +163,6 @@
     <string name="search_user">Buscar usuario</string>
     <string name="get_started">EMPEZAR</string>
     <string name="enter_password">Ingresar contraseña</string>
-    <string name="managerial_login">Inicio de sesión del administrador</string>
-    <string name="save_username_and_password">Guardar nombre de usuario y contraseña</string>
     <string name="year">Año</string>
     <string name="publisher">Editor</string>
     <string name="link_to_license">Enlace a la licencia</string>
@@ -744,6 +742,9 @@
     <string name="return_to_the_home_tab_to_access_mylibrary">\n\nRegresa a la pestaña de Inicio para acceder a miBiblioteca.\n</string>
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nNota: Es posible que aún necesites descargar los recursos recién agregados.</string>
     <string name="self_examination">%s\nAutoexamen</string>
+    <string name="pending_survey_notification">tienes una encuesta pendiente:</string>
+    <string name="task_notification">%1$s vence el %2$s</string>
+    <string name="resource_notification">Tienes %1$d recursos no descargados</string>
     <string name="vitals_format">
     Temperatura: %1$s\n
     Pulso: %2$s\n
@@ -1084,7 +1085,6 @@
     <string name="add_note">Agregar una nota (opcional)</string>
     <string name="no_teams">equipos no disponibles</string>
     <string name="planet_name">%s Planeta</string>
-    <string name="no_submissions">envíos no disponibles</string>
     <string name="no_chats">no hay chats anteriores</string>
     <string name="no_feedback">No hay comentarios aquí</string>
     <string name="empty_text" />
@@ -1136,7 +1136,6 @@
     <string name="sync_embakasi">🇰🇪 planet embakasi</string>
     <string name="sync_cambridge">🇺🇸 planet cambridge</string>
     <string name="sync_egdirbmac">🇺🇸 planet egdirbmac</string>
-    <string name="sync_palmbay">🇺🇸 planet palmbay</string>
     <string name="surveys_to_complete">Tienes %1$d %2$s para completar</string>
     <string name="show_less">mostrar menos</string>
     <string name="show_more">mostrar más</string>
@@ -1224,5 +1223,7 @@
     <string name="community">comunidad</string>
     <string name="no_enterprise">empresas no disponibles</string>
     <string name="local_resource">recurso local</string>
+    <string name="no_survey_submissions">no hay envíos de encuestas</string>
+    <string name="no_exam_submissions">no hay envíos de exámenes</string>
 
 </resources>

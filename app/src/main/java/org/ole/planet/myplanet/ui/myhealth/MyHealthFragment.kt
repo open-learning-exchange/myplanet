@@ -67,7 +67,7 @@ class MyHealthFragment : Fragment() {
             val now = Calendar.getInstance()
             val dpd = DatePickerDialog(requireContext(), { _, year, month, dayOfMonth ->
                 val selectedDate = String.format(Locale.US, "%04d-%02d-%02dT00:00:00.000Z", year, month + 1, dayOfMonth)
-                fragmentVitalSignBinding.txtDob.setText(selectedDate)
+                fragmentVitalSignBinding.txtDob.text = selectedDate
             }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH))
             dpd.show()
         }
@@ -117,7 +117,7 @@ class MyHealthFragment : Fragment() {
             dialog?.dismiss()
         }
         sortList(alertHealthListBinding.spnSort, alertHealthListBinding.list)
-        dialog = AlertDialog.Builder(requireActivity())
+        dialog = AlertDialog.Builder(requireActivity(),R.style.AlertDialogTheme)
             .setTitle(getString(R.string.select_health_member)).setView(alertHealthListBinding.root)
             .setCancelable(false).setNegativeButton(R.string.dismiss, null).create()
         dialog?.show()
@@ -205,11 +205,11 @@ class MyHealthFragment : Fragment() {
                 return
             }
             val myHealths = mm.profile
-            fragmentVitalSignBinding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes!!)
-            fragmentVitalSignBinding.txtSpecialNeeds.text = Utilities.checkNA(myHealths.specialNeeds)
-            fragmentVitalSignBinding.txtBirthPlace.text = Utilities.checkNA(userModel?.birthPlace!!)
-            fragmentVitalSignBinding.txtEmergencyContact.text = getString(R.string.emergency_contact_details, Utilities.checkNA(myHealths.emergencyContactName),
-                Utilities.checkNA(myHealths.emergencyContactName), Utilities.checkNA(myHealths.emergencyContact)).trimIndent()
+            fragmentVitalSignBinding.txtOtherNeed.text = Utilities.checkNA("${myHealths?.notes}")
+            fragmentVitalSignBinding.txtSpecialNeeds.text = Utilities.checkNA("${myHealths?.specialNeeds}")
+            fragmentVitalSignBinding.txtBirthPlace.text = Utilities.checkNA("${userModel?.birthPlace}")
+            fragmentVitalSignBinding.txtEmergencyContact.text = getString(R.string.emergency_contact_details, Utilities.checkNA("${myHealths?.emergencyContactName}"),
+                Utilities.checkNA("${myHealths?.emergencyContactName}"), Utilities.checkNA("${myHealths?.emergencyContact}")).trimIndent()
             val list = getExaminations(mm)
 
             val adap = AdapterHealthExamination(requireActivity(), list, mh, userModel)
@@ -220,7 +220,10 @@ class MyHealthFragment : Fragment() {
                 adapter = adap
             }
             fragmentVitalSignBinding.rvRecords.post {
-                fragmentVitalSignBinding.rvRecords.scrollToPosition(list?.size ?: (0 - 1))
+                val lastPosition = (list?.size ?: 0) - 1
+                if (lastPosition >= 0) {
+                    fragmentVitalSignBinding.rvRecords.scrollToPosition(lastPosition)
+                }
             }
         } else {
             fragmentVitalSignBinding.txtOtherNeed.text = getString(R.string.empty_text)

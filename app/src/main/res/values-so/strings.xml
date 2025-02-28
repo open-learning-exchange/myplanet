@@ -164,7 +164,6 @@
     <string name="get_started">BILAAB</string>
     <string name="enter_password">Geli Password</string>
     <string name="managerial_login">Maareeyaha Soo gal</string>
-    <string name= "save_username_and_password">Keydi magaca isticmaalaha iyo erayga sirta ah</string>
     <string name="year">Sannad</string>
     <string name="publisher">Daabace</string>
     <string name="link_to_license">Link to shatiga</string>
@@ -744,6 +743,9 @@
     <string name="return_to_the_home_tab_to_access_mylibrary">\n\nKu noqo tabka Home si aad uga heli karto maktabaddaaga.\n</string>
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nNote: Amaan waxaad u baahan tahay inaad ku diyaariyey khadkaan cusub ee la soo kiciyey.</string>
     <string name="self_examination">%s\nIs-imtixaanid</string>
+    <string name="pending_survey_notification">waxaad leedahay su\'aal weydiin sugaya:</string>
+    <string name="task_notification">%1$s waa inuu dhamaadaa %2$s</string>
+    <string name="resource_notification">Waxaad haysataa %1$d agab aan la soo dejisan</string>
     <string name="vitals_format">
     Heerkulka: %1$s\n
     Garaaca wadnaha: %2$s\n
@@ -1084,7 +1086,6 @@
     <string name="add_note">Ku dar falanqeey (ixtiyaacsi ah)</string>
     <string name="no_teams">kooxaha aan la heli karin</string>
     <string name="planet_name">%s Meerah</string>
-    <string name="no_submissions">soo gudbin lama heli karo</string>
     <string name="no_chats">ma jiraan wada sheekaysi hore</string>
     <string name="no_feedback">wax jawaab celin ah lama hayo</string>
     <string name="empty_text" />
@@ -1136,7 +1137,6 @@
     <string name="sync_embakasi">🇰🇪 planet embakasi</string>
     <string name="sync_cambridge">🇺🇸 planet cambridge</string>
     <string name="sync_egdirbmac">🇺🇸 planet egdirbmac</string>
-    <string name="sync_palmbay">🇺🇸 planet palmbay</string>
     <string name="surveys_to_complete">Waxaad haysataa %1$d %2$s oo ay tahay inaad dhammaystirto</string>
     <string name="show_less">tus wax yar</string>
     <string name="show_more">tus wax badan</string>
@@ -1224,5 +1224,7 @@
     <string name="community">bulsho</string>
     <string name="no_enterprise">ganacsiyo lama heli karo</string>
     <string name="local_resource">kheyraadka deegaanka</string>
+    <string name="no_survey_submissions">ma jiro soo gudbinta sahanka</string>
+    <string name="no_exam_submissions">ma jiro soo gudbinta imtixaan</string>
 
 </resources>

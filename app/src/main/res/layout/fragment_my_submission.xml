@@ -2,6 +2,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@color/secondary_bg"
     tools:context=".ui.submission.MySubmissionFragment">
 
@@ -10,66 +11,109 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/colorPrimary"
+            android:padding="20dp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent">
+
+            <ImageView
+                android:id="@+id/iv_icon"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_marginEnd="8dp"
+                android:padding="4dp"
+                android:src="@drawable/ic_submissions"
+                app:tint="@color/daynight_textColor"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
+            <TextView
+                android:id="@+id/tv_fragment_info"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="@string/submission"
+                android:gravity="center_vertical"
+                android:padding="@dimen/padding_normal"
+                android:textColor="@color/textColorPrimary"
+                android:textSize="@dimen/text_size_large"
+                android:textStyle="bold"
+                android:minWidth="150dp"
+                app:layout_constraintStart_toEndOf="@id/iv_icon"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
         <LinearLayout
             android:id="@+id/llSearch"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="right"
-            android:gravity="right">
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:padding="10dp">
 
             <RadioGroup
-                android:layout_width="0dp"
+                android:id="@+id/rg_submission"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="right"
-                android:layout_weight="1"
-                android:gravity="right"
+                android:background="@drawable/submission_toggle"
+                android:gravity="center"
                 android:orientation="horizontal"
-                android:padding="@dimen/padding_normal">
+                android:padding="10dp">
 
                 <RadioButton
                     android:id="@+id/rb_exam"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/bg_green"
-                    android:button="@android:color/transparent"
-                    android:padding="@dimen/padding_normal"
+                    android:layout_marginEnd="5dp"
+                    android:background="@drawable/bg_submission_toggle_button"
+                    android:button="@null"
+                    android:gravity="center"
+                    android:paddingHorizontal="30dp"
+                    android:paddingVertical="3dp"
                     android:text="@string/exams"
-                    android:textSize="20sp" />
+                    android:textColor="@color/toggle_text_color"
+                    android:textSize="18sp" />
                 <RadioButton
                     android:id="@+id/rb_survey"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/bg_green"
-                    android:button="@android:color/transparent"
-                    android:padding="@dimen/padding_normal"
+                    android:layout_marginStart="5dp"
+                    android:background="@drawable/bg_submission_toggle_button"
+                    android:button="@null"
+                    android:gravity="center"
+                    android:paddingHorizontal="30dp"
+                    android:paddingVertical="3dp"
                     android:text="@string/survey"
-                    android:textSize="20sp" />
+                    android:textColor="@color/toggle_text_color"
+                    android:textSize="18sp" />
             </RadioGroup>
 
             <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tl_search"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_weight="1"
-                android:textColorHint="@color/hint_color">
+                    android:id="@+id/tl_search"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:textColorHint="@color/hint_color">
 
                 <EditText
                     android:id="@+id/et_search"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center"
+                    android:backgroundTint="@color/hint_color"
                     android:drawableLeft="@drawable/ic_search"
                     android:drawableTint="@color/daynight_textColor"
                     android:hint="@string/search"
                     android:inputType="text"
                     android:maxLines="1"
-                    android:backgroundTint="@color/hint_color"
                     android:textColor="@color/daynight_textColor" />
             </com.google.android.material.textfield.TextInputLayout>
-        </LinearLayout>
+    </LinearLayout>
 
-        <LinearLayout
+    <LinearLayout
             android:id="@+id/title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
