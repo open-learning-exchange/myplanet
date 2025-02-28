@@ -130,11 +130,13 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
                 setPadding(20, 25, 20, 0)
             }
 
-            AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+            val dialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                 .setCustomTitle(titleView)
                 .setPositiveButton(getString(R.string.finish)) { _: DialogInterface?, _: Int ->
                     parentFragmentManager.popBackStack()
-                }.show()
+                }.create()
+            dialog.setCanceledOnTouchOutside(false)
+            dialog.show()
         }
     }
 
