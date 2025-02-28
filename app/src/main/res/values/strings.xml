@@ -1241,5 +1241,7 @@
     <string name="show_additional_fields">show additional fields</string>
     <string name="hide_additional_fields">hide additional fields</string>
     <string name="age">Age</string>
+    <string name="preparing_download">Preparing download…</string>
+    <string name="downloading_files">Downloading files</string>
 
 </resources>

@@ -1241,5 +1241,7 @@
     <string name="show_additional_fields">muuji beeraha dheeraadka ah</string>
     <string name="hide_additional_fields">qari beeraha dheeraadka ah</string>
     <string name="age">Da\'da</string>
+    <string name="preparing_download">Diyaarinaya soo dejinta…</string>
+    <string name="downloading_files">Faylasha ayaa la soo dejinayaa</string>
 
 </resources>

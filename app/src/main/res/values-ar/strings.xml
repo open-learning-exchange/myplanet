@@ -1241,5 +1241,7 @@
     <string name="show_additional_fields">عرض الحقول الإضافية</string>
     <string name="hide_additional_fields">إخفاء الحقول الإضافية</string>
     <string name="age">العمر</string>
+    <string name="preparing_download">جارٍ تحضير التنزيل…</string>
+    <string name="downloading_files">جارٍ تنزيل الملفات</string>
 
 </resources>
