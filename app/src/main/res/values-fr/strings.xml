@@ -969,7 +969,7 @@
     </string>
 
     <string name="is_on_please_turn_of_to_save_battery">" est activé, veuillez le désactiver pour économiser la batterie"</string>
-    <string name="go_to_settings">Aller aux paramètres</string>
+    <string name="go_to_settings">aller aux paramètres</string>
     <string name="new_version_of_my_planet_available">Nouvelle version de My Planet disponible</string>
     <string name="download_first_to_continue">Téléchargez d\'abord pour continuer.</string>
     <string name="upgrade_local">Mise à niveau (Locale)</string>
