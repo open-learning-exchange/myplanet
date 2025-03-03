@@ -123,7 +123,7 @@
     <string name="inactive_message">المستخدم غير مفعل، يرجى التواصل مع المسؤول أو المدير لتفعيل حسابك.</string>
     <string name="archive_mycourse">أرشفة دورتي</string>
     <string name="menu_achievement">الإنجازات</string>
-    <string name="edit_achievement">تعديل الإنجاز</string>
+    <string name="edit_achievement">تحرير الإنجازات</string>
     <string name="add_resources">إضافة موارد</string>
     <string name="description">الوصف</string>
     <string name="title_asterisk">العنوان *</string>
@@ -514,6 +514,7 @@
     <string name="use_phone_number_as_password">استخدام رقم الهاتف ككلمة مرور</string>
     <string name="feedback">تغذية راجعة</string>
     <string name="add_member">إضافة عضو</string>
+    <string name="exit">"تأكيد الخروج"</string>
     <string name="confirm_exit">هل أنت متأكد أنك تريد مغادرة هذا الفريق؟</string>
     <string name="update_profile_alert">يرجى استكمال ملف التعريف الخاص بك للاستمتاع بجميع الميزات</string>
     <string name="other_notes">ملاحظات أخرى</string>
@@ -712,7 +713,7 @@
     <string name="date_is_required">التاريخ مطلوب</string>
     <string name="transaction_added">تمت إضافة المعاملة</string>
     <string name="thank_you_for_taking_this">"شكرًا لك على إجراء هذا "</string>
-    <string name="we_wish_you_all_the_best">. نتمنى لك كل التوفيق</string>
+    <string name="we_wish_you_all_the_best">نتمنى لك كل التوفيق.</string>
     <string name="thank_you_for_taking_this_survey">شكرًا لك على إجراء هذا الاستبيان.</string>
     <string name="complete">اكتمل</string>
     <string name="no_questions_available">لا تتوفر أسئلة</string>
@@ -734,7 +735,7 @@
     <string name="level_is_required">المستوى مطلوب</string>
     <string name="subject_is_required">الموضوع مطلوب</string>
     <string name="enter_resource_detail">أدخل تفاصيل المصدر</string>
-    <string name="resource_saved_to_my_personal">تم حفظ المصدر في "شخصي"</string>
+    <string name="resource_saved_to_my_personal">تم حفظ المصدر في myPersonal</string>
     <string name="invalid_resource_url">عنوان url للمورد غير صالح</string>
     <string name="my_library">"مكتبتي"</string>
     <string name="link_not_available">الرابط غير متاح</string>
@@ -778,12 +779,12 @@
     <string name="bp_must_be_between_60_40_and_300_200">يجب أن يكون ضغط الدم بين 60/40 و 300/200</string>
     <string name="systolic_and_diastolic_must_be_numbers">يجب أن تكون القيم النبضية والانبساطية أرقام</string>
     <string name="added_successfully">تمت الإضافة بنجاح</string>
-    <string name="invalid_input_must_be_between_30_and_40">إدخال غير صالح، يجب أن يكون بين 30 و 40</string>
-    <string name="invalid_input_must_be_between_40_and_120">إدخال غير صالح، يجب أن يكون بين 40 و 120</string>
-    <string name="invalid_input_must_be_between_1_and_250">إدخال غير صالح، يجب أن يكون بين 1 و 250</string>
-    <string name="invalid_input_must_be_between_1_and_150">إدخال غير صالح، يجب أن يكون بين 1 و 150</string>
+    <string name="invalid_input_must_be_between_30_and_40">يجب أن تكون درجة حرارة الجسم بين 30 و40</string>
+    <string name="invalid_input_must_be_between_40_and_120">معدل النبض يجب أن يكون بين 40 و120</string>
+    <string name="invalid_input_must_be_between_1_and_250">يجب أن يكون الارتفاع بين 1 و 250</string>
+    <string name="invalid_input_must_be_between_1_and_150">الوزن يجب أن يكون بين 1 و 150</string>
     <string name="unable_to_add_health_record">غير قادر على إضافة سجل صحي</string>
-    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">هل أنت متأكد أنك ترغب في الخروج؟ سيتم فقدان البيانات الخاصة بك.</string>
+    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">هل أنت متأكد أنك تريد إلغاء إضافة هذا المورد؟ سيتم فقدان البيانات الخاصة بك</string>
     <string name="yes_i_want_to_exit">"نعم، أرغب في الخروج. "</string>
     <string name="my_health_saved_successfully">تم حفظ صحتي بنجاح</string>
     <string name="health_record_not_available">سجل الصحة غير متاح.</string>
@@ -1237,5 +1238,12 @@
     <string name="user_verification_in_progress">جارٍ التحقق من المستخدم. يرجى الانتظار أثناء معالجة البيانات.</string>
     <string name="go_to_mylibrary">انتقل إلى مكتبتي</string>
     <string name="remind_me_later">تذكرني لاحقًا</string>
+    <string name="choose_an_option">اختر خيارًا</string>
+    <string name="welcome_back">مرحبًا بعودتك %1$s</string>
+    <string name="show_additional_fields">عرض الحقول الإضافية</string>
+    <string name="hide_additional_fields">إخفاء الحقول الإضافية</string>
+    <string name="age">العمر</string>
+    <string name="preparing_download">جارٍ تحضير التنزيل…</string>
+    <string name="downloading_files">جارٍ تنزيل الملفات</string>
 
 </resources>

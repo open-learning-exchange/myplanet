@@ -123,7 +123,7 @@
     <string name="inactive_message">El usuario no está activado. Por favor, ponte en contacto con el administrador o el responsable para activar tu cuenta.</string>
     <string name="archive_mycourse">Archivar miCurso</string>
     <string name="menu_achievement">Logros</string>
-    <string name="edit_achievement">Editar logro</string>
+    <string name="edit_achievement">Editar logros</string>
     <string name="add_resources">Agregar recursos</string>
     <string name="description">Descripción</string>
     <string name="title_asterisk">Título *</string>
@@ -514,6 +514,7 @@
     <string name="use_phone_number_as_password">Usar número de teléfono como contraseña</string>
     <string name="feedback">Comentarios</string>
     <string name="add_member">Agregar miembro</string>
+    <string name="exit">"Potrdite izhod"</string>
     <string name="confirm_exit">¿Estás seguro/a de que quieres abandonar este equipo?</string>
     <string name="update_profile_alert">Por favor, completa tu perfil para disfrutar de todas las funciones</string>
     <string name="other_notes">Otras Notas</string>
@@ -712,7 +713,7 @@
     <string name="date_is_required">Se requiere una fecha</string>
     <string name="transaction_added">Transacción agregada</string>
     <string name="thank_you_for_taking_this">"Gracias por realizar este "</string>
-    <string name="we_wish_you_all_the_best">. Te deseamos lo mejor</string>
+    <string name="we_wish_you_all_the_best">Te deseamos todo lo mejor.</string>
     <string name="thank_you_for_taking_this_survey">Gracias por completar esta encuesta.</string>
     <string name="complete">completa</string>
     <string name="no_questions_available">No hay preguntas disponibles</string>
@@ -734,7 +735,7 @@
     <string name="level_is_required">Se requiere nivel</string>
     <string name="subject_is_required">Se requiere asignatura</string>
     <string name="enter_resource_detail">Ingresa los detalles del recurso</string>
-    <string name="resource_saved_to_my_personal">Recurso guardado en miPersonal</string>
+    <string name="resource_saved_to_my_personal">Recurso guardado en myPersonal</string>
     <string name="invalid_resource_url">URL de recurso no válida</string>
     <string name="my_library">" mi biblioteca"</string>
     <string name="link_not_available">Enlace no disponible</string>
@@ -778,12 +779,12 @@
     <string name="bp_must_be_between_60_40_and_300_200">La presión arterial debe estar entre 60/40 y 300/200</string>
     <string name="systolic_and_diastolic_must_be_numbers">Sistólica y diastólica deben ser números</string>
     <string name="added_successfully">Agregado exitosamente</string>
-    <string name="invalid_input_must_be_between_30_and_40">Entrada inválida, debe estar entre 30 y 40</string>
-    <string name="invalid_input_must_be_between_40_and_120">Entrada inválida, debe estar entre 40 y 120</string>
-    <string name="invalid_input_must_be_between_1_and_250">Entrada inválida, debe estar entre 1 y 250</string>
-    <string name="invalid_input_must_be_between_1_and_150">Entrada inválida, debe estar entre 1 y 150</string>
+    <string name="invalid_input_must_be_between_30_and_40">La temperatura corporal, debe estar entre 30 y 40</string>
+    <string name="invalid_input_must_be_between_40_and_120">frecuencia del pulso, debe estar entre 40 y 120</string>
+    <string name="invalid_input_must_be_between_1_and_250">altura, debe estar entre 1 y 250</string>
+    <string name="invalid_input_must_be_between_1_and_150">Peso, debe estar entre 1 y 150</string>
     <string name="unable_to_add_health_record">No se puede agregar el registro de salud.</string>
-    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">¿Estás seguro de que quieres salir? Se perderán tus datos.</string>
+    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">¿Está seguro de que desea cancelar la adición de este recurso? Tus datos se perderán</string>
     <string name="yes_i_want_to_exit">"Sí, quiero salir. "</string>
     <string name="my_health_saved_successfully">Mi salud guardada correctamente</string>
     <string name="health_record_not_available">Registro de salud no disponible.</string>
@@ -1237,5 +1238,12 @@
     <string name="user_verification_in_progress">Verificación de usuario en progreso. Por favor, espere mientras procesamos los datos.</string>
     <string name="go_to_mylibrary">Ir a Mi Biblioteca</string>
     <string name="remind_me_later">Recuérdame más tarde</string>
+    <string name="choose_an_option">Elige una opción</string>
+    <string name="welcome_back">Bienvenido de nuevo %1$s</string>
+    <string name="show_additional_fields">mostrar campos adicionales</string>
+    <string name="hide_additional_fields">ocultar campos adicionales</string>
+    <string name="age">Edad</string>
+    <string name="preparing_download">Preparando la descarga…</string>
+    <string name="downloading_files">Descargando archivos</string>
 
 </resources>

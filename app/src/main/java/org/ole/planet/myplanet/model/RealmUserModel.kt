@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.model
 
 import android.content.SharedPreferences
+import android.net.Uri
+import android.util.Base64
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -18,6 +20,7 @@ import org.ole.planet.myplanet.utilities.VersionUtils
 import java.io.File
 import java.io.FileWriter
 import java.io.IOException
+import java.io.InputStream
 import java.util.Locale
 import java.util.UUID
 
@@ -45,6 +48,7 @@ open class RealmUserModel : RealmObject() {
     var gender: String? = null
     var salt: String? = null
     var dob: String? = null
+    var age: String? = null
     var birthPlace: String? = null
     var userImage: String? = null
     var key: String? = null
@@ -55,45 +59,80 @@ open class RealmUserModel : RealmObject() {
     var isArchived = false
 
     fun serialize(): JsonObject {
-        val `object` = JsonObject()
+        val jsonObject = JsonObject()
         if (_id?.isNotEmpty() == true) {
-            `object`.addProperty("_id", _id)
-            `object`.addProperty("_rev", _rev)
+            jsonObject.addProperty("_id", _id)
+            jsonObject.addProperty("_rev", _rev)
         }
-        `object`.addProperty("name", name)
-        `object`.add("roles", getRoles())
+        jsonObject.addProperty("name", name)
+        jsonObject.add("roles", getRoles())
         if (_id?.isEmpty() == true) {
-            `object`.addProperty("password", password)
-            `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-            `object`.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(context))
-            `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+            jsonObject.addProperty("password", password)
+            jsonObject.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+            jsonObject.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(context))
+            jsonObject.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
         } else {
-            `object`.addProperty("derived_key", derived_key)
-            `object`.addProperty("salt", salt)
-            `object`.addProperty("password_scheme", password_scheme)
+            jsonObject.addProperty("derived_key", derived_key)
+            jsonObject.addProperty("salt", salt)
+            jsonObject.addProperty("password_scheme", password_scheme)
         }
-        `object`.addProperty("isUserAdmin", userAdmin)
-        `object`.addProperty("joinDate", joinDate)
-        `object`.addProperty("firstName", firstName)
-        `object`.addProperty("lastName", lastName)
-        `object`.addProperty("middleName", middleName)
-        `object`.addProperty("email", email)
-        `object`.addProperty("language", language)
-        `object`.addProperty("level", level)
-        `object`.addProperty("type", "user")
-        `object`.addProperty("gender", gender)
-        `object`.addProperty("phoneNumber", phoneNumber)
-        `object`.addProperty("birthDate", dob)
+        jsonObject.addProperty("isUserAdmin", userAdmin)
+        jsonObject.addProperty("joinDate", joinDate)
+        jsonObject.addProperty("firstName", firstName)
+        jsonObject.addProperty("lastName", lastName)
+        jsonObject.addProperty("middleName", middleName)
+        jsonObject.addProperty("email", email)
+        jsonObject.addProperty("language", language)
+        jsonObject.addProperty("level", level)
+        jsonObject.addProperty("type", "user")
+        jsonObject.addProperty("gender", gender)
+        jsonObject.addProperty("phoneNumber", phoneNumber)
+        jsonObject.addProperty("birthDate", dob)
+        jsonObject.addProperty("age", age)
         try {
-            `object`.addProperty("iterations", iterations?.toInt())
+            jsonObject.addProperty("iterations", iterations?.toInt())
         } catch (e: Exception) {
-            `object`.addProperty("iterations", 10)
+            e.printStackTrace()
+            jsonObject.addProperty("iterations", 10)
         }
-        `object`.addProperty("parentCode", parentCode)
-        `object`.addProperty("planetCode", planetCode)
-        `object`.addProperty("birthPlace", birthPlace)
-        `object`.addProperty("isArchived", isArchived)
-        return `object`
+        jsonObject.addProperty("parentCode", parentCode)
+        jsonObject.addProperty("planetCode", planetCode)
+        jsonObject.addProperty("birthPlace", birthPlace)
+        jsonObject.addProperty("isArchived", isArchived)
+
+        val base64Image = encodeImageToBase64(userImage)
+
+        if (!base64Image.isNullOrEmpty()) {
+            val attachmentObject = JsonObject()
+            val imageData = JsonObject()
+            imageData.addProperty("content_type", "image/jpeg")
+            imageData.addProperty("data", base64Image)
+
+            attachmentObject.add("img", imageData)
+            jsonObject.add("_attachments", attachmentObject)
+        }
+
+        return jsonObject
+    }
+
+    fun encodeImageToBase64(imagePath: String?): String? {
+        if (imagePath.isNullOrEmpty()) return null
+        return try {
+            val inputStream: InputStream? = if (imagePath.startsWith("content://")) {
+                val uri = Uri.parse(imagePath)
+                context.contentResolver.openInputStream(uri)
+            } else {
+                File(imagePath).inputStream()
+            }
+
+            inputStream?.use {
+                val bytes = it.readBytes()
+                Base64.encodeToString(bytes, Base64.NO_WRAP)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
     }
 
     private fun getRoles(): JsonArray {
@@ -226,6 +265,7 @@ open class RealmUserModel : RealmObject() {
                 salt = JsonUtils.getString("salt", jsonDoc)
                 dob = JsonUtils.getString("birthDate", jsonDoc)
                 birthPlace = JsonUtils.getString("birthPlace", jsonDoc)
+                age = JsonUtils.getString("age", jsonDoc)
                 gender = JsonUtils.getString("gender", jsonDoc)
                 language = JsonUtils.getString("language", jsonDoc)
                 level = JsonUtils.getString("level", jsonDoc)

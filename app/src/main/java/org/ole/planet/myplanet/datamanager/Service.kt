@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.net.Uri
+import android.os.*
 import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -50,6 +51,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.io.IOException
+import java.util.concurrent.Executors
 import kotlin.math.min
 
 class Service(private val context: Context) {
@@ -306,40 +308,46 @@ class Service(private val context: Context) {
         }
     }
 
-    fun syncPlanetServers(realm: Realm, callback: SuccessListener) {
+    fun syncPlanetServers(callback: SuccessListener) {
         retrofitInterface?.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true")?.enqueue(object : Callback<JsonObject?> {
             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                 if (response.body() != null) {
                     val arr = JsonUtils.getJsonArray("rows", response.body())
-                    if (!realm.isClosed) {
-                        realm.executeTransactionAsync({ realm1: Realm ->
-                            realm1.delete(RealmCommunity::class.java)
-                            for (j in arr) {
-                                var jsonDoc = j.asJsonObject
-                                jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-                                val id = JsonUtils.getString("_id", jsonDoc)
-                                val community = realm1.createObject(RealmCommunity::class.java, id)
-                                if (JsonUtils.getString("name", jsonDoc) == "learning") {
-                                    community.weight = 0
+
+                    Executors.newSingleThreadExecutor().execute {
+                        val backgroundRealm = Realm.getDefaultInstance()
+                        try {
+                            backgroundRealm.executeTransaction { realm1 ->
+                                realm1.delete(RealmCommunity::class.java)
+                                for (j in arr) {
+                                    var jsonDoc = j.asJsonObject
+                                    jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+                                    val id = JsonUtils.getString("_id", jsonDoc)
+                                    val community = realm1.createObject(RealmCommunity::class.java, id)
+                                    if (JsonUtils.getString("name", jsonDoc) == "learning") {
+                                        community.weight = 0
+                                    }
+                                    community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
+                                    community.name = JsonUtils.getString("name", jsonDoc)
+                                    community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
+                                    community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
                                 }
-                                community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
-                                community.name = JsonUtils.getString("name", jsonDoc)
-                                community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
-                                community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
                             }
-                        }, {
-                            realm.close()
-                            callback.onSuccess("Server sync successfully")
-                        }) { error: Throwable ->
-                            realm.close()
-                            error.printStackTrace()
+
+                            Handler(Looper.getMainLooper()).post {
+                                callback.onSuccess("Server sync successful")
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        } finally {
+                            backgroundRealm.close()
                         }
                     }
                 }
             }
 
             override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                realm.close()
+                callback.onSuccess("Server sync failed")
             }
         })
     }

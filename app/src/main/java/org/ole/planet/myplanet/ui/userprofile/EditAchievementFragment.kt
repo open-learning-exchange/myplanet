@@ -12,7 +12,9 @@ import android.widget.DatePicker
 import android.widget.EditText
 import android.widget.ListView
 import android.widget.Toast
+import android.widget.Toolbar
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
 import com.google.gson.JsonArray
@@ -73,6 +75,14 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         return fragmentEditAchievementBinding.root
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        val toolbar = view.findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
+        toolbar.setNavigationOnClickListener {
+            requireActivity().supportFragmentManager.popBackStack()
+        }
+    }
+    
     private fun setListeners() {
         fragmentEditAchievementBinding.btnUpdate.setOnClickListener {
             if (!aRealm.isInTransaction) aRealm.beginTransaction()
@@ -241,7 +251,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     }
 
     private fun showResourceListDialog(prevList: List<String?>) {
-        val builder = AlertDialog.Builder(requireActivity())
+        val builder = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
         builder.setTitle(R.string.select_resources)
         val list: List<RealmMyLibrary> = aRealm.where(RealmMyLibrary::class.java).findAll()
         myLibraryAlertdialogBinding = MyLibraryAlertdialogBinding.inflate(LayoutInflater.from(activity))
