@@ -41,6 +41,7 @@ import org.ole.planet.myplanet.utilities.NetworkUtils.initialize
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.ThemeMode
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
@@ -75,7 +76,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         lateinit var defaultPref: SharedPreferences
 
-        fun createLog(type: String) {
+        fun createLog(type: String, error: String) {
             runBlocking {
                 withContext(Dispatchers.IO) {
                     val realm = Realm.getDefaultInstance()
@@ -91,7 +92,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                             log.time = "${Date().time}"
                             log.page = ""
                             log.version = getVersionName(context)
-                            log.type = type
+                            if (type == "File Not Found") {
+                                log.type = type
+                                log.error = error
+                            } else {
+                                log.type = type
+                            }
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -120,6 +126,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
 
         suspend fun isServerReachable(urlString: String): Boolean {
+            val serverUrlMapper = ServerUrlMapper(context)
+            val mapping = serverUrlMapper.processUrl(urlString)
+
+            val urlsToTry = mutableListOf(urlString)
+            mapping.alternativeUrl?.let { urlsToTry.add(it) }
+
             return try {
                 if (urlString.isBlank()) return false
 
@@ -328,7 +340,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             isFirstLaunch = false
         } else {
             applicationScope.launch {
-                createLog("foreground")
+                createLog("foreground", "")
             }
         }
     }
@@ -337,7 +349,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     private fun onAppStarted() {
         applicationScope.launch {
-            createLog("new login")
+            createLog("new login", "")
         }
     }
 

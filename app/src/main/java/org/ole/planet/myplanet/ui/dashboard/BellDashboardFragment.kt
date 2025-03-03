@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.TimeUtils
 import java.util.Date
 
@@ -62,9 +63,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
         setupNetworkStatusMonitoring()
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         showBadges()
-        if((user?.id?.startsWith("guest") != true))
-        checkPendingSurveys()
-
+        if((user?.id?.startsWith("guest") != true)) {
+            checkPendingSurveys()
+        }
         if (model?.id?.startsWith("guest") == false && TextUtils.isEmpty(model?.key)) {
             syncKeyId()
         }
@@ -94,20 +95,32 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
                     ContextCompat.getColor(context, R.color.md_yellow_600)
 
-                val serverUrl = settings?.getString("serverURL", "")
-                if (!serverUrl.isNullOrEmpty()) {
-                    try {
-                        val canReachServer = viewModel.checkServerConnection(serverUrl)
-                        if (isAdded && view?.isAttachedToWindow == true) {
-                            fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
-                                ContextCompat.getColor(context, if (canReachServer) R.color.green else R.color.md_yellow_600)
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        if (isAdded && view?.isAttachedToWindow == true) {
-                            fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
-                                ContextCompat.getColor(context, R.color.md_yellow_600)
-                        }
+                val updateUrl = settings?.getString("serverURL", "") ?: return
+                val serverUrlMapper = ServerUrlMapper(requireContext())
+                val mapping = serverUrlMapper.processUrl(updateUrl)
+
+                val serverCheckPrimary = lifecycleScope.async(Dispatchers.IO) {
+                    viewModel.checkServerConnection(mapping.primaryUrl)
+                }
+                val serverCheckAlternative = mapping.alternativeUrl?.let {
+                    lifecycleScope.async(Dispatchers.IO) { viewModel.checkServerConnection(it) }
+                }
+
+                try {
+                    val primaryAvailable = serverCheckPrimary.await()
+                    val alternativeAvailable = serverCheckAlternative?.await() == true
+
+                    val isServerReachable = primaryAvailable || alternativeAvailable
+
+                    if (isAdded && view?.isAttachedToWindow == true) {
+                        fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
+                            ContextCompat.getColor(context, if (isServerReachable) R.color.green else R.color.md_yellow_600)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    if (isAdded && view?.isAttachedToWindow == true) {
+                        fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
+                            ContextCompat.getColor(context, R.color.md_yellow_600)
                     }
                 }
             }
@@ -216,7 +229,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun declareElements() {
-        fragmentHomeBellBinding.homeCardTeams.llHomeTeam.setOnClickListener { homeItemClickListener?.openCallFragment(TeamFragment()) }
+        fragmentHomeBellBinding.homeCardTeams.llHomeTeam.setOnClickListener { homeItemClickListener?.openMyFragment(TeamFragment()) }
         fragmentHomeBellBinding.homeCardLibrary.myLibraryImageButton.setOnClickListener {
             if (user?.id?.startsWith("guest") == true) {
                 guestDialog(requireContext())

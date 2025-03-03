@@ -41,6 +41,7 @@ class AddResourceActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
         activityAddResourceBinding = ActivityAddResourceBinding.inflate(layoutInflater)
         setContentView(activityAddResourceBinding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -65,13 +66,13 @@ class AddResourceActivity : AppCompatActivity() {
         activityAddResourceBinding.fileUrl.text = getString(R.string.file, resourceUrl)
         activityAddResourceBinding.tvAddedBy.text = userModel?.name
         activityAddResourceBinding.tvLevels.setOnClickListener { view: View ->
-            showMultiSelectList(resources.getStringArray(R.array.array_levels), levels, view)
+            showMultiSelectList(resources.getStringArray(R.array.array_levels), levels, view,getString(R.string.levels))
         }
         activityAddResourceBinding.tvSubject.setOnClickListener { view: View ->
-            showMultiSelectList(resources.getStringArray(R.array.array_subjects), subjects, view)
+            showMultiSelectList(resources.getStringArray(R.array.array_subjects), subjects, view,getString(R.string.subject))
         }
         activityAddResourceBinding.tvResourceFor.setOnClickListener { view: View ->
-            showMultiSelectList(resources.getStringArray(R.array.array_resource_for), subjects, view)
+            showMultiSelectList(resources.getStringArray(R.array.array_resource_for), resourceFor, view,getString(R.string.resource_for))
         }
         activityAddResourceBinding.btnSubmit.setOnClickListener { saveResource() }
         activityAddResourceBinding.btnCancel.setOnClickListener { finish() }
@@ -152,27 +153,54 @@ class AddResourceActivity : AppCompatActivity() {
         }
         return true
     }
-
-    private fun showMultiSelectList(list: Array<String>, items: MutableList<String>?, view: View) {
+    private fun showMultiSelectList(list: Array<String>, items: MutableList<String>?, view: View, title: String) {
         val listView = CheckboxListView(this)
         val adapter = ArrayAdapter(this, R.layout.rowlayout, R.id.checkBoxRowLayout, list)
         listView.choiceMode = ListView.CHOICE_MODE_MULTIPLE
         listView.adapter = adapter
+
+        items?.forEach { selectedItem ->
+            val index = list.indexOf(selectedItem)
+            if (index >= 0) {
+                listView.setItemChecked(index, true)
+            }
+        }
+
         AlertDialog.Builder(this, R.style.AlertDialogTheme).setView(listView).setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-            val selected = listView.selectedItemsList
+            val selected = listView.checkedItemPositions
             items?.clear()
             var selection = ""
-            for (index in selected) {
-                val s = list[index]
-                selection += "$s ,"
-                items?.add(s)
+            for (i in 0 until listView.count) {
+                if (selected[i]) {
+                    val s = list[i]
+                    selection += "$s, "
+                    items?.add(s)
+                }
             }
-            (view as TextView).text = selection
+            if (selection.isEmpty()) {
+                (view as TextView).text = title
+            } else {
+                (view as TextView).text = selection.trimEnd(',', ' ')
+            }
         }.setNegativeButton(R.string.dismiss, null).show()
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == android.R.id.home) finish()
-        return super.onOptionsItemSelected(item)
+        return when (item.itemId) {
+            android.R.id.home -> {
+                showExitConfirmationDialog()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+    private fun showExitConfirmationDialog() {
+        AlertDialog.Builder(this,R.style.AlertDialogTheme)
+            .setMessage(R.string.are_you_sure_you_want_to_exit_your_data_will_be_lost)
+            .setPositiveButton(R.string.yes_i_want_to_exit) { _, _ ->
+                finish()
+            }
+            .setNegativeButton(R.string.no, null)
+            .show()
     }
 }

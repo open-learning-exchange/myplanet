@@ -4,7 +4,7 @@
 
     <item
         android:id="@+id/action_chat"
-        android:icon="@drawable/chat"
+        android:icon="@drawable/baseline_forum_24"
         android:title="@string/ai_chat"
         android:contentDescription="@string/ai_chat"
         app:showAsAction="always" />
@@ -23,7 +23,7 @@
         app:showAsAction="never" />
     <item
         android:id="@+id/action_feedback"
-        android:icon="@drawable/ic_feedback"
+        android:icon="@drawable/baseline_feedback_24"
         android:contentDescription="@string/go_to_feedback_page"
         android:title="@string/menu_feedback"
         app:showAsAction="always" />
@@ -33,6 +33,12 @@
         android:title="Notification"
         app:actionLayout="@layout/custom_notification_badge"
         app:showAsAction="always"/>
+    <item
+            android:id="@+id/change_language"
+            android:icon="@drawable/translate"
+            android:title="@string/language"
+            android:contentDescription="@string/language"
+            app:showAsAction="always" />
     <item
         android:id="@+id/action_about"
         android:icon="@drawable/ic_my_survey"

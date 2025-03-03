@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseExpandableListAdapter
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import org.ole.planet.myplanet.R
@@ -57,9 +58,11 @@ class ExpandableListAdapter(private val context: Context, private val expandable
             reusedView = layoutInflater.inflate(R.layout.expandable_list_group, parent, false)
         }
         val listTitleTextView = reusedView?.findViewById<View>(R.id.listTitle) as TextView
+        val arrowIcon = reusedView?.findViewById<ImageView>(R.id.arrowIcon)
         listTitleTextView.setTypeface(null, Typeface.BOLD)
         listTitleTextView.text = listTitle
         listTitleTextView.setTextColor(ContextCompat.getColor(parent.context, R.color.daynight_textColor))
+        arrowIcon?.rotation = if (isExpanded) 180f else 0f
         return reusedView
     }
 

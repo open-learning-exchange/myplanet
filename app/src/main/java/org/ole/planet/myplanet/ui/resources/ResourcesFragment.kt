@@ -35,6 +35,8 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import android.content.Context
+import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.Utilities
@@ -76,6 +78,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
         userModel = UserProfileDbHandler(requireContext()).userModel
         searchTags = ArrayList()
         config = Utilities.getCloudConfig().showClose(R.color.black_overlay)
@@ -94,7 +97,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             tvSelected.visibility = View.VISIBLE
         }
         initArrays()
-        updateTvDelete()
+        hideButton()
 
         if(userModel?.isGuest() == true){
             tvAddToLib.visibility = View.GONE
@@ -154,7 +157,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         checkList()
 
         selectAll.setOnClickListener {
-            updateTvDelete()
+            hideButton()
             val allSelected = selectedItems?.size == adapterLibrary.getLibraryList().size
             adapterLibrary.selectAllItems(!allSelected)
             if (allSelected) {
@@ -175,8 +178,23 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    private fun updateTvDelete(){
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        if (context is OnHomeItemClickListener) {
+            homeItemClickListener = context
+        }
+    }
+
+    private fun hideButton(){
         tvDelete?.isEnabled = selectedItems?.size!! != 0
+        tvAddToLib.isEnabled = selectedItems?.size!! != 0
+        if(selectedItems?.size!! != 0){
+            if(isMyCourseLib) tvDelete?.visibility = View.VISIBLE
+            else tvAddToLib.visibility = View.VISIBLE
+        } else {
+            if(isMyCourseLib) tvDelete?.visibility = View.GONE
+            else tvAddToLib.visibility = View.GONE
+        }
     }
 
     private fun checkList() {
@@ -215,8 +233,24 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         msg += getString(R.string.return_to_the_home_tab_to_access_mylibrary) + getString(R.string.note_you_may_still_need_to_download_the_newly_added_resources)
         builder.setMessage(msg)
         builder.setCancelable(true)
-        builder.setPositiveButton(getString(R.string.ok)) { dialog: DialogInterface, _: Int ->
+        .setPositiveButton(R.string.go_to_mylibrary) { dialog: DialogInterface, _: Int ->
+                if (userModel?.id?.startsWith("guest") == true) {
+                    guestDialog(requireContext())
+                } else {
+                    val fragment = ResourcesFragment().apply {
+                        arguments = Bundle().apply {
+                            putBoolean("isMyCourseLib", true)
+                        }
+                    }
+                    homeItemClickListener?.openMyFragment(fragment)
+                }
+        }
+        builder.setNegativeButton(getString(R.string.ok)) { dialog: DialogInterface, _: Int ->
             dialog.cancel()
+            val newFragment = ResourcesFragment()
+            recreateFragment(newFragment)
+        }
+        builder.setOnDismissListener{
             val newFragment = ResourcesFragment()
             recreateFragment(newFragment)
         }
@@ -241,7 +275,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun onSelectedListChange(list: MutableList<RealmMyLibrary?>) {
         selectedItems = list
         changeButtonStatus()
-        updateTvDelete()
+        hideButton()
     }
 
     override fun onTagClicked(realmTag: RealmTag) {

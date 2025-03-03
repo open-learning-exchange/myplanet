@@ -22,6 +22,7 @@ import com.afollestad.materialdialogs.*
 import io.realm.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -438,31 +439,76 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onSyncComplete() {
-        customProgressDialog?.dismiss()
-        if (::syncIconDrawable.isInitialized) {
-            runOnUiThread {
-                syncIconDrawable = syncIcon.drawable as AnimationDrawable
-                syncIconDrawable.stop()
-                syncIconDrawable.selectDrawable(0)
-                syncIcon.invalidateDrawable(syncIconDrawable)
-                MainApplication.applicationScope.launch {
-                    createLog("synced successfully")
+        val activityContext = this@SyncActivity
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                var attempt = 0
+
+                while (true) {
+                    val realm = Realm.getDefaultInstance()
+                    var dataInserted = false
+
+                    try {
+                        realm.refresh()
+                        val realmResults = realm.where(RealmUserModel::class.java).findAll()
+                        if (!realmResults.isEmpty()) {
+                            dataInserted = true
+                            break
+                        }
+                    } finally {
+                        realm.close()
+                    }
+                    attempt++
+                    delay(1000)
                 }
-                showSnack(findViewById(android.R.id.content), getString(R.string.sync_completed))
-                if (settings.getBoolean("isAlternativeUrl", false)) {
-                    editor.putString("alternativeUrl", "")
-                    editor.putString("processedAlternativeUrl", "")
-                    editor.putBoolean("isAlternativeUrl", false)
-                    editor.apply()
+
+                withContext(Dispatchers.Main) {
+                    customProgressDialog?.dismiss()
+
+                    if (::syncIconDrawable.isInitialized) {
+                        syncIconDrawable = syncIcon.drawable as AnimationDrawable
+                        syncIconDrawable.stop()
+                        syncIconDrawable.selectDrawable(0)
+                        syncIcon.invalidateDrawable(syncIconDrawable)
+                    }
+
+                    lifecycleScope.launch {
+                        createLog("synced successfully", "")
+                    }
+
+                    showSnack(activityContext.findViewById(android.R.id.content), getString(R.string.sync_completed))
+
+                    if (settings.getBoolean("isAlternativeUrl", false)) {
+                        editor.putString("alternativeUrl", "")
+                        editor.putString("processedAlternativeUrl", "")
+                        editor.putBoolean("isAlternativeUrl", false)
+                        editor.apply()
+                    }
+
+                    downloadAdditionalResources()
+
+                    val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
+                    if (betaAutoDownload) {
+                        withContext(Dispatchers.IO) {
+                            val downloadRealm = Realm.getDefaultInstance()
+                            try {
+                                backgroundDownload(downloadAllFiles(getAllLibraryList(downloadRealm)))
+                            } finally {
+                                downloadRealm.close()
+                            }
+                        }
+                    }
+
+                    cancelAll(activityContext)
+
+                    if (activityContext is LoginActivity) {
+                        activityContext.updateTeamDropdown()
+                    }
                 }
-                downloadAdditionalResources()
-                if (defaultPref.getBoolean("beta_auto_download", false)) {
-                    backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
-                }
-                cancelAll(this)
-                if (this is LoginActivity) {
-                    this.updateTeamDropdown()
-                }
+
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
@@ -500,7 +546,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         cal_last_Sync = Calendar.getInstance(Locale.ENGLISH)
         cal_last_Sync.timeInMillis = settings.getLong("LastSync", 0)
         cal_today.timeInMillis = Date().time
-        val msDiff = Calendar.getInstance().timeInMillis - cal_last_Sync.timeInMillis
+        val msDiff = cal_today.timeInMillis - cal_last_Sync.timeInMillis
         val daysDiff = TimeUnit.MILLISECONDS.toDays(msDiff)
         return if (daysDiff >= maxDays) {
             val alertDialogBuilder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
@@ -642,6 +688,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
         dialogServerUrlBinding.clearData.setOnClickListener {
             clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data), false)
+        }
+
+        val isFastSync = settings.getBoolean("fastSync", false)
+        dialogServerUrlBinding.fastSync.isChecked = isFastSync
+        dialogServerUrlBinding.fastSync.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
+            editor.putBoolean("fastSync", b).apply()
         }
 
         neutralAction.setOnClickListener {

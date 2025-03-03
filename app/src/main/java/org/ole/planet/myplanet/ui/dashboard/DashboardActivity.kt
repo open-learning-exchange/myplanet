@@ -208,6 +208,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 R.id.action_disclaimer -> openCallFragment(DisclaimerFragment(), DisclaimerFragment::class.java.simpleName)
                 R.id.action_about -> openCallFragment(AboutFragment(), AboutFragment::class.java.simpleName)
                 R.id.action_logout -> logout()
+                R.id.change_language -> {
+                    SettingActivity.SettingFragment.languageChanger(this)
+                }
                 else -> {}
             }
             true
@@ -789,6 +792,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         when (tag) {
             "MyCoursesFragment" -> result?.setSelection(2, false)
             "MyResourcesFragment" -> result?.setSelection(1, false)
+            "MyTeamFragment" -> result?.setSelection(-5, false)
             else -> {
                 result?.setSelection(0, false)
             }

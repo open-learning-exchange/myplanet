@@ -79,6 +79,7 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
                 UploadManager.instance?.uploadTeams()
                 UploadManager.instance?.uploadTeamTask()
                 UploadManager.instance?.uploadCrashLog()
+                UploadManager.instance?.uploadSubmissions()
                 UploadManager.instance?.uploadActivities { MainApplication.isSyncRunning = false }
             }
         }

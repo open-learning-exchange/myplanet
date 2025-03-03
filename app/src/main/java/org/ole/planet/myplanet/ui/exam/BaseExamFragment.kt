@@ -1,14 +1,18 @@
 package org.ole.planet.myplanet.ui.exam
 
 import android.content.DialogInterface
+import android.graphics.Typeface
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.view.Gravity
 import android.view.View
 import android.widget.CompoundButton
 import android.widget.EditText
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import io.noties.markwon.Markwon
@@ -117,9 +121,18 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             showUserInfoDialog()
         } else {
             saveCourseProgress()
+            val titleView = TextView(requireContext()).apply {
+                text = "${getString(R.string.thank_you_for_taking_this)}$type! ${getString(R.string.we_wish_you_all_the_best)}"
+                textSize = 18f
+                setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+                setTypeface(null, Typeface.BOLD)
+                gravity = Gravity.CENTER
+                setPadding(20, 25, 20, 0)
+            }
+
             AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
-                .setTitle(getString(R.string.thank_you_for_taking_this) + type + getString(R.string.we_wish_you_all_the_best))
-                .setPositiveButton("Finish") { _: DialogInterface?, _: Int ->
+                .setCustomTitle(titleView)
+                .setPositiveButton(getString(R.string.finish)) { _: DialogInterface?, _: Int ->
                     parentFragmentManager.popBackStack()
                 }.show()
         }
@@ -138,7 +151,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
 
     private fun showUserInfoDialog() {
         if (!isMySurvey && !exam?.isFromNation!!) {
-            UserInformationFragment.getInstance(sub?.id, teamId).show(childFragmentManager, "")
+            UserInformationFragment.getInstance(sub?.id, teamId, !isMySurvey && !exam?.isFromNation!!).show(childFragmentManager, "")
         } else {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             sub?.status = "complete"
