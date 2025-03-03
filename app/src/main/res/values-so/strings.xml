@@ -1245,5 +1245,6 @@
     <string name="downloading_files">Faylasha ayaa la soo dejinayaa</string>
     <string name="age_must_be_100_or_below">Da\'du waa inay noqoto 100 ama ka yar</string>
     <string name="please_enter_a_valid_age">Fadlan geli da\'da saxda ah</string>
+    <string name="member_of_planet">xubin ka mid ah planet</string>
 
 </resources>

@@ -1245,5 +1245,6 @@
     <string name="downloading_files">Downloading files</string>
     <string name="age_must_be_100_or_below">age must be 100 or below</string>
     <string name="please_enter_a_valid_age">please enter a valid age</string>
+    <string name="member_of_planet">member of planet</string>
 
 </resources>
