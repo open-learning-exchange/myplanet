@@ -288,7 +288,7 @@
                         android:text="@string/language"
                         android:textColor="@android:color/white"
                         android:textSize="12sp"
-                        android:background="@color/mainColor"
+                        android:background="@color/hint_color"
                         android:elevation="1dp"
                         android:outlineProvider="bounds"
                         android:strokeColor="@color/daynight_textColor"
