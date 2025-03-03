@@ -88,7 +88,6 @@ abstract class PermissionActivity : AppCompatActivity() {
         }
     }
 
-
     companion object {
         const val PERMISSION_REQUEST_CODE_FILE = 111
         @JvmStatic
