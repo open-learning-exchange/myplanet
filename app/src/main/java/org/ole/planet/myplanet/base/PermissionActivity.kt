@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Process
 import android.provider.Settings
+import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
@@ -94,7 +95,7 @@ abstract class PermissionActivity : AppCompatActivity() {
         if (requestCode == PERMISSION_REQUEST_CODE_FILE) {
             permissions.forEachIndexed { index, permission ->
                 if (grantResults[index] != PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(this, getString(R.string.permissions_denied), Toast.LENGTH_SHORT).show()
+                    Log.w("Permissions", "Denied: $permission")
                 }
             }
         }
