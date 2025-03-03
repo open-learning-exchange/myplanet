@@ -1238,7 +1238,7 @@
     <string name="go_to_mylibrary">Go To MyLibrary</string>
     <string name="choose_an_option">Choose an option</string>
     <string name="welcome_back">Welcome back %1$s !</string>
-    <string name="show_additional_fields">show additional fields</string>
+    <string name="show_additional_fields">Show additional fields</string>
     <string name="hide_additional_fields">hide additional fields</string>
     <string name="age">Age</string>
     <string name="preparing_download">Preparing download…</string>

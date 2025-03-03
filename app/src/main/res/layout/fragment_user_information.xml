@@ -234,6 +234,16 @@
             android:gravity="end">
 
             <Button
+                android:id="@+id/btn_submit"
+                style="@style/GreyButtons"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="10dp"
+                android:background="@drawable/buttongrey"
+                android:backgroundTint="@color/md_yellow_700"
+                android:text="@string/button_update" />
+
+            <Button
                 android:id="@+id/btnAdditionalFields"
                 style="@style/GreyButtons"
                 android:layout_width="wrap_content"
@@ -241,28 +251,15 @@
                 android:layout_marginEnd="10dp"
                 android:background="@drawable/buttongrey"
                 android:text="@string/show_additional_fields" />
-            <LinearLayout
+
+            <Button
+                android:id="@+id/btn_cancel"
+                style="@style/GreyButtons"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="end">
+                android:background="@drawable/buttongrey"
+                android:text="@string/button_cancel" />
 
-                <Button
-                    android:id="@+id/btn_submit"
-                    style="@style/GreyButtons"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="10dp"
-                    android:background="@drawable/buttongrey"
-                    android:text="@string/button_update" />
-                <Button
-                    android:id="@+id/btn_cancel"
-                    style="@style/GreyButtons"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/buttongrey"
-                    android:text="@string/button_cancel" />
-            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </FrameLayout>
