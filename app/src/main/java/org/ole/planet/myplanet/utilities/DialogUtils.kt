@@ -101,11 +101,15 @@ object DialogUtils {
     @JvmStatic
     fun showAlert(context: Context?, title: String?, message: String?) {
         if (context is Activity && !context.isFinishing) {
-            AlertDialog.Builder(context, R.style.CustomAlertDialog)
+            val dialog = AlertDialog.Builder(context, R.style.CustomAlertDialog)
                 .setTitle(title)
                 .setMessage(message)
                 .setPositiveButton(R.string.finish, null)
                 .show()
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.apply {
+               textSize = 15f
+                setPadding(20,20,20,20)
+            }
         }
     }
 
