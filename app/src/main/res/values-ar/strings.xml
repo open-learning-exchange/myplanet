@@ -641,7 +641,6 @@
     <string name="added_to_my_library">تمت الإضافة إلى myLibrary</string>
     <string name="added_to_my_courses">تمت الإضافة إلى myCourses</string>
     <string name="do_you_want_to_stay_online">هل ترغب في البقاء متصلاً على الإنترنت؟</string>
-    <string name="no_resources_to_download">لا توجد موارد للتحميل</string>
     <string name="planet_not_available">الكوكب غير متاح</string>
     <string name="device_not_connected_to_planet">الجهاز غير متصل بالكوكب.</string>
     <string name="all_files_downloaded_successfully">تم تنزيل جميع الملفات بنجاح</string>

@@ -641,7 +641,6 @@
     <string name="added_to_my_library">agregado a myLibrary</string>
     <string name="added_to_my_courses">agregado a myCourses</string>
     <string name="do_you_want_to_stay_online">¿Deseas permanecer en línea?</string>
-    <string name="no_resources_to_download">No hay recursos para descargar.</string>
     <string name="planet_not_available">Planet no disponible.</string>
     <string name="device_not_connected_to_planet">Dispositivo no conectado a Planet.</string>
     <string name="all_files_downloaded_successfully">Todos los archivos se han descargado correctamente.</string>

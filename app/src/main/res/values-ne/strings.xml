@@ -641,7 +641,6 @@
     <string name="added_to_my_library">myLibrary मा थपियो</string>
     <string name="added_to_my_courses">myCourses मा थपियो</string>
     <string name="do_you_want_to_stay_online">के तपाइँ अनलाइन बस्न चाहनुहुन्छ?</string>
-    <string name="no_resources_to_download">डाउनलोड गर्नका लागि कुनै स्रोतहरू छैनन्</string>
     <string name="planet_not_available">ग्रह उपलब्ध छैन</string>
     <string name="device_not_connected_to_planet">उपकरण ग्रहसँग जडान गरिएको छैन।</string>
     <string name="all_files_downloaded_successfully">सबै फाइलहरू सफलतापूर्वक डाउनलोड भयो</string>
