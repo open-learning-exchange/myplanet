@@ -57,10 +57,10 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             fragmentUserInformationBinding.llPhoneDob.visibility = View.GONE
             fragmentUserInformationBinding.llLevel.visibility = View.GONE
         } else {
-            val langArray = resources.getStringArray(R.array.language).toMutableList()
-            val levelArray = resources.getStringArray(R.array.level).toMutableList()
-            val adapterLang = ArrayAdapter(requireContext(), R.layout.spinner_item_white, langArray)
-            val adapterLevel = ArrayAdapter(requireContext(), R.layout.spinner_item_white, levelArray)
+            val langArray = resources.getStringArray(R.array.language)
+            val levelArray = resources.getStringArray(R.array.level)
+            val adapterLang = ArrayAdapter(requireContext(), R.layout.become_a_member_spinner_layout, langArray)
+            val adapterLevel = ArrayAdapter(requireContext(), R.layout.become_a_member_spinner_layout, levelArray)
             adapterLang.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             adapterLevel.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             fragmentUserInformationBinding.spnLang.adapter = adapterLang
