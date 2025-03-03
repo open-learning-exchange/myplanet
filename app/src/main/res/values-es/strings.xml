@@ -1243,5 +1243,6 @@
     <string name="age">Edad</string>
     <string name="preparing_download">Preparando la descarga…</string>
     <string name="downloading_files">Descargando archivos</string>
+    <string name="member_of_planet">miembro de planet</string>
 
 </resources>
