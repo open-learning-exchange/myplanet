@@ -641,7 +641,6 @@
     <string name="added_to_my_library">agregado a myLibrary</string>
     <string name="added_to_my_courses">agregado a myCourses</string>
     <string name="do_you_want_to_stay_online">¿Deseas permanecer en línea?</string>
-    <string name="no_resources_to_download">No hay recursos para descargar.</string>
     <string name="planet_not_available">Planet no disponible.</string>
     <string name="device_not_connected_to_planet">Dispositivo no conectado a Planet.</string>
     <string name="all_files_downloaded_successfully">Todos los archivos se han descargado correctamente.</string>
@@ -1239,5 +1238,10 @@
     <string name="go_to_mylibrary">Ir a Mi Biblioteca</string>
     <string name="choose_an_option">Elige una opción</string>
     <string name="welcome_back">Bienvenido de nuevo %1$s</string>
+    <string name="show_additional_fields">mostrar campos adicionales</string>
+    <string name="hide_additional_fields">ocultar campos adicionales</string>
+    <string name="age">Edad</string>
+    <string name="preparing_download">Preparando la descarga…</string>
+    <string name="downloading_files">Descargando archivos</string>
 
 </resources>

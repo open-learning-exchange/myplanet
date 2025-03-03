@@ -48,6 +48,7 @@ open class RealmUserModel : RealmObject() {
     var gender: String? = null
     var salt: String? = null
     var dob: String? = null
+    var age: String? = null
     var birthPlace: String? = null
     var userImage: String? = null
     var key: String? = null
@@ -87,6 +88,7 @@ open class RealmUserModel : RealmObject() {
         jsonObject.addProperty("gender", gender)
         jsonObject.addProperty("phoneNumber", phoneNumber)
         jsonObject.addProperty("birthDate", dob)
+        jsonObject.addProperty("age", age)
         try {
             jsonObject.addProperty("iterations", iterations?.toInt())
         } catch (e: Exception) {
@@ -263,6 +265,7 @@ open class RealmUserModel : RealmObject() {
                 salt = JsonUtils.getString("salt", jsonDoc)
                 dob = JsonUtils.getString("birthDate", jsonDoc)
                 birthPlace = JsonUtils.getString("birthPlace", jsonDoc)
+                age = JsonUtils.getString("age", jsonDoc)
                 gender = JsonUtils.getString("gender", jsonDoc)
                 language = JsonUtils.getString("language", jsonDoc)
                 level = JsonUtils.getString("level", jsonDoc)

@@ -641,7 +641,6 @@
     <string name="added_to_my_library">تمت الإضافة إلى myLibrary</string>
     <string name="added_to_my_courses">تمت الإضافة إلى myCourses</string>
     <string name="do_you_want_to_stay_online">هل ترغب في البقاء متصلاً على الإنترنت؟</string>
-    <string name="no_resources_to_download">لا توجد موارد للتحميل</string>
     <string name="planet_not_available">الكوكب غير متاح</string>
     <string name="device_not_connected_to_planet">الجهاز غير متصل بالكوكب.</string>
     <string name="all_files_downloaded_successfully">تم تنزيل جميع الملفات بنجاح</string>
@@ -1239,5 +1238,10 @@
     <string name="go_to_mylibrary">انتقل إلى مكتبتي</string>
     <string name="choose_an_option">اختر خيارًا</string>
     <string name="welcome_back">مرحبًا بعودتك %1$s</string>
+    <string name="show_additional_fields">عرض الحقول الإضافية</string>
+    <string name="hide_additional_fields">إخفاء الحقول الإضافية</string>
+    <string name="age">العمر</string>
+    <string name="preparing_download">جارٍ تحضير التنزيل…</string>
+    <string name="downloading_files">جارٍ تنزيل الملفات</string>
 
 </resources>
