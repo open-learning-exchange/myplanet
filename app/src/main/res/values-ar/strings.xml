@@ -1243,5 +1243,7 @@
     <string name="age">العمر</string>
     <string name="preparing_download">جارٍ تحضير التنزيل…</string>
     <string name="downloading_files">جارٍ تنزيل الملفات</string>
+    <string name="age_must_be_100_or_below">يجب أن يكون العمر 100 أو أقل</string>
+    <string name="please_enter_a_valid_age">الرجاء إدخال عمر صحيح</string>
 
 </resources>

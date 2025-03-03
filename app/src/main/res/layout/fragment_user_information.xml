@@ -176,12 +176,14 @@
                     android:layout_height="wrap_content"
                     android:buttonTint="@color/daynight_textColor"
                     android:text="@string/male"
+                    android:tag="male"
                     android:textColor="@color/daynight_textColor" />
                 <RadioButton
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:buttonTint="@color/daynight_textColor"
                     android:text="@string/female"
+                    android:tag="female"
                     android:textColor="@color/daynight_textColor" />
             </RadioGroup>
         </LinearLayout>
