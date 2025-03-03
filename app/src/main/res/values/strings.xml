@@ -968,7 +968,7 @@
     ]]>
     </string>
 
-    <string name="is_on_please_turn_of_to_save_battery">" is on,  please turn off to save the battery."</string>
+    <string name="is_on_please_turn_of_to_save_battery">" is on, please turn off to save the battery."</string>
     <string name="go_to_settings">go to settings</string>
     <string name="new_version_of_my_planet_available">New version of my planet available</string>
     <string name="download_first_to_continue">Download first to continue.</string>

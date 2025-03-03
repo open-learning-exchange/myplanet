@@ -75,10 +75,16 @@ object DialogUtils {
 
     private fun showDialog(context: Context) {
         if (MainApplication.syncFailedCount > 3) {
-            val pd = AlertDialog.Builder(context, R.style.CustomAlertDialog)
-            var message = if (NetworkUtils.isBluetoothEnabled()) "Bluetooth " else ""
-            message += if (NetworkUtils.isWifiEnabled()) "Wifi " else ""
+            val pd = AlertDialog.Builder(context, R.style.AlertDialogTheme)
+            var message = ""
+            if (NetworkUtils.isBluetoothEnabled()) message += "Bluetooth/"
+            if (NetworkUtils.isWifiEnabled()) message += "WiFi/"
+            message = message.trim().removeSuffix("/")
+            if (message.isNotEmpty()) {
             message += context.getString(R.string.is_on_please_turn_of_to_save_battery)
+            } else {
+            message = context.getString(R.string.is_on_please_turn_of_to_save_battery)
+            }
             pd.setMessage(message)
             pd.setPositiveButton(context.getString(R.string.go_to_settings)) { _, _ ->
                 MainApplication.syncFailedCount = 0
@@ -88,18 +94,8 @@ object DialogUtils {
             pd.setCancelable(false)
             val d = pd.create()
             d.show()
-            d.getButton(AlertDialog.BUTTON_POSITIVE)?.apply {
-                textSize = 14f
-                setPadding(20,20,20,20)
-            }
-            d.getButton(AlertDialog.BUTTON_NEGATIVE)?.apply {
-                textSize = 14f
-                setPadding(20,20,20,20)
-            }
         }
     }
-
-
 
     @JvmStatic
     fun showSnack(v: View?, s: String?) {
