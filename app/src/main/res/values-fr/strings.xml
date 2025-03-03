@@ -1240,9 +1240,11 @@
     <string name="welcome_back">Bienvenue %1$s</string>
     <string name="show_additional_fields">afficher les champs supplémentaires</string>
     <string name="hide_additional_fields">masquer les champs supplémentaires</string>
-    <string name="age">Âge</string>
+    <string name="age">àge</string>
     <string name="preparing_download">Préparation du téléchargement…</string>
     <string name="downloading_files">Téléchargement des fichiers</string>
+    <string name="age_must_be_100_or_below">L\'âge doit être de 100 ou moins</string>
+    <string name="please_enter_a_valid_age">Veuillez entrer un âge valide</string>
     <string name="member_of_planet">membre de planet</string>
 
 </resources>
