@@ -90,16 +90,6 @@ abstract class PermissionActivity : AppCompatActivity() {
         }
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == PERMISSION_REQUEST_CODE_FILE) {
-            permissions.forEachIndexed { index, permission ->
-                if (grantResults[index] != PackageManager.PERMISSION_GRANTED) {
-                    Log.w("Permissions", "Denied: $permission")
-                }
-            }
-        }
-    }
 
     companion object {
         const val PERMISSION_REQUEST_CODE_FILE = 111
