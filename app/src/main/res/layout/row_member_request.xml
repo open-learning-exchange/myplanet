@@ -16,17 +16,28 @@
 
         <TextView
             android:id="@+id/tv_name"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/daynight_textColor"
             android:textSize="18sp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/tvDescription"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/member_of_planet"
+            android:textColor="@color/daynight_textColor"
+            android:textSize="18sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tv_name" />
+
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/tv_name">
+            app:layout_constraintTop_toBottomOf="@+id/tvDescription">
 
             <Button
                 android:id="@+id/btn_accept"
@@ -34,6 +45,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/button_accept"
                 android:theme="@style/PrimaryButton" />
+
             <Button
                 android:id="@+id/btn_reject"
                 android:layout_width="wrap_content"

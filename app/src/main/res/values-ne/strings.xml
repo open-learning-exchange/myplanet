@@ -1243,5 +1243,6 @@
     <string name="age">उमेर</string>
     <string name="preparing_download">डाउनलोडको तयारी गर्दै…</string>
     <string name="downloading_files">फाइलहरू डाउनलोड हुँदैछन्</string>
+    <string name="member_of_planet">planet को सदस्य</string>
 
 </resources>
