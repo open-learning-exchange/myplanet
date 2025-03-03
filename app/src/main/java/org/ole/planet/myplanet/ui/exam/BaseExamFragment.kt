@@ -134,8 +134,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
                 .setCustomTitle(titleView)
                 .setPositiveButton(getString(R.string.finish)) { _: DialogInterface?, _: Int ->
                     parentFragmentManager.popBackStack()
-                }.setCancelable(false)
-                    .show()
+                }.setCancelable(false).show()
         }
     }
 
