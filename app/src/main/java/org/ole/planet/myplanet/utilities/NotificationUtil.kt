@@ -8,18 +8,32 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 
 object NotificationUtil {
+    private const val CHANNEL_ID = "ole_sync_channel"
+    private const val NOTIFICATION_ID = 111
+
     @JvmStatic
+    @Synchronized
     fun create(context: Context, smallIcon: Int, contentTitle: String?, contentText: String?) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val a = NotificationCompat.Builder(context, "11")
+
         setChannel(manager)
-        val notification = a.setContentTitle(contentTitle).setContentText(contentText).setSmallIcon(smallIcon)
-            .setProgress(0, 0, true).setAutoCancel(true).build()
-        manager.notify(111, notification)
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setContentTitle(contentTitle)
+            .setContentText(contentText)
+            .setSmallIcon(smallIcon)
+            .setProgress(0, 0, false)  // Remove indeterminate progress
+            .setOnlyAlertOnce(true)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setAutoCancel(true)
+            .build()
+
+        manager.notify(NOTIFICATION_ID, notification)
     }
 
     @JvmStatic
-    fun cancel(context: Context, id: Int) {
+    @Synchronized
+    fun cancel(context: Context, id: Int = NOTIFICATION_ID) {
         val nm = NotificationManagerCompat.from(context)
         nm.cancel(id)
     }
@@ -34,7 +48,14 @@ object NotificationUtil {
     fun setChannel(notificationManager: NotificationManager?) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val importance = NotificationManager.IMPORTANCE_LOW
-            val notificationChannel = NotificationChannel("11", "ole", importance)
+            val notificationChannel = NotificationChannel(
+                CHANNEL_ID,
+                "OLE Sync",
+                importance
+            )
+            notificationChannel.description = "Notifications for synchronization process"
+            notificationChannel.setSound(null, null)  // Disable sound
+            notificationChannel.enableVibration(false)  // Disable vibration
             notificationManager?.createNotificationChannel(notificationChannel)
         }
     }
