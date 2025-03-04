@@ -57,31 +57,22 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             fragmentUserInformationBinding.llPhoneDob.visibility = View.GONE
             fragmentUserInformationBinding.llLevel.visibility = View.GONE
         } else {
-            val langArray = resources.getStringArray(R.array.language).toMutableList()
-            val levelArray = resources.getStringArray(R.array.level).toMutableList()
-            val adapterLang = ArrayAdapter(requireContext(), R.layout.spinner_item_white, langArray)
-            val adapterLevel = ArrayAdapter(requireContext(), R.layout.spinner_item_white, levelArray)
+            val langArray = resources.getStringArray(R.array.language)
+            val levelArray = resources.getStringArray(R.array.level)
+            val adapterLang = ArrayAdapter(requireContext(), R.layout.become_a_member_spinner_layout, langArray)
+            val adapterLevel = ArrayAdapter(requireContext(), R.layout.become_a_member_spinner_layout, levelArray)
             adapterLang.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             adapterLevel.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             fragmentUserInformationBinding.spnLang.adapter = adapterLang
             fragmentUserInformationBinding.spnLevel.adapter = adapterLevel
-            fragmentUserInformationBinding.spnLang.post {
-                val selectedView = fragmentUserInformationBinding.spnLang.selectedView as? TextView
-                selectedView?.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-            }
-            fragmentUserInformationBinding.spnLevel.post {
-                val selectedView = fragmentUserInformationBinding.spnLevel.selectedView as? TextView
-                selectedView?.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-            }
 //        fragmentUserInformationBinding.etEmail.setText(getString(R.string.message_placeholder, userModel?.email))
 //        fragmentUserInformationBinding.etFname.setText(getString(R.string.message_placeholder, userModel?.firstName))
 //        fragmentUserInformationBinding.etLname.setText(getString(R.string.message_placeholder, userModel?.lastName))
 //        fragmentUserInformationBinding.etPhone.setText(getString(R.string.message_placeholder, userModel?.phoneNumber))
 //        fragmentUserInformationBinding.txtDob.text = getString(R.string.message_placeholder, userModel?.dob)
 //        dob = userModel?.dob
-            fragmentUserInformationBinding.txtDob.setOnClickListener(this)
         }
-
+        fragmentUserInformationBinding.txtDob.setOnClickListener(this)
         fragmentUserInformationBinding.btnCancel.setOnClickListener(this)
         fragmentUserInformationBinding.btnSubmit.setOnClickListener(this)
     }
@@ -99,6 +90,17 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     private fun toggleAdditionalFields() {
         val isAdditionalFieldsVisible = fragmentUserInformationBinding.llNames.visibility == View.VISIBLE
+        if (isAdditionalFieldsVisible) {
+            fragmentUserInformationBinding.etFname.setText("")
+            fragmentUserInformationBinding.etLname.setText("")
+            fragmentUserInformationBinding.etMname.setText("")
+            fragmentUserInformationBinding.etPhone.setText("")
+            fragmentUserInformationBinding.etEmail.setText("")
+            fragmentUserInformationBinding.txtDob.text = getString(R.string.birth_date)
+        } else {
+            fragmentUserInformationBinding.etAge.setText("")
+            fragmentUserInformationBinding.etAge.error = null
+        }
 
         fragmentUserInformationBinding.btnAdditionalFields.text = if (isAdditionalFieldsVisible) getString(R.string.show_additional_fields) else getString(R.string.hide_additional_fields)
         fragmentUserInformationBinding.llNames.visibility = if (isAdditionalFieldsVisible) View.GONE else View.VISIBLE
@@ -126,10 +128,18 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             age = fragmentUserInformationBinding.etAge.text.toString().trim()
 
             if (age.isNotEmpty()) {
-                user.addProperty("age", age)
+                val ageInt = age.toIntOrNull()
+                if (ageInt == null) {
+                    fragmentUserInformationBinding.etAge.error = getString(R.string.please_enter_a_valid_age)
+                    return
+                } else if (ageInt > 100) {
+                    fragmentUserInformationBinding.etAge.error = getString(R.string.age_must_be_100_or_below)
+                    return
+                } else {
+                    user.addProperty("age", age)
+                }
             }
         }
-
 
         if (fname.isNotEmpty() || lname.isNotEmpty()) {
             user.addProperty("name", "$fname $lname")
@@ -161,7 +171,8 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         if (fragmentUserInformationBinding.rbGender.visibility == View.VISIBLE) {
             val rbSelected = requireView().findViewById<RadioButton>(fragmentUserInformationBinding.rbGender.checkedRadioButtonId)
             if (rbSelected != null) {
-                user.addProperty("gender", rbSelected.text.toString())
+                val gender = rbSelected.tag.toString()
+                user.addProperty("gender", gender)
             }
         }
 
@@ -231,10 +242,14 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
-        val dpd = DatePickerDialog(requireActivity(), { _, i, i1, i2 ->
-            dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2)
-            fragmentUserInformationBinding.txtDob.text = dob
-        }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH])
+        val dpd = DatePickerDialog(
+            requireContext(), { _, i, i1, i2 ->
+                dob = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2)
+                fragmentUserInformationBinding.txtDob.text = dob
+            }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH]
+        )
+        dpd.setTitle(getString(R.string.select_date_of_birth))
+        dpd.datePicker.maxDate = now.timeInMillis
         dpd.show()
     }
 
