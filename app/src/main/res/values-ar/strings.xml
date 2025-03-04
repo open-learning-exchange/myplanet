@@ -1243,5 +1243,7 @@
     <string name="show_additional_fields">عرض الحقول الإضافية</string>
     <string name="hide_additional_fields">إخفاء الحقول الإضافية</string>
     <string name="age">العمر</string>
+    <string name="edit_mission_and_services">تعديل المهمة والخدمات</string>
+    <string name="this_team_has_no_description_defined">هذا الفريق ليس لديه وصف محدد</string>
 
 </resources>

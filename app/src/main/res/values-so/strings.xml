@@ -1243,5 +1243,7 @@
     <string name="show_additional_fields">muuji beeraha dheeraadka ah</string>
     <string name="hide_additional_fields">qari beeraha dheeraadka ah</string>
     <string name="age">Da\'da</string>
+    <string name="edit_mission_and_services">wax ka beddel himilada iyo adeegyada</string>
+    <string name="this_team_has_no_description_defined">kooxdani ma laha sharaxaad la cayimay</string>
 
 </resources>

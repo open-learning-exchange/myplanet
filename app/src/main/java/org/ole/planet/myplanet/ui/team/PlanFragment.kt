@@ -23,7 +23,6 @@ class PlanFragment : BaseTeamFragment() {
     private lateinit var fragmentPlanBinding: FragmentPlanBinding
     private var isEnterprise: Boolean = false
 
-
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentPlanBinding = FragmentPlanBinding.inflate(inflater, container, false)
         return fragmentPlanBinding.root
@@ -36,9 +35,11 @@ class PlanFragment : BaseTeamFragment() {
         val isMyTeam = RealmMyTeam.isTeamLeader(team?._id, user?.id, mRealm)
         isEnterprise = team?.type?.equals("enterprise", ignoreCase = true) == true
 
-
-        fragmentPlanBinding.btnAddPlan.text = if (isEnterprise) "Edit Mission and Services"
-        else getString(R.string.edit_plan)
+        fragmentPlanBinding.btnAddPlan.text = if (isEnterprise) {
+            getString(R.string.edit_mission_and_services)
+        } else {
+            getString(R.string.edit_plan)
+        }
 
         fragmentPlanBinding.btnAddPlan.isVisible = isMyTeam
         fragmentPlanBinding.btnAddPlan.isEnabled = isMyTeam
@@ -50,7 +51,6 @@ class PlanFragment : BaseTeamFragment() {
         }
     }
 
-
     private fun editTeam() {
         if (!isAdded) {
             return
@@ -61,7 +61,6 @@ class PlanFragment : BaseTeamFragment() {
     }
 
     private fun showCreateTeamDialog(context: Context, activity: FragmentActivity, realm: Realm, team: RealmMyTeam) {
-
         val alertCreateTeamBinding = AlertCreateTeamBinding.inflate(LayoutInflater.from(context))
         setupDialogFields(alertCreateTeamBinding, team)
 
@@ -97,14 +96,7 @@ class PlanFragment : BaseTeamFragment() {
         binding.etName.setText(team.name)
     }
 
-    private fun handleSaveButtonClick(
-        binding: AlertCreateTeamBinding,
-        activity: FragmentActivity,
-        context: Context,
-        realm: Realm,
-        team: RealmMyTeam,
-        dialog: AlertDialog
-    ) {
+    private fun handleSaveButtonClick(binding: AlertCreateTeamBinding, activity: FragmentActivity, context: Context, realm: Realm, team: RealmMyTeam, dialog: AlertDialog) {
         val name = binding.etName.text.toString().trim()
         if (name.isEmpty()) {
             Utilities.toast(activity, context.getString(R.string.name_is_required))
@@ -130,34 +122,29 @@ class PlanFragment : BaseTeamFragment() {
         if (updatedTeam == null) return
         isEnterprise=  team?.type?.equals("enterprise", ignoreCase = true) == true
 
-        val missionText = formatTeamDetail(
-            updatedTeam.description,
+        val missionText = formatTeamDetail(updatedTeam.description,
             getString(if (isEnterprise) R.string.entMission else R.string.what_is_your_team_s_plan)
         )
-        val servicesText = formatTeamDetail(
-            updatedTeam.services,
+        val servicesText = formatTeamDetail(updatedTeam.services,
             if (isEnterprise) getString(R.string.entServices) else ""
         )
-        val rulesText = formatTeamDetail(
-            updatedTeam.rules,
+        val rulesText = formatTeamDetail(updatedTeam.rules,
             if (isEnterprise) getString(R.string.entRules) else ""
         )
 
         val finalText = if (missionText.isEmpty() && servicesText.isEmpty() && rulesText.isEmpty()) {
-            "<br/>" + (if (isEnterprise) getString(R.string.entEmptyDescription) else "This Team has no description defined") + "<br/>"
+            "<br/>" + (if (isEnterprise) getString(R.string.entEmptyDescription) else getString(R.string.this_team_has_no_description_defined)) + "<br/>"
         } else {
             missionText + servicesText + rulesText
         }
 
         fragmentPlanBinding.tvDescription.text = Html.fromHtml(finalText, Html.FROM_HTML_MODE_LEGACY)
-
         fragmentPlanBinding.tvDate.text = getString(
             R.string.two_strings,
             getString(R.string.created_on),
             updatedTeam.createdDate?.let { formatDate(it) }
         )
     }
-
 
     private fun formatTeamDetail(detail: String?, title: String): String {
         return if (detail?.trim().isNullOrEmpty()) "" else "<b>$title</b><br/>$detail<br/><br/>"

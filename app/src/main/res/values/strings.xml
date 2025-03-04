@@ -1243,5 +1243,7 @@
     <string name="show_additional_fields">show additional fields</string>
     <string name="hide_additional_fields">hide additional fields</string>
     <string name="age">Age</string>
+    <string name="edit_mission_and_services">edit mission and services</string>
+    <string name="this_team_has_no_description_defined">this team has no description defined</string>
 
 </resources>
