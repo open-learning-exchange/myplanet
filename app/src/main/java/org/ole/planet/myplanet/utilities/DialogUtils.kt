@@ -77,9 +77,11 @@ object DialogUtils {
         if (MainApplication.syncFailedCount > 3) {
             val pd = AlertDialog.Builder(context, R.style.AlertDialogTheme)
             var message = ""
-            if (NetworkUtils.isBluetoothEnabled()) message += "Bluetooth/"
-            if (NetworkUtils.isWifiEnabled()) message += "WiFi/"
-            message = message.trim().removeSuffix("/")
+            if (NetworkUtils.isBluetoothEnabled()) message += "Bluetooth"
+            if (NetworkUtils.isWifiEnabled()) {
+                if (message.isNotEmpty()) message += " and "
+                    message += "Wi-Fi"
+            }
             if (message.isNotEmpty()) {
             message += context.getString(R.string.is_on_please_turn_of_to_save_battery)
             } else {
