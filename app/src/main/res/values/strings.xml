@@ -75,8 +75,8 @@
     <string name="your_feedback">Your Feedback *</string>
     <string name="button_update">Update</string>
     <string name="level">level</string>
-    <string name="male">Male</string>
-    <string name="female">Female</string>
+    <string name="male">male</string>
+    <string name="female">female</string>
     <string name="gender">Gender</string>
     <string name="birth_date">Birth Date</string>
     <string name="phone_number">Phone Number</string>
@@ -641,7 +641,6 @@
     <string name="added_to_my_library">added to myLibrary</string>
     <string name="added_to_my_courses">added to myCourses</string>
     <string name="do_you_want_to_stay_online">Do you want to stay online?</string>
-    <string name="no_resources_to_download">No resources to download</string>
     <string name="planet_not_available">Planet not available</string>
     <string name="device_not_connected_to_planet">Device not connected to planet.</string>
     <string name="all_files_downloaded_successfully">All files downloaded successfully</string>
@@ -1242,7 +1241,12 @@
     <string name="edit_plan">Edit Plan</string>
     <string name="show_additional_fields">show additional fields</string>
     <string name="hide_additional_fields">hide additional fields</string>
-    <string name="age">Age</string>
+    <string name="age">age</string>
+    <string name="preparing_download">Preparing download…</string>
+    <string name="downloading_files">Downloading files</string>
+    <string name="age_must_be_100_or_below">age must be 100 or below</string>
+    <string name="please_enter_a_valid_age">please enter a valid age</string>
+    <string name="member_of_planet">member of planet</string>
     <string name="edit_mission_and_services">edit mission and services</string>
     <string name="this_team_has_no_description_defined">this team has no description defined</string>
 

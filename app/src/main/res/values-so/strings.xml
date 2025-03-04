@@ -641,7 +641,6 @@
     <string name="added_to_my_library">lagu daray myLibrary</string>
     <string name="added_to_my_courses">lagu daray myCourses</string>
     <string name="do_you_want_to_stay_online">Ma rabtid inaad joogto internetka?</string>
-    <string name="no_resources_to_download">Ma jiro khadka ay la diyaariyaan.</string>
     <string name="planet_not_available">Geedka aan la helin</string>
     <string name="device_not_connected_to_planet">Qalabka aan la xidhiidhin Geedka.</string>
     <string name="all_files_downloaded_successfully">Dhammaan faylashu waa la degsanayaa si guul ah.</string>
@@ -1242,7 +1241,12 @@
     <string name="edit_plan">Wax ka beddel qorshaha</string>
     <string name="show_additional_fields">muuji beeraha dheeraadka ah</string>
     <string name="hide_additional_fields">qari beeraha dheeraadka ah</string>
-    <string name="age">Da\'da</string>
+    <string name="age">da\'da</string>
+    <string name="preparing_download">Diyaarinaya soo dejinta…</string>
+    <string name="downloading_files">Faylasha ayaa la soo dejinayaa</string>
+    <string name="age_must_be_100_or_below">Da\'du waa inay noqoto 100 ama ka yar</string>
+    <string name="please_enter_a_valid_age">Fadlan geli da\'da saxda ah</string>
+    <string name="member_of_planet">xubin ka mid ah planet</string>
     <string name="edit_mission_and_services">wax ka beddel himilada iyo adeegyada</string>
     <string name="this_team_has_no_description_defined">kooxdani ma laha sharaxaad la cayimay</string>
 

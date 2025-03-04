@@ -99,6 +99,17 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     private fun toggleAdditionalFields() {
         val isAdditionalFieldsVisible = fragmentUserInformationBinding.llNames.visibility == View.VISIBLE
+        if (isAdditionalFieldsVisible) {
+            fragmentUserInformationBinding.etFname.setText("")
+            fragmentUserInformationBinding.etLname.setText("")
+            fragmentUserInformationBinding.etMname.setText("")
+            fragmentUserInformationBinding.etPhone.setText("")
+            fragmentUserInformationBinding.etEmail.setText("")
+            fragmentUserInformationBinding.txtDob.text = ""
+        } else {
+            fragmentUserInformationBinding.etAge.setText("")
+            fragmentUserInformationBinding.etAge.error = null
+        }
 
         fragmentUserInformationBinding.btnAdditionalFields.text = if (isAdditionalFieldsVisible) getString(R.string.show_additional_fields) else getString(R.string.hide_additional_fields)
         fragmentUserInformationBinding.llNames.visibility = if (isAdditionalFieldsVisible) View.GONE else View.VISIBLE
@@ -126,10 +137,18 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             age = fragmentUserInformationBinding.etAge.text.toString().trim()
 
             if (age.isNotEmpty()) {
-                user.addProperty("age", age)
+                val ageInt = age.toIntOrNull()
+                if (ageInt == null) {
+                    fragmentUserInformationBinding.etAge.error = getString(R.string.please_enter_a_valid_age)
+                    return
+                } else if (ageInt > 100) {
+                    fragmentUserInformationBinding.etAge.error = getString(R.string.age_must_be_100_or_below)
+                    return
+                } else {
+                    user.addProperty("age", age)
+                }
             }
         }
-
 
         if (fname.isNotEmpty() || lname.isNotEmpty()) {
             user.addProperty("name", "$fname $lname")
@@ -161,7 +180,8 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         if (fragmentUserInformationBinding.rbGender.visibility == View.VISIBLE) {
             val rbSelected = requireView().findViewById<RadioButton>(fragmentUserInformationBinding.rbGender.checkedRadioButtonId)
             if (rbSelected != null) {
-                user.addProperty("gender", rbSelected.text.toString())
+                val gender = rbSelected.tag.toString()
+                user.addProperty("gender", gender)
             }
         }
 
