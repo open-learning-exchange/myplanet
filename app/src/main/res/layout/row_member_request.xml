@@ -22,7 +22,6 @@
                 android:textSize="18sp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
-
         <Button
                 android:id="@+id/btn_accept"
                 android:layout_width="0dp"
@@ -39,7 +38,6 @@
                 app:layout_constraintEnd_toStartOf="@+id/btn_reject"
                 app:layout_constraintTop_toBottomOf="@+id/tv_name"
                 app:layout_constraintHorizontal_weight="1" />
-
         <Button
                 android:id="@+id/btn_reject"
                 android:layout_width="0dp"
