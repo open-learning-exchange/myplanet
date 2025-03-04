@@ -443,27 +443,31 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
+                var dataInserted = false
                 var attempt = 0
+                val maxAttempts = 10
 
-                while (true) {
+                while (!dataInserted && attempt < maxAttempts) {
                     val realm = Realm.getDefaultInstance()
-                    var dataInserted = false
-
                     try {
                         realm.refresh()
                         val realmResults = realm.where(RealmUserModel::class.java).findAll()
                         if (!realmResults.isEmpty()) {
                             dataInserted = true
-                            break
                         }
                     } finally {
                         realm.close()
                     }
-                    attempt++
-                    delay(1000)
+
+                    if (!dataInserted) {
+                        delay(500)
+                        attempt++
+                    }
                 }
 
                 withContext(Dispatchers.Main) {
+                    NotificationUtil.cancelAll(activityContext)
+
                     customProgressDialog?.dismiss()
 
                     if (::syncIconDrawable.isInitialized) {
@@ -477,20 +481,25 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         createLog("synced successfully", "")
                     }
 
-                    showSnack(activityContext.findViewById(android.R.id.content), getString(R.string.sync_completed))
+                    showSnack(
+                        activityContext.findViewById(android.R.id.content),
+                        getString(R.string.sync_completed)
+                    )
 
                     if (settings.getBoolean("isAlternativeUrl", false)) {
-                        editor.putString("alternativeUrl", "")
-                        editor.putString("processedAlternativeUrl", "")
-                        editor.putBoolean("isAlternativeUrl", false)
-                        editor.apply()
+                        editor.apply {
+                            putString("alternativeUrl", "")
+                            putString("processedAlternativeUrl", "")
+                            putBoolean("isAlternativeUrl", false)
+                            apply()
+                        }
                     }
 
-                    downloadAdditionalResources()
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        downloadAdditionalResources()
 
-                    val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
-                    if (betaAutoDownload) {
-                        withContext(Dispatchers.IO) {
+                        val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
+                        if (betaAutoDownload) {
                             val downloadRealm = Realm.getDefaultInstance()
                             try {
                                 backgroundDownload(downloadAllFiles(getAllLibraryList(downloadRealm)))
@@ -500,8 +509,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         }
                     }
 
-                    cancelAll(activityContext)
-
                     if (activityContext is LoginActivity) {
                         activityContext.updateTeamDropdown()
                     }
@@ -509,6 +516,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
             } catch (e: Exception) {
                 e.printStackTrace()
+
+                withContext(Dispatchers.Main) {
+                    customProgressDialog?.dismiss()
+                    showAlert(activityContext, "Sync Error", e.localizedMessage)
+                }
             }
         }
     }
