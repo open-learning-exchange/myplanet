@@ -980,7 +980,7 @@
     <string name="beta_function_for_wifi_switch">وظيفة بيتا لتبديل الواي فاي</string>
     <string name="upgrade_application">ترقية التطبيق</string>
     <string name="auto_upgrade">ترقية تلقائية</string>
-    <string name="always_move_to_maximum_version">الانتقال دائمًا إلى الإصدار الأعلى؟</string>
+    <string name="always_move_to_maximum_version">الانتقال دائمًا إلى الإصدار الأعلى</string>
     <string name="all_beta_functions">جميع وظائف بيتا</string>
     <string name="auto_sync_device">جهاز مزامنة تلقائي</string>
     <string name="beta_functionality">وظائف بيتا</string>

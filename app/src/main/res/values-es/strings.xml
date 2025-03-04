@@ -980,7 +980,7 @@
     <string name="beta_function_for_wifi_switch">Función beta para interruptor de WiFi</string>
     <string name="upgrade_application">Actualizar aplicación</string>
     <string name="auto_upgrade">Actualización automática</string>
-    <string name="always_move_to_maximum_version">¿Mover siempre a la versión máxima?</string>
+    <string name="always_move_to_maximum_version">Mover siempre a la versión máxima</string>
     <string name="all_beta_functions">Todas las funciones beta</string>
     <string name="auto_sync_device">Sincronizar automáticamente el dispositivo</string>
     <string name="beta_functionality">Funcionalidad beta</string>

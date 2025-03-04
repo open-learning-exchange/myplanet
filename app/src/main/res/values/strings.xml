@@ -980,7 +980,7 @@
     <string name="beta_function_for_wifi_switch">beta function for wifi switch</string>
     <string name="upgrade_application">upgrade application</string>
     <string name="auto_upgrade">auto upgrade</string>
-    <string name="always_move_to_maximum_version">always move to maximum version?</string>
+    <string name="always_move_to_maximum_version">Always move to maximum version</string>
     <string name="all_beta_functions">all beta functions</string>
     <string name="auto_sync_device">auto sync device</string>
     <string name="beta_functionality">beta functionality</string>
