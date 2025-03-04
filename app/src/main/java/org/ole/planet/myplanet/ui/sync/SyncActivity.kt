@@ -98,6 +98,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private var showAdditionalServers = false
     private var serverAddressAdapter : ServerAddressAdapter? = null
     private lateinit var serverListAddresses: List<ServerAddressesModel>
+    private var hasShownSyncNotification = false
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -364,6 +365,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun startSync() {
+        hasShownSyncNotification = false
         SyncManager.instance?.start(this@SyncActivity)
     }
 
@@ -445,22 +447,22 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             try {
                 var attempt = 0
 
-                while (true) {
-                    val realm = Realm.getDefaultInstance()
-                    var dataInserted = false
-
-                    try {
-                        realm.refresh()
-                        val realmResults = realm.where(RealmUserModel::class.java).findAll()
-                        if (!realmResults.isEmpty()) {
-                            dataInserted = true
-                            break
+                // Only check database if sync hasn't shown notification yet
+                if (!hasShownSyncNotification) {
+                    while (attempt < 10) { // Add maximum attempts to prevent infinite loop
+                        val realm = Realm.getDefaultInstance()
+                        try {
+                            realm.refresh()
+                            val realmResults = realm.where(RealmUserModel::class.java).findAll()
+                            if (!realmResults.isEmpty()) {
+                                break
+                            }
+                        } finally {
+                            realm.close()
                         }
-                    } finally {
-                        realm.close()
+                        attempt++
+                        delay(1000)
                     }
-                    attempt++
-                    delay(1000)
                 }
 
                 withContext(Dispatchers.Main) {
@@ -473,37 +475,42 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         syncIcon.invalidateDrawable(syncIconDrawable)
                     }
 
-                    lifecycleScope.launch {
-                        createLog("synced successfully", "")
-                    }
+                    // Only show notifications and update UI if this is the first sync completion
+                    if (!hasShownSyncNotification) {
+                        lifecycleScope.launch {
+                            createLog("synced successfully", "")
+                        }
 
-                    showSnack(activityContext.findViewById(android.R.id.content), getString(R.string.sync_completed))
+                        showSnack(activityContext.findViewById(android.R.id.content), getString(R.string.sync_completed))
 
-                    if (settings.getBoolean("isAlternativeUrl", false)) {
-                        editor.putString("alternativeUrl", "")
-                        editor.putString("processedAlternativeUrl", "")
-                        editor.putBoolean("isAlternativeUrl", false)
-                        editor.apply()
-                    }
+                        if (settings.getBoolean("isAlternativeUrl", false)) {
+                            editor.putString("alternativeUrl", "")
+                            editor.putString("processedAlternativeUrl", "")
+                            editor.putBoolean("isAlternativeUrl", false)
+                            editor.apply()
+                        }
 
-                    downloadAdditionalResources()
+                        downloadAdditionalResources()
 
-                    val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
-                    if (betaAutoDownload) {
-                        withContext(Dispatchers.IO) {
-                            val downloadRealm = Realm.getDefaultInstance()
-                            try {
-                                backgroundDownload(downloadAllFiles(getAllLibraryList(downloadRealm)))
-                            } finally {
-                                downloadRealm.close()
+                        val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
+                        if (betaAutoDownload) {
+                            withContext(Dispatchers.IO) {
+                                val downloadRealm = Realm.getDefaultInstance()
+                                try {
+                                    backgroundDownload(downloadAllFiles(getAllLibraryList(downloadRealm)))
+                                } finally {
+                                    downloadRealm.close()
+                                }
                             }
                         }
-                    }
 
-                    cancelAll(activityContext)
+                        cancelAll(activityContext)
 
-                    if (activityContext is LoginActivity) {
-                        activityContext.updateTeamDropdown()
+                        if (activityContext is LoginActivity) {
+                            activityContext.updateTeamDropdown()
+                        }
+
+                        hasShownSyncNotification = true
                     }
                 }
 
@@ -1019,6 +1026,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     override fun onDestroy() {
         super.onDestroy()
+        hasShownSyncNotification = false
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
