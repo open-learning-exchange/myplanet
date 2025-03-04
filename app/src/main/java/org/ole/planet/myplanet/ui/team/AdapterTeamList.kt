@@ -9,6 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
@@ -59,13 +60,20 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
 
             root.setOnClickListener {
                 if (context is OnHomeItemClickListener) {
-                    val f = TeamDetailFragment()
+                    val fragmentManager = (context as AppCompatActivity).supportFragmentManager
+                    val existingFragment = fragmentManager.findFragmentByTag("TeamDetailFragment")
                     val b = Bundle()
                     b.putString("id", team._id)
                     b.putBoolean("isMyTeam", isMyTeam)
+                    if (existingFragment is TeamDetailFragment) {
+                        existingFragment.arguments?.clear()
+                        existingFragment.arguments = b
+                    }
+                    val f = TeamDetailFragment()
                     f.arguments = b
                     (context as OnHomeItemClickListener).openCallFragment(f)
                     prefData.setTeamName(team.name)
+                    prefData.setSelectedTeamId(team._id)
                 }
             }
 
