@@ -980,7 +980,7 @@
     <string name="beta_function_for_wifi_switch">Fonction bêta pour le commutateur Wi-Fi</string>
     <string name="upgrade_application">Mettre à niveau l\'application</string>
     <string name="auto_upgrade">Mise à niveau automatique</string>
-    <string name="always_move_to_maximum_version">Passer toujours à la version maximale ?</string>
+    <string name="always_move_to_maximum_version">Passer toujours à la version maximale</string>
     <string name="all_beta_functions">Toutes les fonctions bêta</string>
     <string name="auto_sync_device">Appareil de synchronisation automatique</string>
     <string name="beta_functionality">Fonctionnalité bêta</string>
