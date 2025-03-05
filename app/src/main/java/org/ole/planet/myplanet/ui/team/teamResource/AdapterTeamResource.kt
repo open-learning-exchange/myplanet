@@ -12,7 +12,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getTeamCreator
+import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getTeamLeader
 
 class AdapterTeamResource(
     private val context: Context,
@@ -23,7 +23,7 @@ class AdapterTeamResource(
 ) : RecyclerView.Adapter<AdapterTeamResource.ViewHolderTeamResource>() {
 
     private var listener: OnHomeItemClickListener? = null
-    private val teamCreator: String = getTeamCreator(teamId, mRealm)
+    private val teamLeader: String = getTeamLeader(teamId, mRealm)
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -53,10 +53,14 @@ class AdapterTeamResource(
             removeResource(resource, position)
         }
 
-        val isLeader = settings.getString("userId", "--").equals(teamCreator, ignoreCase = true)
+        val isLeader = settings.getString("userId", "--").equals(teamLeader, ignoreCase = true)
         if (!isLeader) {
-            Log.d("team", "User is not a team leader, hiding remove button for: ${resource.title}")
+            Log.d("team", "User is not a team leader actual leader is ${teamLeader}, hiding remove button for: ${resource.title}")
             holder.rowTeamResourceBinding.ivRemove.visibility = View.GONE
+        }else{
+            Log.d("team", "User is a team leader, showing remove button for: ${resource.title}")
+            holder.rowTeamResourceBinding.ivRemove.visibility = View.VISIBLE
+
         }
     }
 
