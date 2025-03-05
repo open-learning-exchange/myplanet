@@ -980,7 +980,7 @@
     <string name="beta_function_for_wifi_switch">وظيفة بيتا لتبديل الواي فاي</string>
     <string name="upgrade_application">ترقية التطبيق</string>
     <string name="auto_upgrade">ترقية تلقائية</string>
-    <string name="always_move_to_maximum_version">الانتقال دائمًا إلى الإصدار الأعلى؟</string>
+    <string name="always_move_to_maximum_version">الانتقال دائمًا إلى الإصدار الأعلى</string>
     <string name="all_beta_functions">جميع وظائف بيتا</string>
     <string name="auto_sync_device">جهاز مزامنة تلقائي</string>
     <string name="beta_functionality">وظائف بيتا</string>
@@ -1238,6 +1238,7 @@
     <string name="go_to_mylibrary">انتقل إلى مكتبتي</string>
     <string name="choose_an_option">اختر خيارًا</string>
     <string name="welcome_back">مرحبًا بعودتك %1$s</string>
+    <string name="edit_plan">تعديل الخطة</string>
     <string name="show_additional_fields">عرض الحقول الإضافية</string>
     <string name="hide_additional_fields">إخفاء الحقول الإضافية</string>
     <string name="age">العمر</string>
@@ -1246,5 +1247,7 @@
     <string name="age_must_be_100_or_below">يجب أن يكون العمر 100 أو أقل</string>
     <string name="please_enter_a_valid_age">الرجاء إدخال عمر صحيح</string>
     <string name="member_of_planet">عضو في planet</string>
+    <string name="edit_mission_and_services">تعديل المهمة والخدمات</string>
+    <string name="this_team_has_no_description_defined">هذا الفريق ليس لديه وصف محدد</string>
 
 </resources>

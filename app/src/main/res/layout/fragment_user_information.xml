@@ -109,8 +109,9 @@
                     android:contentDescription="@string/select_language"
                     android:entries="@array/language"
                     android:padding="4dp"
-                    android:textColor="@color/daynight_textColor"
-                    app:backgroundTint="@color/daynight_textColor" />
+                    android:popupBackground="@color/secondary_bg"
+                    android:backgroundTint="@color/daynight_textColor"
+                    android:theme="@style/SpinnerItemStyle"/>
             </LinearLayout>
         </LinearLayout>
 
@@ -143,6 +144,8 @@
                 android:layout_weight="1"
                 android:background="?attr/selectableItemBackground"
                 android:gravity="center_vertical"
+                android:clickable="true"
+                android:focusable="true"
                 android:padding="@dimen/padding_normal"
                 android:text="@string/birth_date"
                 android:textColor="@color/daynight_textColor"
@@ -223,10 +226,11 @@
                 android:id="@+id/spn_level"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:contentDescription="@string/skill_level"
                 android:entries="@array/level"
                 android:padding="@dimen/padding_small"
-                app:backgroundTint="@color/daynight_textColor" />
+                android:popupBackground="@color/secondary_bg"
+                android:backgroundTint="@color/daynight_textColor"
+                android:theme="@style/SpinnerItemStyle"/>
         </LinearLayout>
 
         <LinearLayout
