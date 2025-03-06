@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
+import org.ole.planet.myplanet.ui.team.teamResource.ResourceUpdateListner
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -18,7 +19,8 @@ class AdapterTeamResource(
     private val list: MutableList<RealmMyLibrary>,
     private val mRealm: Realm,
     teamId: String?,
-    private val settings: SharedPreferences
+    private val settings: SharedPreferences,
+    private val updateListener: ResourceUpdateListner
 ) : RecyclerView.Adapter<AdapterTeamResource.ViewHolderTeamResource>() {
 
     private var listener: OnHomeItemClickListener? = null
@@ -78,6 +80,10 @@ class AdapterTeamResource(
 
         list.removeAt(position)
         notifyItemRemoved(position)
+
+        if (list.isEmpty()) {
+            updateListener.onResourceListUpdated()
+        }
     }
 
     class ViewHolderTeamResource(val rowTeamResourceBinding: RowTeamResourceBinding) : RecyclerView.ViewHolder(rowTeamResourceBinding.root)

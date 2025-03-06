@@ -13,6 +13,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.GridLayoutManager
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.TeamPageListener
+import org.ole.planet.myplanet.ui.team.teamResource.ResourceUpdateListner
 import org.ole.planet.myplanet.databinding.FragmentTeamResourceBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -23,7 +24,7 @@ import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.CheckboxListView
 import java.util.UUID
 
-class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
+class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdateListner  {
     private lateinit var fragmentTeamResourceBinding: FragmentTeamResourceBinding
     private lateinit var adapterLibrary: AdapterTeamResource
 
@@ -57,11 +58,11 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
 
 
         adapterLibrary = settings?.let {
-            AdapterTeamResource(requireActivity(), libraries, mRealm, teamId, it)
+            AdapterTeamResource(requireActivity(), libraries, mRealm, teamId, it, this)
         }!!
         fragmentTeamResourceBinding.rvResource.layoutManager = GridLayoutManager(activity, 3)
         fragmentTeamResourceBinding.rvResource.adapter = adapterLibrary
-        showNoData(fragmentTeamResourceBinding.tvNodata, adapterLibrary.itemCount, "teamResources")
+        checkAndShowNoData()
     }
 
     private fun showResourceListDialog() {
@@ -126,7 +127,16 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener {
         alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = lv.selectedItemsList.isNotEmpty()
     }
 
+    fun checkAndShowNoData() {
+        showNoData(fragmentTeamResourceBinding.tvNodata, adapterLibrary.itemCount, "teamResources")
+    }
+
+    override fun onResourceListUpdated() {
+        checkAndShowNoData()
+    }
+
     override fun onAddDocument() {
         showResourceListDialog()
     }
+
 }
