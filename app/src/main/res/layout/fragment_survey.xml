@@ -54,22 +54,25 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:background="@color/secondary_bg">
+            android:background="@color/secondary_bg"
+            android:weightSum="1">
 
             <org.ole.planet.myplanet.utilities.CustomSpinner
                 android:id="@+id/spn_sort"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:entries="@array/sort_by_date"
                 android:padding="@dimen/padding_normal"
                 android:popupBackground="@color/secondary_bg"
                 android:backgroundTint="@color/daynight_textColor"
-                android:theme="@style/SpinnerItemStyle" />
+                android:theme="@style/SpinnerItemStyle"
+                android:spinnerMode="dialog"
+                android:layout_weight="0.6"/>
             <include
                 layout="@layout/layout_search"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="1" />
+                android:layout_weight="0.4" />
         </LinearLayout>
 
         <FrameLayout
