@@ -546,7 +546,7 @@
     <string name="tests">الفحوصات</string>
     <string name="referral">الإحالات</string>
     <string name="other_diagnosis">تشخيصات أخرى</string>
-    <string name="close">إغلاق</string>
+    <string name="close">يغلق</string>
     <string name="negative_balance">الرصيد الحالي سالب!</string>
     <string name="entMission">ما هي مهمة المؤسسة الخاصة بك؟</string>
     <string name="entServices">ما هي الخدمات التي تقدمها المؤسسة الخاصة بك؟</string>
