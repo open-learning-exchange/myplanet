@@ -88,7 +88,7 @@ class TeamDetailFragment : BaseTeamFragment() {
             }
             fragmentTeamDetailBinding.btnAddDoc.setOnClickListener {
                 MainApplication.showDownload = true
-                fragmentTeamDetailBinding.viewPager2.currentItem = 0
+                fragmentTeamDetailBinding.viewPager2.currentItem = 6
                 MainApplication.showDownload = false
                 if (MainApplication.listener != null) {
                     MainApplication.listener?.onAddDocument()
