@@ -73,7 +73,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.VISIBLE
             v.findViewById<LinearLayout>(R.id.ll_prompt).setOnClickListener {
                 if (!childFragmentManager.isStateSaved) {
-                    UserInformationFragment.getInstance("", "").show(childFragmentManager, "")
+                    UserInformationFragment.getInstance("", "", false).show(childFragmentManager, "")
                 }
             }
         } else {

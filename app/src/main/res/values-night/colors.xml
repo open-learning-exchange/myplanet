@@ -47,4 +47,7 @@
     <color name="background_color">#000000</color>
     <color name="text_color">#FFFFFF</color>
     <color name="teams_heading">@color/md_blue_700</color>
+
+    <color name="dropdown_bg">@color/colorPrimary</color>
+    <color name="dropdown_text">@android:color/white</color>
 </resources>
