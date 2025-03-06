@@ -243,6 +243,16 @@
                     android:textColor="@color/daynight_textColor" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <Spinner
+                android:id="@+id/spn_level"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:entries="@array/level"
+                android:contentDescription="@string/skill_level"
+                android:padding="@dimen/padding_small"
+                android:popupBackground="@color/secondary_bg"
+                app:backgroundTint="@color/daynight_textColor" />
+
             <Button
                 android:id="@+id/btn_submit"
                 android:layout_width="wrap_content"
