@@ -75,8 +75,8 @@
     <string name="your_feedback">Your Feedback *</string>
     <string name="button_update">Update</string>
     <string name="level">level</string>
-    <string name="male">Male</string>
-    <string name="female">Female</string>
+    <string name="male">male</string>
+    <string name="female">female</string>
     <string name="gender">Gender</string>
     <string name="birth_date">Birth Date</string>
     <string name="phone_number">Phone Number</string>
@@ -980,7 +980,7 @@
     <string name="beta_function_for_wifi_switch">beta function for wifi switch</string>
     <string name="upgrade_application">upgrade application</string>
     <string name="auto_upgrade">auto upgrade</string>
-    <string name="always_move_to_maximum_version">always move to maximum version?</string>
+    <string name="always_move_to_maximum_version">Always move to maximum version</string>
     <string name="all_beta_functions">all beta functions</string>
     <string name="auto_sync_device">auto sync device</string>
     <string name="beta_functionality">beta functionality</string>
@@ -1238,10 +1238,16 @@
     <string name="go_to_mylibrary">Go To MyLibrary</string>
     <string name="choose_an_option">Choose an option</string>
     <string name="welcome_back">Welcome back %1$s !</string>
+    <string name="edit_plan">Edit Plan</string>
     <string name="show_additional_fields">show additional fields</string>
     <string name="hide_additional_fields">hide additional fields</string>
-    <string name="age">Age</string>
+    <string name="age">age</string>
     <string name="preparing_download">Preparing download…</string>
     <string name="downloading_files">Downloading files</string>
+    <string name="age_must_be_100_or_below">age must be 100 or below</string>
+    <string name="please_enter_a_valid_age">please enter a valid age</string>
+    <string name="member_of_planet">member of planet</string>
+    <string name="edit_mission_and_services">edit mission and services</string>
+    <string name="this_team_has_no_description_defined">this team has no description defined</string>
 
 </resources>
