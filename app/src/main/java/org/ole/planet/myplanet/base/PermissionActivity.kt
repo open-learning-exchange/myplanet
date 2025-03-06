@@ -8,7 +8,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Process
 import android.provider.Settings
-import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -86,17 +85,6 @@ abstract class PermissionActivity : AppCompatActivity() {
 
         if (permissions.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, permissions.toTypedArray(), PERMISSION_REQUEST_CODE_FILE)
-        }
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == PERMISSION_REQUEST_CODE_FILE) {
-            permissions.forEachIndexed { index, permission ->
-                if (grantResults[index] != PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(this, getString(R.string.permissions_denied), Toast.LENGTH_SHORT).show()
-                }
-            }
         }
     }
 
