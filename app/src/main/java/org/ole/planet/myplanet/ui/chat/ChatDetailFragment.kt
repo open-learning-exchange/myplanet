@@ -527,7 +527,7 @@ class ChatDetailFragment : Fragment() {
 
     private fun continueConversationRealm(id:String, query:String, chatResponse:String) {
         try {
-            addConversationToChatHistory(mRealm, id, query, chatResponse)
+            addConversationToChatHistory(mRealm, id, query, chatResponse, _rev)
             mRealm.commitTransaction()
         } catch (e: Exception) {
             e.printStackTrace()
