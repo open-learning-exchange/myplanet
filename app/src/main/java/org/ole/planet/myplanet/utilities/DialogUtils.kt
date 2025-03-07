@@ -213,7 +213,9 @@ object DialogUtils {
             if (dialog == null) {
                 dialog = dialogBuilder.create()
             }
-            dialog?.show()
+            if (dialog?.isShowing == false) {
+                dialog?.show()
+            }
         }
 
         fun dismiss() {
