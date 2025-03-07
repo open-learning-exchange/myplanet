@@ -26,6 +26,7 @@
                 android:layout_height="wrap_content"
                 android:text="@string/minutes"
                 android:textColor="@color/daynight_textColor"
+                android:buttonTint="@color/accent"
                 android:checked="true"
                 android:layout_weight="1" />
 
@@ -33,16 +34,20 @@
                 android:id="@+id/radioButtonHours"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/daynight_textColor"
                 android:text="@string/hours"
+                android:textColor="@color/daynight_textColor"
+                android:buttonTint="@color/accent"
+                android:checked="false"
                 android:layout_weight="1" />
 
         <RadioButton
                 android:id="@+id/radioButtonDays"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/daynight_textColor"
                 android:text="@string/days"
+                android:textColor="@color/daynight_textColor"
+                android:buttonTint="@color/accent"
+                android:checked="false"
                 android:layout_weight="1" />
     </RadioGroup>
 
@@ -56,7 +61,8 @@
                 android:id="@+id/numberPickerTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal" />
+                android:layout_gravity="center_horizontal"
+                android:theme="@style/NumberPickerTheme" />
 
         <TextView
                 android:id="@+id/textViewTimeUnit"
