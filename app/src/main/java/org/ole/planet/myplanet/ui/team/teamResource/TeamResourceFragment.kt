@@ -50,12 +50,10 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
 
     private fun showLibraryList() {
         val resourceIds = getResourceIds(teamId, mRealm)
-
         val libraries: MutableList<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java)
             .`in`("id", resourceIds.toTypedArray())
             .findAll()
             .toMutableList()
-
 
         adapterLibrary = settings?.let {
             AdapterTeamResource(requireActivity(), libraries, mRealm, teamId, it, this)
@@ -86,7 +84,6 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
             .not().`in`("_id", getResourceIds(teamId, mRealm).toTypedArray())
             .findAll()
 
-
         alertDialogBuilder.setView(myLibraryAlertdialogBinding.root)
             .setPositiveButton(R.string.add) { _: DialogInterface?, _: Int ->
                 val selected = myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList
@@ -116,7 +113,6 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
 
     private fun listSetting(alertDialog: AlertDialog, libraries: List<RealmMyLibrary>, lv: CheckboxListView) {
         val names = libraries.map { it.title }
-
         val adapter = ArrayAdapter(requireActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, names)
         lv.choiceMode = ListView.CHOICE_MODE_MULTIPLE
         lv.setCheckChangeListener {
@@ -138,5 +134,4 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
     override fun onAddDocument() {
         showResourceListDialog()
     }
-
 }
