@@ -7,6 +7,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.tabs.TabLayoutMediator
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
@@ -114,19 +117,20 @@ class TeamDetailFragment : BaseTeamFragment() {
 
     private fun createTeamLog() {
         val user = UserProfileDbHandler(requireContext()).userModel
-        if (!mRealm.isInTransaction) {
-            mRealm.beginTransaction()
+        CoroutineScope(Dispatchers.IO).launch {
+            val realm = DatabaseService(requireActivity()).realmInstance
+            realm.executeTransaction { r ->
+                val log = r.createObject(RealmTeamLog::class.java, UUID.randomUUID().toString())
+                log.teamId = teamId
+                if (user != null) {
+                    log.user = user.name
+                    log.createdOn = user.planetCode
+                    log.type = "teamVisit"
+                    log.teamType = team?.teamType
+                    log.parentCode = user.parentCode
+                    log.time = Date().time
+                }
+            }
         }
-        val log = mRealm.createObject(RealmTeamLog::class.java, UUID.randomUUID().toString())
-        log.teamId = teamId
-        if (user != null) {
-            log.user = user.name
-            log.createdOn = user.planetCode
-            log.type = "teamVisit"
-            log.teamType = team?.teamType
-            log.parentCode = user.parentCode
-            log.time = Date().time
-        }
-        mRealm.commitTransaction()
     }
 }
