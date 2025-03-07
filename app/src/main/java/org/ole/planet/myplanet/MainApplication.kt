@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.service.AutoSyncWorker
 import org.ole.planet.myplanet.service.StayOnlineWorker
 import org.ole.planet.myplanet.service.TaskNotificationWorker
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.ANRWatchdog
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.LocaleHelper
@@ -92,7 +93,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                             log.time = "${Date().time}"
                             log.page = ""
                             log.version = getVersionName(context)
-                            if (type == "File Not Found") {
+                            if (type == "File Not Found" || type == "anr") {
                                 log.type = type
                                 log.error = error
                             } else {
@@ -199,6 +200,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     private var activityReferences = 0
     private var isActivityChangingConfigurations = false
     private var isFirstLaunch = true
+    private lateinit var anrWatchdog: ANRWatchdog
 
     override fun onCreate() {
         super.onCreate()
@@ -214,6 +216,15 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         val builder = VmPolicy.Builder()
         StrictMode.setVmPolicy(builder.build())
         builder.detectFileUriExposure()
+
+        anrWatchdog = ANRWatchdog(timeout = 5000L, listener = object : ANRWatchdog.ANRListener {
+            override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
+                applicationScope.launch {
+                    createLog("anr", "ANR detected! Duration: ${duration}ms\n $message")
+                }
+            }
+        })
+        anrWatchdog.start()
 
         if (preferences?.getBoolean("autoSync", false) == true && preferences?.contains("autoSyncInterval") == true) {
             val syncInterval = preferences?.getInt("autoSyncInterval", 60 * 60)
@@ -356,6 +367,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     private fun onAppClosed() {}
 
     override fun onTerminate() {
+        if (::anrWatchdog.isInitialized) {
+            anrWatchdog.stop()
+        }
         super.onTerminate()
         onAppClosed()
         applicationScope.cancel()
