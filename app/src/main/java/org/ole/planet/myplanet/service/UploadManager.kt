@@ -335,7 +335,7 @@ class UploadManager(var context: Context) : FileUploadService() {
     }
 
     fun uploadSubmissions() {
-        mRealm = DatabaseService(context).realmInstance
+       mRealm = dbService.realmInstance
         val apiInterface = client?.create(ApiInterface::class.java)
 
         mRealm.executeTransactionAsync { realm: Realm ->
@@ -344,7 +344,7 @@ class UploadManager(var context: Context) : FileUploadService() {
             for (submission in list) {
                 var jsonObject: JsonObject?
                 try {
-                    val requestJson = serialize(submission)
+                    val requestJson = serialize(realm, submission)
                     val response = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/submissions", requestJson)?.execute()
                     jsonObject = response?.body()
 
