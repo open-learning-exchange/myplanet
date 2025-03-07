@@ -8,7 +8,6 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Process
 import android.provider.Settings
-import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -26,12 +25,6 @@ abstract class PermissionActivity : AppCompatActivity() {
         if (!getUsagesPermission(this)) {
             Utilities.toast(this, getString(R.string.please_allow_usages_permission_to_myplanet_app))
             startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
-        }
-    }
-
-    fun requestPermission(strPermission: String?, perCode: Int) {
-        if (!checkPermission(strPermission)) {
-            ActivityCompat.requestPermissions(this, arrayOf(strPermission), perCode)
         }
     }
 
@@ -56,7 +49,7 @@ abstract class PermissionActivity : AppCompatActivity() {
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.TIRAMISU)
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     fun requestAllPermissions() {
         val permissions = ArrayList<String>()
         if (!checkPermission(Manifest.permission.RECORD_AUDIO)) {
@@ -83,18 +76,15 @@ abstract class PermissionActivity : AppCompatActivity() {
                 permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
             }
         }
-        if (permissions.isNotEmpty() && !checkPermission(Manifest.permission.RECORD_AUDIO) &&!checkPermission(Manifest.permission.CAMERA)) {
-            val permissionsArray = permissions.toTypedArray<String>()
-            ActivityCompat.requestPermissions(this, permissionsArray, PERMISSION_REQUEST_CODE_FILE)
-        }
-    }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == PERMISSION_REQUEST_CODE_FILE) {
-            if (grantResults.isNotEmpty() && grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, R.string.permissions_denied, Toast.LENGTH_SHORT).show()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (!checkPermission(Manifest.permission.POST_NOTIFICATIONS)) {
+                permissions.add(Manifest.permission.POST_NOTIFICATIONS)
             }
+        }
+
+        if (permissions.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, permissions.toTypedArray(), PERMISSION_REQUEST_CODE_FILE)
         }
     }
 

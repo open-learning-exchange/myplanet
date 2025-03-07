@@ -48,4 +48,8 @@
     <color name="background_color">#FFFFFF</color>
     <color name="text_color">#000000</color>
     <color name="teams_heading">#000000</color>
+
+    <color name="dropdown_bg">@android:color/white</color>
+    <color name="dropdown_text">@android:color/black</color>
+
 </resources>

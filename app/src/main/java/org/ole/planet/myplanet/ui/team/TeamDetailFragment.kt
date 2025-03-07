@@ -24,6 +24,7 @@ class TeamDetailFragment : BaseTeamFragment() {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTeamDetailBinding = FragmentTeamDetailBinding.inflate(inflater, container, false)
+        val teamId = requireArguments().getString("id" ) ?: ""
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
         val user = UserProfileDbHandler(requireContext()).userModel
         mRealm = DatabaseService(requireActivity()).realmInstance

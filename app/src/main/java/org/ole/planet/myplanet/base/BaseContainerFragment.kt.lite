@@ -58,8 +58,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 //                    installApk(currentLibrary!!)
 //                    currentLibrary = null
 //                }
-//            } else {
-//                Utilities.toast(requireActivity(), getString(R.string.permissions_denied))
 //            }
 //        }
         prefData = SharedPrefManager(requireContext())
