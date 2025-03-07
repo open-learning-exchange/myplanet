@@ -109,7 +109,7 @@ object DialogUtils {
     @JvmStatic
     fun showAlert(context: Context?, title: String?, message: String?) {
         if (context is Activity && !context.isFinishing) {
-            AlertDialog.Builder(context, R.style.CustomAlertDialog)
+            AlertDialog.Builder(context, R.style.AlertDialogTheme)
                 .setTitle(title)
                 .setMessage(message)
                 .setPositiveButton(R.string.finish, null)
@@ -221,7 +221,9 @@ object DialogUtils {
             if (dialog == null) {
                 dialog = dialogBuilder.create()
             }
-            dialog?.show()
+            if (dialog?.isShowing == false) {
+                dialog?.show()
+            }
         }
 
         fun dismiss() {
