@@ -73,7 +73,7 @@ open class RealmChatHistory : RealmObject() {
             return conversations
         }
 
-        fun addConversationToChatHistory(mRealm: Realm, chatHistoryId: String?, query: String?, response: String?) {
+        fun addConversationToChatHistory(mRealm: Realm, chatHistoryId: String?, query: String?, response: String?, newRev: String?) {
             val chatHistory = mRealm.where(RealmChatHistory::class.java).equalTo("_id", chatHistoryId).findFirst()
             if (chatHistory != null) {
                 if (!mRealm.isInTransaction) {
@@ -88,6 +88,9 @@ open class RealmChatHistory : RealmObject() {
                     }
                     chatHistory.conversations?.add(conversation)
                     chatHistory.lastUsed = Date().time
+                    if (!newRev.isNullOrEmpty()) {
+                        chatHistory._rev = newRev
+                    }
                     mRealm.copyToRealmOrUpdate(chatHistory)
                 } catch (e: Exception) {
                     mRealm.cancelTransaction()
