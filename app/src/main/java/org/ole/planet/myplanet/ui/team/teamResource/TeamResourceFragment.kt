@@ -49,26 +49,22 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
     }
 
     private fun showLibraryList() {
-        val resourceIds = getResourceIds(teamId, mRealm)
-        val libraries: MutableList<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java)
-            .`in`("id", resourceIds.toTypedArray())
-            .findAll()
-            .toMutableList()
+        if (!isAdded || activity == null) return
+        val safeActivity = activity ?: return
 
-        adapterLibrary = settings?.let {
-            AdapterTeamResource(requireActivity(), libraries, mRealm, teamId, it, this)
-        }!!
-        fragmentTeamResourceBinding.rvResource.layoutManager = GridLayoutManager(activity, 3)
+        val libraries: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java).`in`("id", getResourceIds(teamId, mRealm).toTypedArray<String>()).findAll()
+        adapterLibrary = settings?.let { AdapterTeamResource(safeActivity, libraries, mRealm, teamId, it) }!!
+        fragmentTeamResourceBinding.rvResource.layoutManager = GridLayoutManager(safeActivity, 3)
         fragmentTeamResourceBinding.rvResource.adapter = adapterLibrary
         checkAndShowNoData()
     }
 
     private fun showResourceListDialog() {
-        if (!isAdded) {
-            return
-        }
+        if (!isAdded || activity == null) return
+        val safeActivity = activity ?: return
 
-        val titleView = TextView(requireActivity()).apply {
+        val titleView = TextView(safeActivity).apply {
+
             text = getString(R.string.select_resource)
             setTextColor(context.getColor(R.color.daynight_textColor))
             setPadding(75, 50, 0, 0)
@@ -77,21 +73,21 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
         }
 
         val myLibraryAlertdialogBinding = MyLibraryAlertdialogBinding.inflate(layoutInflater)
-        val alertDialogBuilder = AlertDialog.Builder(requireActivity())
-        alertDialogBuilder.setCustomTitle(titleView)
+        val alertDialogBuilder = AlertDialog.Builder(safeActivity)
+            .setCustomTitle(titleView)
 
-        val availableLibraries: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java)
+        val libraries: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java)
+
             .not().`in`("_id", getResourceIds(teamId, mRealm).toTypedArray())
             .findAll()
 
         alertDialogBuilder.setView(myLibraryAlertdialogBinding.root)
             .setPositiveButton(R.string.add) { _: DialogInterface?, _: Int ->
-                val selected = myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList
 
                 if (!mRealm.isInTransaction) {
                     mRealm.beginTransaction()
                 }
-                for (se in selected) {
+                for (se in myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList) {
                     val team = mRealm.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
                     team.teamId = teamId
                     team.title = availableLibraries[se].title
@@ -104,7 +100,9 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
                 }
                 mRealm.commitTransaction()
                 showLibraryList()
-            }.setNegativeButton(R.string.cancel, null)
+            }
+            .setNegativeButton(R.string.cancel, null)
+
 
         val alertDialog = alertDialogBuilder.create()
         alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
