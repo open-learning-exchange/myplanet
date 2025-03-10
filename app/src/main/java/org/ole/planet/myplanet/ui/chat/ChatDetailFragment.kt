@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.*
 import com.google.gson.*
 import com.google.gson.reflect.TypeToken
 import io.realm.Realm
+import io.realm.Sort
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -45,6 +46,7 @@ class ChatDetailFragment : Fragment() {
     private lateinit var sharedViewModel: ChatViewModel
     private var _id: String = ""
     private var _rev: String = ""
+    private var currentID: String = ""
     private var aiName: String = ""
     private var aiModel: String = ""
     private lateinit var mRealm: Realm
@@ -94,11 +96,19 @@ class ChatDetailFragment : Fragment() {
                 val message = "${fragmentChatDetailBinding.editGchatMessage.text}".replace("\n", " ")
                 mAdapter.addQuery(message)
                 if (_id != "") {
-                    val continueChatData = ContinueChatModel(data = Data("${user?.name}", message, aiProvider, _id, _rev), save = true)
+                    val newRev = getLatestRev(_id) ?: _rev
+                    val continueChatData = ContinueChatModel(data = Data("${user?.name}", message, aiProvider, _id, newRev), save = true)
                     val jsonContent = Gson().toJson(continueChatData)
                     val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
                     continueChatRequest(requestBody, _id, message)
-                } else {
+                }
+                else if (currentID != "") {
+                    val continueChatData = ContinueChatModel(data = Data("${user?.name}", message, aiProvider, currentID, _rev), save = true)
+                    val jsonContent = Gson().toJson(continueChatData)
+                    val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
+                    continueChatRequest(requestBody, currentID, message)
+                }
+                else {
                     val chatData = ChatRequestModel(data = ContentData("${user?.name}", message, aiProvider), save = true)
                     val jsonContent = Gson().toJson(chatData)
                     val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
@@ -315,14 +325,14 @@ class ChatDetailFragment : Fragment() {
         disableUI()
         val mapping = processServerUrl()
         handleServerReachability(mapping)
-        sendChatRequest(content, query, null)
+        sendChatRequest(content, query, null, true)
     }
 
     private fun continueChatRequest(content: RequestBody, id: String, query: String) {
         disableUI()
         val mapping = processServerUrl()
         handleServerReachability(mapping)
-        sendChatRequest(content, query, id)
+        sendChatRequest(content, query, id, false)
     }
 
     private fun disableUI() {
@@ -358,7 +368,23 @@ class ChatDetailFragment : Fragment() {
         }
     }
 
-    private fun sendChatRequest(content: RequestBody, query: String, id: String?) {
+    private fun getLatestRev(id: String): String? {
+        return try {
+            mRealm.refresh()
+            val realmChatHistory = mRealm.where(RealmChatHistory::class.java)
+                .equalTo("_id", id)
+                .findAll()
+                .maxByOrNull { rev -> rev._rev!!.split("-")[0].toIntOrNull() ?: 0 }
+
+            val rev = realmChatHistory?._rev
+            rev
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    private fun sendChatRequest(content: RequestBody, query: String, id: String?, newChat: Boolean) {
         CoroutineScope(Dispatchers.Main).launch {
             val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
             apiInterface?.chatGpt(Utilities.hostUrl, content)?.enqueue(object : Callback<ChatModel> {
@@ -380,6 +406,11 @@ class ChatDetailFragment : Fragment() {
                 responseBody.chat?.let { chatResponse ->
                     mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_NETWORK
                     mAdapter.addResponse(chatResponse)
+                    val newRev = responseBody.couchDBResponse?.rev
+                    if (newRev != null) {
+                        _rev = newRev
+                    }
+
                     id?.let { continueConversationRealm(it, query, chatResponse) } ?: saveNewChat(query, chatResponse, responseBody)
                 }
             } else {
@@ -405,8 +436,16 @@ class ChatDetailFragment : Fragment() {
 
     private fun saveNewChat(query: String, chatResponse: String, responseBody: ChatModel) {
         val jsonObject = JsonObject().apply {
-            addProperty("_rev", responseBody.couchDBResponse?.rev ?: "")
-            addProperty("_id", responseBody.couchDBResponse?.id ?: "")
+            val id = responseBody.couchDBResponse?.id
+            val rev = responseBody.couchDBResponse?.rev
+            if (id != null) {
+                currentID = id
+            }
+            if (rev != null) {
+                _rev = rev
+            }
+            addProperty("_rev",  responseBody.couchDBResponse?.rev ?: "")
+            addProperty("_id",responseBody.couchDBResponse?.id ?: "")
             addProperty("aiProvider", aiName)
             addProperty("user", user?.name)
             addProperty("title", query)
@@ -430,7 +469,7 @@ class ChatDetailFragment : Fragment() {
 
     private fun continueConversationRealm(id:String, query:String, chatResponse:String) {
         try {
-            addConversationToChatHistory(mRealm, id, query, chatResponse)
+            addConversationToChatHistory(mRealm, id, query, chatResponse, _rev)
             mRealm.commitTransaction()
         } catch (e: Exception) {
             e.printStackTrace()

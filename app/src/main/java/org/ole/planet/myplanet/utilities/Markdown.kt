@@ -24,6 +24,7 @@ import io.noties.markwon.MarkwonPlugin
 import io.noties.markwon.MarkwonSpansFactory
 import io.noties.markwon.RenderProps
 import io.noties.markwon.core.MarkwonTheme
+import io.noties.markwon.ext.tables.TablePlugin
 import io.noties.markwon.html.HtmlPlugin
 import io.noties.markwon.html.HtmlTag
 import io.noties.markwon.html.tag.SimpleTagHandler
@@ -44,6 +45,7 @@ object Markdown {
             .usePlugin(HtmlPlugin.create())
             .usePlugin(ImagesPlugin.create())
             .usePlugin(MovementMethodPlugin.create())
+            .usePlugin(TablePlugin.create(context))
             .usePlugin(HtmlPlugin.create { plugin: HtmlPlugin -> plugin.addHandler(AlignTagHandler()) })
             .usePlugin(object : AbstractMarkwonPlugin() {
                 override fun configure(registry: MarkwonPlugin.Registry) {
