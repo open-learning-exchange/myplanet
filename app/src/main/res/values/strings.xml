@@ -91,7 +91,7 @@
     <string name="published_by">Published By:</string>
     <string name="author">Author:</string>
     <string name="language_with_colon">Language:</string>
-    <string name="subject">Subject/s :</string>
+    <string name="subject">Subject(s):</string>
     <string name="license">License:</string>
     <string name="type">Type:</string>
     <string name="resource_colon">Resource:</string>
@@ -546,7 +546,7 @@
     <string name="tests">tests</string>
     <string name="referral">referrals</string>
     <string name="other_diagnosis">Other Diagnosis</string>
-    <string name="close">close</string>
+    <string name="close">Close</string>
     <string name="negative_balance">The current balance is negative!</string>
     <string name="entMission">What is your enterprise\'s Mission?</string>
     <string name="entServices">What are the Services your enterprise provides?</string>
@@ -967,8 +967,8 @@
     ]]>
     </string>
 
-    <string name="is_on_please_turn_of_to_save_battery">" is on please turn of to save battery"</string>
-    <string name="go_to_settings">Go to settings</string>
+    <string name="is_on_please_turn_of_to_save_battery">" is on, please turn off to save the battery."</string>
+    <string name="go_to_settings">go to settings</string>
     <string name="new_version_of_my_planet_available">New version of my planet available</string>
     <string name="download_first_to_continue">Download first to continue.</string>
     <string name="upgrade_local">Upgrade(Local)</string>
