@@ -91,7 +91,7 @@
     <string name="published_by">Waxaa daabacay:</string>
     <string name="author">Qoraaga:</string>
     <string name="language_with_colon">Luuqad:</string>
-    <string name="subject">Mawduuc/s:</string>
+    <string name="subject">Mawduuc(s):</string>
     <string name="license">Shatiga:</string>
     <string name="type">Nooca:</string>
     <string name="resource_colon">Ilaha:</string>
@@ -968,7 +968,7 @@
     </string>
 
     <string name="is_on_please_turn_of_to_save_battery">waa la xiriiriyay fadlan na soo bandhig si aad u kala wareegto shidaalka</string>
-    <string name="go_to_settings">Tag fariimaha</string>
+    <string name="go_to_settings">tag fariimaha</string>
     <string name="new_version_of_my_planet_available">Vershanka cusub ee my planet ayaa la heli karaa</string>
     <string name="download_first_to_continue">Soo deg faylka hore si aad u sii wadi</string>
     <string name="upgrade_local">Ku hubi(Samee)</string>
