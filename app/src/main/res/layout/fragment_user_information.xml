@@ -244,7 +244,6 @@
                 android:text="@string/button_update"
                 android:gravity="center"
                 android:textAlignment="center"/>
-
             <Button
                 android:id="@+id/btnAdditionalFields"
                 style="@style/GreyButtons"
@@ -255,7 +254,6 @@
                 android:text="@string/show_additional_fields"
                 android:gravity="center"
                 android:textAlignment="center" />
-
             <Button
                 android:id="@+id/btn_cancel"
                 style="@style/GreyButtons"
@@ -265,7 +263,6 @@
                 android:text="@string/button_cancel"
                 android:gravity="center"
                 android:textAlignment="center" />
-
         </LinearLayout>
     </LinearLayout>
 </FrameLayout>
