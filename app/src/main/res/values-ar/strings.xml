@@ -91,7 +91,7 @@
     <string name="published_by">نشر بواسطة:</string>
     <string name="author">المؤلف:</string>
     <string name="language_with_colon">اللغة:</string>
-    <string name="subject">الموضوعات:</string>
+    <string name="subject">الموضوع/الموضوعات:</string>
     <string name="license">الترخيص:</string>
     <string name="type">النوع:</string>
     <string name="resource_colon">المصدر:</string>
@@ -546,7 +546,7 @@
     <string name="tests">الفحوصات</string>
     <string name="referral">الإحالات</string>
     <string name="other_diagnosis">تشخيصات أخرى</string>
-    <string name="close">إغلاق</string>
+    <string name="close">يغلق</string>
     <string name="negative_balance">الرصيد الحالي سالب!</string>
     <string name="entMission">ما هي مهمة المؤسسة الخاصة بك؟</string>
     <string name="entServices">ما هي الخدمات التي تقدمها المؤسسة الخاصة بك؟</string>
@@ -641,7 +641,6 @@
     <string name="added_to_my_library">تمت الإضافة إلى myLibrary</string>
     <string name="added_to_my_courses">تمت الإضافة إلى myCourses</string>
     <string name="do_you_want_to_stay_online">هل ترغب في البقاء متصلاً على الإنترنت؟</string>
-    <string name="no_resources_to_download">لا توجد موارد للتحميل</string>
     <string name="planet_not_available">الكوكب غير متاح</string>
     <string name="device_not_connected_to_planet">الجهاز غير متصل بالكوكب.</string>
     <string name="all_files_downloaded_successfully">تم تنزيل جميع الملفات بنجاح</string>
@@ -713,7 +712,7 @@
     <string name="date_is_required">التاريخ مطلوب</string>
     <string name="transaction_added">تمت إضافة المعاملة</string>
     <string name="thank_you_for_taking_this">"شكرًا لك على إجراء هذا "</string>
-    <string name="we_wish_you_all_the_best">. نتمنى لك كل التوفيق</string>
+    <string name="we_wish_you_all_the_best">نتمنى لك كل التوفيق.</string>
     <string name="thank_you_for_taking_this_survey">شكرًا لك على إجراء هذا الاستبيان.</string>
     <string name="complete">اكتمل</string>
     <string name="no_questions_available">لا تتوفر أسئلة</string>
@@ -981,7 +980,7 @@
     <string name="beta_function_for_wifi_switch">وظيفة بيتا لتبديل الواي فاي</string>
     <string name="upgrade_application">ترقية التطبيق</string>
     <string name="auto_upgrade">ترقية تلقائية</string>
-    <string name="always_move_to_maximum_version">الانتقال دائمًا إلى الإصدار الأعلى؟</string>
+    <string name="always_move_to_maximum_version">الانتقال دائمًا إلى الإصدار الأعلى</string>
     <string name="all_beta_functions">جميع وظائف بيتا</string>
     <string name="auto_sync_device">جهاز مزامنة تلقائي</string>
     <string name="beta_functionality">وظائف بيتا</string>
@@ -1239,5 +1238,16 @@
     <string name="go_to_mylibrary">انتقل إلى مكتبتي</string>
     <string name="choose_an_option">اختر خيارًا</string>
     <string name="welcome_back">مرحبًا بعودتك %1$s</string>
+    <string name="edit_plan">تعديل الخطة</string>
+    <string name="show_additional_fields">عرض الحقول الإضافية</string>
+    <string name="hide_additional_fields">إخفاء الحقول الإضافية</string>
+    <string name="age">العمر</string>
+    <string name="preparing_download">جارٍ تحضير التنزيل…</string>
+    <string name="downloading_files">جارٍ تنزيل الملفات</string>
+    <string name="age_must_be_100_or_below">يجب أن يكون العمر 100 أو أقل</string>
+    <string name="please_enter_a_valid_age">الرجاء إدخال عمر صحيح</string>
+    <string name="member_of_planet">عضو في planet</string>
+    <string name="edit_mission_and_services">تعديل المهمة والخدمات</string>
+    <string name="this_team_has_no_description_defined">هذا الفريق ليس لديه وصف محدد</string>
 
 </resources>

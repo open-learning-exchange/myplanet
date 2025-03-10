@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.datamanager
 
+import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
@@ -7,6 +8,8 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import io.realm.Realm
 import kotlinx.coroutines.CoroutineScope
@@ -14,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.utilities.FileUtils.availableExternalMemorySize
@@ -26,7 +30,6 @@ import java.io.*
 import kotlin.math.roundToInt
 
 class MyDownloadService : Service() {
-    private var count = 0
     private var data = ByteArray(1024 * 4)
     private var outputFile: File? = null
     private var notificationBuilder: NotificationCompat.Builder? = null
@@ -36,17 +39,15 @@ class MyDownloadService : Service() {
     private lateinit var urls: Array<String>
     private var currentIndex = 0
     private var request: Call<ResponseBody>? = null
-    private var completeAll = false
     private var fromSync = false
-
-    private val databaseService: DatabaseService by lazy { DatabaseService(this) }
-    private val mRealm: Realm by lazy { databaseService.realmInstance }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+
+        startForegroundServiceWithNotification()
 
         val urlsKey = intent?.getStringExtra("urls_key") ?: "url_list_key"
         val urlSet = preferences.getStringSet(urlsKey, emptySet()) ?: emptySet()
@@ -67,6 +68,23 @@ class MyDownloadService : Service() {
         }
 
         return START_STICKY
+    }
+
+    private fun startForegroundServiceWithNotification() {
+        val channelId = "DownloadChannel"
+        if (notificationManager?.getNotificationChannel(channelId) == null) {
+            val channel = NotificationChannel(channelId, "Download Service", NotificationManager.IMPORTANCE_HIGH)
+            notificationManager?.createNotificationChannel(channel)
+        }
+
+        notificationBuilder = NotificationCompat.Builder(this, channelId)
+            .setContentTitle(getString(R.string.downloading_files))
+            .setContentText(getString(R.string.preparing_download))
+            .setSmallIcon(R.drawable.ic_download)
+            .setProgress(100, 0, true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+
+        startForeground(1, notificationBuilder?.build())
     }
 
     private fun initDownload(url: String, fromSync: Boolean) {
@@ -189,10 +207,13 @@ class MyDownloadService : Service() {
     private fun sendNotification(download: Download) {
         download.fileName = "Downloading: ${getFileNameFromUrl(urls[currentIndex])}"
         sendIntent(download, fromSync)
-        notificationBuilder?.apply {
-            setProgress(100, download.progress, false)
-            setContentText("Downloading file ${download.currentFileSize}/$totalFileSize KB")
-            notificationManager?.notify(0, build())
+
+        if (NotificationManagerCompat.from(this).areNotificationsEnabled()) {
+            notificationBuilder?.apply {
+                setProgress(100, download.progress, false)
+                setContentText("Downloading file ${download.currentFileSize}/$totalFileSize KB")
+                notificationManager?.notify(0, build())
+            }
         }
     }
 
@@ -256,7 +277,7 @@ class MyDownloadService : Service() {
                 putExtra("urls_key", urlsKey)
                 putExtra("fromSync", fromSync)
             }
-            context.startService(intent)
+            ContextCompat.startForegroundService(context, intent)
         }
     }
 }

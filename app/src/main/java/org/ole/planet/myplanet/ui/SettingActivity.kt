@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui
 
+import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
@@ -10,7 +11,6 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -25,9 +25,7 @@ import io.realm.Realm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.mRealm
-import org.ole.planet.myplanet.MainApplication.Companion.setThemeMode
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
@@ -84,6 +82,7 @@ class SettingActivity : AppCompatActivity() {
         var user: RealmUserModel? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
         private lateinit var defaultPref: SharedPreferences
+        lateinit var settings: SharedPreferences
 
         override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
             val view = super.onCreateView(inflater, container, savedInstanceState)
@@ -98,13 +97,14 @@ class SettingActivity : AppCompatActivity() {
             user = profileDbHandler.userModel
             dialog = DialogUtils.getCustomProgressDialog(requireActivity())
             defaultPref = PreferenceManager.getDefaultSharedPreferences(requireActivity())
+            settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
 
             setBetaToggleOn()
             setAutoSyncToggleOn()
             setDownloadSyncFilesToggle()
             val lp = findPreference<Preference>("app_language")
             lp?.setOnPreferenceClickListener {
-                languageChanger()
+                context?.let { it1 -> languageChanger(it1) }
                 true
             }
 
@@ -122,12 +122,21 @@ class SettingActivity : AppCompatActivity() {
 
             val autoDownload = findPreference<SwitchPreference>("beta_auto_download")
             autoDownload?.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
-                if (autoDownload?.isChecked == true) {
+                if (autoDownload.isChecked == true) {
                     defaultPref.edit().putBoolean("beta_auto_download", true).apply()
                     backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
                 } else {
                     defaultPref.edit().putBoolean("beta_auto_download", false).apply()
                 }
+                true
+            }
+
+            val fastSync = findPreference<SwitchPreference>("beta_fast_sync")
+            val isFastSync = settings.getBoolean("fastSync", false)
+            fastSync?.isChecked = isFastSync
+            fastSync?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
+                val isChecked = newValue as Boolean
+                settings.edit().putBoolean("fastSync", isChecked).apply()
                 true
             }
 
@@ -235,41 +244,6 @@ class SettingActivity : AppCompatActivity() {
             }
         }
 
-        private fun languageChanger() {
-            val options = arrayOf(getString(R.string.english), getString(R.string.spanish), getString(R.string.somali), getString(R.string.nepali), getString(R.string.arabic), getString(R.string.french))
-            val currentLanguage = LocaleHelper.getLanguage(requireContext())
-            val checkedItem = when (currentLanguage) {
-                "en" -> 0
-                "es" -> 1
-                "so" -> 2
-                "ne" -> 3
-                "ar" -> 4
-                "fr" -> 5
-                else -> 0
-            }
-
-            val builder = AlertDialog.Builder(requireContext())
-                .setTitle(getString(R.string.select_language))
-                .setSingleChoiceItems(ArrayAdapter(requireContext(), R.layout.checked_list_item, options), checkedItem) { dialog, which ->
-                    val selectedLanguage = when (which) {
-                        0 -> "en"
-                        1 -> "es"
-                        2 -> "so"
-                        3 -> "ne"
-                        4 -> "ar"
-                        5 -> "fr"
-                        else -> "en"
-                    }
-                    LocaleHelper.setLocale(requireContext(), selectedLanguage)
-                    requireActivity().recreate()
-                    dialog.dismiss()
-                }
-                .setNegativeButton(R.string.cancel, null)
-
-            val dialog = builder.create()
-            dialog.show()
-        }
-
         companion object {
             fun darkMode(context: Context) {
                 val options = arrayOf(context.getString(R.string.dark_mode_off), context.getString(R.string.dark_mode_on),context.getString(R.string.dark_mode_follow_system))
@@ -319,6 +293,48 @@ class SettingActivity : AppCompatActivity() {
                         else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
                     }
                 )
+            }
+
+            fun languageChanger(context: Context) {
+                val options = arrayOf(
+                    context.getString(R.string.english),
+                    context.getString(R.string.spanish),
+                    context.getString(R.string.somali),
+                    context.getString(R.string.nepali),
+                    context.getString(R.string.arabic),
+                    context.getString(R.string.french)
+                )
+                val currentLanguage = LocaleHelper.getLanguage(context)
+                val checkedItem = when (currentLanguage) {
+                    "en" -> 0
+                    "es" -> 1
+                    "so" -> 2
+                    "ne" -> 3
+                    "ar" -> 4
+                    "fr" -> 5
+                    else -> 0
+                }
+
+                val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
+                    .setTitle(context.getString(R.string.select_language))
+                    .setSingleChoiceItems(ArrayAdapter(context, R.layout.checked_list_item, options), checkedItem) { dialog, which ->
+                        val selectedLanguage = when (which) {
+                            0 -> "en"
+                            1 -> "es"
+                            2 -> "so"
+                            3 -> "ne"
+                            4 -> "ar"
+                            5 -> "fr"
+                            else -> "en"
+                        }
+                        LocaleHelper.setLocale(context, selectedLanguage)
+                        (context as Activity).recreate()
+                        dialog.dismiss()
+                    }
+                    .setNegativeButton(R.string.cancel, null)
+
+                val dialog = builder.create()
+                dialog.show()
             }
         }
     }

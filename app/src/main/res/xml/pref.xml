@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <Preference
-        android:key="app_language"
-        android:title="@string/language" />
-    <Preference
         android:key="dark_mode"
         android:title="@string/dark_mode" />
     <Preference
@@ -39,6 +36,10 @@
             android:defaultValue="true"
             android:key="beta_addImageToMessage"
             android:title="@string/addImageToMessage" />
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="beta_fast_sync"
+            android:title="@string/beta_fast_sync" />
         <SwitchPreference
             android:defaultValue="false"
             android:key="beta_wifi_switch"
