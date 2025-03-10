@@ -107,8 +107,8 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         spn.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
                 when (i) {
-                    0 -> adapter.SortByDate(true)
-                    1 -> adapter.SortByDate(false)
+                    0 -> adapter.SortByDate(false)
+                    1 -> adapter.SortByDate(true)
                     2 -> adapter.toggleTitleSortOrder()
                 }
             }
