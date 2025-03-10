@@ -214,6 +214,7 @@
 
     <style name="SpinnerItemStyle" parent="@android:style/Widget.Holo.DropDownItem.Spinner">
         <item name="android:textColor">@color/daynight_textColor</item>
+        <item name="android:background">@color/secondary_bg</item>
     </style>
 
     <style name="PreferencesTheme" parent="ThemeOverlay.AppCompat.DayNight">
