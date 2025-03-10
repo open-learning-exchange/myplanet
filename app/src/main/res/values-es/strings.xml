@@ -1249,7 +1249,6 @@
     <string name="member_of_planet">miembro de planet</string>
     <string name="edit_mission_and_services">editar misión y servicios</string>
     <string name="this_team_has_no_description_defined">este equipo no tiene descripción definida</string>
-
     <string name="planet_is_up_to_date">El planeta está actualizado.</string>
     <string name="new_apk_version_required_but_not_found_on_server">Se requiere una nueva versión de APK, pero no se encontró en el servidor. Contacte al administrador.</string>
     <string name="version_not_found">Versión no encontrada</string>

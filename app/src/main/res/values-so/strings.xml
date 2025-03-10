@@ -1249,7 +1249,6 @@
     <string name="member_of_planet">xubin ka mid ah planet</string>
     <string name="edit_mission_and_services">wax ka beddel himilada iyo adeegyada</string>
     <string name="this_team_has_no_description_defined">kooxdani ma laha sharaxaad la cayimay</string>
-
     <string name="planet_is_up_to_date">Meeraha waa la cusbooneysiiyay.</string>
     <string name="new_apk_version_required_but_not_found_on_server">Nooca cusub ee APK waa loo baahan yahay, laakiin lama helin server-ka. La xidhiidh maamulka.</string>
     <string name="version_not_found">Nooca lama helin.</string>
