@@ -432,8 +432,15 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         editor.putString("loginUserName", name)
         editor.putString("loginUserPassword", password)
         val isLoggedIn = authenticateUser(settings, name, password, false)
+        val isFirstLogin = settings.getBoolean("isFirstLogin", true)
+
         if (isLoggedIn) {
-            Toast.makeText(context, getString(R.string.welcome_back, name), Toast.LENGTH_SHORT).show()
+            if (isFirstLogin) {
+                Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
+                editor.putBoolean("isFirstLogin", false)
+            } else {
+                Toast.makeText(context, getString(R.string.welcome_back, name), Toast.LENGTH_SHORT).show()
+            }
             onLogin()
             saveUsers(activityLoginBinding.inputName.text.toString(), activityLoginBinding.inputPassword.text.toString(), "member")
         } else {
@@ -447,7 +454,12 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                     customProgressDialog?.dismiss()
                     val log = authenticateUser(settings, name, password, true)
                     if (log) {
-                        Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
+                        if (isFirstLogin) {
+                            Toast.makeText(applicationContext, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
+                            editor.putBoolean("isFirstLogin", false)
+                        } else {
+                            Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
+                        }
                         onLogin()
                         saveUsers(activityLoginBinding.inputName.text.toString(), activityLoginBinding.inputPassword.text.toString(), "member")
                     } else {
