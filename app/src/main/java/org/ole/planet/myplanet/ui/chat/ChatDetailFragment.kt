@@ -46,8 +46,7 @@ class ChatDetailFragment : Fragment() {
     private lateinit var sharedViewModel: ChatViewModel
     private var _id: String = ""
     private var _rev: String = ""
-    private var currnetID: String = ""
-    private var currnetRev: String = ""
+    private var currentID: String = ""
     private var aiName: String = ""
     private var aiModel: String = ""
     private lateinit var mRealm: Realm
@@ -97,20 +96,17 @@ class ChatDetailFragment : Fragment() {
                 val message = "${fragmentChatDetailBinding.editGchatMessage.text}".replace("\n", " ")
                 mAdapter.addQuery(message)
                 if (_id != "") {
-                    println("rev: $_rev")
                     val newRev = getLatestRev(_id) ?: _rev
-                    println("ButtonnewRev: $newRev")
                     val continueChatData = ContinueChatModel(data = Data("${user?.name}", message, aiProvider, _id, newRev), save = true)
                     val jsonContent = Gson().toJson(continueChatData)
                     val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
                     continueChatRequest(requestBody, _id, message)
                 }
-                else if (currnetID != "") {
-                    println("hi")
-                    val continueChatData = ContinueChatModel(data = Data("${user?.name}", message, aiProvider, currnetID, _rev), save = true)
+                else if (currentID != "") {
+                    val continueChatData = ContinueChatModel(data = Data("${user?.name}", message, aiProvider, currentID, _rev), save = true)
                     val jsonContent = Gson().toJson(continueChatData)
                     val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
-                    continueChatRequest(requestBody, currnetID, message)
+                    continueChatRequest(requestBody, currentID, message)
                 }
                 else {
                     val chatData = ChatRequestModel(data = ContentData("${user?.name}", message, aiProvider), save = true)
@@ -333,22 +329,10 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun continueChatRequest(content: RequestBody, id: String, query: String) {
-        println("continueChatRequest $id")
         disableUI()
         val mapping = processServerUrl()
         handleServerReachability(mapping)
-        CoroutineScope(Dispatchers.IO).launch {
-            val latestRev = getLatestRevAsync(id)
-            println("latestRev $latestRev")
-            val updatedContent = latestRev?.let {
-                addRevToRequest(contentToJson(content), it)
-            } ?: content
-
-            withContext(Dispatchers.Main) {
-                sendChatRequest(updatedContent, query, id, false)
-            }
-        }
-        //sendChatRequest(content, query, id, false)
+        sendChatRequest(content, query, id, false)
     }
 
     private fun disableUI() {
@@ -387,17 +371,12 @@ class ChatDetailFragment : Fragment() {
     private fun getLatestRev(id: String): String? {
         return try {
             mRealm.refresh()
-            val realmChatHistory1 = mRealm.where(RealmChatHistory::class.java)
-                .equalTo("_id", id)
-                .findAll()
-            println("Fetched realmChatHistory1: $realmChatHistory1")
             val realmChatHistory = mRealm.where(RealmChatHistory::class.java)
                 .equalTo("_id", id)
                 .findAll()
                 .maxByOrNull { rev -> rev._rev!!.split("-")[0].toIntOrNull() ?: 0 }
 
             val rev = realmChatHistory?._rev
-            println("Fetched latest _rev: $rev")
             rev
         } catch (e: Exception) {
             e.printStackTrace()
@@ -405,37 +384,7 @@ class ChatDetailFragment : Fragment() {
         }
     }
 
-    private suspend fun getLatestRevAsync(id: String): String? {
-        return withContext(Dispatchers.IO) {
-            try {
-                mRealm.refresh()
-                mRealm.where(RealmChatHistory::class.java)
-                    .equalTo("_id", id)
-                    .findFirst()?._rev
-            } catch (e: Exception) {
-                e.printStackTrace()
-                null
-            }
-        }
-    }
-
-    private fun addRevToRequest(originalContent: String, latestRev: String?): RequestBody {
-        val jsonObject = Gson().fromJson(originalContent, ContinueChatModel::class.java)
-        latestRev?.let {
-            jsonObject.data.rev = it
-        }
-        val updatedJson = Gson().toJson(jsonObject)
-        return RequestBody.create(MediaType.parse("application/json"), updatedJson)
-    }
-
-    private fun contentToJson(content: RequestBody): String {
-        val buffer = okio.Buffer()
-        content.writeTo(buffer)
-        return buffer.readUtf8()
-    }
-
     private fun sendChatRequest(content: RequestBody, query: String, id: String?, newChat: Boolean) {
-        println("sendChatRequest $id")
         CoroutineScope(Dispatchers.Main).launch {
             val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
             apiInterface?.chatGpt(Utilities.hostUrl, content)?.enqueue(object : Callback<ChatModel> {
@@ -451,20 +400,13 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun handleResponse(response: Response<ChatModel>, query: String, id: String?) {
-        println("handleResponse $id")
-        println("handleResponse $query")
-        println("Response Code: ${response.code()}")
         val responseBody = response.body()
-        println("Error Body: ${response.errorBody()?.string()}")
-        println("handleResponse $responseBody")
         if (response.isSuccessful && responseBody != null) {
             if (responseBody.status == "Success") {
                 responseBody.chat?.let { chatResponse ->
                     mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_NETWORK
                     mAdapter.addResponse(chatResponse)
-
                     val newRev = responseBody.couchDBResponse?.rev
-                    println("newRev $newRev")
                     if (newRev != null) {
                         _rev = newRev
                     }
@@ -497,7 +439,7 @@ class ChatDetailFragment : Fragment() {
             val id = responseBody.couchDBResponse?.id
             val rev = responseBody.couchDBResponse?.rev
             if (id != null) {
-                currnetID = id
+                currentID = id
             }
             if (rev != null) {
                 _rev = rev
