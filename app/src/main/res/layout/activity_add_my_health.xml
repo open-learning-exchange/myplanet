@@ -179,7 +179,6 @@
                         android:padding="@dimen/padding_small"
                         android:text="@string/contact_preference"
                         android:textColor="@color/daynight_textColor" />
-
                 <RelativeLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
