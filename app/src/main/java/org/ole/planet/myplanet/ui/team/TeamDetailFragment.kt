@@ -116,21 +116,28 @@ class TeamDetailFragment : BaseTeamFragment() {
     }
 
     private fun createTeamLog() {
-        val user = UserProfileDbHandler(requireContext()).userModel
+        val userModel = UserProfileDbHandler(requireContext()).userModel ?: return
+        
+        val userName = userModel.name
+        val userPlanetCode = userModel.planetCode
+        val userParentCode = userModel.parentCode
+        val teamType = team?.teamType
+
         CoroutineScope(Dispatchers.IO).launch {
             val realm = DatabaseService(requireActivity()).realmInstance
+
             realm.executeTransaction { r ->
                 val log = r.createObject(RealmTeamLog::class.java, UUID.randomUUID().toString())
                 log.teamId = teamId
-                if (user != null) {
-                    log.user = user.name
-                    log.createdOn = user.planetCode
-                    log.type = "teamVisit"
-                    log.teamType = team?.teamType
-                    log.parentCode = user.parentCode
-                    log.time = Date().time
-                }
+                log.user = userName
+                log.createdOn = userPlanetCode
+                log.type = "teamVisit"
+                log.teamType = teamType
+                log.parentCode = userParentCode
+                log.time = Date().time
             }
+
+            realm.close()
         }
     }
 }
