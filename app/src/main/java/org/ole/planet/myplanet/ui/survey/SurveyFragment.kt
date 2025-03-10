@@ -6,6 +6,7 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
 import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.RadioButton
 import android.widget.RadioGroup
@@ -84,6 +85,10 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
 
     private fun initializeViews(view: View) {
         spn = view.findViewById(R.id.spn_sort)
+        val adapter = ArrayAdapter.createFromResource(
+            requireContext(), R.array.sort_by_date, R.layout.spinner_text)
+        adapter.setDropDownViewResource(R.layout.spinner_text)
+        spn.adapter = adapter
         etSearch = requireView().findViewById(R.id.et_search)
         addNewSurvey = view.findViewById(R.id.fab_add_new_survey)
         rbTeamSurvey = view.findViewById(R.id.rbTeamSurvey)
