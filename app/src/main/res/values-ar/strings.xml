@@ -1249,5 +1249,7 @@
     <string name="member_of_planet">عضو في planet</string>
     <string name="edit_mission_and_services">تعديل المهمة والخدمات</string>
     <string name="this_team_has_no_description_defined">هذا الفريق ليس لديه وصف محدد</string>
+    <string name="response">استجابة</string>
+    <string name="full_conversation_response">استجابة المحادثة الكاملة</string>
 
 </resources>

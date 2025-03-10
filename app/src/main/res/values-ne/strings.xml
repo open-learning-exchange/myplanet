@@ -1249,5 +1249,7 @@
     <string name="member_of_planet">planet को सदस्य</string>
     <string name="edit_mission_and_services">मिशन र सेवाहरू सम्पादन गर्नुहोस्</string>
     <string name="this_team_has_no_description_defined">यस टिमको कुनै विवरण परिभाषित गरिएको छैन</string>
+    <string name="response">उत्तर</string>
+    <string name="full_conversation_response">पूर्ण वार्तालाप उत्तर</string>
 
 </resources>
