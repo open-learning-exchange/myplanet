@@ -241,7 +241,9 @@
                 android:layout_marginEnd="10dp"
                 android:background="@drawable/buttongrey"
                 android:backgroundTint="@color/md_yellow_700"
-                android:text="@string/button_update" />
+                android:text="@string/button_update"
+                android:gravity="center"
+                android:textAlignment="center"/>
 
             <Button
                 android:id="@+id/btnAdditionalFields"
@@ -250,7 +252,9 @@
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="10dp"
                 android:background="@drawable/buttongrey"
-                android:text="@string/show_additional_fields" />
+                android:text="@string/show_additional_fields"
+                android:gravity="center"
+                android:textAlignment="center" />
 
             <Button
                 android:id="@+id/btn_cancel"
@@ -258,7 +262,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/buttongrey"
-                android:text="@string/button_cancel" />
+                android:text="@string/button_cancel"
+                android:gravity="center"
+                android:textAlignment="center" />
 
         </LinearLayout>
     </LinearLayout>
