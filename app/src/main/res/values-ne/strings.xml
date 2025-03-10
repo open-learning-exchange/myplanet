@@ -91,7 +91,7 @@
     <string name="published_by">प्रकाशित गर्ने:</string>
     <string name="author">लेखक:</string>
     <string name="language_with_colon">भाषा:</string>
-    <string name="subject">विषयहरू:</string>
+    <string name="subject">विषय/विषयहरू:</string>
     <string name="license">लाइसेन्स:</string>
     <string name="type">प्रकार:</string>
     <string name="resource_colon">स्रोत:</string>
@@ -980,7 +980,7 @@
     <string name="beta_function_for_wifi_switch">वाईफाई स्विचका लागि बीटा कार्य</string>
     <string name="upgrade_application">अनुप्रयोग अपग्रेड गर्नुहोस्</string>
     <string name="auto_upgrade">स्वतः अपग्रेड</string>
-    <string name="always_move_to_maximum_version">सधैं महत्तम संस्करणमा जानुहोस्?</string>
+    <string name="always_move_to_maximum_version">सधैं महत्तम संस्करणमा जानुहोस्</string>
     <string name="all_beta_functions">सबै बीटा कार्यहरू</string>
     <string name="auto_sync_device">स्वचालित सिङ्क यन्त्र</string>
     <string name="beta_functionality">बीटा कार्यक्षमता</string>
@@ -1238,10 +1238,16 @@
     <string name="go_to_mylibrary">मेरो पुस्तकालयमा जानुहोस्</string>
     <string name="choose_an_option">एउटा विकल्प छान्नुहोस्</string>
     <string name="welcome_back">स्वागतम् %1$s</string>
+    <string name="edit_plan">योजना सम्पादन गर्नुहोस्</string>
     <string name="show_additional_fields">थप क्षेत्रहरू देखाउनुहोस्</string>
     <string name="hide_additional_fields">थप क्षेत्रहरू लुकाउनुहोस्</string>
     <string name="age">उमेर</string>
     <string name="preparing_download">डाउनलोडको तयारी गर्दै…</string>
     <string name="downloading_files">फाइलहरू डाउनलोड हुँदैछन्</string>
+    <string name="age_must_be_100_or_below">उमेर १०० वा कम हुनुपर्छ</string>
+    <string name="please_enter_a_valid_age">कृपया एक वैध उमेर प्रविष्ट गर्नुहोस्</string>
+    <string name="member_of_planet">planet को सदस्य</string>
+    <string name="edit_mission_and_services">मिशन र सेवाहरू सम्पादन गर्नुहोस्</string>
+    <string name="this_team_has_no_description_defined">यस टिमको कुनै विवरण परिभाषित गरिएको छैन</string>
 
 </resources>

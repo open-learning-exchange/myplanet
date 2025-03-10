@@ -38,6 +38,10 @@
             android:title="@string/addImageToMessage" />
         <SwitchPreference
             android:defaultValue="false"
+            android:key="beta_fast_sync"
+            android:title="@string/beta_fast_sync" />
+        <SwitchPreference
+            android:defaultValue="false"
             android:key="beta_wifi_switch"
             android:title="@string/beta_function_for_wifi_switch" />
         <SwitchPreference

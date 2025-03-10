@@ -88,13 +88,13 @@
     <string name="search_dots">Rechercher…</string>
     <string name="btn_remove_lib">Supprimer</string>
     <string name="download">Télécharger</string>
-    <string name="published_by">Publié par :</string>
-    <string name="author">Auteur :</string>
-    <string name="language_with_colon">Langue :</string>
-    <string name="subject">Sujet(s) :</string>
-    <string name="license">Licence :</string>
-    <string name="type">Type :</string>
-    <string name="resource_colon">Ressource :</string>
+    <string name="published_by">Publié par:</string>
+    <string name="author">Auteur:</string>
+    <string name="language_with_colon">Langue:</string>
+    <string name="subject">Sujet(s):</string>
+    <string name="license">Licence:</string>
+    <string name="type">Type:</string>
+    <string name="resource_colon">Ressource:</string>
     <string name="your_rating">Votre évaluation</string>
     <string name="your_comment">Laissez votre commentaire</string>
     <string name="show_top_nav">Afficher la barre de navigation supérieure dans le tableau de bord</string>
@@ -968,7 +968,7 @@
     </string>
 
     <string name="is_on_please_turn_of_to_save_battery">" est activé, veuillez le désactiver pour économiser la batterie"</string>
-    <string name="go_to_settings">Aller aux paramètres</string>
+    <string name="go_to_settings">aller aux paramètres</string>
     <string name="new_version_of_my_planet_available">Nouvelle version de My Planet disponible</string>
     <string name="download_first_to_continue">Téléchargez d\'abord pour continuer.</string>
     <string name="upgrade_local">Mise à niveau (Locale)</string>
@@ -980,7 +980,7 @@
     <string name="beta_function_for_wifi_switch">Fonction bêta pour le commutateur Wi-Fi</string>
     <string name="upgrade_application">Mettre à niveau l\'application</string>
     <string name="auto_upgrade">Mise à niveau automatique</string>
-    <string name="always_move_to_maximum_version">Passer toujours à la version maximale ?</string>
+    <string name="always_move_to_maximum_version">Passer toujours à la version maximale</string>
     <string name="all_beta_functions">Toutes les fonctions bêta</string>
     <string name="auto_sync_device">Appareil de synchronisation automatique</string>
     <string name="beta_functionality">Fonctionnalité bêta</string>
@@ -1238,10 +1238,16 @@
     <string name="go_to_mylibrary">Aller à Ma Bibliothèque</string>
     <string name="choose_an_option">Choisissez une option</string>
     <string name="welcome_back">Bienvenue %1$s</string>
+    <string name="edit_plan">Modifier le plan</string>
     <string name="show_additional_fields">afficher les champs supplémentaires</string>
     <string name="hide_additional_fields">masquer les champs supplémentaires</string>
-    <string name="age">Âge</string>
+    <string name="age">àge</string>
     <string name="preparing_download">Préparation du téléchargement…</string>
     <string name="downloading_files">Téléchargement des fichiers</string>
+    <string name="age_must_be_100_or_below">L\'âge doit être de 100 ou moins</string>
+    <string name="please_enter_a_valid_age">Veuillez entrer un âge valide</string>
+    <string name="member_of_planet">membre de planet</string>
+    <string name="edit_mission_and_services">modifier la mission et les services</string>
+    <string name="this_team_has_no_description_defined">cette équipe n\'a aucune description définie</string>
 
 </resources>
