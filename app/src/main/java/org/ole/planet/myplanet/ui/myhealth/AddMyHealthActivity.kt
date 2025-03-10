@@ -56,7 +56,6 @@ class AddMyHealthActivity : AppCompatActivity() {
             Utilities.toast(this@AddMyHealthActivity, getString(R.string.my_health_saved_successfully))
         }
 
-        // Updated spinner setup with simple ArrayAdapter like in BecomeMemberActivity
         val contactTypes = resources.getStringArray(R.array.contact_type)
         val contactAdapter = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, contactTypes)
         findViewById<Spinner>(R.id.spn_contact_type).adapter = contactAdapter
