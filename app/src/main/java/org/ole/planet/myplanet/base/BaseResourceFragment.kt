@@ -104,9 +104,6 @@ abstract class BaseResourceFragment : Fragment() {
             override fun isAvailable() {
                 if (!isAdded) return
                 if (dbMyLibrary.isEmpty()) {
-                    activity?.let {
-                        Utilities.toast(it, getString(R.string.no_resources_to_download))
-                    }
                     return
                 }
 
