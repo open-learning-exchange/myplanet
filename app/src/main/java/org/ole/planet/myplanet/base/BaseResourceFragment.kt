@@ -133,7 +133,7 @@ abstract class BaseResourceFragment : Fragment() {
 
                     val displayMetrics = resources.displayMetrics
                     val screenHeight = displayMetrics.heightPixels
-                    val dialogHeight = (screenHeight * 0.6).toInt() // Increase to 60% of screen height
+                    val dialogHeight = (screenHeight * 0.6).toInt()
                     alertDialog.window?.setLayout(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         dialogHeight
