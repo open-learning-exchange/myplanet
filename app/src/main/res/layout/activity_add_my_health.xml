@@ -167,6 +167,36 @@
             </LinearLayout>
 
             <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="@dimen/padding_normal">
+
+                <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:padding="@dimen/padding_small"
+                        android:text="@string/contact_preference"
+                        android:textColor="@color/daynight_textColor" />
+                <RelativeLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/border"
+                        android:layout_margin="4dp">
+
+                    <Spinner
+                            android:id="@+id/spn_contact_type"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:padding="@dimen/padding_normal"
+                            android:popupBackground="@color/secondary_bg"
+                            android:backgroundTint="@color/daynight_textColor"
+                            android:spinnerMode="dropdown"/>
+                </RelativeLayout>
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
@@ -185,15 +215,6 @@
                         android:backgroundTint="@color/daynight_textColor"
                         android:textColor="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
-
-                <Spinner
-                    android:id="@+id/spn_contact_type"
-                    style="@style/SpinnerItemStyle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:layout_weight="1"
-                    android:padding="@dimen/padding_large" />
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/et_contact"
                     android:layout_width="0dp"
@@ -242,7 +263,6 @@
                     android:backgroundTint="@color/daynight_textColor"
                     android:textColor="@color/daynight_textColor" />
             </com.google.android.material.textfield.TextInputLayout>
-
             <Button
                 android:id="@+id/btn_submit"
                 android:layout_width="wrap_content"
