@@ -11,6 +11,7 @@ import android.graphics.PorterDuff
 import android.net.Uri
 import android.os.Build
 import android.text.TextUtils
+import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
@@ -22,6 +23,11 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import com.google.android.material.textfield.TextInputLayout
+import io.realm.Realm
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity
@@ -35,6 +41,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.FileUtils.installApk
+import org.ole.planet.myplanet.utilities.SyncState
 import kotlin.math.roundToInt
 
 abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
@@ -173,29 +180,51 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         } else if (source == "login") {
             UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
         } else {
+            if (SyncState.isBackgroundSyncRunning) {
+                Toast.makeText(this, "Please wait for sync to complete", Toast.LENGTH_SHORT).show()
+                return
+            }
+
             customProgressDialog?.setText(context.getString(R.string.uploading_data_to_server_please_wait))
             customProgressDialog?.show()
 
-            UploadToShelfService.instance?.uploadUserData { UploadToShelfService.instance?.uploadHealth() }
-            UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
-            UploadManager.instance?.uploadExamResult(this@ProcessUserDataActivity)
-            UploadManager.instance?.uploadFeedback(this@ProcessUserDataActivity)
-            UploadManager.instance?.uploadAchievement()
-            UploadManager.instance?.uploadResourceActivities("")
-            UploadManager.instance?.uploadCourseActivities()
-            UploadManager.instance?.uploadSearchActivity()
-            UploadManager.instance?.uploadNews()
-            UploadManager.instance?.uploadTeams()
-            UploadManager.instance?.uploadResource(this@ProcessUserDataActivity)
-            UploadManager.instance?.uploadRating()
-            UploadManager.instance?.uploadTeamTask()
-            UploadManager.instance?.uploadSubmissions()
-            UploadManager.instance?.uploadCrashLog()
-            UploadManager.instance?.uploadSubmitPhotos(this@ProcessUserDataActivity)
-            UploadManager.instance?.uploadActivities(this@ProcessUserDataActivity)
+            MainApplication.applicationScope.launch(Dispatchers.IO) {
+                val realmInstance = Realm.getDefaultInstance()
+                try {
+                    withContext(Dispatchers.IO) {
+                        UploadToShelfService.instance?.uploadUserData {
+                            UploadToShelfService.instance?.uploadHealth()
+                        }
+                        UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
+                        UploadManager.instance?.uploadExamResult(this@ProcessUserDataActivity)
+                        UploadManager.instance?.uploadFeedback(this@ProcessUserDataActivity)
+                        UploadManager.instance?.uploadAchievement()
+                        UploadManager.instance?.uploadResourceActivities("")
+                        UploadManager.instance?.uploadCourseActivities()
+                        UploadManager.instance?.uploadSearchActivity()
+                        UploadManager.instance?.uploadNews()
+                        UploadManager.instance?.uploadTeams()
+                        UploadManager.instance?.uploadResource(this@ProcessUserDataActivity)
+                        UploadManager.instance?.uploadRating()
+                        UploadManager.instance?.uploadTeamTask()
+                        UploadManager.instance?.uploadSubmissions()
+                        UploadManager.instance?.uploadCrashLog()
+                        UploadManager.instance?.uploadSubmitPhotos(this@ProcessUserDataActivity)
+                        UploadManager.instance?.uploadActivities(this@ProcessUserDataActivity)
+                    }
 
-            runOnUiThread {
-                Toast.makeText(this@ProcessUserDataActivity, getString(R.string.uploading_activities_to_server_please_wait), Toast.LENGTH_SHORT).show()
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@ProcessUserDataActivity, getString(R.string.uploading_activities_to_server_please_wait), Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    Log.e("UploadError", "Error during upload: ${e.message}", e)
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@ProcessUserDataActivity, "Upload failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                } finally {
+                    realmInstance.close()
+                    customProgressDialog?.dismiss()
+                }
             }
         }
     }

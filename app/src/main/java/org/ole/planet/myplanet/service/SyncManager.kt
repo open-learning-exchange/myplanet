@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancel
 import org.ole.planet.myplanet.utilities.NotificationUtil.create
+import org.ole.planet.myplanet.utilities.SyncState
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.IOException
 import java.util.Date
@@ -52,6 +53,7 @@ class SyncManager private constructor(private val context: Context) {
     private val dbService: DatabaseService = DatabaseService(context)
     private var backgroundSync: Job? = null
     val _syncState = MutableLiveData<Boolean>()
+    var isBackgroundSyncRunning = false
 
     fun start(listener: SyncListener?) {
         this.listener = listener
@@ -196,6 +198,8 @@ class SyncManager private constructor(private val context: Context) {
     }
 
     private fun startBackgroundSync() {
+        SyncState.isBackgroundSyncRunning = true
+        isBackgroundSyncRunning = true
         _syncState.postValue(true)
         backgroundSync = MainApplication.applicationScope.launch(Dispatchers.IO) {
             try {
@@ -271,6 +275,7 @@ class SyncManager private constructor(private val context: Context) {
                 Log.e("SYNC", "Error during background sync: ${e.message}", e)
             } finally {
                 _syncState.postValue(false)
+                SyncState.isBackgroundSyncRunning = false
                 cleanupBackgroundSync()
                 Log.d("SYNC", "Background sync completed.")
             }
