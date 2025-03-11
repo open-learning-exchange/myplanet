@@ -10,6 +10,7 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.*
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
@@ -31,6 +32,7 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
 import io.realm.Case
+import io.realm.Realm
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmResults
@@ -454,45 +456,52 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun checkAndCreateNewNotifications() {
-        if (mRealm.isInTransaction) {
-            createNotifications()
-        } else {
-            mRealm.executeTransaction {
-                createNotifications()
-            }
-        }
+        val userId = user?.id ?: return // Fetch user ID on the main thread
 
-        updateNotificationBadge(getUnreadNotificationsSize()) {
-            openNotificationsList(user?.id ?: "")
+        if (mRealm.isInTransaction) {
+            createNotifications(userId, mRealm)
+        } else {
+            mRealm.executeTransactionAsync({ realm ->
+                // Perform database operations here
+                createNotifications(userId, realm)
+            }, {
+                // Transaction completed successfully
+                updateNotificationBadge(getUnreadNotificationsSize()) {
+                    openNotificationsList(userId)
+                }
+            }, { error ->
+                // Handle errors
+                Log.e("RealmError", "Transaction failed", error)
+            })
         }
     }
 
-    private fun createNotifications() {
-        updateResourceNotification()
+    private fun createNotifications(userId: String, realm: Realm) {
+        updateResourceNotification(userId, realm)
 
-        val pendingSurveys = getPendingSurveys(user?.id)
+        val pendingSurveys = getPendingSurveys(userId)
         val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys)
         surveyTitles.forEach { title ->
-            createNotificationIfNotExists("survey", "$title", title)
+            createNotificationIfNotExists("survey", title, title)
         }
 
-        val tasks = mRealm.where(RealmTeamTask::class.java)
+        val tasks = realm.where(RealmTeamTask::class.java)
             .notEqualTo("status", "archived")
             .equalTo("completed", false)
-            .equalTo("assignee", user?.id)
+            .equalTo("assignee", userId)
             .findAll()
         tasks.forEach { task ->
-            createNotificationIfNotExists("task","${task.title} ${formatDate(task.deadline)}", task.id)
+            createNotificationIfNotExists("task", "${task.title} ${formatDate(task.deadline)}", task.id)
         }
 
         val storageRatio = totalAvailableMemoryRatio
-        createNotificationIfNotExists("storage", "$storageRatio" , "storage")
+        createNotificationIfNotExists("storage", "$storageRatio", "storage")
     }
 
-    private fun updateResourceNotification() {
-        val resourceCount = BaseResourceFragment.getLibraryList(mRealm, user?.id).size
+    private fun updateResourceNotification(userId: String, realm: Realm) {
+        val resourceCount = BaseResourceFragment.getLibraryList(realm, userId).size
         if (resourceCount > 0) {
-            val existingNotification = mRealm.where(RealmNotification::class.java)
+            val existingNotification = realm.where(RealmNotification::class.java)
                 .equalTo("userId", user?.id)
                 .equalTo("type", "resource")
                 .findFirst()
@@ -504,7 +513,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 createNotificationIfNotExists("resource", "$resourceCount", "$resourceCount")
             }
         } else {
-            mRealm.where(RealmNotification::class.java)
+            realm.where(RealmNotification::class.java)
                 .equalTo("userId", user?.id)
                 .equalTo("type", "resource")
                 .findFirst()?.deleteFromRealm()

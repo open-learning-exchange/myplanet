@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.base.PermissionActivity
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -35,6 +36,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.FileUtils.installApk
+import org.ole.planet.myplanet.utilities.UploadQueue
 import kotlin.math.roundToInt
 
 abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
@@ -166,39 +168,132 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     }
 
     fun startUpload(source: String) {
-        if (source == "becomeMember") {
+        val uploadQueue = UploadQueue.instance
+
+        if (SyncManager.instance?.isSyncingLiveData?.value == true) {
+            // Option 1: Wait for sync to complete
+            SyncManager.instance?.isSyncingLiveData?.observe(this) { isSyncing ->
+                if (!isSyncing) {
+                    // Remove observer and proceed with upload
+                    SyncManager.instance?.isSyncingLiveData?.removeObservers(this)
+                    queueAllUploads(uploadQueue, source)
+                }
+            }
+
+            // Show waiting message
+            runOnUiThread {
+                Toast.makeText(this, "Waiting for sync to complete before uploading...", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            // If not syncing, queue uploads immediately
+            queueAllUploads(uploadQueue, source)
+        }
+    }
+
+    private fun queueAllUploads(uploadQueue: UploadQueue?, source: String) {
+        // No need to show progress dialog here as UploadQueue handles this
+
+        // Queue all uploads with appropriate priorities
+        uploadQueue?.enqueue("User Data", 17) {
             UploadToShelfService.instance?.uploadUserData {
                 UploadToShelfService.instance?.uploadHealth()
             }
-        } else if (source == "login") {
-            UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
-        } else {
-            customProgressDialog?.setText(context.getString(R.string.uploading_data_to_server_please_wait))
-            customProgressDialog?.show()
-
-            UploadToShelfService.instance?.uploadUserData { UploadToShelfService.instance?.uploadHealth() }
-            UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
-            UploadManager.instance?.uploadExamResult(this@ProcessUserDataActivity)
-            UploadManager.instance?.uploadFeedback(this@ProcessUserDataActivity)
-            UploadManager.instance?.uploadAchievement()
-            UploadManager.instance?.uploadResourceActivities("")
-            UploadManager.instance?.uploadCourseActivities()
-            UploadManager.instance?.uploadSearchActivity()
-            UploadManager.instance?.uploadNews()
-            UploadManager.instance?.uploadTeams()
-            UploadManager.instance?.uploadResource(this@ProcessUserDataActivity)
-            UploadManager.instance?.uploadRating()
-            UploadManager.instance?.uploadTeamTask()
-            UploadManager.instance?.uploadSubmissions()
-            UploadManager.instance?.uploadCrashLog()
-            UploadManager.instance?.uploadSubmitPhotos(this@ProcessUserDataActivity)
-            UploadManager.instance?.uploadActivities(this@ProcessUserDataActivity)
-
-            runOnUiThread {
-                Toast.makeText(this@ProcessUserDataActivity, getString(R.string.uploading_activities_to_server_please_wait), Toast.LENGTH_SHORT).show()
-            }
         }
+
+        uploadQueue?.enqueue("User Activities", 16) {
+            UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
+        }
+
+        uploadQueue?.enqueue("Exam Results", 15) {
+            UploadManager.instance?.uploadExamResult(this@ProcessUserDataActivity)
+        }
+
+        uploadQueue?.enqueue("Feedback", 14) {
+            UploadManager.instance?.uploadFeedback(this@ProcessUserDataActivity)
+        }
+
+        uploadQueue?.enqueue("Achievement", 13) {
+            UploadManager.instance?.uploadAchievement()
+        }
+
+        uploadQueue?.enqueue("Resource Activities", 12) {
+            UploadManager.instance?.uploadResourceActivities("")
+        }
+
+        uploadQueue?.enqueue("Course Activities", 11) {
+            UploadManager.instance?.uploadCourseActivities()
+        }
+
+        uploadQueue?.enqueue("Search Activity", 10) {
+            UploadManager.instance?.uploadSearchActivity()
+        }
+
+        uploadQueue?.enqueue("News", 9) {
+            UploadManager.instance?.uploadNews()
+        }
+
+        uploadQueue?.enqueue("Teams", 8) {
+            UploadManager.instance?.uploadTeams()
+        }
+
+        uploadQueue?.enqueue("Resource", 7) {
+            UploadManager.instance?.uploadResource(this@ProcessUserDataActivity)
+        }
+
+        uploadQueue?.enqueue("Rating", 6) {
+            UploadManager.instance?.uploadRating()
+        }
+
+        uploadQueue?.enqueue("Team Task", 5) {
+            UploadManager.instance?.uploadTeamTask()
+        }
+
+        uploadQueue?.enqueue("Submissions", 4) {
+            UploadManager.instance?.uploadSubmissions()
+        }
+
+        uploadQueue?.enqueue("Crash Log", 3) {
+            UploadManager.instance?.uploadCrashLog()
+        }
+
+        uploadQueue?.enqueue("Submit Photos", 2) {
+            UploadManager.instance?.uploadSubmitPhotos(this@ProcessUserDataActivity)
+        }
+
+        uploadQueue?.enqueue("Activities", 1) {
+            UploadManager.instance?.uploadActivities(this@ProcessUserDataActivity)
+        }
+
+        // You can use the source parameter if needed to queue specific uploads based on source
     }
+
+   fun performUpload(source: String) {
+           customProgressDialog?.setText(context.getString(R.string.uploading_data_to_server_please_wait))
+           customProgressDialog?.show()
+
+           UploadToShelfService.instance?.uploadUserData { UploadToShelfService.instance?.uploadHealth() }
+           UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
+           UploadManager.instance?.uploadExamResult(this@ProcessUserDataActivity)
+           UploadManager.instance?.uploadFeedback(this@ProcessUserDataActivity)
+           UploadManager.instance?.uploadAchievement()
+           UploadManager.instance?.uploadResourceActivities("")
+           UploadManager.instance?.uploadCourseActivities()
+           UploadManager.instance?.uploadSearchActivity()
+           UploadManager.instance?.uploadNews()
+           UploadManager.instance?.uploadTeams()
+           UploadManager.instance?.uploadResource(this@ProcessUserDataActivity)
+           UploadManager.instance?.uploadRating()
+           UploadManager.instance?.uploadTeamTask()
+           UploadManager.instance?.uploadSubmissions()
+           UploadManager.instance?.uploadCrashLog()
+           UploadManager.instance?.uploadSubmitPhotos(this@ProcessUserDataActivity)
+           UploadManager.instance?.uploadActivities(this@ProcessUserDataActivity)
+
+           runOnUiThread {
+               Toast.makeText(this@ProcessUserDataActivity, getString(R.string.uploading_activities_to_server_please_wait), Toast.LENGTH_SHORT).show()
+           }
+
+   }
 
     protected fun hideKeyboard(view: View?) {
         val `in` = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager

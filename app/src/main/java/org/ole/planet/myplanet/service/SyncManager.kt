@@ -40,6 +40,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.io.IOException
 import java.util.Date
 import kotlin.system.measureTimeMillis
+import androidx.core.content.edit
+import androidx.lifecycle.LiveData
 
 class SyncManager private constructor(private val context: Context) {
     private var td: Thread? = null
@@ -52,6 +54,8 @@ class SyncManager private constructor(private val context: Context) {
     private val dbService: DatabaseService = DatabaseService(context)
     private var backgroundSync: Job? = null
     val _syncState = MutableLiveData<Boolean>()
+    private val _isSyncingLiveData = MutableLiveData<Boolean>(false)
+    val isSyncingLiveData: LiveData<Boolean> = _isSyncingLiveData
 
     fun start(listener: SyncListener?) {
         this.listener = listener
@@ -154,7 +158,7 @@ class SyncManager private constructor(private val context: Context) {
             initializeSync()
             syncFirstBatch()
 
-            settings.edit().putLong("LastSync", Date().time).apply()
+            settings.edit { putLong("LastSync", Date().time) }
             listener?.onSyncComplete()
             destroy()
             startBackgroundSync()
@@ -183,7 +187,7 @@ class SyncManager private constructor(private val context: Context) {
         val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
         val wifiInfo = wifiManager.connectionInfo
         if (wifiInfo.supplicantState == SupplicantState.COMPLETED) {
-            settings.edit().putString("LastWifiSSID", wifiInfo.ssid).apply()
+            settings.edit { putString("LastWifiSSID", wifiInfo.ssid) }
         }
         isSyncing = true
         create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")
@@ -197,6 +201,7 @@ class SyncManager private constructor(private val context: Context) {
 
     private fun startBackgroundSync() {
         _syncState.postValue(true)
+        _isSyncingLiveData.postValue(true)
         backgroundSync = MainApplication.applicationScope.launch(Dispatchers.IO) {
             try {
                 Log.d("SYNC", "Starting parallel background sync...")
@@ -271,6 +276,7 @@ class SyncManager private constructor(private val context: Context) {
                 Log.e("SYNC", "Error during background sync: ${e.message}", e)
             } finally {
                 _syncState.postValue(false)
+                _isSyncingLiveData.postValue(false)
                 cleanupBackgroundSync()
                 Log.d("SYNC", "Background sync completed.")
             }
