@@ -63,7 +63,7 @@ class Service(private val context: Context) {
         retrofitInterface?.healthAccess(Utilities.getHealthAccessUrl(preferences))?.enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                 if (response.code() == 200) {
-                    listener.onSuccess("Successfully synced")
+                    listener.onSuccess(context.getString(R.string.server_sync_successfully))
                 } else {
                     listener.onSuccess("")
                 }
@@ -124,7 +124,7 @@ class Service(private val context: Context) {
                             try {
                                 responses = Gson().fromJson(response.body()?.string(), String::class.java)
                                 if (responses == null || responses.isEmpty()) {
-                                    callback.onError("Planet up to date", false)
+                                    callback.onError(context.getString(R.string.planet_is_up_to_date), false)
                                     return
                                 }
                                 var vsn = responses.replace("v".toRegex(), "")
@@ -147,24 +147,24 @@ class Service(private val context: Context) {
                                     if (currentVersion < p.minapkcode && apkVersion < p.minapkcode) {
                                         callback.onUpdateAvailable(p, true)
                                     } else {
-                                        callback.onError("Planet up to date", false)
+                                        callback.onError(context.getString(R.string.planet_is_up_to_date), false)
                                     }
                                 }
                             } catch (e: Exception) {
                                 e.printStackTrace()
-                                callback.onError("New apk version required but not found on server - Contact admin", false)
+                                callback.onError(context.getString(R.string.new_apk_version_required_but_not_found_on_server), false)
                             }
                         }
                         override fun onFailure(call: Call<ResponseBody>, t: Throwable) {}
                     })
                 } else {
-                    callback.onError("Version not found", true)
+                    callback.onError(context.getString(R.string.version_not_found), true)
                 }
             }
 
             override fun onFailure(call: Call<MyPlanet?>, t: Throwable) {
                 t.printStackTrace()
-                callback.onError("Connection failed.", true)
+                callback.onError(context.getString(R.string.connection_failed), true)
             }
         })
     }
@@ -212,7 +212,7 @@ class Service(private val context: Context) {
                 retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}")?.enqueue(object : Callback<JsonObject> {
                     override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
                         if (response.body() != null && response.body()?.has("_id") == true) {
-                            callback.onSuccess("Unable to create user, user already exists")
+                            callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                         } else {
                             retrofitInterface.putDoc(null, "application/json", "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
                                 override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
@@ -220,19 +220,19 @@ class Service(private val context: Context) {
                                         uploadToShelf(obj)
                                         saveUserToDb(realm, response.body()!!.get("id").asString, obj, callback)
                                     } else {
-                                        callback.onSuccess("Unable to create user")
+                                        callback.onSuccess(context.getString(R.string.unable_to_create_user))
                                     }
                                 }
 
                                 override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                                    callback.onSuccess("Unable to create user")
+                                    callback.onSuccess(context.getString(R.string.unable_to_create_user))
                                 }
                             })
                         }
                     }
 
                     override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                        callback.onSuccess("Unable to create user")
+                        callback.onSuccess(context.getString(R.string.unable_to_create_user))
                     }
                 })
             }
@@ -240,7 +240,7 @@ class Service(private val context: Context) {
             override fun notAvailable() {
                 val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 if (isUserExists(realm, obj["name"].asString)) {
-                    callback.onSuccess("User already exists")
+                    callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                     return
                 }
                 realm.beginTransaction()
@@ -252,8 +252,8 @@ class Service(private val context: Context) {
                     model.iv = iv
                 }
                 realm.commitTransaction()
-                Utilities.toast(MainApplication.context, "Not connected to planet, created user offline.")
-                callback.onSuccess("Not connected to planet, created user offline.")
+                Utilities.toast(MainApplication.context, context.getString(R.string.not_connect_to_planet_created_user_offline))
+                callback.onSuccess(context.getString(R.string.not_connect_to_planet_created_user_offline))
             }
         })
     }
@@ -281,7 +281,7 @@ class Service(private val context: Context) {
                 e.printStackTrace()
             }
         }, {
-            callback.onSuccess("User created successfully")
+            callback.onSuccess(context.getString(R.string.user_created_successfully))
             isNetworkConnectedFlow.onEach { isConnected ->
                 if (isConnected) {
                     val serverUrl = settings.getString("serverURL", "")
@@ -304,7 +304,7 @@ class Service(private val context: Context) {
             }.launchIn(serviceScope)
         }) { error: Throwable ->
             error.printStackTrace()
-            callback.onSuccess("Unable to save user please sync")
+            callback.onSuccess(context.getString(R.string.unable_to_save_user_please_sync))
         }
     }
 
@@ -335,7 +335,7 @@ class Service(private val context: Context) {
                             }
 
                             Handler(Looper.getMainLooper()).post {
-                                callback.onSuccess("Server sync successful")
+                                callback.onSuccess(context.getString(R.string.server_sync_successfully))
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()
@@ -347,7 +347,7 @@ class Service(private val context: Context) {
             }
 
             override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                callback.onSuccess("Server sync failed")
+                callback.onSuccess(context.getString(R.string.server_sync_has_failed))
             }
         })
     }
