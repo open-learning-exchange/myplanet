@@ -87,11 +87,26 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
 
     override fun onBindViewHolder(holder: ViewHolderSurvey, position: Int) {
         holder.bind(examList[position])
+        val exam = examList[position]
+        val questions = mRealm.where(RealmExamQuestion::class.java)
+            .equalTo("examId", exam.id)
+            .findAll()
+
+        if (questions.isEmpty()) {
+            holder.binding.startSurvey.visibility = View.GONE
+            holder.binding.sendSurvey.visibility = View.GONE
+        } else if (userId?.startsWith("guest") == true) {
+            holder.binding.startSurvey.visibility = View.GONE
+            holder.binding.sendSurvey.visibility = View.GONE
+        } else {
+            holder.binding.startSurvey.visibility = View.VISIBLE
+            holder.binding.sendSurvey.visibility = View.GONE
+        }
     }
 
     override fun getItemCount(): Int = examList.size
 
-    inner class ViewHolderSurvey(private val binding: RowSurveyBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class ViewHolderSurvey(val binding: RowSurveyBinding) : RecyclerView.ViewHolder(binding.root) {
         init {
             binding.startSurvey.visibility = View.VISIBLE
             binding.sendSurvey.visibility = View.GONE
@@ -131,6 +146,12 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
                 if (questions.isEmpty()) {
                     sendSurvey.visibility = View.GONE
                     startSurvey.visibility = View.GONE
+                } else if (userId?.startsWith("guest") == true) {
+                    startSurvey.visibility = View.GONE
+                    sendSurvey.visibility = View.GONE
+                } else {
+                    startSurvey.visibility = View.VISIBLE
+                    sendSurvey.visibility = View.GONE
                 }
 
                 if (adoptedSurveyIds.contains(exam.id)) {
@@ -142,11 +163,6 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
                         else -> context.getString(R.string.record_survey)
                     }
                 }
-
-                if (userId?.startsWith("guest") == true) {
-                    startSurvey.visibility = View.GONE
-                }
-
                 tvNoSubmissions.text = getNoOfSubmissionByUser(exam.id, exam.courseId, userId, mRealm)
                 tvDateCompleted.text = getRecentSubmissionDate(exam.id, exam.courseId, userId, mRealm)
                 tvDate.text = formatDate(RealmStepExam.getSurveyCreationTime(exam.id!!, mRealm)!!, "MMM dd, yyyy")
