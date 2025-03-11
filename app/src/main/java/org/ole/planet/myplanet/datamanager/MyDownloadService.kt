@@ -178,7 +178,7 @@ class MyDownloadService : Service() {
                 }
             }
         } finally {
-            closeStreams(output, bis)
+            closeStreams(output, bis, url)
         }
     }
 
@@ -197,11 +197,11 @@ class MyDownloadService : Service() {
     }
 
     @Throws(IOException::class)
-    private fun closeStreams(output: OutputStream, bis: InputStream) {
+    private fun closeStreams(output: OutputStream, bis: InputStream, url: String) {
         output.flush()
         output.close()
         bis.close()
-        onDownloadComplete()
+        onDownloadComplete(url)
     }
 
     private fun sendNotification(download: Download) {
@@ -225,13 +225,13 @@ class MyDownloadService : Service() {
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
     }
 
-    private fun onDownloadComplete() {
+    private fun onDownloadComplete(url: String) {
         if ((outputFile?.length() ?: 0) > 0) {
-            changeOfflineStatus()
+            changeOfflineStatus(url)
         }
         val download = Download().apply {
-            fileName = getFileNameFromUrl(urls[currentIndex])
-            fileUrl = urls[currentIndex]
+            fileName = getFileNameFromUrl(url)
+            fileUrl = url
             progress = 100
             completeAll = (currentIndex == urls.size - 1)
         }
@@ -245,25 +245,22 @@ class MyDownloadService : Service() {
         }
     }
 
-    private fun changeOfflineStatus() {
+    private fun changeOfflineStatus(url: String) {
         CoroutineScope(Dispatchers.IO).launch {
-            if (urls.isNotEmpty() && currentIndex >= 0 && currentIndex < urls.size) {
-                val currentFileName = getFileNameFromUrl(urls[currentIndex])
-                try {
-                    val backgroundRealm = Realm.getDefaultInstance()
-                    backgroundRealm.use { realm ->
-                        realm.executeTransaction {
-                            realm.where(RealmMyLibrary::class.java)
-                                .equalTo("resourceLocalAddress", currentFileName).findAll()
-                                ?.forEach {
-                                    it.resourceOffline = true
-                                    it.downloadedRev = it._rev
-                                }
-                        }
+            val currentFileName = getFileNameFromUrl(url)
+            try {
+                val backgroundRealm = Realm.getDefaultInstance()
+                backgroundRealm.use { realm ->
+                    realm.executeTransaction {
+                        realm.where(RealmMyLibrary::class.java).equalTo("resourceLocalAddress", currentFileName).findAll()
+                            ?.forEach {
+                                it.resourceOffline = true
+                                it.downloadedRev = it._rev
+                            }
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
