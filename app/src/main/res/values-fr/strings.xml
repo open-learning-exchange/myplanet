@@ -1078,7 +1078,7 @@
     <string name="enterprise_list">liste des entreprises</string>
     <string name="list_of_teams">liste des équipes</string>
     <string name="sign_up_to_chat">Veuillez vous inscrire pour accéder au chat IA</string>
-    <string name="share_chat">partager le chat</string>
+    <string name="share_chat">Partager le chat</string>
     <string name="shared_chat">chat partagé</string>
     <string name="check_apk_version">vérification de la version app</string>
     <string name="checking_server">vérification du serveur</string>
@@ -1222,7 +1222,7 @@
     <string name="export_cancelled">exportation annulée.</string>
     <string name="failed_to_save_csv_file">échec de l\'enregistrement du fichier CSV.</string>
     <string name="csv_file_saved_successfully">fichier CSV enregistré avec succès.</string>
-    <string name="share_with_team_enterprise">partager avec l\'équipe/l\'entreprise</string>
+    <string name="share_with_team_enterprise">Partager avec l\'équipe/l\'entreprise</string>
     <string name="teams">équipes</string>
     <string name="community">communauté</string>
     <string name="no_enterprise">entreprises non disponibles</string>

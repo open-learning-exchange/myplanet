@@ -1078,7 +1078,7 @@
     <string name="enterprise_list">list of enterprises</string>
     <string name="list_of_teams">list of teams</string>
     <string name="sign_up_to_chat">Please sign up to access AI chat</string>
-    <string name="share_chat">share chat</string>
+    <string name="share_chat">Share chat</string>
     <string name="shared_chat">shared chat</string>
     <string name="check_apk_version">checking app version</string>
     <string name="checking_server">checking server</string>
@@ -1222,7 +1222,7 @@
     <string name="export_cancelled">export cancelled.</string>
     <string name="failed_to_save_csv_file">failed to save CSV file.</string>
     <string name="csv_file_saved_successfully">CSV file saved successfully.</string>
-    <string name="share_with_team_enterprise">share with team/enterprise</string>
+    <string name="share_with_team_enterprise">Share with team/enterprise</string>
     <string name="teams">teams</string>
     <string name="community">community</string>
     <string name="no_enterprise">enteprises not available</string>

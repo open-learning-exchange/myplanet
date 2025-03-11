@@ -1078,7 +1078,7 @@
     <string name="enterprise_list">liiska ganacsiyada</string>
     <string name="list_of_teams">liiska kooxaha</string>
     <string name="sign_up_to_chat">Fadlan isdiiwaangeli si aad u hesho sheekada AI.</string>
-    <string name="share_chat">la wadaag sheekaysiga</string>
+    <string name="share_chat">La wadaag sheekaysiga</string>
     <string name="shared_chat">sheeko wadaag ah</string>
     <string name="check_apk_version">hubinta nooca app</string>
     <string name="checking_server">hubinta server-ka</string>
@@ -1222,7 +1222,7 @@
     <string name="export_cancelled">dhoofinta waa la joojiyay.</string>
     <string name="failed_to_save_csv_file">waa lagu guuldareystay in la badbaadiyo faylka CSV.</string>
     <string name="csv_file_saved_successfully">faylka CSV si guul leh ayaa loo keydiyay.</string>
-    <string name="share_with_team_enterprise">la wadaag kooxda/ganacsiga</string>
+    <string name="share_with_team_enterprise">La wadaag kooxda/ganacsiga</string>
     <string name="teams">kooxo</string>
     <string name="community">bulsho</string>
     <string name="no_enterprise">ganacsiyo lama heli karo</string>
