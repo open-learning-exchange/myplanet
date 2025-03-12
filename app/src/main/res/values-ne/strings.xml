@@ -91,7 +91,7 @@
     <string name="published_by">प्रकाशित गर्ने:</string>
     <string name="author">लेखक:</string>
     <string name="language_with_colon">भाषा:</string>
-    <string name="subject">विषयहरू:</string>
+    <string name="subject">विषय/विषयहरू:</string>
     <string name="license">लाइसेन्स:</string>
     <string name="type">प्रकार:</string>
     <string name="resource_colon">स्रोत:</string>
@@ -1249,5 +1249,18 @@
     <string name="member_of_planet">planet को सदस्य</string>
     <string name="edit_mission_and_services">मिशन र सेवाहरू सम्पादन गर्नुहोस्</string>
     <string name="this_team_has_no_description_defined">यस टिमको कुनै विवरण परिभाषित गरिएको छैन</string>
+    <string name="contact_preference">contact preference</string>
+    <string name="planet_is_up_to_date">ग्रह अपडेट गरिएको छ</string>
+    <string name="new_apk_version_required_but_not_found_on_server">नयाँ APK संस्करण आवश्यक छ, तर सर्भरमा फेला परेन। प्रशासकलाई सम्पर्क गर्नुहोस्।</string>
+    <string name="version_not_found">संस्करण फेला परेन।</string>
+    <string name="connection_failed">जडान असफल भयो!</string>
+    <string name="unable_to_create_user_user_already_exists">प्रयोगकर्ता सिर्जना गर्न सकिएन, प्रयोगकर्ता पहिले नै अवस्थित छ।</string>
+    <string name="unable_to_create_user">प्रयोगकर्ता सिर्जना गर्न सकिएन।</string>
+    <string name="not_connect_to_planet_created_user_offline">ग्रहसँग जडान भएको छैन, प्रयोगकर्ता अफलाइन सिर्जना गरियो।</string>
+    <string name="user_created_successfully">प्रयोगकर्ता सफलतापूर्वक सिर्जना गरियो।</string>
+    <string name="unable_to_save_user_please_sync">प्रयोगकर्ता बचत गर्न सकिएन, कृपया सिंक गर्नुहोस्।</string>
+    <string name="server_sync_successfully">सर्भर सफलतापूर्वक समिकरण गरियो।</string>
+    <string name="server_sync_has_failed">सर्भर समिकरण असफल भयो।</string>
+    <string name="no_resources_to_download">डाउनलोड गर्न कुनै स्रोत छैन</string>
 
 </resources>
