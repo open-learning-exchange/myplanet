@@ -641,7 +641,6 @@
     <string name="added_to_my_library">added to myLibrary</string>
     <string name="added_to_my_courses">added to myCourses</string>
     <string name="do_you_want_to_stay_online">Do you want to stay online?</string>
-    <string name="no_resources_to_download">No resources to download</string>
     <string name="planet_not_available">Planet not available</string>
     <string name="device_not_connected_to_planet">Device not connected to planet.</string>
     <string name="all_files_downloaded_successfully">All files downloaded successfully</string>
@@ -1262,5 +1261,6 @@
     <string name="unable_to_save_user_please_sync">Unable to save user, please sync.</string>
     <string name="server_sync_successfully">Server synced successfully.</string>
     <string name="server_sync_has_failed">Server synced has failed.</string>
+    <string name="no_resources_to_download">No resources to download</string>
 
 </resources>
