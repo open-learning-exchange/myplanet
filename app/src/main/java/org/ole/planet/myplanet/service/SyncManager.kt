@@ -41,6 +41,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.io.IOException
 import java.util.Date
 import kotlin.system.measureTimeMillis
+import androidx.core.content.edit
 
 class SyncManager private constructor(private val context: Context) {
     private var td: Thread? = null
@@ -104,15 +105,7 @@ class SyncManager private constructor(private val context: Context) {
 
     private fun startFullSync() {
         try {
-            val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-            val wifiInfo = wifiManager.connectionInfo
-            if (wifiInfo.supplicantState == SupplicantState.COMPLETED) {
-                settings.edit().putString("LastWifiSSID", wifiInfo.ssid).apply()
-            }
-            isSyncing = true
-            create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")
-            mRealm = dbService.realmInstance
-
+            initializeSync()
             runBlocking {
                 val syncJobs = listOf(
                     async { TransactionSyncManager.syncDb(mRealm, "tablet_users") },
@@ -185,7 +178,7 @@ class SyncManager private constructor(private val context: Context) {
         val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
         val wifiInfo = wifiManager.connectionInfo
         if (wifiInfo.supplicantState == SupplicantState.COMPLETED) {
-            settings.edit().putString("LastWifiSSID", wifiInfo.ssid).apply()
+            settings.edit { putString("LastWifiSSID", wifiInfo.ssid) }
         }
         isSyncing = true
         create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")
