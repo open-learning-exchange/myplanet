@@ -260,7 +260,6 @@ class ChatDetailFragment : Fragment() {
 
         if (providersMap.isEmpty()) return
 
-        // Get saved provider name
         val savedProvider = settings.getString("selectedAIProvider", null)
         var savedProviderButton: Button? = null
 
@@ -318,7 +317,6 @@ class ChatDetailFragment : Fragment() {
         aiName = providerName
         aiModel = modelName
 
-        // Save the selected AI provider and model
         val editor = settings.edit()
         editor.putString("selectedAIProvider", providerName)
         editor.putString("selectedAIModel", modelName)
