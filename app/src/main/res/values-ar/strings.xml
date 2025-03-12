@@ -91,7 +91,7 @@
     <string name="published_by">نشر بواسطة:</string>
     <string name="author">المؤلف:</string>
     <string name="language_with_colon">اللغة:</string>
-    <string name="subject">الموضوعات:</string>
+    <string name="subject">الموضوع/الموضوعات:</string>
     <string name="license">الترخيص:</string>
     <string name="type">النوع:</string>
     <string name="resource_colon">المصدر:</string>
@@ -1249,5 +1249,18 @@
     <string name="member_of_planet">عضو في planet</string>
     <string name="edit_mission_and_services">تعديل المهمة والخدمات</string>
     <string name="this_team_has_no_description_defined">هذا الفريق ليس لديه وصف محدد</string>
+    <string name="contact_preference">contact preference</string>
+    <string name="planet_is_up_to_date">الكوكب محدث</string>
+    <string name="new_apk_version_required_but_not_found_on_server">مطلوب إصدار جديد من APK ولكنه غير موجود على الخادم. اتصل بالمشرف.</string>
+    <string name="version_not_found">الإصدار غير موجود.</string>
+    <string name="connection_failed">فشل الاتصال!</string>
+    <string name="unable_to_create_user_user_already_exists">تعذّر إنشاء المستخدم، المستخدم موجود بالفعل.</string>
+    <string name="unable_to_create_user">تعذّر إنشاء المستخدم.</string>
+    <string name="not_connect_to_planet_created_user_offline">غير متصل بالكوكب، تم إنشاء المستخدم دون اتصال.</string>
+    <string name="user_created_successfully">تم إنشاء المستخدم بنجاح.</string>
+    <string name="unable_to_save_user_please_sync">تعذّر حفظ المستخدم، يرجى المزامنة.</string>
+    <string name="server_sync_successfully">تمت مزامنة الخادم بنجاح.</string>
+    <string name="server_sync_has_failed">فشلت مزامنة الخادم.</string>
+    <string name="no_resources_to_download">لا توجد موارد للتحميل</string>
 
 </resources>
