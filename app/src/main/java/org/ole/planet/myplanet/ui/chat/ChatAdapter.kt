@@ -104,7 +104,6 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
     fun addResponse(response: String) {
         chatList.add(response)
         lastAnimatedPosition = chatList.size - 1
-        println(lastAnimatedPosition)
         notifyItemInserted(chatList.size - 1)
         scrollToLastItem()
     }
