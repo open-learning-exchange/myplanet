@@ -1249,6 +1249,7 @@
     <string name="member_of_planet">member of planet</string>
     <string name="edit_mission_and_services">edit mission and services</string>
     <string name="this_team_has_no_description_defined">this team has no description defined</string>
+    <string name="contact_preference">contact preference</string>
     <string name="planet_is_up_to_date">Planet is up to date.</string>
     <string name="new_apk_version_required_but_not_found_on_server">New apk version required but not found on server. Contact admin.</string>
     <string name="version_not_found">Version not found.</string>
@@ -1260,5 +1261,6 @@
     <string name="unable_to_save_user_please_sync">Unable to save user, please sync.</string>
     <string name="server_sync_successfully">Server synced successfully.</string>
     <string name="server_sync_has_failed">Server synced has failed.</string>
+    <string name="no_resources_to_download">No resources to download</string>
 
 </resources>
