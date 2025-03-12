@@ -1,24 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="@color/card_bg"
+    android:maxHeight="400dp"
+    android:padding="10dp">
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
-        android:background="@color/card_bg"
-        android:padding="10dp">
+        android:layout_height="300dp"
+        android:fillViewport="true"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent">
 
-    <org.ole.planet.myplanet.utilities.CheckboxListView
+        <org.ole.planet.myplanet.utilities.CheckboxListView
             android:id="@+id/alertDialog_listView"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="100dp"
-            android:maxHeight="300dp"
-            android:layout_marginLeft="18dp"
-            android:layout_marginRight="18dp"
-            android:layout_marginBottom="10dp"
-            android:scrollbars="vertical"
-            android:fadeScrollbars="false"
-            android:overScrollMode="always"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            android:scrollbars="vertical"/>
+    </ScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>

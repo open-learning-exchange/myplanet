@@ -130,14 +130,6 @@ abstract class BaseResourceFragment : Fragment() {
                     createListView(dbMyLibrary, alertDialog)
                     alertDialog.show()
                     alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv?.selectedItemsList?.size ?: 0) > 0
-
-                    val displayMetrics = resources.displayMetrics
-                    val screenHeight = displayMetrics.heightPixels
-                    val dialogHeight = (screenHeight * 0.6).toInt()
-                    alertDialog.window?.setLayout(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        dialogHeight
-                    )
                 }
             }
 
