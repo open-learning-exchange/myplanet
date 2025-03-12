@@ -11,9 +11,11 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.content.ContextCompat
 import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
@@ -25,7 +27,9 @@ import io.realm.Realm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.mRealm
+import org.ole.planet.myplanet.MainApplication.Companion.setThemeMode
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
@@ -82,7 +86,6 @@ class SettingActivity : AppCompatActivity() {
         var user: RealmUserModel? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
         private lateinit var defaultPref: SharedPreferences
-        lateinit var settings: SharedPreferences
 
         override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
             val view = super.onCreateView(inflater, container, savedInstanceState)
@@ -97,7 +100,6 @@ class SettingActivity : AppCompatActivity() {
             user = profileDbHandler.userModel
             dialog = DialogUtils.getCustomProgressDialog(requireActivity())
             defaultPref = PreferenceManager.getDefaultSharedPreferences(requireActivity())
-            settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
 
             setBetaToggleOn()
             setAutoSyncToggleOn()
@@ -122,21 +124,12 @@ class SettingActivity : AppCompatActivity() {
 
             val autoDownload = findPreference<SwitchPreference>("beta_auto_download")
             autoDownload?.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
-                if (autoDownload.isChecked == true) {
+                if (autoDownload?.isChecked == true) {
                     defaultPref.edit().putBoolean("beta_auto_download", true).apply()
                     backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
                 } else {
                     defaultPref.edit().putBoolean("beta_auto_download", false).apply()
                 }
-                true
-            }
-
-            val fastSync = findPreference<SwitchPreference>("beta_fast_sync")
-            val isFastSync = settings.getBoolean("fastSync", false)
-            fastSync?.isChecked = isFastSync
-            fastSync?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
-                val isChecked = newValue as Boolean
-                settings.edit().putBoolean("fastSync", isChecked).apply()
                 true
             }
 
