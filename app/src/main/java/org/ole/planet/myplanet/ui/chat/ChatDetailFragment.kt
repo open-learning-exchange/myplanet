@@ -260,6 +260,10 @@ class ChatDetailFragment : Fragment() {
 
         if (providersMap.isEmpty()) return
 
+        // Get saved provider name
+        val savedProvider = settings.getString("selectedAIProvider", null)
+        var savedProviderButton: Button? = null
+
         providersMap.keys.forEachIndexed { index, providerName ->
             val modelName = modelsMap[providerName.lowercase()] ?: "default-model"
 
@@ -276,6 +280,10 @@ class ChatDetailFragment : Fragment() {
 
             aiTableRow.addView(button)
 
+            if (providerName == savedProvider) {
+                savedProviderButton = button
+            }
+
             if (index < providersMap.size - 1) {
                 val divider = View(currentContext).apply {
                     layoutParams = TableRow.LayoutParams(1, TableRow.LayoutParams.MATCH_PARENT).apply {
@@ -287,7 +295,7 @@ class ChatDetailFragment : Fragment() {
             }
         }
 
-        aiTableRow.getChildAt(0)?.performClick()
+        (savedProviderButton ?: aiTableRow.getChildAt(0) as? Button)?.performClick()
     }
 
     private fun selectAI(selectedButton: Button, providerName: String, modelName: String) {
@@ -309,6 +317,12 @@ class ChatDetailFragment : Fragment() {
 
         aiName = providerName
         aiModel = modelName
+
+        // Save the selected AI provider and model
+        val editor = settings.edit()
+        editor.putString("selectedAIProvider", providerName)
+        editor.putString("selectedAIModel", modelName)
+        editor.apply()
 
         clearChatDetail()
         fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
