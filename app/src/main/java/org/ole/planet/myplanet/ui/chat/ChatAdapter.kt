@@ -20,6 +20,8 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
     var responseSource: Int = RESPONSE_SOURCE_UNKNOWN
     private val viewTypeQuery = 1
     private val viewTypeResponse = 2
+    private val animatedMessages = HashMap<Int, Boolean>()
+    private var lastAnimatedPosition: Int = -1
 
     interface OnChatItemClickListener {
         fun onChatItemClick(position: Int, chatItem: String)
@@ -43,14 +45,19 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
     }
 
     class ResponseViewHolder(private val textAiMessageBinding: ItemAiResponseMessageBinding, private val copyToClipboard: (String) -> Unit, val context: Context) : RecyclerView.ViewHolder(textAiMessageBinding.root) {
-        fun bind(response: String, responseSource: Int) {
+        fun bind(response: String, responseSource: Int,  shouldAnimate: Boolean, markAnimated: () -> Unit) {
             if (responseSource == RESPONSE_SOURCE_NETWORK) {
-                val typingDelayMillis = 10L
-                val typingAnimationDurationMillis = response.length * typingDelayMillis
-                textAiMessageBinding.textGchatMessageOther.text = context.getString(R.string.empty_text)
-                Handler(Looper.getMainLooper()).postDelayed({
-                    animateTyping(response)
-                }, typingAnimationDurationMillis)
+                if (shouldAnimate) {
+                    val typingDelayMillis = 10L
+                    val typingAnimationDurationMillis = response.length * typingDelayMillis
+                    textAiMessageBinding.textGchatMessageOther.text = context.getString(R.string.empty_text)
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        animateTyping(response, markAnimated)
+                    }, typingAnimationDurationMillis)
+                } else{
+                    textAiMessageBinding.textGchatMessageOther.text = response
+                }
+
             } else if (responseSource == RESPONSE_SOURCE_SHARED_VIEW_MODEL) {
                 if (response.isNotEmpty()) {
                     textAiMessageBinding.textGchatMessageOther.text = response
@@ -64,7 +71,7 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
             }
         }
 
-        private fun animateTyping(response: String) {
+        private fun animateTyping(response: String, markAnimated: () -> Unit) {
             var currentIndex = 0
             val typingRunnable = object : Runnable {
                 override fun run() {
@@ -72,6 +79,8 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
                         textAiMessageBinding.textGchatMessageOther.text = response.substring(0, currentIndex + 1)
                         currentIndex++
                         Handler(Looper.getMainLooper()).postDelayed(this, 10L)
+                    } else{
+                        markAnimated()
                     }
                 }
             }
@@ -94,6 +103,8 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
 
     fun addResponse(response: String) {
         chatList.add(response)
+        lastAnimatedPosition = chatList.size - 1
+        println(lastAnimatedPosition)
         notifyItemInserted(chatList.size - 1)
         scrollToLastItem()
     }
@@ -138,7 +149,10 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
             }
             viewTypeResponse -> {
                 val responseViewHolder = holder as ResponseViewHolder
-                responseViewHolder.bind(chatItem, responseSource)
+                val shouldAnimate = (position == lastAnimatedPosition && !animatedMessages.containsKey(position))
+                responseViewHolder.bind(chatItem,responseSource, shouldAnimate) {
+                    animatedMessages[position] = true
+                }
             }
             else -> throw IllegalArgumentException("Invalid view type")
         }
