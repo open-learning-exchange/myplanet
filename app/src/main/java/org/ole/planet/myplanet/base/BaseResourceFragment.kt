@@ -215,14 +215,14 @@ abstract class BaseResourceFragment : Fragment() {
         if (isAdded) {
             Service(requireActivity()).isPlanetAvailable(object : PlanetAvailableListener {
                 override fun isAvailable() {
-                    if (urls.isNotEmpty()) {
+                    if (urls.isNotEmpty() && isAdded && activity != null && !requireActivity().isFinishing) {
                         prgDialog.show()
                         Utilities.openDownloadService(activity, urls, false)
                     }
                 }
 
                 override fun notAvailable() {
-                    if (isAdded) {
+                    if (isAdded && activity != null && !requireActivity().isFinishing) {
                         Utilities.toast(requireActivity(), getString(R.string.device_not_connected_to_planet))
                     }
                 }

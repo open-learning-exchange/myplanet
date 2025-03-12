@@ -459,63 +459,25 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         })
     }
 
-//    private fun checkAndCreateNewNotifications() {
-//        val userId = user?.id ?: return // Extract userId on the main thread
-//
-//        mRealm.executeTransactionAsync({ realm ->
-//            createNotifications(realm, userId) // Pass userId as a parameter
-//        }, {
-//            // Transaction succeeded
-//            updateNotificationBadge(getUnreadNotificationsSize(userId)) {
-//                openNotificationsList(userId)
-//            }
-//        }, { error ->
-//            // Transaction failed
-//            error.printStackTrace()
-//        })
-//    }
-
     private fun checkAndCreateNewNotifications() {
         val userId = user?.id ?: return // Extract userId on the main thread
 
         CoroutineScope(Dispatchers.IO).launch {
-            val backgroundRealm = Realm.getInstance(mRealm.configuration) // Create a new Realm instance for the background thread
-            try {
+            var unreadCount = 0
+            Realm.getInstance(mRealm.configuration).use { backgroundRealm ->
                 backgroundRealm.executeTransaction { realm ->
-                    createNotifications(realm, userId) // Pass userId as a parameter
+                    createNotifications(realm, userId)
                 }
+                unreadCount = getUnreadNotificationsSize(userId)
+            } // .use() will close the Realm automatically on the same thread
 
-                withContext(Dispatchers.Main) {
-                    updateNotificationBadge(getUnreadNotificationsSize(userId)) {
-                        openNotificationsList(userId)
-                    }
+            withContext(Dispatchers.Main) {
+                updateNotificationBadge(unreadCount) {
+                    openNotificationsList(userId)
                 }
-            } finally {
-                backgroundRealm.close() // Safely close the Realm instance
             }
         }
     }
-
-//    private fun checkAndCreateNewNotifications() {
-//        val userId = user?.id ?: return // Extract userId on the main thread
-//
-//        CoroutineScope(Dispatchers.IO).launch {
-//            val backgroundRealm = Realm.getInstance(mRealm.configuration) // Create a new Realm instance for the background thread
-//            try {
-//                backgroundRealm.executeTransaction { realm ->
-//                    createNotifications(realm, userId) // Pass userId as a parameter
-//                }
-//
-//                withContext(Dispatchers.Main) {
-//                    updateNotificationBadge(getUnreadNotificationsSize(userId)) {
-//                        openNotificationsList(userId)
-//                    }
-//                }
-//            } finally {
-//                backgroundRealm.close() // Safely close the Realm instance
-//            }
-//        }
-//    }
 
     private fun createNotifications(realm: Realm, userId: String) {
         updateResourceNotification(realm, userId)

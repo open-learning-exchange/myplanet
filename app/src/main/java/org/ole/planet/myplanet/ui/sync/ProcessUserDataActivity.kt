@@ -180,6 +180,8 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         } else if (source == "login") {
             UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
         } else {
+            Log.d("okuro", "startUpload: called, source: $source")
+            Log.d("okuro", "startUpload: isBackgroundSyncRunning: ${SyncState.isBackgroundSyncRunning}")
             if (SyncState.isBackgroundSyncRunning) {
                 Toast.makeText(this, "Please wait for sync to complete", Toast.LENGTH_SHORT).show()
                 return

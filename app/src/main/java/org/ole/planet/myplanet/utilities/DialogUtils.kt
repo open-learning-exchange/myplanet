@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.provider.Settings
+import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.View
@@ -79,8 +80,11 @@ object DialogUtils {
             var message = ""
             if (NetworkUtils.isBluetoothEnabled()) message += "Bluetooth"
             if (NetworkUtils.isWifiEnabled()) {
-                if (message.isNotEmpty()) message += " and "
-                    message += "Wi-Fi"
+                message += if (message.isNotEmpty()) {
+                    " and "
+                } else {
+                    "Wi-Fi"
+                }
             }
             if (message.isNotEmpty()) {
             message += context.getString(R.string.is_on_please_turn_of_to_save_battery)
