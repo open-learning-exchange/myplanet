@@ -1261,5 +1261,6 @@
     <string name="unable_to_save_user_please_sync">تعذّر حفظ المستخدم، يرجى المزامنة.</string>
     <string name="server_sync_successfully">تمت مزامنة الخادم بنجاح.</string>
     <string name="server_sync_has_failed">فشلت مزامنة الخادم.</string>
+    <string name="no_resources_to_download">لا توجد موارد للتحميل</string>
 
 </resources>

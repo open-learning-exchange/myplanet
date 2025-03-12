@@ -1261,5 +1261,6 @@
     <string name="unable_to_save_user_please_sync">Lama kaydin karo isticmaalaha, fadlan isku dheelli tir.</string>
     <string name="server_sync_successfully">Adeegaha si guul leh ayuu u hagaagay.</string>
     <string name="server_sync_has_failed">Isku-dubbaridka server-ka wuu fashilmay.</string>
+    <string name="no_resources_to_download">Ma jiro ilo la soo dejiyo</string>
 
 </resources>

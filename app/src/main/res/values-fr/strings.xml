@@ -1261,5 +1261,6 @@
     <string name="unable_to_save_user_please_sync">Impossible d\'enregistrer l\'utilisateur, veuillez synchroniser.</string>
     <string name="server_sync_successfully">Synchronisation du serveur réussie.</string>
     <string name="server_sync_has_failed">La synchronisation du serveur a échoué.</string>
+    <string name="no_resources_to_download">Aucune ressource à télécharger</string>
 
 </resources>

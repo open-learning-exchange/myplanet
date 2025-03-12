@@ -1261,5 +1261,6 @@
     <string name="unable_to_save_user_please_sync">प्रयोगकर्ता बचत गर्न सकिएन, कृपया सिंक गर्नुहोस्।</string>
     <string name="server_sync_successfully">सर्भर सफलतापूर्वक समिकरण गरियो।</string>
     <string name="server_sync_has_failed">सर्भर समिकरण असफल भयो।</string>
+    <string name="no_resources_to_download">डाउनलोड गर्न कुनै स्रोत छैन</string>
 
 </resources>
