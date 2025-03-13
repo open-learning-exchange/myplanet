@@ -48,10 +48,11 @@
                     android:id="@+id/full_search"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/hint_color"
                     android:layout_marginTop="20dp"
                     android:text="@string/full_conversation_response"
                     android:textSize="17sp"/>
+                    android:textColor="@color/hint_color"
+                    android:buttonTint="@color/hint_color"/>
 
                 <com.google.android.material.button.MaterialButtonToggleGroup
                     android:id="@+id/toggleGroup"

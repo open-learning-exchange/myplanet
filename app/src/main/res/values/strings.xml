@@ -91,7 +91,7 @@
     <string name="published_by">Published By:</string>
     <string name="author">Author:</string>
     <string name="language_with_colon">Language:</string>
-    <string name="subject">Subject/s :</string>
+    <string name="subject">Subject(s):</string>
     <string name="license">License:</string>
     <string name="type">Type:</string>
     <string name="resource_colon">Resource:</string>
@@ -1249,6 +1249,19 @@
     <string name="member_of_planet">member of planet</string>
     <string name="edit_mission_and_services">edit mission and services</string>
     <string name="this_team_has_no_description_defined">this team has no description defined</string>
+    <string name="contact_preference">contact preference</string>
+    <string name="planet_is_up_to_date">Planet is up to date.</string>
+    <string name="new_apk_version_required_but_not_found_on_server">New apk version required but not found on server. Contact admin.</string>
+    <string name="version_not_found">Version not found.</string>
+    <string name="connection_failed">Connection failed!</string>
+    <string name="unable_to_create_user_user_already_exists">Unable to create user, user already exists.</string>
+    <string name="unable_to_create_user">Unable to create user, user already exists.</string>
+    <string name="not_connect_to_planet_created_user_offline">Not connected to planet, created user offline.</string>
+    <string name="user_created_successfully">User created successfully.</string>
+    <string name="unable_to_save_user_please_sync">Unable to save user, please sync.</string>
+    <string name="server_sync_successfully">Server synced successfully.</string>
+    <string name="server_sync_has_failed">Server synced has failed.</string>
+    <string name="no_resources_to_download">No resources to download</string>
     <string name="response">Response</string>
     <string name="full_conversation_response">Full conversation response</string>
 
