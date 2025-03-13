@@ -22,6 +22,7 @@ open class RealmStepExam : RealmObject() {
     var createdBy: String? = null
     var totalMarks = 0
     var name: String? = null
+    var description: String? = null
     var type: String? = null
     var stepId: String? = null
     var courseId: String? = null
@@ -59,6 +60,7 @@ open class RealmStepExam : RealmObject() {
             checkIdsAndInsert(myCoursesID, stepId, myExam)
             myExam?.type = if (exam.has("type")) JsonUtils.getString("type", exam) else "exam"
             myExam?.name = JsonUtils.getString("name", exam)
+            myExam?.description = JsonUtils.getString("description", exam)
             myExam?.passingPercentage = JsonUtils.getString("passingPercentage", exam)
             myExam?._rev = JsonUtils.getString("_rev", exam)
             myExam?.createdBy = JsonUtils.getString("createdBy", exam)
