@@ -6,6 +6,7 @@
     android:background="@color/card_bg"
     android:maxHeight="400dp"
     android:padding="10dp">
+
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="300dp"
