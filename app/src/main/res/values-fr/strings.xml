@@ -88,13 +88,13 @@
     <string name="search_dots">Rechercher…</string>
     <string name="btn_remove_lib">Supprimer</string>
     <string name="download">Télécharger</string>
-    <string name="published_by">Publié par :</string>
-    <string name="author">Auteur :</string>
-    <string name="language_with_colon">Langue :</string>
-    <string name="subject">Sujet(s) :</string>
-    <string name="license">Licence :</string>
-    <string name="type">Type :</string>
-    <string name="resource_colon">Ressource :</string>
+    <string name="published_by">Publié par:</string>
+    <string name="author">Auteur:</string>
+    <string name="language_with_colon">Langue:</string>
+    <string name="subject">Sujet(s):</string>
+    <string name="license">Licence:</string>
+    <string name="type">Type:</string>
+    <string name="resource_colon">Ressource:</string>
     <string name="your_rating">Votre évaluation</string>
     <string name="your_comment">Laissez votre commentaire</string>
     <string name="show_top_nav">Afficher la barre de navigation supérieure dans le tableau de bord</string>
@@ -1250,5 +1250,18 @@
     <string name="member_of_planet">membre de planet</string>
     <string name="edit_mission_and_services">modifier la mission et les services</string>
     <string name="this_team_has_no_description_defined">cette équipe n\'a aucune description définie</string>
+    <string name="contact_preference">contact preference</string>
+    <string name="planet_is_up_to_date">La planète est à jour</string>
+    <string name="new_apk_version_required_but_not_found_on_server">Une nouvelle version de l\'APK est requise, mais elle n\'a pas été trouvée sur le serveur. Contactez l\'administrateur.</string>
+    <string name="version_not_found">Version non trouvée.</string>
+    <string name="connection_failed">Échec de la connexion !</string>
+    <string name="unable_to_create_user_user_already_exists">Impossible de créer l\'utilisateur, l\'utilisateur existe déjà.</string>
+    <string name="unable_to_create_user">Impossible de créer l\'utilisateur.</string>
+    <string name="not_connect_to_planet_created_user_offline">Non connecté à la planète, utilisateur créé hors ligne.</string>
+    <string name="user_created_successfully">Utilisateur créé avec succès.</string>
+    <string name="unable_to_save_user_please_sync">Impossible d\'enregistrer l\'utilisateur, veuillez synchroniser.</string>
+    <string name="server_sync_successfully">Synchronisation du serveur réussie.</string>
+    <string name="server_sync_has_failed">La synchronisation du serveur a échoué.</string>
+    <string name="no_resources_to_download">Aucune ressource à télécharger</string>
 
 </resources>

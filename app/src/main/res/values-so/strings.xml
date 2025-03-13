@@ -91,7 +91,7 @@
     <string name="published_by">Waxaa daabacay:</string>
     <string name="author">Qoraaga:</string>
     <string name="language_with_colon">Luuqad:</string>
-    <string name="subject">Mawduuc/s:</string>
+    <string name="subject">Mawduuc(s):</string>
     <string name="license">Shatiga:</string>
     <string name="type">Nooca:</string>
     <string name="resource_colon">Ilaha:</string>
@@ -1250,5 +1250,18 @@
     <string name="member_of_planet">xubin ka mid ah planet</string>
     <string name="edit_mission_and_services">wax ka beddel himilada iyo adeegyada</string>
     <string name="this_team_has_no_description_defined">kooxdani ma laha sharaxaad la cayimay</string>
+    <string name="contact_preference">contact preference</string>
+    <string name="planet_is_up_to_date">Meeraha waa la cusbooneysiiyay.</string>
+    <string name="new_apk_version_required_but_not_found_on_server">Nooca cusub ee APK waa loo baahan yahay, laakiin lama helin server-ka. La xidhiidh maamulka.</string>
+    <string name="version_not_found">Nooca lama helin.</string>
+    <string name="connection_failed">Xiriirku wuu fashilmay!</string>
+    <string name="unable_to_create_user_user_already_exists">Lama abuurin isticmaale, isticmaale horey ayuu u jiray.</string>
+    <string name="unable_to_create_user">Lama abuuri karo isticmaale.</string>
+    <string name="not_connect_to_planet_created_user_offline">Lama xirin meeraha, isticmaalaha ayaa la abuuray offline.</string>
+    <string name="user_created_successfully">Isticmaale si guul leh ayaa loo abuuray.</string>
+    <string name="unable_to_save_user_please_sync">Lama kaydin karo isticmaalaha, fadlan isku dheelli tir.</string>
+    <string name="server_sync_successfully">Adeegaha si guul leh ayuu u hagaagay.</string>
+    <string name="server_sync_has_failed">Isku-dubbaridka server-ka wuu fashilmay.</string>
+    <string name="no_resources_to_download">Ma jiro ilo la soo dejiyo</string>
 
 </resources>
