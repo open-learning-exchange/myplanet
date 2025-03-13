@@ -1262,5 +1262,28 @@
     <string name="server_sync_successfully">Sincronización del servidor exitosa.</string>
     <string name="server_sync_has_failed">La sincronización del servidor ha fallado.</string>
     <string name="no_resources_to_download">No hay recursos para descargar</string>
+    <string name="remind_later">Recordar más tarde</string>
+    <string name="remind_me_later">Recuérdame más tarde</string>
+    <string name="remind_me_in">Recuérdame en:</string>
+    <string name="minutes">Minutos</string>
+    <string name="days">Días</string>
+    <string name="set_reminder">Establecer recordatorio</string>
+    <string name="reminder_set_for">Recordatorio establecido para %1$s a partir de ahora</string>
+    <string name="reminder_surveys_to_complete">Recordatorio: Tienes %1$d %2$s por completar</string>
+
+    <plurals name="minutes">
+        <item quantity="one">%d minuto</item>
+        <item quantity="other">%d minutos</item>
+    </plurals>
+
+    <plurals name="hours">
+        <item quantity="one">%d hora</item>
+        <item quantity="other">%d horas</item>
+    </plurals>
+
+    <plurals name="days">
+        <item quantity="one">%d día</item>
+        <item quantity="other">%d días</item>
+    </plurals>
 
 </resources>

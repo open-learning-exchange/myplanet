@@ -1262,5 +1262,28 @@
     <string name="server_sync_successfully">Adeegaha si guul leh ayuu u hagaagay.</string>
     <string name="server_sync_has_failed">Isku-dubbaridka server-ka wuu fashilmay.</string>
     <string name="no_resources_to_download">Ma jiro ilo la soo dejiyo</string>
+    <string name="remind_later">पछि सम्झाउनुहोस्</string>
+    <string name="remind_me_later">मलाई पछि सम्झाउनुहोस्</string>
+    <string name="remind_me_in">मलाई यसमा सम्झाउनुहोस्:</string>
+    <string name="minutes">मिनेटहरू</string>
+    <string name="days">दिनहरू</string>
+    <string name="set_reminder">रिमाइन्डर सेट गर्नुहोस्</string>
+    <string name="reminder_set_for">अहिलेबाट %1$s को लागि रिमाइन्डर सेट गरियो</string>
+    <string name="reminder_surveys_to_complete">रिमाइन्डर: तपाईंसँग %1$d %2$s पूरा गर्न बाँकी छ</string>
+
+    <plurals name="minutes">
+        <item quantity="one">%d मिनेट</item>
+        <item quantity="other">%d मिनेटहरू</item>
+    </plurals>
+
+    <plurals name="hours">
+        <item quantity="one">%d घण्टा</item>
+        <item quantity="other">%d घण्टाहरू</item>
+    </plurals>
+
+    <plurals name="days">
+        <item quantity="one">%d दिन</item>
+        <item quantity="other">%d दिनहरू</item>
+    </plurals>
 
 </resources>

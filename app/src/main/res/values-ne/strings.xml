@@ -1262,5 +1262,28 @@
     <string name="server_sync_successfully">सर्भर सफलतापूर्वक समिकरण गरियो।</string>
     <string name="server_sync_has_failed">सर्भर समिकरण असफल भयो।</string>
     <string name="no_resources_to_download">डाउनलोड गर्न कुनै स्रोत छैन</string>
+    <string name="remind_later">Xasuusi hadhow</string>
+    <string name="remind_me_later">Xasuusi hadhow</string>
+    <string name="remind_me_in">Ixasuusi gudaha:</string>
+    <string name="minutes">Daqiiqado</string>
+    <string name="days">Maalmaha</string>
+    <string name="set_reminder">Deji xasuusin</string>
+    <string name="reminder_set_for">Xasuusin ayaa loo dejiyay %1$s laga bilaabo hadda</string>
+    <string name="reminder_surveys_to_complete">Xasuusin: Waxaad haysataa %1$d %2$s oo la buuxinayo</string>
+
+    <plurals name="minutes">
+        <item quantity="one">%d daqiiqad</item>
+        <item quantity="other">%d daqiiqado</item>
+    </plurals>
+
+    <plurals name="hours">
+        <item quantity="one">%d saac</item>
+        <item quantity="other">%d saacadood</item>
+    </plurals>
+
+    <plurals name="days">
+        <item quantity="one">%d maalin</item>
+        <item quantity="other">%d maalmood</item>
+    </plurals>
 
 </resources>

@@ -1262,5 +1262,40 @@
     <string name="server_sync_successfully">تمت مزامنة الخادم بنجاح.</string>
     <string name="server_sync_has_failed">فشلت مزامنة الخادم.</string>
     <string name="no_resources_to_download">لا توجد موارد للتحميل</string>
+    <string name="remind_later">تذكير لاحقاً</string>
+    <string name="remind_me_later">ذكرني لاحقاً</string>
+    <string name="remind_me_in">ذكرني في:</string>
+    <string name="minutes">دقائق</string>
+    <string name="days">أيام</string>
+    <string name="set_reminder">تعيين تذكير</string>
+    <string name="reminder_set_for">تم تعيين التذكير بعد %1$s من الآن</string>
+    <string name="reminder_surveys_to_complete">تذكير: لديك %1$d %2$s للإكمال</string>
+
+    <plurals name="minutes">
+        <item quantity="zero">%d دقيقة</item>
+        <item quantity="one">دقيقة واحدة</item>
+        <item quantity="two">دقيقتان</item>
+        <item quantity="few">%d دقائق</item>
+        <item quantity="many">%d دقيقة</item>
+        <item quantity="other">%d دقيقة</item>
+    </plurals>
+
+    <plurals name="hours">
+        <item quantity="zero">%d ساعة</item>
+        <item quantity="one">ساعة واحدة</item>
+        <item quantity="two">ساعتان</item>
+        <item quantity="few">%d ساعات</item>
+        <item quantity="many">%d ساعة</item>
+        <item quantity="other">%d ساعة</item>
+    </plurals>
+
+    <plurals name="days">
+        <item quantity="zero">%d يوم</item>
+        <item quantity="one">يوم واحد</item>
+        <item quantity="two">يومان</item>
+        <item quantity="few">%d أيام</item>
+        <item quantity="many">%d يوماً</item>
+        <item quantity="other">%d يوم</item>
+    </plurals>
 
 </resources>
