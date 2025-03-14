@@ -53,7 +53,6 @@
                     android:textSize="17sp"/>
                     android:textColor="@color/hint_color"
                     android:buttonTint="@color/hint_color"/>
-
                 <com.google.android.material.button.MaterialButtonToggleGroup
                     android:id="@+id/toggleGroup"
                     android:layout_width="wrap_content"
@@ -80,7 +79,6 @@
                         app:strokeColor="@color/hint_color"
                         style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
                 </com.google.android.material.button.MaterialButtonToggleGroup>
-
             </LinearLayout>
 
             <EditText
