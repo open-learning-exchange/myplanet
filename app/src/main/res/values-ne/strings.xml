@@ -1263,5 +1263,7 @@
     <string name="server_sync_successfully">सर्भर सफलतापूर्वक समिकरण गरियो।</string>
     <string name="server_sync_has_failed">सर्भर समिकरण असफल भयो।</string>
     <string name="no_resources_to_download">डाउनलोड गर्न कुनै स्रोत छैन</string>
+    <string name="response">उत्तर</string>
+    <string name="full_conversation_response">पूर्ण वार्तालाप उत्तर</string>
 
 </resources>

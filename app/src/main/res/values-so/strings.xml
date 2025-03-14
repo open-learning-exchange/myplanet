@@ -1263,5 +1263,7 @@
     <string name="server_sync_successfully">Adeegaha si guul leh ayuu u hagaagay.</string>
     <string name="server_sync_has_failed">Isku-dubbaridka server-ka wuu fashilmay.</string>
     <string name="no_resources_to_download">Ma jiro ilo la soo dejiyo</string>
+    <string name="response">Jawaab</string>
+    <string name="full_conversation_response">Jawaabta wada hadalka oo dhameystiran</string>
 
 </resources>
