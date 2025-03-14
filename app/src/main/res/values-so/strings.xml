@@ -1111,7 +1111,7 @@
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
-    <string name="download_sync_files">soo dejiso faylalka is-waafajinta</string>
+    <string name="download_sync_files">Soo dejiso faylalka is-waafajinta</string>
     <string name="member_description">%1$s (%2$d booqasho)</string>
     <string name="last_visit">Booqashadii ugu dambeysay: %1$s</string>
     <string name="no_visit">Booqasho la\'aan</string>
@@ -1233,7 +1233,7 @@
     <string name="fetching_ai_providers">Helitaanka bixiyeyaasha AI…</string>
     <string name="adopt_survey">Sahaminta qaado</string>
     <string name="survey_adopted_successfully">Sahanka si guul ah ayaa la qaatay!</string>
-    <string name="beta_fast_sync">beta sinkron degdeg ah</string>
+    <string name="beta_fast_sync">Beta sinkron degdeg ah</string>
     <string name="user_verification_in_progress">Hubinta isticmaalaha ayaa socota. Fadlan sug inta aan xogta ka shaqeynayno.</string>
     <string name="go_to_mylibrary">Tag Maktabaddayda</string>
     <string name="choose_an_option">Dooro ikhtiyaar</string>
