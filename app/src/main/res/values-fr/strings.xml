@@ -1111,7 +1111,7 @@
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
-    <string name="download_sync_files">télécharger les fichiers de synchronisation</string>
+    <string name="download_sync_files">Télécharger les fichiers de synchronisation</string>
     <string name="member_description">%1$s (%2$d visites)</string>
     <string name="last_visit">Dernière visite: %1$s</string>
     <string name="no_visit">Pas de visite</string>
@@ -1233,7 +1233,7 @@
     <string name="fetching_ai_providers">Récupération des fournisseurs d\'IA…</string>
     <string name="adopt_survey">Adopter le sondage</string>
     <string name="survey_adopted_successfully">Enquête adoptée avec succès !</string>
-    <string name="beta_fast_sync">synchronisation rapide bêta</string>
+    <string name="beta_fast_sync">Synchronisation rapide bêta</string>
     <string name="user_verification_in_progress">Vérification de l\'utilisateur en cours. Veuillez patienter pendant que nous traitons les données.</string>
     <string name="go_to_mylibrary">Aller à Ma Bibliothèque</string>
     <string name="choose_an_option">Choisissez une option</string>

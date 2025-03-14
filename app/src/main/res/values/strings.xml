@@ -406,10 +406,10 @@
     <string name="tasks">Tasks</string>
     <string name="join_requests">Join Requests</string>
     <string name="add_image">Add Image</string>
-    <string name="addImageToMessage">beta add image to message</string>
+    <string name="addImageToMessage">Beta add image to message</string>
     <string name="clear_data">clear data</string>
-    <string name="reset_app">reset app</string>
-    <string name="freeup_space">free-up disk space</string>
+    <string name="reset_app">Reset app</string>
+    <string name="freeup_space">Free-up disk space</string>
     <string name="action_disclaimer">disclaimer</string>
     <string name="action_about">about</string>
     <string name="engilsh_dictionary">English Dictionary</string>
@@ -887,7 +887,7 @@
     <string name="are_you_sure_want_to_delete_all_the_files">Are you sure want to delete all the files?</string>
     <string name="unable_to_clear_files">Unable to clear files</string>
     <string name="last_synced_never">never synced</string>
-    <string name="last_synced_colon">last synced: </string>
+    <string name="last_synced_colon">Last synced: </string>
 
     <string name="disclaimer">
     <![CDATA[
@@ -974,17 +974,17 @@
     <string name="upgrade_local">Upgrade(Local)</string>
     <string name="upgrade">Upgrade</string>
     <string name="apk_already_exists">Apk already exists</string>
-    <string name="auto_sync">auto sync</string>
-    <string name="force_weekly_sync">force weekly sync</string>
-    <string name="force_monthly_sync">force monthly sync</string>
-    <string name="beta_function_for_wifi_switch">beta function for wifi switch</string>
-    <string name="upgrade_application">upgrade application</string>
-    <string name="auto_upgrade">auto upgrade</string>
+    <string name="auto_sync">Auto sync</string>
+    <string name="force_weekly_sync">Force weekly sync</string>
+    <string name="force_monthly_sync">Force monthly sync</string>
+    <string name="beta_function_for_wifi_switch">Beta function for wifi switch</string>
+    <string name="upgrade_application">Upgrade application</string>
+    <string name="auto_upgrade">Auto upgrade</string>
     <string name="always_move_to_maximum_version">Always move to maximum version</string>
-    <string name="all_beta_functions">all beta functions</string>
-    <string name="auto_sync_device">auto sync device</string>
-    <string name="beta_functionality">beta functionality</string>
-    <string name="main_controls">main controls</string>
+    <string name="all_beta_functions">All beta functions</string>
+    <string name="auto_sync_device">Auto sync device</string>
+    <string name="beta_functionality">Beta functionality</string>
+    <string name="main_controls">Main controls</string>
     <string name="select_user_to_login">Select User To Login</string>
     <string name="dismiss">Dismiss</string>
     <string name="gps_is_settings">GPS is settings</string>
@@ -1111,11 +1111,11 @@
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
-    <string name="download_sync_files">download sync files</string>
+    <string name="download_sync_files">Download sync files</string>
     <string name="member_description">%1$s (%2$d visits)</string>
     <string name="last_visit">Last visit: %1$s</string>
     <string name="no_visit">No visit</string>
-    <string name="dark_mode">dark mode</string>
+    <string name="dark_mode">Dark mode</string>
     <string name="dark_mode_off">off</string>
     <string name="dark_mode_on">on</string>
     <string name="dark_mode_follow_system">follow system</string>
@@ -1233,7 +1233,7 @@
     <string name="fetching_ai_providers">Fetching AI providers…</string>
     <string name="adopt_survey">Adopt survey</string>
     <string name="survey_adopted_successfully">Survey adopted successfully!</string>
-    <string name="beta_fast_sync">beta fast sync</string>
+    <string name="beta_fast_sync">Beta fast sync</string>
     <string name="user_verification_in_progress">User verification in progress. Please wait while we process the data.</string>
     <string name="go_to_mylibrary">Go To MyLibrary</string>
     <string name="choose_an_option">Choose an option</string>
