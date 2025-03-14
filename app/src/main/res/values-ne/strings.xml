@@ -435,8 +435,8 @@
     </string-array>
 
     <string-array name="sort_by_date">
-        <item>मितिमा आदान - आरोही</item>
         <item>मितिमा आदान - अवरोही</item>
+        <item>मितिमा आदान - आरोही</item>
         <item>शीर्षकमा आदान</item>
     </string-array>
 

@@ -435,8 +435,8 @@
     </string-array>
 
     <string-array name="sort_by_date">
-        <item>Ordre par date - Asc</item>
         <item>Ordre par date - Desc</item>
+        <item>Ordre par date - Asc</item>
         <item>Ordre par titre</item>
     </string-array>
 
