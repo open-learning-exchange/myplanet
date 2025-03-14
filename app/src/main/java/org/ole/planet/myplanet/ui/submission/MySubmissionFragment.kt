@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,6 +15,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmQuery
+import io.realm.Sort
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -23,6 +25,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import java.util.Locale
 
 class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     private lateinit var fragmentMySubmissionBinding: FragmentMySubmissionBinding
@@ -99,9 +102,19 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
                 .contains("name", s, Case.INSENSITIVE).findAll()
             q?.`in`("parentId", getIds(ex))
         }
+        /*
         if (q != null) {
             submissions = q.findAll().mapNotNull { it as? RealmSubmission }
         }
+        */
+        //test
+        if (q != null) {
+            submissions = (q.findAll()).mapNotNull { it as? RealmSubmission }
+                //.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.user ?: "" })
+                //.filter { it.id?.startsWith(s, ignoreCase = true) == true }
+                .sortedBy { it.id?.lowercase(Locale.ROOT) ?: "" }
+        }
+        //test done
 
         val adapter = AdapterMySubmission(requireActivity(), submissions, exams)
         val itemCount = adapter.itemCount
