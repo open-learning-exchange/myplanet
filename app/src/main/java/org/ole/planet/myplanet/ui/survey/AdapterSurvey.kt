@@ -112,6 +112,7 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
 
         fun bind(exam: RealmStepExam) {
             binding.apply {
+                startSurvey.visibility = View.VISIBLE
                 tvTitle.text = exam.name
                 if (exam.description?.isNotEmpty() == true) {
                     tvDescription.visibility = View.VISIBLE
