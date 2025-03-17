@@ -437,13 +437,13 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             onLogin()
             saveUsers(activityLoginBinding.inputName.text.toString(), activityLoginBinding.inputPassword.text.toString(), "member")
         } else {
-            ManagerSync.instance?.login(name, password, object : SyncListener {
-                override fun onSyncStarted() {
-                    customProgressDialog?.setText(getString(R.string.please_wait))
-                    customProgressDialog?.show()
-                }
-                override fun onSyncComplete() {
-                    customProgressDialog?.dismiss()
+//            ManagerSync.instance?.login(name, password, object : SyncListener {
+//                override fun onSyncStarted() {
+//                    customProgressDialog?.setText(getString(R.string.please_wait))
+//                    customProgressDialog?.show()
+//                }
+//                override fun onSyncComplete() {
+//                    customProgressDialog?.dismiss()
                     val log = authenticateUser(settings, name, password, true)
                     if (log) {
                         Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
@@ -454,14 +454,14 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                     }
                     syncIconDrawable.stop()
                     syncIconDrawable.selectDrawable(0)
-                }
-                override fun onSyncFailed(msg: String?) {
-                    toast(MainApplication.context, msg)
-                    customProgressDialog?.dismiss()
-                    syncIconDrawable.stop()
-                    syncIconDrawable.selectDrawable(0)
-                }
-            })
+//                }
+//                override fun onSyncFailed(msg: String?) {
+//                    toast(MainApplication.context, msg)
+//                    customProgressDialog?.dismiss()
+//                    syncIconDrawable.stop()
+//                    syncIconDrawable.selectDrawable(0)
+//                }
+//            })
         }
         editor.apply()
     }

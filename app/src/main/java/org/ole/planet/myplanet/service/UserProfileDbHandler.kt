@@ -2,8 +2,11 @@ package org.ole.planet.myplanet.service
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.annotation.MainThread
 import io.realm.Realm
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -35,42 +38,62 @@ class UserProfileDbHandler(context: Context) {
         }
     }
 
-    val userModel: RealmUserModel? get() {
-        if (mRealm.isClosed) {
-            mRealm = realmService.realmInstance
-        }
-        return mRealm.where(RealmUserModel::class.java)
+    private fun getUserModel(realm: Realm): RealmUserModel? {
+        return realm.where(RealmUserModel::class.java)
             .equalTo("id", settings.getString("userId", ""))
             .findFirst()
     }
 
-    fun onLogin() {
-        if (mRealm.isClosed) {
-            mRealm = realmService.realmInstance
+//    val userModel: RealmUserModel? get() {
+//        if (mRealm.isClosed) {
+//            mRealm = realmService.realmInstance
+//        }
+//        return mRealm.where(RealmUserModel::class.java)
+//            .equalTo("id", settings.getString("userId", ""))
+//            .findFirst()
+//    }
+
+    val userModel: RealmUserModel?
+        @MainThread
+        get() {
+            if (mRealm.isClosed) {
+                mRealm = realmService.realmInstance
+            }
+            return mRealm.where(RealmUserModel::class.java)
+                .equalTo("id", settings.getString("userId", ""))
+                .findFirst()
         }
 
-        if (!mRealm.isInTransaction) {
-            mRealm.beginTransaction()
-        } else {
+    // Background thread access
+    suspend fun getUserModelBackground(): RealmUserModel? {
+        return withContext(Dispatchers.IO) {
+            val backgroundRealm = realmService.realmInstance
             try {
-                mRealm.commitTransaction()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                mRealm.cancelTransaction()
+                backgroundRealm.where(RealmUserModel::class.java)
+                    .equalTo("id", settings.getString("userId", ""))
+                    .findFirst()
+            } finally {
+                backgroundRealm.close()
             }
-            mRealm.beginTransaction()
         }
-        try {
-            val offlineActivities = mRealm.copyToRealm(createUser())
-            offlineActivities.type = KEY_LOGIN
-            offlineActivities._rev = null
-            offlineActivities._id = null
-            offlineActivities.description = "Member login on offline application"
-            offlineActivities.loginTime = Date().time
-            mRealm.commitTransaction()
-        } catch (e: Exception) {
-            mRealm.cancelTransaction()
-            throw e
+    }
+
+    fun onLogin() {
+        CoroutineScope(Dispatchers.IO).launch {
+            // Create a new Realm instance for the background thread
+            val backgroundRealm = realmService.realmInstance
+
+            backgroundRealm.executeTransaction { realm ->
+                val offlineActivities = realm.copyToRealm(createUser(realm)) // Pass the correct Realm instance
+                offlineActivities.type = KEY_LOGIN
+                offlineActivities._rev = null
+                offlineActivities._id = null
+                offlineActivities.description = "Member login on offline application"
+                offlineActivities.loginTime = Date().time
+            }
+
+            // Close the Realm instance when done
+            backgroundRealm.close()
         }
     }
 
@@ -94,8 +117,8 @@ class UserProfileDbHandler(context: Context) {
         }
     }
 
-    private fun createUser(): RealmOfflineActivity {
-        val offlineActivities = mRealm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
+    private fun createUser(realm: Realm): RealmOfflineActivity {
+        val offlineActivities = realm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
         val model = userModel
         offlineActivities.userId = model?.id
         offlineActivities.userName = model?.name

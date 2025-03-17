@@ -79,12 +79,12 @@ class ManagerSync private constructor(context: Context) {
     }
 
     private fun checkManagerAndInsert(jsonDoc: JsonObject?, realm: Realm, listener: SyncListener) {
-        if (isManager(jsonDoc)) {
+//        if (isManager(jsonDoc)) {
             populateUsersTable(jsonDoc, realm, settings)
             listener.onSyncComplete()
-        } else {
-            listener.onSyncFailed(MainApplication.context.getString(R.string.user_verification_in_progress))
-        }
+//        } else {
+//            listener.onSyncFailed(MainApplication.context.getString(R.string.user_verification_in_progress))
+//        }
     }
 
     private fun isManager(jsonDoc: JsonObject?): Boolean {

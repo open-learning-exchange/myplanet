@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
+import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -220,6 +221,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         anrWatchdog = ANRWatchdog(timeout = 5000L, listener = object : ANRWatchdog.ANRListener {
             override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
                 applicationScope.launch {
+                    Log.d("okuro", "ANR detected! Duration: ${duration}ms\n $message")
                     createLog("anr", "ANR detected! Duration: ${duration}ms\n $message")
                 }
             }

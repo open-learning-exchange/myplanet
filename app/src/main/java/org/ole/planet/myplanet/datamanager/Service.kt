@@ -272,10 +272,11 @@ class Service(private val context: Context) {
             try {
                 val res = retrofitInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/" + id)?.execute()
                 if (res?.body() != null) {
-                    val model = populateUsersTable(res.body(), realm1, settings)
-                    if (model != null) {
-                        UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
-                    }
+                    populateUsersTable(res.body(), realm1, settings)
+//                    val model = populateUsersTable(res.body(), realm1, settings)
+//                    if (model != null) {
+//                        UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
+//                    }
                 }
             } catch (e: IOException) {
                 e.printStackTrace()

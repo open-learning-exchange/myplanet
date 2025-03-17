@@ -31,18 +31,25 @@ import com.mikepenz.materialdrawer.model.PrimaryDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.IDrawerItem
 import com.mikepenz.materialdrawer.model.interfaces.Nameable
 import io.realm.Case
+import io.realm.Realm
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmResults
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -454,26 +461,70 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun checkAndCreateNewNotifications() {
-        if (mRealm.isInTransaction) {
-            createNotifications()
-        } else {
-            mRealm.executeTransaction {
-                createNotifications()
-            }
-        }
+        CoroutineScope(Dispatchers.IO).launch {
+            // Create a new Realm instance for the background thread
+            val realmService = DatabaseService(context)
+            val backgroundRealm = realmService.realmInstance
 
-        updateNotificationBadge(getUnreadNotificationsSize()) {
-            openNotificationsList(user?.id ?: "")
+            if (backgroundRealm.isInTransaction) {
+                createNotifications(backgroundRealm)
+            } else {
+                backgroundRealm.executeTransaction { realm ->
+                    createNotifications(backgroundRealm)
+                }
+            }
+
+            // Close the Realm instance when done
+            backgroundRealm.close()
+
+            // Update UI on the main thread
+            withContext(Dispatchers.Main) {
+                updateNotificationBadge(getUnreadNotificationsSize()) {
+                    openNotificationsList(user?.id ?: "")
+                }
+            }
         }
     }
 
-    private fun createNotifications() {
-        updateResourceNotification()
+//    private fun checkAndCreateNewNotifications() {
+//        CoroutineScope(Dispatchers.IO).launch {
+//            if (mRealm.isInTransaction) {
+//                createNotifications()
+//            } else {
+//                mRealm.executeTransaction { realm ->
+//                    createNotifications()
+//                }
+//            }
+//
+//            withContext(Dispatchers.Main) {
+//                updateNotificationBadge(getUnreadNotificationsSize()) {
+//                    openNotificationsList(user?.id ?: "")
+//                }
+//            }
+//        }
+//    }
+
+//    private fun checkAndCreateNewNotifications() {
+//        if (mRealm.isInTransaction) {
+//            createNotifications()
+//        } else {
+//            mRealm.executeTransaction {
+//                createNotifications()
+//            }
+//        }
+//
+//        updateNotificationBadge(getUnreadNotificationsSize()) {
+//            openNotificationsList(user?.id ?: "")
+//        }
+//    }
+
+    private fun createNotifications(backgroundRealm: Realm) {
+        updateResourceNotification(backgroundRealm)
 
         val pendingSurveys = getPendingSurveys(user?.id)
         val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys)
         surveyTitles.forEach { title ->
-            createNotificationIfNotExists("survey", "$title", title)
+            createNotificationIfNotExists("survey", title, title)
         }
 
         val tasks = mRealm.where(RealmTeamTask::class.java)
@@ -489,10 +540,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         createNotificationIfNotExists("storage", "$storageRatio" , "storage")
     }
 
-    private fun updateResourceNotification() {
-        val resourceCount = BaseResourceFragment.getLibraryList(mRealm, user?.id).size
+    private fun updateResourceNotification(backgroundRealm: Realm) {
+        val resourceCount = BaseResourceFragment.getLibraryList(backgroundRealm, user?.id).size
         if (resourceCount > 0) {
-            val existingNotification = mRealm.where(RealmNotification::class.java)
+            val existingNotification = backgroundRealm.where(RealmNotification::class.java)
                 .equalTo("userId", user?.id)
                 .equalTo("type", "resource")
                 .findFirst()
@@ -504,7 +555,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 createNotificationIfNotExists("resource", "$resourceCount", "$resourceCount")
             }
         } else {
-            mRealm.where(RealmNotification::class.java)
+            backgroundRealm.where(RealmNotification::class.java)
                 .equalTo("userId", user?.id)
                 .equalTo("type", "resource")
                 .findFirst()?.deleteFromRealm()

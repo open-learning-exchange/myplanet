@@ -349,11 +349,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         return true
                     }
                 } else {
-                    if (androidDecrypter(username, password, it.derived_key, it.salt)) {
-                        if (isManagerMode && !it.isManager()) return false
+//                    if (androidDecrypter(username, password, it.derived_key, it.salt)) {
+//                        if (isManagerMode && !it.isManager()) return false
                         saveUserInfoPref(settings, password, it)
                         return true
-                    }
+//                    }
                 }
             }
         } catch (err: Exception) {
