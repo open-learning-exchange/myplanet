@@ -1238,6 +1238,7 @@
     <string name="go_to_mylibrary">Ir a Mi Biblioteca</string>
     <string name="choose_an_option">Elige una opción</string>
     <string name="welcome_back">Bienvenido de nuevo %1$s</string>
+    <string name="welcome">Bienvenido %1$s</string>
     <string name="edit_plan">Editar plan</string>
     <string name="show_additional_fields">mostrar campos adicionales</string>
     <string name="hide_additional_fields">ocultar campos adicionales</string>
@@ -1262,6 +1263,8 @@
     <string name="server_sync_successfully">Sincronización del servidor exitosa.</string>
     <string name="server_sync_has_failed">La sincronización del servidor ha fallado.</string>
     <string name="no_resources_to_download">No hay recursos para descargar</string>
+    <string name="response">Respuesta</string>
+    <string name="full_conversation_response">Respuesta completa de la conversación</string>
     <string name="remind_later">Recordar más tarde</string>
     <string name="remind_me_later">Recuérdame más tarde</string>
     <string name="remind_me_in">Recuérdame en:</string>

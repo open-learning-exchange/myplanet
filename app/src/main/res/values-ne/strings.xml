@@ -1238,6 +1238,7 @@
     <string name="go_to_mylibrary">मेरो पुस्तकालयमा जानुहोस्</string>
     <string name="choose_an_option">एउटा विकल्प छान्नुहोस्</string>
     <string name="welcome_back">स्वागतम् %1$s</string>
+    <string name="welcome">स्वागतम् %1$s</string>
     <string name="edit_plan">योजना सम्पादन गर्नुहोस्</string>
     <string name="show_additional_fields">थप क्षेत्रहरू देखाउनुहोस्</string>
     <string name="hide_additional_fields">थप क्षेत्रहरू लुकाउनुहोस्</string>
@@ -1262,6 +1263,8 @@
     <string name="server_sync_successfully">सर्भर सफलतापूर्वक समिकरण गरियो।</string>
     <string name="server_sync_has_failed">सर्भर समिकरण असफल भयो।</string>
     <string name="no_resources_to_download">डाउनलोड गर्न कुनै स्रोत छैन</string>
+    <string name="response">उत्तर</string>
+    <string name="full_conversation_response">पूर्ण वार्तालाप उत्तर</string>
     <string name="remind_later">Xasuusi hadhow</string>
     <string name="remind_me_later">Xasuusi hadhow</string>
     <string name="remind_me_in">Ixasuusi gudaha:</string>
