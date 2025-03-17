@@ -44,33 +44,24 @@ class UserProfileDbHandler(context: Context) {
             .findFirst()
     }
 
-    fun onLogin() {
-        if (mRealm.isClosed) {
-            mRealm = realmService.realmInstance
-        }
-
-        if (!mRealm.isInTransaction) {
-            mRealm.beginTransaction()
-        } else {
+    suspend fun onLogin() {
+        withContext(Dispatchers.IO) {
+            // Create a new Realm instance in this background thread
+            val realm = realmService.realmInstance
             try {
-                mRealm.commitTransaction()
+                realm.executeTransaction { r ->
+                    val offlineActivities = r.copyToRealm(createUser(r))
+                    offlineActivities.type = KEY_LOGIN
+                    offlineActivities._rev = null
+                    offlineActivities._id = null
+                    offlineActivities.description = "Member login on offline application"
+                    offlineActivities.loginTime = Date().time
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
-                mRealm.cancelTransaction()
+            } finally {
+                realm.close()
             }
-            mRealm.beginTransaction()
-        }
-        try {
-            val offlineActivities = mRealm.copyToRealm(createUser())
-            offlineActivities.type = KEY_LOGIN
-            offlineActivities._rev = null
-            offlineActivities._id = null
-            offlineActivities.description = "Member login on offline application"
-            offlineActivities.loginTime = Date().time
-            mRealm.commitTransaction()
-        } catch (e: Exception) {
-            mRealm.cancelTransaction()
-            throw e
         }
     }
 
@@ -94,9 +85,13 @@ class UserProfileDbHandler(context: Context) {
         }
     }
 
-    private fun createUser(): RealmOfflineActivity {
-        val offlineActivities = mRealm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
-        val model = userModel
+    private fun createUser(realm: Realm): RealmOfflineActivity {
+        val offlineActivities = realm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
+        // Get user model from the passed realm instance
+        val model = realm.where(RealmUserModel::class.java)
+            .equalTo("id", settings.getString("userId", ""))
+            .findFirst()
+
         offlineActivities.userId = model?.id
         offlineActivities.userName = model?.name
         offlineActivities.parentCode = model?.parentCode

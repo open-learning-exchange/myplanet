@@ -169,7 +169,7 @@ open class RealmUserModel : RealmObject() {
 
     fun isManager(): Boolean {
         val roles = getRoles()
-        val isManager = roles.toString().lowercase(Locale.ROOT).contains("manager") || userAdmin ?: false
+        val isManager = roles.toString().lowercase(Locale.ROOT).contains("manager") || userAdmin == true
         return isManager
     }
 

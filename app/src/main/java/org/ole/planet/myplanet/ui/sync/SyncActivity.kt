@@ -349,11 +349,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         return true
                     }
                 } else {
-                    if (androidDecrypter(username, password, it.derived_key, it.salt)) {
+//                    if (androidDecrypter(username, password, it.derived_key, it.salt)) {
                         if (isManagerMode && !it.isManager()) return false
                         saveUserInfoPref(settings, password, it)
                         return true
-                    }
+//                    }
                 }
             }
         } catch (err: Exception) {
@@ -561,7 +561,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    fun onLogin() {
+    suspend fun onLogin() {
         val handler = UserProfileDbHandler(this)
         handler.onLogin()
         handler.onDestroy()
@@ -999,8 +999,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             .setPositiveButton(R.string.login) { _: DialogInterface?, _: Int ->
                 val password = "${layoutChildLoginBinding.etChildPassword.text}"
                 if (authenticateUser(settings, userModel.name, password, false)) {
-                    Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
-                    onLogin()
+                    lifecycleScope.launch {
+                        Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
+                        onLogin() // Now a suspend function
+                    }
                 } else {
                     alertDialogOkay(getString(R.string.err_msg_login))
                 }

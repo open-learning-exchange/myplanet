@@ -10,6 +10,7 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.*
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
@@ -84,6 +85,7 @@ import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.Date
 import java.util.UUID
+import java.util.concurrent.Executors
 import kotlin.math.ceil
 
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
@@ -453,19 +455,47 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         })
     }
 
+    // Replace the existing checkAndCreateNewNotifications method with this:
     private fun checkAndCreateNewNotifications() {
-        if (mRealm.isInTransaction) {
-            createNotifications()
-        } else {
-            mRealm.executeTransaction {
-                createNotifications()
+        // Move the database work to a background thread
+        val executor = Executors.newSingleThreadExecutor()
+        executor.execute {
+            try {
+                // Do the Realm work in a background thread
+                if (!mRealm.isClosed) {
+                    mRealm.executeTransaction { realm ->
+                        createNotifications()
+                    }
+
+                    // Get the count in the background thread
+                    val unreadCount = getUnreadNotificationsSize()
+
+                    // Update UI on main thread
+                    Handler(Looper.getMainLooper()).post {
+                        updateNotificationBadge(unreadCount) {
+                            openNotificationsList(user?.id ?: "")
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("DashboardActivity", "Error updating notifications", e)
             }
         }
-
-        updateNotificationBadge(getUnreadNotificationsSize()) {
-            openNotificationsList(user?.id ?: "")
-        }
     }
+
+//    private fun checkAndCreateNewNotifications() {
+//        if (mRealm.isInTransaction) {
+//            createNotifications()
+//        } else {
+//            mRealm.executeTransaction {
+//                createNotifications()
+//            }
+//        }
+//
+//        updateNotificationBadge(getUnreadNotificationsSize()) {
+//            openNotificationsList(user?.id ?: "")
+//        }
+//    }
 
     private fun createNotifications() {
         updateResourceNotification()
