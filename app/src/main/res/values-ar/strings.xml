@@ -1238,6 +1238,7 @@
     <string name="go_to_mylibrary">انتقل إلى مكتبتي</string>
     <string name="choose_an_option">اختر خيارًا</string>
     <string name="welcome_back">مرحبًا بعودتك %1$s</string>
+    <string name="welcome">%1$s بعودتك</string>
     <string name="edit_plan">تعديل الخطة</string>
     <string name="show_additional_fields">عرض الحقول الإضافية</string>
     <string name="hide_additional_fields">إخفاء الحقول الإضافية</string>
@@ -1249,6 +1250,7 @@
     <string name="member_of_planet">عضو في planet</string>
     <string name="edit_mission_and_services">تعديل المهمة والخدمات</string>
     <string name="this_team_has_no_description_defined">هذا الفريق ليس لديه وصف محدد</string>
+    <string name="contact_preference">contact preference</string>
     <string name="planet_is_up_to_date">الكوكب محدث</string>
     <string name="new_apk_version_required_but_not_found_on_server">مطلوب إصدار جديد من APK ولكنه غير موجود على الخادم. اتصل بالمشرف.</string>
     <string name="version_not_found">الإصدار غير موجود.</string>
@@ -1260,5 +1262,8 @@
     <string name="unable_to_save_user_please_sync">تعذّر حفظ المستخدم، يرجى المزامنة.</string>
     <string name="server_sync_successfully">تمت مزامنة الخادم بنجاح.</string>
     <string name="server_sync_has_failed">فشلت مزامنة الخادم.</string>
+    <string name="no_resources_to_download">لا توجد موارد للتحميل</string>
+    <string name="response">استجابة</string>
+    <string name="full_conversation_response">استجابة المحادثة الكاملة</string>
 
 </resources>
