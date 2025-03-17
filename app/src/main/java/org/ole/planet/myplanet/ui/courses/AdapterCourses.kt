@@ -51,6 +51,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     private var isTitleAscending = false
     private var areAllSelected = false
     var userModel: RealmUserModel?= null
+    private var numMyCourse: Int = 0
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -132,6 +133,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
             val course = courseList[position]
             if (course != null) {
                 if (course.isMyCourse) {
+                    numMyCourse++
                     holder.rowCourseBinding.isMyCourse.visibility = View.VISIBLE
                     holder.rowCourseBinding.checkbox.visibility = View.GONE
                 } else {
@@ -223,7 +225,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     }
 
     fun areAllSelected(): Boolean {
-        areAllSelected = selectedItems.size == courseList.size
+        areAllSelected = selectedItems.size == courseList.size - numMyCourse
         return areAllSelected
     }
 
