@@ -286,6 +286,8 @@ class ChatDetailFragment : Fragment() {
                 aiTableRow.addView(divider)
             }
         }
+
+        aiTableRow.getChildAt(0)?.performClick()
     }
 
     private fun selectAI(selectedButton: Button, providerName: String, modelName: String) {
