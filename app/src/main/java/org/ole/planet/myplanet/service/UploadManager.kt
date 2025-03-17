@@ -7,6 +7,10 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmResults
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType
 import okhttp3.RequestBody
 import org.ole.planet.myplanet.MainApplication
@@ -384,29 +388,73 @@ class UploadManager(var context: Context) : FileUploadService() {
 
     fun uploadUserActivities(listener: SuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
-        mRealm = dbService.realmInstance
-        val model = UserProfileDbHandler(MainApplication.context).userModel ?: return
-        if (model.isManager()) {
-            return
-        }
-        mRealm.executeTransactionAsync({ realm: Realm ->
-            val activities = realm.where(RealmOfflineActivity::class.java).isNull("_rev").equalTo("type", "login").findAll()
-            for (act in activities) {
-                try {
-                    if (act.userId?.startsWith("guest") == true) {
-                        continue
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val realm = Realm.getDefaultInstance() // ✅ Open a new Realm instance in this thread
+            try {
+                realm.executeTransaction { r ->
+                    val activities = r.where(RealmOfflineActivity::class.java)
+                        .isNull("_rev")
+                        .equalTo("type", "login")
+                        .findAll()
+
+                    for (act in activities) {
+                        try {
+                            if (act.userId?.startsWith("guest") == true) continue
+
+                            val `object` = apiInterface?.postDoc(
+                                Utilities.header,
+                                "application/json",
+                                Utilities.getUrl() + "/login_activities",
+                                serializeLoginActivities(act, context)
+                            )?.execute()?.body()
+
+                            act.changeRev(`object`)
+                        } catch (e: IOException) {
+                            e.printStackTrace()
+                        }
                     }
-                    val `object` = apiInterface?.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/login_activities", serializeLoginActivities(act, context))?.execute()?.body()
-                    act.changeRev(`object`)
-                } catch (e: IOException) {
-                    e.printStackTrace()
+
+                    uploadTeamActivities(r, apiInterface)
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                realm.close() // ✅ Close the Realm instance after use
             }
-            uploadTeamActivities(realm, apiInterface) },
-            { listener.onSuccess("Sync with server completed successfully") }) { e: Throwable ->
-            listener.onSuccess(e.message)
+
+            withContext(Dispatchers.Main) {
+                listener.onSuccess("Sync with server completed successfully")
+            }
         }
     }
+
+//    fun uploadUserActivities(listener: SuccessListener) {
+//        val apiInterface = client?.create(ApiInterface::class.java)
+//        mRealm = dbService.realmInstance
+//        val model = UserProfileDbHandler(MainApplication.context).userModel ?: return
+//        if (model.isManager()) {
+//            return
+//        }
+//
+//        mRealm.executeTransactionAsync({ realm: Realm ->
+//            val activities = realm.where(RealmOfflineActivity::class.java).isNull("_rev").equalTo("type", "login").findAll()
+//            for (act in activities) {
+//                try {
+//                    if (act.userId?.startsWith("guest") == true) {
+//                        continue
+//                    }
+//                    val `object` = apiInterface?.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/login_activities", serializeLoginActivities(act, context))?.execute()?.body()
+//                    act.changeRev(`object`)
+//                } catch (e: IOException) {
+//                    e.printStackTrace()
+//                }
+//            }
+//            uploadTeamActivities(realm, apiInterface) },
+//            { listener.onSuccess("Sync with server completed successfully") }) { e: Throwable ->
+//            listener.onSuccess(e.message)
+//        }
+//    }
 
     private fun uploadTeamActivities(realm: Realm, apiInterface: ApiInterface?) {
         val logs = realm.where(RealmTeamLog::class.java).isNull("_rev").findAll()

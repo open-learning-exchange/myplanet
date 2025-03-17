@@ -443,44 +443,23 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             putString("loginUserPassword", password)
             val isLoggedIn = authenticateUser(settings, name, password, false)
             if (isLoggedIn) {
-//                Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
-//                onLogin()
                 lifecycleScope.launch {
-                    onLogin() // Now a suspend function
+                    Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
+                    onLogin()
                     saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
                 }
-                saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
             } else {
-//            ManagerSync.instance?.login(name, password, object : SyncListener {
-//                override fun onSyncStarted() {
-//                    customProgressDialog?.setText(getString(R.string.please_wait))
-//                    customProgressDialog?.show()
-//                }
-//                override fun onSyncComplete() {
-//                    customProgressDialog?.dismiss()
-                val log = authenticateUser(settings, name, password, true)
+                val log = authenticateUser(settings, name, password, false)
                 if (log) {
                     lifecycleScope.launch {
-                        onLogin() // Now a suspend function
+                        Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
+                        onLogin()
                         saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
                     }
-//                    Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
-//                    onLogin()
-                    saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
                 } else {
                     Log.d("LoginActivity1", "called 1")
                     alertDialogOkay(getString(R.string.err_msg_login))
                 }
-                syncIconDrawable.stop()
-                syncIconDrawable.selectDrawable(0)
-//                }
-//                override fun onSyncFailed(msg: String?) {
-//                    toast(MainApplication.context, msg)
-//                    customProgressDialog?.dismiss()
-//                    syncIconDrawable.stop()
-//                    syncIconDrawable.selectDrawable(0)
-//                }
-//            })
             }
         }
     }

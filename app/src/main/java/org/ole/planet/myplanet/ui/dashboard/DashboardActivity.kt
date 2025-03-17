@@ -10,7 +10,6 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.*
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
@@ -455,47 +454,19 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         })
     }
 
-    // Replace the existing checkAndCreateNewNotifications method with this:
     private fun checkAndCreateNewNotifications() {
-        // Move the database work to a background thread
-        val executor = Executors.newSingleThreadExecutor()
-        executor.execute {
-            try {
-                // Do the Realm work in a background thread
-                if (!mRealm.isClosed) {
-                    mRealm.executeTransaction { realm ->
-                        createNotifications()
-                    }
-
-                    // Get the count in the background thread
-                    val unreadCount = getUnreadNotificationsSize()
-
-                    // Update UI on main thread
-                    Handler(Looper.getMainLooper()).post {
-                        updateNotificationBadge(unreadCount) {
-                            openNotificationsList(user?.id ?: "")
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e("DashboardActivity", "Error updating notifications", e)
+        if (mRealm.isInTransaction) {
+            createNotifications()
+        } else {
+            mRealm.executeTransaction {
+                createNotifications()
             }
         }
-    }
 
-//    private fun checkAndCreateNewNotifications() {
-//        if (mRealm.isInTransaction) {
-//            createNotifications()
-//        } else {
-//            mRealm.executeTransaction {
-//                createNotifications()
-//            }
-//        }
-//
-//        updateNotificationBadge(getUnreadNotificationsSize()) {
-//            openNotificationsList(user?.id ?: "")
-//        }
-//    }
+        updateNotificationBadge(getUnreadNotificationsSize()) {
+            openNotificationsList(user?.id ?: "")
+        }
+    }
 
     private fun createNotifications() {
         updateResourceNotification()

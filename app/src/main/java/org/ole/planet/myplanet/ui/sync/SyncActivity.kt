@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -61,6 +62,8 @@ import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
 import java.io.File
 import java.util.*
 import java.util.concurrent.TimeUnit
+import androidx.core.net.toUri
+import kotlinx.coroutines.async
 
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
     OnUserSelectedListener, ConfigurationIdListener {
@@ -562,36 +565,232 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     suspend fun onLogin() {
+        val startTime = System.currentTimeMillis() // Start time tracking
+
         val handler = UserProfileDbHandler(this)
+
+        val startDbHandler = System.currentTimeMillis()
         handler.onLogin()
         handler.onDestroy()
-        editor.putBoolean(Constants.KEY_LOGIN, true).commit()
-        openDashboard()
+        val dbHandlerTime = System.currentTimeMillis() - startDbHandler
+        Log.d("Performance", "DB Handler execution time: ${dbHandlerTime}ms")
 
-        isNetworkConnectedFlow.onEach { isConnected ->
-            if (isConnected) {
-                val serverUrl = settings.getString("serverURL", "")
-                if (!serverUrl.isNullOrEmpty()) {
-                    MainApplication.applicationScope.launch(Dispatchers.IO) {
-                        val canReachServer = MainApplication.Companion.isServerReachable(serverUrl)
-                        if (canReachServer) {
-                            withContext(Dispatchers.Main) {
-                                startUpload("login")
-                            }
-                            withContext(Dispatchers.Default) {
-                                val backgroundRealm = Realm.getDefaultInstance()
-                                try {
-                                    TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
-                                } finally {
-                                    backgroundRealm.close()
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }.launchIn(MainApplication.applicationScope)
+        val startEditor = System.currentTimeMillis()
+        editor.putBoolean(Constants.KEY_LOGIN, true).commit()
+        val editorTime = System.currentTimeMillis() - startEditor
+        Log.d("Performance", "SharedPreferences commit time: ${editorTime}ms")
+
+        val startDashboard = System.currentTimeMillis()
+        openDashboard() // ✅ Now, this will run immediately!
+        val dashboardTime = System.currentTimeMillis() - startDashboard
+        Log.d("Performance", "openDashboard execution time: ${dashboardTime}ms")
+
+        // ✅ Run the server check & data upload in a background coroutine
+//        CoroutineScope(Dispatchers.IO).launch {
+//            val updateUrl = "${settings.getString("serverURL", "")}"
+//            val serverUrlMapper = ServerUrlMapper(this@SyncActivity)
+//            val mapping = serverUrlMapper.processUrl(updateUrl)
+//
+//            val primaryAvailable = MainApplication.Companion.isServerReachable(mapping.primaryUrl)
+//            val alternativeAvailable = mapping.alternativeUrl?.let {
+//                MainApplication.Companion.isServerReachable(it)
+//            } == true
+//
+//            if (!primaryAvailable && alternativeAvailable) {
+//                mapping.alternativeUrl.let { alternativeUrl ->
+//                    val uri = updateUrl.toUri()
+//                    val editor = settings.edit()
+//                    serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
+//                }
+//            }
+//
+//            val serverReachTime = System.currentTimeMillis() - startTime
+//            Log.d("Performance", "Server reachability check time: ${serverReachTime}ms")
+//
+//            // ✅ Run upload & DB sync asynchronously, without blocking UI
+//            val uploadJob = async {
+//                val uploadStart = System.currentTimeMillis()
+//                startUpload("login")
+//                val uploadTime = System.currentTimeMillis() - uploadStart
+//                Log.d("Performance", "Data upload execution time: ${uploadTime}ms")
+//            }
+//
+//            val syncJob = async {
+//                val syncStart = System.currentTimeMillis()
+//                val backgroundRealm = Realm.getDefaultInstance()
+//                try {
+//                    TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
+//                } finally {
+//                    backgroundRealm.close()
+//                }
+//                val syncTime = System.currentTimeMillis() - syncStart
+//                Log.d("Performance", "DB Sync execution time: ${syncTime}ms")
+//            }
+//
+//            // ✅ Wait for both upload and sync to finish in parallel
+//            uploadJob.await()
+//            syncJob.await()
+//        }
+//
+//        val totalExecutionTime = System.currentTimeMillis() - startTime
+//        Log.d("Performance", "Total execution time before openDashboard: ${totalExecutionTime}ms")
     }
+
+    //with old server check
+//    suspend fun onLogin() {
+//        val startTime = System.currentTimeMillis()
+//
+//        val handler = UserProfileDbHandler(this)
+//
+//        val startDbHandler = System.currentTimeMillis()
+//        handler.onLogin()
+//        handler.onDestroy()
+//        val dbHandlerTime = System.currentTimeMillis() - startDbHandler
+//        Log.d("Performance", "DB Handler execution time: ${dbHandlerTime}ms")
+//
+//        val startEditor = System.currentTimeMillis()
+//        editor.putBoolean(Constants.KEY_LOGIN, true).commit()
+//        val editorTime = System.currentTimeMillis() - startEditor
+//        Log.d("Performance", "SharedPreferences commit time: ${editorTime}ms")
+//
+//        val startDashboard = System.currentTimeMillis()
+//        openDashboard()  // 🚀 OPEN DASHBOARD IMMEDIATELY!
+//        val dashboardTime = System.currentTimeMillis() - startDashboard
+//        Log.d("Performance", "openDashboard execution time: ${dashboardTime}ms")
+//
+//        // 🚀 RUN NETWORK TASKS IN BACKGROUND
+//        MainApplication.applicationScope.launch(Dispatchers.IO) {
+//            isNetworkConnectedFlow.collectLatest { isConnected ->
+//                if (isConnected) {
+//                    val serverUrl = settings.getString("serverURL", "")
+//                    if (!serverUrl.isNullOrEmpty()) {
+//                        val serverReachStart = System.currentTimeMillis()
+//                        val canReachServer = MainApplication.Companion.isServerReachable(serverUrl)
+//                        val serverReachTime = System.currentTimeMillis() - serverReachStart
+//                        Log.d("Performance", "Server reachability check time: ${serverReachTime}ms")
+//
+//                        if (canReachServer) {
+//                            val uploadStart = System.currentTimeMillis()
+//                            startUpload("login")  // 🚀 RUNS IN BACKGROUND
+//                            val uploadTime = System.currentTimeMillis() - uploadStart
+//                            Log.d("Performance", "Data upload execution time: ${uploadTime}ms")
+//
+//                            val syncStart = System.currentTimeMillis()
+//                            val backgroundRealm = Realm.getDefaultInstance()
+//                            try {
+//                                TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
+//                            } finally {
+//                                backgroundRealm.close()
+//                            }
+//                            val syncTime = System.currentTimeMillis() - syncStart
+//                            Log.d("Performance", "DB Sync execution time: ${syncTime}ms")
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//
+//        val totalExecutionTime = System.currentTimeMillis() - startTime
+//        Log.d("Performance", "Total execution time before openDashboard: ${totalExecutionTime}ms")
+//    }
+
+    //slow server check
+//    suspend fun onLogin() {
+//        val startTime = System.currentTimeMillis() // Start time tracking
+//
+//        val handler = UserProfileDbHandler(this)
+//
+//        val startDbHandler = System.currentTimeMillis()
+//        handler.onLogin()
+//        handler.onDestroy()
+//        val dbHandlerTime = System.currentTimeMillis() - startDbHandler
+//        Log.d("Performance", "DB Handler execution time: ${dbHandlerTime}ms")
+//
+//        val startEditor = System.currentTimeMillis()
+//        editor.putBoolean(Constants.KEY_LOGIN, true).commit()
+//        val editorTime = System.currentTimeMillis() - startEditor
+//        Log.d("Performance", "SharedPreferences commit time: ${editorTime}ms")
+//
+//        val startDashboard = System.currentTimeMillis()
+//        openDashboard()
+//        val dashboardTime = System.currentTimeMillis() - startDashboard
+//        Log.d("Performance", "openDashboard execution time: ${dashboardTime}ms")
+//
+//        val updateUrl = "${settings.getString("serverURL", "")}"
+//        val serverUrlMapper = ServerUrlMapper(this)
+//        val mapping = serverUrlMapper.processUrl(updateUrl)
+//
+//        CoroutineScope(Dispatchers.IO).launch {
+//            val primaryAvailable = MainApplication.Companion.isServerReachable(mapping.primaryUrl)
+//            val alternativeAvailable = mapping.alternativeUrl?.let {
+//                MainApplication.Companion.isServerReachable(it)
+//            } == true
+//
+//            if (!primaryAvailable && alternativeAvailable) {
+//                mapping.alternativeUrl.let { alternativeUrl ->
+//                    val uri = updateUrl.toUri()
+//                    val editor = settings.edit()
+//
+//                    serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
+//                }
+//            }
+//
+//            withContext(Dispatchers.Main) {
+//                val serverReachTime = System.currentTimeMillis() - startTime
+//                Log.d("Performance", "Server reachability check time: ${serverReachTime}ms")
+//
+//                val uploadStart = System.currentTimeMillis()
+//                startUpload("login")
+//                val uploadTime = System.currentTimeMillis() - uploadStart
+//                Log.d("Performance", "Data upload execution time: ${uploadTime}ms")
+//
+//                val syncStart = System.currentTimeMillis()
+//                val backgroundRealm = Realm.getDefaultInstance()
+//                try {
+//                    TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
+//                } finally {
+//                    backgroundRealm.close()
+//                }
+//                val syncTime = System.currentTimeMillis() - syncStart
+//                Log.d("Performance", "DB Sync execution time: ${syncTime}ms")
+//            }
+//        }
+//
+//        val totalExecutionTime = System.currentTimeMillis() - startTime
+//        Log.d("Performance", "Total execution time before openDashboard: ${totalExecutionTime}ms")
+//    }
+
+//    suspend fun onLogin() {
+//        val handler = UserProfileDbHandler(this)
+//        handler.onLogin()
+//        handler.onDestroy()
+//        editor.putBoolean(Constants.KEY_LOGIN, true).commit()
+//        openDashboard()
+//
+//        isNetworkConnectedFlow.onEach { isConnected ->
+//            if (isConnected) {
+//                val serverUrl = settings.getString("serverURL", "")
+//                if (!serverUrl.isNullOrEmpty()) {
+//                    MainApplication.applicationScope.launch(Dispatchers.IO) {
+//                        val canReachServer = MainApplication.Companion.isServerReachable(serverUrl)
+//                        if (canReachServer) {
+//                            withContext(Dispatchers.Main) {
+//                                startUpload("login")
+//                            }
+//                            withContext(Dispatchers.Default) {
+//                                val backgroundRealm = Realm.getDefaultInstance()
+//                                try {
+//                                    TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
+//                                } finally {
+//                                    backgroundRealm.close()
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }.launchIn(MainApplication.applicationScope)
+//    }
 
     fun settingDialog() {
         val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
