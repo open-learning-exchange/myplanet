@@ -1263,5 +1263,7 @@
     <string name="server_sync_successfully">تمت مزامنة الخادم بنجاح.</string>
     <string name="server_sync_has_failed">فشلت مزامنة الخادم.</string>
     <string name="no_resources_to_download">لا توجد موارد للتحميل</string>
+    <string name="response">استجابة</string>
+    <string name="full_conversation_response">استجابة المحادثة الكاملة</string>
 
 </resources>

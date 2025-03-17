@@ -1263,5 +1263,7 @@
     <string name="server_sync_successfully">Server synced successfully.</string>
     <string name="server_sync_has_failed">Server synced has failed.</string>
     <string name="no_resources_to_download">No resources to download</string>
+    <string name="response">Response</string>
+    <string name="full_conversation_response">Full conversation response</string>
 
 </resources>

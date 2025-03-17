@@ -1263,5 +1263,7 @@
     <string name="server_sync_successfully">Sincronización del servidor exitosa.</string>
     <string name="server_sync_has_failed">La sincronización del servidor ha fallado.</string>
     <string name="no_resources_to_download">No hay recursos para descargar</string>
+    <string name="response">Respuesta</string>
+    <string name="full_conversation_response">Respuesta completa de la conversación</string>
 
 </resources>
