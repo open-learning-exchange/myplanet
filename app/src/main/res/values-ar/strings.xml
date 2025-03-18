@@ -190,7 +190,7 @@
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">عرض الرد على:</string>
     <string name="open_date">تاريخ الافتتاح</string>
-    <string name="my_survey">استطلاعي</string>
+    <string name="my_survey">mySurveys</string>
     <string name="cannot_remove_user">لم يتمكن من إزالة المستخدم</string>
     <string name="no_members_task">لا يوجد أعضاء فريق لتكليف المهام</string>
     <string name="no_member_selected">لم يتم اختيار أي عضو. يرجى المحاولة مرة أخرى</string>
@@ -435,8 +435,8 @@
     </string-array>
 
     <string-array name="sort_by_date">
-        <item>ترتيب حسب التاريخ - تصاعديًا</item>
         <item>ترتيب حسب التاريخ - تنازليًا</item>
+        <item>ترتيب حسب التاريخ - تصاعديًا</item>
         <item>ترتيب حسب العنوان</item>
     </string-array>
 
