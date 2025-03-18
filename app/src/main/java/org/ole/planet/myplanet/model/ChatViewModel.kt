@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -9,8 +10,11 @@ class ChatViewModel : ViewModel() {
     private val selectedChatHistoryLiveData = MutableLiveData<RealmList<Conversation>>()
     private val selectedId = MutableLiveData<String>()
     private val selectedRev = MutableLiveData<String>()
+    private val selectedAiProvider = MutableLiveData<String>()
+
 
     fun setSelectedChatHistory(conversations: RealmList<Conversation>) {
+        Log.d("ChatViewModel", "Setting selected chat history: ${conversations.size} items")
         selectedChatHistoryLiveData.value = conversations
     }
 
@@ -23,6 +27,7 @@ class ChatViewModel : ViewModel() {
     }
 
     fun setSelectedRev(rev: String) {
+        Log.d("ChatViewModel", "setSelectedRev: $rev")
         selectedRev.value = rev
     }
 
@@ -33,5 +38,14 @@ class ChatViewModel : ViewModel() {
     fun getSelectedRev(): LiveData<String> {
         return selectedRev
     }
+
+    fun setSelectedAiProvider(aiProvider: String) {
+        selectedAiProvider.value = aiProvider
+    }
+
+    fun getSelectedAiProvider(): LiveData<String> {
+        return selectedAiProvider
+    }
+
 }
 

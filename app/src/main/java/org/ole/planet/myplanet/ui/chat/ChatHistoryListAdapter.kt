@@ -34,6 +34,7 @@ import org.osmdroid.views.overlay.gridlines.LatLonGridlineOverlay.backgroundColo
 import java.text.Normalizer
 import java.util.Date
 import java.util.Locale
+import kotlin.text.get
 
 class ChatHistoryListAdapter(var context: Context, private var chatHistory: List<RealmChatHistory>, private val fragment: ChatHistoryListFragment) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
@@ -53,7 +54,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     }
 
     interface ChatHistoryItemClickListener {
-        fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?)
+        fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?, aiProvider: String?)
     }
 
     fun setChatHistoryItemClickListener(listener: ChatHistoryItemClickListener) {
@@ -179,7 +180,8 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
             chatHistoryItemClickListener?.onChatHistoryItemClicked(
                 filteredChatHistory[position].conversations,
                 "${filteredChatHistory[position]._id}",
-                filteredChatHistory[position]._rev
+                filteredChatHistory[position]._rev,
+                filteredChatHistory[position].aiProvider
             )
         }
 

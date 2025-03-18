@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -140,6 +141,7 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        Log.d("ChatAdapter", "Binding item at position $position")
         val chatItem = chatList[position]
         when (holder.itemViewType) {
             viewTypeQuery -> {
