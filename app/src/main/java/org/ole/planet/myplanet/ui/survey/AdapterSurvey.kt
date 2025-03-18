@@ -63,15 +63,11 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
     }
 
     private fun SortSurveyListByName(isAscend: Boolean){
-        val list = examList.toList()
-        Collections.sort(list) { survey1, survey2 ->
-            if (isAscend) {
-                survey1?.name!!.compareTo(survey2?.name!!)
-            } else {
-                survey2?.name!!.compareTo(survey1?.name!!)
-            }
+        examList = if (isAscend) {
+            examList.sortedBy { it.name?.lowercase() }
+        } else {
+            examList.sortedByDescending { it.name?.lowercase() }
         }
-        examList = list
     }
 
     fun toggleTitleSortOrder() {
