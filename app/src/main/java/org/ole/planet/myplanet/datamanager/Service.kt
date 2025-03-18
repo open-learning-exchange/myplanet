@@ -209,32 +209,47 @@ class Service(private val context: Context) {
     fun becomeMember(realm: Realm, obj: JsonObject, callback: CreateUserCallback) {
         isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
-                retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}")?.enqueue(object : Callback<JsonObject> {
-                    override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                        if (response.body() != null && response.body()?.has("_id") == true) {
-                            callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                        } else {
-                            retrofitInterface.putDoc(null, "application/json", "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
-                                override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                                    if (response.body() != null && response.body()!!.has("id")) {
-                                        uploadToShelf(obj)
-                                        saveUserToDb(realm, response.body()!!.get("id").asString, obj, callback)
-                                    } else {
-                                        callback.onSuccess(context.getString(R.string.unable_to_create_user))
-                                    }
-                                }
+                val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                if (isUserExists(realm, obj["name"].asString)) {
+                    callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
+                    return
+                }
+                realm.beginTransaction()
+                val model = populateUsersTable(obj, realm, settings)
+                val keyString = generateKey()
+                val iv = generateIv()
+                if (model != null) {
+                    model.key = keyString
+                    model.iv = iv
+                }
+                realm.commitTransaction()
 
-                                override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                                    callback.onSuccess(context.getString(R.string.unable_to_create_user))
-                                }
-                            })
-                        }
-                    }
-
-                    override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                        callback.onSuccess(context.getString(R.string.unable_to_create_user))
-                    }
-                })
+//                retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}")?.enqueue(object : Callback<JsonObject> {
+//                    override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+//                        if (response.body() != null && response.body()?.has("_id") == true) {
+//                            callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
+//                        } else {
+//                            retrofitInterface.putDoc(null, "application/json", "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
+//                                override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+//                                    if (response.body() != null && response.body()!!.has("id")) {
+//                                        uploadToShelf(obj)
+//                                        saveUserToDb(realm, response.body()!!.get("id").asString, obj, callback)
+//                                    } else {
+//                                        callback.onSuccess(context.getString(R.string.unable_to_create_user))
+//                                    }
+//                                }
+//
+//                                override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+//                                    callback.onSuccess(context.getString(R.string.unable_to_create_user))
+//                                }
+//                            })
+//                        }
+//                    }
+//
+//                    override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+//                        callback.onSuccess(context.getString(R.string.unable_to_create_user))
+//                    }
+//                })
             }
 
             override fun notAvailable() {
