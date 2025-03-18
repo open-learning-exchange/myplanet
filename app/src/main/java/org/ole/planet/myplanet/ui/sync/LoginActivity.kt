@@ -120,6 +120,14 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
         guest = intent.getBooleanExtra("guest", false)
         val username = intent.getStringExtra("username")
+        val password = intent.getStringExtra("password")
+        val autoLogin = intent.getBooleanExtra("autoLogin", false)
+        Log.d("LoginActivity", "guest: $guest, username: $username, password: $password, autoLogin: $autoLogin")
+
+        if (autoLogin && username != null && password != null) {
+            // Auto login using the credentials
+            submitForm(username, password)
+        }
 
         if (guest) {
             resetGuestAsMember(username)

@@ -239,12 +239,18 @@ class BecomeMemberActivity : BaseActivity() {
 
             val intent = Intent(this, LoginActivity::class.java)
             if (guest){
-                intent.putExtra("username", username)
                 intent.putExtra("guest", guest)
             }
+// Add these lines to trigger automatic login
+            intent.putExtra("username", username)
+            intent.putExtra("autoLogin", true)
+            intent.putExtra("password", password)
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             startActivity(intent)
             finish()
+//            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+//            startActivity(intent)
+//            finish()
         }
     }
 
