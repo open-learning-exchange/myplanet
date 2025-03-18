@@ -45,120 +45,48 @@ class UserProfileDbHandler(context: Context) {
             .findFirst()
     }
 
-//    suspend fun onLogin() {
-//        withContext(Dispatchers.IO) {
-//            val realm = realmService.realmInstance
-//            try {
-//                val startTransaction = System.currentTimeMillis()
-//                realm.executeTransaction { r ->
-//                    val startCreateUser = System.currentTimeMillis()
-//                    val offlineActivities = r.copyToRealm(createUser(r))
-//                    val createUserTime = System.currentTimeMillis() - startCreateUser
-//                    Log.d("Performance", "createUser execution time: ${createUserTime}ms")
-//
-//                    offlineActivities.type = KEY_LOGIN
-//                    offlineActivities._rev = null
-//                    offlineActivities._id = null
-//                    offlineActivities.description = "Member login on offline application"
-//                    offlineActivities.loginTime = Date().time
-//                }
-//                val transactionTime = System.currentTimeMillis() - startTransaction
-//                Log.d("Performance", "Realm transaction execution time: ${transactionTime}ms")
-//            } catch (e: Exception) {
-//                e.printStackTrace()
-//            } finally {
-//                realm.close()
-//            }
-//        }
-//    }
-
-//    suspend fun onLogin() {
-//        withContext(Dispatchers.IO) {
-//            val realm = realmService.realmInstance
-//            try {
-//                val startTransaction = System.currentTimeMillis()
-//
-//                realm.executeTransaction { r ->
-//                    if (r.isClosed) return@executeTransaction
-//                    r.compactRealm() // Auto-compact before writing
-//
-//                    val offlineActivities = createUser(r) // Avoid copyToRealm()
-//                    offlineActivities.type = KEY_LOGIN
-//                    offlineActivities.loginTime = Date().time
-//                }
-//
-//                val transactionTime = System.currentTimeMillis() - startTransaction
-//                Log.d("Performance", "Realm transaction execution time: ${transactionTime}ms")
-//            } catch (e: Exception) {
-//                e.printStackTrace()
-//            } finally {
-//                realm.close()
-//            }
-//        }
-//    }
-
     suspend fun onLogin() {
         withContext(Dispatchers.IO) {
             val realm = realmService.realmInstance
             try {
-                val startTransaction = System.currentTimeMillis()
+                val startTime = System.currentTimeMillis()
 
-                realm.executeTransactionAsync({ r ->
-                    val count = r.where(RealmOfflineActivity::class.java).count()
-                    Log.d("Performance", "Total RealmOfflineActivity records: $count")
+                realm.executeTransaction { r ->
+                    val startCleanup = System.currentTimeMillis()
+                    val oldRecords = r.where(RealmOfflineActivity::class.java)
+                        .lessThan("loginTime", System.currentTimeMillis() - 30 * 24 * 60 * 60 * 1000)
+                        .findAll()
 
-                    if (count > 100000) {
-                        val oldRecords = r.where(RealmOfflineActivity::class.java)
-                            .lessThan("loginTime", System.currentTimeMillis() - 30 * 24 * 60 * 60 * 1000)
-                            .findAll()
+                    if (oldRecords.isNotEmpty()) {
                         oldRecords.deleteAllFromRealm()
-                        Log.d("Performance", "Deleted old records: ${oldRecords.size}")
+                        Log.d("Performance", "Cleanup time: ${System.currentTimeMillis() - startCleanup}ms")
                     }
 
-                    val offlineActivities = createUser(r)
-                    r.insert(offlineActivities) // Faster than copyToRealm()
-                }, {
-                    val transactionTime = System.currentTimeMillis() - startTransaction
-                    Log.d("Performance", "Realm transaction execution time: ${transactionTime}ms")
-                }, { error ->
-                    Log.e("Performance", "Transaction failed: ${error.message}")
-                })
+                    val startInsert = System.currentTimeMillis()
+                    val users = mutableListOf<RealmOfflineActivity>()
+                    repeat(10) {
+                        val offlineActivity = RealmOfflineActivity()
+                        offlineActivity.id = UUID.randomUUID().toString()
+                        offlineActivity.type = KEY_LOGIN
+                        offlineActivity.description = "Member login on offline application"
+                        offlineActivity.loginTime = System.currentTimeMillis()
+                        users.add(offlineActivity)
+                    }
+
+                    r.insertOrUpdate(users)
+                    Log.d("Performance", "Insert time: ${System.currentTimeMillis() - startInsert}ms")
+                }
+
+                Log.d("Performance", "Realm transaction completed in ${System.currentTimeMillis() - startTime}ms")
 
             } catch (e: Exception) {
+                Log.e("Performance", "Transaction failed: ${e.message}")
                 e.printStackTrace()
             } finally {
                 realm.close()
             }
         }
     }
-
-    //hopeful
-//    suspend fun onLogin() {
-//        withContext(Dispatchers.IO) {
-//            val realm = realmService.realmInstance
-//            try {
-//                val startTransaction = System.currentTimeMillis()
-//
-//                realm.executeTransaction { r ->
-//                    val offlineActivities = createUser(r) // Already managed, no need for copyToRealm()
-//
-//                    // You can still update these fields inside the transaction
-//                    offlineActivities.type = KEY_LOGIN
-//                    offlineActivities._rev = null
-//                    offlineActivities._id = null
-//                    offlineActivities.description = "Member login on offline application"
-//                    offlineActivities.loginTime = Date().time
-//                }
-//
-//                val transactionTime = System.currentTimeMillis() - startTransaction
-//                Log.d("Performance", "Realm transaction execution time: ${transactionTime}ms")
-//            } catch (e: Exception) {
-//                e.printStackTrace()
-//            } finally {
-//                realm.close()
-//            }
-//        }
-//    }
 
     private fun createUser(realm: Realm): RealmOfflineActivity {
         val startQuery = System.currentTimeMillis()
@@ -175,27 +103,6 @@ class UserProfileDbHandler(context: Context) {
         offlineActivities.createdOn = model?.planetCode
         return offlineActivities
     }
-
-//    suspend fun onLogin() {
-//        withContext(Dispatchers.IO) {
-//            // Create a new Realm instance in this background thread
-//            val realm = realmService.realmInstance
-//            try {
-//                realm.executeTransaction { r ->
-//                    val offlineActivities = r.copyToRealm(createUser(r))
-//                    offlineActivities.type = KEY_LOGIN
-//                    offlineActivities._rev = null
-//                    offlineActivities._id = null
-//                    offlineActivities.description = "Member login on offline application"
-//                    offlineActivities.loginTime = Date().time
-//                }
-//            } catch (e: Exception) {
-//                e.printStackTrace()
-//            } finally {
-//                realm.close()
-//            }
-//        }
-//    }
 
     suspend fun onLogout() {
         withContext(Dispatchers.IO) {
@@ -216,20 +123,6 @@ class UserProfileDbHandler(context: Context) {
             mRealm.close()
         }
     }
-
-//    private fun createUser(realm: Realm): RealmOfflineActivity {
-//        val offlineActivities = realm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
-//        // Get user model from the passed realm instance
-//        val model = realm.where(RealmUserModel::class.java)
-//            .equalTo("id", settings.getString("userId", ""))
-//            .findFirst()
-//
-//        offlineActivities.userId = model?.id
-//        offlineActivities.userName = model?.name
-//        offlineActivities.parentCode = model?.parentCode
-//        offlineActivities.createdOn = model?.planetCode
-//        return offlineActivities
-//    }
 
     val lastVisit: Long? get() = mRealm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
     val offlineVisits: Int get() = getOfflineVisits(userModel)

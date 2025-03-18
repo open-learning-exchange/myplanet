@@ -1,41 +1,60 @@
 package org.ole.planet.myplanet.ui.sync
 
-import android.content.*
+import android.content.Context
+import android.content.DialogInterface
+import android.content.Intent
 import android.graphics.drawable.AnimationDrawable
-import android.os.*
+import android.os.Build
 import android.os.Build.VERSION_CODES.TIRAMISU
-import android.text.*
+import android.os.Bundle
+import android.text.Editable
+import android.text.TextUtils
+import android.text.TextWatcher
 import android.util.Log
-import android.view.*
+import android.view.ContextThemeWrapper
+import android.view.KeyEvent
+import android.view.LayoutInflater
+import android.view.MotionEvent
+import android.view.View
 import android.view.inputmethod.EditorInfo
-import android.widget.*
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.ImageButton
+import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.*
+import androidx.core.content.edit
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import io.realm.Realm
-import org.ole.planet.myplanet.*
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.databinding.*
-import org.ole.planet.myplanet.datamanager.*
-import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.ActivityLoginBinding
+import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding
+import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
+import org.ole.planet.myplanet.datamanager.Service
+import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
-import org.ole.planet.myplanet.ui.userprofile.*
-import org.ole.planet.myplanet.utilities.*
+import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
+import org.ole.planet.myplanet.ui.userprofile.TeamListAdapter
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
+import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.text.Normalizer
 import java.util.Locale
 import java.util.regex.Pattern
-import androidx.core.content.edit
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
 
 class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private lateinit var activityLoginBinding: ActivityLoginBinding
@@ -442,14 +461,16 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             putString("loginUserName", name)
             putString("loginUserPassword", password)
             val isLoggedIn = authenticateUser(settings, name, password, false)
+            Log.d("performance", "isLoggedIn: $isLoggedIn")
             if (isLoggedIn) {
+                Log.d("performance", "true called")
                 lifecycleScope.launch {
                     Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
                     onLogin()
                     saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
                 }
             } else {
-                val log = authenticateUser(settings, name, password, false)
+                val log = authenticateUser(settings, name, password, true)
                 if (log) {
                     lifecycleScope.launch {
                         Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
