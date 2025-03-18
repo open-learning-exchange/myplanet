@@ -117,7 +117,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             toast.show()
             Handler(Looper.getMainLooper()).postDelayed({
                 toast.cancel()
-            }, 600)
+            }, 1000)
         }
     }
 
@@ -184,7 +184,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
                 toast.show()
                 Handler(Looper.getMainLooper()).postDelayed({
                     toast.cancel()
-                }, 600)
+                }, 1000)
             }
             return true
         }
