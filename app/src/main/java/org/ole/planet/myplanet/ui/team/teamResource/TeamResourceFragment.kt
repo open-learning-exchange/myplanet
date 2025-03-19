@@ -13,9 +13,9 @@ import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.GridLayoutManager
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.TeamPageListener
-import org.ole.planet.myplanet.ui.team.teamResource.ResourceUpdateListner
 import org.ole.planet.myplanet.databinding.FragmentTeamResourceBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getResourceIds
@@ -112,8 +112,13 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
         listSetting(alertDialog, availableLibraries, myLibraryAlertdialogBinding.alertDialogListView)
     }
 
-    private fun listSetting(alertDialog: AlertDialog, libraries: List<RealmMyLibrary>, lv: CheckboxListView) {
-        val names = libraries.map { it.title }
+    private fun <T> listSetting(alertDialog: AlertDialog, items: List<T>, lv: CheckboxListView) {
+        val names = when (items.firstOrNull()) {
+            is RealmMyLibrary -> items.map { (it as RealmMyLibrary).title }
+            is RealmMyCourse -> items.map { (it as RealmMyCourse).courseTitle }
+            else -> return
+        }
+
         val adapter = ArrayAdapter(requireActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, names)
         lv.choiceMode = ListView.CHOICE_MODE_MULTIPLE
         lv.setCheckChangeListener {
@@ -124,6 +129,7 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
         alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = lv.selectedItemsList.isNotEmpty()
     }
 
+
     fun checkAndShowNoData() {
         showNoData(fragmentTeamResourceBinding.tvNodata, adapterLibrary.itemCount, "teamResources")
     }
@@ -133,6 +139,54 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
     }
 
     override fun onAddDocument() {
-        showResourceListDialog()
+        // This is being called by the add document which should add courses
+        showCoursesListDialog()
     }
+
+    private fun showCoursesListDialog() {
+        if (!isAdded || activity == null) return
+        val safeActivity = activity ?: return
+
+        val titleView = TextView(safeActivity).apply {
+            text = getString(R.string.select_resource)
+            setTextColor(context.getColor(R.color.daynight_textColor))
+            setPadding(75, 50, 0, 0)
+            textSize = 24f
+            typeface = Typeface.DEFAULT_BOLD
+        }
+
+        val myLibraryAlertdialogBinding = MyLibraryAlertdialogBinding.inflate(layoutInflater)
+        val alertDialogBuilder = AlertDialog.Builder(safeActivity)
+            .setCustomTitle(titleView)
+
+        val availableCourses: List<RealmMyCourse> = mRealm.where(RealmMyCourse::class.java)
+            .not().`in`("id", getResourceIds(teamId, mRealm).toTypedArray())
+            .findAll()
+
+        alertDialogBuilder.setView(myLibraryAlertdialogBinding.root)
+            .setPositiveButton(R.string.add) { _: DialogInterface?, _: Int ->
+
+                if (!mRealm.isInTransaction) {
+                    mRealm.beginTransaction()
+                }
+                for (se in myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList) {
+                    val team = mRealm.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
+                    team.teamId = teamId
+                    team.title = availableCourses[se].courseTitle
+                    team.status = user!!.parentCode
+                    team.resourceId = availableCourses[se].id
+                    team.docType = "resourceLink"
+                    team.updated = true
+                    team.teamType = "local"
+                    team.teamPlanetCode = user!!.planetCode
+                }
+                mRealm.commitTransaction()
+                showLibraryList()
+            }.setNegativeButton(R.string.cancel, null)
+
+        val alertDialog = alertDialogBuilder.create()
+        alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
+        listSetting(alertDialog, availableCourses, myLibraryAlertdialogBinding.alertDialogListView)
+    }
+
 }
