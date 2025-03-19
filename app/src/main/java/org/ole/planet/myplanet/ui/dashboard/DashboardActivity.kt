@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.dashboard
 
-import android.util.Log
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
@@ -599,7 +598,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun checkUser() {
         user = UserProfileDbHandler(this).userModel
-        Log.d("DashboardActivity", "User: $user")
         if (user == null) {
             toast(this, getString(R.string.session_expired))
             logout()
