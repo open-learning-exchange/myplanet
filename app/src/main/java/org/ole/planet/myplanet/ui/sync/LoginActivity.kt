@@ -470,26 +470,28 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             putString("loginUserPassword", password)
             val isLoggedIn = authenticateUser(settings, name, password, false)
             Log.d("performance", "isLoggedIn: $isLoggedIn")
-//            if (isLoggedIn) {
-                Log.d("performance", "true called")
+            if (isLoggedIn) {
+                Log.d("performance", "isLoggedIn: $isLoggedIn called")
                 lifecycleScope.launch {
                     Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
                     onLogin()
                     saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
                 }
-//            } else {
-//                val log = authenticateUser(settings, name, password, true)
-//                if (log) {
-//                    lifecycleScope.launch {
-//                        Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
-//                        onLogin()
-//                        saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
-//                    }
-//                } else {
-//                    Log.d("LoginActivity1", "called 1")
-//                    alertDialogOkay(getString(R.string.err_msg_login))
-//                }
-//            }
+            } else {
+                Log.d("performance", "isLoggedIn: $isLoggedIn called, name: $name, password: $password")
+                val log = authenticateUser(settings, name, password, false)
+
+                if (log) {
+                    lifecycleScope.launch {
+                        Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
+                        onLogin()
+                        saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
+                    }
+                } else {
+                    Log.d("LoginActivity1", "called 1")
+                    alertDialogOkay(getString(R.string.err_msg_login))
+                }
+            }
         }
     }
 

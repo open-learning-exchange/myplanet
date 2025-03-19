@@ -333,7 +333,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             if (mRealm.isEmpty) {
                 alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
                 false
+
             } else {
+                Log.d("okuro", "checkName is called, username: $username, password: $password, isManagerMode: $isManagerMode")
                 checkName(username, password, isManagerMode)
             }
         } catch (e: Exception) {
@@ -345,14 +347,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
         try {
             val user = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
+            Log.d("okuro", "$username == ${user?.name}, $password == ${user?.password}" )
             user?.let {
                 if (it._id?.isEmpty() == true) {
+                    Log.d("okuro", "$username == ${it.name}, $password == ${it.password}" )
                     if (username == it.name && password == it.password) {
                         saveUserInfoPref(settings, password, it)
                         return true
                     }
                 } else {
 //                    if (androidDecrypter(username, password, it.derived_key, it.salt)) {
+                    Log.d("okuro", "isManagerMode: $isManagerMode, isManager:${it.isManager()}")
                         if (isManagerMode && !it.isManager()) return false
                         saveUserInfoPref(settings, password, it)
                         return true
@@ -361,6 +366,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
         } catch (err: Exception) {
             err.printStackTrace()
+            Log.d("okuro", "checkName error: ${err.message}")
             return false
         }
         return false
@@ -381,7 +387,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 (dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text.toString()
             }
 
-            val uri = Uri.parse(url)
+            val uri = url.toUri()
             val couchdbURL: String
             val urlUser: String
             val urlPwd: String
