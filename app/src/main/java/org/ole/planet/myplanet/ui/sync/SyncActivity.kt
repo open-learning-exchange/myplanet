@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.*
-import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -29,7 +28,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.ole.planet.myplanet.BuildConfig
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
@@ -64,6 +62,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import androidx.core.net.toUri
 import kotlinx.coroutines.async
+import org.ole.planet.myplanet.MainApplication
 
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
     OnUserSelectedListener, ConfigurationIdListener {
@@ -335,7 +334,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 false
 
             } else {
-                Log.d("okuro", "checkName is called, username: $username, password: $password, isManagerMode: $isManagerMode")
                 checkName(username, password, isManagerMode)
             }
         } catch (e: Exception) {
@@ -347,17 +345,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
         try {
             val user = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
-            Log.d("okuro", "$username == ${user?.name}, $password == ${user?.password}" )
             user?.let {
                 if (it._id?.isEmpty() == true) {
-                    Log.d("okuro", "$username == ${it.name}, $password == ${it.password}" )
                     if (username == it.name && password == it.password) {
                         saveUserInfoPref(settings, password, it)
                         return true
                     }
                 } else {
 //                    if (androidDecrypter(username, password, it.derived_key, it.salt)) {
-                    Log.d("okuro", "isManagerMode: $isManagerMode, isManager:${it.isManager()}")
                         if (isManagerMode && !it.isManager()) return false
                         saveUserInfoPref(settings, password, it)
                         return true
@@ -366,7 +361,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
         } catch (err: Exception) {
             err.printStackTrace()
-            Log.d("okuro", "checkName error: ${err.message}")
             return false
         }
         return false
@@ -695,25 +689,39 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     suspend fun onLogin() {
-        val startTotal = System.currentTimeMillis()
-
         val handler = UserProfileDbHandler(this)
-
-        val startDbHandler = System.currentTimeMillis()
         handler.onLogin()
-        Log.d("Performance", "UserProfileDbHandler.onLogin() time: ${System.currentTimeMillis() - startDbHandler}ms")
-
         handler.onDestroy()
-
-        val startEditor = System.currentTimeMillis()
         editor.putBoolean(Constants.KEY_LOGIN, true).commit()
-        Log.d("Performance", "SharedPreferences commit time: ${System.currentTimeMillis() - startEditor}ms")
-
-        val startDashboard = System.currentTimeMillis()
         openDashboard()
-        Log.d("Performance", "openDashboard execution time: ${System.currentTimeMillis() - startDashboard}ms")
 
-        Log.d("Performance", "Total onLogin() time: ${System.currentTimeMillis() - startTotal}ms")
+        val updateUrl = "${settings.getString("serverURL", "")}"
+        val serverUrlMapper = ServerUrlMapper(this)
+        val mapping = serverUrlMapper.processUrl(updateUrl)
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val primaryAvailable = MainApplication.Companion.isServerReachable(mapping.primaryUrl)
+            val alternativeAvailable = mapping.alternativeUrl?.let { MainApplication.Companion.isServerReachable(it) } == true
+
+            if (!primaryAvailable && alternativeAvailable) {
+                mapping.alternativeUrl.let { alternativeUrl ->
+                    val uri = updateUrl.toUri()
+                    val editor = settings.edit()
+
+                    serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
+                }
+            }
+
+            withContext(Dispatchers.Main) {
+                startUpload("login")
+                val backgroundRealm = Realm.getDefaultInstance()
+                try {
+                    TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
+                } finally {
+                    backgroundRealm.close()
+                }
+            }
+        }
     }
 
     private fun showConfigurationUIElements(binding: DialogServerUrlBinding, manualSelected: Boolean, dialog: MaterialDialog) {

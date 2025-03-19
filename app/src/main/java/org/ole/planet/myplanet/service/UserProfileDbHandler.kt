@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.service
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Log
 import io.realm.Realm
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -49,20 +48,15 @@ class UserProfileDbHandler(context: Context) {
         withContext(Dispatchers.IO) {
             val realm = realmService.realmInstance
             try {
-                val startTime = System.currentTimeMillis()
-
                 realm.executeTransaction { r ->
-                    val startCleanup = System.currentTimeMillis()
                     val oldRecords = r.where(RealmOfflineActivity::class.java)
                         .lessThan("loginTime", System.currentTimeMillis() - 30 * 24 * 60 * 60 * 1000)
                         .findAll()
 
                     if (oldRecords.isNotEmpty()) {
                         oldRecords.deleteAllFromRealm()
-                        Log.d("Performance", "Cleanup time: ${System.currentTimeMillis() - startCleanup}ms")
                     }
 
-                    val startInsert = System.currentTimeMillis()
                     val users = mutableListOf<RealmOfflineActivity>()
                     repeat(10) {
                         val offlineActivity = RealmOfflineActivity()
@@ -72,36 +66,14 @@ class UserProfileDbHandler(context: Context) {
                         offlineActivity.loginTime = System.currentTimeMillis()
                         users.add(offlineActivity)
                     }
-
                     r.insertOrUpdate(users)
-                    Log.d("Performance", "Insert time: ${System.currentTimeMillis() - startInsert}ms")
                 }
-
-                Log.d("Performance", "Realm transaction completed in ${System.currentTimeMillis() - startTime}ms")
-
             } catch (e: Exception) {
-                Log.e("Performance", "Transaction failed: ${e.message}")
                 e.printStackTrace()
             } finally {
                 realm.close()
             }
         }
-    }
-
-    private fun createUser(realm: Realm): RealmOfflineActivity {
-        val startQuery = System.currentTimeMillis()
-        val model = realm.where(RealmUserModel::class.java)
-            .equalTo("id", settings.getString("userId", ""))
-            .findFirst()
-        val queryTime = System.currentTimeMillis() - startQuery
-        Log.d("Performance", "RealmUserModel query time: ${queryTime}ms")
-
-        val offlineActivities = realm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
-        offlineActivities.userId = model?.id
-        offlineActivities.userName = model?.name
-        offlineActivities.parentCode = model?.parentCode
-        offlineActivities.createdOn = model?.planetCode
-        return offlineActivities
     }
 
     suspend fun onLogout() {

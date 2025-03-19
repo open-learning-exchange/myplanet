@@ -1,55 +1,34 @@
 package org.ole.planet.myplanet.ui.sync
 
-import android.content.Context
-import android.content.DialogInterface
-import android.content.Intent
+import android.content.*
 import android.graphics.drawable.AnimationDrawable
-import android.os.Build
+import android.os.*
 import android.os.Build.VERSION_CODES.TIRAMISU
-import android.os.Bundle
-import android.text.Editable
-import android.text.TextUtils
-import android.text.TextWatcher
-import android.util.Log
-import android.view.ContextThemeWrapper
-import android.view.KeyEvent
-import android.view.LayoutInflater
-import android.view.MotionEvent
-import android.view.View
+import android.text.*
+import android.view.*
 import android.view.inputmethod.EditorInfo
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
-import android.widget.ImageButton
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.*
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import io.realm.Realm
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.ActivityLoginBinding
-import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding
-import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
-import org.ole.planet.myplanet.datamanager.Service
-import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.model.User
+import org.ole.planet.myplanet.databinding.*
+import org.ole.planet.myplanet.datamanager.*
+import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
-import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
-import org.ole.planet.myplanet.ui.userprofile.TeamListAdapter
+import org.ole.planet.myplanet.ui.userprofile.*
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
-import org.ole.planet.myplanet.utilities.LocaleHelper
-import org.ole.planet.myplanet.utilities.NetworkUtils
+import org.ole.planet.myplanet.utilities.*
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.text.Normalizer
@@ -122,10 +101,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         val username = intent.getStringExtra("username")
         val password = intent.getStringExtra("password")
         val autoLogin = intent.getBooleanExtra("autoLogin", false)
-        Log.d("LoginActivity", "guest: $guest, username: $username, password: $password, autoLogin: $autoLogin")
 
         if (autoLogin && username != null && password != null) {
-            // Auto login using the credentials
             submitForm(username, password)
         }
 
@@ -469,16 +446,13 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             putString("loginUserName", name)
             putString("loginUserPassword", password)
             val isLoggedIn = authenticateUser(settings, name, password, false)
-            Log.d("performance", "isLoggedIn: $isLoggedIn")
             if (isLoggedIn) {
-                Log.d("performance", "isLoggedIn: $isLoggedIn called")
                 lifecycleScope.launch {
                     Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
                     onLogin()
                     saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
                 }
             } else {
-                Log.d("performance", "isLoggedIn: $isLoggedIn called, name: $name, password: $password")
                 val log = authenticateUser(settings, name, password, false)
 
                 if (log) {
@@ -488,7 +462,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                         saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
                     }
                 } else {
-                    Log.d("LoginActivity1", "called 1")
                     alertDialogOkay(getString(R.string.err_msg_login))
                 }
             }
