@@ -78,33 +78,31 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         lateinit var defaultPref: SharedPreferences
 
         fun createLog(type: String, error: String) {
-            runBlocking {
-                withContext(Dispatchers.IO) {
-                    val realm = Realm.getDefaultInstance()
-                    try {
-                        realm.executeTransaction { r ->
-                            val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
-                            val model = UserProfileDbHandler(context).userModel
-                            if (model != null) {
-                                log.parentCode = model.parentCode
-                                log.createdOn = model.planetCode
-                                log.userId = model.id
-                            }
-                            log.time = "${Date().time}"
-                            log.page = ""
-                            log.version = getVersionName(context)
-                            if (type == "File Not Found" || type == "anr") {
-                                log.type = type
-                                log.error = error
-                            } else {
-                                log.type = type
-                            }
+            applicationScope.launch(Dispatchers.IO) {
+                val realm = Realm.getDefaultInstance()
+                try {
+                    realm.executeTransaction { r ->
+                        val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
+                        val model = UserProfileDbHandler(context).userModel
+                        if (model != null) {
+                            log.parentCode = model.parentCode
+                            log.createdOn = model.planetCode
+                            log.userId = model.id
                         }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    } finally {
-                        realm.close()
+                        log.time = "${Date().time}"
+                        log.page = ""
+                        log.version = getVersionName(context)
+                        if (type == "File Not Found" || type == "anr") {
+                            log.type = type
+                            log.error = error
+                        } else {
+                            log.type = type
+                        }
                     }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                } finally {
+                    realm.close()
                 }
             }
         }
