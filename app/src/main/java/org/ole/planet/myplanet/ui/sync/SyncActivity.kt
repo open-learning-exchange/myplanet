@@ -544,8 +544,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private fun checkForceSync(maxDays: Int): Boolean {
         cal_today = Calendar.getInstance(Locale.ENGLISH)
         cal_last_Sync = Calendar.getInstance(Locale.ENGLISH)
-        cal_last_Sync.timeInMillis = settings.getLong("LastSync", 0)
-        cal_today.timeInMillis = Date().time
+        val lastSyncTime = settings.getLong("LastSync", -1)
+        if (lastSyncTime <= 0) {
+            return false
+        }
+        cal_last_Sync.timeInMillis = lastSyncTime
+        cal_today.timeInMillis = System.currentTimeMillis()
         val msDiff = cal_today.timeInMillis - cal_last_Sync.timeInMillis
         val daysDiff = TimeUnit.MILLISECONDS.toDays(msDiff)
         return if (daysDiff >= maxDays) {
