@@ -454,7 +454,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 }
             } else {
                 val log = authenticateUser(settings, name, password, true)
-
                 if (log) {
                     lifecycleScope.launch {
                         Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
