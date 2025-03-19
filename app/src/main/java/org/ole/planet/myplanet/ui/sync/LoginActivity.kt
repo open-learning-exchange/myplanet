@@ -453,7 +453,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                     saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
                 }
             } else {
-                val log = authenticateUser(settings, name, password, false)
+                val log = authenticateUser(settings, name, password, true)
 
                 if (log) {
                     lifecycleScope.launch {
