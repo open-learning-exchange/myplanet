@@ -229,8 +229,6 @@ class UserProfileFragment : Fragment() {
                     editProfileDialogBinding.lastName.error = getString(R.string.compulsory_last_name)
                 } else if (TextUtils.isEmpty("${editProfileDialogBinding.email.text}".trim())) {
                     editProfileDialogBinding.email.error = getString(R.string.compulsory_email)
-                } else if (TextUtils.isEmpty("${editProfileDialogBinding.phoneNumber.text}".trim())) {
-                    editProfileDialogBinding.phoneNumber.error = getString(R.string.compulsory_phone_number)
                 } else if (resources.getString(R.string.birth_date) == "${editProfileDialogBinding.dateOfBirth.text}") {
                     editProfileDialogBinding.dateOfBirth.error = getString(R.string.compulsory_date_of_birth)
                 } else if (editProfileDialogBinding.rdGender.checkedRadioButtonId == -1) {
