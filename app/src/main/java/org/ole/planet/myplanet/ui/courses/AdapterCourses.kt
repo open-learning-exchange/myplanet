@@ -56,6 +56,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         if (context is OnHomeItemClickListener) {
             homeItemClickListener = context
         }
+        selectedItems.clear()
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
     }
 
