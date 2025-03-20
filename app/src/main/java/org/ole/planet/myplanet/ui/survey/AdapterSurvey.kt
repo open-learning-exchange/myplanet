@@ -43,7 +43,6 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
         val diffCallback = SurveyDiffCallback(examList, newList)
         val diffResult = DiffUtil.calculateDiff(diffCallback)
         examList = newList
-        println(examList.size)
         diffResult.dispatchUpdatesTo(this)
     }
 
