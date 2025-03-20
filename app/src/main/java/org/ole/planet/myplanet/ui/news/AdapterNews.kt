@@ -413,7 +413,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             return
         }
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        news?.updateMessage(s)  // Use updateMessage instead of direct assignment
+        news?.updateMessage(s)
         mRealm.commitTransaction()
         notifyDataSetChanged()
         listener?.clearImages()
