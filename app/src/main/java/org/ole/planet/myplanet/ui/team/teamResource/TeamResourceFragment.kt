@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.team.teamResource
 import android.content.DialogInterface
 import android.graphics.Typeface
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,6 +12,7 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.GridLayoutManager
+import io.realm.RealmList
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.TeamPageListener
 import org.ole.planet.myplanet.databinding.FragmentTeamResourceBinding
@@ -21,6 +23,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getResourceIds
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
+import org.ole.planet.myplanet.ui.team.teamCourse.TeamCourseFragment
 import org.ole.planet.myplanet.utilities.CheckboxListView
 import java.util.UUID
 
@@ -139,7 +142,6 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
     }
 
     override fun onAddDocument() {
-        // This is being called by the add document which should add courses
         showCoursesListDialog()
     }
 
@@ -160,29 +162,37 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
             .setCustomTitle(titleView)
 
         val availableCourses: List<RealmMyCourse> = mRealm.where(RealmMyCourse::class.java)
-            .not().`in`("id", getResourceIds(teamId, mRealm).toTypedArray())
+            .not().`in`("_id", getResourceIds(teamId, mRealm).toTypedArray())
             .findAll()
 
         alertDialogBuilder.setView(myLibraryAlertdialogBinding.root)
             .setPositiveButton(R.string.add) { _: DialogInterface?, _: Int ->
+                mRealm.executeTransaction { realm ->
+                    val team = realm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()
+                    if (team != null) {
+                        val courseList = team.courses ?: RealmList<String>().also { team.courses = it }
 
-                if (!mRealm.isInTransaction) {
-                    mRealm.beginTransaction()
+                        for (se in myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList) {
+                            val selectedCourse = availableCourses[se]
+                            if (selectedCourse is RealmMyCourse && !courseList.contains(selectedCourse.courseId)) {
+                                courseList.add(selectedCourse.courseId)
+                            }
+                        }
+                    }
                 }
-                for (se in myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList) {
-                    val team = mRealm.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
-                    team.teamId = teamId
-                    team.title = availableCourses[se].courseTitle
-                    team.status = user!!.parentCode
-                    team.resourceId = availableCourses[se].id
-                    team.docType = "resourceLink"
-                    team.updated = true
-                    team.teamType = "local"
-                    team.teamPlanetCode = user!!.planetCode
+
+                // Fetch the updated courses and refresh the fragment
+                val updatedTeam = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()
+                updatedTeam?.courses?.let {
+                    Log.d("TeamCourse", "Fetched Updated Course List After Commit: $it")
                 }
-                mRealm.commitTransaction()
-                showLibraryList()
-            }.setNegativeButton(R.string.cancel, null)
+
+                showLibraryList()  // Refresh resources as well
+                val fragment = parentFragmentManager.findFragmentByTag("TeamCourseFragment") as? TeamCourseFragment
+                fragment?.refreshCourseList()  // This will reload the courses in the TeamCourseFragment
+            }
+
+            .setNegativeButton(R.string.cancel, null)
 
         val alertDialog = alertDialogBuilder.create()
         alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
