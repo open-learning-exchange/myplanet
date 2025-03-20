@@ -176,8 +176,6 @@ class ChatDetailFragment : Fragment() {
                     fragmentChatDetailBinding.recyclerGchat.post {
                         fragmentChatDetailBinding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
                     }
-                } else {
-                    Log.d("ChatDetailFragment", "No valid conversations to display")
                 }
             }
             sharedViewModel.getSelectedAiProvider().observe(viewLifecycleOwner) { selectedAiProvider ->
