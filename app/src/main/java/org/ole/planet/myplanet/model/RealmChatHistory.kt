@@ -32,35 +32,36 @@ open class RealmChatHistory : RealmObject() {
 
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
-            val chatHistoryId = JsonUtils.getString("_id", act)
-            val existingChatHistory = mRealm.where(RealmChatHistory::class.java).equalTo("_id", chatHistoryId).findFirst()
-            existingChatHistory?.deleteFromRealm()
-            val chatHistory = mRealm.createObject(RealmChatHistory::class.java, chatHistoryId)
-            chatHistory._rev = JsonUtils.getString("_rev", act)
-            chatHistory._id = JsonUtils.getString("_id", act)
-            chatHistory.title = JsonUtils.getString("title", act)
-            chatHistory.createdDate = JsonUtils.getString("createdDate", act)
-            chatHistory.updatedDate = JsonUtils.getString("updatedDate", act)
-            chatHistory.user = JsonUtils.getString("user", act)
-            chatHistory.aiProvider = JsonUtils.getString("aiProvider", act)
-            chatHistory.conversations = parseConversations(mRealm, JsonUtils.getJsonArray("conversations", act))
-            chatHistory.lastUsed = Date().time
-            mRealm.commitTransaction()
+            mRealm.executeTransaction { realmInstance ->
+                val chatHistoryId = JsonUtils.getString("_id", act)
+                val existingChatHistory = realmInstance.where(RealmChatHistory::class.java)
+                    .equalTo("_id", chatHistoryId)
+                    .findFirst()
+                existingChatHistory?.deleteFromRealm()
 
-            val csvRow = arrayOf(
-                JsonUtils.getString("_id", act),
-                JsonUtils.getString("_rev", act),
-                JsonUtils.getString("title", act),
-                JsonUtils.getString("createdDate", act),
-                JsonUtils.getString("updatedDate", act),
-                JsonUtils.getString("user", act),
-                JsonUtils.getString("aiProvider", act),
-                JsonUtils.getJsonArray("conversations", act).toString()
-            )
-            chatDataList.add(csvRow)
+                val chatHistory = realmInstance.createObject(RealmChatHistory::class.java, chatHistoryId)
+                chatHistory._rev = JsonUtils.getString("_rev", act)
+                chatHistory._id = JsonUtils.getString("_id", act)
+                chatHistory.title = JsonUtils.getString("title", act)
+                chatHistory.createdDate = JsonUtils.getString("createdDate", act)
+                chatHistory.updatedDate = JsonUtils.getString("updatedDate", act)
+                chatHistory.user = JsonUtils.getString("user", act)
+                chatHistory.aiProvider = JsonUtils.getString("aiProvider", act)
+                chatHistory.conversations = parseConversations(realmInstance, JsonUtils.getJsonArray("conversations", act))
+                chatHistory.lastUsed = Date().time
+
+                val csvRow = arrayOf(
+                    JsonUtils.getString("_id", act),
+                    JsonUtils.getString("_rev", act),
+                    JsonUtils.getString("title", act),
+                    JsonUtils.getString("createdDate", act),
+                    JsonUtils.getString("updatedDate", act),
+                    JsonUtils.getString("user", act),
+                    JsonUtils.getString("aiProvider", act),
+                    JsonUtils.getJsonArray("conversations", act).toString()
+                )
+                chatDataList.add(csvRow)
+            }
         }
 
         private fun parseConversations(realm: Realm, jsonArray: JsonArray): RealmList<Conversation> {

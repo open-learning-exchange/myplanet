@@ -16,7 +16,6 @@ import androidx.recyclerview.widget.*
 import com.google.gson.*
 import com.google.gson.reflect.TypeToken
 import io.realm.Realm
-import io.realm.Sort
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -461,10 +460,18 @@ class ChatDetailFragment : Fragment() {
             add("conversations", conversationsArray)
         }
 
-        requireActivity().runOnUiThread {
-            RealmChatHistory.insert(mRealm, jsonObject)
+        CoroutineScope(Dispatchers.IO).launch {
+            val backgroundRealm = Realm.getDefaultInstance()
+            try {
+                RealmChatHistory.insert(backgroundRealm, jsonObject)
+            } finally {
+                backgroundRealm.close()
+            }
+
+            withContext(Dispatchers.Main) {
+                (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
+            }
         }
-        (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
     }
 
     private fun continueConversationRealm(id:String, query:String, chatResponse:String) {

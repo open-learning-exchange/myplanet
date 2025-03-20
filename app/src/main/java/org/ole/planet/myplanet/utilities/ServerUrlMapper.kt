@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
 import org.ole.planet.myplanet.BuildConfig
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
 class ServerUrlMapper(private val context: Context, private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE), private val editor: SharedPreferences.Editor = settings.edit()) {
@@ -36,7 +35,7 @@ class ServerUrlMapper(private val context: Context, private val settings: Shared
         return UrlMapping(url, alternativeUrl, extractedUrl)
     }
 
-    fun updateUrlPreferences(editor: SharedPreferences.Editor, uri: Uri, alternativeUrl: String, url: String, settings: SharedPreferences) {
+    fun updateUrlPreferences(editor: SharedPreferences.Editor, uri: Uri?, alternativeUrl: String, url: String, settings: SharedPreferences) {
         val urlUser: String
         val urlPwd: String
 
@@ -60,8 +59,8 @@ class ServerUrlMapper(private val context: Context, private val settings: Shared
         editor.apply {
             putString("url_user", urlUser)
             putString("url_pwd", urlPwd)
-            putString("url_Scheme", uri.scheme)
-            putString("url_Host", uri.host)
+            putString("url_Scheme", uri?.scheme)
+            putString("url_Host", uri?.host)
             putString("alternativeUrl", url)
             putString("processedAlternativeUrl", couchdbURL)
             putBoolean("isAlternativeUrl", true)
@@ -69,9 +68,9 @@ class ServerUrlMapper(private val context: Context, private val settings: Shared
         }
     }
 
-    private fun getUserInfo(uri: Uri): Array<String> {
+    private fun getUserInfo(uri: Uri?): Array<String> {
         val defaultInfo = arrayOf("", "")
-        val info = uri.userInfo?.split(":")?.dropLastWhile { it.isEmpty() }?.toTypedArray()
+        val info = uri?.userInfo?.split(":")?.dropLastWhile { it.isEmpty() }?.toTypedArray()
 
         return if ((info?.size ?: 0) > 1) {
             arrayOf(info!![0], info[1])
