@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.ui.exam
 import android.content.DialogInterface
 import android.graphics.Typeface
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -11,6 +13,7 @@ import android.view.View
 import android.widget.CompoundButton
 import android.widget.EditText
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -110,7 +113,11 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             continueExam()
         } else {
             isLastAnsvalid = false
-            Utilities.toast(activity, getString(R.string.incorrect_ans))
+            val toast = Toast.makeText(activity, getString(R.string.incorrect_ans), Toast.LENGTH_SHORT)
+            toast.show()
+            Handler(Looper.getMainLooper()).postDelayed({
+                toast.cancel()
+            }, 1000)
         }
     }
 
@@ -173,7 +180,11 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     fun showErrorMessage(s: String?): Boolean {
         if (ans.isEmpty() && listAns?.isEmpty() != false) {
             if (s != null) {
-                Utilities.toast(activity, s)
+                val toast = Toast.makeText(activity, s, Toast.LENGTH_SHORT)
+                toast.show()
+                Handler(Looper.getMainLooper()).postDelayed({
+                    toast.cancel()
+                }, 1000)
             }
             return true
         }
