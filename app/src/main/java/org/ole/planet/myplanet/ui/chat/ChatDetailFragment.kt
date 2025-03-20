@@ -6,6 +6,7 @@ import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.widget.Button
 import android.widget.TableRow
@@ -39,6 +40,7 @@ import retrofit2.Callback
 import retrofit2.Response
 import java.util.Date
 import java.util.Locale
+import androidx.core.view.isNotEmpty
 
 class ChatDetailFragment : Fragment() {
     lateinit var fragmentChatDetailBinding: FragmentChatDetailBinding
@@ -159,16 +161,61 @@ class ChatDetailFragment : Fragment() {
                 mAdapter.clearData()
                 fragmentChatDetailBinding.editGchatMessage.text.clear()
                 fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
-                if (conversations.isValid) {
+
+                // Add logging to debug the issue
+                Log.d("ChatDetailFragment", "Received chat history: ${conversations?.size ?: "null"} items, valid: ${conversations?.isValid}")
+
+                // Check if conversations is null or empty before processing
+                if (conversations != null && conversations.isValid && conversations.isNotEmpty()) {
+                    Log.d("ChatDetailFragment", "Processing ${conversations.size} conversations")
+
                     for (conversation in conversations) {
                         val query = conversation.query
                         val response = conversation.response
+
+                        Log.d("ChatDetailFragment", "Conversation: query=${query}, response=${response?.take(20)}...")
+
                         if (query != null) {
                             mAdapter.addQuery(query)
                         }
+
                         mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
+
                         if (response != null) {
                             mAdapter.addResponse(response)
+                        }
+                    }
+
+                    // Make sure to scroll to the bottom after adding items
+                    fragmentChatDetailBinding.recyclerGchat.post {
+                        fragmentChatDetailBinding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
+                    }
+                } else {
+                    Log.d("ChatDetailFragment", "No valid conversations to display")
+                }
+            }
+
+            sharedViewModel.getSelectedAiProvider().observe(viewLifecycleOwner) { selectedAiProvider ->
+                Log.d("AI_PROVIDER", "Selected AI Provider: $selectedAiProvider")
+                aiName = selectedAiProvider ?: aiName
+
+                // If we have a list of AI buttons already displayed, select the matching one
+                if (fragmentChatDetailBinding.aiTableRow.isNotEmpty()) {
+                    for (i in 0 until fragmentChatDetailBinding.aiTableRow.childCount) {
+                        val view = fragmentChatDetailBinding.aiTableRow.getChildAt(i)
+                        if (view is Button && view.text.toString().equals(selectedAiProvider, ignoreCase = true)) {
+                            // Find the corresponding model name
+                            val modelsString = settings.getString("ai_models", null)
+                            val modelsMap: Map<String, String> = if (modelsString != null) {
+                                Gson().fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type)
+                            } else {
+                                emptyMap()
+                            }
+                            val modelName = modelsMap[selectedAiProvider?.lowercase()] ?: "default-model"
+
+                            // Call selectAI with the appropriate parameters
+                            selectAI(view, "$selectedAiProvider", modelName)
+                            break
                         }
                     }
                 }
@@ -182,6 +229,7 @@ class ChatDetailFragment : Fragment() {
         sharedViewModel.getSelectedRev().observe(viewLifecycleOwner) { selectedRev ->
             _rev = selectedRev
         }
+
         view.post {
             clearChatDetail()
         }
@@ -310,7 +358,6 @@ class ChatDetailFragment : Fragment() {
         aiName = providerName
         aiModel = modelName
 
-        clearChatDetail()
         fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
     }
 
