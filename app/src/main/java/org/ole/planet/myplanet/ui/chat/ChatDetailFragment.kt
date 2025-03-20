@@ -443,8 +443,8 @@ class ChatDetailFragment : Fragment() {
             if (rev != null) {
                 _rev = rev
             }
-            addProperty("_rev",  responseBody.couchDBResponse?.rev ?: "")
-            addProperty("_id",responseBody.couchDBResponse?.id ?: "")
+            addProperty("_rev", responseBody.couchDBResponse?.rev ?: "")
+            addProperty("_id", responseBody.couchDBResponse?.id ?: "")
             addProperty("aiProvider", aiName)
             addProperty("user", user?.name)
             addProperty("title", query)
@@ -464,12 +464,17 @@ class ChatDetailFragment : Fragment() {
             val backgroundRealm = Realm.getDefaultInstance()
             try {
                 RealmChatHistory.insert(backgroundRealm, jsonObject)
+            } catch (e: Exception) {
+                e.printStackTrace()
             } finally {
                 backgroundRealm.close()
             }
 
             withContext(Dispatchers.Main) {
-                (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
+                val activity = requireActivity() as? DashboardActivity
+                if (activity != null && !activity.isFinishing) {
+                    activity.refreshChatHistoryList()
+                }
             }
         }
     }
