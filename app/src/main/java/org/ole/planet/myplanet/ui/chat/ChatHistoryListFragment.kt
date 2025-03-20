@@ -4,7 +4,6 @@ import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.os.Bundle
 import android.text.*
-import android.util.Log
 import android.view.*
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
@@ -124,12 +123,10 @@ class ChatHistoryListFragment : Fragment() {
             val newAdapter = ChatHistoryListAdapter(requireContext(), list, this)
             newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
                 override fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?, aiProvider: String?) {
-                    Log.d("ChatAdapter", "Selected conversations: $conversations, size: ${conversations?.size}")
                     conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
                     sharedViewModel.setSelectedId(id)
                     rev?.let { sharedViewModel.setSelectedRev(it) }
-                    aiProvider?.let { sharedViewModel.setSelectedAiProvider(it) } // Add this line
-
+                    aiProvider?.let { sharedViewModel.setSelectedAiProvider(it) }
                     fragmentChatHistoryListBinding.slidingPaneLayout.openPane()
                 }
             })

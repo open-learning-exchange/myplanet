@@ -34,7 +34,6 @@ import org.osmdroid.views.overlay.gridlines.LatLonGridlineOverlay.backgroundColo
 import java.text.Normalizer
 import java.util.Date
 import java.util.Locale
-import kotlin.text.get
 
 class ChatHistoryListAdapter(var context: Context, private var chatHistory: List<RealmChatHistory>, private val fragment: ChatHistoryListFragment) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding

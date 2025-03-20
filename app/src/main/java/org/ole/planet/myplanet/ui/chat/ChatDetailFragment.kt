@@ -6,7 +6,6 @@ import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
 import android.text.*
-import android.util.Log
 import android.view.*
 import android.widget.Button
 import android.widget.TableRow
@@ -17,7 +16,6 @@ import androidx.recyclerview.widget.*
 import com.google.gson.*
 import com.google.gson.reflect.TypeToken
 import io.realm.Realm
-import io.realm.Sort
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -40,7 +38,7 @@ import retrofit2.Callback
 import retrofit2.Response
 import java.util.Date
 import java.util.Locale
-import kotlin.toString
+import androidx.core.view.isNotEmpty
 
 class ChatDetailFragment : Fragment() {
     lateinit var fragmentChatDetailBinding: FragmentChatDetailBinding
@@ -82,7 +80,6 @@ class ChatDetailFragment : Fragment() {
         newsId = arguments?.getString("newsId")
         val newsRev = arguments?.getString("newsRev")
         val newsConversations = arguments?.getString("conversations")
-        Log.d("ChatDetailFragment", "newsId: $newsId, newsRev: $newsRev, newsConversations: $newsConversations")
         checkAiProviders()
         if (mAdapter.itemCount > 0) {
             fragmentChatDetailBinding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
@@ -159,30 +156,47 @@ class ChatDetailFragment : Fragment() {
             }
         } else {
             sharedViewModel.getSelectedChatHistory().observe(viewLifecycleOwner) { conversations ->
-                Log.d("ChatDetailFragment", "Observer triggered with ${conversations?.size ?: "null"} conversations")
-
                 mAdapter.clearData()
-                // Set the response source BEFORE adding items
-                Log.d("ChatDetailFragment", "Observer triggered with ${conversations?.size ?: "null"} conversations")
-
-                mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
-
                 fragmentChatDetailBinding.editGchatMessage.text.clear()
                 fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
-                if (conversations != null && conversations.isNotEmpty()) {
-                    Log.d("ChatDetailFragment", "conversations: $conversations")
+                if (conversations != null && conversations.isValid && conversations.isNotEmpty()) {
                     for (conversation in conversations) {
                         val query = conversation.query
                         val response = conversation.response
                         if (query != null) {
                             mAdapter.addQuery(query)
                         }
+
+                        mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
+
                         if (response != null) {
                             mAdapter.addResponse(response)
                         }
                     }
+                    fragmentChatDetailBinding.recyclerGchat.post {
+                        fragmentChatDetailBinding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
+                    }
                 } else {
-                    Log.d("ChatDetailFragment", "No conversations to display")
+                    Log.d("ChatDetailFragment", "No valid conversations to display")
+                }
+            }
+            sharedViewModel.getSelectedAiProvider().observe(viewLifecycleOwner) { selectedAiProvider ->
+                aiName = selectedAiProvider ?: aiName
+                if (fragmentChatDetailBinding.aiTableRow.isNotEmpty()) {
+                    for (i in 0 until fragmentChatDetailBinding.aiTableRow.childCount) {
+                        val view = fragmentChatDetailBinding.aiTableRow.getChildAt(i)
+                        if (view is Button && view.text.toString().equals(selectedAiProvider, ignoreCase = true)) {
+                            val modelsString = settings.getString("ai_models", null)
+                            val modelsMap: Map<String, String> = if (modelsString != null) {
+                                Gson().fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type)
+                            } else {
+                                emptyMap()
+                            }
+                            val modelName = modelsMap[selectedAiProvider?.lowercase()] ?: "default-model"
+                            selectAI(view, "$selectedAiProvider", modelName)
+                            break
+                        }
+                    }
                 }
             }
         }
@@ -193,13 +207,6 @@ class ChatDetailFragment : Fragment() {
 
         sharedViewModel.getSelectedRev().observe(viewLifecycleOwner) { selectedRev ->
             _rev = selectedRev
-        }
-
-        sharedViewModel.getSelectedAiProvider().observe(viewLifecycleOwner) { provider ->
-            if (!provider.isNullOrEmpty()) {
-                aiName = provider
-                selectAIByName(provider)
-            }
         }
         view.post {
             clearChatDetail()
@@ -238,7 +245,6 @@ class ChatDetailFragment : Fragment() {
                                         responseString,
                                         object : TypeToken<Map<String, Boolean>>() {}.type
                                     )
-                                    Log.d("AI_PROVIDERS", aiProvidersResponse.toString())
                                     updateAIButtons(aiProvidersResponse)
                                 } catch (e: JsonSyntaxException) {
                                     e.printStackTrace()
@@ -329,8 +335,6 @@ class ChatDetailFragment : Fragment() {
         aiName = providerName
         aiModel = modelName
 
-
-        clearChatDetail()
         fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
     }
 
@@ -455,7 +459,6 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun saveNewChat(query: String, chatResponse: String, responseBody: ChatModel) {
-        Log.d("ChatDetailFragment", "Saving new chat")
         val jsonObject = JsonObject().apply {
             val id = responseBody.couchDBResponse?.id
             val rev = responseBody.couchDBResponse?.rev
@@ -478,11 +481,8 @@ class ChatDetailFragment : Fragment() {
                 addProperty("query", query)
                 addProperty("response", chatResponse)
             }
-            Log.d("ChatDetailFragment", "New chat: $conversationObject")
             conversationsArray.add(conversationObject)
-            Log.d("ChatDetailFragment", "New chat: $conversationsArray")
             add("conversations", conversationsArray)
-            Log.d("ChatDetailFragment", "New chat: $this")
         }
 
         requireActivity().runOnUiThread {
@@ -525,28 +525,4 @@ class ChatDetailFragment : Fragment() {
             editor.apply()
         }
     }
-
-    private fun selectAIByName(providerName: String) {
-        if (providerName.isEmpty()) return
-
-        val aiTableRow = fragmentChatDetailBinding.aiTableRow
-        for (i in 0 until aiTableRow.childCount) {
-            val view = aiTableRow.getChildAt(i)
-            if (view is Button && view.text.toString().equals(providerName, ignoreCase = true)) {
-                selectAI(view, providerName, getModelForProvider(providerName))
-                break
-            }
-        }
-    }
-
-    private fun getModelForProvider(providerName: String): String {
-        val modelsString = settings.getString("ai_models", null)
-        val modelsMap: Map<String, String> = if (modelsString != null) {
-            Gson().fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type)
-        } else {
-            emptyMap()
-        }
-        return modelsMap[providerName.lowercase()] ?: "default-model"
-    }
-
 }
