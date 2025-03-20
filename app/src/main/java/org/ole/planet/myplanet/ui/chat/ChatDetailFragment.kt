@@ -82,6 +82,7 @@ class ChatDetailFragment : Fragment() {
         newsId = arguments?.getString("newsId")
         val newsRev = arguments?.getString("newsRev")
         val newsConversations = arguments?.getString("conversations")
+        Log.d("ChatDetailFragment", "newsId: $newsId, newsRev: $newsRev, newsConversations: $newsConversations")
         checkAiProviders()
         if (mAdapter.itemCount > 0) {
             fragmentChatDetailBinding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
@@ -162,6 +163,8 @@ class ChatDetailFragment : Fragment() {
 
                 mAdapter.clearData()
                 // Set the response source BEFORE adding items
+                Log.d("ChatDetailFragment", "Observer triggered with ${conversations?.size ?: "null"} conversations")
+
                 mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
 
                 fragmentChatDetailBinding.editGchatMessage.text.clear()
@@ -452,6 +455,7 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun saveNewChat(query: String, chatResponse: String, responseBody: ChatModel) {
+        Log.d("ChatDetailFragment", "Saving new chat")
         val jsonObject = JsonObject().apply {
             val id = responseBody.couchDBResponse?.id
             val rev = responseBody.couchDBResponse?.rev
@@ -474,8 +478,11 @@ class ChatDetailFragment : Fragment() {
                 addProperty("query", query)
                 addProperty("response", chatResponse)
             }
+            Log.d("ChatDetailFragment", "New chat: $conversationObject")
             conversationsArray.add(conversationObject)
+            Log.d("ChatDetailFragment", "New chat: $conversationsArray")
             add("conversations", conversationsArray)
+            Log.d("ChatDetailFragment", "New chat: $this")
         }
 
         requireActivity().runOnUiThread {
