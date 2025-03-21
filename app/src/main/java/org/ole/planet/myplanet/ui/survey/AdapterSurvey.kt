@@ -31,6 +31,7 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
     private var listener: OnHomeItemClickListener? = null
     private val adoptedSurveyIds = mutableSetOf<String>()
     private var isTitleAscending = true
+    private var activeFilter = 0
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -45,8 +46,23 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
         diffResult.dispatchUpdatesTo(this)
     }
 
-    private fun SortSurveyList(isAscend: Boolean){
-        val list = examList.toList()
+    fun updateDataAfterSearch(newList: List<RealmStepExam>) {
+        if(examList.isEmpty()){
+            examList = newList
+        } else{
+            if(activeFilter == 0){
+                SortSurveyList(false, newList)
+            } else if(activeFilter == 1) {
+                SortSurveyList(true, newList)
+            } else{
+                SortSurveyListByName(isTitleAscending, newList)
+            }
+        }
+        notifyDataSetChanged()
+    }
+
+    private fun SortSurveyList(isAscend: Boolean, list: List<RealmStepExam> = examList){
+        val list = list.toList()
         Collections.sort(list) { survey1, survey2 ->
             if (isAscend) {
                 survey1?.createdDate!!.compareTo(survey2?.createdDate!!)
@@ -58,19 +74,21 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
     }
 
     fun SortByDate(isAscend: Boolean){
+        activeFilter = if (isAscend) 1 else 0
         SortSurveyList(isAscend)
         notifyDataSetChanged()
     }
 
-    private fun SortSurveyListByName(isAscend: Boolean){
+    private fun SortSurveyListByName(isAscend: Boolean, list: List<RealmStepExam> = examList){
         examList = if (isAscend) {
-            examList.sortedBy { it.name?.lowercase() }
+            list.sortedBy { it.name?.lowercase() }
         } else {
-            examList.sortedByDescending { it.name?.lowercase() }
+            list.sortedByDescending { it.name?.lowercase() }
         }
     }
 
     fun toggleTitleSortOrder() {
+        activeFilter = 2
         isTitleAscending = !isTitleAscending
         SortSurveyListByName(isTitleAscending)
         notifyDataSetChanged()
