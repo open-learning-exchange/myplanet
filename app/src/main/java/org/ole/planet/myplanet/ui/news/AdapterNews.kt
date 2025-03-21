@@ -136,6 +136,11 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     holder.rowNewsBinding.linearLayout51.visibility = View.GONE
                 }
                 holder.rowNewsBinding.tvDate.text = formatDate(news.time)
+                if (news.isEdited) {
+                    holder.rowNewsBinding.tvEdited.visibility = View.VISIBLE
+                } else {
+                    holder.rowNewsBinding.tvEdited.visibility = View.GONE
+                }
                 if (news.userId == currentUser?._id) {
                     holder.rowNewsBinding.imgDelete.setOnClickListener {
                         AlertDialog.Builder(context)
@@ -408,7 +413,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             return
         }
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        news?.message = s
+        news?.updateMessage(s)
         mRealm.commitTransaction()
         notifyDataSetChanged()
         listener?.clearImages()
@@ -432,9 +437,11 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun showHideButtons(userModel: RealmUserModel, holder: RecyclerView.ViewHolder) {
         val viewHolder = holder as ViewHolderNews
-        if (currentUser?.id == userModel.id) {
+        if (currentUser?.id == userModel.id && !fromLogin && !nonTeamMember) {
             viewHolder.rowNewsBinding.llEditDelete.visibility = View.VISIBLE
             viewHolder.rowNewsBinding.btnAddLabel.visibility = View.VISIBLE
+            viewHolder.rowNewsBinding.imgEdit.visibility = View.VISIBLE
+            viewHolder.rowNewsBinding.imgDelete.visibility = View.VISIBLE
         } else {
             viewHolder.rowNewsBinding.llEditDelete.visibility = View.GONE
             viewHolder.rowNewsBinding.btnAddLabel.visibility = View.GONE
