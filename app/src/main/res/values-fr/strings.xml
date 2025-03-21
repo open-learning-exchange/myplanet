@@ -1256,7 +1256,6 @@
     <string name="version_not_found">Version non trouvée.</string>
     <string name="connection_failed">Échec de la connexion !</string>
     <string name="unable_to_create_user_user_already_exists">Impossible de créer l\'utilisateur, l\'utilisateur existe déjà.</string>
-    <string name="unable_to_create_user">Impossible de créer l\'utilisateur.</string>
     <string name="not_connect_to_planet_created_user_offline">Non connecté à la planète, utilisateur créé hors ligne.</string>
     <string name="user_created_successfully">Utilisateur créé avec succès.</string>
     <string name="unable_to_save_user_please_sync">Impossible d\'enregistrer l\'utilisateur, veuillez synchroniser.</string>
