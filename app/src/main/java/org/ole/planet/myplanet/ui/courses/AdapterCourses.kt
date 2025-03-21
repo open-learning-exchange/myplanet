@@ -57,6 +57,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
             homeItemClickListener = context
         }
         selectedItems.clear()
+        areAllSelected = false
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
     }
 
@@ -78,6 +79,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     }
 
     fun setCourseList(courseList: List<RealmMyCourse?>) {
+        selectedItems.clear()
         this.courseList = courseList
         notifyDataSetChanged()
     }
@@ -229,12 +231,14 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         val notMyCourse = courseList.count { course ->
             course != null && !course.isMyCourse
         }
+        println("selectedItems.size: ${selectedItems.size}, notMyCourse: $notMyCourse")
         areAllSelected = selectedItems.size == notMyCourse
         return areAllSelected
     }
 
     fun selectAllItems(selectAll: Boolean) {
         selectedItems.clear()
+        println("selectAllItems: $selectAll")
         if (selectAll) {
             selectedItems.addAll(courseList.filter { course ->
                 course != null && !course.isMyCourse
