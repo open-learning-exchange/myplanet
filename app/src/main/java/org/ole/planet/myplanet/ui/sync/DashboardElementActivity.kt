@@ -219,8 +219,12 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     fun logout() {
         CoroutineScope(Dispatchers.Main).launch {
             profileDbHandler.onLogout()
-            settings.edit().putBoolean(Constants.KEY_LOGIN, false).apply()
-            settings.edit().putBoolean(Constants.KEY_NOTIFICATION_SHOWN, false).apply()
+            settings.edit().apply {
+                putBoolean(Constants.KEY_LOGIN, false)
+                putBoolean(Constants.KEY_NOTIFICATION_SHOWN, false)
+                putBoolean(Constants.KEY_REMIND_ME_LATER, false)
+                apply()
+            }
             val loginScreen = Intent(this@DashboardElementActivity, LoginActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(loginScreen)
