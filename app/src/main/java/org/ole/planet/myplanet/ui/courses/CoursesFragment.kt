@@ -386,12 +386,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun updateCheckBoxState(programmaticState: Boolean) {
         isCheckboxChangedByCode = true
         selectAll.isChecked = programmaticState
+        println(selectAll.isChecked)
         isCheckboxChangedByCode = false
     }
     private fun changeButtonStatus() {
         tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
         btnRemove.isEnabled = (selectedItems?.size ?: 0) > 0
         btnArchive.isEnabled = (selectedItems?.size ?: 0) > 0
+        println("are all: ${adapterCourses.areAllSelected()}")
         if (adapterCourses.areAllSelected()) {
             updateCheckBoxState(true)
             selectAll.text = getString(R.string.unselect_all)
