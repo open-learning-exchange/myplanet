@@ -131,16 +131,42 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun checkPendingSurveys() {
-        val pendingSurveys = getPendingSurveys(user?.id, mRealm)
+        // First, get only valid pending surveys by joining with exam data
+        val validPendingSurveys = mutableListOf<Pair<RealmSubmission, String>>()
 
-        if (pendingSurveys.isNotEmpty()) {
-            val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)
+        mRealm.where(RealmSubmission::class.java)
+            .equalTo("userId", user?.id)
+            .equalTo("type", "survey")
+            .equalTo("status", "pending", Case.INSENSITIVE)
+            .findAll().forEach { submission ->
+                val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
+                if (examId.isNotEmpty()) {
+                    val exam = mRealm.where(RealmStepExam::class.java)
+                        .equalTo("id", examId)
+                        .findFirst()
 
+                    if (exam != null && !exam.name.isNullOrEmpty()) {
+                        validPendingSurveys.add(Pair(submission, exam.name!!))
+                    }
+                }
+            }
+
+        // Log for debugging
+        println("DEBUG: Found ${validPendingSurveys.size} valid pending surveys")
+        validPendingSurveys.forEachIndexed { index, pair ->
+            println("DEBUG: Survey $index - ID: ${pair.first.id}, Title: ${pair.second}")
+        }
+
+        // Only show dialog if we have valid surveys
+        if (validPendingSurveys.isNotEmpty()) {
             val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
             val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
             recyclerView.layoutManager = LinearLayoutManager(requireActivity())
+
+            val surveyCount = validPendingSurveys.size
             val alertDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
-                .setTitle(getString(R.string.surveys_to_complete, pendingSurveys.size, if (pendingSurveys.size > 1) "surveys" else "survey"))
+                .setTitle(getString(R.string.surveys_to_complete, surveyCount,
+                    if (surveyCount > 1) "surveys" else "survey"))
                 .setView(dialogView)
                 .setPositiveButton(getString(R.string.ok)) { dialog, _ ->
                     homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
@@ -151,10 +177,15 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 }
                 .create()
 
-            val adapter = SurveyAdapter(surveyTitles, { position ->
-                val selectedSurvey = pendingSurveys[position].id
-                AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
-            }, alertDialog)
+            // Create an adapter that works with our paired data
+            val adapter = SurveyAdapter(
+                validPendingSurveys.map { it.second },
+                { position ->
+                    val selectedSurvey = validPendingSurveys[position].first.id
+                    AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
+                },
+                alertDialog
+            )
 
             recyclerView.adapter = adapter
             alertDialog.show()
