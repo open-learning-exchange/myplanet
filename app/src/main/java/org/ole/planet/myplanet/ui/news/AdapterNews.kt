@@ -122,8 +122,14 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 holder.rowNewsBinding.sharedChat.visibility = View.GONE
 
                 val userModel = mRealm.where(RealmUserModel::class.java).equalTo("id", news.userId).findFirst()
+                val userFullName = userModel?.getFullNameWithMiddleName()?.trim()
                 if (userModel != null && currentUser != null) {
-                    holder.rowNewsBinding.tvName.text = userModel.toString()
+                    if(userFullName.isNullOrEmpty()){
+                        holder.rowNewsBinding.tvName.text = news.userName
+                    } else {
+                        println("userFullName: $userFullName")
+                        holder.rowNewsBinding.tvName.text = userFullName
+                    }
                     Utilities.loadImage(userModel.userImage, holder.rowNewsBinding.imgUser)
                     showHideButtons(userModel, holder)
                 } else {
