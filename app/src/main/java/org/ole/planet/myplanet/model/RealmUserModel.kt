@@ -89,9 +89,10 @@ open class RealmUserModel : RealmObject() {
         jsonObject.addProperty("phoneNumber", phoneNumber)
         jsonObject.addProperty("birthDate", dob)
         jsonObject.addProperty("age", age)
+
         try {
-            jsonObject.addProperty("iterations", iterations?.toInt())
-        } catch (e: Exception) {
+            jsonObject.addProperty("iterations", iterations?.takeIf { it.isNotBlank() }?.toInt() ?: 10)
+        } catch (e: NumberFormatException) {
             e.printStackTrace()
             jsonObject.addProperty("iterations", 10)
         }
