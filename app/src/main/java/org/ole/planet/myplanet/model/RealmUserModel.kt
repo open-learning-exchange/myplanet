@@ -155,6 +155,10 @@ open class RealmUserModel : RealmObject() {
         return "$firstName $lastName"
     }
 
+    fun getFullNameWithMiddleName(): String {
+        return "$firstName ${middleName ?: ""} $lastName"
+    }
+
     fun addImageUrl(jsonDoc: JsonObject?) {
         if (jsonDoc?.has("_attachments") == true) {
             val element = JsonParser.parseString(jsonDoc["_attachments"].asJsonObject.toString())
