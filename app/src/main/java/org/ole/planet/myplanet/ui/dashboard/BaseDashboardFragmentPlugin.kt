@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import android.os.Bundle
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -49,6 +50,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
     }
 
     private fun handleClickMyLife(title: String, v: View) {
+        Log.d("BaseDashboardFragmentPlugin", "handleClickMyLife: $title")
         v.setOnClickListener {
             if (homeItemClickListener != null) {
                 if (title == "mySubmissions") {
@@ -63,7 +65,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
                     homeItemClickListener?.openCallFragment(ReferenceFragment())
                 } else if (title == "Calendar") {
                     homeItemClickListener?.openCallFragment(CalendarFragment())
-                } else if (title == "mySurvey") {
+                } else if (title == "mySurveys") {
                     if (model?.id?.startsWith("guest") == false) {
                         homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
                     } else {
@@ -90,6 +92,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
                         guestDialog(requireContext())
                     }
                 } else {
+                    Log.d("BaseDashboardFragmentPlugin", "handleClickMyLife: $title")
                     Utilities.toast(activity, getString(R.string.feature_not_available))
                 }
             }
