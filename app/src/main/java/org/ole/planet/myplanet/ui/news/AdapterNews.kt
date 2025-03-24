@@ -7,7 +7,6 @@ import android.content.DialogInterface
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Build
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -56,9 +55,6 @@ import androidx.core.graphics.drawable.toDrawable
 
 class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
 
-    init {
-        Log.d("AdapterNews", "Team name passed: $teamName")
-    }
     private lateinit var rowNewsBinding: RowNewsBinding
     private var listener: OnNewsItemClickListener? = null
     private var imageList: RealmList<String>? = null
