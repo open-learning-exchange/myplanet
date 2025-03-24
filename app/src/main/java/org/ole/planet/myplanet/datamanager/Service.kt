@@ -53,6 +53,7 @@ import retrofit2.Response
 import java.io.IOException
 import java.util.concurrent.Executors
 import kotlin.math.min
+import androidx.core.net.toUri
 
 class Service(private val context: Context) {
     private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -180,7 +181,7 @@ class Service(private val context: Context) {
 
             if (!primaryAvailable && alternativeAvailable) {
                 mapping.alternativeUrl.let { alternativeUrl ->
-                    val uri = Uri.parse(updateUrl)
+                    val uri = updateUrl.toUri()
                     val editor = preferences.edit()
 
                     serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, preferences)
@@ -377,7 +378,7 @@ class Service(private val context: Context) {
                                     val currentVersion = context.getString(R.string.app_version)
 
                                     if (minApkVersion != null && isVersionAllowed(currentVersion, minApkVersion)) {
-                                        val uri = Uri.parse(currentUrl)
+                                        val uri = currentUrl.toUri()
                                         val couchdbURL = if (currentUrl.contains("@")) {
                                             getUserInfo(uri)
                                             currentUrl
