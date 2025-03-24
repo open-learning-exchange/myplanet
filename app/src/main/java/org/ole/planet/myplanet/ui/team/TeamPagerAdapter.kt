@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.team
 
 import android.os.Bundle
 import android.text.TextUtils
-import android.util.Log
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
@@ -55,7 +54,6 @@ class TeamPagerAdapter(fm: FragmentActivity, private val team: RealmMyTeam?, isI
         }
         val fragment: Fragment = when (list[position]) {
             context.getString(R.string.chat) -> {
-                Log.d("TeamPagerAdapter", "Passing teamName: ${team?.name}")
                 val chatFragment = DiscussionListFragment()
                 val bundle = Bundle()
                 bundle.putString("teamName", team?.name ?: "")

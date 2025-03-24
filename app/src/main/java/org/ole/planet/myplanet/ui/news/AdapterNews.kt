@@ -118,7 +118,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                         }
                     }
                 } catch (e: Exception) {
-                    // Optional: Log or ignore
                 }
             }
 
