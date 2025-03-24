@@ -176,7 +176,7 @@ class NewsFragment : BaseNewsFragment() {
                 .findAll()
             getUrlsAndStartDownload(lib, urls)
             adapterNews = activity?.let {
-                AdapterNews(it, list?.toMutableList() ?: mutableListOf(), user, null)
+                AdapterNews(it, list?.toMutableList() ?: mutableListOf(), user, null, "")
             }
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
