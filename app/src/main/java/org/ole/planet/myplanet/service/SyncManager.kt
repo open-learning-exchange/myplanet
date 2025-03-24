@@ -102,14 +102,7 @@ class SyncManager private constructor(private val context: Context) {
 
     private fun startFullSync() {
         try {
-            val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-            val wifiInfo = wifiManager.connectionInfo
-            if (wifiInfo.supplicantState == SupplicantState.COMPLETED) {
-                settings.edit().putString("LastWifiSSID", wifiInfo.ssid).apply()
-            }
-            isSyncing = true
-            create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")
-            mRealm = dbService.realmInstance
+            initializeSync()
 
             runBlocking {
                 val syncJobs = listOf(

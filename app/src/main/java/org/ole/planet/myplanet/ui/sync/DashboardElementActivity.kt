@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.sync
 
+import android.util.Log
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Intent
@@ -171,6 +172,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         currentDialog = dialog
         service.getMinApk(this, url, serverPin, this, "DashboardActivity")
         createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
+        Log.d("okuro1", "dashboard logSyncInSharedPrefs()")
     }
 
     @SuppressLint("RestrictedApi")

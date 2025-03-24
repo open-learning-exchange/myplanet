@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -125,6 +126,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 isSync = false
                 forceSync = true
                 service.checkVersion(this, settings)
+                Log.d("okuro", "checkVersion called in $callerActivity")
             }
             else -> {
                 if (serverConfigAction == "sync") {
@@ -977,6 +979,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     private fun continueSyncProcess() {
+        Log.d("isSync", "isSync: $isSync, forceSync: $forceSync")
         try {
             lifecycleScope.launch {
                 if (isSync) {
