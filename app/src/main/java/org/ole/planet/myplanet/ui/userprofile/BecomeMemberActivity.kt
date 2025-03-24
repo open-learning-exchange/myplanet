@@ -252,7 +252,7 @@ class BecomeMemberActivity : BaseActivity() {
                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 startActivity(intent)
                 finish()
-            }, 3000)
+            }, 5000)
         }
     }
 
