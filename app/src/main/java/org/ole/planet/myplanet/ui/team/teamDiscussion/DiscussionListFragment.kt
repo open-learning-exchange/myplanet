@@ -4,7 +4,6 @@ import android.content.DialogInterface
 import android.content.res.Configuration
 import android.os.Bundle
 import android.text.TextUtils
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -59,7 +58,6 @@ class DiscussionListFragment : BaseTeamFragment() {
         val realmNewsList = news
         val count = realmNewsList.size
         teamName = arguments?.getString("teamName") ?: ""
-        Log.d("DiscussionListFragment", "Received teamName: $teamName")
         mRealm.executeTransactionAsync { realm: Realm ->
             var notification = realm.where(RealmTeamNotification::class.java).equalTo("type", "chat").equalTo("parentId", teamId).findFirst()
             if (notification == null) {
