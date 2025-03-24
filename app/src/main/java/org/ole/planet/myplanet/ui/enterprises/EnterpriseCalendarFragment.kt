@@ -5,11 +5,17 @@ import android.os.*
 import android.view.*
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.applandeo.materialcalendarview.CalendarDay
 import com.applandeo.materialcalendarview.CalendarView
 import com.applandeo.materialcalendarview.listeners.OnCalendarDayClickListener
 import com.google.gson.*
+import io.realm.Realm
+import io.realm.RealmResults
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.*
 import org.ole.planet.myplanet.model.RealmMeetup
@@ -27,6 +33,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
     private lateinit var start: Calendar
     private lateinit var end: Calendar
     private lateinit var calendarEventsMap: MutableMap<CalendarDay, RealmMeetup>
+    private lateinit var meetupList: RealmResults<RealmMeetup>
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentEnterpriseCalendarBinding = FragmentEnterpriseCalendarBinding.inflate(inflater, container, false)
@@ -107,17 +114,25 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        setupCalendarClickListener()
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         list = mutableListOf()
         calendar = fragmentEnterpriseCalendarBinding.calendarView
         calendarEventsMap = mutableMapOf()
+        meetupList = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
+        setupCalendarClickListener()
+    }
+
+    private fun setupCalendarClickListener(){
         fragmentEnterpriseCalendarBinding.calendarView.setOnCalendarDayClickListener(object : OnCalendarDayClickListener {
             override fun onClick(calendarDay: CalendarDay) {
                 val clickedCalendar = calendarDay.calendar
                 val clickedDateInMillis = clickedCalendar.timeInMillis
-
-                val meetupList = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
                 val isDateMarked = meetupList.any { meetup ->
                     meetup.startDate == clickedDateInMillis
                 }
@@ -137,7 +152,6 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                 }
             }
         })
-
         refreshCalendarView()
     }
 
@@ -156,17 +170,34 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
     }
 
     private fun refreshCalendarView() {
-        val meetupList = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
-        val eventDates: MutableList<Calendar> = mutableListOf()
-        val calendarInstance = Calendar.getInstance()
-
-        for (meetup in meetupList) {
-            val startDateMillis = meetup.startDate
-            calendarInstance.timeInMillis = startDateMillis
-            eventDates.add(calendarInstance.clone() as Calendar)
+        if (teamId.isEmpty()) {
+            return
         }
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            var meetupList = mutableListOf<RealmMeetup>()
+            val eventDates: MutableList<Calendar> = mutableListOf()
+            val realm = Realm.getDefaultInstance()
+            try {
+                meetupList = realm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
+                val calendarInstance = Calendar.getInstance()
 
-        fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
+                for (meetup in meetupList) {
+                    val startDateMillis = meetup.startDate
+                    calendarInstance.timeInMillis = startDateMillis
+                    eventDates.add(calendarInstance.clone() as Calendar)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                println("hi")
+                realm.close()
+            }
+            withContext(Dispatchers.Main) {
+                if (isAdded && activity != null) {
+                    fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
+                }
+            }
+        }
     }
 
     private fun showHideFab() {
