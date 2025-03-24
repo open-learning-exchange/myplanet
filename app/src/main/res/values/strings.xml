@@ -1256,7 +1256,6 @@
     <string name="version_not_found">Version not found.</string>
     <string name="connection_failed">Connection failed!</string>
     <string name="unable_to_create_user_user_already_exists">Unable to create user, user already exists.</string>
-    <string name="unable_to_create_user">Unable to create user, user already exists.</string>
     <string name="not_connect_to_planet_created_user_offline">Not connected to planet, created user offline.</string>
     <string name="user_created_successfully">User created successfully.</string>
     <string name="unable_to_save_user_please_sync">Unable to save user, please sync.</string>

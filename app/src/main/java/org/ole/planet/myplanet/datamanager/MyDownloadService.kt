@@ -205,7 +205,11 @@ class MyDownloadService : Service() {
     }
 
     private fun sendNotification(download: Download) {
-        download.fileName = "Downloading: ${getFileNameFromUrl(urls[currentIndex])}"
+        val url = urls.getOrNull(currentIndex) ?: run {
+            return
+        }
+
+        download.fileName = "Downloading: ${getFileNameFromUrl(url)}"
         sendIntent(download, fromSync)
 
         if (NotificationManagerCompat.from(this).areNotificationsEnabled()) {
