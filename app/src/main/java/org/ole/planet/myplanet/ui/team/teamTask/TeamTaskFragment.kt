@@ -110,20 +110,27 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             textSize = 24f
             typeface = Typeface.DEFAULT_BOLD
         }
-        val alertDialog = AlertDialog.Builder(requireActivity()).setCustomTitle(titleView)
+        val builder = AlertDialog.Builder(requireActivity()).setCustomTitle(titleView)
             .setView(alertTaskBinding.root)
-            .setPositiveButton(R.string.save) { _: DialogInterface?, _: Int ->
-                val task = alertTaskBinding.etTask.text.toString()
-                val desc = alertTaskBinding.etDescription.text.toString()
-                if (task.isEmpty()) {
-                    Utilities.toast(activity, getString(R.string.task_title_is_required))
-                } else if (deadline == null) {
-                    Utilities.toast(activity, getString(R.string.deadline_is_required))
-                } else {
-                    createOrUpdateTask(task, desc, t)
-                    setAdapter()
-                }
-            }.setNegativeButton(getString(R.string.cancel), null).show()
+            .setPositiveButton(R.string.save, null)
+            .setNegativeButton(getString(R.string.cancel), null)
+
+        val alertDialog = builder.create()
+        alertDialog.show()
+
+        alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val task = alertTaskBinding.etTask.text.toString()
+            val desc = alertTaskBinding.etDescription.text.toString()
+            if (task.isEmpty()) {
+                Utilities.toast(activity, getString(R.string.task_title_is_required))
+            } else if (deadline == null) {
+                Utilities.toast(activity, getString(R.string.deadline_is_required))
+            } else {
+                createOrUpdateTask(task, desc, t)
+                setAdapter()
+                alertDialog.dismiss()
+            }
+        }
         alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
     }
 
