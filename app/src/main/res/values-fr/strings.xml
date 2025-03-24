@@ -190,7 +190,7 @@
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">Affichage de la réponse de :</string>
     <string name="open_date">Date d\'ouverture</string>
-    <string name="my_survey">Mon sondage</string>
+    <string name="my_survey">mySurveys</string>
     <string name="cannot_remove_user">L\'utilisateur n\'a pas pu être supprimé</string>
     <string name="no_members_task">Aucun membre de l\'équipe présent pour attribuer des tâches</string>
     <string name="no_member_selected">Aucun membre sélectionné. Veuillez réessayer</string>
@@ -435,8 +435,8 @@
     </string-array>
 
     <string-array name="sort_by_date">
-        <item>Ordre par date - Asc</item>
         <item>Ordre par date - Desc</item>
+        <item>Ordre par date - Asc</item>
         <item>Ordre par titre</item>
     </string-array>
 
@@ -1256,12 +1256,13 @@
     <string name="version_not_found">Version non trouvée.</string>
     <string name="connection_failed">Échec de la connexion !</string>
     <string name="unable_to_create_user_user_already_exists">Impossible de créer l\'utilisateur, l\'utilisateur existe déjà.</string>
-    <string name="unable_to_create_user">Impossible de créer l\'utilisateur.</string>
     <string name="not_connect_to_planet_created_user_offline">Non connecté à la planète, utilisateur créé hors ligne.</string>
     <string name="user_created_successfully">Utilisateur créé avec succès.</string>
     <string name="unable_to_save_user_please_sync">Impossible d\'enregistrer l\'utilisateur, veuillez synchroniser.</string>
     <string name="server_sync_successfully">Synchronisation du serveur réussie.</string>
     <string name="server_sync_has_failed">La synchronisation du serveur a échoué.</string>
     <string name="no_resources_to_download">Aucune ressource à télécharger</string>
+    <string name="response">Réponse</string>
+    <string name="full_conversation_response">Réponse complète de la conversation</string>
 
 </resources>
