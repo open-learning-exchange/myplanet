@@ -82,7 +82,7 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
     private fun updatedNewsList(updatedList: RealmResults<RealmNews>?) {
         activity?.runOnUiThread {
             val updatedListAsMutable: MutableList<RealmNews?> = updatedList?.toMutableList() ?: mutableListOf()
-            val adapter = activity?.let { AdapterNews(it, updatedListAsMutable, user, null) }
+            val adapter = activity?.let { AdapterNews(it, updatedListAsMutable, user, null, "") }
             adapter?.setListener(this)
             adapter?.setFromLogin(requireArguments().getBoolean("fromLogin", false))
             adapter?.setmRealm(mRealm)
