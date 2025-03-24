@@ -127,7 +127,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     if(userFullName.isNullOrEmpty()){
                         holder.rowNewsBinding.tvName.text = news.userName
                     } else {
-                        println("userFullName: $userFullName")
                         holder.rowNewsBinding.tvName.text = userFullName
                     }
                     Utilities.loadImage(userModel.userImage, holder.rowNewsBinding.imgUser)
