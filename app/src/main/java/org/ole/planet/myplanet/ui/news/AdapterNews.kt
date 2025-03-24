@@ -121,7 +121,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 }
             }
 
-            holder.rowNewsBinding.teamName2.text = teamName
+            holder.rowNewsBinding.tvTeamName.text = if (teamName.isNotBlank()) "From team: $teamName" else ""
 
             if (news?.isValid == true) {
                 holder.rowNewsBinding.tvName.text = ""
