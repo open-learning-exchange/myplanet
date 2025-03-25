@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
+import androidx.core.net.toUri
 
 abstract class BaseContainerFragment : BaseResourceFragment() {
     private var timesRated: TextView? = null
@@ -245,7 +246,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
 //    private fun requestInstallPermission() {
 //        val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
-//        intent.data = Uri.parse("package:" + MainApplication.context.packageName)
+//        intent.data = ("package:" + MainApplication.context.packageName).toUri()
 //        installApkLauncher.launch(intent)
 //    }
 
