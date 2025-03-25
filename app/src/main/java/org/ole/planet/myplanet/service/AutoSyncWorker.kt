@@ -88,6 +88,6 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
 
     override fun onSuccess(success: String?) {
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        settings.edit() { putLong("lastUsageUploaded", Date().time) }
+        settings.edit { putLong("lastUsageUploaded", Date().time) }
     }
 }
