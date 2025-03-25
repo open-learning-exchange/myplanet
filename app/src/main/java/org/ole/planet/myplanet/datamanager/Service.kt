@@ -116,19 +116,13 @@ class Service(private val context: Context) {
 
         retrofitInterface?.checkVersion(Utilities.getUpdateUrl(settings))?.enqueue(object : Callback<MyPlanet?> {
             override fun onResponse(call: Call<MyPlanet?>, response: Response<MyPlanet?>) {
-                preferences.edit() {
-                    putInt(
-                        "LastWifiID",
-                        NetworkUtils.getCurrentNetworkId(context)
-                    )
+                preferences.edit {
+                    putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context))
                 }
                 if (response.body() != null) {
                     val p = response.body()
-                    preferences.edit() {
-                        putString(
-                            "versionDetail",
-                            Gson().toJson(response.body())
-                        )
+                    preferences.edit {
+                        putString("versionDetail", Gson().toJson(response.body()))
                     }
                     retrofitInterface.getApkVersion(Utilities.getApkVersionUrl(settings)).enqueue(object : Callback<ResponseBody> {
                         override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
@@ -416,11 +410,8 @@ class Service(private val context: Context) {
                                                 val parentCode = doc.getAsJsonPrimitive("parentCode").asString
 
                                                 withContext(Dispatchers.IO) {
-                                                    preferences.edit() {
-                                                        putString(
-                                                            "parentCode",
-                                                            parentCode
-                                                        )
+                                                    preferences.edit {
+                                                        putString("parentCode", parentCode)
                                                     }
                                                 }
 
@@ -429,11 +420,8 @@ class Service(private val context: Context) {
                                                         .associate { it.key to it.value.asString }
 
                                                     withContext(Dispatchers.IO) {
-                                                        preferences.edit() {
-                                                            putString(
-                                                                "ai_models",
-                                                                Gson().toJson(modelsMap)
-                                                            )
+                                                        preferences.edit {
+                                                            putString("ai_models", Gson().toJson(modelsMap))
                                                         }
                                                     }
                                                 }
