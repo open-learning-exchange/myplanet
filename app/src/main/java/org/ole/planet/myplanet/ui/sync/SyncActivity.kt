@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.*
-import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -126,7 +125,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 isSync = false
                 forceSync = true
                 service.checkVersion(this, settings)
-                Log.d("okuro", "checkVersion called in $callerActivity")
             }
             else -> {
                 if (serverConfigAction == "sync") {
@@ -264,7 +262,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                             false
                         } else {
                             withContext(Dispatchers.Main) {
-                                Log.d("okuro", "Server is reachable $type")
                                 if (type == "sync") {
                                     startSync()
                                 }
@@ -370,7 +367,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     fun startSync() {
         SyncManager.instance?.start(this@SyncActivity)
-        Log.d("okuro", "SyncManager started")
     }
 
     private fun saveConfigAndContinue(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String): String {
@@ -983,16 +979,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     private fun continueSyncProcess() {
-        Log.d("okuro", "isSync: $isSync, forceSync: $forceSync")
         try {
             lifecycleScope.launch {
                 if (isSync) {
                     isServerReachable(processedUrl, "sync")
-                    Log.d("okuro", "Sync triggered")
                 } else if (forceSync) {
                     isServerReachable(processedUrl, "upload")
                     startUpload("")
-                    Log.d("okuro", "Force sync triggered")
                 }
             }
         } catch (e: Exception) {

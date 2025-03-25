@@ -7,7 +7,6 @@ import android.content.SharedPreferences
 import android.net.Uri
 import android.os.*
 import android.text.TextUtils
-import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -434,7 +433,6 @@ class Service(private val context: Context) {
                     is UrlCheckResult.Success -> {
                         val isAlternativeUrl = result.url != url
                         listener?.onConfigurationIdReceived(result.id, result.code, result.url, url, isAlternativeUrl, callerActivity)
-                        Log.d("okuro", "getMinApk: $result, callerActivity: $callerActivity")
                         activity.setSyncFailed(false)
                     }
                     is UrlCheckResult.Failure -> {
