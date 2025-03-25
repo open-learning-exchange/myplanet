@@ -24,6 +24,8 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import java.lang.ref.WeakReference
 import java.math.BigInteger
+import androidx.core.graphics.toColorInt
+import androidx.core.net.toUri
 
 object Utilities {
     private var contextRef: WeakReference<Context>? = null
@@ -76,10 +78,10 @@ object Utilities {
     fun getCloudConfig(): ChipCloudConfig {
         return ChipCloudConfig()
             .useInsetPadding(true)
-            .checkedChipColor(Color.parseColor("#e0e0e0"))
-            .checkedTextColor(Color.parseColor("#000000"))
-            .uncheckedChipColor(Color.parseColor("#e0e0e0"))
-            .uncheckedTextColor(Color.parseColor("#000000"))
+            .checkedChipColor("#e0e0e0".toColorInt())
+            .checkedTextColor("#000000".toColorInt())
+            .uncheckedChipColor("#e0e0e0".toColorInt())
+            .uncheckedTextColor("#000000".toColorInt())
     }
 
     fun checkNA(s: String): String {
@@ -149,7 +151,7 @@ object Utilities {
 
             if (isAlternativeUrl && !alternativeUrl.isNullOrEmpty()) {
                 try {
-                    val uri = Uri.parse(alternativeUrl)
+                    val uri = alternativeUrl.toUri()
                     hostIp = uri.host ?: hostIp
                     scheme = uri.scheme ?: scheme
                 } catch (e: Exception) {
@@ -239,13 +241,14 @@ object Utilities {
 
     fun openPlayStore() {
         val appPackageName = context.packageName
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$appPackageName")).apply {
+        val intent = Intent(Intent.ACTION_VIEW, "market://details?id=$appPackageName".toUri()).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         try {
             context.startActivity(intent)
         } catch (e: android.content.ActivityNotFoundException) {
-            val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$appPackageName")).apply {
+            val webIntent = Intent(Intent.ACTION_VIEW,
+                "https://play.google.com/store/apps/details?id=$appPackageName".toUri()).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(webIntent)
