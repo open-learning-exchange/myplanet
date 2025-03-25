@@ -189,7 +189,6 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
             } catch (e: Exception) {
                 e.printStackTrace()
             } finally {
-                println("hi")
                 realm.close()
             }
             withContext(Dispatchers.Main) {
