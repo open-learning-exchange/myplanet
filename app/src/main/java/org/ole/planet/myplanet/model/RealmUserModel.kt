@@ -281,7 +281,7 @@ open class RealmUserModel : RealmObject() {
             }
 
             if (planetCodes.isNotEmpty()) {
-                settings.edit() { putString("planetCode", planetCodes) }
+                settings.edit { putString("planetCode", planetCodes) }
             }
 
             userDataList.add(arrayOf(

@@ -194,7 +194,7 @@ open class RealmMyCourse : RealmObject() {
                 }
             }
             val jsonConcatenatedLinks = gson.toJson(existingConcatenatedLinks)
-            settings.edit() { putString("concatenated_links", jsonConcatenatedLinks) }
+            settings.edit { putString("concatenated_links", jsonConcatenatedLinks) }
         }
 
         fun getCourseSteps(mRealm: Realm, courseId: String?): List<RealmCourseStep> {
