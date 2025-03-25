@@ -174,8 +174,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         } else if (source == "login") {
             UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
         } else {
-
-            Log.d("ProcessUserDataActivity", "startUpload: called")
+            Log.d("okuro", "startUpload: called")
             customProgressDialog?.setText(context.getString(R.string.uploading_data_to_server_please_wait))
             customProgressDialog?.show()
 

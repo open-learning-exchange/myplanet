@@ -264,6 +264,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                             false
                         } else {
                             withContext(Dispatchers.Main) {
+                                Log.d("okuro", "Server is reachable")
                                 startSync()
                             }
                             true
@@ -367,6 +368,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     fun startSync() {
         SyncManager.instance?.start(this@SyncActivity)
+        Log.d("okuro", "SyncManager started")
     }
 
     private fun saveConfigAndContinue(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String): String {
@@ -979,14 +981,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     private fun continueSyncProcess() {
-        Log.d("isSync", "isSync: $isSync, forceSync: $forceSync")
+        Log.d("okuro", "isSync: $isSync, forceSync: $forceSync")
         try {
             lifecycleScope.launch {
                 if (isSync) {
                     isServerReachable(processedUrl)
+                    Log.d("okuro", "Sync triggered")
                 } else if (forceSync) {
                     isServerReachable(processedUrl)
                     startUpload("")
+                    Log.d("okuro", "Force sync triggered")
                 }
             }
         } catch (e: Exception) {

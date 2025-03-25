@@ -59,6 +59,7 @@ class SyncManager private constructor(private val context: Context) {
             settings.edit().remove("concatenated_links").apply()
             listener?.onSyncStarted()
             authenticateAndSync()
+            Log.d("okuro", "Sync started")
         }
     }
 
@@ -80,6 +81,7 @@ class SyncManager private constructor(private val context: Context) {
     }
 
     private fun authenticateAndSync() {
+        Log.d("okuro", "Authenticating...")
         td = Thread {
             if (TransactionSyncManager.authenticate()) {
                 startSync()
@@ -92,6 +94,7 @@ class SyncManager private constructor(private val context: Context) {
     }
 
     private fun startSync() {
+        Log.d("okuro", "Starting sync...")
         val isFastSync = settings.getBoolean("fastSync", false)
         if (isFastSync) {
             startFastSync()
