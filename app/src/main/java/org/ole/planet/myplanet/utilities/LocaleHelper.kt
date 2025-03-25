@@ -39,6 +39,6 @@ object LocaleHelper {
 
     private fun persist(context: Context, language: String) {
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-        preferences.edit() { putString(SELECTED_LANGUAGE, language) }
+        preferences.edit { putString(SELECTED_LANGUAGE, language) }
     }
 }
