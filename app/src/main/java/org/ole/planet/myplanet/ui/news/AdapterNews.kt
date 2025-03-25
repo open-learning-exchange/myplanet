@@ -120,8 +120,9 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 } catch (e: Exception) {
                 }
             }
-
-            holder.rowNewsBinding.tvTeamName.text = if (teamName.isNotBlank()) "From team: $teamName" else ""
+            val prefix = context.getString(R.string.shared_from_prefix)
+            val fullText = "$prefix$teamName"
+            holder.rowNewsBinding.tvTeamName.text = if (teamName.isNotBlank()) fullText else ""
 
             if (news?.isValid == true) {
                 holder.rowNewsBinding.tvName.text = ""
