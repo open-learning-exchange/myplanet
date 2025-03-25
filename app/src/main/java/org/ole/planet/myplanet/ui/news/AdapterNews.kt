@@ -53,7 +53,7 @@ import java.io.File
 import java.util.Calendar
 import androidx.core.graphics.drawable.toDrawable
 
-class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
+class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String, private val showTeamName: Boolean) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
 
     private lateinit var rowNewsBinding: RowNewsBinding
     private var listener: OnNewsItemClickListener? = null
@@ -121,8 +121,8 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 }
             }
             val prefix = context.getString(R.string.shared_from_prefix)
-            val fullText = "$prefix$teamName"
-            holder.rowNewsBinding.tvTeamName.text = if (teamName.isNotBlank()) fullText else ""
+            val fullText = "$prefix $teamName"
+            holder.rowNewsBinding.tvTeamName.text = if (showTeamName && teamName.isNotBlank()) fullText else ""
 
             if (news?.isValid == true) {
                 holder.rowNewsBinding.tvName.text = ""
