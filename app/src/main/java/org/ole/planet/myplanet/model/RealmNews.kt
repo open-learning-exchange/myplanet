@@ -51,6 +51,8 @@ open class RealmNews : RealmObject() {
     var newsCreatedDate: Long = 0
     var newsUpdatedDate: Long = 0
     var chat: Boolean = false
+    var isEdited: Boolean = false
+    var editedTime: Long = 0
 
     val imagesArray: JsonArray
         get() = if (images == null) JsonArray() else Gson().fromJson(images, JsonArray::class.java)
@@ -64,6 +66,11 @@ open class RealmNews : RealmObject() {
             return array
         }
 
+    fun updateMessage(newMessage: String) {
+        this.message = newMessage
+        this.isEdited = true
+        this.editedTime = Date().time
+    }
     fun addLabel(label: String?) {
         if (label != null && !labels?.contains(label)!!) {
             labels?.add(label)

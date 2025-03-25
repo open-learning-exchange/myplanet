@@ -190,7 +190,7 @@
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">muujinaya jawaabta:</string>
     <string name="open_date">Taariikhda Furan</string>
-    <string name="my_survey">Galmadaayda</string>
+    <string name="my_survey">mySurveys</string>
     <string name="cannot_remove_user">Isticmaalaha lama saari karin</string>
     <string name="no_members_task">Wax xubno koox ah looma hayo in shaqo loo xil saaro</string>
     <string name="no_member_selected">Ma jiro xubin la doortay. Fadlan isku day mar kale</string>
@@ -435,8 +435,8 @@
     </string-array>
 
     <string-array name="sort_by_date">
-        <item>Ururinta Tariikhda - Asc</item>
         <item>Ururinta Tariikhda - Desc</item>
+        <item>Ururinta Tariikhda - Asc</item>
         <item>Ururinta Magaca</item>
     </string-array>
 
@@ -1256,7 +1256,6 @@
     <string name="version_not_found">Nooca lama helin.</string>
     <string name="connection_failed">Xiriirku wuu fashilmay!</string>
     <string name="unable_to_create_user_user_already_exists">Lama abuurin isticmaale, isticmaale horey ayuu u jiray.</string>
-    <string name="unable_to_create_user">Lama abuuri karo isticmaale.</string>
     <string name="not_connect_to_planet_created_user_offline">Lama xirin meeraha, isticmaalaha ayaa la abuuray offline.</string>
     <string name="user_created_successfully">Isticmaale si guul leh ayaa loo abuuray.</string>
     <string name="unable_to_save_user_please_sync">Lama kaydin karo isticmaalaha, fadlan isku dheelli tir.</string>

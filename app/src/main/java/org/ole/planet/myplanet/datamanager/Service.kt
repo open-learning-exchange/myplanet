@@ -239,13 +239,13 @@ class Service(private val context: Context) {
                                     if (response.body() != null && response.body()?.has("id") == true) {
                                         uploadToShelf(obj)
                                     } else {
-                                        callback.onSuccess(context.getString(R.string.unable_to_create_user))
+                                        callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                                         Log.d("Service3", "User already exists")
                                     }
                                 }
 
                                 override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                                    callback.onSuccess(context.getString(R.string.unable_to_create_user))
+                                    callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                                     Log.d("Service4", "User already exists")
                                 }
                             })
@@ -253,7 +253,7 @@ class Service(private val context: Context) {
                     }
 
                     override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                        callback.onSuccess(context.getString(R.string.unable_to_create_user))
+                        callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                         Log.d("Service5", "User already exists")
                     }
                 })
