@@ -236,7 +236,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    suspend fun isServerReachable(processedUrl: String?): Boolean {
+    suspend fun isServerReachable(processedUrl: String?, type: String): Boolean {
         return withContext(Dispatchers.IO) {
             val apiInterface = client?.create(ApiInterface::class.java)
             try {
@@ -264,8 +264,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                             false
                         } else {
                             withContext(Dispatchers.Main) {
-                                Log.d("okuro", "Server is reachable")
-                                startSync()
+                                Log.d("okuro", "Server is reachable $type")
+                                if (type == "sync") {
+                                    startSync()
+                                }
                             }
                             true
                         }
@@ -985,10 +987,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         try {
             lifecycleScope.launch {
                 if (isSync) {
-                    isServerReachable(processedUrl)
+                    isServerReachable(processedUrl, "sync")
                     Log.d("okuro", "Sync triggered")
                 } else if (forceSync) {
-                    isServerReachable(processedUrl)
+                    isServerReachable(processedUrl, "upload")
                     startUpload("")
                     Log.d("okuro", "Force sync triggered")
                 }
