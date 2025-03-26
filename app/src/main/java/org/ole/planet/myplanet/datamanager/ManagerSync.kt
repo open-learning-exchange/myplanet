@@ -18,6 +18,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.util.Locale
+import androidx.core.content.edit
 
 class ManagerSync private constructor(context: Context) {
     private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -64,10 +65,10 @@ class ManagerSync private constructor(context: Context) {
         apiInterface?.findDocs(Utilities.header, "application/json", Utilities.getUrl() + "/_users/_find", `object`)?.enqueue(object : Callback<JsonObject?> {
             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                 if (response.body() != null) {
-                    settings.edit().putString("communityLeaders", "${response.body()}").apply()
+                    settings.edit { putString("communityLeaders", "${response.body()}") }
                     val array = JsonUtils.getJsonArray("docs", response.body())
                     if (array.size() > 0) {
-                        settings.edit().putString("user_admin", Gson().toJson(array[0])).apply()
+                        settings.edit { putString("user_admin", Gson().toJson(array[0])) }
                     }
                 }
             }
