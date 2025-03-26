@@ -53,12 +53,12 @@ class SyncManager private constructor(private val context: Context) {
     private var backgroundSync: Job? = null
     val _syncState = MutableLiveData<Boolean>()
 
-    fun start(listener: SyncListener?) {
+    fun start(listener: SyncListener?, type: String) {
         this.listener = listener
         if (!isSyncing) {
             settings.edit().remove("concatenated_links").apply()
             listener?.onSyncStarted()
-            authenticateAndSync()
+            authenticateAndSync(type)
         }
     }
 
@@ -79,10 +79,10 @@ class SyncManager private constructor(private val context: Context) {
         }
     }
 
-    private fun authenticateAndSync() {
+    private fun authenticateAndSync(type: String) {
         td = Thread {
             if (TransactionSyncManager.authenticate()) {
-                startSync()
+                startSync(type)
             } else {
                 handleException(context.getString(R.string.invalid_configuration))
                 cleanupMainSync()
@@ -91,13 +91,21 @@ class SyncManager private constructor(private val context: Context) {
         td?.start()
     }
 
-    private fun startSync() {
+    private fun startSync(type: String) {
         val isFastSync = settings.getBoolean("fastSync", false)
-        if (isFastSync) {
-            startFastSync()
-        } else {
+        if (!isFastSync || type == "upload") {
+            Log.d("SYNC", "Starting full sync...")
             startFullSync()
+        } else {
+            Log.d("SYNC", "Starting fast sync...")
+            startFastSync()
         }
+//        if (isFastSync) {
+//            Log.d("SYNC", "Starting fast sync...")
+//            startFastSync()
+//        } else {
+//
+//        }
     }
 
     private fun startFullSync() {

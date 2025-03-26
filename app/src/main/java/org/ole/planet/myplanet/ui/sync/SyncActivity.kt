@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -262,9 +263,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                             false
                         } else {
                             withContext(Dispatchers.Main) {
-                                if (type == "sync") {
-                                    startSync()
-                                }
+                                startSync(type)
                             }
                             true
                         }
@@ -365,8 +364,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         return false
     }
 
-    fun startSync() {
-        SyncManager.instance?.start(this@SyncActivity)
+    fun startSync(type: String) {
+        SyncManager.instance?.start(this@SyncActivity, type)
     }
 
     private fun saveConfigAndContinue(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String): String {
@@ -441,6 +440,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onSyncComplete() {
+        Log.d("Sync", "Sync 2 Complete")
         val activityContext = this@SyncActivity
 
         lifecycleScope.launch(Dispatchers.IO) {
