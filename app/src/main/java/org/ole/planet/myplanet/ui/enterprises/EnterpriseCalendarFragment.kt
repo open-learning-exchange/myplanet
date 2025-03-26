@@ -50,8 +50,8 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
 
     private fun showMeetupAlert() {
         val addMeetupBinding = AddMeetupBinding.inflate(layoutInflater)
-        setDatePickerListener(addMeetupBinding.tvStartDate, start)
-        setDatePickerListener(addMeetupBinding.tvEndDate, end, start)
+        setDatePickerListener(addMeetupBinding.tvStartDate, start, end)
+        setDatePickerListener(addMeetupBinding.tvEndDate, end, null)
         setTimePicker(addMeetupBinding.tvStartTime)
         setTimePicker(addMeetupBinding.tvEndTime)
 
@@ -100,13 +100,18 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
     }
 
-    private fun setDatePickerListener(view: TextView, date: Calendar?, defaultDate: Calendar? = null) {
-        val c = defaultDate ?: Calendar.getInstance()
+    private fun setDatePickerListener(view: TextView, date: Calendar?, endDate: Calendar?) {
+        val c = Calendar.getInstance()
         view.setOnClickListener {
             DatePickerDialog(requireActivity(), { _, year, monthOfYear, dayOfMonth ->
                 date?.set(Calendar.YEAR, year)
                 date?.set(Calendar.MONTH, monthOfYear)
                 date?.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+                if(endDate != null){
+                    endDate.set(Calendar.YEAR, year)
+                    endDate.set(Calendar.MONTH, monthOfYear)
+                    endDate.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+                }
                 view.text = date?.timeInMillis?.let { it1 -> TimeUtils.formatDate(it1, "yyyy-MM-dd") }
             }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show()
         }
