@@ -159,6 +159,9 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                 meetupList = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
                 clickedCalendar = calendarDay.calendar
                 println(clickedCalendar)
+                for (meetup in meetupList) {
+                    println(meetup)
+                }
                 val clickedDateInMillis = clickedCalendar.timeInMillis
                 val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
                     .atZone(ZoneId.systemDefault())

@@ -22,7 +22,7 @@ open class RealmMeetup : RealmObject() {
     var description: String? = null
     var startDate: Long = 0
     var endDate: Long = 0
-    var recurring: String? = null
+    var recurring: String? = "none"
     var day: String? = null
     var startTime: String? = null
     var endTime: String? = null
@@ -41,6 +41,7 @@ open class RealmMeetup : RealmObject() {
         }
 
         fun insert(userId: String?, meetupDoc: JsonObject, mRealm: Realm) {
+            println(meetupDoc)
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
@@ -61,7 +62,7 @@ open class RealmMeetup : RealmObject() {
             myMeetupsDB?.endTime = JsonUtils.getString("endTime", meetupDoc)
             myMeetupsDB?.category = JsonUtils.getString("category", meetupDoc)
             myMeetupsDB?.meetupLocation = JsonUtils.getString("meetupLocation", meetupDoc)
-            myMeetupsDB?.creator = JsonUtils.getString("createdBy", meetupDoc)
+            myMeetupsDB?.creator = JsonUtils.getString("creator", meetupDoc)
             myMeetupsDB?.day = JsonUtils.getJsonArray("day", meetupDoc).toString()
             myMeetupsDB?.links = JsonUtils.getJsonObject("link", meetupDoc).toString()
             myMeetupsDB?.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("link", meetupDoc))
@@ -166,24 +167,28 @@ open class RealmMeetup : RealmObject() {
 
         @JvmStatic
         fun serialize(meetup: RealmMeetup): JsonObject {
-            val json = JsonObject()
-            json.addProperty("title", meetup.title)
-            json.addProperty("description", meetup.description)
-            json.addProperty("startDate", meetup.startDate)
-            json.addProperty("endDate", meetup.endDate)
-            json.addProperty("startTime", meetup.startTime)
-            json.addProperty("endTime", meetup.endTime)
-            json.addProperty("recurring", meetup.recurring)
-            json.addProperty("meetupLocation", meetup.meetupLocation)
-            json.addProperty("creator", meetup.creator)
-            json.addProperty("teamId", meetup.teamId)
+            val `object` = JsonObject()
+            if (!meetup.id.isNullOrEmpty()) `object`.addProperty("_id", meetup.meetupId)
+            if (!meetup.meetupIdRev.isNullOrEmpty()) `object`.addProperty("_rev", meetup.meetupIdRev)
+            `object`.addProperty("title", meetup.title)
+            `object`.addProperty("description", meetup.description)
+            `object`.addProperty("startDate", meetup.startDate)
+            `object`.addProperty("endDate", meetup.endDate)
+            `object`.addProperty("startTime", meetup.startTime)
+            `object`.addProperty("endTime", meetup.endTime)
+            `object`.addProperty("recurring", meetup.recurring)
+            `object`.addProperty("meetupLocation", meetup.meetupLocation)
+            `object`.addProperty("creator", meetup.creator)
+            `object`.addProperty("teamId", meetup.teamId)
 
             if (!meetup.links.isNullOrEmpty()) {
                 val linksJson = Gson().fromJson(meetup.links, JsonObject::class.java)
-                json.add("links", linksJson)
+                `object`.add("links", linksJson)
+            } else {
+
             }
 
-            return json
+            return `object`
         }
     }
 }
