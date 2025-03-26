@@ -236,7 +236,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    suspend fun isServerReachable(processedUrl: String?): Boolean {
+    suspend fun isServerReachable(processedUrl: String?, type: String): Boolean {
         return withContext(Dispatchers.IO) {
             val apiInterface = client?.create(ApiInterface::class.java)
             try {
@@ -264,7 +264,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                             false
                         } else {
                             withContext(Dispatchers.Main) {
-                                startSync()
+                                startSync(type)
                             }
                             true
                         }
@@ -366,8 +366,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         return false
     }
 
-    fun startSync() {
-        SyncManager.instance?.start(this@SyncActivity)
+    fun startSync(type: String) {
+        SyncManager.instance?.start(this@SyncActivity, type)
     }
 
     private fun saveConfigAndContinue(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String): String {
@@ -987,9 +987,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         try {
             lifecycleScope.launch {
                 if (isSync) {
-                    isServerReachable(processedUrl)
+                    isServerReachable(processedUrl, "sync")
                 } else if (forceSync) {
-                    isServerReachable(processedUrl)
+                    isServerReachable(processedUrl, "upload")
                     startUpload("")
                 }
             }

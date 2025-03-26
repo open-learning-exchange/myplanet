@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
 import java.io.FileWriter
 import java.io.IOException
+import androidx.core.content.edit
 
 open class RealmMyCourse : RealmObject() {
     @PrimaryKey
@@ -193,7 +194,7 @@ open class RealmMyCourse : RealmObject() {
                 }
             }
             val jsonConcatenatedLinks = gson.toJson(existingConcatenatedLinks)
-            settings.edit().putString("concatenated_links", jsonConcatenatedLinks).apply()
+            settings.edit { putString("concatenated_links", jsonConcatenatedLinks) }
         }
 
         fun getCourseSteps(mRealm: Realm, courseId: String?): List<RealmCourseStep> {
