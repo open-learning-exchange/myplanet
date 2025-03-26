@@ -163,5 +163,27 @@ open class RealmMeetup : RealmObject() {
         fun meetupWriteCsv() {
             writeCsv("${context.getExternalFilesDir(null)}/ole/meetups.csv", meetupDataList)
         }
+
+        @JvmStatic
+        fun serialize(meetup: RealmMeetup): JsonObject {
+            val json = JsonObject()
+            json.addProperty("title", meetup.title)
+            json.addProperty("description", meetup.description)
+            json.addProperty("startDate", meetup.startDate)
+            json.addProperty("endDate", meetup.endDate)
+            json.addProperty("startTime", meetup.startTime)
+            json.addProperty("endTime", meetup.endTime)
+            json.addProperty("recurring", meetup.recurring)
+            json.addProperty("meetupLocation", meetup.meetupLocation)
+            json.addProperty("creator", meetup.creator)
+            json.addProperty("teamId", meetup.teamId)
+
+            if (!meetup.links.isNullOrEmpty()) {
+                val linksJson = Gson().fromJson(meetup.links, JsonObject::class.java)
+                json.add("links", linksJson)
+            }
+
+            return json
+        }
     }
 }
