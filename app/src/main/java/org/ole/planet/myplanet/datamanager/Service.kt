@@ -236,12 +236,12 @@ class Service(private val context: Context) {
                             retrofitInterface.putDoc(null, "application/json", "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
                                 override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
                                     Log.d("service3.0", "response ${response.body()}")
-                                    if (response.body() != null && response.body()?.has("id") == true) {
+//                                    if (response.body() != null && response.body()?.has("id") == true) {
                                         uploadToShelf(obj)
-                                    } else {
-                                        callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                                        Log.d("Service3", "User already exists")
-                                    }
+//                                    } else {
+//                                        callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
+//                                        Log.d("Service3", "User already exists")
+//                                    }
                                 }
 
                                 override fun onFailure(call: Call<JsonObject>, t: Throwable) {
