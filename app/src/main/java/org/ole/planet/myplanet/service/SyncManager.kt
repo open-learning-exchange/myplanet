@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.io.IOException
 import java.util.Date
 import kotlin.system.measureTimeMillis
+import androidx.core.content.edit
 
 class SyncManager private constructor(private val context: Context) {
     private var td: Thread? = null
@@ -56,7 +57,7 @@ class SyncManager private constructor(private val context: Context) {
     fun start(listener: SyncListener?) {
         this.listener = listener
         if (!isSyncing) {
-            settings.edit().remove("concatenated_links").apply()
+            settings.edit { remove("concatenated_links") }
             listener?.onSyncStarted()
             authenticateAndSync()
         }
@@ -67,7 +68,7 @@ class SyncManager private constructor(private val context: Context) {
         cancel(context, 111)
         isSyncing = false
         ourInstance = null
-        settings.edit().putLong("LastSync", Date().time).apply()
+        settings.edit { putLong("LastSync", Date().time) }
         listener?.onSyncComplete()
         try {
             if (::mRealm.isInitialized && !mRealm.isClosed) {
@@ -105,7 +106,7 @@ class SyncManager private constructor(private val context: Context) {
             val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
             val wifiInfo = wifiManager.connectionInfo
             if (wifiInfo.supplicantState == SupplicantState.COMPLETED) {
-                settings.edit().putString("LastWifiSSID", wifiInfo.ssid).apply()
+                settings.edit { putString("LastWifiSSID", wifiInfo.ssid) }
             }
             isSyncing = true
             create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")
@@ -154,7 +155,7 @@ class SyncManager private constructor(private val context: Context) {
             initializeSync()
             syncFirstBatch()
 
-            settings.edit().putLong("LastSync", Date().time).apply()
+            settings.edit { putLong("LastSync", Date().time) }
             listener?.onSyncComplete()
             destroy()
             startBackgroundSync()
@@ -183,7 +184,7 @@ class SyncManager private constructor(private val context: Context) {
         val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
         val wifiInfo = wifiManager.connectionInfo
         if (wifiInfo.supplicantState == SupplicantState.COMPLETED) {
-            settings.edit().putString("LastWifiSSID", wifiInfo.ssid).apply()
+            settings.edit { putString("LastWifiSSID", wifiInfo.ssid) }
         }
         isSyncing = true
         create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")

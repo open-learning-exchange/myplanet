@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
+import androidx.core.content.edit
 
 class AutoSyncWorker(private val context: Context, workerParams: WorkerParameters) : Worker(context, workerParams), SyncListener, CheckVersionCallback, SuccessListener {
     private lateinit var preferences: SharedPreferences
@@ -87,6 +88,6 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
 
     override fun onSuccess(success: String?) {
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        settings.edit().putLong("lastUsageUploaded", Date().time).apply()
+        settings.edit { putLong("lastUsageUploaded", Date().time) }
     }
 }
