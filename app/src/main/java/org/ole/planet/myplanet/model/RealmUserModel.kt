@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.model
 
 import android.content.SharedPreferences
-import android.net.Uri
 import android.util.Base64
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -175,7 +174,7 @@ open class RealmUserModel : RealmObject() {
 
     fun isManager(): Boolean {
         val roles = getRoles()
-        val isManager = roles.toString().lowercase(Locale.ROOT).contains("manager") || userAdmin ?: false
+        val isManager = roles.toString().lowercase(Locale.ROOT).contains("manager") || userAdmin == true
         return isManager
     }
 
