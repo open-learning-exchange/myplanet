@@ -34,6 +34,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
     private lateinit var list: List<Calendar>
     private lateinit var start: Calendar
     private lateinit var end: Calendar
+    private lateinit var clickedCalendar: Calendar
     private lateinit var calendarEventsMap: MutableMap<CalendarDay, RealmMeetup>
     private lateinit var meetupList: RealmResults<RealmMeetup>
 
@@ -96,12 +97,23 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                         Utilities.toast(activity, getString(R.string.meetup_not_added))
                     }
                 }
-            }.setNegativeButton("Cancel", null).show()
+            }.setNegativeButton("Cancel", null).create()
+
+        alertDialog.setOnDismissListener {
+            if (selectedDates.contains(clickedCalendar)) {
+                selectedDates.remove(clickedCalendar)
+                refreshCalendarView()
+            }
+        }
+        alertDialog.show()
         alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
     }
 
     private fun setDatePickerListener(view: TextView, date: Calendar?, endDate: Calendar?) {
         val c = Calendar.getInstance()
+        if (date != null && endDate != null) {
+            view.text = date.timeInMillis.let { it1 -> TimeUtils.formatDate(it1, "yyyy-MM-dd") }
+        }
         view.setOnClickListener {
             DatePickerDialog(requireActivity(), { _, year, monthOfYear, dayOfMonth ->
                 date?.set(Calendar.YEAR, year)
@@ -145,7 +157,8 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         fragmentEnterpriseCalendarBinding.calendarView.setOnCalendarDayClickListener(object : OnCalendarDayClickListener {
             override fun onClick(calendarDay: CalendarDay) {
                 meetupList = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
-                val clickedCalendar = calendarDay.calendar
+                clickedCalendar = calendarDay.calendar
+                println(clickedCalendar)
                 val clickedDateInMillis = clickedCalendar.timeInMillis
                 val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
                     .atZone(ZoneId.systemDefault())
@@ -162,9 +175,8 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                     showMeetupDetails(markedDates)
                     showHideFab()
                 } else {
-                    if (arguments?.getBoolean("fromLogin", false) != true && arguments?.getBoolean("fromCommunity", false) == true) {
-                        showMeetupAlert()
-                    }
+                    start = clickedCalendar
+                    showMeetupAlert()
                 }
                 if (!selectedDates.contains(clickedCalendar)) {
                     selectedDates.add(clickedCalendar)

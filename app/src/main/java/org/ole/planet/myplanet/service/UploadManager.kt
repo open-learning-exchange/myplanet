@@ -624,6 +624,7 @@ class UploadManager(var context: Context) : FileUploadService() {
                         meetup.meetupId = getString("id", `object`)
                         meetup.meetupIdRev = getString("rev", `object`)
                     }
+                    println("Meetup sync completed successfully")
                 } catch (e: IOException) {
                     println(e.message)
                     e.printStackTrace()
