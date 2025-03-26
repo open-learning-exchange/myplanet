@@ -706,6 +706,7 @@
     <string name="description_is_required">विवरण आवश्यक छ</string>
     <string name="start_time_is_required">समय आवश्यक छ</string>
     <string name="meetup_added">मिलन सम्मेलन थपियो</string>
+    <string name="meetup_not_added">मिलन सम्मेलन होइन थपियो</string>
     <string name="add_transaction">लेखा थप्नुहोस्</string>
     <string name="note_is_required">टिप्पणी आवश्यक छ</string>
     <string name="amount_is_required">रकम आवश्यक छ</string>
