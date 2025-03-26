@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.*
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.ui.mymeetup.AdapterMeetup
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.*
@@ -89,7 +90,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                         meetup.teamId = teamId
                         mRealm.commitTransaction()
                         Utilities.toast(activity, getString(R.string.meetup_added))
-
+                        UploadManager.instance?.uploadMeetups()
                         refreshCalendarView()
                     } catch (e: Exception) {
                         mRealm.cancelTransaction()
@@ -119,7 +120,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                 date?.set(Calendar.YEAR, year)
                 date?.set(Calendar.MONTH, monthOfYear)
                 date?.set(Calendar.DAY_OF_MONTH, dayOfMonth)
-                if(endDate != null){
+                if(endDate != null && date == Calendar.getInstance()){
                     endDate.set(Calendar.YEAR, year)
                     endDate.set(Calendar.MONTH, monthOfYear)
                     endDate.set(Calendar.DAY_OF_MONTH, dayOfMonth)
@@ -156,7 +157,10 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
     private fun setupCalendarClickListener(){
         fragmentEnterpriseCalendarBinding.calendarView.setOnCalendarDayClickListener(object : OnCalendarDayClickListener {
             override fun onClick(calendarDay: CalendarDay) {
+                val meetupList2 = mRealm.where(RealmMeetup::class.java).findAll()
                 meetupList = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
+                val meetupList1 = mRealm.where(RealmMeetup::class.java).equalTo("creator", "pavi78").findAll()
+                println(meetupList1)
                 clickedCalendar = calendarDay.calendar
                 println(clickedCalendar)
                 for (meetup in meetupList) {
@@ -179,6 +183,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                     showHideFab()
                 } else {
                     start = clickedCalendar
+                    end = clickedCalendar
                     showMeetupAlert()
                 }
                 if (!selectedDates.contains(clickedCalendar)) {
