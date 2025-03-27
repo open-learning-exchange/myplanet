@@ -41,7 +41,6 @@ open class RealmMeetup : RealmObject() {
         }
 
         fun insert(userId: String?, meetupDoc: JsonObject, mRealm: Realm) {
-            println(meetupDoc)
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }

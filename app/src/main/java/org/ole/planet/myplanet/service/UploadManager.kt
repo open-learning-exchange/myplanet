@@ -605,7 +605,6 @@ class UploadManager(var context: Context) : FileUploadService() {
     }
 
     fun uploadMeetups() {
-        println("hi")
         mRealm = DatabaseService(context).realmInstance
         val apiInterface = client?.create(ApiInterface::class.java)
 
@@ -625,9 +624,7 @@ class UploadManager(var context: Context) : FileUploadService() {
                         meetup.meetupId = getString("id", `object`)
                         meetup.meetupIdRev = getString("rev", `object`)
                     }
-                    println(meetup.meetupIdRev)
                 } catch (e: IOException) {
-                    println(e.message)
                     e.printStackTrace()
                 }
             }

@@ -157,14 +157,9 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
     private fun setupCalendarClickListener(){
         fragmentEnterpriseCalendarBinding.calendarView.setOnCalendarDayClickListener(object : OnCalendarDayClickListener {
             override fun onClick(calendarDay: CalendarDay) {
-                val meetupList2 = mRealm.where(RealmMeetup::class.java).findAll()
                 meetupList = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
-                val meetupList1 = mRealm.where(RealmMeetup::class.java).equalTo("creator", "pavi78").findAll()
-                println(meetupList1)
                 clickedCalendar = calendarDay.calendar
-                println(clickedCalendar)
                 for (meetup in meetupList) {
-                    println(meetup)
                 }
                 val clickedDateInMillis = clickedCalendar.timeInMillis
                 val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
