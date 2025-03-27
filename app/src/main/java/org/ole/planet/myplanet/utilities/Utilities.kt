@@ -26,6 +26,7 @@ import java.lang.ref.WeakReference
 import java.math.BigInteger
 import androidx.core.graphics.toColorInt
 import androidx.core.net.toUri
+import androidx.core.content.edit
 
 object Utilities {
     private var contextRef: WeakReference<Context>? = null
@@ -62,7 +63,9 @@ object Utilities {
     fun openDownloadService(context: Context?, urls: ArrayList<String>, fromSync: Boolean) {
         context?.let { ctx ->
             val preferences = ctx.getSharedPreferences(MyDownloadService.PREFS_NAME, Context.MODE_PRIVATE)
-            preferences.edit()?.putStringSet("url_list_key", urls.toSet())?.apply()
+            preferences.edit {
+                putStringSet("url_list_key", urls.toSet())
+            }
             MyDownloadService.startService(ctx, "url_list_key", fromSync)
         }
     }
