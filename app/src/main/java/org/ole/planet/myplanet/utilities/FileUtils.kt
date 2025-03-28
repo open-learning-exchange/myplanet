@@ -13,6 +13,7 @@ import android.text.TextUtils
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import java.io.*
 import java.util.UUID
+import androidx.core.net.toUri
 
 object FileUtils {
     @JvmStatic
@@ -220,7 +221,7 @@ object FileUtils {
     @JvmStatic
     fun openOleFolder(): Intent {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
-        val uri = Uri.parse(Utilities.SD_PATH)  // Ensure org.ole.planet.myplanet.utilities.Utilities.SD_PATH is the correct path
+        val uri = Utilities.SD_PATH.toUri()  // Ensure org.ole.planet.myplanet.utilities.Utilities.SD_PATH is the correct path
         intent.setDataAndType(uri, "*/*")
         return Intent.createChooser(intent, "Open folder")
     }
