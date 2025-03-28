@@ -1264,5 +1264,6 @@
     <string name="no_resources_to_download">Aucune ressource à télécharger</string>
     <string name="response">Réponse</string>
     <string name="full_conversation_response">Réponse complète de la conversation</string>
+    <string name="shared_from_prefix">Partagé depuis:</string>
 
 </resources>

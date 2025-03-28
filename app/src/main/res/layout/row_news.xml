@@ -47,9 +47,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:layout_marginTop="4dp">
-
-                    <TextView
+                    android:baselineAligned="true">
+                <TextView
                         android:id="@+id/tv_date"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -65,6 +64,13 @@
                         android:textSize="12sp"
                         android:textStyle="italic"
                         android:visibility="gone" />
+                    <TextView
+                        android:id="@+id/tv_teamName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:textColor="@color/daynight_textColor"
+                        android:textSize="14sp"/>
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
