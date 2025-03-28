@@ -31,6 +31,8 @@ import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.serializeProgress
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmFeedback.Companion.serializeFeedback
+import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.RealmMeetup.Companion.serialize
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.serialize
 import org.ole.planet.myplanet.model.RealmMyPersonal
@@ -613,6 +615,34 @@ class UploadManager(var context: Context) : FileUploadService() {
             }
         }
     }
+
+    fun uploadMeetups() {
+        mRealm = DatabaseService(context).realmInstance
+        val apiInterface = client?.create(ApiInterface::class.java)
+
+        mRealm.executeTransactionAsync { realm: Realm ->
+            val meetups: List<RealmMeetup> = realm.where(RealmMeetup::class.java).findAll()
+
+            for (meetup in meetups) {
+                try {
+                    val meetupJson = serialize(meetup)
+                    val `object` = apiInterface?.postDoc(
+                        Utilities.header, "application/json",
+                        Utilities.getUrl() + "/meetups",
+                        meetupJson
+                    )?.execute()?.body()
+
+                    if (`object` != null) {
+                        meetup.meetupId = getString("id", `object`)
+                        meetup.meetupIdRev = getString("rev", `object`)
+                    }
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
 
     companion object {
         var instance: UploadManager? = null

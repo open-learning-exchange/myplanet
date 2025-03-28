@@ -706,6 +706,7 @@
     <string name="description_is_required">Sharraxaad waa loo baahan yahay</string>
     <string name="start_time_is_required">Waqtiga bilaabid waa loo baahan yahay</string>
     <string name="meetup_added">Ku daray la isku day</string>
+    <string name="meetup_not_added">Meetup lama darin</string>
     <string name="add_transaction">Ku daray Hawlaha</string>
     <string name="note_is_required">Fariin waa loo baahan yahay</string>
     <string name="amount_is_required">Qaddarku waa loo baahan yahay</string>
