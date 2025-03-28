@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.model
 
 import android.content.SharedPreferences
-import android.net.Uri
 import android.util.Base64
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -23,6 +22,8 @@ import java.io.IOException
 import java.io.InputStream
 import java.util.Locale
 import java.util.UUID
+import androidx.core.net.toUri
+import androidx.core.content.edit
 
 open class RealmUserModel : RealmObject() {
     @PrimaryKey
@@ -119,7 +120,7 @@ open class RealmUserModel : RealmObject() {
         if (imagePath.isNullOrEmpty()) return null
         return try {
             val inputStream: InputStream? = if (imagePath.startsWith("content://")) {
-                val uri = Uri.parse(imagePath)
+                val uri = imagePath.toUri()
                 context.contentResolver.openInputStream(uri)
             } else {
                 File(imagePath).inputStream()
@@ -173,7 +174,7 @@ open class RealmUserModel : RealmObject() {
 
     fun isManager(): Boolean {
         val roles = getRoles()
-        val isManager = roles.toString().lowercase(Locale.ROOT).contains("manager") || userAdmin ?: false
+        val isManager = roles.toString().lowercase(Locale.ROOT).contains("manager") || userAdmin == true
         return isManager
     }
 
@@ -279,7 +280,7 @@ open class RealmUserModel : RealmObject() {
             }
 
             if (planetCodes.isNotEmpty()) {
-                settings.edit().putString("planetCode", planetCodes).apply()
+                settings.edit { putString("planetCode", planetCodes) }
             }
 
             userDataList.add(arrayOf(

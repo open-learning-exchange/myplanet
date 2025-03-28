@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.tabs.TabLayoutMediator
@@ -36,10 +37,11 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
             bottomSheetBehavior?.state = BottomSheetBehavior.STATE_COLLAPSED
             bottomSheetBehavior?.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
                 override fun onStateChanged(bottomSheet: View, newState: Int) {
-
                     when (newState) {
                         BottomSheetBehavior.STATE_HIDDEN -> {
-                            dismiss()
+                            if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+                                dismiss()
+                            }
                         }
                     }
                 }

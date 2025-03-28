@@ -209,13 +209,13 @@ dependencies {
     implementation 'com.mikepenz:crossfadedrawerlayout:1.1.0@aar'
     implementation('com.mikepenz:materialdrawer:6.1.1@aar') { transitive = true}
 
-    def camera_version = "1.4.1"
+    def camera_version = "1.4.2"
     implementation "androidx.camera:camera-core:$camera_version"
     implementation "androidx.camera:camera-camera2:$camera_version"
     implementation "androidx.camera:camera-lifecycle:$camera_version"
     implementation "androidx.camera:camera-view:$camera_version"
 
-    def dagger_hilt_version = "2.56"
+    def dagger_hilt_version = "2.56.1"
     implementation "com.google.dagger:hilt-android:$dagger_hilt_version"
     kapt "com.google.dagger:hilt-android-compiler:$dagger_hilt_version"
 
@@ -227,7 +227,7 @@ dependencies {
     implementation "com.github.bumptech.glide:glide:$glide_version"
     kapt "com.github.bumptech.glide:compiler:$glide_version"
 
-    def media3_version = "1.5.1"
+    def media3_version = "1.6.0"
     implementation "androidx.media3:media3-exoplayer:$media3_version"
     implementation "androidx.media3:media3-ui:$media3_version"
     implementation "androidx.media3:media3-common:$media3_version"
