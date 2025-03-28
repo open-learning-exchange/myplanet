@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Calendar
 import java.util.Locale
+import androidx.core.view.isVisible
 
 class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     private lateinit var fragmentUserInformationBinding: FragmentUserInformationBinding
@@ -89,7 +90,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     }
 
     private fun toggleAdditionalFields() {
-        val isAdditionalFieldsVisible = fragmentUserInformationBinding.llNames.visibility == View.VISIBLE
+        val isAdditionalFieldsVisible = fragmentUserInformationBinding.llNames.isVisible
         if (isAdditionalFieldsVisible) {
             fragmentUserInformationBinding.etFname.setText("")
             fragmentUserInformationBinding.etLname.setText("")
@@ -116,7 +117,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         var mName = ""
         var age = ""
 
-        if (fragmentUserInformationBinding.llNames.visibility == View.VISIBLE) {
+        if (fragmentUserInformationBinding.llNames.isVisible) {
             fname = fragmentUserInformationBinding.etFname.text.toString().trim()
             lname = fragmentUserInformationBinding.etLname.text.toString().trim()
             mName = fragmentUserInformationBinding.etMname.text.toString().trim()
@@ -124,7 +125,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
         val user = JsonObject()
 
-        if (fragmentUserInformationBinding.ltAge.visibility == View.VISIBLE) {
+        if (fragmentUserInformationBinding.ltAge.isVisible) {
             age = fragmentUserInformationBinding.etAge.text.toString().trim()
 
             if (age.isNotEmpty()) {
@@ -148,14 +149,14 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         if (lname.isNotEmpty()) user.addProperty("lastName", lname)
         if (mName.isNotEmpty()) user.addProperty("middleName", mName)
 
-        if (fragmentUserInformationBinding.llPhoneDob.visibility == View.VISIBLE) {
+        if (fragmentUserInformationBinding.llPhoneDob.isVisible) {
             val phone = fragmentUserInformationBinding.etPhone.text.toString().trim()
             if (phone.isNotEmpty()) user.addProperty("phoneNumber", phone)
 
             if (!dob.isNullOrEmpty()) user.addProperty("birthDate", dob)
         }
 
-        if (fragmentUserInformationBinding.llEmailLang.visibility == View.VISIBLE) {
+        if (fragmentUserInformationBinding.llEmailLang.isVisible) {
             val email = fragmentUserInformationBinding.etEmail.text.toString().trim()
             val lang = fragmentUserInformationBinding.spnLang.selectedItem.toString()
 
@@ -163,12 +164,12 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             if (lang.isNotEmpty()) user.addProperty("language", lang)
         }
 
-        if (fragmentUserInformationBinding.llLevel.visibility == View.VISIBLE) {
+        if (fragmentUserInformationBinding.llLevel.isVisible) {
             val level = fragmentUserInformationBinding.spnLevel.selectedItem.toString()
             if (level.isNotEmpty()) user.addProperty("level", level)
         }
 
-        if (fragmentUserInformationBinding.rbGender.visibility == View.VISIBLE) {
+        if (fragmentUserInformationBinding.rbGender.isVisible) {
             val rbSelected = requireView().findViewById<RadioButton>(fragmentUserInformationBinding.rbGender.checkedRadioButtonId)
             if (rbSelected != null) {
                 val gender = rbSelected.tag.toString()

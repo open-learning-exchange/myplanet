@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
+import androidx.core.view.isVisible
 
 class NewsFragment : BaseNewsFragment() {
     private lateinit var fragmentNewsBinding: FragmentNewsBinding
@@ -44,12 +45,12 @@ class NewsFragment : BaseNewsFragment() {
             fragmentNewsBinding.btnNewVoice.visibility = View.GONE
         }
         fragmentNewsBinding.btnNewVoice.setOnClickListener {
-            fragmentNewsBinding.llAddNews.visibility = if (fragmentNewsBinding.llAddNews.visibility == View.VISIBLE) {
+            fragmentNewsBinding.llAddNews.visibility = if (fragmentNewsBinding.llAddNews.isVisible) {
                 View.GONE
             } else {
                 View.VISIBLE
             }
-            fragmentNewsBinding.btnNewVoice.text = if (fragmentNewsBinding.llAddNews.visibility == View.VISIBLE) {
+            fragmentNewsBinding.btnNewVoice.text = if (fragmentNewsBinding.llAddNews.isVisible) {
                 getString(R.string.hide_new_voice)
             } else {
                 getString(R.string.new_voice)

@@ -42,6 +42,7 @@ import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Calendar
 import java.util.UUID
+import androidx.core.view.isVisible
 
 class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSelected,
     ChipDeletedListener, TagClickListener, OnFilterListener {
@@ -409,7 +410,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private fun additionalSetup() {
         val bottomSheet = requireView().findViewById<View>(R.id.card_filter)
         requireView().findViewById<View>(R.id.filter).setOnClickListener {
-            bottomSheet.visibility = if (bottomSheet.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+            bottomSheet.visibility = if (bottomSheet.isVisible) View.GONE else View.VISIBLE
         }
         orderByDate = requireView().findViewById(R.id.order_by_date_button)
         orderByTitle = requireView().findViewById(R.id.order_by_title_button)

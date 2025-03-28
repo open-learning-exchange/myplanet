@@ -44,6 +44,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.Date
 import java.util.UUID
+import androidx.core.graphics.drawable.toDrawable
 
 class AddResourceFragment : BottomSheetDialogFragment() {
     private lateinit var fragmentAddResourceBinding: FragmentAddResourceBinding
@@ -122,7 +123,11 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             .setView(alertSoundRecorderBinding.root)
             .setCancelable(false)
             .create()
-        dialog.window?.setBackgroundDrawable(ColorDrawable(ContextCompat.getColor(requireContext(), R.color.card_bg)))
+        dialog.window?.setBackgroundDrawable(
+            ContextCompat.getColor(
+                requireContext(),
+                R.color.card_bg
+            ).toDrawable())
 
         createAudioRecorderService(dialog)
         alertSoundRecorderBinding.fabRecord.setOnClickListener {

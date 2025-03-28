@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.databinding.ActivityExoPlayerVideoBinding
 import org.ole.planet.myplanet.utilities.AuthSessionUpdater
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities
+import androidx.core.net.toUri
 
 class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback {
     private lateinit var binding: ActivityExoPlayerVideoBinding
@@ -151,7 +152,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
             )
             .build()
 
-        val videoUri = Uri.parse(videoUrl)
+        val videoUri = videoUrl.toUri()
         val requestProperties = hashMapOf("Cookie" to auth)
         val defaultHttpDataSourceFactory = DefaultHttpDataSource.Factory()
             .setUserAgent("ExoPlayer")
@@ -174,7 +175,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     private fun prepareExoPlayerFromFileUri(uriString: String) {
         if (!isActivityVisible) return
 
-        val uri = Uri.parse(uriString)
+        val uri = uriString.toUri()
         val trackSelectorDef = DefaultTrackSelector(this)
 
         exoPlayer = ExoPlayer.Builder(this)

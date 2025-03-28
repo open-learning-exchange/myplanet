@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
 import java.io.File
+import androidx.core.net.toUri
 
 class WebViewActivity : AppCompatActivity() {
     private lateinit var activityWebViewBinding: ActivityWebViewBinding
@@ -95,7 +96,7 @@ class WebViewActivity : AppCompatActivity() {
                 if (url.startsWith("file://")) {
                     activityWebViewBinding.contentWebView.webSource.text = getString(R.string.local_resource)
                 } else {
-                    val i = Uri.parse(url)
+                    val i = url.toUri()
                     activityWebViewBinding.contentWebView.webSource.text = i.host
                 }
             }

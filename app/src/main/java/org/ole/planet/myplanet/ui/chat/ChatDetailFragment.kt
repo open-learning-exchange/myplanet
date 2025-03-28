@@ -39,6 +39,7 @@ import retrofit2.Callback
 import retrofit2.Response
 import java.util.Date
 import java.util.Locale
+import androidx.core.net.toUri
 
 class ChatDetailFragment : Fragment() {
     lateinit var fragmentChatDetailBinding: FragmentChatDetailBinding
@@ -198,7 +199,7 @@ class ChatDetailFragment : Fragment() {
 
             if (!primaryAvailable && alternativeAvailable) {
                 mapping.alternativeUrl.let { alternativeUrl ->
-                    val uri = Uri.parse(updateUrl)
+                    val uri = updateUrl.toUri()
                     val editor = settings.edit()
 
                     serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)

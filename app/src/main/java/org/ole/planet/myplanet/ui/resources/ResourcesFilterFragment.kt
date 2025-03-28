@@ -16,6 +16,7 @@ import androidx.fragment.app.DialogFragment
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnFilterListener
 import org.ole.planet.myplanet.databinding.FragmentLibraryFilterBinding
+import androidx.core.view.isGone
 
 class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListener {
     private lateinit var fragmentLibraryFilterBinding: FragmentLibraryFilterBinding
@@ -127,7 +128,7 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
     }
 
     private fun toggleSection(section: View, listView: ListView, dropdownIcon: ImageView) {
-        if (section.visibility == View.GONE) {
+        if (section.isGone) {
             expand(section, listView, dropdownIcon)
         } else {
             collapse(section, dropdownIcon)

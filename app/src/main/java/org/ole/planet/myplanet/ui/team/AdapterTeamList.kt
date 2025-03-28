@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
+import androidx.core.graphics.toColorInt
 
 class AdapterTeamList(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm, private val fragmentManager: FragmentManager) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private lateinit var itemTeamListBinding: ItemTeamListBinding
@@ -108,7 +109,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                     contentDescription = "${context.getString(R.string.requested)} ${team.name}"
                     visibility = View.VISIBLE
                     setImageResource(R.drawable.baseline_hourglass_top_24)
-                    setColorFilter(Color.parseColor("#9fa0a4"), PorterDuff.Mode.SRC_IN)
+                    setColorFilter("#9fa0a4".toColorInt(), PorterDuff.Mode.SRC_IN)
                 }
             }
 
