@@ -83,13 +83,19 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                         meetup.endDate = end.timeInMillis
                         meetup.endTime = "${addMeetupBinding.tvEndTime.text}"
                         meetup.startTime = "${addMeetupBinding.tvStartTime.text}"
+                        meetup.createdDate = System.currentTimeMillis()
+                        meetup.sourcePlanet = team?.teamPlanetCode
+                        val jo = JsonObject()
+                        jo.addProperty("type", "local")
+                        jo.addProperty("planetCode", team?.teamPlanetCode)
+                        meetup.sync = Gson().toJson(jo)
                         val rb = addMeetupBinding.rgRecuring.findViewById<RadioButton>(addMeetupBinding.rgRecuring.checkedRadioButtonId)
                         if (rb != null) {
                             meetup.recurring = "${rb.text}"
                         }
                         val ob = JsonObject()
                         ob.addProperty("teams", teamId)
-                        meetup.links = Gson().toJson(ob)
+                        meetup.link = Gson().toJson(ob)
                         meetup.teamId = teamId
                         mRealm.commitTransaction()
                         Utilities.toast(activity, getString(R.string.meetup_added))

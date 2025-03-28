@@ -29,8 +29,12 @@ open class RealmMeetup : RealmObject() {
     var category: String? = null
     var meetupLocation: String? = null
     var creator: String? = null
-    var links: String? = null
+    var link: String? = null
     var teamId: String? = null
+    var createdDate: Long = 0
+    var recurringNumber: Int = 10
+    var sync: String? = null
+    var sourcePlanet: String? = null
 
     companion object {
         private val meetupDataList: MutableList<Array<String>> = mutableListOf()
@@ -61,10 +65,10 @@ open class RealmMeetup : RealmObject() {
             myMeetupsDB?.endTime = JsonUtils.getString("endTime", meetupDoc)
             myMeetupsDB?.category = JsonUtils.getString("category", meetupDoc)
             myMeetupsDB?.meetupLocation = JsonUtils.getString("meetupLocation", meetupDoc)
-            myMeetupsDB?.creator = JsonUtils.getString("creator", meetupDoc)
+            myMeetupsDB?.creator = JsonUtils.getString("createdBy", meetupDoc)
             myMeetupsDB?.day = JsonUtils.getJsonArray("day", meetupDoc).toString()
-            myMeetupsDB?.links = JsonUtils.getJsonObject("links", meetupDoc).toString()
-            myMeetupsDB?.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("links", meetupDoc))
+            myMeetupsDB?.link = JsonUtils.getJsonObject("link", meetupDoc).toString()
+            myMeetupsDB?.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("link", meetupDoc))
             mRealm.commitTransaction()
 
             val csvRow = arrayOf(
@@ -80,7 +84,7 @@ open class RealmMeetup : RealmObject() {
                 JsonUtils.getString("endTime", meetupDoc),
                 JsonUtils.getString("category", meetupDoc),
                 JsonUtils.getString("meetupLocation", meetupDoc),
-                JsonUtils.getString("creator", meetupDoc),
+                JsonUtils.getString("createdBy", meetupDoc),
                 JsonUtils.getJsonArray("day", meetupDoc).toString(),
                 JsonUtils.getJsonObject("link", meetupDoc).toString(),
                 JsonUtils.getString("teams", JsonUtils.getJsonObject("link", meetupDoc))
@@ -94,7 +98,7 @@ open class RealmMeetup : RealmObject() {
                 val file = File(filePath)
                 file.parentFile?.mkdirs()
                 val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("meetupId", "userId", "meetupId_rev", "title", "description", "startDate", "endDate", "recurring", "startTime", "endTime", "category", "meetupLocation", "creator", "day", "links", "teamId"))
+                writer.writeNext(arrayOf("meetupId", "userId", "meetupId_rev", "title", "description", "startDate", "endDate", "recurring", "startTime", "endTime", "category", "meetupLocation", "createdBy", "day", "link", "teamId"))
                 for (row in data) {
                     writer.writeNext(row)
                 }
@@ -177,12 +181,17 @@ open class RealmMeetup : RealmObject() {
             `object`.addProperty("endTime", meetup.endTime)
             `object`.addProperty("recurring", meetup.recurring)
             `object`.addProperty("meetupLocation", meetup.meetupLocation)
-            `object`.addProperty("creator", meetup.creator)
+            `object`.addProperty("createdBy", meetup.creator)
             `object`.addProperty("teamId", meetup.teamId)
+            `object`.addProperty("category", meetup.category)
+            `object`.addProperty("createdDate", meetup.createdDate)
+            `object`.addProperty("recurringNumber", meetup.recurringNumber)
+            `object`.addProperty("sourcePlanet", meetup.sourcePlanet)
+            `object`.addProperty("sync", meetup.sync)
 
-            if (!meetup.links.isNullOrEmpty()) {
-                val linksJson = Gson().fromJson(meetup.links, JsonObject::class.java)
-                `object`.add("links", linksJson)
+            if (!meetup.link.isNullOrEmpty()) {
+                val linksJson = Gson().fromJson(meetup.link, JsonObject::class.java)
+                `object`.add("link", linksJson)
             }
 
             return `object`
