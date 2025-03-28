@@ -98,6 +98,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private var showAdditionalServers = false
     private var serverAddressAdapter : ServerAddressAdapter? = null
     private lateinit var serverListAddresses: List<ServerAddressesModel>
+    private var isProgressDialogShowing = false
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -423,9 +424,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     override fun onSyncStarted() {
         customProgressDialog?.setText(getString(R.string.syncing_data_please_wait))
         customProgressDialog?.show()
+        isProgressDialogShowing = true
     }
 
     override fun onSyncFailed(msg: String?) {
+        if (isProgressDialogShowing) {
+            customProgressDialog?.dismiss()
+        }
         if (::syncIconDrawable.isInitialized) {
             syncIconDrawable = syncIcon.drawable as AnimationDrawable
             syncIconDrawable.stop()
