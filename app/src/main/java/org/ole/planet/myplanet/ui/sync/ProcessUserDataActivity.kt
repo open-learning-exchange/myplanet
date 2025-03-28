@@ -36,6 +36,8 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.FileUtils.installApk
 import kotlin.math.roundToInt
+import androidx.core.net.toUri
+import androidx.core.content.edit
 
 abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     lateinit var settings: SharedPreferences
@@ -127,7 +129,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
 
     fun setUrlParts(url: String, password: String): String {
         val editor = settings.edit()
-        val uri = Uri.parse(url)
+        val uri = url.toUri()
         var couchdbURL: String
         val urlUser: String
         val urlPwd: String
@@ -207,16 +209,16 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
 
     fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUserModel) {
         this.settings = settings
-        val editor = settings.edit()
-        editor.putString("userId", user.id)
-        editor.putString("name", user.name)
-        editor.putString("password", password)
-        editor.putString("firstName", user.firstName)
-        editor.putString("lastName", user.lastName)
-        editor.putString("middleName", user.middleName)
-        user.userAdmin?.let { editor.putBoolean("isUserAdmin", it) }
-        editor.putLong("lastLogin", System.currentTimeMillis())
-        editor.apply()
+        settings.edit {
+            putString("userId", user.id)
+            putString("name", user.name)
+            putString("password", password)
+            putString("firstName", user.firstName)
+            putString("lastName", user.lastName)
+            putString("middleName", user.middleName)
+            user.userAdmin?.let { putBoolean("isUserAdmin", it) }
+            putLong("lastLogin", System.currentTimeMillis())
+        }
     }
 
     fun alertDialogOkay(message: String?) {
