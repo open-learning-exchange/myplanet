@@ -609,7 +609,7 @@ class UploadManager(var context: Context) : FileUploadService() {
         val apiInterface = client?.create(ApiInterface::class.java)
 
         mRealm.executeTransactionAsync { realm: Realm ->
-            val meetups: List<RealmMeetup> = realm.where(RealmMeetup::class.java).isNull("meetupId").findAll()
+            val meetups: List<RealmMeetup> = realm.where(RealmMeetup::class.java).findAll()
 
             for (meetup in meetups) {
                 try {

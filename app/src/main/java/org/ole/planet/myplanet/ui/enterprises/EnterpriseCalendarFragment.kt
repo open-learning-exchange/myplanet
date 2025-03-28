@@ -56,6 +56,9 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         setDatePickerListener(addMeetupBinding.tvEndDate, end, null)
         setTimePicker(addMeetupBinding.tvStartTime)
         setTimePicker(addMeetupBinding.tvEndTime)
+        if (!::clickedCalendar.isInitialized) {
+            clickedCalendar = Calendar.getInstance()
+        }
 
         val alertDialog = AlertDialog.Builder(requireActivity()).setView(addMeetupBinding.root)
             .setPositiveButton("Save") { _, _ ->
@@ -90,7 +93,6 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                         meetup.teamId = teamId
                         mRealm.commitTransaction()
                         Utilities.toast(activity, getString(R.string.meetup_added))
-                        UploadManager.instance?.uploadMeetups()
                         refreshCalendarView()
                     } catch (e: Exception) {
                         mRealm.cancelTransaction()
@@ -159,8 +161,6 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
             override fun onClick(calendarDay: CalendarDay) {
                 meetupList = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
                 clickedCalendar = calendarDay.calendar
-                for (meetup in meetupList) {
-                }
                 val clickedDateInMillis = clickedCalendar.timeInMillis
                 val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
                     .atZone(ZoneId.systemDefault())

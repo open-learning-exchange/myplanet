@@ -61,7 +61,7 @@ open class RealmMeetup : RealmObject() {
             myMeetupsDB?.endTime = JsonUtils.getString("endTime", meetupDoc)
             myMeetupsDB?.category = JsonUtils.getString("category", meetupDoc)
             myMeetupsDB?.meetupLocation = JsonUtils.getString("meetupLocation", meetupDoc)
-            myMeetupsDB?.creator = JsonUtils.getString("createdBy", meetupDoc)
+            myMeetupsDB?.creator = JsonUtils.getString("creator", meetupDoc)
             myMeetupsDB?.day = JsonUtils.getJsonArray("day", meetupDoc).toString()
             myMeetupsDB?.links = JsonUtils.getJsonObject("links", meetupDoc).toString()
             myMeetupsDB?.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("links", meetupDoc))
@@ -80,7 +80,7 @@ open class RealmMeetup : RealmObject() {
                 JsonUtils.getString("endTime", meetupDoc),
                 JsonUtils.getString("category", meetupDoc),
                 JsonUtils.getString("meetupLocation", meetupDoc),
-                JsonUtils.getString("createdBy", meetupDoc),
+                JsonUtils.getString("creator", meetupDoc),
                 JsonUtils.getJsonArray("day", meetupDoc).toString(),
                 JsonUtils.getJsonObject("link", meetupDoc).toString(),
                 JsonUtils.getString("teams", JsonUtils.getJsonObject("link", meetupDoc))
@@ -177,7 +177,7 @@ open class RealmMeetup : RealmObject() {
             `object`.addProperty("endTime", meetup.endTime)
             `object`.addProperty("recurring", meetup.recurring)
             `object`.addProperty("meetupLocation", meetup.meetupLocation)
-            `object`.addProperty("createdBy", meetup.creator)
+            `object`.addProperty("creator", meetup.creator)
             `object`.addProperty("teamId", meetup.teamId)
 
             if (!meetup.links.isNullOrEmpty()) {
