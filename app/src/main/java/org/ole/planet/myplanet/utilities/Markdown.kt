@@ -36,6 +36,7 @@ import io.noties.markwon.image.network.OkHttpNetworkSchemeHandler
 import io.noties.markwon.movement.MovementMethodPlugin
 import org.commonmark.node.Image
 import org.ole.planet.myplanet.R
+import androidx.core.graphics.drawable.toDrawable
 
 object Markdown {
     private var currentZoomDialog: Dialog? = null
@@ -92,7 +93,7 @@ object Markdown {
         val closeButton = view.findViewById<ImageView>(R.id.closeButton)
 
         dialog.setContentView(view)
-        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.BLACK))
+        dialog.window?.setBackgroundDrawable(Color.BLACK.toDrawable())
 
         Glide.with(context)
             .load(imageUrl)

@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.*
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import java.util.Locale
+import androidx.core.net.toUri
 
 object NetworkUtils {
     lateinit var coroutineScope: CoroutineScope
@@ -166,7 +167,7 @@ object NetworkUtils {
     }
 
     fun extractProtocol(url: String): String? {
-        val uri = Uri.parse(url)
+        val uri = url.toUri()
         val scheme = uri.scheme
         return if (scheme != null) "$scheme://" else null
     }
