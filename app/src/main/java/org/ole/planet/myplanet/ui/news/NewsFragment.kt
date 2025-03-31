@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.databinding.FragmentNewsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -73,6 +74,12 @@ class NewsFragment : BaseNewsFragment() {
 
     private fun filterNewsList(results: RealmResults<RealmNews>): List<RealmNews?> {
         val filteredList: MutableList<RealmNews?> = ArrayList()
+        /*adding*/
+        val myTeams = mRealm.where(RealmMyTeam::class.java)
+            .equalTo("status", "active")
+            .findAll()
+        val myTeamIds = myTeams.mapNotNull { it._id }
+        /*done*/
         for (news in results) {
             if (news.viewableBy.equals("community", ignoreCase = true)) {
                 filteredList.add(news)
@@ -83,11 +90,17 @@ class NewsFragment : BaseNewsFragment() {
                 val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
                 for (e in ar) {
                     val ob = e.asJsonObject
+                    /*
                     var userId = "${user?.planetCode}@${user?.parentCode}"
                     if(userId.isEmpty() || userId=="@"){
                         userId = settings?.getString("planetCode","")+"@"+settings?.getString("parentCode", "")
                     }
                     if (ob != null && ob.has("_id") && ob["_id"].asString.equals(userId, ignoreCase = true)) {
+                        filteredList.add(news)
+                        break
+                    }
+                    */
+                    if (ob.has("_id") && myTeamIds.contains(ob["_id"].asString)) {
                         filteredList.add(news)
                         break
                     }
@@ -133,6 +146,12 @@ class NewsFragment : BaseNewsFragment() {
         val allNews: List<RealmNews> = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING).isEmpty("replyTo")
             .equalTo("docType", "message", Case.INSENSITIVE).findAll()
         val list: MutableList<RealmNews?> = ArrayList()
+        /*adding*/
+        val myTeams = mRealm.where(RealmMyTeam::class.java)
+        .equalTo("status", "active")
+        .findAll()
+        val myTeamIds = myTeams.mapNotNull { it._id }
+        /*done*/
         for (news in allNews) {
             if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("community", ignoreCase = true)) {
                 list.add(news)
@@ -142,12 +161,19 @@ class NewsFragment : BaseNewsFragment() {
                 val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
                 for (e in ar) {
                     val ob = e.asJsonObject
+                    /*
                     var userId = "${user?.planetCode}@${user?.parentCode}"
                     if(userId.isEmpty() || userId=="@"){
                         userId = settings?.getString("planetCode","")+"@"+settings?.getString("parentCode", "")
                     }
                     if (ob != null && ob.has("_id") && ob["_id"].asString.equals(userId, ignoreCase = true)) {
                         list.add(news)
+                    }
+
+                    */
+                    if (ob.has("_id") && myTeamIds.contains(ob["_id"].asString)) {
+                        list.add(news)
+                        break
                     }
                 }
             }
