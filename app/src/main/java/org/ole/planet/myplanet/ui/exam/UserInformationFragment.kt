@@ -57,6 +57,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             fragmentUserInformationBinding.llPhoneDob.visibility = View.GONE
             fragmentUserInformationBinding.llLevel.visibility = View.GONE
         } else {
+            fragmentUserInformationBinding.btnAdditionalFields.visibility = View.GONE
             val langArray = resources.getStringArray(R.array.language)
             val levelArray = resources.getStringArray(R.array.level)
             val adapterLang = ArrayAdapter(requireContext(), R.layout.become_a_member_spinner_layout, langArray)
