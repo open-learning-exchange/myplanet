@@ -1265,5 +1265,6 @@
     <string name="no_resources_to_download">Ma jiro ilo la soo dejiyo</string>
     <string name="response">Jawaab</string>
     <string name="full_conversation_response">Jawaabta wada hadalka oo dhameystiran</string>
+    <string name="shared_from_prefix">Lagu wadaagay laga bilaabo:</string>
 
 </resources>

@@ -1265,5 +1265,6 @@
     <string name="no_resources_to_download">डाउनलोड गर्न कुनै स्रोत छैन</string>
     <string name="response">उत्तर</string>
     <string name="full_conversation_response">पूर्ण वार्तालाप उत्तर</string>
+    <string name="shared_from_prefix">बाट साझा गरिएको:</string>
 
 </resources>

@@ -1265,5 +1265,6 @@
     <string name="no_resources_to_download">لا توجد موارد للتحميل</string>
     <string name="response">استجابة</string>
     <string name="full_conversation_response">استجابة المحادثة الكاملة</string>
+    <string name="shared_from_prefix">تم المشاركة من:</string>
 
 </resources>

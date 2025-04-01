@@ -7,6 +7,7 @@ import android.content.DialogInterface
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Build
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -53,7 +54,8 @@ import java.io.File
 import java.util.Calendar
 import androidx.core.graphics.drawable.toDrawable
 
-class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
+class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String, private val showTeamName: Boolean) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
+
     private lateinit var rowNewsBinding: RowNewsBinding
     private var listener: OnNewsItemClickListener? = null
     private var imageList: RealmList<String>? = null
@@ -104,6 +106,24 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         if (holder is ViewHolderNews) {
             holder.bind(position)
             val news = getNews(holder, position)
+            var teamName = ""
+            val viewInJson = news?.viewIn
+            if (!viewInJson.isNullOrEmpty()) {
+                try {
+                    val jsonArray = Gson().fromJson(viewInJson, JsonArray::class.java)
+                    for (jsonElement in jsonArray) {
+                        val jsonObject = jsonElement.asJsonObject
+                        if (jsonObject.has("teamName")) {
+                            teamName = jsonObject.get("teamName").asString
+                            break
+                        }
+                    }
+                } catch (e: Exception) {
+                }
+            }
+            val prefix = context.getString(R.string.shared_from_prefix)
+            val fullText = "$prefix $teamName"
+            holder.rowNewsBinding.tvTeamName.text = if (showTeamName && teamName.isNotBlank()) fullText else ""
 
             if (news?.isValid == true) {
                 holder.rowNewsBinding.tvName.text = ""
@@ -505,7 +525,9 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             ob.addProperty("section", "community")
             ob.addProperty("_id", currentUser?.planetCode + "@" + currentUser?.parentCode)
             ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
+            ob.addProperty("teamName", teamName)
             array.add(ob)
+            Log.d("AdapterNews", "Added teamName to viewIn: $teamName") //test
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
