@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.Utilities
+import androidx.core.view.isGone
 
 class AchievementFragment : BaseContainerFragment() {
     private lateinit var fragmentAchievementBinding: FragmentAchievementBinding
@@ -70,9 +71,9 @@ class AchievementFragment : BaseContainerFragment() {
                     val libraries = getList(ob.getAsJsonArray("resources"))
                     if (getString("description", ob.getAsJsonObject()).isNotEmpty() && libraries.size > 0) {
                         rowAchievementBinding.llRow.setOnClickListener {
-                            rowAchievementBinding.llDesc.visibility = if (rowAchievementBinding.llDesc.visibility == View.GONE) View.VISIBLE else View.GONE
+                            rowAchievementBinding.llDesc.visibility = if (rowAchievementBinding.llDesc.isGone) View.VISIBLE else View.GONE
                             rowAchievementBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0,
-                                if (rowAchievementBinding.llDesc.visibility == View.GONE) R.drawable.ic_down else R.drawable.ic_up, 0
+                                if (rowAchievementBinding.llDesc.isGone) R.drawable.ic_down else R.drawable.ic_up, 0
                             )
                         }
                         for (lib in libraries) {
@@ -129,9 +130,9 @@ class AchievementFragment : BaseContainerFragment() {
                 rowAchievementBinding.tvTitle.text = getString("title", ob.getAsJsonObject())
                 val libraries = getList(ob.getAsJsonArray("resources"))
                 rowAchievementBinding.llRow.setOnClickListener {
-                    rowAchievementBinding.llDesc.visibility = if (rowAchievementBinding.llDesc.visibility == View.GONE) View.VISIBLE else View.GONE
+                    rowAchievementBinding.llDesc.visibility = if (rowAchievementBinding.llDesc.isGone) View.VISIBLE else View.GONE
                     rowAchievementBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0,
-                        if (rowAchievementBinding.llDesc.visibility == View.GONE)
+                        if (rowAchievementBinding.llDesc.isGone)
                             R.drawable.ic_down
                         else
                             R.drawable.ic_up, 0)
