@@ -7,6 +7,7 @@ import android.content.DialogInterface
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Build
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -526,6 +527,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
             ob.addProperty("teamName", teamName)
             array.add(ob)
+            Log.d("AdapterNews", "Added teamName to viewIn: $teamName") //test
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
