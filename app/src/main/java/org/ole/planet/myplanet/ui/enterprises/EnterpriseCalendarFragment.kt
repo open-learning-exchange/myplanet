@@ -47,10 +47,6 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         fragmentEnterpriseCalendarBinding = FragmentEnterpriseCalendarBinding.inflate(inflater, container, false)
         start = Calendar.getInstance()
         end = Calendar.getInstance()
-        if (!isMember()) {
-            fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
-        }
-        fragmentEnterpriseCalendarBinding.addEvent.setOnClickListener { showMeetupAlert() }
         return fragmentEnterpriseCalendarBinding.root
     }
 
@@ -185,7 +181,6 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
 
                 if (markedDates.isNotEmpty()) {
                     showMeetupDialog(markedDates)
-                    showHideFab()
                 } else {
                     start = clickedCalendar
                     end = clickedCalendar
@@ -273,20 +268,6 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                     fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
                 }
             }
-        }
-    }
-
-    private fun showHideFab() {
-        if (requireArguments().getBoolean("fromLogin", false)) {
-            fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
-        } else if (user != null) {
-            if (user?.isManager() == true || user?.isLeader() == true) {
-                fragmentEnterpriseCalendarBinding.addEvent.visibility = View.VISIBLE
-            } else {
-                fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
-            }
-        } else {
-            fragmentEnterpriseCalendarBinding.addEvent.visibility = View.GONE
         }
     }
 }
