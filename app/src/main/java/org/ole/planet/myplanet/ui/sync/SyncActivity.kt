@@ -61,6 +61,8 @@ import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
 import java.io.File
 import java.util.*
 import java.util.concurrent.TimeUnit
+import androidx.core.net.toUri
+import androidx.core.content.edit
 
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
     OnUserSelectedListener, ConfigurationIdListener {
@@ -155,7 +157,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     fun processAlternativeUrl(url: String, settings: SharedPreferences, editor: SharedPreferences.Editor, defaultUrl: String): String {
         val password = "${settings.getString("serverPin", "")}"
-        val uri = Uri.parse(url)
+        val uri = url.toUri()
         val couchdbURL: String
         val urlUser: String
         val urlPwd: String
@@ -1065,7 +1067,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             editor.commit()
 
             val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-            preferences.edit().clear().apply()
+            preferences.edit { clear() }
         }
 
         fun restartApp() {
