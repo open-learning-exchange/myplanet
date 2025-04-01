@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.net.Uri
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import androidx.core.net.toUri
 
 class ServerUrlMapper(private val context: Context, private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE), private val editor: SharedPreferences.Editor = settings.edit()) {
     private val serverMappings = mapOf(
@@ -21,7 +22,7 @@ class ServerUrlMapper(private val context: Context, private val settings: Shared
 
     private fun extractBaseUrl(url: String): String? {
         return try {
-            val uri = Uri.parse(url)
+            val uri = url.toUri()
             "${uri.scheme}://${uri.host}${if (uri.port != -1) ":${uri.port}" else ""}"
         } catch (e: Exception) {
             e.printStackTrace()
@@ -48,7 +49,7 @@ class ServerUrlMapper(private val context: Context, private val settings: Shared
             urlPwd = settings.getString("serverPin", "") ?: ""
         }
 
-        val altUri = Uri.parse(alternativeUrl)
+        val altUri = alternativeUrl.toUri()
 
         val couchdbURL = if (alternativeUrl.contains("@")) {
             alternativeUrl

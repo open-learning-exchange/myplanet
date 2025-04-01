@@ -191,6 +191,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             UploadManager.instance?.uploadResource(this@ProcessUserDataActivity)
             UploadManager.instance?.uploadRating()
             UploadManager.instance?.uploadTeamTask()
+            UploadManager.instance?.uploadMeetups()
             UploadManager.instance?.uploadSubmissions()
             UploadManager.instance?.uploadCrashLog()
             UploadManager.instance?.uploadSubmitPhotos(this@ProcessUserDataActivity)
