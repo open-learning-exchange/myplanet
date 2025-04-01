@@ -51,6 +51,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
 import java.util.Calendar
+import androidx.core.graphics.drawable.toDrawable
 
 class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
     private lateinit var rowNewsBinding: RowNewsBinding
@@ -317,7 +318,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         val closeButton = view.findViewById<ImageView>(R.id.closeButton)
 
         dialog.setContentView(view)
-        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.BLACK))
+        dialog.window?.setBackgroundDrawable(Color.BLACK.toDrawable())
 
         Glide.with(context)
             .load(imageUrl)
