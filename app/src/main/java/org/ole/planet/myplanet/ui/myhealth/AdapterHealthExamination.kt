@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
+import androidx.core.graphics.drawable.toDrawable
 
 class AdapterHealthExamination(private val context: Context, private val list: List<RealmMyHealthPojo>?, private val mh: RealmMyHealthPojo, private val userModel: RealmUserModel?) : RecyclerView.Adapter<ViewHolderMyHealthExamination>() {
     private lateinit var rowExaminationBinding: RowExaminationBinding
@@ -95,7 +96,7 @@ class AdapterHealthExamination(private val context: Context, private val list: L
             .setView(alertExaminationBinding.root)
             .setPositiveButton("OK", null).create()
         val backgroundColor = ContextCompat.getColor(context, R.color.multi_select_grey)
-        dialog.window?.setBackgroundDrawable(ColorDrawable(backgroundColor))
+        dialog.window?.setBackgroundDrawable(backgroundColor.toDrawable())
         val time = Date().time - 5000 * 60
         if (realmExamination != null) {
             if (realmExamination.date >= time) { dialog.setButton(DialogInterface.BUTTON_NEUTRAL, context.getString(R.string.edit)) { _: DialogInterface?, _: Int ->
