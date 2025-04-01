@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.JsonObject
 import com.opencsv.CSVWriter
 import io.realm.Realm
@@ -72,8 +73,14 @@ open class RealmStepExam : RealmObject() {
                 myExam?.isFromNation = !TextUtils.isEmpty(parentId)
                 myExam.teamId = JsonUtils.getString("teamId", exam)
                 myExam.isTeamShareAllowed = JsonUtils.getBoolean("teamShareAllowed", exam)
-                val oldQuestions: RealmResults<*>? = mRealm.where(RealmExamQuestion::class.java)
+                val oldQuestions = mRealm.where(RealmExamQuestion::class.java)
                     .equalTo("examId", JsonUtils.getString("_id", exam)).findAll()
+                if (JsonUtils.getString("name", exam) == "Community Engagement survey v5") {
+                    Log.d("okuro", JsonUtils.getString("_id", exam))
+                    Log.d("okuro", "${JsonUtils.getJsonArray("questions", exam)}")
+                    Log.d("okuro", "oldQuestions: $oldQuestions")
+                }
+
                 if (oldQuestions == null || oldQuestions.isEmpty()) {
                     RealmExamQuestion.insertExamQuestions(JsonUtils.getJsonArray("questions", exam), JsonUtils.getString("_id", exam), mRealm)
                 }
