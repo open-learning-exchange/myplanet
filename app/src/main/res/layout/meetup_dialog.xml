@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="24dp"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Event Title"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:background="@color/primary"
+        android:textStyle="bold"
+        android:textColor="@color/md_white_1000"
+        android:padding="10dp"/>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+        <LinearLayout
+            android:id="@+id/scrollContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+        </LinearLayout>
+    </ScrollView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="end">
+        <Button
+            android:id="@+id/btnadd"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="add new event"
+            android:layout_gravity="end"
+            android:backgroundTint="@color/primary"
+            android:textColor="@color/md_white_1000" />
+        <Button
+            android:id="@+id/btnClose"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Close"
+            android:layout_gravity="end"/>
+    </LinearLayout>
+
+</LinearLayout>
