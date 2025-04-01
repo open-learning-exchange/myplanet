@@ -45,6 +45,7 @@ import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.ThemeMode
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
+import androidx.core.content.edit
 
 class SettingActivity : AppCompatActivity() {
 
@@ -123,10 +124,10 @@ class SettingActivity : AppCompatActivity() {
             val autoDownload = findPreference<SwitchPreference>("beta_auto_download")
             autoDownload?.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
                 if (autoDownload.isChecked == true) {
-                    defaultPref.edit().putBoolean("beta_auto_download", true).apply()
+                    defaultPref.edit { putBoolean("beta_auto_download", true) }
                     backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
                 } else {
-                    defaultPref.edit().putBoolean("beta_auto_download", false).apply()
+                    defaultPref.edit { putBoolean("beta_auto_download", false) }
                 }
                 true
             }
@@ -136,7 +137,7 @@ class SettingActivity : AppCompatActivity() {
             fastSync?.isChecked = isFastSync
             fastSync?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
                 val isChecked = newValue as Boolean
-                settings.edit().putBoolean("fastSync", isChecked).apply()
+                settings.edit { putBoolean("fastSync", isChecked) }
                 true
             }
 
@@ -232,7 +233,7 @@ class SettingActivity : AppCompatActivity() {
             downloadSyncFiles?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
                 val isEnabled = newValue as Boolean
                 val sharedPreferences = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                sharedPreferences.edit().putBoolean("download_sync_files", isEnabled).apply()
+                sharedPreferences.edit { putBoolean("download_sync_files", isEnabled) }
                 true
             }
         }

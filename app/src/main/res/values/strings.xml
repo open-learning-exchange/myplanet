@@ -340,7 +340,7 @@
     <string name="remove">Remove</string>
     <string name="make_leader">Make Leader</string>
     <string name="mission"><![CDATA[Mission & Services]]></string>
-    <string name="team">Team</string>
+    <string name="team">Teams</string>
     <string name="applicants">Applicants</string>
     <string name="finances">Finances</string>
     <string name="messages">messages</string>
@@ -706,6 +706,7 @@
     <string name="description_is_required">Description is required</string>
     <string name="start_time_is_required">Start time is required</string>
     <string name="meetup_added">Meetup added</string>
+    <string name="meetup_not_added">Meetup not added</string>
     <string name="add_transaction">Add Transaction</string>
     <string name="note_is_required">Note is required</string>
     <string name="amount_is_required">Amount is required</string>
