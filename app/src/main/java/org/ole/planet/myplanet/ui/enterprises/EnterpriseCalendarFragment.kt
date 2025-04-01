@@ -1,12 +1,15 @@
 package org.ole.planet.myplanet.ui.enterprises
 
 import android.app.*
+import android.content.Context
+import android.content.res.Resources
 import android.os.*
 import android.view.*
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.applandeo.materialcalendarview.CalendarDay
 import com.applandeo.materialcalendarview.CalendarView
 import com.applandeo.materialcalendarview.listeners.OnCalendarDayClickListener
@@ -24,6 +27,7 @@ import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.ui.mymeetup.AdapterMeetup
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.*
+import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
 import java.util.*
@@ -180,7 +184,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                 }
 
                 if (markedDates.isNotEmpty()) {
-                    showMeetupDetails(markedDates)
+                    showMeetupDialog(markedDates)
                     showHideFab()
                 } else {
                     start = clickedCalendar
@@ -203,10 +207,43 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         llImage?.removeAllViews()
     }
 
-    private fun showMeetupDetails(meetupList: List<RealmMeetup>) {
-        fragmentEnterpriseCalendarBinding.meetup.visibility = View.VISIBLE
-        fragmentEnterpriseCalendarBinding.rvMeetups.layoutManager = LinearLayoutManager(requireContext())
-        fragmentEnterpriseCalendarBinding.rvMeetups.adapter = AdapterMeetup(meetupList)
+    private fun getCardViewHeight(context: Context): Int {
+        val view = LayoutInflater.from(context).inflate(R.layout.item_meetup, null)
+        view.measure(
+            View.MeasureSpec.makeMeasureSpec(Resources.getSystem().displayMetrics.widthPixels, View.MeasureSpec.AT_MOST),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        )
+        return view.measuredHeight
+    }
+
+    private fun showMeetupDialog(meetupList: List<RealmMeetup>) {
+        println(meetupList.size)
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.meetup_dialog, null)
+        val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMeetups)
+        val dialogTitle = dialogView.findViewById< TextView>(R.id.tvTitle)
+        val dateFormat = SimpleDateFormat("EEE, MMM d, yyyy", Locale.getDefault())
+        dialogTitle.text = dateFormat.format(clickedCalendar.time)
+        val cardHeight = getCardViewHeight(requireContext())
+        recyclerView.layoutParams.height = cardHeight
+        recyclerView.requestLayout()
+        recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        recyclerView.adapter = AdapterMeetup(meetupList)
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .create()
+
+        dialogView.findViewById<Button>(R.id.btnClose).setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialogView.findViewById<Button>(R.id.btnadd).setOnClickListener {
+            start = clickedCalendar
+            end = clickedCalendar
+            showMeetupAlert()
+        }
+
+        dialog.show()
     }
 
     private fun refreshCalendarView() {
