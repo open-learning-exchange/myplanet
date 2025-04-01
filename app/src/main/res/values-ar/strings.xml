@@ -340,7 +340,7 @@
     <string name="remove">إزالة</string>
     <string name="make_leader">جعله قائدًا</string>
     <string name="mission"><![CDATA[المهمة والخدمات]]></string>
-    <string name="team">الفريق</string>
+    <string name="team">الفرق</string>
     <string name="applicants">المتقدمون</string>
     <string name="finances">المالية</string>
     <string name="messages">رسائل</string>
@@ -706,6 +706,7 @@
     <string name="description_is_required">الوصف مطلوب</string>
     <string name="start_time_is_required">وقت البدء مطلوب</string>
     <string name="meetup_added">تمت إضافة اللقاء</string>
+    <string name="meetup_not_added">ميكوشي ب نو ت د</string>
     <string name="add_transaction">إضافة المعاملة</string>
     <string name="note_is_required">الملاحظة مطلوبة</string>
     <string name="amount_is_required">المبلغ مطلوب</string>

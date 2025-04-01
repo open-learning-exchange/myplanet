@@ -4,12 +4,14 @@ import android.content.Context
 import android.content.DialogInterface
 import android.graphics.Color
 import android.graphics.PorterDuff
+import android.graphics.Typeface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
@@ -23,6 +25,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
+import androidx.core.graphics.toColorInt
 
 class AdapterTeamList(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm, private val fragmentManager: FragmentManager) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private lateinit var itemTeamListBinding: ItemTeamListBinding
@@ -90,10 +93,13 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
     }
 
     private fun ItemTeamListBinding.showActionButton(isMyTeam: Boolean, team: RealmMyTeam, user: RealmUserModel?) {
+        if (isMyTeam) {
+            name.setTypeface(name.typeface, Typeface.BOLD)
+        }
         when {
             user?.isGuest() == true -> joinLeave.visibility = View.GONE
 
-            isMyTeam && RealmMyTeam.isTeamLeader(team.teamId, user?.id, mRealm) -> {
+            isMyTeam && RealmMyTeam.getTeamLeader(team._id, mRealm) != user?.id -> {
                 joinLeave.apply {
                     contentDescription = "${context.getString(R.string.leave)} ${team.name}"
                     visibility = View.VISIBLE
@@ -108,7 +114,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                     contentDescription = "${context.getString(R.string.requested)} ${team.name}"
                     visibility = View.VISIBLE
                     setImageResource(R.drawable.baseline_hourglass_top_24)
-                    setColorFilter(Color.parseColor("#9fa0a4"), PorterDuff.Mode.SRC_IN)
+                    setColorFilter("#9fa0a4".toColorInt(), PorterDuff.Mode.SRC_IN)
                 }
             }
 

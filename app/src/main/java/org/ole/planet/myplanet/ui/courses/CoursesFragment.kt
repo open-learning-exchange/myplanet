@@ -38,6 +38,7 @@ import java.util.Calendar
 import java.util.UUID
 import android.content.Context
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
+import androidx.core.view.isVisible
 
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener {
 
@@ -202,7 +203,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun additionalSetup() {
         val bottomSheet = requireView().findViewById<View>(R.id.card_filter)
         requireView().findViewById<View>(R.id.filter).setOnClickListener {
-            bottomSheet.visibility = if (bottomSheet.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+            bottomSheet.visibility = if (bottomSheet.isVisible) View.GONE else View.VISIBLE
         }
         orderByDate = requireView().findViewById(R.id.order_by_date_button)
         orderByTitle = requireView().findViewById(R.id.order_by_title_button)
