@@ -291,7 +291,6 @@
             android:textAllCaps="false"
             android:textColor="@android:color/white"
             android:textSize="12sp" />
-
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCancel"
             style="@style/Widget.MaterialComponents.Button"
