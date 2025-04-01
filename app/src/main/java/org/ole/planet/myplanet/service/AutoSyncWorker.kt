@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.service
 
+import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -29,11 +30,13 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
         val syncInterval = preferences.getInt("autoSyncInterval", 60 * 60)
         if (currentTime - lastSync > syncInterval * 1000) {
             // Post a Runnable to the main thread's Handler to show the Toast
-            val mainHandler = Handler(Looper.getMainLooper())
-            mainHandler.post {
-                Utilities.toast(
-                    context, "Syncing started..."
-                )
+            if (isAppInForeground(context)) {
+                val mainHandler = Handler(Looper.getMainLooper())
+                mainHandler.post {
+                    Utilities.toast(
+                        context, "Syncing started..."
+                    )
+                }
             }
             Service(context).checkVersion(this, preferences)
         }
@@ -90,5 +93,18 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
     override fun onSuccess(success: String?) {
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         settings.edit { putLong("lastUsageUploaded", Date().time) }
+    }
+
+    private fun isAppInForeground(context: Context): Boolean {
+        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val runningProcesses = activityManager.runningAppProcesses ?: return false
+
+        for (processInfo in runningProcesses) {
+            if (processInfo.processName == context.packageName &&
+                processInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
+                return true
+            }
+        }
+        return false
     }
 }
