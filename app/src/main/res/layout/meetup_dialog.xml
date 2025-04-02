@@ -22,7 +22,8 @@
         android:id="@+id/rvMeetups"
         android:layout_width="match_parent"
         android:layout_height="100dp"
-        android:layout_marginTop="16dp" />
+        android:layout_marginTop="16dp"
+        android:scrollbars="vertical" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -33,7 +34,7 @@
             android:id="@+id/btnadd"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="add new event"
+            android:text="@string/add_new_event"
             android:layout_gravity="end"
             android:backgroundTint="@color/primary"
             android:textColor="@color/md_white_1000" />
@@ -41,7 +42,7 @@
             android:id="@+id/btnClose"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Close"
+            android:text="@string/close"
             android:layout_gravity="end"/>
     </LinearLayout>
 

@@ -4,6 +4,7 @@ import android.app.*
 import android.content.Context
 import android.content.res.Resources
 import android.os.*
+import android.util.TypedValue
 import android.view.*
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
@@ -42,6 +43,7 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
     private lateinit var clickedCalendar: Calendar
     private lateinit var calendarEventsMap: MutableMap<CalendarDay, RealmMeetup>
     private lateinit var meetupList: RealmResults<RealmMeetup>
+    private val eventDates: MutableList<Calendar> = mutableListOf()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentEnterpriseCalendarBinding = FragmentEnterpriseCalendarBinding.inflate(inflater, container, false)
@@ -218,8 +220,11 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         val dialogTitle = dialogView.findViewById< TextView>(R.id.tvTitle)
         val dateFormat = SimpleDateFormat("EEE, MMM d, yyyy", Locale.getDefault())
         dialogTitle.text = dateFormat.format(clickedCalendar.time)
+        val extraHeight = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP, 12f, resources.displayMetrics
+        ).toInt()
         val cardHeight = getCardViewHeight(requireContext())
-        recyclerView.layoutParams.height = cardHeight
+        recyclerView.layoutParams.height = cardHeight + extraHeight
         recyclerView.requestLayout()
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = AdapterMeetup(meetupList)
@@ -230,6 +235,8 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
 
         dialogView.findViewById<Button>(R.id.btnClose).setOnClickListener {
             dialog.dismiss()
+            eventDates.add(clickedCalendar)
+            fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
         }
 
         dialogView.findViewById<Button>(R.id.btnadd).setOnClickListener {
@@ -247,7 +254,6 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         }
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             var meetupList = mutableListOf<RealmMeetup>()
-            val eventDates: MutableList<Calendar> = mutableListOf()
             val realm = Realm.getDefaultInstance()
             try {
                 meetupList = realm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
