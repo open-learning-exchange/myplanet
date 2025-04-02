@@ -49,6 +49,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.lang.String.format
 import java.util.*
+import androidx.core.net.toUri
 
 class UserProfileFragment : Fragment() {
     private lateinit var fragmentUserProfileBinding: FragmentUserProfileBinding
@@ -82,7 +83,7 @@ class UserProfileFragment : Fragment() {
                 imageUrl = url.toString()
 
                 val path = FileUtils.getRealPathFromURI(requireActivity(), url)
-                photoURI = Uri.parse(path)
+                photoURI = path?.toUri()
                 startIntent(photoURI)
                 fragmentUserProfileBinding.image.setImageURI(url)
             }
