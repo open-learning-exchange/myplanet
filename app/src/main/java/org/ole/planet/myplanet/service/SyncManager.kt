@@ -418,13 +418,7 @@ class SyncManager private constructor(private val context: Context) {
 
             "courses" -> {
                 if (backgroundRealm != null) {
-                    if (!backgroundRealm.isInTransaction) {
-                        backgroundRealm.beginTransaction()
-                    }
                     insertMyCourses(stringArray[0], resourceDoc, backgroundRealm)
-                    if (backgroundRealm.isInTransaction) {
-                        backgroundRealm.commitTransaction()
-                    }
                 } else {
                     if (!mRealm.isInTransaction) {
                         mRealm.beginTransaction()
