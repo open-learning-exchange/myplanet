@@ -13,7 +13,7 @@
     <string name="course_in_progress">أدخل الدورة %1$s أكملها (%2$d من %3$d تم)</string>
     <string name="course_not_started">%1$s لم يبدأ</string>
     <string name="app_name">My Planet</string>
-    <string name="planet">كوكب</string>
+    <string name="planet">Planet</string>
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">الإعدادات</string>
     <string name="hint_name">اسم المستخدم</string>
