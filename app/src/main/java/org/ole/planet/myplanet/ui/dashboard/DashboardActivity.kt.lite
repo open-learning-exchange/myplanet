@@ -137,7 +137,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 if (name.isNullOrBlank()) {
                     name = profileDbHandler.userModel?.name
                 }
-                activityDashboardBinding.appBarBell.appTitleName.text = getString(R.string.planet_name, name)
+                val communityName = settings.getString("communityName", "")
+                activityDashboardBinding.appBarBell.appTitleName.text = if (user?.planetCode == "") {
+                    "${getString(R.string.planet)} $communityName"
+                } else {
+                    "${getString(R.string.planet)} ${user?.planetCode}"
+                }
             } else {
                 activityDashboardBinding.appBarBell.appTitleName.text = getString(R.string.app_project_name)
             }

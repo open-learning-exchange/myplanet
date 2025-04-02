@@ -13,7 +13,7 @@
     <string name="course_in_progress">कोर्स %1$s मा प्रवेश गर्नुहोस् यसलाई पूरा गर्नुहोस् (%2$d को %3$d गरियो)</string>
     <string name="course_not_started">%1$s सुरु भएको छैन</string>
     <string name="app_name">My Planet</string>
-    <string name="planet">ग्रह</string>
+    <string name="planet">Planet</string>
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">सेटिङ्स</string>
     <string name="hint_name">प्रयोगकर्तानाम</string>
