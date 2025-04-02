@@ -42,9 +42,6 @@ open class RealmTag : RealmObject() {
 
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
             var tag = mRealm.where(RealmTag::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
             if (tag == null) {
                 tag = mRealm.createObject(RealmTag::class.java, JsonUtils.getString("_id", act))
@@ -65,7 +62,6 @@ open class RealmTag : RealmObject() {
                 }
                 tag.isAttached = (tag.attachedTo?.size ?: 0) > 0
             }
-            mRealm.commitTransaction()
 
             val csvRow = arrayOf(
                 JsonUtils.getString("_id", act),

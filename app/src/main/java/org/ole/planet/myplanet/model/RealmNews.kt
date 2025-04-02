@@ -112,10 +112,7 @@ open class RealmNews : RealmObject() {
 
         @JvmStatic
         fun insert(mRealm: Realm, doc: JsonObject?) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            var news = mRealm.where(RealmNews::class.java)
-                .equalTo("_id", JsonUtils.getString("_id", doc))
-                .findFirst()
+            var news = mRealm.where(RealmNews::class.java).equalTo("_id", JsonUtils.getString("_id", doc)).findFirst()
             if (news == null) {
                 news = mRealm.createObject(RealmNews::class.java, JsonUtils.getString("_id", doc))
             }
@@ -154,7 +151,6 @@ open class RealmNews : RealmObject() {
             news?.conversations = Gson().toJson(JsonUtils.getJsonArray("conversations", newsObj))
             news?.newsCreatedDate = JsonUtils.getLong("createdDate", newsObj)
             news?.newsUpdatedDate = JsonUtils.getLong("updatedDate", newsObj)
-            mRealm.commitTransaction()
 
             val csvRow = arrayOf(
                 JsonUtils.getString("_id", doc),

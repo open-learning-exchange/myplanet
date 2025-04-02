@@ -45,9 +45,6 @@ open class RealmMeetup : RealmObject() {
         }
 
         fun insert(userId: String?, meetupDoc: JsonObject, mRealm: Realm) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
             var myMeetupsDB = mRealm.where(RealmMeetup::class.java)
                 .equalTo("meetupId", JsonUtils.getString("_id", meetupDoc)).findFirst()
             if (myMeetupsDB == null) {
@@ -69,7 +66,6 @@ open class RealmMeetup : RealmObject() {
             myMeetupsDB?.day = JsonUtils.getJsonArray("day", meetupDoc).toString()
             myMeetupsDB?.link = JsonUtils.getJsonObject("link", meetupDoc).toString()
             myMeetupsDB?.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("link", meetupDoc))
-            mRealm.commitTransaction()
 
             val csvRow = arrayOf(
                 JsonUtils.getString("_id", meetupDoc),
