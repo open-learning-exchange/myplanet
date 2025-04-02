@@ -83,7 +83,6 @@ open class RealmMyHealthPojo : RealmObject() {
             myHealth?.gender = JsonUtils.getString("gender", act)
             myHealth?.planetCode = JsonUtils.getString("planetCode", act)
             myHealth?.conditions = Gson().toJson(JsonUtils.getJsonObject("conditions", act))
-
             val csvRow = arrayOf(
                 JsonUtils.getString("_id", act),
                 JsonUtils.getString("_rev", act),

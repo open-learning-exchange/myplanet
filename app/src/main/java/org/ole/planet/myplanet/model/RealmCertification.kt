@@ -36,7 +36,6 @@ open class RealmCertification : RealmObject() {
             }
             certification?.name = JsonUtils.getString("name", `object`)
             certification?.setCourseIds(JsonUtils.getJsonArray("courseIds", `object`))
-
             val csvRow = arrayOf(
                 JsonUtils.getString("_id", `object`),
                 JsonUtils.getString("name", `object`),
