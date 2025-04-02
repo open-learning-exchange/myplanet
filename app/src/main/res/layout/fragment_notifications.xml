@@ -21,27 +21,23 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/mark_all_as_read"
-            android:padding="@dimen/_4dp"
-            android:background="@color/mainColor"
+            android:padding="10dp"
+            android:backgroundTint="@color/mainColor"
             android:textColor="@color/bg_white"
             android:textAllCaps="false"
             app:layout_constraintEnd_toEndOf="parent" />
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
             android:layout_weight="1" />
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1" />
-        <Spinner
+
+        <androidx.appcompat.widget.AppCompatSpinner
             android:id="@+id/status"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:layout_weight="1"
-            android:popupBackground="@color/secondary_bg"
-            app:backgroundTint="@color/daynight_textColor" />
+            android:spinnerMode="dropdown"
+            android:dropDownWidth="match_parent"
+            app:backgroundTint="@color/daynight_textColor"/>
     </LinearLayout>
 
     <TextView

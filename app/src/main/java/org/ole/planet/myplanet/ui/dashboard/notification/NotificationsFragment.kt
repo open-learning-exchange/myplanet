@@ -7,8 +7,10 @@ import android.provider.Settings.ACTION_INTERNAL_STORAGE_SETTINGS
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.ViewTreeObserver
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import androidx.appcompat.widget.AppCompatSpinner
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import io.realm.Realm
@@ -60,7 +62,14 @@ class NotificationsFragment : Fragment() {
         val optionsList: MutableList<String?> = ArrayList(listOf(*options))
         val spinnerAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, optionsList)
         spinnerAdapter.setDropDownViewResource(R.layout.spinner_item)
-        fragmentNotificationsBinding.status.adapter = spinnerAdapter
+        val spinner = fragmentNotificationsBinding.status as AppCompatSpinner
+        spinner.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                spinner.dropDownWidth = spinner.width
+                spinner.viewTreeObserver.removeOnGlobalLayoutListener(this)
+            }
+        })
+        spinner.adapter = spinnerAdapter
         fragmentNotificationsBinding.status.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                 val selectedOption = parent.getItemAtPosition(position).toString().lowercase()
