@@ -592,7 +592,7 @@
     <string name="level_colon">स्तर: %s</string>
     <string name="method">तरिका:</string>
     <string name="number_of_exams">परीक्षाहरूको संख्या:</string>
-    <string name="description_colon">वर्णन:</string>
+    <string name="description_colon">वर्णन:&#160;</string>
     <string name="download_resources">संसाधनहरू डाउनलोड गर्नुहोस्</string>
     <string name="take_test">परीक्षा दिनुहोस् [%d]</string>
     <string name="search">खोज्नुहोस्</string>
@@ -1066,12 +1066,12 @@
     <string name="compulsory_phone_number">फोन नम्बर आवश्यक छ</string>
     <string name="compulsory_date_of_birth">जन्म मिति आवश्यक छ</string>
     <string name="gender_not_picked">लिङ्ग छानिएको छैन</string>
-    <string name="title_colon">शीर्षक:</string>
-    <string name="date_from_colon">मिति बाट:</string>
-    <string name="date_to_colon">मिति सम्म:</string>
-    <string name="location_colon">स्थान:</string>
-    <string name="recurring_colon">आवर्तमान:</string>
-    <string name="created_by_colon">बनाएको:</string>
+    <string name="title_colon">शीर्षक:&#160;</string>
+    <string name="date_from_colon">मिति बाट:&#160;</string>
+    <string name="date_to_colon">मिति सम्म:&#160;</string>
+    <string name="location_colon">स्थान:&#160;</string>
+    <string name="recurring_colon">आवर्तमान:&#160;</string>
+    <string name="created_by_colon">बनाएको:&#160;</string>
     <string name="failed_to_get_configuration_id">बनावट आईडी प्राप्त गर्न असफल भयो। कृपया व्यवस्थापकसँग सम्पर्क गर्नुहोस्।</string>
     <string name="you_want_to_connect_to_a_different_server">तपाईं अर्को सर्भरमा जडान गर्न चाहनुहुन्छ। अगाडि बढ्नका लागि एपको डेटा मेटाउनुहोस्</string>
     <string name="are_you_sure_you_want_to_clear_data">के तपाईं सबै डाटा हटाउन निश्चित हुनुहुन्छ?</string>
@@ -1265,5 +1265,6 @@
     <string name="no_resources_to_download">डाउनलोड गर्न कुनै स्रोत छैन</string>
     <string name="response">उत्तर</string>
     <string name="full_conversation_response">पूर्ण वार्तालाप उत्तर</string>
+    <string name="add_new_event">नयाँ घटना थप्नुहोस्</string>
 
 </resources>
