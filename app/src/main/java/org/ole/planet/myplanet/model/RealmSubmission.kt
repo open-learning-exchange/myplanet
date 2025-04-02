@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.model
 import android.content.Context
 import android.text.TextUtils
 import com.google.gson.Gson
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.opencsv.CSVWriter
@@ -295,7 +294,6 @@ open class RealmSubmission : RealmObject() {
 
         @JvmStatic
         fun serialize(mRealm: Realm, submission: RealmSubmission): JsonObject {
-            val gson = Gson()
             val jsonObject = JsonObject()
 
             try {
@@ -339,10 +337,7 @@ open class RealmSubmission : RealmObject() {
                 val serializedQuestions = RealmExamQuestion.serializeQuestions(questions)
                 jsonObject.add("questions", serializedQuestions)
 
-                val answersArray = JsonArray()
-                submission.answers?.forEach { answer ->
-                    answersArray.add(gson.toJsonTree(answer))
-                }
+                val answersArray = RealmAnswer.serializeRealmAnswer(submission.answers ?: RealmList())
                 jsonObject.add("answers", answersArray)
             } catch (e: Exception) {
                 e.printStackTrace()
