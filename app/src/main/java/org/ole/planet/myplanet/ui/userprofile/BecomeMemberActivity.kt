@@ -29,6 +29,7 @@ import java.text.Normalizer
 import java.util.Calendar
 import java.util.Locale
 import java.util.regex.Pattern
+import androidx.core.content.edit
 
 class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
@@ -237,22 +238,26 @@ class BecomeMemberActivity : BaseActivity() {
                         activityBecomeMemberBinding.pbar.visibility = View.GONE
                         Utilities.toast(this@BecomeMemberActivity, message)
                     }
-                    finish()
+                    settings.edit {
+                        putBoolean("pendingAutoLogin", true)
+                        putString("pendingUsername", username)
+                        putString("pendingPassword", password)
+                    }
+
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        val intent = Intent(this@BecomeMemberActivity, LoginActivity::class.java)
+                        if (guest) {
+                            intent.putExtra("guest", guest)
+                        }
+                        intent.putExtra("username", username)
+                        intent.putExtra("autoLogin", true)
+                        intent.putExtra("password", password)
+                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        startActivity(intent)
+                        finish()
+                    }, 1000)
                 }
             })
-
-            Handler(Looper.getMainLooper()).postDelayed({
-                val intent = Intent(this, LoginActivity::class.java)
-                if (guest) {
-                    intent.putExtra("guest", guest)
-                }
-                intent.putExtra("username", username)
-                intent.putExtra("autoLogin", true)
-                intent.putExtra("password", password)
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                startActivity(intent)
-                finish()
-            }, 5000)
         }
     }
 

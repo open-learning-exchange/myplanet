@@ -54,6 +54,16 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         syncIcon = activityLoginBinding.syncIcon
         service = Service(this)
 
+        guest = intent.getBooleanExtra("guest", false)
+        val username = intent.getStringExtra("username")
+        val password = intent.getStringExtra("password")
+        val autoLogin = intent.getBooleanExtra("autoLogin", false)
+
+        if (autoLogin && username != null && password != null) {
+            customProgressDialog.setText(getString(R.string.authenticating))
+            customProgressDialog.show()
+        }
+
         activityLoginBinding.tvAvailableSpace.text = buildString {
             append(getString(R.string.available_space_colon))
             append(" ")
@@ -97,15 +107,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             FeedbackFragment().show(supportFragmentManager, "")
         }
 
-        guest = intent.getBooleanExtra("guest", false)
-        val username = intent.getStringExtra("username")
-        val password = intent.getStringExtra("password")
-        val autoLogin = intent.getBooleanExtra("autoLogin", false)
-
-        if (autoLogin && username != null && password != null) {
-            submitForm(username, password)
-        }
-
         if (guest) {
             resetGuestAsMember(username)
         }
@@ -124,6 +125,12 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         val selectDarkModeButton = findViewById<ImageButton>(R.id.themeToggleButton)
         selectDarkModeButton?.setOnClickListener{
             SettingActivity.SettingFragment.darkMode(this)
+        }
+
+        if (autoLogin && username != null && password != null) {
+            Handler(Looper.getMainLooper()).postDelayed({
+                submitForm(username, password)
+            }, 500)
         }
     }
 
@@ -356,7 +363,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             .show()
     }
 
-
     private fun updateConfiguration(languageCode: String) {
         val locale = Locale(languageCode)
         Locale.setDefault(locale)
@@ -445,25 +451,39 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         settings.edit {
             putString("loginUserName", name)
             putString("loginUserPassword", password)
-            val isLoggedIn = authenticateUser(settings, name, password, false)
-            if (isLoggedIn) {
-                lifecycleScope.launch {
-                    Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
-                    onLogin()
-                    saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
-                }
-            } else {
-                val log = authenticateUser(settings, name, password, true)
-                if (log) {
+
+            fun attemptLogin(retryCount: Int = 0) {
+                val isLoggedIn = authenticateUser(settings, name, password, false)
+                if (isLoggedIn) {
                     lifecycleScope.launch {
+                        customProgressDialog.dismiss()
                         Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
                         onLogin()
                         saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
                     }
                 } else {
-                    alertDialogOkay(getString(R.string.err_msg_login))
+                    if (retryCount < 2) {
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            attemptLogin(retryCount + 1)
+                        }, 1000)
+                    } else {
+                        val log = authenticateUser(settings, name, password, true)
+                        if (log) {
+                            lifecycleScope.launch {
+                                customProgressDialog.dismiss()
+                                Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
+                                onLogin()
+                                saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
+                            }
+                        } else {
+                            customProgressDialog.dismiss()
+                            alertDialogOkay(getString(R.string.err_msg_login))
+                        }
+                    }
                 }
             }
+
+            attemptLogin()
         }
     }
 
@@ -704,9 +724,33 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     override fun onDestroy() {
+        customProgressDialog.dismiss()
         super.onDestroy()
         if (!mRealm.isClosed) {
             mRealm.close()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val autoLogin = intent.getBooleanExtra("autoLogin", false)
+
+        if (!autoLogin && settings.contains("pendingAutoLogin")) {
+            val pendingUsername = settings.getString("pendingUsername", "")
+            val pendingPassword = settings.getString("pendingPassword", "")
+
+            if (pendingUsername?.isNotEmpty() == true && pendingPassword?.isNotEmpty() == true) {
+                customProgressDialog.setText(getString(R.string.authenticating))
+                customProgressDialog.show()
+
+                settings.edit {
+                    remove("pendingAutoLogin")
+                    remove("pendingUsername")
+                    remove("pendingPassword")
+                }
+
+                submitForm(pendingUsername, pendingPassword)
+            }
         }
     }
 }
