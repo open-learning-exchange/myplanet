@@ -94,7 +94,9 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
 
     private fun ItemTeamListBinding.showActionButton(isMyTeam: Boolean, team: RealmMyTeam, user: RealmUserModel?) {
         if (isMyTeam) {
-            name.setTypeface(name.typeface, Typeface.BOLD)
+            name.setTypeface(null, Typeface.BOLD)
+        } else {
+            name.setTypeface(null, Typeface.NORMAL)
         }
         when {
             user?.isGuest() == true -> joinLeave.visibility = View.GONE
@@ -143,7 +145,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
 
     private fun handleJoinLeaveClick(isMyTeam: Boolean, team: RealmMyTeam, user: RealmUserModel?, position: Int) {
         if (isMyTeam) {
-            if (RealmMyTeam.isTeamLeader(team.teamId, user?.id, mRealm)) {
+            if (RealmMyTeam.isTeamLeader(team._id, user?.id, mRealm)) {
                 teamListener?.onEditTeam(team)
             } else {
                 AlertDialog.Builder(context, R.style.CustomAlertDialog).setMessage(R.string.confirm_exit)
