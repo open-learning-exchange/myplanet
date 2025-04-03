@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.sync
 import android.Manifest
 import android.content.*
 import android.graphics.drawable.AnimationDrawable
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.*
@@ -23,7 +22,6 @@ import io.realm.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -53,7 +51,6 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showWifiSettingDialog
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
-import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
@@ -61,7 +58,6 @@ import java.io.File
 import java.util.*
 import java.util.concurrent.TimeUnit
 import androidx.core.net.toUri
-import kotlinx.coroutines.async
 import org.ole.planet.myplanet.MainApplication
 import androidx.core.content.edit
 
@@ -111,7 +107,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         mRealm = DatabaseService(this).realmInstance
         mRealm = Realm.getDefaultInstance()
         requestAllPermissions()
-        customProgressDialog = DialogUtils.getCustomProgressDialog(this)
         prefData = SharedPrefManager(this)
         profileDbHandler = UserProfileDbHandler(this)
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
@@ -260,7 +255,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
                         if ((myList?.size ?: 0) < 8) {
                             withContext(Dispatchers.Main) {
-                                customProgressDialog?.dismiss()
+                                customProgressDialog.dismiss()
                                 alertDialogOkay(context.getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
                             }
                             false
@@ -280,7 +275,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                             else -> ""
                         }
                         withContext(Dispatchers.Main) {
-                            customProgressDialog?.dismiss()
+                            customProgressDialog.dismiss()
                             alertDialogOkay(errorMessage)
                         }
                         false
@@ -346,19 +341,33 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
         try {
-            val user = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
-            user?.let {
-                if (it._id?.isEmpty() == true) {
-                    if (username == it.name && password == it.password) {
-                        saveUserInfoPref(settings, password, it)
-                        return true
+            var attempts = 0
+            while (attempts < 3) {
+                mRealm.refresh()
+                val user = mRealm.where(RealmUserModel::class.java)
+                    .equalTo("name", username)
+                    .findFirst()
+
+                user?.let {
+                    if (it._id?.isEmpty() == true) {
+                        if (username == it.name && password == it.password) {
+                            saveUserInfoPref(settings, password, it)
+                            return true
+                        }
+                    } else {
+                        if (androidDecrypter(username, password, it.derived_key, it.salt)) {
+                            if (isManagerMode && !it.isManager()) return false
+                            saveUserInfoPref(settings, password, it)
+                            return true
+                        }
                     }
+                }
+
+                if (user == null) {
+                    Thread.sleep(500)
+                    attempts++
                 } else {
-                    if (androidDecrypter(username, password, it.derived_key, it.salt)) {
-                        if (isManagerMode && !it.isManager()) return false
-                        saveUserInfoPref(settings, password, it)
-                        return true
-                    }
+                    break
                 }
             }
         } catch (err: Exception) {
@@ -426,14 +435,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onSyncStarted() {
-        customProgressDialog?.setText(getString(R.string.syncing_data_please_wait))
-        customProgressDialog?.show()
+        customProgressDialog.setText(getString(R.string.syncing_data_please_wait))
+        customProgressDialog.show()
         isProgressDialogShowing = true
     }
 
     override fun onSyncFailed(msg: String?) {
         if (isProgressDialogShowing) {
-            customProgressDialog?.dismiss()
+            customProgressDialog.dismiss()
         }
         if (::syncIconDrawable.isInitialized) {
             syncIconDrawable = syncIcon.drawable as AnimationDrawable
@@ -473,7 +482,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 }
 
                 withContext(Dispatchers.Main) {
-                    customProgressDialog?.dismiss()
+                    customProgressDialog.dismiss()
 
                     if (::syncIconDrawable.isInitialized) {
                         syncIconDrawable = syncIcon.drawable as AnimationDrawable
@@ -938,8 +947,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onSuccess(success: String?) {
-        if (customProgressDialog?.isShowing() == true && success?.contains("Crash") == true) {
-            customProgressDialog?.dismiss()
+        if (customProgressDialog.isShowing() == true && success?.contains("Crash") == true) {
+            customProgressDialog.dismiss()
         }
         if (::btnSignIn.isInitialized) {
             showSnack(btnSignIn, success)
@@ -966,8 +975,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onCheckingVersion() {
-        customProgressDialog?.setText(getString(R.string.checking_version))
-        customProgressDialog?.show()
+        customProgressDialog.setText(getString(R.string.checking_version))
+        customProgressDialog.show()
     }
 
     fun registerReceiver() {
@@ -982,7 +991,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         if (msg.startsWith("Config")) {
             settingDialog()
         }
-        customProgressDialog?.dismiss()
+        customProgressDialog.dismiss()
         if (!blockSync) continueSyncProcess() else {
             syncIconDrawable.stop()
             syncIconDrawable.selectDrawable(0)

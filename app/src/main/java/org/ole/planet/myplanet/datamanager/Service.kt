@@ -13,10 +13,7 @@ import io.realm.Realm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
@@ -28,9 +25,6 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.isUserExists
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
-import org.ole.planet.myplanet.service.TransactionSyncManager
-import org.ole.planet.myplanet.service.UploadToShelfService
-import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
@@ -42,7 +36,6 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
-import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Sha256Utils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -59,7 +52,6 @@ import androidx.core.content.edit
 class Service(private val context: Context) {
     private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val retrofitInterface: ApiInterface? = ApiClient.client?.create(ApiInterface::class.java)
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     fun healthAccess(listener: SuccessListener) {
         retrofitInterface?.healthAccess(Utilities.getHealthAccessUrl(preferences))?.enqueue(object : Callback<ResponseBody> {
@@ -220,41 +212,43 @@ class Service(private val context: Context) {
                     callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                     return
                 }
-                realm.beginTransaction()
-                val model = populateUsersTable(obj, realm, settings)
-                val keyString = generateKey()
-                val iv = generateIv()
-                if (model != null) {
-                    model.key = keyString
-                    model.iv = iv
-                }
-                realm.commitTransaction()
 
-                retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}")?.enqueue(object : Callback<JsonObject> {
-                    override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                        if (response.body() != null && response.body()?.has("_id") == true) {
-                            callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                        } else {
-                            retrofitInterface.putDoc(null, "application/json", "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
-                                override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                                    if (response.body() != null && response.body()?.has("id") == true) {
-                                        uploadToShelf(obj)
-                                    } else {
+                realm.executeTransaction { transactionRealm ->
+                    val model = populateUsersTable(obj, transactionRealm, settings)
+                    val keyString = generateKey()
+                    val iv = generateIv()
+                    model?.key = keyString
+                    model?.iv = iv
+                }
+
+                Handler(Looper.getMainLooper()).postDelayed({
+                    retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}")?.enqueue(object : Callback<JsonObject> {
+                        override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                            if (response.body() != null && response.body()?.has("_id") == true) {
+                                callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
+                            } else {
+                                retrofitInterface.putDoc(null, "application/json", "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
+                                    override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                                        if (response.body() != null && response.body()?.has("id") == true) {
+                                            uploadToShelf(obj)
+                                            callback.onSuccess(context.getString(R.string.user_created_successfully))
+                                        } else {
+                                            callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
+                                        }
+                                    }
+
+                                    override fun onFailure(call: Call<JsonObject>, t: Throwable) {
                                         callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                                     }
-                                }
-
-                                override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                                    callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                                }
-                            })
+                                })
+                            }
                         }
-                    }
 
-                    override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                        callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                    }
-                })
+                        override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+                            callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
+                        }
+                    })
+                }, 1000)
             }
 
             override fun notAvailable() {
@@ -263,15 +257,15 @@ class Service(private val context: Context) {
                     callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                     return
                 }
-                realm.beginTransaction()
-                val model = populateUsersTable(obj, realm, settings)
-                val keyString = generateKey()
-                val iv = generateIv()
-                if (model != null) {
-                    model.key = keyString
-                    model.iv = iv
+                realm.executeTransaction { transactionRealm ->
+                    val model = populateUsersTable(obj, transactionRealm, settings)
+                    val keyString = generateKey()
+                    val iv = generateIv()
+                    if (model != null) {
+                        model.key = keyString
+                        model.iv = iv
+                    }
                 }
-                realm.commitTransaction()
                 Utilities.toast(MainApplication.context, context.getString(R.string.not_connect_to_planet_created_user_offline))
                 callback.onSuccess(context.getString(R.string.not_connect_to_planet_created_user_offline))
             }
