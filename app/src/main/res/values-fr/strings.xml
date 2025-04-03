@@ -13,7 +13,7 @@
     <string name="course_in_progress">Entrez dans le cours %1$s complétez-le (%2$d de %3$d fait)</string>
     <string name="course_not_started">%1$s non commencé</string>
     <string name="app_name">My Planet</string>
-    <string name="planet">planète</string>
+    <string name="planet">Planet</string>
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">paramètres</string>
     <string name="hint_name">Nom d\'utilisateur</string>
@@ -592,7 +592,7 @@
     <string name="level_colon">Niveau: %s</string>
     <string name="method">Méthode :</string>
     <string name="number_of_exams">Nombre d\'examens :</string>
-    <string name="description_colon">Description :</string>
+    <string name="description_colon">Description:&#160;</string>
     <string name="download_resources">Télécharger les ressources</string>
     <string name="take_test">Passer le test [%d]</string>
     <string name="search">Rechercher</string>
@@ -1066,12 +1066,12 @@
     <string name="compulsory_phone_number">numéro de téléphone requis</string>
     <string name="compulsory_date_of_birth">date de naissance requise</string>
     <string name="gender_not_picked">genre non sélectionné</string>
-    <string name="title_colon">titre:</string>
-    <string name="date_from_colon">date de:</string>
-    <string name="date_to_colon">date à:</string>
-    <string name="location_colon">emplacement:</string>
-    <string name="recurring_colon">récurrent:</string>
-    <string name="created_by_colon">créé par:</string>
+    <string name="title_colon">titre:&#160;</string>
+    <string name="date_from_colon">date de:&#160;</string>
+    <string name="date_to_colon">date à:&#160;</string>
+    <string name="location_colon">emplacement:&#160;</string>
+    <string name="recurring_colon">récurrent:&#160;</string>
+    <string name="created_by_colon">créé par:&#160;</string>
     <string name="failed_to_get_configuration_id">Impossible de récupérer l\'identifiant de configuration. Veuillez contacter l\'administrateur</string>
     <string name="you_want_to_connect_to_a_different_server">Vous souhaitez vous connecter à un autre serveur. Effacez les données de l\'application pour continuer</string>
     <string name="are_you_sure_you_want_to_clear_data">Êtes-vous sûr de vouloir effacer toutes les données ?</string>
@@ -1265,5 +1265,6 @@
     <string name="no_resources_to_download">Aucune ressource à télécharger</string>
     <string name="response">Réponse</string>
     <string name="full_conversation_response">Réponse complète de la conversation</string>
+    <string name="add_new_event">ajouter un nouvel événement</string>
 
 </resources>

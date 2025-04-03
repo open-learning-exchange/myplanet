@@ -592,7 +592,7 @@
     <string name="level_colon">Level: %s</string>
     <string name="method">Method:</string>
     <string name="number_of_exams">Number of exams:</string>
-    <string name="description_colon">Description:</string>
+    <string name="description_colon">Description:&#160;</string>
     <string name="download_resources">download Resources</string>
     <string name="take_test">take test [%d]</string>
     <string name="search">search</string>
@@ -1066,12 +1066,12 @@
     <string name="compulsory_phone_number">phone number is required</string>
     <string name="compulsory_date_of_birth">date of birth is required</string>
     <string name="gender_not_picked">gender not picked</string>
-    <string name="title_colon">title:</string>
-    <string name="date_from_colon">date from:</string>
-    <string name="date_to_colon">date to:</string>
-    <string name="location_colon">location:</string>
-    <string name="recurring_colon">recurring:</string>
-    <string name="created_by_colon">created by:</string>
+    <string name="title_colon">title:&#160;</string>
+    <string name="date_from_colon">date from:&#160;</string>
+    <string name="date_to_colon">date to:&#160;</string>
+    <string name="location_colon">location:&#160;</string>
+    <string name="recurring_colon">recurring:&#160;</string>
+    <string name="created_by_colon">created by:&#160;</string>
     <string name="failed_to_get_configuration_id">failed to get configuration id. kindly contact admin</string>
     <string name="you_want_to_connect_to_a_different_server">Are you sure you want to change the configuration? This action will clear the app data.</string>
     <string name="are_you_sure_you_want_to_clear_data">are you sure you want to clear all data?</string>
@@ -1265,5 +1265,6 @@
     <string name="no_resources_to_download">No resources to download</string>
     <string name="response">Response</string>
     <string name="full_conversation_response">Full conversation response</string>
+    <string name="add_new_event">add new event</string>
 
 </resources>
