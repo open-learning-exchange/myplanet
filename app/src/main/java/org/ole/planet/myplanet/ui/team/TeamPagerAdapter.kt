@@ -9,7 +9,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.ui.enterprises.EnterpriseCalendarFragment
+import org.ole.planet.myplanet.ui.enterprises.TeamCalendarFragment
 import org.ole.planet.myplanet.ui.enterprises.FinanceFragment
 import org.ole.planet.myplanet.ui.enterprises.ReportsFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
@@ -58,7 +58,7 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
             context.getString(R.string.plan), context.getString(R.string.mission) -> PlanFragment()
             context.getString(R.string.members), context.getString(R.string.team) -> JoinedMemberFragment()
             context.getString(R.string.tasks) -> TeamTaskFragment()
-            context.getString(R.string.calendar) -> EnterpriseCalendarFragment()
+            context.getString(R.string.calendar) -> TeamCalendarFragment()
             context.getString(R.string.survey) -> SurveyFragment().apply {
                 arguments = Bundle().apply {
                     putBoolean("isTeam", true)
