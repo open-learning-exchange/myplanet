@@ -1266,5 +1266,6 @@
     <string name="response">استجابة</string>
     <string name="full_conversation_response">استجابة المحادثة الكاملة</string>
     <string name="add_new_event">إضافة حدث جديد</string>
+    <string name="none">لا شيء</string>
 
 </resources>
