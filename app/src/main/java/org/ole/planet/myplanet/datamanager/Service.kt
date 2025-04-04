@@ -55,6 +55,7 @@ import java.util.concurrent.Executors
 import kotlin.math.min
 import androidx.core.net.toUri
 import androidx.core.content.edit
+import org.ole.planet.myplanet.model.RealmUserModel
 
 class Service(private val context: Context) {
     private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -215,32 +216,26 @@ class Service(private val context: Context) {
     fun becomeMember(realm: Realm, obj: JsonObject, callback: CreateUserCallback) {
         isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
-                retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}")?.enqueue(object : Callback<JsonObject> {
-                    override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                        if (response.body() != null && response.body()?.has("_id") == true) {
-                            callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                        } else {
-                            retrofitInterface.putDoc(null, "application/json", "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
-                                override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                                    if (response.body() != null && response.body()!!.has("id")) {
-                                        uploadToShelf(obj)
-                                        saveUserToDb(realm, response.body()!!.get("id").asString, obj, callback)
-                                    } else {
-                                        callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                                    }
-                                }
+                // First check if user exists locally
+                val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                if (isUserExists(realm, obj["name"].asString)) {
+                    callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
+                    return
+                }
 
-                                override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                                    callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                                }
-                            })
-                        }
-                    }
+                // Create user locally first to allow immediate login
+                val localCreationSuccess = createLocalUser(realm, obj, settings)
 
-                    override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                        callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                    }
-                })
+                if (localCreationSuccess) {
+                    // Immediately call callback to allow navigation to LoginActivity
+                    callback.onSuccess(context.getString(R.string.user_created_successfully))
+
+                    // Continue with server synchronization in background
+                    synchronizeUserWithServer(realm, obj)
+                } else {
+                    // Handle local creation failure
+                    callback.onSuccess("unable_to_create_user_local_error")
+                }
             }
 
             override fun notAvailable() {
@@ -249,19 +244,43 @@ class Service(private val context: Context) {
                     callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                     return
                 }
-                realm.beginTransaction()
+
+                val localCreationSuccess = createLocalUser(realm, obj, settings)
+
+                if (localCreationSuccess) {
+                    Utilities.toast(MainApplication.context, context.getString(R.string.not_connect_to_planet_created_user_offline))
+                    // Call callback to allow navigation to LoginActivity
+                    callback.onSuccess(context.getString(R.string.user_created_successfully))
+                } else {
+                    // Handle local creation failure
+                    callback.onSuccess("unable_to_create_user_local_error")
+                }
+            }
+        })
+    }
+
+    private fun createLocalUser(realm: Realm, obj: JsonObject, settings: SharedPreferences): Boolean {
+        var success = false
+
+        try {
+            realm.executeTransaction { transactionRealm ->
                 val model = populateUsersTable(obj, realm, settings)
                 val keyString = generateKey()
                 val iv = generateIv()
                 if (model != null) {
                     model.key = keyString
                     model.iv = iv
+                    // Mark user as pending sync with server
+                    model.isPendingSync = true
+                    success = true
                 }
-                realm.commitTransaction()
-                Utilities.toast(MainApplication.context, context.getString(R.string.not_connect_to_planet_created_user_offline))
-                callback.onSuccess(context.getString(R.string.not_connect_to_planet_created_user_offline))
             }
-        })
+        } catch (e: Exception) {
+            e.printStackTrace()
+            success = false
+        }
+
+        return success
     }
 
     private fun uploadToShelf(obj: JsonObject) {
@@ -288,29 +307,213 @@ class Service(private val context: Context) {
             }
         }, {
             callback.onSuccess(context.getString(R.string.user_created_successfully))
-            isNetworkConnectedFlow.onEach { isConnected ->
-                if (isConnected) {
-                    val serverUrl = settings.getString("serverURL", "")
-                    if (!serverUrl.isNullOrEmpty()) {
-                        serviceScope.launch {
-                            val canReachServer = withContext(Dispatchers.IO) {
-                                isServerReachable(serverUrl)
-                            }
-                            if (canReachServer) {
-                                if (context is ProcessUserDataActivity) {
-                                    context.runOnUiThread {
-                                        context.startUpload("becomeMember")
-                                    }
-                                }
-                                TransactionSyncManager.syncDb(realm, "tablet_users")
-                            }
-                        }
+            val updateUrl = "${settings.getString("serverURL", "")}"
+            val serverUrlMapper = ServerUrlMapper(context)
+            val mapping = serverUrlMapper.processUrl(updateUrl)
+
+            CoroutineScope(Dispatchers.IO).launch {
+                val primaryAvailable = isServerReachable(mapping.primaryUrl)
+                val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
+
+                if (!primaryAvailable && alternativeAvailable) {
+                    mapping.alternativeUrl.let { alternativeUrl ->
+                        val uri = updateUrl.toUri()
+                        val editor = settings.edit()
+
+                        serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
                     }
                 }
-            }.launchIn(serviceScope)
+
+                withContext(Dispatchers.Main) {
+                    if (context is ProcessUserDataActivity) {
+                        context.runOnUiThread {
+                            context.startUpload("becomeMember")
+                        }
+                    }
+                    TransactionSyncManager.syncDb(realm, "tablet_users")
+                }
+            }
         }) { error: Throwable ->
             error.printStackTrace()
             callback.onSuccess(context.getString(R.string.unable_to_save_user_please_sync))
+        }
+    }
+
+    private fun handleUserAlreadyExistsOnServer(realm: Realm, username: String, serverData: JsonObject) {
+        realm.executeTransaction { transactionRealm ->
+            val localUser = transactionRealm.where(RealmUserModel::class.java)
+                .equalTo("name", username)
+                .findFirst()
+
+            localUser?.let { user ->
+                // Update local user with server data
+                // Merge important server fields while preserving local session data
+                serverData.entrySet().forEach { entry ->
+                    when (entry.key) {
+                        "_id", "_rev" -> {
+                            // Store these server-specific identifiers
+                            user._id = serverData.get("_id").asString
+                            user._rev = serverData.get("_rev").asString
+                        }
+                        // Add other fields that should be updated from server
+                    }
+                }
+
+                // Mark as synced with server
+                user.isPendingSync = false
+            }
+        }
+
+        Utilities.log("User already existed on server, local user updated with server data")
+    }
+
+    private fun syncLocalUserWithServer(realm: Realm, id: String, obj: JsonObject) {
+        val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        realm.executeTransactionAsync({ realm1: Realm? ->
+            try {
+                val res = retrofitInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/" + id)?.execute()
+                if (res?.body() != null) {
+                    // Update the existing user instead of creating a new one
+                    val username = obj["name"].asString
+                    val localUser = realm1?.where(RealmUserModel::class.java)
+                        ?.equalTo("name", username)
+                        ?.findFirst()
+
+                    if (localUser != null) {
+                        // Update with server data, but keep local session info
+                        val serverData = res.body()!!
+                        serverData.entrySet().forEach { entry ->
+                            when (entry.key) {
+                                "_id", "_rev" -> {
+                                    // Store these server-specific identifiers
+                                    localUser._id = serverData.get("_id").asString
+                                    localUser._rev = serverData.get("_rev").asString
+                                }
+                                // Add other fields that should be updated from server
+                            }
+                        }
+
+                        // Mark as synced with server
+                        localUser.isPendingSync = false
+
+                        // Save key/IV to shelf
+                        UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, localUser, obj)
+                    } else {
+                        // This shouldn't happen, but handle just in case
+                        val model = populateUsersTable(res.body(), realm1, settings)
+                        if (model != null) {
+                            model.isPendingSync = false
+                            UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
+                        }
+                    }
+                }
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }, {
+            Utilities.log("User synced successfully with server")
+            val updateUrl = "${settings.getString("serverURL", "")}"
+            val serverUrlMapper = ServerUrlMapper(context)
+            val mapping = serverUrlMapper.processUrl(updateUrl)
+
+            CoroutineScope(Dispatchers.IO).launch {
+                val primaryAvailable = isServerReachable(mapping.primaryUrl)
+                val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
+
+                if (!primaryAvailable && alternativeAvailable) {
+                    mapping.alternativeUrl.let { alternativeUrl ->
+                        val uri = updateUrl.toUri()
+                        val editor = settings.edit()
+
+                        serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
+                    }
+                }
+
+                withContext(Dispatchers.Main) {
+                    if (context is ProcessUserDataActivity) {
+                        context.runOnUiThread {
+                            context.startUpload("becomeMember")
+                        }
+                    }
+                    TransactionSyncManager.syncDb(realm, "tablet_users")
+                }
+            }
+        }) { error: Throwable ->
+            error.printStackTrace()
+            Utilities.log("Failed to sync user with server: ${error.message}")
+            // User can still login with local data
+        }
+    }
+
+    private fun synchronizeUserWithServer(realm: Realm, obj: JsonObject) {
+        retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}")?.enqueue(object : Callback<JsonObject> {
+            override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                if (response.body() != null && response.body()?.has("_id") == true) {
+                    // User already exists on server, update local with server data
+                    handleUserAlreadyExistsOnServer(realm, obj["name"].asString, response.body()!!)
+                } else {
+                    // Create user on server
+                    retrofitInterface.putDoc(null, "application/json", "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
+                        override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                            if (response.body() != null && response.body()!!.has("id")) {
+                                uploadToShelf(obj)
+                                syncLocalUserWithServer(realm, response.body()!!.get("id").asString, obj)
+                            } else {
+                                handleServerCreationFailure(realm, obj["name"].asString)
+                            }
+                        }
+
+                        override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+                            // Server creation failed but user can still login locally
+                            Utilities.log("Failed to create user on server: ${t.message}")
+                            // Keep local user marked as pending sync
+                        }
+                    })
+                }
+            }
+
+            override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+                // Network request failed but user can still login locally
+                Utilities.log("Network check failed: ${t.message}")
+                // Keep local user marked as pending sync
+            }
+        })
+    }
+
+    private fun handleServerCreationFailure(realm: Realm, username: String) {
+        // Log the failure but keep the local user
+        Utilities.log("Failed to create user on server, keeping local version marked as pending sync")
+
+        // Optionally update UI to show sync status or retry option
+        Utilities.toast(MainApplication.context, "user_created_offline_sync_pending")
+    }
+
+    fun retryPendingSyncUsers(realm: Realm) {
+        val pendingUsers = realm.where(RealmUserModel::class.java)
+            .equalTo("isPendingSync", true)
+            .findAll()
+
+        pendingUsers.forEach { user ->
+            // Create JsonObject from user model
+            val obj = JsonObject()
+            obj.addProperty("name", user.name)
+            // Add other required properties from user model
+            // ...
+
+            // Retry server creation
+            retrofitInterface?.putDoc(null, "application/json", "${Utilities.getUrl()}/_users/org.couchdb.user:${user.name}", obj)?.enqueue(object : Callback<JsonObject> {
+                override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                    if (response.body() != null && response.body()!!.has("id")) {
+                        uploadToShelf(obj)
+                        syncLocalUserWithServer(realm, response.body()!!.get("id").asString, obj)
+                    }
+                }
+
+                override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+                    // Still failed, will retry next time
+                    Utilities.log("Retry sync failed for user ${user.name}: ${t.message}")
+                }
+            })
         }
     }
 

@@ -59,6 +59,7 @@ open class RealmUserModel : RealmObject() {
     var isUpdated = false
     var isShowTopbar = false
     var isArchived = false
+    var isPendingSync = false
 
     fun serialize(): JsonObject {
         val jsonObject = JsonObject()

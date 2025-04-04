@@ -1239,7 +1239,7 @@
     <string name="go_to_mylibrary">Tag Maktabaddayda</string>
     <string name="choose_an_option">Dooro ikhtiyaar</string>
     <string name="welcome_back">Soo dhawoow %1$s</string>
-    <string name="welcome">Soo dhawoow 1$s</string>
+    <string name="welcome">Soo dhawoow %1$s</string>
     <string name="edit_plan">Wax ka beddel qorshaha</string>
     <string name="show_additional_fields">muuji beeraha dheeraadka ah</string>
     <string name="hide_additional_fields">qari beeraha dheeraadka ah</string>
@@ -1266,5 +1266,6 @@
     <string name="response">Jawaab</string>
     <string name="full_conversation_response">Jawaabta wada hadalka oo dhameystiran</string>
     <string name="add_new_event">ku dar dhacdo cusub</string>
+    <string name="authenticating">Xaqiijinayo…</string>
 
 </resources>

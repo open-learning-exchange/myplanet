@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,6 +17,9 @@ import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
@@ -143,41 +147,43 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     private fun createTeam(name: String?, type: String?, map: HashMap<String, String>, isPublic: Boolean) {
         val user = UserProfileDbHandler(requireContext()).userModel!!
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        val teamId = AndroidDecrypter.generateIv()
-        val team = mRealm.createObject(RealmMyTeam::class.java, teamId)
-        team.status = "active"
-        team.createdDate = Date().time
-        if (TextUtils.equals(this.type, "enterprise")) {
-            team.type = "enterprise"
-            team.services = map["services"]
-            team.rules = map["rules"]
-        } else {
-            team.type = "team"
-            team.teamType = type
+        Log.d("okuro", "creatorTeam: ${user._id}")
+        mRealm.executeTransaction { realm ->
+            val teamId = AndroidDecrypter.generateIv()
+            val team = realm.createObject(RealmMyTeam::class.java, teamId)
+            team.status = "active"
+            team.createdDate = Date().time
+            if (TextUtils.equals(this.type, "enterprise")) {
+                team.type = "enterprise"
+                team.services = map["services"]
+                team.rules = map["rules"]
+            } else {
+                team.type = "team"
+                team.teamType = type
+            }
+            team.name = name
+            team.description = map["desc"]
+            team.createdBy = user._id
+            team.teamId = ""
+            team.isPublic = isPublic
+            team.userId = user.id
+            team.parentCode = user.parentCode
+            team.teamPlanetCode = user.planetCode
+            team.updated = true
+            Log.d("okuro", "userId: ${user.id} , createdTeam: $team")
+
+            //create member ship
+            val teamMemberObj = realm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
+            teamMemberObj.userId = user._id
+            teamMemberObj.teamId = teamId
+            teamMemberObj.teamPlanetCode = user.planetCode
+            teamMemberObj.userPlanetCode = user.planetCode
+            teamMemberObj.docType = "membership"
+            teamMemberObj.isLeader = true
+            teamMemberObj.teamType = type
+            teamMemberObj.updated = true
+            Log.d("okuro", "membership: $teamMemberObj")
         }
-        team.name = name
-        team.description = map["desc"]
-        team.createdBy = user._id
-        team.teamId = ""
-        team.isPublic = isPublic
-        team.userId = user.id
-        team.parentCode = user.parentCode
-        team.teamPlanetCode = user.planetCode
-        team.updated = true
-
-        //create member ship
-        val teamMemberObj = mRealm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
-        teamMemberObj.userId = user._id
-        teamMemberObj.teamId = teamId
-        teamMemberObj.teamPlanetCode = user.planetCode
-        teamMemberObj.userPlanetCode = user.planetCode
-        teamMemberObj.docType = "membership"
-        teamMemberObj.isLeader = true
-        teamMemberObj.teamType = type
-        teamMemberObj.updated = true
-
-        mRealm.commitTransaction()
     }
 
     override fun onDestroy() {

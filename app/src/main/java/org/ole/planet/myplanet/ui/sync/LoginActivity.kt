@@ -11,10 +11,12 @@ import android.widget.*
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.*
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import io.realm.Realm
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.*
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.callback.SyncListener
@@ -32,6 +34,7 @@ import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.text.Normalizer
 import java.util.Locale
 import java.util.regex.Pattern
+import androidx.core.content.edit
 
 class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private lateinit var activityLoginBinding: ActivityLoginBinding
@@ -51,6 +54,16 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         btnSignIn = activityLoginBinding.btnSignin
         syncIcon = activityLoginBinding.syncIcon
         service = Service(this)
+
+        guest = intent.getBooleanExtra("guest", false)
+        val username = intent.getStringExtra("username")
+        val password = intent.getStringExtra("password")
+        val autoLogin = intent.getBooleanExtra("autoLogin", false)
+
+        if (autoLogin && username != null && password != null) {
+            customProgressDialog.setText(getString(R.string.authenticating))
+            customProgressDialog.show()
+        }
 
         activityLoginBinding.tvAvailableSpace.text = buildString {
             append(getString(R.string.available_space_colon))
@@ -95,8 +108,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             FeedbackFragment().show(supportFragmentManager, "")
         }
 
-        guest = intent.getBooleanExtra("guest", false)
-        val username = intent.getStringExtra("username")
+//        guest = intent.getBooleanExtra("guest", false)
+//        val username = intent.getStringExtra("username")
 
         if (guest) {
             resetGuestAsMember(username)
@@ -117,11 +130,17 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         selectDarkModeButton?.setOnClickListener{
             SettingActivity.SettingFragment.darkMode(this)
         }
+
+        if (autoLogin && username != null && password != null) {
+            Handler(Looper.getMainLooper()).postDelayed({
+                submitForm(username, password)
+            }, 500)
+        }
     }
 
     private fun declareElements() {
         if (!defaultPref.contains("beta_addImageToMessage")) {
-            defaultPref.edit().putBoolean("beta_addImageToMessage", true).apply()
+            defaultPref.edit() { putBoolean("beta_addImageToMessage", true) }
         }
         activityLoginBinding.customDeviceName.text = getCustomDeviceName()
         activityLoginBinding.btnSignin.setOnClickListener {
@@ -344,7 +363,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             .show()
     }
 
-
     private fun updateConfiguration(languageCode: String) {
         val locale = Locale(languageCode)
         Locale.setDefault(locale)
@@ -428,42 +446,43 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         if (forceSyncTrigger()) {
             return
         }
-        val editor = settings.edit()
-        editor.putString("loginUserName", name)
-        editor.putString("loginUserPassword", password)
-        val isLoggedIn = authenticateUser(settings, name, password, false)
-        if (isLoggedIn) {
-            Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
-            onLogin()
-            saveUsers(activityLoginBinding.inputName.text.toString(), activityLoginBinding.inputPassword.text.toString(), "member")
-        } else {
-            ManagerSync.instance?.login(name, password, object : SyncListener {
-                override fun onSyncStarted() {
-                    customProgressDialog?.setText(getString(R.string.please_wait))
-                    customProgressDialog?.show()
-                }
-                override fun onSyncComplete() {
-                    customProgressDialog?.dismiss()
-                    val log = authenticateUser(settings, name, password, true)
-                    if (log) {
-                        Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
+        settings.edit().apply {
+            putString("loginUserName", name)
+            putString("loginUserPassword", password)
+
+            fun attemptLogin(retryCount: Int = 0) {
+                val isLoggedIn = authenticateUser(settings, name, password, false)
+                if (isLoggedIn) {
+                    lifecycleScope.launch {
+                        customProgressDialog.dismiss()
+                        Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
                         onLogin()
-                        saveUsers(activityLoginBinding.inputName.text.toString(), activityLoginBinding.inputPassword.text.toString(), "member")
-                    } else {
-                        alertDialogOkay(getString(R.string.err_msg_login))
+                        saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
                     }
-                    syncIconDrawable.stop()
-                    syncIconDrawable.selectDrawable(0)
+                } else {
+                    if (retryCount < 2) {
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            attemptLogin(retryCount + 1)
+                        }, 1000)
+                    } else {
+                        val log = authenticateUser(settings, name, password, true)
+                        if (log) {
+                            lifecycleScope.launch {
+                                customProgressDialog.dismiss()
+                                Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
+                                onLogin()
+                                saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
+                            }
+                        } else {
+                            customProgressDialog.dismiss()
+                            alertDialogOkay(getString(R.string.err_msg_login))
+                        }
+                    }
                 }
-                override fun onSyncFailed(msg: String?) {
-                    toast(MainApplication.context, msg)
-                    customProgressDialog?.dismiss()
-                    syncIconDrawable.stop()
-                    syncIconDrawable.selectDrawable(0)
-                }
-            })
+            }
+
+            attemptLogin()
         }
-        editor.apply()
     }
 
     private fun showGuestLoginDialog() {
@@ -698,7 +717,31 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        val autoLogin = intent.getBooleanExtra("autoLogin", false)
+
+        if (!autoLogin && settings.contains("pendingAutoLogin")) {
+            val pendingUsername = settings.getString("pendingUsername", "")
+            val pendingPassword = settings.getString("pendingPassword", "")
+
+            if (pendingUsername?.isNotEmpty() == true && pendingPassword?.isNotEmpty() == true) {
+                customProgressDialog.setText(getString(R.string.authenticating))
+                customProgressDialog.show()
+
+                settings.edit().apply {
+                    remove("pendingAutoLogin")
+                    remove("pendingUsername")
+                    remove("pendingPassword")
+                }
+
+                submitForm(pendingUsername, pendingPassword)
+            }
+        }
+    }
+
     override fun onDestroy() {
+        customProgressDialog.dismiss()
         super.onDestroy()
         if (!mRealm.isClosed) {
             mRealm.close()

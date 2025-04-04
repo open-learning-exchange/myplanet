@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.ui.userprofile
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -233,18 +235,38 @@ class BecomeMemberActivity : BaseActivity() {
                         activityBecomeMemberBinding.pbar.visibility = View.GONE
                         Utilities.toast(this@BecomeMemberActivity, message)
                     }
-                    finish()
+                    settings.edit().apply {
+                        putBoolean("pendingAutoLogin", true)
+                        putString("pendingUsername", username)
+                        putString("pendingPassword", password)
+                    }
+
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        val intent = Intent(this@BecomeMemberActivity, LoginActivity::class.java)
+                        if (guest) {
+                            intent.putExtra("guest", guest)
+                        }
+                        intent.putExtra("username", username)
+                        intent.putExtra("autoLogin", true)
+                        intent.putExtra("password", password)
+                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        startActivity(intent)
+                        finish()
+                    }, 1000)
                 }
             })
+//                    finish()
+//                }
+//            })
 
-            val intent = Intent(this, LoginActivity::class.java)
-            if (guest){
-                intent.putExtra("username", username)
-                intent.putExtra("guest", guest)
-            }
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            startActivity(intent)
-            finish()
+//            val intent = Intent(this, LoginActivity::class.java)
+//            if (guest){
+//                intent.putExtra("username", username)
+//                intent.putExtra("guest", guest)
+//            }
+//            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+//            startActivity(intent)
+//            finish()
         }
     }
 

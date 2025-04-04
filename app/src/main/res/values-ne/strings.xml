@@ -1266,5 +1266,6 @@
     <string name="response">उत्तर</string>
     <string name="full_conversation_response">पूर्ण वार्तालाप उत्तर</string>
     <string name="add_new_event">नयाँ घटना थप्नुहोस्</string>
+    <string name="authenticating">प्रमाणीकरण गर्दै…</string>
 
 </resources>

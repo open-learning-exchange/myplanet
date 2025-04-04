@@ -10,6 +10,7 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.*
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
@@ -132,6 +133,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         try {
             val userProfileModel = profileDbHandler.userModel
+            Log.d("okuro", "userProfileModel id: ${userProfileModel?.id}")
+            Log.d("okuro", "userProfileModel _id: ${userProfileModel?._id}")
             if (userProfileModel != null) {
                 var name: String? = userProfileModel.getFullName()
                 if (name.isNullOrBlank()) {
