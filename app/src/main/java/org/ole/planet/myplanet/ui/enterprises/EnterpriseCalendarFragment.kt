@@ -188,6 +188,8 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                         start = clickedCalendar
                         end = clickedCalendar
                         showMeetupAlert()
+                    } else{
+                        fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
                     }
                 }
                 if (!selectedDates.contains(clickedCalendar)) {
