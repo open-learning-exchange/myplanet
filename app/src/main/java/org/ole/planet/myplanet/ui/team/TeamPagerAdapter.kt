@@ -9,7 +9,6 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.ui.enterprises.TeamCalendarFragment
 import org.ole.planet.myplanet.ui.enterprises.FinanceFragment
 import org.ole.planet.myplanet.ui.enterprises.ReportsFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment

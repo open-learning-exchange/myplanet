@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.enterprises
+package org.ole.planet.myplanet.ui.team
 
 import android.app.*
 import android.content.Context
@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.databinding.*
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.mymeetup.AdapterMeetup
-import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.*
 import java.text.SimpleDateFormat
 import java.time.Instant
