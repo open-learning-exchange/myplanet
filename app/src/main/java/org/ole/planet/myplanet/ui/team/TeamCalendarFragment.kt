@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.enterprises
+package org.ole.planet.myplanet.ui.team
 
 import android.app.*
 import android.content.Context
@@ -24,16 +24,14 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.*
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.ui.mymeetup.AdapterMeetup
-import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.*
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
 import java.util.*
 
-class EnterpriseCalendarFragment : BaseTeamFragment() {
+class TeamCalendarFragment : BaseTeamFragment() {
     private lateinit var fragmentEnterpriseCalendarBinding: FragmentEnterpriseCalendarBinding
     private val selectedDates: MutableList<Calendar> = mutableListOf()
     private lateinit var calendar: CalendarView
