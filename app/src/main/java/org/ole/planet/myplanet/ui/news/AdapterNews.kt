@@ -526,8 +526,8 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             ob.addProperty("_id", currentUser?.planetCode + "@" + currentUser?.parentCode)
             ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
             ob.addProperty("teamName", teamName)
+            ob.addProperty("isUpdate", true)
             array.add(ob)
-            Log.d("AdapterNews", "Added teamName to viewIn: $teamName") //test
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
