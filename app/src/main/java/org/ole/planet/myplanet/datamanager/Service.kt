@@ -7,6 +7,7 @@ import android.content.SharedPreferences
 import android.net.Uri
 import android.os.*
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -55,11 +56,13 @@ import java.util.concurrent.Executors
 import kotlin.math.min
 import androidx.core.net.toUri
 import androidx.core.content.edit
+import java.util.concurrent.ConcurrentHashMap
 
 class Service(private val context: Context) {
     private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val retrofitInterface: ApiInterface? = ApiClient.client?.create(ApiInterface::class.java)
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
     fun healthAccess(listener: SuccessListener) {
         retrofitInterface?.healthAccess(Utilities.getHealthAccessUrl(preferences))?.enqueue(object : Callback<ResponseBody> {
@@ -176,13 +179,34 @@ class Service(private val context: Context) {
     }
 
     fun isPlanetAvailable(callback: PlanetAvailableListener?) {
+        Log.d("PerformanceLog", "[IS_PLANET_AVAILABLE_START] Time: ${System.currentTimeMillis()}")
+
         val updateUrl = "${preferences.getString("serverURL", "")}"
+
+        // Check cache first
+        serverAvailabilityCache[updateUrl]?.let { (available, timestamp) ->
+            // Use cached result if less than 30 seconds old
+            if (System.currentTimeMillis() - timestamp < 30000) {
+                Log.d("PerformanceLog", "[IS_PLANET_AVAILABLE_CACHED] Time: ${System.currentTimeMillis()}, Cached Value: $available")
+                if (available) {
+                    callback?.isAvailable()
+                } else {
+                    callback?.notAvailable()
+                }
+                return
+            }
+        }
+
         val serverUrlMapper = ServerUrlMapper(context)
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
         CoroutineScope(Dispatchers.IO).launch {
+            Log.d("PerformanceLog", "[SERVER_REACHABLE_CHECK_START] Time: ${System.currentTimeMillis()}")
+
             val primaryAvailable = isServerReachable(mapping.primaryUrl)
             val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
+
+            Log.d("PerformanceLog", "[SERVER_REACHABLE_CHECK_END] Time: ${System.currentTimeMillis()}")
 
             if (!primaryAvailable && alternativeAvailable) {
                 mapping.alternativeUrl.let { alternativeUrl ->
@@ -194,10 +218,19 @@ class Service(private val context: Context) {
             }
 
             withContext(Dispatchers.Main) {
+                Log.d("PerformanceLog", "[BEFORE_IS_PLANET_AVAILABLE_RETROFIT] Time: ${System.currentTimeMillis()}")
+
                 retrofitInterface?.isPlanetAvailable(Utilities.getUpdateUrl(preferences))
                     ?.enqueue(object : Callback<ResponseBody?> {
                         override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
-                            if (callback != null && response.code() == 200) {
+                            Log.d("PerformanceLog", "[IS_PLANET_AVAILABLE_RESPONSE] Time: ${System.currentTimeMillis()}")
+
+                            val isAvailable = callback != null && response.code() == 200
+
+                            // Update cache
+                            serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
+
+                            if (isAvailable) {
                                 callback.isAvailable()
                             } else {
                                 callback?.notAvailable()
@@ -205,6 +238,11 @@ class Service(private val context: Context) {
                         }
 
                         override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
+                            Log.d("PerformanceLog", "[IS_PLANET_AVAILABLE_FAILURE] Time: ${System.currentTimeMillis()}")
+
+                            // Update cache with failure
+                            serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
+
                             callback?.notAvailable()
                         }
                     })
@@ -213,24 +251,40 @@ class Service(private val context: Context) {
     }
 
     fun becomeMember(realm: Realm, obj: JsonObject, callback: CreateUserCallback) {
+        Log.d("PerformanceLog", "[BECOME_MEMBER_START] Time: ${System.currentTimeMillis()}")
+
         isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
+                Log.d("PerformanceLog", "[PLANET_AVAILABLE] Time: ${System.currentTimeMillis()}")
+
                 retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}")?.enqueue(object : Callback<JsonObject> {
                     override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                        Log.d("PerformanceLog", "[USER_CHECK_RESPONSE] Time: ${System.currentTimeMillis()}")
+
                         if (response.body() != null && response.body()?.has("_id") == true) {
+                            Log.d("PerformanceLog", "[USER_EXISTS] Time: ${System.currentTimeMillis()}")
                             callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                         } else {
+                            Log.d("PerformanceLog", "[BEFORE_PUT_DOC] Time: ${System.currentTimeMillis()}")
+
                             retrofitInterface.putDoc(null, "application/json", "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
                                 override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                                    Log.d("PerformanceLog", "[PUT_DOC_RESPONSE] Time: ${System.currentTimeMillis()}")
+
                                     if (response.body() != null && response.body()!!.has("id")) {
+                                        Log.d("PerformanceLog", "[BEFORE_UPLOAD_TO_SHELF] Time: ${System.currentTimeMillis()}")
                                         uploadToShelf(obj)
+
+                                        Log.d("PerformanceLog", "[BEFORE_SAVE_USER_TO_DB] Time: ${System.currentTimeMillis()}")
                                         saveUserToDb(realm, response.body()!!.get("id").asString, obj, callback)
                                     } else {
+                                        Log.d("PerformanceLog", "[PUT_DOC_FAILED] Time: ${System.currentTimeMillis()}")
                                         callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                                     }
                                 }
 
                                 override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+                                    Log.d("PerformanceLog", "[PUT_DOC_NETWORK_FAILURE] Time: ${System.currentTimeMillis()}")
                                     callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                                 }
                             })
@@ -238,12 +292,14 @@ class Service(private val context: Context) {
                     }
 
                     override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+                        Log.d("PerformanceLog", "[USER_CHECK_NETWORK_FAILURE] Time: ${System.currentTimeMillis()}")
                         callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                     }
                 })
             }
 
             override fun notAvailable() {
+                Log.d("PerformanceLog", "[PLANET_NOT_AVAILABLE] Time: ${System.currentTimeMillis()}")
                 val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 if (isUserExists(realm, obj["name"].asString)) {
                     callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
@@ -273,20 +329,30 @@ class Service(private val context: Context) {
     }
 
     private fun saveUserToDb(realm: Realm, id: String, obj: JsonObject, callback: CreateUserCallback) {
+        Log.d("PerformanceLog", "[SAVE_USER_TO_DB_START] Time: ${System.currentTimeMillis()}")
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         realm.executeTransactionAsync({ realm1: Realm? ->
+            Log.d("PerformanceLog", "[REALM_TRANSACTION_START] Time: ${System.currentTimeMillis()}")
             try {
+                Log.d("PerformanceLog", "[BEFORE_GET_JSON_OBJECT] Time: ${System.currentTimeMillis()}")
                 val res = retrofitInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/" + id)?.execute()
+                Log.d("PerformanceLog", "[AFTER_GET_JSON_OBJECT] Time: ${System.currentTimeMillis()}")
                 if (res?.body() != null) {
+                    Log.d("PerformanceLog", "[BEFORE_POPULATE_USERS_TABLE] Time: ${System.currentTimeMillis()}")
                     val model = populateUsersTable(res.body(), realm1, settings)
                     if (model != null) {
+                        Log.d("PerformanceLog", "[BEFORE_SAVE_KEY_IV] Time: ${System.currentTimeMillis()}")
                         UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
+                        Log.d("PerformanceLog", "[AFTER_SAVE_KEY_IV] Time: ${System.currentTimeMillis()}")
                     }
                 }
             } catch (e: IOException) {
+                Log.d("PerformanceLog", "[REALM_TRANSACTION_ERROR] Time: ${System.currentTimeMillis()}")
                 e.printStackTrace()
             }
+            Log.d("PerformanceLog", "[REALM_TRANSACTION_END] Time: ${System.currentTimeMillis()}")
         }, {
+            Log.d("PerformanceLog", "[REALM_TRANSACTION_SUCCESS] Time: ${System.currentTimeMillis()}")
             callback.onSuccess(context.getString(R.string.user_created_successfully))
             isNetworkConnectedFlow.onEach { isConnected ->
                 if (isConnected) {
@@ -309,6 +375,7 @@ class Service(private val context: Context) {
                 }
             }.launchIn(serviceScope)
         }) { error: Throwable ->
+            Log.d("PerformanceLog", "[REALM_TRANSACTION_ERROR] Time: ${System.currentTimeMillis()}")
             error.printStackTrace()
             callback.onSuccess(context.getString(R.string.unable_to_save_user_please_sync))
         }

@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.ArrayAdapter
 import com.google.gson.JsonArray
@@ -32,6 +33,8 @@ class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
     var guest: Boolean = false
+    private val logTimes = mutableMapOf<String, Long>()
+
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(
@@ -125,6 +128,7 @@ class BecomeMemberActivity : BaseActivity() {
         }
 
         activityBecomeMemberBinding.btnSubmit.setOnClickListener {
+            logTime("BTN_SUBMIT_CLICKED")
             val userName: String = activityBecomeMemberBinding.etUsername.text.toString()
             var password: String? = activityBecomeMemberBinding.etPassword.text.toString()
             val rePassword: String = activityBecomeMemberBinding.etRePassword.text.toString()
@@ -158,6 +162,7 @@ class BecomeMemberActivity : BaseActivity() {
                 Character.isLetterOrDigit(codePoint) || codePoint == '.'.code || codePoint == '-'.code || codePoint == '_'.code
             }
 
+
             if (TextUtils.isEmpty(userName)) {
                 activityBecomeMemberBinding.etUsername.error = getString(R.string.please_enter_a_username)
             } else if (userName.contains(" ")) {
@@ -186,6 +191,7 @@ class BecomeMemberActivity : BaseActivity() {
                     password = phoneNumber
                 }
 
+                logTime("BEFORE_CHECK_FIELDS")
                 checkMandatoryFieldsAndAddMember(
                     userName, password, rePassword, fName, lName, mName, email, language, level,
                     phoneNumber, birthDate, gender, mRealm
@@ -199,7 +205,9 @@ class BecomeMemberActivity : BaseActivity() {
         mName: String?, email: String?, language: String?, level: String?, phoneNumber: String?,
         birthDate: String?, gender: String?, mRealm: Realm
     ) {
+        logTime("CHECK_FIELDS_START")
         if (username.isNotEmpty() && password.isNotEmpty() && rePassword == password) {
+            logTime("CREATING_JSON_OBJECT")
             val obj = JsonObject()
             obj.addProperty("name", username)
             obj.addProperty("firstName", fName)
@@ -220,15 +228,18 @@ class BecomeMemberActivity : BaseActivity() {
             obj.addProperty("betaEnabled", false)
             obj.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             obj.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
-            obj.addProperty(
-                "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
-            )
+            obj.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
             val roles = JsonArray()
             roles.add("learner")
             obj.add("roles", roles)
+
+            logTime("JSON_OBJECT_CREATED")
             activityBecomeMemberBinding.pbar.visibility = View.VISIBLE
+            logTime("BEFORE_BECOME_MEMBER")
             Service(this).becomeMember(mRealm, obj, object : Service.CreateUserCallback {
                 override fun onSuccess(message: String) {
+                    logTime("SERVICE_SUCCESS_CALLBACK")
+                    Log.d("PerformanceLog", "Total time: ${getElapsedTime("BTN_SUBMIT_CLICKED", "SERVICE_SUCCESS_CALLBACK")} ms")
                     runOnUiThread {
                         activityBecomeMemberBinding.pbar.visibility = View.GONE
                         Utilities.toast(this@BecomeMemberActivity, message)
@@ -277,5 +288,16 @@ class BecomeMemberActivity : BaseActivity() {
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
             }
         })
+    }
+
+
+
+    private fun logTime(tag: String) {
+        logTimes[tag] = System.currentTimeMillis()
+        Log.d("PerformanceLog", "[$tag] Time: ${logTimes[tag]}")
+    }
+
+    private fun getElapsedTime(startTag: String, endTag: String): Long {
+        return logTimes[endTag]!! - logTimes[startTag]!!
     }
 }
