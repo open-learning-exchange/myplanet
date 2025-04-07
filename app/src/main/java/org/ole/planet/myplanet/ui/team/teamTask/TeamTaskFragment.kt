@@ -64,7 +64,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             deadline?.set(Calendar.MINUTE, minute)
             if (datePicker != null) {
                 datePicker?.text = deadline?.let {
-                    formatDate(it.timeInMillis, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+                    formatDate(it.timeInMillis, "yyyy-MM-dd 'T:' HH:mm")
                 }
             }
         }, deadline!![Calendar.HOUR_OF_DAY], deadline!![Calendar.MINUTE], true)
