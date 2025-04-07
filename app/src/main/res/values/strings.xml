@@ -1266,5 +1266,6 @@
     <string name="response">Response</string>
     <string name="full_conversation_response">Full conversation response</string>
     <string name="add_new_event">add new event</string>
+    <string name="authenticating">Authenticating…</string>
 
 </resources>
