@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.ArrayAdapter
 import com.google.gson.JsonArray
@@ -227,24 +228,42 @@ class BecomeMemberActivity : BaseActivity() {
             roles.add("learner")
             obj.add("roles", roles)
             activityBecomeMemberBinding.pbar.visibility = View.VISIBLE
+            // Record the start time
+            val startTime = System.currentTimeMillis()
+
+            // Log the start of the operation
+            Log.d("BecomeMemberTiming", "Starting user creation for user: $username at $startTime")
+
             Service(this).becomeMember(mRealm, obj, object : Service.CreateUserCallback {
                 override fun onSuccess(message: String) {
+                    // Calculate elapsed time
+                    val endTime = System.currentTimeMillis()
+                    val elapsedTime = endTime - startTime
+
+                    // Log the completion time
+                    Log.d("BecomeMemberTiming", "User creation completed in $elapsedTime ms for user: $username")
+
                     runOnUiThread {
+                        // Show elapsed time to user (optional)
+                        val timeMessage = "Account created in ${elapsedTime / 1000.0} seconds"
+
                         activityBecomeMemberBinding.pbar.visibility = View.GONE
                         Utilities.toast(this@BecomeMemberActivity, message)
+
+                        // Move navigation logic here, inside the callback
+                        val intent = Intent(this@BecomeMemberActivity, LoginActivity::class.java)
+                        if (guest) {
+                            intent.putExtra("username", username)
+                            intent.putExtra("guest", guest)
+                        }
+                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        startActivity(intent)
+                        finish()
+
+                        Log.d("okuro", "onSuccess: $timeMessage")
                     }
-                    finish()
                 }
             })
-
-            val intent = Intent(this, LoginActivity::class.java)
-            if (guest){
-                intent.putExtra("username", username)
-                intent.putExtra("guest", guest)
-            }
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            startActivity(intent)
-            finish()
         }
     }
 
