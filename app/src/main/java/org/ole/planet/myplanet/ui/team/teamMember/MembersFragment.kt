@@ -27,23 +27,7 @@ class MembersFragment : BaseMemberFragment() {
     }
 
     override val list: List<RealmUserModel>
-        get() {
-            val members = getRequestedMember(teamId, mRealm).toMutableList()
-            val leader = members.find { it.id == getTeamLeaderId() }
-            if (leader != null) {
-                members.remove(leader)
-                members.add(0, leader)
-            }
-            return members
-        }
-
-    private fun getTeamLeaderId(): String? {
-        val team = mRealm.where(RealmMyTeam::class.java)
-            .equalTo("teamId", teamId)
-            .equalTo("isLeader", true)
-            .findFirst()
-        return team?.userId
-    }
+        get() = getRequestedMember(teamId, mRealm)
 
     override val adapter: RecyclerView.Adapter<*>
         get() = AdapterMemberRequest(requireActivity(), list.toMutableList(), mRealm, isTeamLeader()).apply { setTeamId(teamId) }
