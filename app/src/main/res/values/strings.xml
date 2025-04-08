@@ -1265,5 +1265,6 @@
     <string name="no_resources_to_download">No resources to download</string>
     <string name="response">Response</string>
     <string name="full_conversation_response">Full conversation response</string>
+    <string name="untitled_survey">untitled</string>
 
 </resources>
