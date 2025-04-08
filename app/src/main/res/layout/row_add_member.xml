@@ -29,6 +29,7 @@
             android:id="@+id/tv_last_visit"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:background="@drawable/rounded_grey"
             android:text="Text 2" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>

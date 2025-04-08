@@ -27,7 +27,11 @@ class AdapterAddMember(private val list: List<RealmUserModel>): RecyclerView.Ada
     override fun onBindViewHolder(holder: ViewHolderAddMember, position: Int) {
         val member = list[position]
         rowAddMemberBinding.tvName.text = member.name
-        rowAddMemberBinding.tvLastVisit.text = member.email
+        if(member.rolesList.isNullOrEmpty()){
+            rowAddMemberBinding.tvLastVisit.text = "Learner"
+        } else {
+            rowAddMemberBinding.tvLastVisit.text = member.rolesList?.get(0)
+        }
         rowAddMemberBinding.checkbox.setOnClickListener { view: View ->
             Utilities.handleCheck((view as CheckBox).isChecked, position, selectedMembers, list)
             listener?.onSelectedListChange(selectedMembers)
