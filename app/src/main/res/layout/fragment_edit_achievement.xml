@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+<FrameLayout
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ui.userprofile.EditAchievementFragment">
@@ -123,7 +128,7 @@
                         android:gravity="center_vertical"
                         android:padding="@dimen/padding_normal"
                         android:text="@string/birth_date"
-                        android:textSize="@dimen/text_size_mid"
+                        android:textSize="17dp"
                         android:textColor="@color/daynight_textColor"
                         app:drawableRightCompat="@drawable/ic_date"
                         app:drawableTint="@color/daynight_textColor" />
@@ -194,7 +199,6 @@
                         android:textColor="@color/daynight_textColor"
                         android:backgroundTint="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
-
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -206,14 +210,14 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical" />
-                <Button
-                    android:id="@+id/btn_achievement"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_normal"
-                    android:contentDescription="@string/add_an_achievement"
-                    android:text="@string/add_an_achievement"
-                    android:theme="@style/PrimaryButton" />
+                        <Button
+                            android:id="@+id/btn_achievement"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:padding="@dimen/padding_normal"
+                            android:contentDescription="@string/add_an_achievement"
+                            android:text="@string/add_an_achievement"
+                            android:theme="@style/PrimaryButton" />
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -254,7 +258,8 @@
                         android:layout_height="wrap_content"
                         android:contentDescription="@string/button_update"
                         android:text="@string/button_update"
-                        android:theme="@style/PrimaryButton" />
+                        android:theme="@style/PrimaryButton"
+                        android:backgroundTint="@color/md_amber_500" />
                     <Button
                         android:id="@+id/btn_cancel"
                         android:layout_width="wrap_content"
@@ -267,3 +272,4 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </FrameLayout>
+</ScrollView>

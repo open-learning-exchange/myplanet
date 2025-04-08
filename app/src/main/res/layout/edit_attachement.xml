@@ -32,7 +32,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/attached_resources"
-                    android:textSize="@dimen/text_size_small"
+                    android:textSize="15dp"
                     android:textColor="@color/daynight_textColor" />
                 <com.google.android.flexbox.FlexboxLayout
                     android:id="@+id/flexbox"
@@ -43,13 +43,13 @@
 
             <Button
                 android:id="@+id/edit"
-                style="@style/GreyButtons"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:background="@drawable/buttongrey"
+                android:theme="@style/PrimaryButton"
                 android:text="@string/edit"
-                android:visibility="visible" />
+                android:visibility="visible"
+                />
             <ImageView
                 android:id="@+id/iv_delete"
                 android:layout_width="50dp"
