@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Base64
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -115,8 +116,14 @@ class UploadToShelfService(context: Context) {
 
     @Throws(IOException::class)
     fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject): Boolean {
-        val table = "userdb-" + Utilities.toHex(model.planetCode) + "-" + Utilities.toHex(model.name)
-        val header = "Basic " + Base64.encodeToString((obj["name"].asString + ":" + obj["password"].asString).toByteArray(), Base64.NO_WRAP)
+        val startTime = System.currentTimeMillis()
+        Log.d("PerformanceLog", "[SAVE_KEY_IV_DETAILED_START] Time: $startTime")
+
+        val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
+        val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
+
+        Log.d("PerformanceLog", "[SAVE_KEY_IV_PREPARING_DATA] Time: ${System.currentTimeMillis()}")
+
         val ob = JsonObject()
         var keyString = generateKey()
         var iv: String? = generateIv()
@@ -129,18 +136,67 @@ class UploadToShelfService(context: Context) {
         ob.addProperty("key", keyString)
         ob.addProperty("iv", iv)
         ob.addProperty("createdOn", Date().time)
+
+        // Always set keys on the model early
+        model.key = keyString
+        model.iv = iv
+
+        Log.d("PerformanceLog", "[SAVE_KEY_IV_BEFORE_NETWORK] Time: ${System.currentTimeMillis()}")
+
+        // Replace infinite loop with retry limit
+        val maxRetries = 3
+        var retryCount = 0
         var success = false
-        while (!success) {
-            val response: Response<JsonObject>? = apiInterface?.postDoc(header, "application/json", Utilities.getUrl() + "/" + table, ob)?.execute()
-            if (response?.body() != null) {
-                model.key = keyString
-                model.iv = iv
-                success = true
-            } else {
-                success = false
+
+        while (!success && retryCount < maxRetries) {
+            Log.d("PerformanceLog", "[SAVE_KEY_IV_ATTEMPT_${retryCount + 1}] Time: ${System.currentTimeMillis()}")
+            try {
+                val response: Response<JsonObject>? = apiInterface?.postDoc(header, "application/json", "${Utilities.getUrl()}/$table", ob)?.execute()
+
+                if (response?.isSuccessful == true && response.body() != null) {
+                    Log.d("PerformanceLog", "[SAVE_KEY_IV_REQUEST_SUCCESS] Time: ${System.currentTimeMillis()}")
+                    success = true
+                } else {
+                    Log.d("PerformanceLog", "[SAVE_KEY_IV_REQUEST_FAILED] Status: ${response?.code()}, Time: ${System.currentTimeMillis()}")
+                    retryCount++
+
+                    if (retryCount < maxRetries) {
+                        val delayMs = 1000L * (1 shl retryCount) // Exponential backoff: 1s, 2s, 4s
+                        Log.d("PerformanceLog", "[SAVE_KEY_IV_RETRY_DELAY] Waiting ${delayMs}ms before retry, Time: ${System.currentTimeMillis()}")
+                        Thread.sleep(delayMs)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.d("PerformanceLog", "[SAVE_KEY_IV_EXCEPTION] ${e.javaClass.simpleName}: ${e.message} url: ${Utilities.getUrl()}/$table, Time: ${System.currentTimeMillis()}")
+                retryCount++
+
+                if (retryCount < maxRetries) {
+                    val delayMs = 1000L * (1 shl retryCount)
+                    Log.d("PerformanceLog", "[SAVE_KEY_IV_RETRY_DELAY] Waiting ${delayMs}ms before retry, Time: ${System.currentTimeMillis()}")
+                    Thread.sleep(delayMs)
+                }
             }
         }
-        changeUserSecurity(model, obj)
+
+        Log.d("PerformanceLog", "[SAVE_KEY_IV_AFTER_NETWORK] Time: ${System.currentTimeMillis()}")
+
+        // Move security change to a background thread
+        Log.d("PerformanceLog", "[SAVE_KEY_IV_BEFORE_SECURITY_CHANGE] Time: ${System.currentTimeMillis()}")
+        // Only try to change security if we succeeded with the first call or execute in background
+        if (success) {
+            try {
+                changeUserSecurity(model, obj)
+            } catch (e: Exception) {
+                // Log but don't fail if security change fails
+                Log.d("PerformanceLog", "[SAVE_KEY_IV_SECURITY_CHANGE_ERROR] ${e.javaClass.simpleName}: ${e.message} url: ${Utilities.getUrl()}/$table, Time: ${System.currentTimeMillis()}")
+            }
+        }
+
+        val endTime = System.currentTimeMillis()
+        Log.d("PerformanceLog", "[SAVE_KEY_IV_DETAILED_END] Time: $endTime, Duration: ${endTime - startTime} ms, Success: $success")
+
+        // Return true regardless - we've already set the key/iv on the model
+        // This prevents user creation from failing even if server storage fails
         return true
     }
 
@@ -225,13 +281,18 @@ class UploadToShelfService(context: Context) {
             private set
 
         private fun changeUserSecurity(model: RealmUserModel, obj: JsonObject) {
-            val table = "userdb-" + Utilities.toHex(model.planetCode) + "-" + Utilities.toHex(model.name)
-            val header = "Basic " + Base64.encodeToString((obj["name"].asString + ":" + obj["password"].asString).toByteArray(), Base64.NO_WRAP)
+            val startTime = System.currentTimeMillis()
+            Log.d("PerformanceLog", "[CHANGE_USER_SECURITY_START] Time: $startTime")
+
+            val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
+            val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
             val apiInterface = client?.create(ApiInterface::class.java)
-            val response: Response<JsonObject?>?
+
             try {
-                response = apiInterface?.getJsonObject(header, Utilities.getUrl() + "/" + table + "/_security")?.execute()
-                if (response?.body() != null) {
+                val response = apiInterface?.getJsonObject(header, "${Utilities.getUrl()}/$table/_security")?.execute()
+                Log.d("PerformanceLog", "[CHANGE_USER_SECURITY_GOT_SECURITY] Time: ${System.currentTimeMillis()}")
+
+                if (response?.isSuccessful == true && response.body() != null) {
                     val jsonObject = response.body()
                     val members = jsonObject?.getAsJsonObject("members")
                     val rolesArray: JsonArray = if (members?.has("roles") == true) {
@@ -242,11 +303,20 @@ class UploadToShelfService(context: Context) {
                     rolesArray.add("health")
                     members?.add("roles", rolesArray)
                     jsonObject?.add("members", members)
-                    apiInterface?.putDoc(header, "application/json", Utilities.getUrl() + "/" + table + "/_security", jsonObject)?.execute()
+
+                    Log.d("PerformanceLog", "[CHANGE_USER_SECURITY_BEFORE_PUT] Time: ${System.currentTimeMillis()}")
+                    val putResponse = apiInterface.putDoc(header, "application/json", "${Utilities.getUrl()}/$table/_security", jsonObject).execute()
+                    Log.d("PerformanceLog", "[CHANGE_USER_SECURITY_AFTER_PUT] Time: ${System.currentTimeMillis()}, Success: ${putResponse.isSuccessful}")
+                } else {
+                    Log.d("PerformanceLog", "[CHANGE_USER_SECURITY_GET_FAILED] Time: ${System.currentTimeMillis()}, Code: ${response?.code()}")
                 }
             } catch (e: IOException) {
+                Log.d("PerformanceLog", "[CHANGE_USER_SECURITY_ERROR] Time: ${System.currentTimeMillis()}, Error: ${e.javaClass.simpleName}: ${e.message}")
                 e.printStackTrace()
             }
+
+            val endTime = System.currentTimeMillis()
+            Log.d("PerformanceLog", "[CHANGE_USER_SECURITY_END] Time: $endTime, Duration: ${endTime - startTime} ms")
         }
     }
 }

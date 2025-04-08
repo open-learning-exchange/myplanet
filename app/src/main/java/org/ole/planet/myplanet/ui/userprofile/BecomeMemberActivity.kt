@@ -8,6 +8,7 @@ import android.os.Looper
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.ArrayAdapter
 import com.google.gson.JsonArray
@@ -34,6 +35,8 @@ class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
     var guest: Boolean = false
+    private val logTimes = mutableMapOf<String, Long>()
+
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(
@@ -127,6 +130,7 @@ class BecomeMemberActivity : BaseActivity() {
         }
 
         activityBecomeMemberBinding.btnSubmit.setOnClickListener {
+            logTime("BTN_SUBMIT_CLICKED")
             val userName: String = activityBecomeMemberBinding.etUsername.text.toString()
             var password: String? = activityBecomeMemberBinding.etPassword.text.toString()
             val rePassword: String = activityBecomeMemberBinding.etRePassword.text.toString()
@@ -139,7 +143,7 @@ class BecomeMemberActivity : BaseActivity() {
             val birthDate: String = dob
             val level: String = activityBecomeMemberBinding.spnLevel.selectedItem.toString()
             var gender: String? = null
-          
+
             val firstChar = if (userName.isNotEmpty()) {
                 userName[0]
             } else {
@@ -167,9 +171,7 @@ class BecomeMemberActivity : BaseActivity() {
             } else if (firstChar != null && !Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
                 activityBecomeMemberBinding.etUsername.error = getString(R.string.must_start_with_letter_or_number)
             } else if (hasInvalidCharacters || hasSpecialCharacters || hasDiacriticCharacters) {
-               activityBecomeMemberBinding.etUsername.error = getString(R.string.only_letters_numbers_and_are_allowed)
-            } else if (RealmUserModel.isUserExists(mRealm, activityBecomeMemberBinding.etUsername.text.toString())) {
-                activityBecomeMemberBinding.etUsername.error = getString(R.string.username_taken)
+                activityBecomeMemberBinding.etUsername.error = getString(R.string.only_letters_numbers_and_are_allowed)
             } else if (TextUtils.isEmpty(password)) {
                 activityBecomeMemberBinding.etPassword.error = getString(R.string.please_enter_a_password)
             } else if (password != rePassword) {
@@ -190,6 +192,7 @@ class BecomeMemberActivity : BaseActivity() {
                     password = phoneNumber
                 }
 
+                logTime("BEFORE_CHECK_FIELDS")
                 checkMandatoryFieldsAndAddMember(
                     userName, password, rePassword, fName, lName, mName, email, language, level,
                     phoneNumber, birthDate, gender, mRealm
@@ -203,7 +206,9 @@ class BecomeMemberActivity : BaseActivity() {
         mName: String?, email: String?, language: String?, level: String?, phoneNumber: String?,
         birthDate: String?, gender: String?, mRealm: Realm
     ) {
+        logTime("CHECK_FIELDS_START")
         if (username.isNotEmpty() && password.isNotEmpty() && rePassword == password) {
+            logTime("CREATING_JSON_OBJECT")
             val obj = JsonObject()
             obj.addProperty("name", username)
             obj.addProperty("firstName", fName)
@@ -224,15 +229,18 @@ class BecomeMemberActivity : BaseActivity() {
             obj.addProperty("betaEnabled", false)
             obj.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             obj.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
-            obj.addProperty(
-                "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
-            )
+            obj.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
             val roles = JsonArray()
             roles.add("learner")
             obj.add("roles", roles)
+
+            logTime("JSON_OBJECT_CREATED")
             activityBecomeMemberBinding.pbar.visibility = View.VISIBLE
+            logTime("BEFORE_BECOME_MEMBER")
             Service(this).becomeMember(mRealm, obj, object : Service.CreateUserCallback {
                 override fun onSuccess(message: String) {
+                    logTime("SERVICE_SUCCESS_CALLBACK")
+                    Log.d("PerformanceLog", "Total time: ${getElapsedTime("BTN_SUBMIT_CLICKED", "SERVICE_SUCCESS_CALLBACK")} ms")
                     runOnUiThread {
                         activityBecomeMemberBinding.pbar.visibility = View.GONE
                         Utilities.toast(this@BecomeMemberActivity, message)
@@ -241,18 +249,14 @@ class BecomeMemberActivity : BaseActivity() {
                 }
             })
 
-            Handler(Looper.getMainLooper()).postDelayed({
-                val intent = Intent(this, LoginActivity::class.java)
-                if (guest) {
-                    intent.putExtra("guest", guest)
-                }
+            val intent = Intent(this, LoginActivity::class.java)
+            if (guest){
                 intent.putExtra("username", username)
-                intent.putExtra("autoLogin", true)
-                intent.putExtra("password", password)
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                startActivity(intent)
-                finish()
-            }, 5000)
+                intent.putExtra("guest", guest)
+            }
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            startActivity(intent)
+            finish()
         }
     }
 
@@ -285,5 +289,14 @@ class BecomeMemberActivity : BaseActivity() {
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
             }
         })
+    }
+
+    private fun logTime(tag: String) {
+        logTimes[tag] = System.currentTimeMillis()
+        Log.d("PerformanceLog", "[$tag] Time: ${logTimes[tag]}")
+    }
+
+    private fun getElapsedTime(startTag: String, endTag: String): Long {
+        return logTimes[endTag]!! - logTimes[startTag]!!
     }
 }
