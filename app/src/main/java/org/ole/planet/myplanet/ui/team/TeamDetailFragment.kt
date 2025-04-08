@@ -5,7 +5,10 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import androidx.appcompat.app.AlertDialog
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +21,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.isTeamLeader
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
@@ -49,6 +53,8 @@ class TeamDetailFragment : BaseTeamFragment() {
         fragmentTeamDetailBinding.subtitle.text = team?.type
 
         if (!isMyTeam) {
+            fragmentTeamDetailBinding.btnAddMember?.isEnabled = false
+            fragmentTeamDetailBinding.btnAddMember?.visibility = View.GONE
             fragmentTeamDetailBinding.btnAddDoc.isEnabled = false
             fragmentTeamDetailBinding.btnAddDoc.visibility = View.GONE
             val currentTeam = team
@@ -72,7 +78,10 @@ class TeamDetailFragment : BaseTeamFragment() {
             }
 
         } else {
-
+            if (isTeamLeader(teamId, user?.id, mRealm)) {
+                fragmentTeamDetailBinding.btnAddMember?.isEnabled = true
+                fragmentTeamDetailBinding.btnAddMember?.visibility = View.VISIBLE
+            }
             fragmentTeamDetailBinding.btnAddDoc.isEnabled = true
             fragmentTeamDetailBinding.btnAddDoc.visibility = View.VISIBLE
             fragmentTeamDetailBinding.btnLeave.isEnabled = true
@@ -107,6 +116,11 @@ class TeamDetailFragment : BaseTeamFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         createTeamLog()
+        val allMembers = mRealm.where(RealmUserModel::class.java).findAll()
+        println(allMembers)
+        fragmentTeamDetailBinding.btnAddMember?.setOnClickListener {
+            showAddMemberDialog(allMembers)
+        }
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
@@ -139,5 +153,19 @@ class TeamDetailFragment : BaseTeamFragment() {
 
             realm.close()
         }
+    }
+
+    private fun showAddMemberDialog(memberList: List<RealmUserModel>){
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.add_member_dialog, null)
+        val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMembers)
+        recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        recyclerView.adapter = AdapterAddMember(memberList)
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .create()
+        dialogView.findViewById<Button>(R.id.btnClose).setOnClickListener {
+            dialog.dismiss()
+        }
+        dialog.show()
     }
 }

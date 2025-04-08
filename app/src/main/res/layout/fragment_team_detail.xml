@@ -54,6 +54,13 @@
                     android:layout_gravity="right">
 
                     <Button
+                        android:id="@+id/btn_add_member"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:backgroundTint="@color/primary"
+                        android:text="Add member" />
+                    <Button
                         android:id="@+id/btn_add_doc"
                         style="@style/YellowButtons"
                         android:layout_width="wrap_content"

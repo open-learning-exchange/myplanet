@@ -112,8 +112,8 @@
 
     <style name="YellowButtons" parent="Theme.AppCompat">
         <item name="android:textColor">@color/md_black_1000</item>
-        <item name="android:padding">8dp</item>
-        <item name="android:background">@color/md_amber_500</item>
+        <item name="android:padding">10dp</item>
+        <item name="android:backgroundTint">@color/md_amber_500</item>
         <item name="colorControlHighlight">@color/disable_color</item>
         <item name="android:layout_margin">8dp</item>
     </style>
