@@ -5,6 +5,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnMemberSelected
 import org.ole.planet.myplanet.databinding.RowAddMemberBinding
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -26,13 +29,21 @@ class AdapterAddMember(private val list: List<RealmUserModel>): RecyclerView.Ada
 
     override fun onBindViewHolder(holder: ViewHolderAddMember, position: Int) {
         val member = list[position]
-        rowAddMemberBinding.tvName.text = member.name
+        println(member.name)
+        holder.binding.tvName.text = member.name
+
+        Glide.with(context)
+            .load(member.userImage)
+            .placeholder(R.drawable.profile)
+            .error(R.drawable.profile)
+            .into(holder.binding.memberImage)
+
         if(member.rolesList.isNullOrEmpty()){
-            rowAddMemberBinding.tvLastVisit.text = "Learner"
+            holder.binding.tvLastVisit.text = "Learner"
         } else {
-            rowAddMemberBinding.tvLastVisit.text = member.rolesList?.get(0)
+            holder.binding.tvLastVisit.text = member.rolesList?.get(0)
         }
-        rowAddMemberBinding.checkbox.setOnClickListener { view: View ->
+        holder.binding.checkbox.setOnClickListener { view: View ->
             Utilities.handleCheck((view as CheckBox).isChecked, position, selectedMembers, list)
             listener?.onSelectedListChange(selectedMembers)
         }
@@ -42,5 +53,4 @@ class AdapterAddMember(private val list: List<RealmUserModel>): RecyclerView.Ada
         return list.size
     }
 
-    class ViewHolderAddMember(rowAddMemberBinding: RowAddMemberBinding) : RecyclerView.ViewHolder(rowAddMemberBinding.root)
-}
+    class ViewHolderAddMember(val binding: RowAddMemberBinding) : RecyclerView.ViewHolder(binding.root)}
