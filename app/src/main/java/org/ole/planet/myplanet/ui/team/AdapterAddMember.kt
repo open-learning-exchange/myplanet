@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
 import androidx.recyclerview.widget.RecyclerView
+import org.ole.planet.myplanet.callback.OnMemberSelected
 import org.ole.planet.myplanet.databinding.RowAddMemberBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Utilities
@@ -12,6 +13,11 @@ import org.ole.planet.myplanet.utilities.Utilities
 class AdapterAddMember(private val list: List<RealmUserModel>): RecyclerView.Adapter<AdapterAddMember.ViewHolderAddMember>()  {
     private lateinit var rowAddMemberBinding: RowAddMemberBinding
     private val selectedMembers: MutableList<RealmUserModel?> = ArrayList()
+    private var listener: OnMemberSelected? = null
+
+    fun setListener(listener: OnMemberSelected?) {
+        this.listener = listener
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderAddMember {
         rowAddMemberBinding = RowAddMemberBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -19,12 +25,12 @@ class AdapterAddMember(private val list: List<RealmUserModel>): RecyclerView.Ada
     }
 
     override fun onBindViewHolder(holder: ViewHolderAddMember, position: Int) {
-        println("hi")
         val member = list[position]
         rowAddMemberBinding.tvName.text = member.name
         rowAddMemberBinding.tvLastVisit.text = member.email
         rowAddMemberBinding.checkbox.setOnClickListener { view: View ->
             Utilities.handleCheck((view as CheckBox).isChecked, position, selectedMembers, list)
+            listener?.onSelectedListChange(selectedMembers)
         }
     }
 
@@ -33,5 +39,4 @@ class AdapterAddMember(private val list: List<RealmUserModel>): RecyclerView.Ada
     }
 
     class ViewHolderAddMember(rowAddMemberBinding: RowAddMemberBinding) : RecyclerView.ViewHolder(rowAddMemberBinding.root)
-
 }

@@ -22,7 +22,7 @@
             android:id="@+id/btnadd"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/add_new_event"
+            android:text="@string/add"
             android:layout_gravity="end"
             android:backgroundTint="@color/primary"
             android:textColor="@color/md_white_1000" />

@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnMemberSelected
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -23,13 +24,24 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 import java.util.UUID
 
-class TeamDetailFragment : BaseTeamFragment() {
+class TeamDetailFragment : BaseTeamFragment(), OnMemberSelected {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
+    private lateinit var selectedItems: MutableList<RealmUserModel?>
+    private lateinit var adapterAddMember: AdapterAddMember
+
+   fun getAdapter(memberList: List<RealmUserModel>): RecyclerView.Adapter<*> {
+        adapterAddMember = AdapterAddMember(memberList)
+        adapterAddMember.setListener(this)
+        return adapterAddMember
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        selectedItems = mutableListOf()
         fragmentTeamDetailBinding = FragmentTeamDetailBinding.inflate(inflater, container, false)
         val teamId = requireArguments().getString("id" ) ?: ""
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
@@ -155,17 +167,40 @@ class TeamDetailFragment : BaseTeamFragment() {
         }
     }
 
-    private fun showAddMemberDialog(memberList: List<RealmUserModel>){
-        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.add_member_dialog, null)
+    private fun addMember(userModel: RealmUserModel?){
+        if (!mRealm.isInTransaction) mRealm.beginTransaction()
+        val newMember = mRealm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
+        newMember.teamType = "sync"
+        newMember.userId = userModel?.id
+        newMember.teamId = teamId
+        newMember.docType = "membership"
+        newMember.updated = true
+        newMember.teamPlanetCode = userModel?.planetCode
+        mRealm.commitTransaction()
+    }
+
+    private fun showAddMemberDialog(memberList: List<RealmUserModel>) {
+        val dialogView =
+            LayoutInflater.from(requireContext()).inflate(R.layout.add_member_dialog, null)
         val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMembers)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        recyclerView.adapter = AdapterAddMember(memberList)
+        recyclerView.adapter = getAdapter(memberList)
         val dialog = AlertDialog.Builder(requireContext())
             .setView(dialogView)
             .create()
         dialogView.findViewById<Button>(R.id.btnClose).setOnClickListener {
             dialog.dismiss()
         }
+        dialogView.findViewById<Button>(R.id.btnadd).setOnClickListener {
+            selectedItems.forEach { member ->
+                addMember(member)
+            }
+            dialog.dismiss()
+        }
         dialog.show()
+    }
+
+    override fun onSelectedListChange(list: MutableList<RealmUserModel?>) {
+        selectedItems = list
     }
 }
