@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.DialogInterface
 import android.graphics.Typeface
+import android.icu.text.SimpleDateFormat
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -36,6 +37,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Calendar
 import java.util.Date
+import java.util.Locale
 import java.util.UUID
 
 class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
@@ -63,9 +65,12 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             deadline?.set(Calendar.HOUR_OF_DAY, hourOfDay)
             deadline?.set(Calendar.MINUTE, minute)
             if (datePicker != null) {
-                datePicker?.text = deadline?.let {
-                    formatDate(it.timeInMillis, "yyyy-MM-dd 'T:' HH:mm")
-                }
+                val localeFormatter = SimpleDateFormat.getDateTimeInstance(
+                    SimpleDateFormat.MEDIUM,
+                    SimpleDateFormat.SHORT,
+                    Locale.getDefault()
+                )
+                datePicker?.text = deadline?.time?.let { localeFormatter.format(it) }
             }
         }, deadline!![Calendar.HOUR_OF_DAY], deadline!![Calendar.MINUTE], true)
         timePickerDialog.show()
