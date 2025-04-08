@@ -13,7 +13,7 @@
     <string name="course_in_progress">कोर्स %1$s मा प्रवेश गर्नुहोस् यसलाई पूरा गर्नुहोस् (%2$d को %3$d गरियो)</string>
     <string name="course_not_started">%1$s सुरु भएको छैन</string>
     <string name="app_name">My Planet</string>
-    <string name="planet">ग्रह</string>
+    <string name="planet">Planet</string>
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">सेटिङ्स</string>
     <string name="hint_name">प्रयोगकर्तानाम</string>
@@ -190,7 +190,7 @@
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">उत्तर देखाउँदै:</string>
     <string name="open_date">खोल्ने मिति</string>
-    <string name="my_survey">मेरो सर्वेक्षण</string>
+    <string name="my_survey">mySurveys</string>
     <string name="cannot_remove_user">प्रयोगकर्ता हटाउन सकिएन</string>
     <string name="no_members_task">कार्य सौंपन टोली सदस्यहरू उपस्थित छैनन्</string>
     <string name="no_member_selected">कुनै सदस्य चयन गरिएको छैन। कृपया फेरि प्रयास गर्नुहोस्</string>
@@ -340,7 +340,7 @@
     <string name="remove">हटाउनुहोस्</string>
     <string name="make_leader">नेता बनाउनुहोस्</string>
     <string name="mission"><![CDATA[मिशन र सेवाहरू]]></string>
-    <string name="team">टिम</string>
+    <string name="team">टटिमहरू</string>
     <string name="applicants">आवेदकहरू</string>
     <string name="finances">वित्त</string>
     <string name="messages">सन्देशहरू</string>
@@ -435,8 +435,8 @@
     </string-array>
 
     <string-array name="sort_by_date">
-        <item>मितिमा आदान - आरोही</item>
         <item>मितिमा आदान - अवरोही</item>
+        <item>मितिमा आदान - आरोही</item>
         <item>शीर्षकमा आदान</item>
     </string-array>
 
@@ -592,7 +592,7 @@
     <string name="level_colon">स्तर: %s</string>
     <string name="method">तरिका:</string>
     <string name="number_of_exams">परीक्षाहरूको संख्या:</string>
-    <string name="description_colon">वर्णन:</string>
+    <string name="description_colon">वर्णन:&#160;</string>
     <string name="download_resources">संसाधनहरू डाउनलोड गर्नुहोस्</string>
     <string name="take_test">परीक्षा दिनुहोस् [%d]</string>
     <string name="search">खोज्नुहोस्</string>
@@ -706,6 +706,7 @@
     <string name="description_is_required">विवरण आवश्यक छ</string>
     <string name="start_time_is_required">समय आवश्यक छ</string>
     <string name="meetup_added">मिलन सम्मेलन थपियो</string>
+    <string name="meetup_not_added">मिलन सम्मेलन होइन थपियो</string>
     <string name="add_transaction">लेखा थप्नुहोस्</string>
     <string name="note_is_required">टिप्पणी आवश्यक छ</string>
     <string name="amount_is_required">रकम आवश्यक छ</string>
@@ -1065,12 +1066,12 @@
     <string name="compulsory_phone_number">फोन नम्बर आवश्यक छ</string>
     <string name="compulsory_date_of_birth">जन्म मिति आवश्यक छ</string>
     <string name="gender_not_picked">लिङ्ग छानिएको छैन</string>
-    <string name="title_colon">शीर्षक:</string>
-    <string name="date_from_colon">मिति बाट:</string>
-    <string name="date_to_colon">मिति सम्म:</string>
-    <string name="location_colon">स्थान:</string>
-    <string name="recurring_colon">आवर्तमान:</string>
-    <string name="created_by_colon">बनाएको:</string>
+    <string name="title_colon">शीर्षक:&#160;</string>
+    <string name="date_from_colon">मिति बाट:&#160;</string>
+    <string name="date_to_colon">मिति सम्म:&#160;</string>
+    <string name="location_colon">स्थान:&#160;</string>
+    <string name="recurring_colon">आवर्तमान:&#160;</string>
+    <string name="created_by_colon">बनाएको:&#160;</string>
     <string name="failed_to_get_configuration_id">बनावट आईडी प्राप्त गर्न असफल भयो। कृपया व्यवस्थापकसँग सम्पर्क गर्नुहोस्।</string>
     <string name="you_want_to_connect_to_a_different_server">तपाईं अर्को सर्भरमा जडान गर्न चाहनुहुन्छ। अगाडि बढ्नका लागि एपको डेटा मेटाउनुहोस्</string>
     <string name="are_you_sure_you_want_to_clear_data">के तपाईं सबै डाटा हटाउन निश्चित हुनुहुन्छ?</string>
@@ -1256,7 +1257,6 @@
     <string name="version_not_found">संस्करण फेला परेन।</string>
     <string name="connection_failed">जडान असफल भयो!</string>
     <string name="unable_to_create_user_user_already_exists">प्रयोगकर्ता सिर्जना गर्न सकिएन, प्रयोगकर्ता पहिले नै अवस्थित छ।</string>
-    <string name="unable_to_create_user">प्रयोगकर्ता सिर्जना गर्न सकिएन।</string>
     <string name="not_connect_to_planet_created_user_offline">ग्रहसँग जडान भएको छैन, प्रयोगकर्ता अफलाइन सिर्जना गरियो।</string>
     <string name="user_created_successfully">प्रयोगकर्ता सफलतापूर्वक सिर्जना गरियो।</string>
     <string name="unable_to_save_user_please_sync">प्रयोगकर्ता बचत गर्न सकिएन, कृपया सिंक गर्नुहोस्।</string>
@@ -1265,5 +1265,7 @@
     <string name="no_resources_to_download">डाउनलोड गर्न कुनै स्रोत छैन</string>
     <string name="response">उत्तर</string>
     <string name="full_conversation_response">पूर्ण वार्तालाप उत्तर</string>
+    <string name="add_new_event">नयाँ घटना थप्नुहोस्</string>
+    <string name="none">कुनै पनि होइन</string>
 
 </resources>

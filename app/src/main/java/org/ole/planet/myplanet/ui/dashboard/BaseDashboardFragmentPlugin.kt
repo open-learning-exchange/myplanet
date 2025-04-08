@@ -63,7 +63,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
                     homeItemClickListener?.openCallFragment(ReferenceFragment())
                 } else if (title == "Calendar") {
                     homeItemClickListener?.openCallFragment(CalendarFragment())
-                } else if (title == "mySurvey") {
+                } else if (title == "mySurveys") {
                     if (model?.id?.startsWith("guest") == false) {
                         homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
                     } else {

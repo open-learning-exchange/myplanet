@@ -34,6 +34,7 @@ import org.osmdroid.views.overlay.gridlines.LatLonGridlineOverlay.backgroundColo
 import java.text.Normalizer
 import java.util.Date
 import java.util.Locale
+import androidx.core.graphics.drawable.toDrawable
 
 class ChatHistoryListAdapter(var context: Context, private var chatHistory: List<RealmChatHistory>, private val fragment: ChatHistoryListFragment) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
@@ -236,7 +237,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
                 dialog = builder.create()
 
                 val backgroundColor = ContextCompat.getColor(context, R.color.daynight_grey)
-                dialog.window?.setBackgroundDrawable(ColorDrawable(backgroundColor))
+                dialog.window?.setBackgroundDrawable(backgroundColor.toDrawable())
 
                 dialog.show()
             }
@@ -266,7 +267,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
             dialog?.dismiss()
         }
         dialog = builder.create()
-        dialog.window?.setBackgroundDrawable(ColorDrawable(backgroundColor))
+        dialog.window?.setBackgroundDrawable(backgroundColor.toDrawable())
         dialog.show()
     }
 

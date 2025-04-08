@@ -186,7 +186,7 @@
             android:id="@+id/rb_none"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/daily"
+            android:text="@string/none"
             android:textColor="@color/daynight_textColor"
             android:buttonTint="@color/daynight_textColor" />
     </RadioGroup>

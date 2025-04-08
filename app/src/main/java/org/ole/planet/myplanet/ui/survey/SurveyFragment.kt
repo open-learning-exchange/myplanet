@@ -195,8 +195,8 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
             val surveys = query.findAll()
             adapter.updateData(safeCastList(search(etSearch.text.toString(), surveys), RealmStepExam::class.java))
         } else {
-            val surveys = query.sort(field, sort).findAll()
-            adapter.updateData(safeCastList(surveys, RealmStepExam::class.java))
+            val surveys = query.findAll()
+            adapter.updateDataAfterSearch(safeCastList(surveys, RealmStepExam::class.java))
         }
 
         updateUIState()

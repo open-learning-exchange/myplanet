@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import io.realm.Realm
 import io.realm.Sort
+import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
 import org.ole.planet.myplanet.utilities.Utilities
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -183,6 +184,22 @@ class AdapterJoinedMember(
         return null
     }
 
+    private fun refreshList() {
+        val members = getJoinedMember(teamId, mRealm).toMutableList()
+        val leaderId = mRealm.where(RealmMyTeam::class.java)
+            .equalTo("teamId", teamId)
+            .equalTo("isLeader", true)
+            .findFirst()?.userId
+        val leader = members.find { it.id == leaderId }
+        if (leader != null) {
+            members.remove(leader)
+            members.add(0, leader)
+        }
+        list.clear()
+        list.addAll(members)
+        notifyDataSetChanged()
+    }
+
     private fun makeLeader(userModel: RealmUserModel) {
         if (userModel == null) {
             Utilities.toast(context, context.getString(R.string.cannot_remove_user))
@@ -203,6 +220,7 @@ class AdapterJoinedMember(
         }
         notifyDataSetChanged()
         Utilities.toast(context, context.getString(R.string.leader_selected))
+        refreshList()
     }
 
     private fun reject(userModel: RealmUserModel, position: Int) {

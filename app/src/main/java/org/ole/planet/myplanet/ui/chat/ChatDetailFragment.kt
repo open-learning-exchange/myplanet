@@ -38,6 +38,7 @@ import retrofit2.Callback
 import retrofit2.Response
 import java.util.Date
 import java.util.Locale
+import androidx.core.net.toUri
 import androidx.core.view.isNotEmpty
 
 class ChatDetailFragment : Fragment() {
@@ -222,7 +223,7 @@ class ChatDetailFragment : Fragment() {
 
             if (!primaryAvailable && alternativeAvailable) {
                 mapping.alternativeUrl.let { alternativeUrl ->
-                    val uri = Uri.parse(updateUrl)
+                    val uri = updateUrl.toUri()
                     val editor = settings.edit()
 
                     serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
@@ -382,9 +383,13 @@ class ChatDetailFragment : Fragment() {
 
             if (!primaryAvailable && alternativeAvailable) {
                 mapping.alternativeUrl.let { alternativeUrl ->
-                    val uri = Uri.parse(settings.getString("serverURL", ""))
+                    val uri = settings.getString("serverURL", "")?.toUri()
                     val editor = settings.edit()
-                    ServerUrlMapper(requireContext()).updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
+                    if (uri != null) {
+                        if (alternativeUrl != null) {
+                            ServerUrlMapper(requireContext()).updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
+                        }
+                    }
                 }
             }
         }
