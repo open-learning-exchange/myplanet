@@ -5,6 +5,7 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.*
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.view.inputmethod.EditorInfo
 import android.widget.*
@@ -44,6 +45,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private val backPressedInterval: Long = 2000
     private var teamList = java.util.ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
+    private val MAX_LOGIN_ATTEMPTS = 3
+    private var loginAttemptCount = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -105,6 +108,32 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 //        if (autoLogin && username != null && password != null) {
 //            submitForm(username, password)
 //        }
+
+//        if (intent.getBooleanExtra("autoLogin", false)) {
+//            if (username != null && password != null) {
+//                activityLoginBinding.inputName.setText(username);
+//                activityLoginBinding.inputPassword.setText(password);
+//
+//                Handler(Looper.getMainLooper()).postDelayed({ activityLoginBinding.btnSignin.performClick(); }, 500)
+//            }
+//        }
+
+        if (intent.getBooleanExtra("autoLogin", false)) {
+            val username = intent.getStringExtra("username")
+            val password = intent.getStringExtra("password")
+
+            if (username != null && password != null) {
+                // Fill in the fields
+                activityLoginBinding.inputName.setText(username)
+                activityLoginBinding.inputPassword.setText(password)
+
+                // Reset attempt counter
+                loginAttemptCount = 0
+
+                // Try to login with increasing delays
+                attemptAutoLogin(username, password)
+            }
+        }
 
         if (guest) {
             resetGuestAsMember(username)
@@ -356,7 +385,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             .show()
     }
 
-
     private fun updateConfiguration(languageCode: String) {
         val locale = Locale(languageCode)
         Locale.setDefault(locale)
@@ -462,9 +490,78 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                     }
                 } else {
                     alertDialogOkay(getString(R.string.err_msg_login))
+                    Log.d("okuro", "1 login failed- name: $name, password: $password")
                 }
             }
         }
+    }
+
+    private fun attemptAutoLogin(username: String, password: String) {
+        val startTime = System.currentTimeMillis()
+
+        // Show a small progress indicator for auto-login
+        customProgressDialog.setText("Preparing your account...")
+        customProgressDialog.show()
+
+        // Debugging log with timestamp
+        Log.d("LoginFlow", "[${System.currentTimeMillis()}] Starting attempt ${loginAttemptCount + 1} of $MAX_LOGIN_ATTEMPTS")
+
+        // Calculate delay based on attempt number (exponential backoff: 1s, 2s, 4s)
+        val delay = 1000L * (1 shl loginAttemptCount)
+
+        Handler(Looper.getMainLooper()).postDelayed({
+            Log.d("LoginFlow", "[${System.currentTimeMillis()}] Executing attempt ${loginAttemptCount + 1} after ${delay}ms delay. Time since start: ${System.currentTimeMillis() - startTime}ms")
+
+            // Try to login with both methods
+            val authStartTime = System.currentTimeMillis()
+            val standardLogin = authenticateUser(settings, username, password, false)
+            val standardLoginTime = System.currentTimeMillis() - authStartTime
+
+            val altStartTime = System.currentTimeMillis()
+            val alternativeLogin = if (!standardLogin) authenticateUser(settings, username, password, true) else false
+            val altLoginTime = System.currentTimeMillis() - altStartTime
+
+            val isLoggedIn = standardLogin || alternativeLogin
+
+            Log.d("LoginFlow", "[${System.currentTimeMillis()}] Authentication complete - Standard login: $standardLogin (${standardLoginTime}ms), Alternative login: $alternativeLogin (${altLoginTime}ms)")
+
+            if (isLoggedIn) {
+                // Success - proceed with login
+                Log.d("LoginFlow", "[${System.currentTimeMillis()}] Login successful on attempt ${loginAttemptCount + 1}. Total time: ${System.currentTimeMillis() - startTime}ms")
+                customProgressDialog.setText("Logging in...")
+
+                lifecycleScope.launch {
+                    Log.d("LoginFlow", "[${System.currentTimeMillis()}] Starting lifecycleScope.launch after successful login")
+                    Toast.makeText(this@LoginActivity, getString(R.string.welcome, username), Toast.LENGTH_SHORT).show()
+
+                    Log.d("LoginFlow", "[${System.currentTimeMillis()}] About to call onLogin()")
+                    val onLoginStart = System.currentTimeMillis()
+                    onLogin()
+                    Log.d("LoginFlow", "[${System.currentTimeMillis()}] onLogin() completed after ${System.currentTimeMillis() - onLoginStart}ms - should have navigated to Dashboard")
+
+                    saveUsers(username, password, "member")
+                }
+            } else {
+                // Failed - increment counter and try again if not at max attempts
+                loginAttemptCount++
+
+                Log.d("LoginFlow", "[${System.currentTimeMillis()}] Attempt failed. Login count now: $loginAttemptCount. Time elapsed: ${System.currentTimeMillis() - startTime}ms")
+
+                if (loginAttemptCount < MAX_LOGIN_ATTEMPTS) {
+                    val nextDelay = 1000L * (1 shl loginAttemptCount)
+                    Log.d("LoginFlow", "[${System.currentTimeMillis()}] Will retry in ${nextDelay}ms")
+
+                    customProgressDialog.setText("Retrying login (${loginAttemptCount + 1}/${MAX_LOGIN_ATTEMPTS})...")
+                    // Call recursively for next attempt
+                    attemptAutoLogin(username, password)
+                } else {
+                    // Max attempts reached, hide progress and let user try manually
+                    Log.d("LoginFlow", "[${System.currentTimeMillis()}] Max attempts reached after ${System.currentTimeMillis() - startTime}ms. Falling back to manual login")
+                    customProgressDialog.dismiss()
+                    Toast.makeText(this@LoginActivity, "Auto-login failed. Please try manually.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }, delay)
     }
 
     private fun showGuestLoginDialog() {

@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -143,6 +144,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     private fun createTeam(name: String?, type: String?, map: HashMap<String, String>, isPublic: Boolean) {
         val user = UserProfileDbHandler(requireContext()).userModel!!
+        Log.d("TeamFragment", "creatorTeam id: ${user.id}")
+        Log.d("TeamFragment", "creatorTeam _id: ${user._id}")
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
         val teamId = AndroidDecrypter.generateIv()
         val team = mRealm.createObject(RealmMyTeam::class.java, teamId)
@@ -166,6 +169,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         team.teamPlanetCode = user.planetCode
         team.updated = true
 
+        Log.d("TeamFragment", "teamDetails: $team")
+
         //create member ship
         val teamMemberObj = mRealm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
         teamMemberObj.userId = user._id
@@ -176,6 +181,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         teamMemberObj.isLeader = true
         teamMemberObj.teamType = type
         teamMemberObj.updated = true
+
+        Log.d("TeamFragment", "teamMemberObj: $teamMemberObj")
 
         mRealm.commitTransaction()
     }

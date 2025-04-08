@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -111,7 +112,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         mRealm = DatabaseService(this).realmInstance
         mRealm = Realm.getDefaultInstance()
         requestAllPermissions()
-        customProgressDialog = DialogUtils.getCustomProgressDialog(this)
         prefData = SharedPrefManager(this)
         profileDbHandler = UserProfileDbHandler(this)
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
@@ -699,38 +699,40 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     suspend fun onLogin() {
-        val handler = UserProfileDbHandler(this)
-        handler.onLogin()
-        handler.onDestroy()
-        editor.putBoolean(Constants.KEY_LOGIN, true).commit()
-        openDashboard()
+        val startTime = System.currentTimeMillis()
+        Log.d("LoginFlow", "[${startTime}] onLogin() started")
 
-        val updateUrl = "${settings.getString("serverURL", "")}"
-        val serverUrlMapper = ServerUrlMapper(this)
-        val mapping = serverUrlMapper.processUrl(updateUrl)
+        try {
+            val handlerStartTime = System.currentTimeMillis()
+            val handler = UserProfileDbHandler(this)
+            Log.d("LoginFlow", "[${System.currentTimeMillis()}] Created UserProfileDbHandler in ${System.currentTimeMillis() - handlerStartTime}ms")
 
-        CoroutineScope(Dispatchers.IO).launch {
-            val primaryAvailable = MainApplication.Companion.isServerReachable(mapping.primaryUrl)
-            val alternativeAvailable = mapping.alternativeUrl?.let { MainApplication.Companion.isServerReachable(it) } == true
+            // Launch the time-consuming operation in the background
+            // and don't wait for it to complete
+            CoroutineScope(Dispatchers.IO).launch {
+                val loginStartTime = System.currentTimeMillis()
+                handler.onLogin()
+                Log.d("LoginFlow", "[${System.currentTimeMillis()}] handler.onLogin() completed in ${System.currentTimeMillis() - loginStartTime}ms")
 
-            if (!primaryAvailable && alternativeAvailable) {
-                mapping.alternativeUrl.let { alternativeUrl ->
-                    val uri = updateUrl.toUri()
-                    val editor = settings.edit()
-
-                    serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
-                }
+                // Clean up the handler after the operation completes
+                handler.onDestroy()
+                Log.d("LoginFlow", "[${System.currentTimeMillis()}] handler.onDestroy() completed")
             }
 
-            withContext(Dispatchers.Main) {
-                startUpload("login")
-                val backgroundRealm = Realm.getDefaultInstance()
-                try {
-                    TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
-                } finally {
-                    backgroundRealm.close()
-                }
-            }
+            // Continue with the rest of your login flow immediately
+            val prefStartTime = System.currentTimeMillis()
+            editor.putBoolean(Constants.KEY_LOGIN, true).commit()
+            Log.d("LoginFlow", "[${System.currentTimeMillis()}] Saved login state to preferences in ${System.currentTimeMillis() - prefStartTime}ms")
+
+            Log.d("LoginFlow", "[${System.currentTimeMillis()}] About to call openDashboard() - ${System.currentTimeMillis() - startTime}ms since start")
+            val dashboardStartTime = System.currentTimeMillis()
+            openDashboard()
+            Log.d("LoginFlow", "[${System.currentTimeMillis()}] openDashboard() returned after ${System.currentTimeMillis() - dashboardStartTime}ms - should have started navigation")
+
+            // Continue with the rest of your code...
+        } catch (e: Exception) {
+            Log.e("LoginFlow", "[${System.currentTimeMillis()}] Exception in onLogin after ${System.currentTimeMillis() - startTime}ms: ${e.javaClass.simpleName} - ${e.message}")
+            e.printStackTrace()
         }
     }
 
@@ -1022,6 +1024,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     }
                 } else {
                     alertDialogOkay(getString(R.string.err_msg_login))
+                    Log.d("okuro", "2 login failed- name: ${userModel.name}, password: $password")
                 }
             }.setNegativeButton(R.string.cancel, null).show()
     }
