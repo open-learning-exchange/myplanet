@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.enterprises
+package org.ole.planet.myplanet.ui.team
 
 import android.app.*
 import android.content.Context
@@ -24,16 +24,14 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.*
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.ui.mymeetup.AdapterMeetup
-import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.*
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
 import java.util.*
 
-class EnterpriseCalendarFragment : BaseTeamFragment() {
+class TeamCalendarFragment : BaseTeamFragment() {
     private lateinit var fragmentEnterpriseCalendarBinding: FragmentEnterpriseCalendarBinding
     private val selectedDates: MutableList<Calendar> = mutableListOf()
     private lateinit var calendar: CalendarView
@@ -184,9 +182,13 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
                 if (markedDates.isNotEmpty()) {
                     showMeetupDialog(markedDates)
                 } else {
-                    start = clickedCalendar
-                    end = clickedCalendar
-                    showMeetupAlert()
+                    if(arguments?.getBoolean("fromLogin", false) != true){
+                        start = clickedCalendar
+                        end = clickedCalendar
+                        showMeetupAlert()
+                    } else{
+                        fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
+                    }
                 }
                 if (!selectedDates.contains(clickedCalendar)) {
                     selectedDates.add(clickedCalendar)
@@ -214,7 +216,6 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
     }
 
     private fun showMeetupDialog(meetupList: List<RealmMeetup>) {
-        println(meetupList.size)
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.meetup_dialog, null)
         val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMeetups)
         val dialogTitle = dialogView.findViewById< TextView>(R.id.tvTitle)
@@ -232,17 +233,23 @@ class EnterpriseCalendarFragment : BaseTeamFragment() {
         val dialog = AlertDialog.Builder(requireContext())
             .setView(dialogView)
             .create()
-
+        val btnAdd = dialogView.findViewById<Button>(R.id.btnadd)
+        if (arguments?.getBoolean("fromLogin", false) != true) {
+            btnAdd.visibility = View.VISIBLE
+        } else {
+            btnAdd.visibility = View.GONE
+        }
         dialogView.findViewById<Button>(R.id.btnClose).setOnClickListener {
             dialog.dismiss()
             eventDates.add(clickedCalendar)
             fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
         }
-
-        dialogView.findViewById<Button>(R.id.btnadd).setOnClickListener {
-            start = clickedCalendar
-            end = clickedCalendar
-            showMeetupAlert()
+        btnAdd.setOnClickListener {
+            if(arguments?.getBoolean("fromLogin", false) != true){
+                start = clickedCalendar
+                end = clickedCalendar
+                showMeetupAlert()
+            }
         }
 
         dialog.show()

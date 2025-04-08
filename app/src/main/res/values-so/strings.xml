@@ -1266,5 +1266,6 @@
     <string name="response">Jawaab</string>
     <string name="full_conversation_response">Jawaabta wada hadalka oo dhameystiran</string>
     <string name="add_new_event">ku dar dhacdo cusub</string>
+    <string name="none">Midna</string>
 
 </resources>
