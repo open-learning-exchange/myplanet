@@ -137,7 +137,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 if (name.isNullOrBlank()) {
                     name = profileDbHandler.userModel?.name
                 }
-                activityDashboardBinding.appBarBell.appTitleName.text = getString(R.string.planet_name, name)
+                val communityName = settings.getString("communityName", "")
+                activityDashboardBinding.appBarBell.appTitleName.text = if (user?.planetCode == "") {
+                    "${getString(R.string.planet)} $communityName"
+                } else {
+                    "${getString(R.string.planet)} ${user?.planetCode}"
+                }
             } else {
                 activityDashboardBinding.appBarBell.appTitleName.text = getString(R.string.app_project_name)
             }
@@ -880,8 +885,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 changeUX(R.string.menu_library, menuImageList[3]),
                 changeUX(R.string.menu_courses, menuImageList[4]),
                 changeUX(R.string.team, menuImageList[5]),
-                changeUX(R.string.menu_community, menuImageList[7]),
                 changeUX(R.string.enterprises, menuImageList[6]),
+                changeUX(R.string.menu_community, menuImageList[7]),
                 changeUX(R.string.menu_surveys, menuImageList[8])
             )
         }

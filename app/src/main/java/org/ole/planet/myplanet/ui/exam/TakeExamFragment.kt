@@ -74,32 +74,32 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun createSubmission() {
-        startTransaction()
-        sub = createSubmission(sub, mRealm)
-        if (!TextUtils.isEmpty(exam?.id)) {
-            sub?.parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
-                exam?.id + "@" + exam?.courseId
-            } else {
-                exam?.id
+        mRealm.executeTransaction { realm ->
+            sub = createSubmission(sub, realm)
+            if (!TextUtils.isEmpty(exam?.id)) {
+                sub?.parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
+                    "${exam?.id}@${exam?.courseId}"
+                } else {
+                    exam?.id
+                }
+            } else if (!TextUtils.isEmpty(id)) {
+                sub?.parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
+                    "$id@${exam?.courseId}"
+                } else {
+                    id
+                }
             }
-        } else if(!TextUtils.isEmpty(id)){
-            sub?.parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
-                id + "@" + exam?.courseId
-            } else {
-                id
+            sub?.userId = user?.id
+            sub?.status = "pending"
+            sub?.type = type
+            sub?.startTime = Date().time
+            if (sub?.answers != null) {
+                currentIndex = sub?.answers?.size ?: 0
+            }
+            if (sub?.answers?.size == questions?.size && sub?.type == "survey") {
+                currentIndex = 0
             }
         }
-        sub?.userId = user?.id
-        sub?.status = "pending"
-        sub?.type = type
-        sub?.startTime = Date().time
-        if (sub?.answers != null) {
-            currentIndex = sub?.answers?.size ?: 0
-        }
-        if (sub?.answers?.size == questions?.size && sub?.type == "survey") {
-            currentIndex = 0
-        }
-        mRealm.commitTransaction()
     }
 
     override fun startExam(question: RealmExamQuestion?) {
@@ -228,36 +228,36 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun updateAnsDb(): Boolean {
-        val flag: Boolean
-        startTransaction()
-        sub?.status = if (currentIndex == (questions?.size ?: 0) - 1) {
-            if (sub?.type == "survey") {
-                "complete"
+        var flag = false
+        mRealm.executeTransaction { realm ->
+            sub?.status = if (currentIndex == (questions?.size ?: 0) - 1) {
+                if (sub?.type == "survey") {
+                    "complete"
+                } else {
+                    "requires grading"
+                }
             } else {
-                "requires grading"
+                "pending"
             }
-        } else {
-            "pending"
+            val list: RealmList<RealmAnswer>? = sub?.answers
+            val answer = createAnswer(list)
+            val que = questions?.get(currentIndex)?.let { mRealm.copyFromRealm(it) }
+            answer?.questionId = que?.id
+            answer?.value = ans
+            answer?.setValueChoices(listAns, isLastAnsvalid)
+            answer?.submissionId = sub?.id
+            submitId = answer?.submissionId ?: ""
+            if ((que?.getCorrectChoice()?.size ?: 0) == 0) {
+                answer?.grade = 0
+                answer?.mistakes = 0
+                flag = true
+            } else {
+                flag = checkCorrectAns(answer, que)
+            }
+            removeOldAnswer(list)
+            list?.add(currentIndex, answer)
+            sub?.answers = list
         }
-        val list: RealmList<RealmAnswer>? = sub?.answers
-        val answer = createAnswer(list)
-        val que = questions?.get(currentIndex)?.let { mRealm.copyFromRealm(it) }
-        answer?.questionId = que?.id
-        answer?.value = ans
-        answer?.setValueChoices(listAns, isLastAnsvalid)
-        answer?.submissionId = sub?.id
-        submitId = answer?.submissionId ?: ""
-        if ((que?.getCorrectChoice()?.size ?: 0) == 0) {
-            answer?.grade = 0
-            answer?.mistakes = 0
-            flag = true
-        } else {
-            flag = checkCorrectAns(answer, que)
-        }
-        removeOldAnswer(list)
-        list?.add(currentIndex, answer)
-        sub?.answers = list
-        mRealm.commitTransaction()
         return flag
     }
 
@@ -293,12 +293,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         ar1?.let { Arrays.sort(it) }
         ar2?.let { Arrays.sort(it) }
         return ar1.contentEquals(ar2)
-    }
-
-    private fun startTransaction() {
-        if (!mRealm.isInTransaction) {
-            mRealm.beginTransaction()
-        }
     }
 
     override fun onDestroy() {

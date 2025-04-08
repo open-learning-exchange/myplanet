@@ -74,10 +74,8 @@ open class RealmTeamLog : RealmObject() {
 
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
-            var tag = mRealm.where(RealmTeamLog::class.java).equalTo("id", JsonUtils.getString("_id", act)).findFirst()
+            var tag = mRealm.where(RealmTeamLog::class.java)
+                .equalTo("id", JsonUtils.getString("_id", act)).findFirst()
             if (tag == null) {
                 tag = mRealm.createObject(RealmTeamLog::class.java, JsonUtils.getString("_id", act))
             }
@@ -92,7 +90,6 @@ open class RealmTeamLog : RealmObject() {
                 tag.teamId = JsonUtils.getString("teamId", act)
                 tag.teamType = JsonUtils.getString("teamType", act)
             }
-            mRealm.commitTransaction()
 
             val csvRow = arrayOf(
                 JsonUtils.getString("_id", act),

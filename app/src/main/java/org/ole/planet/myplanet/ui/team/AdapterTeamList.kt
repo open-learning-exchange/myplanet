@@ -4,12 +4,14 @@ import android.content.Context
 import android.content.DialogInterface
 import android.graphics.Color
 import android.graphics.PorterDuff
+import android.graphics.Typeface
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
@@ -91,10 +93,15 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
     }
 
     private fun ItemTeamListBinding.showActionButton(isMyTeam: Boolean, team: RealmMyTeam, user: RealmUserModel?) {
+        if (isMyTeam) {
+            name.setTypeface(null, Typeface.BOLD)
+        } else {
+            name.setTypeface(null, Typeface.NORMAL)
+        }
         when {
             user?.isGuest() == true -> joinLeave.visibility = View.GONE
 
-            isMyTeam && RealmMyTeam.isTeamLeader(team.teamId, user?.id, mRealm) -> {
+            isMyTeam && RealmMyTeam.getTeamLeader(team._id, mRealm) != user?.id -> {
                 joinLeave.apply {
                     contentDescription = "${context.getString(R.string.leave)} ${team.name}"
                     visibility = View.VISIBLE
@@ -138,7 +145,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
 
     private fun handleJoinLeaveClick(isMyTeam: Boolean, team: RealmMyTeam, user: RealmUserModel?, position: Int) {
         if (isMyTeam) {
-            if (RealmMyTeam.isTeamLeader(team.teamId, user?.id, mRealm)) {
+            if (RealmMyTeam.isTeamLeader(team._id, user?.id, mRealm)) {
                 teamListener?.onEditTeam(team)
             } else {
                 AlertDialog.Builder(context, R.style.CustomAlertDialog).setMessage(R.string.confirm_exit)
