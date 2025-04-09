@@ -53,6 +53,8 @@ import retrofit2.Response
 import java.io.IOException
 import java.util.concurrent.Executors
 import kotlin.math.min
+import androidx.core.net.toUri
+import androidx.core.content.edit
 
 class Service(private val context: Context) {
     private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -114,10 +116,14 @@ class Service(private val context: Context) {
 
         retrofitInterface?.checkVersion(Utilities.getUpdateUrl(settings))?.enqueue(object : Callback<MyPlanet?> {
             override fun onResponse(call: Call<MyPlanet?>, response: Response<MyPlanet?>) {
-                preferences.edit().putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context)).apply()
+                preferences.edit {
+                    putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context))
+                }
                 if (response.body() != null) {
                     val p = response.body()
-                    preferences.edit().putString("versionDetail", Gson().toJson(response.body())).apply()
+                    preferences.edit {
+                        putString("versionDetail", Gson().toJson(response.body()))
+                    }
                     retrofitInterface.getApkVersion(Utilities.getApkVersionUrl(settings)).enqueue(object : Callback<ResponseBody> {
                         override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                             val responses: String?
@@ -180,7 +186,7 @@ class Service(private val context: Context) {
 
             if (!primaryAvailable && alternativeAvailable) {
                 mapping.alternativeUrl.let { alternativeUrl ->
-                    val uri = Uri.parse(updateUrl)
+                    val uri = updateUrl.toUri()
                     val editor = preferences.edit()
 
                     serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, preferences)
@@ -209,6 +215,21 @@ class Service(private val context: Context) {
     fun becomeMember(realm: Realm, obj: JsonObject, callback: CreateUserCallback) {
         isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
+                val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                if (isUserExists(realm, obj["name"].asString)) {
+                    callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
+                    return
+                }
+                realm.beginTransaction()
+                val model = populateUsersTable(obj, realm, settings)
+                val keyString = generateKey()
+                val iv = generateIv()
+                if (model != null) {
+                    model.key = keyString
+                    model.iv = iv
+                }
+                realm.commitTransaction()
+
                 retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}")?.enqueue(object : Callback<JsonObject> {
                     override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
                         if (response.body() != null && response.body()?.has("_id") == true) {
@@ -216,23 +237,22 @@ class Service(private val context: Context) {
                         } else {
                             retrofitInterface.putDoc(null, "application/json", "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
                                 override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                                    if (response.body() != null && response.body()!!.has("id")) {
+                                    if (response.body() != null && response.body()?.has("id") == true) {
                                         uploadToShelf(obj)
-                                        saveUserToDb(realm, response.body()!!.get("id").asString, obj, callback)
                                     } else {
-                                        callback.onSuccess(context.getString(R.string.unable_to_create_user))
+                                        callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                                     }
                                 }
 
                                 override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                                    callback.onSuccess(context.getString(R.string.unable_to_create_user))
+                                    callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                                 }
                             })
                         }
                     }
 
                     override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                        callback.onSuccess(context.getString(R.string.unable_to_create_user))
+                        callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                     }
                 })
             }
@@ -264,48 +284,6 @@ class Service(private val context: Context) {
 
             override fun onFailure(call: Call<JsonObject?>, t: Throwable) {}
         })
-    }
-
-    private fun saveUserToDb(realm: Realm, id: String, obj: JsonObject, callback: CreateUserCallback) {
-        val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        realm.executeTransactionAsync({ realm1: Realm? ->
-            try {
-                val res = retrofitInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/" + id)?.execute()
-                if (res?.body() != null) {
-                    val model = populateUsersTable(res.body(), realm1, settings)
-                    if (model != null) {
-                        UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
-                    }
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }, {
-            callback.onSuccess(context.getString(R.string.user_created_successfully))
-            isNetworkConnectedFlow.onEach { isConnected ->
-                if (isConnected) {
-                    val serverUrl = settings.getString("serverURL", "")
-                    if (!serverUrl.isNullOrEmpty()) {
-                        serviceScope.launch {
-                            val canReachServer = withContext(Dispatchers.IO) {
-                                isServerReachable(serverUrl)
-                            }
-                            if (canReachServer) {
-                                if (context is ProcessUserDataActivity) {
-                                    context.runOnUiThread {
-                                        context.startUpload("becomeMember")
-                                    }
-                                }
-                                TransactionSyncManager.syncDb(realm, "tablet_users")
-                            }
-                        }
-                    }
-                }
-            }.launchIn(serviceScope)
-        }) { error: Throwable ->
-            error.printStackTrace()
-            callback.onSuccess(context.getString(R.string.unable_to_save_user_please_sync))
-        }
     }
 
     fun syncPlanetServers(callback: SuccessListener) {
@@ -377,7 +355,7 @@ class Service(private val context: Context) {
                                     val currentVersion = context.getString(R.string.app_version)
 
                                     if (minApkVersion != null && isVersionAllowed(currentVersion, minApkVersion)) {
-                                        val uri = Uri.parse(currentUrl)
+                                        val uri = currentUrl.toUri()
                                         val couchdbURL = if (currentUrl.contains("@")) {
                                             getUserInfo(uri)
                                             currentUrl
@@ -404,7 +382,9 @@ class Service(private val context: Context) {
                                                 val parentCode = doc.getAsJsonPrimitive("parentCode").asString
 
                                                 withContext(Dispatchers.IO) {
-                                                    preferences.edit().putString("parentCode", parentCode).apply()
+                                                    preferences.edit {
+                                                        putString("parentCode", parentCode)
+                                                    }
                                                 }
 
                                                 if (doc.has("models")) {
@@ -412,7 +392,9 @@ class Service(private val context: Context) {
                                                         .associate { it.key to it.value.asString }
 
                                                     withContext(Dispatchers.IO) {
-                                                        preferences.edit().putString("ai_models", Gson().toJson(modelsMap)).apply()
+                                                        preferences.edit {
+                                                            putString("ai_models", Gson().toJson(modelsMap))
+                                                        }
                                                     }
                                                 }
                                                 return@async UrlCheckResult.Success(id, code, currentUrl)

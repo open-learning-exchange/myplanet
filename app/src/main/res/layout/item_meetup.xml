@@ -7,6 +7,7 @@
     android:layout_marginTop="8dp"
     android:layout_marginEnd="8dp"
     android:layout_marginBottom="4dp"
+    app:cardBackgroundColor="@color/card_bg"
     app:cardCornerRadius="@dimen/_10dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -28,14 +29,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/title_colon"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tvTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/md_black_1000" />
+                android:textColor="@color/daynight_textColor" />
         </LinearLayout>
 
         <LinearLayout
@@ -52,70 +53,64 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/description_colon"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tvDescription"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/md_black_1000" />
+                android:textColor="@color/daynight_textColor" />
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/dates"
+            android:id="@+id/ltDateFrom"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:layout_height="match_parent"
             android:padding="4dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/ltDescription"
-            android:baselineAligned="false">
+            app:layout_constraintTop_toBottomOf="@+id/ltDescription">
 
-            <LinearLayout
-                android:id="@+id/ltDateFrom"
+            <TextView
+                android:id="@+id/date"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1">
+                android:text="@string/date_from_colon"
+                android:textColor="@color/daynight_textColor"
+                android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/date"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/date_from_colon"
-                    android:textColor="@color/md_black_1000"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvDateFrom"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/md_black_1000" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/ltDateTo"
+            <TextView
+                android:id="@+id/tvDateFrom"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1">
-
-                <TextView
-                    android:id="@+id/dateTo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/date_to_colon"
-                    android:textColor="@color/md_black_1000"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvDateTo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/md_black_1000" />
-            </LinearLayout>
-
+                android:textColor="@color/daynight_textColor" />
         </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/ltDateTo"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="4dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/ltDateFrom">
+
+            <TextView
+                android:id="@+id/dateTo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/date_to_colon"
+                android:textColor="@color/daynight_textColor"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvDateTo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/daynight_textColor" />
+        </LinearLayout>
+
 
         <LinearLayout
             android:id="@+id/ltLocation"
@@ -124,21 +119,21 @@
             android:padding="4dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/dates">
+            app:layout_constraintTop_toBottomOf="@+id/ltDateTo">
 
             <TextView
                 android:id="@+id/location"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/location_colon"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tvLocation"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/md_black_1000" />
+                android:textColor="@color/daynight_textColor" />
         </LinearLayout>
 
         <LinearLayout
@@ -155,14 +150,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/recurring_colon"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tvRecurring"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/md_black_1000" />
+                android:textColor="@color/daynight_textColor" />
         </LinearLayout>
 
         <LinearLayout
@@ -179,14 +174,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/created_by_colon"
-                android:textColor="@color/md_black_1000"
+                android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tvCreator"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/md_black_1000" />
+                android:textColor="@color/daynight_textColor" />
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>

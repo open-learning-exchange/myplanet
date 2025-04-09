@@ -13,7 +13,7 @@
     <string name="course_in_progress">Ingresa al curso %1$s completalo (%2$d de %3$d hecho)</string>
     <string name="course_not_started">%1$s no iniciado</string>
     <string name="app_name">My Planet</string>
-    <string name="planet">Planeta</string>
+    <string name="planet">Planet</string>
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">configuración</string>
     <string name="hint_name">Nombre</string>
@@ -190,7 +190,7 @@
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">mostrando la respuesta de:</string>
     <string name="open_date">Fecha de apertura</string>
-    <string name="my_survey">miEncuesta</string>
+    <string name="my_survey">mySurveys</string>
     <string name="cannot_remove_user">No se pudo eliminar al usuario</string>
     <string name="no_members_task">No hay miembros del equipo presentes para asignar tareas</string>
     <string name="no_member_selected">No se seleccionó ningún miembro. Por favor, inténtalo de nuevo</string>
@@ -340,7 +340,7 @@
     <string name="remove">Eliminar</string>
     <string name="make_leader">Asignar como líder</string>
     <string name="mission"><![CDATA[Misión y Servicios]]></string>
-    <string name="team">Equipo</string>
+    <string name="team">Equipos</string>
     <string name="applicants">Solicitantes</string>
     <string name="finances">Finanzas</string>
     <string name="messages">Mensajes</string>
@@ -435,8 +435,8 @@
     </string-array>
 
     <string-array name="sort_by_date">
-        <item>Ordenar por fecha - Asc</item>
         <item>Ordenar por fecha - Desc</item>
+        <item>Ordenar por fecha - Asc</item>
         <item>Ordenar por título</item>
     </string-array>
 
@@ -592,7 +592,7 @@
     <string name="level_colon">Nivel: %s</string>
     <string name="method">Método:</string>
     <string name="number_of_exams">Número de exámenes:</string>
-    <string name="description_colon">Descripción:</string>
+    <string name="description_colon">Descripción:&#160;</string>
     <string name="download_resources">Descargar Recursos</string>
     <string name="take_test">Realizar Examen [%d]</string>
     <string name="search">Buscar</string>
@@ -706,6 +706,7 @@
     <string name="description_is_required">Se requiere una descripción</string>
     <string name="start_time_is_required">Se requiere la hora de inicio</string>
     <string name="meetup_added">Encuentro agregado</string>
+    <string name="meetup_not_added">Encuentro no agregada</string>
     <string name="add_transaction">Agregar Transacción</string>
     <string name="note_is_required">Se requiere una nota</string>
     <string name="amount_is_required">Se requiere una cantidad</string>
@@ -1065,12 +1066,12 @@
     <string name="compulsory_phone_number">número de teléfono requerido</string>
     <string name="compulsory_date_of_birth">fecha de nacimiento requerida</string>
     <string name="gender_not_picked">género no seleccionado</string>
-    <string name="title_colon">título:</string>
-    <string name="date_from_colon">fecha desde:</string>
-    <string name="date_to_colon">fecha hasta:</string>
-    <string name="location_colon">ubicación:</string>
-    <string name="recurring_colon">recurrente:</string>
-    <string name="created_by_colon">creado por:</string>
+    <string name="title_colon">título:&#160;</string>
+    <string name="date_from_colon">fecha desde:&#160;</string>
+    <string name="date_to_colon">fecha hasta:&#160;</string>
+    <string name="location_colon">ubicación:&#160;</string>
+    <string name="recurring_colon">recurrente:&#160;</string>
+    <string name="created_by_colon">creado por:&#160;</string>
     <string name="failed_to_get_configuration_id">No se pudo obtener el ID de configuración. Por favor, contacte al administrador</string>
     <string name="you_want_to_connect_to_a_different_server">Desea conectarse a un servidor diferente. Borre los datos de la aplicación para continuar</string>
     <string name="are_you_sure_you_want_to_clear_data">¿Estás seguro de que deseas borrar todos los datos?</string>
@@ -1256,7 +1257,6 @@
     <string name="version_not_found">Versión no encontrada</string>
     <string name="connection_failed">¡Conexión fallida!</string>
     <string name="unable_to_create_user_user_already_exists">No se puede crear el usuario, el usuario ya existe.</string>
-    <string name="unable_to_create_user">No se puede crear el usuario.</string>
     <string name="not_connect_to_planet_created_user_offline">No conectado al planeta, usuario creado sin conexión.</string>
     <string name="user_created_successfully">Usuario creado con éxito.</string>
     <string name="unable_to_save_user_please_sync">No se puede guardar el usuario, por favor sincronice.</string>
@@ -1265,6 +1265,8 @@
     <string name="no_resources_to_download">No hay recursos para descargar</string>
     <string name="response">Respuesta</string>
     <string name="full_conversation_response">Respuesta completa de la conversación</string>
+    <string name="add_new_event">agregar nuevo evento</string>
+    <string name="none">Ninguno</string>
     <string name="remind_later">Recordar más tarde</string>
     <string name="remind_me_later">Recuérdame más tarde</string>
     <string name="remind_me_in">Recuérdame en:</string>

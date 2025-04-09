@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.res.Configuration
 import androidx.preference.PreferenceManager
 import java.util.Locale
+import androidx.core.content.edit
 
 object LocaleHelper {
     private const val SELECTED_LANGUAGE = "Locale.Helper.Selected.Language"
@@ -38,6 +39,6 @@ object LocaleHelper {
 
     private fun persist(context: Context, language: String) {
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-        preferences.edit().putString(SELECTED_LANGUAGE, language).apply()
+        preferences.edit { putString(SELECTED_LANGUAGE, language) }
     }
 }

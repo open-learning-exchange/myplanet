@@ -31,6 +31,7 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
     private var listener: OnHomeItemClickListener? = null
     private val adoptedSurveyIds = mutableSetOf<String>()
     private var isTitleAscending = true
+    private var activeFilter = 0
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -45,8 +46,23 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
         diffResult.dispatchUpdatesTo(this)
     }
 
-    private fun SortSurveyList(isAscend: Boolean){
-        val list = examList.toList()
+    fun updateDataAfterSearch(newList: List<RealmStepExam>) {
+        if(examList.isEmpty()){
+            examList = newList
+        } else{
+            if(activeFilter == 0){
+                SortSurveyList(false, newList)
+            } else if(activeFilter == 1) {
+                SortSurveyList(true, newList)
+            } else{
+                SortSurveyListByName(isTitleAscending, newList)
+            }
+        }
+        notifyDataSetChanged()
+    }
+
+    private fun SortSurveyList(isAscend: Boolean, list: List<RealmStepExam> = examList){
+        val list = list.toList()
         Collections.sort(list) { survey1, survey2 ->
             if (isAscend) {
                 survey1?.createdDate!!.compareTo(survey2?.createdDate!!)
@@ -58,23 +74,21 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
     }
 
     fun SortByDate(isAscend: Boolean){
+        activeFilter = if (isAscend) 1 else 0
         SortSurveyList(isAscend)
         notifyDataSetChanged()
     }
 
-    private fun SortSurveyListByName(isAscend: Boolean){
-        val list = examList.toList()
-        Collections.sort(list) { survey1, survey2 ->
-            if (isAscend) {
-                survey1?.name!!.compareTo(survey2?.name!!)
-            } else {
-                survey2?.name!!.compareTo(survey1?.name!!)
-            }
+    private fun SortSurveyListByName(isAscend: Boolean, list: List<RealmStepExam> = examList){
+        examList = if (isAscend) {
+            list.sortedBy { it.name?.lowercase() }
+        } else {
+            list.sortedByDescending { it.name?.lowercase() }
         }
-        examList = list
     }
 
     fun toggleTitleSortOrder() {
+        activeFilter = 2
         isTitleAscending = !isTitleAscending
         SortSurveyListByName(isTitleAscending)
         notifyDataSetChanged()

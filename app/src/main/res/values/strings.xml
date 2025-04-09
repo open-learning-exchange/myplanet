@@ -190,7 +190,7 @@
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">Showing reply of:</string>
     <string name="open_date">Open Date</string>
-    <string name="my_survey">mySurvey</string>
+    <string name="my_survey">mySurveys</string>
     <string name="cannot_remove_user">User could not be removed</string>
     <string name="no_members_task">No Team members present to assign tasks</string>
     <string name="no_member_selected">No member selected. Please try again</string>
@@ -340,7 +340,7 @@
     <string name="remove">Remove</string>
     <string name="make_leader">Make Leader</string>
     <string name="mission"><![CDATA[Mission & Services]]></string>
-    <string name="team">Team</string>
+    <string name="team">Teams</string>
     <string name="applicants">Applicants</string>
     <string name="finances">Finances</string>
     <string name="messages">messages</string>
@@ -435,8 +435,8 @@
     </string-array>
 
     <string-array name="sort_by_date">
-        <item>Order By Date - Asc</item>
         <item>Order By Date - Desc</item>
+        <item>Order By Date - Asc</item>
         <item>Order By Title</item>
     </string-array>
 
@@ -592,7 +592,7 @@
     <string name="level_colon">Level: %s</string>
     <string name="method">Method:</string>
     <string name="number_of_exams">Number of exams:</string>
-    <string name="description_colon">Description:</string>
+    <string name="description_colon">Description:&#160;</string>
     <string name="download_resources">download Resources</string>
     <string name="take_test">take test [%d]</string>
     <string name="search">search</string>
@@ -706,6 +706,7 @@
     <string name="description_is_required">Description is required</string>
     <string name="start_time_is_required">Start time is required</string>
     <string name="meetup_added">Meetup added</string>
+    <string name="meetup_not_added">Meetup not added</string>
     <string name="add_transaction">Add Transaction</string>
     <string name="note_is_required">Note is required</string>
     <string name="amount_is_required">Amount is required</string>
@@ -1065,12 +1066,12 @@
     <string name="compulsory_phone_number">phone number is required</string>
     <string name="compulsory_date_of_birth">date of birth is required</string>
     <string name="gender_not_picked">gender not picked</string>
-    <string name="title_colon">title:</string>
-    <string name="date_from_colon">date from:</string>
-    <string name="date_to_colon">date to:</string>
-    <string name="location_colon">location:</string>
-    <string name="recurring_colon">recurring:</string>
-    <string name="created_by_colon">created by:</string>
+    <string name="title_colon">title:&#160;</string>
+    <string name="date_from_colon">date from:&#160;</string>
+    <string name="date_to_colon">date to:&#160;</string>
+    <string name="location_colon">location:&#160;</string>
+    <string name="recurring_colon">recurring:&#160;</string>
+    <string name="created_by_colon">created by:&#160;</string>
     <string name="failed_to_get_configuration_id">failed to get configuration id. kindly contact admin</string>
     <string name="you_want_to_connect_to_a_different_server">Are you sure you want to change the configuration? This action will clear the app data.</string>
     <string name="are_you_sure_you_want_to_clear_data">are you sure you want to clear all data?</string>
@@ -1256,7 +1257,6 @@
     <string name="version_not_found">Version not found.</string>
     <string name="connection_failed">Connection failed!</string>
     <string name="unable_to_create_user_user_already_exists">Unable to create user, user already exists.</string>
-    <string name="unable_to_create_user">Unable to create user, user already exists.</string>
     <string name="not_connect_to_planet_created_user_offline">Not connected to planet, created user offline.</string>
     <string name="user_created_successfully">User created successfully.</string>
     <string name="unable_to_save_user_please_sync">Unable to save user, please sync.</string>
@@ -1265,6 +1265,8 @@
     <string name="no_resources_to_download">No resources to download</string>
     <string name="response">Response</string>
     <string name="full_conversation_response">Full conversation response</string>
+    <string name="add_new_event">add new event</string>
+    <string name="none">None</string>
     <string name="remind_later">Remind Later</string>
     <string name="remind_me_later">Remind Me Later</string>
     <string name="remind_me_in">Remind me in:</string>
