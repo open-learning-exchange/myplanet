@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.OnCompletedListener
+import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
@@ -65,12 +66,9 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             deadline?.set(Calendar.HOUR_OF_DAY, hourOfDay)
             deadline?.set(Calendar.MINUTE, minute)
             if (datePicker != null) {
-                val localeFormatter = SimpleDateFormat.getDateTimeInstance(
-                    SimpleDateFormat.MEDIUM,
-                    SimpleDateFormat.SHORT,
-                    Locale.getDefault()
-                )
-                datePicker?.text = deadline?.time?.let { localeFormatter.format(it) }
+                datePicker?.text = deadline?.timeInMillis?.let {
+                    formatDate(it, "MMM d, yyy hh:mm a")
+                }
             }
         }, deadline!![Calendar.HOUR_OF_DAY], deadline!![Calendar.MINUTE], true)
         timePickerDialog.show()
