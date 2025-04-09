@@ -125,7 +125,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
 
         suspend fun isServerReachable(urlString: String): Boolean {
-            val startTime = System.currentTimeMillis()
             val serverUrlMapper = ServerUrlMapper(context)
             val mapping = serverUrlMapper.processUrl(urlString)
 
@@ -133,9 +132,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             mapping.alternativeUrl?.let { urlsToTry.add(it) }
 
             return try {
-                if (urlString.isBlank()) {
-                    return false
-                }
+                if (urlString.isBlank()) return false
 
                 val formattedUrl = if (!urlString.startsWith("http://") && !urlString.startsWith("https://")) {
                     "http://$urlString"
@@ -147,20 +144,15 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 val connection = withContext(Dispatchers.IO) {
                     url.openConnection()
                 } as HttpURLConnection
-
                 connection.requestMethod = "GET"
                 connection.connectTimeout = 5000
                 connection.readTimeout = 5000
-
                 withContext(Dispatchers.IO) {
                     connection.connect()
                 }
-
                 val responseCode = connection.responseCode
                 connection.disconnect()
-                val result = responseCode in 200..299
-
-                result
+                responseCode in 200..299
             } catch (e: Exception) {
                 e.printStackTrace()
                 false

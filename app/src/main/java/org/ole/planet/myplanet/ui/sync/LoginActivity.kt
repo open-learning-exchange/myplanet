@@ -110,7 +110,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 activityLoginBinding.inputName.setText(username)
                 activityLoginBinding.inputPassword.setText(password)
                 loginAttemptCount = 0
-
                 attemptAutoLogin(username, password)
             }
         }

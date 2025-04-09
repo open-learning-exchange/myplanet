@@ -252,7 +252,6 @@ class UploadToShelfService(context: Context) {
             val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
             val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
             val apiInterface = client?.create(ApiInterface::class.java)
-
             try {
                 val response = apiInterface?.getJsonObject(header, "${Utilities.getUrl()}/$table/_security")?.execute()
                 if (response?.isSuccessful == true && response.body() != null) {

@@ -245,13 +245,11 @@ open class RealmUserModel : RealmObject() {
                 _rev = JsonUtils.getString("_rev", jsonDoc)
                 _id = userId
                 name = JsonUtils.getString("name", jsonDoc)
-
                 val roles = RealmList<String?>()
                 for (i in 0 until rolesArray.size()) {
                     roles.add(JsonUtils.getString(rolesArray, i))
                 }
                 setRoles(roles)
-
                 userAdmin = JsonUtils.getBoolean("isUserAdmin", jsonDoc)
                 joinDate = JsonUtils.getLong("joinDate", jsonDoc)
                 firstName = JsonUtils.getString("firstName", jsonDoc)
@@ -260,11 +258,9 @@ open class RealmUserModel : RealmObject() {
                 planetCode = utilsPlanetCode
                 parentCode = JsonUtils.getString("parentCode", jsonDoc)
                 email = JsonUtils.getString("email", jsonDoc)
-
                 if (_id?.isEmpty() == true) {
                     password = JsonUtils.getString("password", jsonDoc)
                 }
-
                 phoneNumber = JsonUtils.getString("phoneNumber", jsonDoc)
                 password_scheme = JsonUtils.getString("password_scheme", jsonDoc)
                 iterations = JsonUtils.getString("iterations", jsonDoc)
@@ -320,7 +316,6 @@ open class RealmUserModel : RealmObject() {
         fun userWriteCsv() {
             writeCsv("${context.getExternalFilesDir(null)}/ole/userData.csv", userDataList)
         }
-
 
         fun updateUserDetails(realm: Realm, userId: String?, firstName: String?, lastName: String?,
         middleName: String?, email: String?, phoneNumber: String?, level: String?, language: String?,

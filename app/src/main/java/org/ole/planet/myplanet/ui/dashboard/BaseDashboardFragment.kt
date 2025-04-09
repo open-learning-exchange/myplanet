@@ -98,7 +98,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         offlineActivitiesResults = mRealm.where(RealmOfflineActivity::class.java)
             .equalTo("userName", profileDbHandler.userModel?.name).equalTo("type", KEY_LOGIN)
             .findAllAsync()
-
         v.findViewById<TextView>(R.id.txtRole).text = getString(R.string.user_role, model?.getRoleAsString())
         v.findViewById<TextView>(R.id.txtFullName).text = getString(R.string.user_name, fullName, profileDbHandler.offlineVisits)
     }
@@ -252,7 +251,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     private fun setUpMyLife(userId: String?) {
         if (isSettingUpMyLife) return
-
         isSettingUpMyLife = true
         try {
             val realm = DatabaseService(requireContext()).realmInstance
