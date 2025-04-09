@@ -11,7 +11,6 @@ import android.graphics.PorterDuff
 import android.net.Uri
 import android.os.Build
 import android.text.TextUtils
-import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
@@ -103,29 +102,13 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     }
 
     fun openDashboard() {
-        val startTime = System.currentTimeMillis()
-        Log.d("LoginFlow", "[${startTime}] openDashboard() - Creating dashboard intent")
-
         if (customProgressDialog.isShowing()) {
             customProgressDialog.dismiss()
         }
-
-        val intentCreationTime = System.currentTimeMillis()
         val dashboard = Intent(applicationContext, DashboardActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-        Log.d("LoginFlow", "[${System.currentTimeMillis()}] Intent created in ${System.currentTimeMillis() - intentCreationTime}ms")
-
-        Log.d("LoginFlow", "[${System.currentTimeMillis()}] About to startActivity(dashboard)")
-        val activityStartTime = System.currentTimeMillis()
         startActivity(dashboard)
-        Log.d("LoginFlow", "[${System.currentTimeMillis()}] startActivity returned in ${System.currentTimeMillis() - activityStartTime}ms")
-
-        Log.d("LoginFlow", "[${System.currentTimeMillis()}] About to call finish()")
-        val finishStartTime = System.currentTimeMillis()
         finish()
-        Log.d("LoginFlow", "[${System.currentTimeMillis()}] finish() returned in ${System.currentTimeMillis() - finishStartTime}ms")
-
-        Log.d("LoginFlow", "[${System.currentTimeMillis()}] openDashboard() complete in ${System.currentTimeMillis() - startTime}ms")
     }
 
     private fun requestFocus(view: View) {

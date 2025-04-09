@@ -4,7 +4,6 @@ import android.app.DatePickerDialog
 import android.content.Intent
 import android.graphics.Typeface
 import android.text.TextUtils
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.AdapterView
@@ -15,14 +14,10 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import io.realm.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.callback.SyncListener
@@ -100,10 +95,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             imageView.setImageResource(R.drawable.profile)
         }
 
-        // Replace transaction with async query
         offlineActivitiesResults = mRealm.where(RealmOfflineActivity::class.java)
-            .equalTo("userName", profileDbHandler.userModel?.name)
-            .equalTo("type", KEY_LOGIN)
+            .equalTo("userName", profileDbHandler.userModel?.name).equalTo("type", KEY_LOGIN)
             .findAllAsync()
 
         v.findViewById<TextView>(R.id.txtRole).text = getString(R.string.user_role, model?.getRoleAsString())
@@ -278,22 +271,19 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
                         weight++
                     }
                 }, {
-                    // Success callback
                     isSettingUpMyLife = false
                     activity?.runOnUiThread {
                         updateMyLifeUI()
                     }
                 }, { error ->
-                    // Failure callback
                     isSettingUpMyLife = false
-                    Log.e("RealmError", "Error setting up MyLife: ${error.message}")
                 })
             } else {
                 isSettingUpMyLife = false
             }
         } catch (e: Exception) {
+            e.printStackTrace()
             isSettingUpMyLife = false
-            Log.e("RealmError", "Exception in setUpMyLife: ${e.message}")
         }
     }
 
@@ -313,7 +303,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     override fun onDestroy() {
         super.onDestroy()
-//        profileDbHandler.onDestroy()
         if (::myCoursesResults.isInitialized) {
             myCoursesResults.removeChangeListener(myCoursesChangeListener)
         }
@@ -361,7 +350,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         initializeFlexBoxView(view, R.id.flexboxLayoutMeetups, RealmMeetup::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutMyLife, RealmMyLife::class.java)
 
-        // Use findAllAsync instead of executeTransaction
         myCoursesResults = mRealm.where(RealmMyCourse::class.java)
             .equalTo("userId", settings?.getString("userId", "--"))
             .findAllAsync()

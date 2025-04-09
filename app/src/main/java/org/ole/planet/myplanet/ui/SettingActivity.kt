@@ -238,13 +238,6 @@ class SettingActivity : AppCompatActivity() {
             }
         }
 
-//        override fun onDestroy() {
-//            super.onDestroy()
-//            if (this::profileDbHandler.isInitialized) {
-//                profileDbHandler.onDestroy()
-//            }
-//        }
-
         companion object {
             fun darkMode(context: Context) {
                 val options = arrayOf(context.getString(R.string.dark_mode_off), context.getString(R.string.dark_mode_on),context.getString(R.string.dark_mode_follow_system))

@@ -10,7 +10,6 @@ import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
-import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -126,9 +125,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
 
         suspend fun isServerReachable(urlString: String): Boolean {
-            Log.d("PerformanceLog", "[IS_SERVER_REACHABLE_START: $urlString] Time: ${System.currentTimeMillis()}")
             val startTime = System.currentTimeMillis()
-
             val serverUrlMapper = ServerUrlMapper(context)
             val mapping = serverUrlMapper.processUrl(urlString)
 
@@ -137,7 +134,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
             return try {
                 if (urlString.isBlank()) {
-                    Log.d("PerformanceLog", "[IS_SERVER_REACHABLE_BLANK_URL: $urlString] Time: ${System.currentTimeMillis()}")
                     return false
                 }
 
@@ -147,34 +143,25 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                     urlString
                 }
 
-                Log.d("PerformanceLog", "[BEFORE_URL_CONNECTION: $formattedUrl] Time: ${System.currentTimeMillis()}")
                 val url = URL(formattedUrl)
                 val connection = withContext(Dispatchers.IO) {
                     url.openConnection()
                 } as HttpURLConnection
 
-                Log.d("PerformanceLog", "[AFTER_URL_CONNECTION: $formattedUrl] Time: ${System.currentTimeMillis()}")
                 connection.requestMethod = "GET"
                 connection.connectTimeout = 5000
                 connection.readTimeout = 5000
 
-                Log.d("PerformanceLog", "[BEFORE_CONNECT: $formattedUrl] Time: ${System.currentTimeMillis()}")
                 withContext(Dispatchers.IO) {
                     connection.connect()
                 }
-                Log.d("PerformanceLog", "[AFTER_CONNECT: $formattedUrl] Time: ${System.currentTimeMillis()}")
 
                 val responseCode = connection.responseCode
-                Log.d("PerformanceLog", "[GOT_RESPONSE_CODE: $formattedUrl] Code: $responseCode, Time: ${System.currentTimeMillis()}")
-
                 connection.disconnect()
                 val result = responseCode in 200..299
 
-                Log.d("PerformanceLog", "[IS_SERVER_REACHABLE_END: $urlString] Time: ${System.currentTimeMillis()}, Duration: ${System.currentTimeMillis() - startTime} ms, Result: $result")
                 result
             } catch (e: Exception) {
-                val endTime = System.currentTimeMillis()
-                Log.d("PerformanceLog", "[IS_SERVER_REACHABLE_ERROR: $urlString] Time: $endTime, Duration: ${endTime - startTime} ms, Error: ${e.javaClass.simpleName}: ${e.message}")
                 e.printStackTrace()
                 false
             }
@@ -239,7 +226,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
                 applicationScope.launch {
                     createLog("anr", "ANR detected! Duration: ${duration}ms\n $message")
-                    Log.d("ANRWatchdog", "ANR detected! Duration: ${duration}ms\n $message")
                 }
             }
         })

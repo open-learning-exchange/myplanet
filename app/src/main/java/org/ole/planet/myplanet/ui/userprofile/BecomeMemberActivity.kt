@@ -8,7 +8,6 @@ import android.os.Looper
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
-import android.util.Log
 import android.view.View
 import android.widget.ArrayAdapter
 import com.google.gson.JsonArray
@@ -35,7 +34,6 @@ class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
     var guest: Boolean = false
-    private val logTimes = mutableMapOf<String, Long>()
 
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
@@ -130,7 +128,6 @@ class BecomeMemberActivity : BaseActivity() {
         }
 
         activityBecomeMemberBinding.btnSubmit.setOnClickListener {
-            logTime("BTN_SUBMIT_CLICKED")
             val userName: String = activityBecomeMemberBinding.etUsername.text.toString()
             var password: String? = activityBecomeMemberBinding.etPassword.text.toString()
             val rePassword: String = activityBecomeMemberBinding.etRePassword.text.toString()
@@ -192,8 +189,6 @@ class BecomeMemberActivity : BaseActivity() {
                     password = phoneNumber
                 }
                 activityBecomeMemberBinding.pbar.visibility = View.VISIBLE
-
-                logTime("BEFORE_CHECK_FIELDS")
                 checkMandatoryFieldsAndAddMember(
                     userName, password, rePassword, fName, lName, mName, email, language, level,
                     phoneNumber, birthDate, gender, mRealm
@@ -207,10 +202,7 @@ class BecomeMemberActivity : BaseActivity() {
         mName: String?, email: String?, language: String?, level: String?, phoneNumber: String?,
         birthDate: String?, gender: String?, mRealm: Realm
     ) {
-        logTime("CHECK_FIELDS_START")
-
         if (username.isNotEmpty() && password.isNotEmpty() && rePassword == password) {
-            logTime("CREATING_JSON_OBJECT")
             val obj = JsonObject()
             obj.addProperty("name", username)
             obj.addProperty("firstName", fName)
@@ -235,47 +227,26 @@ class BecomeMemberActivity : BaseActivity() {
             val roles = JsonArray()
             roles.add("learner")
             obj.add("roles", roles)
-
-            logTime("JSON_OBJECT_CREATED")
-//            activityBecomeMemberBinding.pbar.visibility = View.VISIBLE
-            logTime("BEFORE_BECOME_MEMBER")
             Service(this).becomeMember(mRealm, obj, object : Service.CreateUserCallback {
                 override fun onSuccess(message: String) {
-                    logTime("SERVICE_SUCCESS_CALLBACK")
-                    Log.d("PerformanceLog", "Total time: ${getElapsedTime("BTN_SUBMIT_CLICKED", "SERVICE_SUCCESS_CALLBACK")} ms")
-
-                    // Show the success message
                     Utilities.toast(this@BecomeMemberActivity, message)
-
-                    // Add a delay before navigating to login to ensure database operations complete
                     Handler(Looper.getMainLooper()).postDelayed({
-                        // Hide progress bar
                         activityBecomeMemberBinding.pbar.visibility = View.GONE
 
-                        // Navigate to login with auto-login parameters
                         val intent = Intent(this@BecomeMemberActivity, LoginActivity::class.java)
                         intent.putExtra("username", username)
                         intent.putExtra("password", password)
                         intent.putExtra("autoLogin", true)
 
                         if (guest) {
-                            intent.putExtra("guest", guest)
+                            intent.putExtra("guest", true)
                         }
                         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
                         startActivity(intent)
                         finish()
-                    }, 2000) // 2-second delay to ensure database operations complete
+                    }, 2000)
                 }
             })
-
-//            val intent = Intent(this, LoginActivity::class.java)
-//            if (guest){
-//                intent.putExtra("username", username)
-//                intent.putExtra("guest", guest)
-//            }
-//            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-//            startActivity(intent)
-//            finish()
         }
     }
 
@@ -308,14 +279,5 @@ class BecomeMemberActivity : BaseActivity() {
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
             }
         })
-    }
-
-    private fun logTime(tag: String) {
-        logTimes[tag] = System.currentTimeMillis()
-        Log.d("PerformanceLog", "[$tag] Time: ${logTimes[tag]}")
-    }
-
-    private fun getElapsedTime(startTag: String, endTag: String): Long {
-        return logTimes[endTag]!! - logTimes[startTag]!!
     }
 }

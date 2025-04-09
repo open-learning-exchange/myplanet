@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.service
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Log
 import io.realm.Realm
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -49,45 +48,30 @@ class UserProfileDbHandler(context: Context) {
     }
 
     suspend fun onLogin() {
-        Log.d("LoginFlow", "onLogin: Starting database operations")
         return withContext(Dispatchers.IO) {
             val realm = getRealm()
             try {
-                Log.d("LoginFlow", "onLogin: Got realm instance, starting transaction")
-                // Execute as a single transaction for better performance
                 realm.executeTransaction { r ->
-                    // First, check if we need to delete old records at all
                     val oldRecordsCount = r.where(RealmOfflineActivity::class.java)
                         .lessThan("loginTime", System.currentTimeMillis() - 30 * 24 * 60 * 60 * 1000)
                         .count()
 
-                    Log.d("LoginFlow", "onLogin: Found $oldRecordsCount old records to delete")
-
                     if (oldRecordsCount > 0) {
-                        // Use more efficient batch deletion by query rather than finding all
                         r.where(RealmOfflineActivity::class.java)
                             .lessThan("loginTime", System.currentTimeMillis() - 30 * 24 * 60 * 60 * 1000)
                             .findAll().deleteAllFromRealm()
-
-                        Log.d("LoginFlow", "onLogin: Deleted old records")
                     }
 
-                    // Create just one object (already optimized)
                     val offlineActivity = r.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
                     offlineActivity.type = KEY_LOGIN
                     offlineActivity.description = "Member login on offline application"
                     offlineActivity.loginTime = System.currentTimeMillis()
                     offlineActivity.userName = Utilities.getUserName(settings)
-
-                    Log.d("LoginFlow", "onLogin: Created new login record")
                 }
-                Log.d("LoginFlow", "onLogin: Transaction completed successfully")
             } catch (e: Exception) {
-                Log.e("LoginFlow", "Error in onLogin: ${e.message}")
                 e.printStackTrace()
             } finally {
                 realm.close()
-                Log.d("LoginFlow", "onLogin: Realm instance closed")
             }
         }
     }
