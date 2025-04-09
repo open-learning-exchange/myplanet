@@ -63,6 +63,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         val alertDialog = AlertDialog.Builder(requireActivity()).setView(addMeetupBinding.root)
             .setPositiveButton("Save") { _, _ ->
                 val title = "${addMeetupBinding.etTitle.text}"
+                val link = "${addMeetupBinding.etLink.text}"
                 val description = "${addMeetupBinding.etDescription.text}"
                 val location = "${addMeetupBinding.etLocation.text}"
                 if (title.isEmpty()) {
@@ -76,6 +77,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
                         }
                         val meetup = mRealm.createObject(RealmMeetup::class.java, "${UUID.randomUUID()}")
                         meetup.title = title
+                        meetup.link = link
                         meetup.description = description
                         meetup.meetupLocation = location
                         meetup.creator = user?.name

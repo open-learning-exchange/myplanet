@@ -1,9 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="20dp"
     android:orientation="vertical"
     android:background="@color/card_bg">
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Add Meetup"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:background="@color/primary"
+        android:textStyle="bold"
+        android:textColor="@color/md_white_1000"
+        android:padding="10dp"/>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/padding_large"
+        android:textColorHint="@color/hint_color">
+
+        <EditText
+            android:id="@+id/et_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/title_asterisk"
+            android:textColor="@color/daynight_textColor"
+            android:backgroundTint="@color/hint_color" />
+
+    </com.google.android.material.textfield.TextInputLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -17,10 +45,10 @@
             android:textColorHint="@color/hint_color">
 
             <EditText
-                android:id="@+id/et_title"
+                android:id="@+id/et_link"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="@string/title_asterisk"
+                android:hint="Link"
                 android:textColor="@color/daynight_textColor"
                 android:backgroundTint="@color/hint_color" />
         </com.google.android.material.textfield.TextInputLayout>
@@ -190,4 +218,24 @@
             android:textColor="@color/daynight_textColor"
             android:buttonTint="@color/daynight_textColor" />
     </RadioGroup>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="end">
+        <Button
+            android:id="@+id/btnadd"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/cancel"
+            android:layout_gravity="end"
+            android:backgroundTint="@color/primary"
+            android:textColor="@color/md_white_1000" />
+        <Button
+            android:id="@+id/btnClose"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/save"
+            android:layout_gravity="end"/>
+    </LinearLayout>
 </LinearLayout>
