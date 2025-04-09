@@ -184,7 +184,7 @@ class AdapterJoinedMember(
         return null
     }
 
-    private fun refreshList() {
+    fun refreshList() {
         val members = getJoinedMember(teamId, mRealm).toMutableList()
         val leaderId = mRealm.where(RealmMyTeam::class.java)
             .equalTo("teamId", teamId)

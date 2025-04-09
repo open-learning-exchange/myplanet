@@ -56,7 +56,7 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
         val fragment: Fragment = when (list[position]) {
             context.getString(R.string.chat) -> DiscussionListFragment()
             context.getString(R.string.plan), context.getString(R.string.mission) -> PlanFragment()
-            context.getString(R.string.members), context.getString(R.string.team) -> JoinedMemberFragment()
+            context.getString(R.string.members), context.getString(R.string.team) -> JoinedMemberFragment().apply {MainApplication.memberListener = this}
             context.getString(R.string.tasks) -> TeamTaskFragment()
             context.getString(R.string.calendar) -> EnterpriseCalendarFragment()
             context.getString(R.string.survey) -> SurveyFragment().apply {

@@ -222,6 +222,9 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberSelected {
             selectedItems.forEach { member ->
                 addMember(member)
             }
+            if (MainApplication.memberListener != null) {
+                MainApplication.memberListener?.onMemberAdded()
+            }
             dialog.dismiss()
         }
         dialog.show()
