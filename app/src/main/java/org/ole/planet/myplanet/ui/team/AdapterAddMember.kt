@@ -13,7 +13,7 @@ import org.ole.planet.myplanet.databinding.RowAddMemberBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterAddMember(private val list: List<RealmUserModel>): RecyclerView.Adapter<AdapterAddMember.ViewHolderAddMember>()  {
+class AdapterAddMember(private var list: List<RealmUserModel>): RecyclerView.Adapter<AdapterAddMember.ViewHolderAddMember>()  {
     private lateinit var rowAddMemberBinding: RowAddMemberBinding
     private val selectedMembers: MutableList<RealmUserModel?> = ArrayList()
     private var listener: OnMemberSelected? = null
@@ -47,6 +47,11 @@ class AdapterAddMember(private val list: List<RealmUserModel>): RecyclerView.Ada
             Utilities.handleCheck((view as CheckBox).isChecked, position, selectedMembers, list)
             listener?.onSelectedListChange(selectedMembers)
         }
+    }
+
+    fun setMemberList(memberList: List<RealmUserModel>) {
+        this.list = memberList
+        notifyDataSetChanged()
     }
 
     override fun getItemCount(): Int {

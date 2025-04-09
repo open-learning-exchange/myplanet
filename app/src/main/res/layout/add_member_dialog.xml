@@ -7,15 +7,28 @@
     android:background="@color/secondary_bg"
     android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/tvTitle"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text= "Members"
-        android:textAppearance="?android:attr/textAppearanceLarge"
-        android:background="@color/daynight_grey"
-        android:textColor="@color/daynight_textColor"
-        android:padding="10dp"/>
+        android:orientation="horizontal"
+        android:background="@color/daynight_grey">
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text= "Members"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="@color/daynight_textColor"
+            android:padding="10dp"
+            android:layout_marginEnd="@dimen/_10dp"
+            android:layout_marginStart="5dp"
+            android:layout_marginTop="5dp"/>
+        <include
+            layout="@layout/layout_search"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1" />
+    </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvMembers"

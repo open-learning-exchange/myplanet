@@ -2,10 +2,13 @@ package org.ole.planet.myplanet.ui.team
 
 import android.content.DialogInterface
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -182,6 +185,23 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberSelected {
     private fun showAddMemberDialog(memberList: List<RealmUserModel>) {
         val dialogView =
             LayoutInflater.from(requireContext()).inflate(R.layout.add_member_dialog, null)
+        val searchBar =dialogView.findViewById<EditText>(R.id.et_search)
+        searchBar.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
+                if (!searchBar.isFocused) return
+                val query = s.toString().trim()
+                if (query.isEmpty()) {
+                    adapterAddMember.setMemberList(memberList)
+                } else {
+                    adapterAddMember.setMemberList(memberList.filter {
+                        it.name!!.startsWith(query, ignoreCase = true)
+                    })
+                }
+            }
+            override fun afterTextChanged(s: Editable) {}
+        })
+
         val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMembers)
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = getAdapter(memberList)
