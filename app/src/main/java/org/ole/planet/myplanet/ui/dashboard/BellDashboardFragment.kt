@@ -176,14 +176,14 @@ class BellDashboardFragment : BaseDashboardFragment() {
             alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
 
             alertDialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
-                showRemindLaterDialog(pendingSurveys)
+                showRemindLaterDialog(pendingSurveys, alertDialog)
             }
         } else {
             checkScheduledReminders()
         }
     }
 
-    private fun showRemindLaterDialog(pendingSurveys: List<RealmSubmission>) {
+    private fun showRemindLaterDialog(pendingSurveys: List<RealmSubmission>,previousDialog: AlertDialog) {
         val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_remind_later, null)
         val radioGroup: RadioGroup = dialogView.findViewById(R.id.radioGroupRemindOptions)
         val numberPicker: NumberPicker = dialogView.findViewById(R.id.numberPickerTime)
@@ -226,6 +226,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 }
 
                 scheduleReminder(pendingSurveys, value, timeUnit)
+                previousDialog.dismiss()
                 dialog.dismiss()
             }
             .setNegativeButton(getString(R.string.cancel), null)
@@ -339,7 +340,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
 
         alertDialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
-            showRemindLaterDialog(pendingSurveys)
+            showRemindLaterDialog(pendingSurveys, alertDialog)
             alertDialog.dismiss()
         }
     }
