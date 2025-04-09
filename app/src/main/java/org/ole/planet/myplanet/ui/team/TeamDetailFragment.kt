@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.callback.OnMemberSelected
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.isTeamLeader
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
@@ -96,6 +97,9 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberSelected {
             if (isTeamLeader(teamId, user?.id, mRealm)) {
                 fragmentTeamDetailBinding.btnAddMember?.isEnabled = true
                 fragmentTeamDetailBinding.btnAddMember?.visibility = View.VISIBLE
+            } else {
+                fragmentTeamDetailBinding.btnAddMember?.isEnabled = false
+                fragmentTeamDetailBinding.btnAddMember?.visibility = View.GONE
             }
             fragmentTeamDetailBinding.btnAddDoc.isEnabled = true
             fragmentTeamDetailBinding.btnAddDoc.visibility = View.VISIBLE
@@ -132,9 +136,12 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberSelected {
         super.onViewCreated(view, savedInstanceState)
         createTeamLog()
         val allMembers = mRealm.where(RealmUserModel::class.java).findAll()
-        println(allMembers)
+        val joinedMembers = getJoinedMember(teamId, mRealm)
+        val notJoinedMembers = allMembers.filter { user ->
+            joinedMembers.none { it.id == user.id }
+        }
         fragmentTeamDetailBinding.btnAddMember?.setOnClickListener {
-            showAddMemberDialog(allMembers)
+            showAddMemberDialog(notJoinedMembers)
         }
     }
 

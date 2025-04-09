@@ -16,7 +16,7 @@
             android:id="@+id/tvTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text= "Members"
+            android:text= "@string/members"
             android:textAppearance="?android:attr/textAppearanceLarge"
             android:textColor="@color/daynight_textColor"
             android:padding="10dp"

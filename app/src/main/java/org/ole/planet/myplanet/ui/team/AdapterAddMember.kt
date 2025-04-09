@@ -29,7 +29,6 @@ class AdapterAddMember(private var list: List<RealmUserModel>): RecyclerView.Ada
 
     override fun onBindViewHolder(holder: ViewHolderAddMember, position: Int) {
         val member = list[position]
-        println(member.name)
         holder.binding.tvName.text = member.name
 
         Glide.with(context)
@@ -38,10 +37,10 @@ class AdapterAddMember(private var list: List<RealmUserModel>): RecyclerView.Ada
             .error(R.drawable.profile)
             .into(holder.binding.memberImage)
 
-        if(member.rolesList.isNullOrEmpty()){
-            holder.binding.tvLastVisit.text = "Learner"
+        if(member.rolesList!!.size <= 1){
+            holder.binding.tvRole.text = context.getString(R.string.learner)
         } else {
-            holder.binding.tvLastVisit.text = member.rolesList?.get(0)
+            holder.binding.tvRole.text = member.rolesList?.get(1)
         }
         holder.binding.checkbox.setOnClickListener { view: View ->
             Utilities.handleCheck((view as CheckBox).isChecked, position, selectedMembers, list)

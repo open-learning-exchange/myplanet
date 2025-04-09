@@ -31,12 +31,14 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"
+            android:textColor="@color/hint_color"
             android:layout_marginEnd="5dp" />
 
         <TextView
-            android:id="@+id/tv_last_visit"
+            android:id="@+id/tv_role"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:textColor="@color/hint_color"
             android:background="@drawable/rounded_grey" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>
