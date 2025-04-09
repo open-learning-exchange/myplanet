@@ -1267,5 +1267,7 @@
     <string name="full_conversation_response">استجابة المحادثة الكاملة</string>
     <string name="add_new_event">إضافة حدث جديد</string>
     <string name="none">لا شيء</string>
+    <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">ستظهر بيانات صحتك هنا مع استمرارك في تتبعها</string>
+    <string name="no_health_records_available">لا توجد سجلات صحية متاحة</string>
 
 </resources>
