@@ -715,7 +715,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 Log.d("LoginFlow", "[${System.currentTimeMillis()}] handler.onLogin() completed in ${System.currentTimeMillis() - loginStartTime}ms")
 
                 // Clean up the handler after the operation completes
-                handler.onDestroy()
+//                handler.onDestroy()
                 Log.d("LoginFlow", "[${System.currentTimeMillis()}] handler.onDestroy() completed")
             }
 
