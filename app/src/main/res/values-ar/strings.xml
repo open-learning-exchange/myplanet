@@ -13,7 +13,7 @@
     <string name="course_in_progress">أدخل الدورة %1$s أكملها (%2$d من %3$d تم)</string>
     <string name="course_not_started">%1$s لم يبدأ</string>
     <string name="app_name">My Planet</string>
-    <string name="planet">كوكب</string>
+    <string name="planet">Planet</string>
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">الإعدادات</string>
     <string name="hint_name">اسم المستخدم</string>
@@ -340,7 +340,7 @@
     <string name="remove">إزالة</string>
     <string name="make_leader">جعله قائدًا</string>
     <string name="mission"><![CDATA[المهمة والخدمات]]></string>
-    <string name="team">الفريق</string>
+    <string name="team">الفرق</string>
     <string name="applicants">المتقدمون</string>
     <string name="finances">المالية</string>
     <string name="messages">رسائل</string>
@@ -592,7 +592,7 @@
     <string name="level_colon">%s :المستوى</string>
     <string name="method">الطريقة:</string>
     <string name="number_of_exams">عدد الامتحانات:</string>
-    <string name="description_colon">الوصف:</string>
+    <string name="description_colon">&#160;الوصف:</string>
     <string name="download_resources">تحميل الموارد</string>
     <string name="take_test">إجراء الاختبار [%d]</string>
     <string name="search">بحث</string>
@@ -706,6 +706,7 @@
     <string name="description_is_required">الوصف مطلوب</string>
     <string name="start_time_is_required">وقت البدء مطلوب</string>
     <string name="meetup_added">تمت إضافة اللقاء</string>
+    <string name="meetup_not_added">ميكوشي ب نو ت د</string>
     <string name="add_transaction">إضافة المعاملة</string>
     <string name="note_is_required">الملاحظة مطلوبة</string>
     <string name="amount_is_required">المبلغ مطلوب</string>
@@ -1065,12 +1066,12 @@
     <string name="compulsory_phone_number">رقم الهاتف مطلوب</string>
     <string name="compulsory_date_of_birth">تاريخ الميلاد مطلوب</string>
     <string name="gender_not_picked">لم يتم اختيار الجنس</string>
-    <string name="title_colon">العنوان:</string>
-    <string name="date_from_colon">التاريخ من:</string>
-    <string name="date_to_colon">التاريخ إلى:</string>
-    <string name="location_colon">الموقع:</string>
-    <string name="recurring_colon">متكرر:</string>
-    <string name="created_by_colon">تم إنشاؤه بواسطة:</string>
+    <string name="title_colon">&#160;العنوان:</string>
+    <string name="date_from_colon">&#160;التاريخ من:</string>
+    <string name="date_to_colon">&#160;التاريخ إلى:</string>
+    <string name="location_colon">&#160;الموقع:</string>
+    <string name="recurring_colon">&#160;متكرر:</string>
+    <string name="created_by_colon">&#160;تم إنشاؤه بواسطة:</string>
     <string name="failed_to_get_configuration_id">فشل في الحصول على معرف التكوين. يرجى الاتصال بالمسؤول</string>
     <string name="you_want_to_connect_to_a_different_server">تريد الاتصال بخادم مختلف. امسح بيانات التطبيق للمتابعة</string>
     <string name="are_you_sure_you_want_to_clear_data">هل أنت متأكد أنك تريد مسح جميع البيانات؟</string>
@@ -1256,7 +1257,6 @@
     <string name="version_not_found">الإصدار غير موجود.</string>
     <string name="connection_failed">فشل الاتصال!</string>
     <string name="unable_to_create_user_user_already_exists">تعذّر إنشاء المستخدم، المستخدم موجود بالفعل.</string>
-    <string name="unable_to_create_user">تعذّر إنشاء المستخدم.</string>
     <string name="not_connect_to_planet_created_user_offline">غير متصل بالكوكب، تم إنشاء المستخدم دون اتصال.</string>
     <string name="user_created_successfully">تم إنشاء المستخدم بنجاح.</string>
     <string name="unable_to_save_user_please_sync">تعذّر حفظ المستخدم، يرجى المزامنة.</string>
@@ -1265,5 +1265,7 @@
     <string name="no_resources_to_download">لا توجد موارد للتحميل</string>
     <string name="response">استجابة</string>
     <string name="full_conversation_response">استجابة المحادثة الكاملة</string>
+    <string name="add_new_event">إضافة حدث جديد</string>
+    <string name="none">لا شيء</string>
 
 </resources>

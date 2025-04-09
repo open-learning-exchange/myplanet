@@ -13,7 +13,7 @@
     <string name="course_in_progress">Geli koorsada %1$s dhameystir (%2$d ka %3$d la sameeyay)</string>
     <string name="course_not_started">%1$s lama bilaabin</string>
     <string name="app_name">My Planet</string>
-    <string name="planet">Meerah</string>
+    <string name="planet">Planet</string>
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">goobooyinka</string>
     <string name="hint_name">Magaca isticmaalaha</string>
@@ -340,7 +340,7 @@
     <string name="remove">Ka saar</string>
     <string name="make_leader">Gacan-siin</string>
     <string name="mission"><![CDATA[Mission & Adeegyada]]></string>
-    <string name="team">Kooxda</string>
+    <string name="team">Kooxaha</string>
     <string name="applicants">Loo baahan yahay</string>
     <string name="finances">Maaliyadda</string>
     <string name="messages">Fariimaha</string>
@@ -592,7 +592,7 @@
     <string name="level_colon">Heer: %s</string>
     <string name="method">Hab:</string>
     <string name="number_of_exams">Tirada Baaristada:</string>
-    <string name="description_colon">Sharaxaad:</string>
+    <string name="description_colon">Sharaxaad:&#160;</string>
     <string name="download_resources">Dhig Resources</string>
     <string name="take_test">Barto Imtixaan [%d]</string>
     <string name="search">Raadi</string>
@@ -706,6 +706,7 @@
     <string name="description_is_required">Sharraxaad waa loo baahan yahay</string>
     <string name="start_time_is_required">Waqtiga bilaabid waa loo baahan yahay</string>
     <string name="meetup_added">Ku daray la isku day</string>
+    <string name="meetup_not_added">Meetup lama darin</string>
     <string name="add_transaction">Ku daray Hawlaha</string>
     <string name="note_is_required">Fariin waa loo baahan yahay</string>
     <string name="amount_is_required">Qaddarku waa loo baahan yahay</string>
@@ -1065,12 +1066,12 @@
     <string name="compulsory_phone_number">numberka telefoonka loo baahan yahay</string>
     <string name="compulsory_date_of_birth">taariikhda dhalashada loo baahan yahay</string>
     <string name="gender_not_picked">nooca loo dooran maayo</string>
-    <string name="title_colon">saraakiisha:</string>
-    <string name="date_from_colon">taariikhda:</string>
-    <string name="date_to_colon">ilaa:</string>
-    <string name="location_colon">goobta:</string>
-    <string name="recurring_colon">ku dhaqan:</string>
-    <string name="created_by_colon">lagu sameeyay:</string>
+    <string name="title_colon">saraakiisha:&#160;</string>
+    <string name="date_from_colon">taariikhda:&#160;</string>
+    <string name="date_to_colon">ilaa:&#160;</string>
+    <string name="location_colon">goobta:&#160;</string>
+    <string name="recurring_colon">ku dhaqan:&#160;</string>
+    <string name="created_by_colon">lagu sameeyay:&#160;</string>
     <string name="failed_to_get_configuration_id">Ma jirin ID-ka qaababka. Fadlan la xiriir maamulaha</string>
     <string name="you_want_to_connect_to_a_different_server">Waxaad rabtaa inaad ku xirto server kale. Tirtir xogta barnaamijka si aad u sii wadato</string>
     <string name="are_you_sure_you_want_to_clear_data">Ma hubtaa inaad diiwaangelisid dhammaan xogta?</string>
@@ -1256,7 +1257,6 @@
     <string name="version_not_found">Nooca lama helin.</string>
     <string name="connection_failed">Xiriirku wuu fashilmay!</string>
     <string name="unable_to_create_user_user_already_exists">Lama abuurin isticmaale, isticmaale horey ayuu u jiray.</string>
-    <string name="unable_to_create_user">Lama abuuri karo isticmaale.</string>
     <string name="not_connect_to_planet_created_user_offline">Lama xirin meeraha, isticmaalaha ayaa la abuuray offline.</string>
     <string name="user_created_successfully">Isticmaale si guul leh ayaa loo abuuray.</string>
     <string name="unable_to_save_user_please_sync">Lama kaydin karo isticmaalaha, fadlan isku dheelli tir.</string>
@@ -1265,5 +1265,7 @@
     <string name="no_resources_to_download">Ma jiro ilo la soo dejiyo</string>
     <string name="response">Jawaab</string>
     <string name="full_conversation_response">Jawaabta wada hadalka oo dhameystiran</string>
+    <string name="add_new_event">ku dar dhacdo cusub</string>
+    <string name="none">Midna</string>
 
 </resources>

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.service
 
+import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -18,6 +19,7 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
+import androidx.core.content.edit
 
 class AutoSyncWorker(private val context: Context, workerParams: WorkerParameters) : Worker(context, workerParams), SyncListener, CheckVersionCallback, SuccessListener {
     private lateinit var preferences: SharedPreferences
@@ -28,11 +30,13 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
         val syncInterval = preferences.getInt("autoSyncInterval", 60 * 60)
         if (currentTime - lastSync > syncInterval * 1000) {
             // Post a Runnable to the main thread's Handler to show the Toast
-            val mainHandler = Handler(Looper.getMainLooper())
-            mainHandler.post {
-                Utilities.toast(
-                    context, "Syncing started..."
-                )
+            if (isAppInForeground(context)) {
+                val mainHandler = Handler(Looper.getMainLooper())
+                mainHandler.post {
+                    Utilities.toast(
+                        context, "Syncing started..."
+                    )
+                }
             }
             Service(context).checkVersion(this, preferences)
         }
@@ -58,7 +62,7 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
     override fun onCheckingVersion() {}
     override fun onError(msg: String, blockSync: Boolean) {
         if (!blockSync) {
-            SyncManager.instance?.start(this)
+            SyncManager.instance?.start(this, "upload")
             UploadToShelfService.instance?.uploadUserData {
                 Service(MainApplication.context).healthAccess {
                     UploadToShelfService.instance?.uploadHealth()
@@ -78,6 +82,7 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
                 UploadManager.instance?.uploadNews()
                 UploadManager.instance?.uploadTeams()
                 UploadManager.instance?.uploadTeamTask()
+                UploadManager.instance?.uploadMeetups()
                 UploadManager.instance?.uploadCrashLog()
                 UploadManager.instance?.uploadSubmissions()
                 UploadManager.instance?.uploadActivities { MainApplication.isSyncRunning = false }
@@ -87,6 +92,19 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
 
     override fun onSuccess(success: String?) {
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        settings.edit().putLong("lastUsageUploaded", Date().time).apply()
+        settings.edit { putLong("lastUsageUploaded", Date().time) }
+    }
+
+    private fun isAppInForeground(context: Context): Boolean {
+        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val runningProcesses = activityManager.runningAppProcesses ?: return false
+
+        for (processInfo in runningProcesses) {
+            if (processInfo.processName == context.packageName &&
+                processInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
+                return true
+            }
+        }
+        return false
     }
 }
