@@ -1267,5 +1267,6 @@
     <string name="full_conversation_response">Réponse complète de la conversation</string>
     <string name="add_new_event">ajouter un nouvel événement</string>
     <string name="none">Aucun</string>
+    <string name="untitled_survey">sans titre</string>
 
 </resources>

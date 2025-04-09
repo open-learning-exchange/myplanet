@@ -1267,5 +1267,6 @@
     <string name="full_conversation_response">पूर्ण वार्तालाप उत्तर</string>
     <string name="add_new_event">नयाँ घटना थप्नुहोस्</string>
     <string name="none">कुनै पनि होइन</string>
+    <string name="untitled_survey">शीर्षकविहीन</string>
 
 </resources>
