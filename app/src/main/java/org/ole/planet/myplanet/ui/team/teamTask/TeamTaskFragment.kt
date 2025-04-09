@@ -4,7 +4,6 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.DialogInterface
 import android.graphics.Typeface
-import android.icu.text.SimpleDateFormat
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -32,13 +31,11 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.OnCompletedListener
-import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Calendar
 import java.util.Date
-import java.util.Locale
 import java.util.UUID
 
 class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
