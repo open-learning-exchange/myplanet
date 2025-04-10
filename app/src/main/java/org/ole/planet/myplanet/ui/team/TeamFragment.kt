@@ -72,7 +72,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         return fragmentTeamBinding.root
     }
 
-     fun createTeamAlert(team: RealmMyTeam?) {
+    fun createTeamAlert(team: RealmMyTeam?) {
         alertCreateTeamBinding = AlertCreateTeamBinding.inflate(LayoutInflater.from(context))
         if (TextUtils.equals(type, "enterprise")) {
             alertCreateTeamBinding.spnTeamType.visibility = View.GONE
@@ -110,31 +110,31 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                         Utilities.toast(activity, getString(R.string.name_is_required))
                         alertCreateTeamBinding.etName.error = getString(R.string.please_enter_a_name)
                     } else -> {
-                        if (team == null) {
-                            createTeam(name,
-                                if (alertCreateTeamBinding.spnTeamType.selectedItemPosition == 0) "local" else "sync", map,
-                                alertCreateTeamBinding.switchPublic.isChecked
-                            )
-                        } else {
-                            if (!team.realm.isInTransaction) {
-                                team.realm.beginTransaction()
-                            }
-                            team.name = name
-                            team.services = "${alertCreateTeamBinding.etServices.text}"
-                            team.rules = "${alertCreateTeamBinding.etRules.text}"
-                            team.limit = 12
-                            team.description = "${alertCreateTeamBinding.etDescription.text}"
-                            team.createdBy = userId
-                            team.updated = true
-                            team.realm.commitTransaction()
+                    if (team == null) {
+                        createTeam(name,
+                            if (alertCreateTeamBinding.spnTeamType.selectedItemPosition == 0) "local" else "sync", map,
+                            alertCreateTeamBinding.switchPublic.isChecked
+                        )
+                    } else {
+                        if (!team.realm.isInTransaction) {
+                            team.realm.beginTransaction()
                         }
-                        fragmentTeamBinding.etSearch.visibility = View.VISIBLE
-                        fragmentTeamBinding.tableTitle.visibility = View.VISIBLE
-                        Utilities.toast(activity, getString(R.string.team_created))
-                        setTeamList()
-                        // dialog won't close by default
-                        dialog.dismiss()
+                        team.name = name
+                        team.services = "${alertCreateTeamBinding.etServices.text}"
+                        team.rules = "${alertCreateTeamBinding.etRules.text}"
+                        team.limit = 12
+                        team.description = "${alertCreateTeamBinding.etDescription.text}"
+                        team.createdBy = userId
+                        team.updated = true
+                        team.realm.commitTransaction()
                     }
+                    fragmentTeamBinding.etSearch.visibility = View.VISIBLE
+                    fragmentTeamBinding.tableTitle.visibility = View.VISIBLE
+                    Utilities.toast(activity, getString(R.string.team_created))
+                    setTeamList()
+                    // dialog won't close by default
+                    dialog.dismiss()
+                }
                 }
             }
         }
