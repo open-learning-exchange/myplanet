@@ -207,6 +207,8 @@ class MyHealthFragment : Fragment() {
             val mm = getHealthProfile(mh)
             if (mm == null) {
                 fragmentVitalSignBinding.rvRecords.adapter = null
+                fragmentVitalSignBinding.tvNoRecords.visibility = View.VISIBLE
+                fragmentVitalSignBinding.tvDataPlaceholder.visibility = View.GONE
                 Utilities.toast(activity, getString(R.string.health_record_not_available))
                 return
             }
@@ -214,22 +216,35 @@ class MyHealthFragment : Fragment() {
             fragmentVitalSignBinding.txtOtherNeed.text = Utilities.checkNA("${myHealths?.notes}")
             fragmentVitalSignBinding.txtSpecialNeeds.text = Utilities.checkNA("${myHealths?.specialNeeds}")
             fragmentVitalSignBinding.txtBirthPlace.text = Utilities.checkNA("${userModel?.birthPlace}")
-            fragmentVitalSignBinding.txtEmergencyContact.text = getString(R.string.emergency_contact_details, Utilities.checkNA("${myHealths?.emergencyContactName}"),
-                Utilities.checkNA("${myHealths?.emergencyContactType}"), Utilities.checkNA("${myHealths?.emergencyContact}")).trimIndent()
+            fragmentVitalSignBinding.txtEmergencyContact.text = getString(R.string.emergency_contact_details,
+                Utilities.checkNA("${myHealths?.emergencyContactName}"),
+                Utilities.checkNA("${myHealths?.emergencyContactType}"),
+                Utilities.checkNA("${myHealths?.emergencyContact}")).trimIndent()
+
             val list = getExaminations(mm)
 
-            val adap = AdapterHealthExamination(requireActivity(), list, mh, userModel)
-            adap.setmRealm(mRealm)
-            fragmentVitalSignBinding.rvRecords.apply {
-                layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
-                isNestedScrollingEnabled = false
-                adapter = adap
-            }
-            fragmentVitalSignBinding.rvRecords.post {
-                val lastPosition = (list?.size ?: 0) - 1
-                if (lastPosition >= 0) {
-                    fragmentVitalSignBinding.rvRecords.scrollToPosition(lastPosition)
+            if (list != null && list.isNotEmpty()) {
+                fragmentVitalSignBinding.rvRecords.visibility = View.VISIBLE
+                fragmentVitalSignBinding.tvNoRecords.visibility = View.GONE
+                fragmentVitalSignBinding.tvDataPlaceholder.visibility = View.VISIBLE
+
+                val adap = AdapterHealthExamination(requireActivity(), list, mh, userModel)
+                adap.setmRealm(mRealm)
+                fragmentVitalSignBinding.rvRecords.apply {
+                    layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
+                    isNestedScrollingEnabled = false
+                    adapter = adap
                 }
+                fragmentVitalSignBinding.rvRecords.post {
+                    val lastPosition = list.size - 1
+                    if (lastPosition >= 0) {
+                        fragmentVitalSignBinding.rvRecords.scrollToPosition(lastPosition)
+                    }
+                }
+            } else {
+                fragmentVitalSignBinding.rvRecords.visibility = View.GONE
+                fragmentVitalSignBinding.tvNoRecords.visibility = View.GONE
+                fragmentVitalSignBinding.tvDataPlaceholder.visibility = View.VISIBLE
             }
         } else {
             fragmentVitalSignBinding.txtOtherNeed.text = getString(R.string.empty_text)
@@ -237,6 +252,9 @@ class MyHealthFragment : Fragment() {
             fragmentVitalSignBinding.txtBirthPlace.text = getString(R.string.empty_text)
             fragmentVitalSignBinding.txtEmergencyContact.text = getString(R.string.empty_text)
             fragmentVitalSignBinding.rvRecords.adapter = null
+            fragmentVitalSignBinding.rvRecords.visibility = View.GONE
+            fragmentVitalSignBinding.tvNoRecords.visibility = View.VISIBLE
+            fragmentVitalSignBinding.tvDataPlaceholder.visibility = View.GONE
         }
     }
 
