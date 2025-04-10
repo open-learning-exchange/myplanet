@@ -137,13 +137,37 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/ltRecurring"
+            android:id="@+id/ltLink"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="4dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/ltLocation">
+
+            <TextView
+                android:id="@+id/Link"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Link: "
+                android:textColor="@color/daynight_textColor"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvLink"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/daynight_textColor" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/ltRecurring"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="4dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/ltLink">
 
             <TextView
                 android:id="@+id/recurring"
