@@ -4,12 +4,17 @@ import android.content.res.Configuration
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.base.BaseMemberFragment
+import org.ole.planet.myplanet.callback.OnMemberAddedListener
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 
-class JoinedMemberFragment : BaseMemberFragment() {
+class JoinedMemberFragment : BaseMemberFragment(), OnMemberAddedListener {
+    private val adapterJoinedMember by lazy {
+        AdapterJoinedMember(requireContext(), list.toMutableList(), mRealm, teamId)
+    }
+
     override val list: List<RealmUserModel>
         get() {
             val members = getJoinedMember(teamId, mRealm).toMutableList()
@@ -29,7 +34,7 @@ class JoinedMemberFragment : BaseMemberFragment() {
         return team?.userId
     }
     override val adapter: RecyclerView.Adapter<*>
-        get() = AdapterJoinedMember(requireActivity(), list.toMutableList(), mRealm, teamId)
+        get() = adapterJoinedMember
 
     override val layoutManager: RecyclerView.LayoutManager
         get() {
@@ -46,5 +51,9 @@ class JoinedMemberFragment : BaseMemberFragment() {
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
+    }
+
+    override fun onMemberAdded() {
+        adapterJoinedMember.refreshList()
     }
 }
