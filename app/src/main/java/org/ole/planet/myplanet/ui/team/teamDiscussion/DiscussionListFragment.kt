@@ -34,6 +34,7 @@ class DiscussionListFragment : BaseTeamFragment() {
     private lateinit var fragmentDiscussionListBinding: FragmentDiscussionListBinding
     private var updatedNewsList: RealmResults<RealmNews>? = null
     private var filteredNewsList: List<RealmNews?> = listOf()
+    private var teamName: String = ""
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentDiscussionListBinding = FragmentDiscussionListBinding.inflate(inflater, container, false)
@@ -56,6 +57,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         super.onViewCreated(view, savedInstanceState)
         val realmNewsList = news
         val count = realmNewsList.size
+        teamName = arguments?.getString("teamName") ?: ""
         mRealm.executeTransactionAsync { realm: Realm ->
             var notification = realm.where(RealmTeamNotification::class.java).equalTo("type", "chat").equalTo("parentId", teamId).findFirst()
             if (notification == null) {
@@ -134,7 +136,7 @@ class DiscussionListFragment : BaseTeamFragment() {
 
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
         val adapterNews = activity?.let {
-            realmNewsList?.let { it1 -> AdapterNews(it, it1.toMutableList(), user, null) }
+            realmNewsList?.let { it1 -> AdapterNews(it, it1.toMutableList(), user, null, team?.name ?: "", false) }
         }
         adapterNews?.setmRealm(mRealm)
         adapterNews?.setListener(this)

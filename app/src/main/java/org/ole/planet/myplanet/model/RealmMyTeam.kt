@@ -60,6 +60,8 @@ open class RealmMyTeam : RealmObject() {
     var startDate: Long = 0
     var endDate: Long = 0
     var updatedDate: Long = 0
+    var showTeamName: Boolean = false
+    var teamName: String? = null
 
     companion object {
         private val teamDataList: MutableList<Array<String>> = mutableListOf()
@@ -114,6 +116,8 @@ open class RealmMyTeam : RealmObject() {
                 myTeams.startDate = JsonUtils.getLong("startDate", doc)
                 myTeams.endDate = JsonUtils.getLong("endDate", doc)
                 myTeams.updatedDate = JsonUtils.getLong("updatedDate", doc)
+                myTeams.showTeamName = JsonUtils.getBoolean("showTeamName", doc)
+                myTeams.teamName = JsonUtils.getString("teamName", doc)
                 val coursesArray = JsonUtils.getJsonArray("courses", doc)
                 myTeams.courses = RealmList()
                 for (e in coursesArray) {
@@ -415,7 +419,6 @@ open class RealmMyTeam : RealmObject() {
             `object`.addProperty("status", team.status)
             `object`.addProperty("userPlanetCode", team.userPlanetCode)
             `object`.addProperty("parentCode", team.parentCode)
-
             `object`.addProperty("type", team.type)
             `object`.addProperty("route", team.route)
             `object`.addProperty("sourcePlanet", team.sourcePlanet)
@@ -423,6 +426,8 @@ open class RealmMyTeam : RealmObject() {
             `object`.addProperty("createdBy", team.createdBy)
             `object`.addProperty("resourceId", team.resourceId)
             `object`.addProperty("rules", team.rules)
+            `object`.addProperty("showTeamName",team.showTeamName)
+            `object`.addProperty("teamName",team.teamName)
 
             if (team.teamType == "debit" || team.teamType == "credit") {
                 `object`.addProperty("type", team.teamType)
