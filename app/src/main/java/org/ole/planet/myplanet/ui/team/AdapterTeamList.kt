@@ -76,7 +76,6 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                     f.arguments = b
                     (context as OnHomeItemClickListener).openCallFragment(f)
                     prefData.setTeamName(team.name)
-                    prefData.setSelectedTeamId(team._id)
                 }
             }
 
