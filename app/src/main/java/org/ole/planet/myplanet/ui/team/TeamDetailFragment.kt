@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.ui.team
 
 import android.content.DialogInterface
+import android.content.res.Configuration
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.DisplayMetrics
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -38,7 +40,10 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberSelected {
     private lateinit var selectedItems: MutableList<RealmUserModel?>
     private lateinit var adapterAddMember: AdapterAddMember
 
-   fun getAdapter(memberList: List<RealmUserModel>): RecyclerView.Adapter<*> {
+    private var addMemberDialog: AlertDialog? = null
+    private var lastMemberList: List<RealmUserModel>? = null
+
+    fun getAdapter(memberList: List<RealmUserModel>): RecyclerView.Adapter<*> {
         adapterAddMember = AdapterAddMember(memberList)
         adapterAddMember.setListener(this)
         return adapterAddMember
@@ -189,10 +194,19 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberSelected {
         mRealm.commitTransaction()
     }
 
+    private fun dpToPx(dp: Int): Int {
+        val density = resources.displayMetrics.density
+        return (dp * density + 0.5f).toInt()
+    }
+
     private fun showAddMemberDialog(memberList: List<RealmUserModel>) {
+        val displayMetrics = DisplayMetrics()
+        requireActivity().windowManager.defaultDisplay.getMetrics(displayMetrics)
+        val screenHeight = displayMetrics.heightPixels
         val dialogView =
             LayoutInflater.from(requireContext()).inflate(R.layout.add_member_dialog, null)
-        val searchBar =dialogView.findViewById<EditText>(R.id.et_search)
+        lastMemberList = memberList
+        val searchBar = dialogView.findViewById<EditText>(R.id.et_search)
         searchBar.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
@@ -201,20 +215,30 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberSelected {
                 if (query.isEmpty()) {
                     adapterAddMember.setMemberList(memberList)
                 } else {
-                    adapterAddMember.setMemberList(memberList.filter {
+                    val searchedMember = memberList.filter {
                         it.name!!.startsWith(query, ignoreCase = true)
-                    })
+                    }
+                    adapterAddMember.setMemberList(searchedMember)
                 }
             }
             override fun afterTextChanged(s: Editable) {}
         })
-
+        val reservedHeight = dpToPx(400)
+        val availableHeight = screenHeight - reservedHeight
         val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMembers)
+        val params = recyclerView.layoutParams
+        params.height = if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            dpToPx(100)
+        } else {
+            minOf(availableHeight, dpToPx(400))
+        }
+        recyclerView.layoutParams = params
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = getAdapter(memberList)
         val dialog = AlertDialog.Builder(requireContext())
             .setView(dialogView)
             .create()
+        addMemberDialog = dialog
         dialogView.findViewById<Button>(R.id.btnClose).setOnClickListener {
             dialog.dismiss()
         }
@@ -228,6 +252,14 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberSelected {
             dialog.dismiss()
         }
         dialog.show()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        if (addMemberDialog?.isShowing == true) {
+            addMemberDialog?.dismiss()
+            lastMemberList?.let { showAddMemberDialog(it) }
+        }
     }
 
     override fun onSelectedListChange(list: MutableList<RealmUserModel?>) {
