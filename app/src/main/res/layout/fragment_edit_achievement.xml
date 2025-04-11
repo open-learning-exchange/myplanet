@@ -204,39 +204,51 @@
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_small"
                     android:text="@string/add_materials"
-                    android:textColor="@color/daynight_textColor" />
+                    android:textColor="@color/daynight_textColor"
+                    android:visibility="invisible"/>
                 <LinearLayout
                     android:id="@+id/ll_attachment"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical" />
-                        <Button
-                            android:id="@+id/btn_achievement"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:padding="@dimen/padding_normal"
-                            android:contentDescription="@string/add_an_achievement"
-                            android:text="@string/add_an_achievement"
-                            android:theme="@style/PrimaryButton" />
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity= "right">
+                            <Button
+                                android:id="@+id/btn_achievement"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:padding="@dimen/padding_normal"
+                                android:contentDescription="@string/add_an_achievement"
+                                android:text="@string/add_an_achievement"
+                                android:theme="@style/PrimaryButton" />
+                </LinearLayout>
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_small"
                     android:text="Add any references below"
-                    android:textColor="@color/daynight_textColor" />
+                    android:textColor="@color/daynight_textColor"
+                    android:visibility="invisible"/>
                 <LinearLayout
                     android:id="@+id/ll_other_info"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical" />
-                <Button
-                    android:id="@+id/btn_other"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_normal"
-                    android:contentDescription="@string/add_a_reference"
-                    android:text="@string/add_a_reference"
-                    android:theme="@style/PrimaryButton" />
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="right" >
+                        <Button
+                            android:id="@+id/btn_other"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:padding="@dimen/padding_normal"
+                            android:contentDescription="@string/add_a_reference"
+                            android:text="@string/add_a_reference"
+                            android:theme="@style/PrimaryButton" />
+                    </LinearLayout>
                 <CheckBox
                     android:id="@+id/cb_send_to_nation"
                     android:layout_width="match_parent"
@@ -250,8 +262,7 @@
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="left">
-
+                    android:layout_gravity="right">
                     <Button
                         android:id="@+id/btn_update"
                         android:layout_width="wrap_content"

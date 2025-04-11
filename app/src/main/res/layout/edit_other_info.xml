@@ -21,15 +21,15 @@
         android:orientation="horizontal">
         <Button
             android:id="@+id/edit"
-            style="@style/GreyButtons"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:theme="@style/PrimaryButton"
             android:backgroundTint="@color/colorPrimary"
             android:text="@string/edit"
             android:visibility="visible"
             android:textSize="15sp"
-            android:textAllCaps="true"
-            android:textStyle="bold"/>
+            android:textAllCaps="true" />
         <ImageView
             android:id="@+id/iv_delete"
             android:layout_width="50dp"
