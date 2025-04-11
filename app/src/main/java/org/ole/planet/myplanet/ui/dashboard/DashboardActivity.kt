@@ -509,7 +509,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val pendingSurveys = getPendingSurveys(realm, userId)
         val surveyTitles = getSurveyTitlesFromSubmissions(realm, pendingSurveys)
         surveyTitles.forEach { title ->
-            createNotificationIfNotExists(realm, "survey", "$title", title, userId)
+            createNotificationIfNotExists(realm, "survey", title, title, userId)
         }
 
         val tasks = realm.where(RealmTeamTask::class.java)
@@ -838,8 +838,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onDestroy() {
         super.onDestroy()
-        profileDbHandler.onDestroy()
-
         realmListeners.forEach { it.removeListener() }
         realmListeners.clear()
     }

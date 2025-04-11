@@ -115,8 +115,9 @@ class UploadToShelfService(context: Context) {
 
     @Throws(IOException::class)
     fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject): Boolean {
-        val table = "userdb-" + Utilities.toHex(model.planetCode) + "-" + Utilities.toHex(model.name)
-        val header = "Basic " + Base64.encodeToString((obj["name"].asString + ":" + obj["password"].asString).toByteArray(), Base64.NO_WRAP)
+        val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
+        val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
+
         val ob = JsonObject()
         var keyString = generateKey()
         var iv: String? = generateIv()
@@ -129,18 +130,41 @@ class UploadToShelfService(context: Context) {
         ob.addProperty("key", keyString)
         ob.addProperty("iv", iv)
         ob.addProperty("createdOn", Date().time)
+        model.key = keyString
+        model.iv = iv
+        val maxRetries = 5
+        var retryCount = 0
         var success = false
-        while (!success) {
-            val response: Response<JsonObject>? = apiInterface?.postDoc(header, "application/json", Utilities.getUrl() + "/" + table, ob)?.execute()
-            if (response?.body() != null) {
-                model.key = keyString
-                model.iv = iv
-                success = true
-            } else {
-                success = false
+
+        while (!success && retryCount < maxRetries) {
+            try {
+                val response: Response<JsonObject>? = apiInterface?.postDoc(header, "application/json", "${Utilities.getUrl()}/$table", ob)?.execute()
+                if (response?.isSuccessful == true && response.body() != null) {
+                    success = true
+                } else {
+                    retryCount++
+                    if (retryCount < maxRetries) {
+                        val delayMs = 1000L * (1 shl retryCount)
+                        Thread.sleep(delayMs)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                retryCount++
+
+                if (retryCount < maxRetries) {
+                    val delayMs = 1000L * (1 shl retryCount)
+                    Thread.sleep(delayMs)
+                }
             }
         }
-        changeUserSecurity(model, obj)
+        if (success) {
+            try {
+                changeUserSecurity(model, obj)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
         return true
     }
 
@@ -225,13 +249,12 @@ class UploadToShelfService(context: Context) {
             private set
 
         private fun changeUserSecurity(model: RealmUserModel, obj: JsonObject) {
-            val table = "userdb-" + Utilities.toHex(model.planetCode) + "-" + Utilities.toHex(model.name)
-            val header = "Basic " + Base64.encodeToString((obj["name"].asString + ":" + obj["password"].asString).toByteArray(), Base64.NO_WRAP)
+            val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
+            val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
             val apiInterface = client?.create(ApiInterface::class.java)
-            val response: Response<JsonObject?>?
             try {
-                response = apiInterface?.getJsonObject(header, Utilities.getUrl() + "/" + table + "/_security")?.execute()
-                if (response?.body() != null) {
+                val response = apiInterface?.getJsonObject(header, "${Utilities.getUrl()}/$table/_security")?.execute()
+                if (response?.isSuccessful == true && response.body() != null) {
                     val jsonObject = response.body()
                     val members = jsonObject?.getAsJsonObject("members")
                     val rolesArray: JsonArray = if (members?.has("roles") == true) {
@@ -242,7 +265,6 @@ class UploadToShelfService(context: Context) {
                     rolesArray.add("health")
                     members?.add("roles", rolesArray)
                     jsonObject?.add("members", members)
-                    apiInterface?.putDoc(header, "application/json", Utilities.getUrl() + "/" + table + "/_security", jsonObject)?.execute()
                 }
             } catch (e: IOException) {
                 e.printStackTrace()

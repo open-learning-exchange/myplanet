@@ -44,6 +44,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private val backPressedInterval: Long = 2000
     private var teamList = java.util.ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
+    private val MAX_LOGIN_ATTEMPTS = 5
+    private var loginAttemptCount = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -99,11 +101,17 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
         guest = intent.getBooleanExtra("guest", false)
         val username = intent.getStringExtra("username")
-        val password = intent.getStringExtra("password")
-        val autoLogin = intent.getBooleanExtra("autoLogin", false)
 
-        if (autoLogin && username != null && password != null) {
-            submitForm(username, password)
+        if (intent.getBooleanExtra("autoLogin", false)) {
+            val username = intent.getStringExtra("username")
+            val password = intent.getStringExtra("password")
+
+            if (username != null && password != null) {
+                activityLoginBinding.inputName.setText(username)
+                activityLoginBinding.inputPassword.setText(password)
+                loginAttemptCount = 0
+                attemptAutoLogin(username, password)
+            }
         }
 
         if (guest) {
@@ -356,7 +364,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             .show()
     }
 
-
     private fun updateConfiguration(languageCode: String) {
         val locale = Locale(languageCode)
         Locale.setDefault(locale)
@@ -465,6 +472,38 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 }
             }
         }
+    }
+
+    private fun attemptAutoLogin(username: String, password: String) {
+        customProgressDialog.setText("Preparing your account...")
+        customProgressDialog.show()
+        val delay = 1000L * (1 shl loginAttemptCount)
+
+        Handler(Looper.getMainLooper()).postDelayed({
+            val standardLogin = authenticateUser(settings, username, password, false)
+            val alternativeLogin = if (!standardLogin) authenticateUser(settings, username, password, true) else false
+            val isLoggedIn = standardLogin || alternativeLogin
+
+            if (isLoggedIn) {
+                customProgressDialog.setText("Logging in...")
+
+                lifecycleScope.launch {
+                    Toast.makeText(this@LoginActivity, getString(R.string.welcome, username), Toast.LENGTH_SHORT).show()
+                    onLogin()
+                    saveUsers(username, password, "member")
+                }
+            } else {
+                loginAttemptCount++
+
+                if (loginAttemptCount < MAX_LOGIN_ATTEMPTS) {
+                    customProgressDialog.setText("Retrying login (${loginAttemptCount + 1}/${MAX_LOGIN_ATTEMPTS})...")
+                    attemptAutoLogin(username, password)
+                } else {
+                    customProgressDialog.dismiss()
+                    Toast.makeText(this@LoginActivity, "Auto-login failed. Please try manually.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }, delay)
     }
 
     private fun showGuestLoginDialog() {
