@@ -10,6 +10,7 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.*
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
@@ -111,6 +112,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val startTimes = System.currentTimeMillis()
+        Log.d("LoginFlow", "[${startTimes}] DashboardActivity.onCreate started")
         super.onCreate(savedInstanceState)
         checkUser()
         activityDashboardBinding = ActivityDashboardBinding.inflate(layoutInflater)
@@ -361,6 +364,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
         }
+
+        Log.d("LoginFlow", "[${System.currentTimeMillis()}] DashboardActivity.onCreate completed in ${System.currentTimeMillis() - startTimes}ms")
     }
 
     fun challengeDialog (voiceCount: Int, courseStatus: String, allVoiceCount: Int, hasUnfinishedSurvey: Boolean) {
@@ -838,7 +843,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onDestroy() {
         super.onDestroy()
-        profileDbHandler.onDestroy()
+//        profileDbHandler.onDestroy()
 
         realmListeners.forEach { it.removeListener() }
         realmListeners.clear()

@@ -95,10 +95,10 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         if (context is OnHomeItemClickListener) homeItemClickListener = context
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        profileDbHandler.onDestroy()
-    }
+//    override fun onDestroy() {
+//        super.onDestroy()
+//        profileDbHandler.onDestroy()
+//    }
 
     override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
         if (news != null) {

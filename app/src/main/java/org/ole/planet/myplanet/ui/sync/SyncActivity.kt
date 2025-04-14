@@ -1,29 +1,48 @@
 package org.ole.planet.myplanet.ui.sync
 
 import android.Manifest
-import android.content.*
+import android.content.DialogInterface
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.SharedPreferences
 import android.graphics.drawable.AnimationDrawable
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.text.*
-import android.view.*
+import android.text.Editable
+import android.text.TextUtils
+import android.text.TextWatcher
+import android.util.Log
+import android.view.ContextThemeWrapper
+import android.view.LayoutInflater
+import android.view.View
 import android.webkit.URLUtil
-import android.widget.*
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.CompoundButton
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.RadioGroup
+import android.widget.Spinner
+import android.widget.TextView
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.afollestad.materialdialogs.*
-import io.realm.*
+import com.afollestad.materialdialogs.DialogAction
+import com.afollestad.materialdialogs.MaterialDialog
+import io.realm.Realm
+import io.realm.Sort
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -34,16 +53,25 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.databinding.*
-import org.ole.planet.myplanet.datamanager.*
+import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
+import org.ole.planet.myplanet.databinding.LayoutChildLoginBinding
 import org.ole.planet.myplanet.datamanager.ApiClient.client
-import org.ole.planet.myplanet.datamanager.Service.*
-import org.ole.planet.myplanet.model.*
-import org.ole.planet.myplanet.service.*
+import org.ole.planet.myplanet.datamanager.ApiInterface
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.Service
+import org.ole.planet.myplanet.datamanager.Service.CheckVersionCallback
+import org.ole.planet.myplanet.datamanager.Service.ConfigurationIdListener
+import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
+import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.model.RealmCommunity
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.ServerAddressesModel
+import org.ole.planet.myplanet.service.SyncManager
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
-import org.ole.planet.myplanet.utilities.*
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
+import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.autoSynFeature
 import org.ole.planet.myplanet.utilities.DialogUtils.getUpdateDialog
@@ -51,19 +79,19 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.DialogUtils.showSnack
 import org.ole.planet.myplanet.utilities.DialogUtils.showWifiSettingDialog
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
+import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
-import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
+import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
 import java.io.File
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
-import androidx.core.net.toUri
-import kotlinx.coroutines.async
-import org.ole.planet.myplanet.MainApplication
-import androidx.core.content.edit
 
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
     OnUserSelectedListener, ConfigurationIdListener {
@@ -111,7 +139,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         mRealm = DatabaseService(this).realmInstance
         mRealm = Realm.getDefaultInstance()
         requestAllPermissions()
-        customProgressDialog = DialogUtils.getCustomProgressDialog(this)
         prefData = SharedPrefManager(this)
         profileDbHandler = UserProfileDbHandler(this)
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
@@ -260,7 +287,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
                         if ((myList?.size ?: 0) < 8) {
                             withContext(Dispatchers.Main) {
-                                customProgressDialog?.dismiss()
+                                customProgressDialog.dismiss()
                                 alertDialogOkay(context.getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
                             }
                             false
@@ -280,7 +307,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                             else -> ""
                         }
                         withContext(Dispatchers.Main) {
-                            customProgressDialog?.dismiss()
+                            customProgressDialog.dismiss()
                             alertDialogOkay(errorMessage)
                         }
                         false
@@ -426,14 +453,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onSyncStarted() {
-        customProgressDialog?.setText(getString(R.string.syncing_data_please_wait))
-        customProgressDialog?.show()
+        customProgressDialog.setText(getString(R.string.syncing_data_please_wait))
+        customProgressDialog.show()
         isProgressDialogShowing = true
     }
 
     override fun onSyncFailed(msg: String?) {
         if (isProgressDialogShowing) {
-            customProgressDialog?.dismiss()
+            customProgressDialog.dismiss()
         }
         if (::syncIconDrawable.isInitialized) {
             syncIconDrawable = syncIcon.drawable as AnimationDrawable
@@ -473,7 +500,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 }
 
                 withContext(Dispatchers.Main) {
-                    customProgressDialog?.dismiss()
+                    customProgressDialog.dismiss()
 
                     if (::syncIconDrawable.isInitialized) {
                         syncIconDrawable = syncIcon.drawable as AnimationDrawable
@@ -698,39 +725,41 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         sync(dialog)
     }
 
-    suspend fun onLogin() {
-        val handler = UserProfileDbHandler(this)
-        handler.onLogin()
-        handler.onDestroy()
-        editor.putBoolean(Constants.KEY_LOGIN, true).commit()
-        openDashboard()
+    fun onLogin() {
+        val startTime = System.currentTimeMillis()
+        Log.d("LoginFlow", "[${startTime}] onLogin() started")
 
-        val updateUrl = "${settings.getString("serverURL", "")}"
-        val serverUrlMapper = ServerUrlMapper(this)
-        val mapping = serverUrlMapper.processUrl(updateUrl)
+        try {
+            val handlerStartTime = System.currentTimeMillis()
+            val handler = UserProfileDbHandler(this)
+            Log.d("LoginFlow", "[${System.currentTimeMillis()}] Created UserProfileDbHandler in ${System.currentTimeMillis() - handlerStartTime}ms")
 
-        CoroutineScope(Dispatchers.IO).launch {
-            val primaryAvailable = MainApplication.Companion.isServerReachable(mapping.primaryUrl)
-            val alternativeAvailable = mapping.alternativeUrl?.let { MainApplication.Companion.isServerReachable(it) } == true
+            // Launch the time-consuming operation in the background
+            // and don't wait for it to complete
+            CoroutineScope(Dispatchers.IO).launch {
+                val loginStartTime = System.currentTimeMillis()
+                handler.onLogin()
+                Log.d("LoginFlow", "[${System.currentTimeMillis()}] handler.onLogin() completed in ${System.currentTimeMillis() - loginStartTime}ms")
 
-            if (!primaryAvailable && alternativeAvailable) {
-                mapping.alternativeUrl.let { alternativeUrl ->
-                    val uri = updateUrl.toUri()
-                    val editor = settings.edit()
-
-                    serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
-                }
+                // Clean up the handler after the operation completes
+//                handler.onDestroy()
+                Log.d("LoginFlow", "[${System.currentTimeMillis()}] handler.onDestroy() completed")
             }
 
-            withContext(Dispatchers.Main) {
-                startUpload("login")
-                val backgroundRealm = Realm.getDefaultInstance()
-                try {
-                    TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
-                } finally {
-                    backgroundRealm.close()
-                }
-            }
+            // Continue with the rest of your login flow immediately
+            val prefStartTime = System.currentTimeMillis()
+            editor.putBoolean(Constants.KEY_LOGIN, true).commit()
+            Log.d("LoginFlow", "[${System.currentTimeMillis()}] Saved login state to preferences in ${System.currentTimeMillis() - prefStartTime}ms")
+
+            Log.d("LoginFlow", "[${System.currentTimeMillis()}] About to call openDashboard() - ${System.currentTimeMillis() - startTime}ms since start")
+            val dashboardStartTime = System.currentTimeMillis()
+            openDashboard()
+            Log.d("LoginFlow", "[${System.currentTimeMillis()}] openDashboard() returned after ${System.currentTimeMillis() - dashboardStartTime}ms - should have started navigation")
+
+            // Continue with the rest of your code...
+        } catch (e: Exception) {
+            Log.e("LoginFlow", "[${System.currentTimeMillis()}] Exception in onLogin after ${System.currentTimeMillis() - startTime}ms: ${e.javaClass.simpleName} - ${e.message}")
+            e.printStackTrace()
         }
     }
 
@@ -938,8 +967,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onSuccess(success: String?) {
-        if (customProgressDialog?.isShowing() == true && success?.contains("Crash") == true) {
-            customProgressDialog?.dismiss()
+        if (customProgressDialog.isShowing() == true && success?.contains("Crash") == true) {
+            customProgressDialog.dismiss()
         }
         if (::btnSignIn.isInitialized) {
             showSnack(btnSignIn, success)
@@ -966,8 +995,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onCheckingVersion() {
-        customProgressDialog?.setText(getString(R.string.checking_version))
-        customProgressDialog?.show()
+        customProgressDialog.setText(getString(R.string.checking_version))
+        customProgressDialog.show()
     }
 
     fun registerReceiver() {
@@ -982,7 +1011,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         if (msg.startsWith("Config")) {
             settingDialog()
         }
-        customProgressDialog?.dismiss()
+        customProgressDialog.dismiss()
         if (!blockSync) continueSyncProcess() else {
             syncIconDrawable.stop()
             syncIconDrawable.selectDrawable(0)
@@ -1022,6 +1051,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     }
                 } else {
                     alertDialogOkay(getString(R.string.err_msg_login))
+                    Log.d("okuro", "2 login failed- name: ${userModel.name}, password: $password")
                 }
             }.setNegativeButton(R.string.cancel, null).show()
     }

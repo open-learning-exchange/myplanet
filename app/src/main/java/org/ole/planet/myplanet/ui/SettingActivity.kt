@@ -238,12 +238,12 @@ class SettingActivity : AppCompatActivity() {
             }
         }
 
-        override fun onDestroy() {
-            super.onDestroy()
-            if (this::profileDbHandler.isInitialized) {
-                profileDbHandler.onDestroy()
-            }
-        }
+//        override fun onDestroy() {
+//            super.onDestroy()
+//            if (this::profileDbHandler.isInitialized) {
+//                profileDbHandler.onDestroy()
+//            }
+//        }
 
         companion object {
             fun darkMode(context: Context) {
