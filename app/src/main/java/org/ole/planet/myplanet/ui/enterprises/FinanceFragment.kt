@@ -150,7 +150,7 @@ class FinanceFragment : BaseTeamFragment() {
                 .equalTo("teamId", teamId)
                 .equalTo("docType", "transaction")
                 .between("date", start, end)
-                .sort("date", if (isAsc) Sort.DESCENDING else Sort.ASCENDING)
+                .sort("date", if (isAsc) Sort.ASCENDING else Sort.DESCENDING)
                 .findAll()
 
             updatedFinanceList(list!!)
