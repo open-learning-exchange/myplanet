@@ -216,6 +216,18 @@
         </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/tvGenderTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="10dp"
+        android:text="@string/gender"
+        android:textColor="@color/hint_color"
+        android:textSize="12sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/lt2" />
+
     <RadioGroup
         android:id="@+id/rdGender"
         android:layout_width="match_parent"
@@ -224,7 +236,7 @@
         android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/lt2">
+        app:layout_constraintTop_toBottomOf="@+id/tvGenderTitle">
 
         <RadioButton
             android:id="@+id/rbMale"
@@ -254,20 +266,53 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/rdGender">
 
-        <Spinner
-            android:id="@+id/language"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:popupBackground="@color/secondary_bg"
-            app:backgroundTint="@color/daynight_textColor" />
-        <Spinner
-            android:id="@+id/level"
-            android:layout_width="wrap_content"
+            android:layout_marginStart="10dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/languageTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/language"
+                android:textColor="@color/hint_color"
+                android:layout_marginBottom="4dp"
+                android:textSize="12sp" />
+
+            <Spinner
+                android:id="@+id/language"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:popupBackground="@color/secondary_bg"
+                app:backgroundTint="@color/daynight_textColor" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:popupBackground="@color/secondary_bg"
-            app:backgroundTint="@color/daynight_textColor" />
+            android:orientation="vertical"
+            android:layout_marginStart="8dp">
+
+            <TextView
+                android:id="@+id/levelTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/gender"
+                android:textColor="@color/hint_color"
+                android:textSize="12sp"
+                android:layout_marginBottom="4dp" />
+
+            <Spinner
+                android:id="@+id/level"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:popupBackground="@color/secondary_bg"
+                app:backgroundTint="@color/daynight_textColor" />
+        </LinearLayout>
     </LinearLayout>
 
     <LinearLayout
