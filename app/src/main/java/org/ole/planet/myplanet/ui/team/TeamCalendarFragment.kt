@@ -128,11 +128,6 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 date?.set(Calendar.YEAR, year)
                 date?.set(Calendar.MONTH, monthOfYear)
                 date?.set(Calendar.DAY_OF_MONTH, dayOfMonth)
-                if(endDate != null && date == Calendar.getInstance()){
-                    endDate.set(Calendar.YEAR, year)
-                    endDate.set(Calendar.MONTH, monthOfYear)
-                    endDate.set(Calendar.DAY_OF_MONTH, dayOfMonth)
-                }
                 view.text = date?.timeInMillis?.let { it1 -> TimeUtils.formatDate(it1, "yyyy-MM-dd") }
             }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show()
         }
@@ -183,8 +178,8 @@ class TeamCalendarFragment : BaseTeamFragment() {
                     showMeetupDialog(markedDates)
                 } else {
                     if(arguments?.getBoolean("fromLogin", false) != true){
-                        start = clickedCalendar
-                        end = clickedCalendar
+                        start = clickedCalendar.clone() as Calendar
+                        end = clickedCalendar.clone() as Calendar
                         showMeetupAlert()
                     } else{
                         fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
