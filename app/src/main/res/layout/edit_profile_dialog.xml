@@ -189,31 +189,44 @@
                 android:textColor="@color/daynight_textColor"
                 android:backgroundTint="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/ltInputName"
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_marginTop="10dp"
             android:layout_weight="0.8"
+            android:layout_marginTop="9dp"
             android:layout_marginStart="4dp"
-            app:boxBackgroundColor="@color/md_white_1000"
-            app:boxStrokeColor="@color/md_white_1000"
-            app:boxStrokeWidth="0dp"
-            app:boxStrokeWidthFocused="0dp">
-
+            android:orientation="vertical">
             <TextView
-                android:id="@+id/dateOfBirth"
+                android:id="@+id/tvBirthTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="right"
-                android:hint="@string/birth_date"
-                android:textColor="@color/daynight_textColor"
-                android:textSize="16sp"
-                app:drawableRightCompat="@drawable/ic_date"
-                app:drawableTint="@color/daynight_textColor" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:text="@string/birth_date"
+                android:textColor="@color/hint_color"
+                android:textSize="12sp"
+                android:layout_marginBottom="4dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/ltInputName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:boxBackgroundColor="@color/md_white_1000"
+                app:boxStrokeColor="@color/md_white_1000"
+                app:boxStrokeWidth="0dp"
+                app:boxStrokeWidthFocused="0dp">
+
+                <TextView
+                    android:id="@+id/dateOfBirth"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="right"
+                    android:hint="@string/birth_date"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="16sp"
+                    app:drawableRightCompat="@drawable/ic_date"
+                    app:drawableTint="@color/daynight_textColor" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+        </LinearLayout>
     </LinearLayout>
 
     <TextView
