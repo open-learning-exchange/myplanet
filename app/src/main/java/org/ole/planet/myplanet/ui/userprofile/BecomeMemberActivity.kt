@@ -127,9 +127,6 @@ class BecomeMemberActivity : BaseActivity() {
         }
 
         activityBecomeMemberBinding.btnSubmit.setOnClickListener {
-            PerformanceLogger.start()
-            PerformanceLogger.markEvent("Submit button clicked")
-
             val userName: String = activityBecomeMemberBinding.etUsername.text.toString()
             var password: String? = activityBecomeMemberBinding.etPassword.text.toString()
             val rePassword: String = activityBecomeMemberBinding.etRePassword.text.toString()
