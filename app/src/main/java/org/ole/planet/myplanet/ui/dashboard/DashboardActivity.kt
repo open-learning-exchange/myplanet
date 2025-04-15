@@ -71,7 +71,6 @@ import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
-import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper.disableShiftMode
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
@@ -123,7 +122,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         activityDashboardBinding.myToolbar.setTitleTextColor(Color.WHITE)
         activityDashboardBinding.myToolbar.setSubtitleTextColor(Color.WHITE)
         navigationView = activityDashboardBinding.topBarNavigation
-        disableShiftMode(navigationView)
+        navigationView.labelVisibilityMode = NavigationBarView.LABEL_VISIBILITY_LABELED
         activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
         service = Service(this)
         tl = findViewById(R.id.tab_layout)
@@ -426,6 +425,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun setupRealmListeners() {
+        if (mRealm.isInTransaction) {
+            mRealm.commitTransaction()
+        }
         setupListener {
             mRealm.where(RealmMyLibrary::class.java).findAllAsync()
         }

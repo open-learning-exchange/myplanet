@@ -1266,5 +1266,8 @@
     <string name="response">Response</string>
     <string name="full_conversation_response">Full conversation response</string>
     <string name="add_new_event">add new event</string>
+    <string name="none">None</string>
+    <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">Your health data will appear here as you continue tracking it</string>
+    <string name="no_health_records_available">No health records available</string>
 
 </resources>

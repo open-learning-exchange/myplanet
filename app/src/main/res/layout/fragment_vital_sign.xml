@@ -315,6 +315,24 @@
                         android:layout_weight="1"
                         android:scrollbars="horizontal" />
                 </LinearLayout>
+                <TextView
+                        android:id="@+id/tv_data_placeholder"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/your_health_data_will_appear_here_as_you_continue_tracking_it"
+                        android:textColor="@color/daynight_textColor"
+                        android:gravity="center"
+                        android:padding="@dimen/padding_normal"
+                        android:visibility="gone" />
+                <TextView
+                        android:id="@+id/tv_no_records"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/no_health_records_available"
+                        android:textColor="@color/daynight_textColor"
+                        android:gravity="center"
+                        android:padding="@dimen/padding_normal"
+                        android:visibility="gone" />
             </LinearLayout>
 
             <TextView

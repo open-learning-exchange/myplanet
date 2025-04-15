@@ -1266,5 +1266,8 @@
     <string name="response">Jawaab</string>
     <string name="full_conversation_response">Jawaabta wada hadalka oo dhameystiran</string>
     <string name="add_new_event">ku dar dhacdo cusub</string>
+    <string name="none">Midna</string>
+    <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">Xogtaada caafimaadka waxay halkan ka muuqan doontaa markaad sii waddo la socodka</string>
+    <string name="no_health_records_available">Ma jiraan diiwaanada caafimaadka ee la heli karo</string>
 
 </resources>

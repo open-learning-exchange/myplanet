@@ -1266,5 +1266,8 @@
     <string name="response">Respuesta</string>
     <string name="full_conversation_response">Respuesta completa de la conversación</string>
     <string name="add_new_event">agregar nuevo evento</string>
+    <string name="none">Ninguno</string>
+    <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">Sus datos de salud aparecerán aquí a medida que continúe registrándolos</string>
+    <string name="no_health_records_available">No hay registros de salud disponibles</string>
 
 </resources>
