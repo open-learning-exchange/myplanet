@@ -5,8 +5,8 @@ import android.app.Dialog
 import android.content.Context
 import android.content.DialogInterface
 import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.os.Build
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -29,7 +29,6 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
-import fisk.chipcloud.ChipCloudConfig
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
@@ -505,6 +504,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             ob.addProperty("section", "community")
             ob.addProperty("_id", currentUser?.planetCode + "@" + currentUser?.parentCode)
             ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
+            ob.addProperty("teamOnly", true) //test
             array.add(ob)
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
