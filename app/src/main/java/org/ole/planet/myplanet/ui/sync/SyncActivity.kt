@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -328,16 +329,27 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     fun authenticateUser(settings: SharedPreferences?, username: String?, password: String?, isManagerMode: Boolean): Boolean {
         return try {
+            PerformanceLogger.markEvent("Starting authenticateUser for $username")
+
             if (settings != null) {
                 this.settings = settings
             }
+
+            if (mRealm.isClosed) {
+                mRealm = Realm.getDefaultInstance()
+            }
+
             if (mRealm.isEmpty) {
+                PerformanceLogger.markEvent("Authentication failed: Realm is empty")
                 alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
                 false
             } else {
-                checkName(username, password, isManagerMode)
+                val result = checkName(username, password, isManagerMode)
+                PerformanceLogger.markEvent("Authentication result for $username: $result")
+                result
             }
         } catch (e: Exception) {
+            PerformanceLogger.markEvent("Authentication exception: ${e.message}")
             e.printStackTrace()
             false
         }
@@ -1076,6 +1088,48 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             val mainIntent = Intent.makeRestartActivityTask(intent?.component)
             context.startActivity(mainIntent)
             Runtime.getRuntime().exit(0)
+        }
+    }
+
+    fun debugAuthenticationIssue(username: String?, password: String?) {
+        try {
+            if (mRealm.isClosed) {
+                mRealm = Realm.getDefaultInstance()
+            }
+
+            val user = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
+
+            if (user == null) {
+                Log.d("AuthDebug", "User $username not found in database")
+                return
+            }
+
+            Log.d("AuthDebug", "Found user: ${user.name}, ID: ${user._id}")
+            Log.d("AuthDebug", "User has empty _id: ${user._id?.isEmpty() == true}")
+
+            if (user._id?.isEmpty() == true) {
+                // Local user case
+                val passwordMatches = password == user.password
+                Log.d("AuthDebug", "Local user password match: $passwordMatches")
+            } else {
+                // CouchDB user case
+                Log.d("AuthDebug", "CouchDB user authentication check")
+                Log.d("AuthDebug", "Has derived_key: ${!user.derived_key.isNullOrEmpty()}")
+                Log.d("AuthDebug", "Has salt: ${!user.salt.isNullOrEmpty()}")
+
+                try {
+                    val result = androidDecrypter(username, password, user.derived_key, user.salt)
+                    Log.d("AuthDebug", "androidDecrypter result: $result")
+                } catch (e: Exception) {
+                    Log.e("AuthDebug", "Error in androidDecrypter: ${e.message}", e)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("AuthDebug", "General error in debugAuthentication: ${e.message}", e)
+        } finally {
+            if (!mRealm.isClosed) {
+                mRealm.close()
+            }
         }
     }
 }

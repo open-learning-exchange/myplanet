@@ -55,11 +55,14 @@ import java.util.concurrent.Executors
 import kotlin.math.min
 import androidx.core.net.toUri
 import androidx.core.content.edit
+import org.ole.planet.myplanet.utilities.PerformanceLogger
+import java.util.concurrent.ConcurrentHashMap
 
 class Service(private val context: Context) {
     private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val retrofitInterface: ApiInterface? = ApiClient.client?.create(ApiInterface::class.java)
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
     fun healthAccess(listener: SuccessListener) {
         retrofitInterface?.healthAccess(Utilities.getHealthAccessUrl(preferences))?.enqueue(object : Callback<ResponseBody> {
@@ -177,9 +180,24 @@ class Service(private val context: Context) {
 
     fun isPlanetAvailable(callback: PlanetAvailableListener?) {
         val updateUrl = "${preferences.getString("serverURL", "")}"
+
+        // OPTIMIZATION 5: Check cache first
+        serverAvailabilityCache[updateUrl]?.let { (available, timestamp) ->
+            if (System.currentTimeMillis() - timestamp < 30000) { // Cache valid for 30 seconds
+                PerformanceLogger.markEvent("Using cached server availability: ${if (available) "available" else "not available"}")
+                if (available) {
+                    callback?.isAvailable()
+                } else {
+                    callback?.notAvailable()
+                }
+                return
+            }
+        }
+
         val serverUrlMapper = ServerUrlMapper(context)
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
+        // Check server reachability in background
         CoroutineScope(Dispatchers.IO).launch {
             val primaryAvailable = isServerReachable(mapping.primaryUrl)
             val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
@@ -188,49 +206,78 @@ class Service(private val context: Context) {
                 mapping.alternativeUrl.let { alternativeUrl ->
                     val uri = updateUrl.toUri()
                     val editor = preferences.edit()
-
                     serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, preferences)
                 }
             }
 
             withContext(Dispatchers.Main) {
-                retrofitInterface?.isPlanetAvailable(Utilities.getUpdateUrl(preferences))
-                    ?.enqueue(object : Callback<ResponseBody?> {
-                        override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
-                            if (callback != null && response.code() == 200) {
-                                callback.isAvailable()
-                            } else {
-                                callback?.notAvailable()
-                            }
-                        }
+                retrofitInterface?.isPlanetAvailable(Utilities.getUpdateUrl(preferences))?.enqueue(object : Callback<ResponseBody?> {
+                    override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
+                        val isAvailable = callback != null && response.code() == 200
 
-                        override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
+                        // Cache the result
+                        serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
+                        PerformanceLogger.markEvent("Caching server availability: ${if (isAvailable) "available" else "not available"}")
+
+                        if (isAvailable) {
+                            callback?.isAvailable()
+                        } else {
                             callback?.notAvailable()
                         }
-                    })
+                    }
+
+                    override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
+                        serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
+                        PerformanceLogger.markEvent("Server availability check failed")
+                        callback?.notAvailable()
+                    }
+                })
             }
         }
     }
 
     fun becomeMember(realm: Realm, obj: JsonObject, callback: CreateUserCallback) {
+        PerformanceLogger.markEvent("Service.becomeMember called")
         isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
+                PerformanceLogger.markEvent("Planet is available, checking if user exists")
                 retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}")?.enqueue(object : Callback<JsonObject> {
                     override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                        PerformanceLogger.markEvent("User existence check response received")
                         if (response.body() != null && response.body()?.has("_id") == true) {
+                            PerformanceLogger.markEvent("User already exists")
                             callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                         } else {
+                            PerformanceLogger.markEvent("Creating new user on server")
                             retrofitInterface.putDoc(null, "application/json", "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
                                 override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                                    PerformanceLogger.markEvent("User creation response received")
                                     if (response.body() != null && response.body()!!.has("id")) {
-                                        uploadToShelf(obj)
-                                        saveUserToDb(realm, response.body()!!.get("id").asString, obj, callback)
+                                        // OPTIMIZATION 3: Parallelize operations
+                                        serviceScope.launch {
+                                            // Start both operations in parallel
+                                            val uploadJob = async(Dispatchers.IO) {
+                                                PerformanceLogger.markEvent("Starting uploadToShelf")
+                                                uploadToShelf(obj)
+                                                PerformanceLogger.markEvent("uploadToShelf completed")
+                                            }
+
+                                            val saveUserJob = async(Dispatchers.Main) {
+                                                PerformanceLogger.markEvent("Starting saveUserToDb")
+                                                saveUserToDb(realm, response.body()!!.get("id").asString, obj, callback)
+                                            }
+
+                                            // Wait for both to complete (though saveUserToDb will call the callback)
+                                            uploadJob.await()
+                                        }
                                     } else {
+                                        PerformanceLogger.markEvent("Failed to create user")
                                         callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                                     }
                                 }
 
                                 override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+                                    PerformanceLogger.markEvent("Network failure during user creation")
                                     callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                                 }
                             })
@@ -238,17 +285,22 @@ class Service(private val context: Context) {
                     }
 
                     override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+                        PerformanceLogger.markEvent("Network failure during user existence check")
                         callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                     }
                 })
             }
 
             override fun notAvailable() {
+                // Offline user creation (unchanged)
+                PerformanceLogger.markEvent("Planet not available, creating user offline")
                 val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 if (isUserExists(realm, obj["name"].asString)) {
+                    PerformanceLogger.markEvent("User already exists locally")
                     callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                     return
                 }
+                PerformanceLogger.markEvent("Starting local user creation")
                 realm.beginTransaction()
                 val model = populateUsersTable(obj, realm, settings)
                 val keyString = generateKey()
@@ -258,6 +310,7 @@ class Service(private val context: Context) {
                     model.iv = iv
                 }
                 realm.commitTransaction()
+                PerformanceLogger.markEvent("Local user creation completed")
                 Utilities.toast(MainApplication.context, context.getString(R.string.not_connect_to_planet_created_user_offline))
                 callback.onSuccess(context.getString(R.string.not_connect_to_planet_created_user_offline))
             }
@@ -273,42 +326,55 @@ class Service(private val context: Context) {
     }
 
     private fun saveUserToDb(realm: Realm, id: String, obj: JsonObject, callback: CreateUserCallback) {
+        PerformanceLogger.markEvent("saveUserToDb started")
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         realm.executeTransactionAsync({ realm1: Realm? ->
+            PerformanceLogger.markEvent("Realm transaction started")
             try {
-                val res = retrofitInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/" + id)?.execute()
+                PerformanceLogger.markEvent("Fetching user data from server")
+                val res = retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/$id")?.execute()
                 if (res?.body() != null) {
+                    PerformanceLogger.markEvent("User data retrieved, populating user table")
                     val model = populateUsersTable(res.body(), realm1, settings)
                     if (model != null) {
+                        PerformanceLogger.markEvent("Starting saveKeyIv")
                         UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
+                        PerformanceLogger.markEvent("saveKeyIv completed")
                     }
                 }
             } catch (e: IOException) {
+                PerformanceLogger.markEvent("Error in Realm transaction: ${e.message}")
                 e.printStackTrace()
             }
         }, {
+            PerformanceLogger.markEvent("Realm transaction completed successfully")
             callback.onSuccess(context.getString(R.string.user_created_successfully))
             isNetworkConnectedFlow.onEach { isConnected ->
                 if (isConnected) {
                     val serverUrl = settings.getString("serverURL", "")
                     if (!serverUrl.isNullOrEmpty()) {
                         serviceScope.launch {
+                            PerformanceLogger.markEvent("Starting server reachability check")
                             val canReachServer = withContext(Dispatchers.IO) {
                                 isServerReachable(serverUrl)
                             }
                             if (canReachServer) {
+                                PerformanceLogger.markEvent("Server is reachable, starting upload")
                                 if (context is ProcessUserDataActivity) {
                                     context.runOnUiThread {
                                         context.startUpload("becomeMember")
                                     }
                                 }
+                                PerformanceLogger.markEvent("Starting DB sync")
                                 TransactionSyncManager.syncDb(realm, "tablet_users")
+                                PerformanceLogger.markEvent("DB sync completed")
                             }
                         }
                     }
                 }
             }.launchIn(serviceScope)
         }) { error: Throwable ->
+            PerformanceLogger.markEvent("Realm transaction failed: ${error.message}")
             error.printStackTrace()
             callback.onSuccess(context.getString(R.string.unable_to_save_user_please_sync))
         }

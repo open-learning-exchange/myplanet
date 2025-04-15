@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.ui.userprofile
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -21,6 +23,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.NetworkUtils
+import org.ole.planet.myplanet.utilities.PerformanceLogger
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
 import java.text.Normalizer
@@ -125,6 +128,9 @@ class BecomeMemberActivity : BaseActivity() {
         }
 
         activityBecomeMemberBinding.btnSubmit.setOnClickListener {
+            PerformanceLogger.start()
+            PerformanceLogger.markEvent("Submit button clicked")
+
             val userName: String = activityBecomeMemberBinding.etUsername.text.toString()
             var password: String? = activityBecomeMemberBinding.etPassword.text.toString()
             val rePassword: String = activityBecomeMemberBinding.etRePassword.text.toString()
@@ -175,6 +181,7 @@ class BecomeMemberActivity : BaseActivity() {
             } else if (activityBecomeMemberBinding.rbGender.checkedRadioButtonId == -1) {
                 Utilities.toast(this, getString(R.string.please_select_gender))
             } else {
+                PerformanceLogger.markEvent("Validation successful")
                 if (activityBecomeMemberBinding.male.isChecked) {
                     gender = "male"
                 } else if (activityBecomeMemberBinding.female.isChecked) {
@@ -186,6 +193,8 @@ class BecomeMemberActivity : BaseActivity() {
                     password = phoneNumber
                 }
 
+                activityBecomeMemberBinding.pbar.visibility = View.VISIBLE
+                PerformanceLogger.markEvent("Starting user creation process")
                 checkMandatoryFieldsAndAddMember(
                     userName, password, rePassword, fName, lName, mName, email, language, level,
                     phoneNumber, birthDate, gender, mRealm
@@ -200,6 +209,7 @@ class BecomeMemberActivity : BaseActivity() {
         birthDate: String?, gender: String?, mRealm: Realm
     ) {
         if (username.isNotEmpty() && password.isNotEmpty() && rePassword == password) {
+            PerformanceLogger.markEvent("Starting JSON object creation")
             val obj = JsonObject()
             obj.addProperty("name", username)
             obj.addProperty("firstName", fName)
@@ -220,31 +230,41 @@ class BecomeMemberActivity : BaseActivity() {
             obj.addProperty("betaEnabled", false)
             obj.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             obj.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
-            obj.addProperty(
-                "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
-            )
+            obj.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
             val roles = JsonArray()
             roles.add("learner")
             obj.add("roles", roles)
-            activityBecomeMemberBinding.pbar.visibility = View.VISIBLE
+            PerformanceLogger.markEvent("JSON object created, calling becomeMember")
             Service(this).becomeMember(mRealm, obj, object : Service.CreateUserCallback {
                 override fun onSuccess(message: String) {
-                    runOnUiThread {
+                    PerformanceLogger.markEvent("becomeMember success callback received")
+                    Utilities.toast(this@BecomeMemberActivity, message)
+
+                    // OPTIMIZATION 4: Remove the 2-second delay
+                    Handler(Looper.getMainLooper()).post {
+                        PerformanceLogger.markEvent("Starting navigation to LoginActivity")
                         activityBecomeMemberBinding.pbar.visibility = View.GONE
-                        Utilities.toast(this@BecomeMemberActivity, message)
+
+                        val intent = Intent(this@BecomeMemberActivity, LoginActivity::class.java)
+                        intent.putExtra("username", username)
+                        intent.putExtra("password", password)
+                        intent.putExtra("autoLogin", true)
+
+                        if (guest) {
+                            intent.putExtra("guest", true)
+                        }
+
+                        PerformanceLogger.markEvent("Intent prepared, starting LoginActivity")
+                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        startActivity(intent)
+                        PerformanceLogger.markEvent("LoginActivity started")
+
+                        // End the performance tracking right before finishing this activity
+                        PerformanceLogger.end()
+                        finish()
                     }
-                    finish()
                 }
             })
-
-            val intent = Intent(this, LoginActivity::class.java)
-            if (guest){
-                intent.putExtra("username", username)
-                intent.putExtra("guest", guest)
-            }
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            startActivity(intent)
-            finish()
         }
     }
 

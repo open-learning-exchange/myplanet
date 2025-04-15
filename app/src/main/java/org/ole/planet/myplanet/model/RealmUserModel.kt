@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.model
 
 import android.content.SharedPreferences
-import android.net.Uri
 import android.util.Base64
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -175,7 +174,7 @@ open class RealmUserModel : RealmObject() {
 
     fun isManager(): Boolean {
         val roles = getRoles()
-        val isManager = roles.toString().lowercase(Locale.ROOT).contains("manager") || userAdmin ?: false
+        val isManager = roles.toString().lowercase(Locale.ROOT).contains("manager") || userAdmin == true
         return isManager
     }
 
@@ -215,50 +214,48 @@ open class RealmUserModel : RealmObject() {
             try {
                 val id = JsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: UUID.randomUUID().toString()
 
-                var user: RealmUserModel? = null
-
-                if (!mRealm.isInTransaction) {
+                return if (!mRealm.isInTransaction) {
+                    var userResult: RealmUserModel? = null
                     mRealm.executeTransaction { realm ->
-                        user = realm.where(RealmUserModel::class.java)
-                            .equalTo("_id", id)
-                            .findFirst() ?: realm.createObject(RealmUserModel::class.java, id)
-
-                        insertIntoUsers(jsonDoc, user!!, settings)
+                        userResult = findOrCreateUser(realm, id, jsonDoc, settings)
                     }
+                    userResult
                 } else {
-                    user = mRealm.where(RealmUserModel::class.java)
-                        .equalTo("_id", id)
-                        .findFirst() ?: mRealm.createObject(RealmUserModel::class.java, id)
-                    insertIntoUsers(jsonDoc, user!!, settings)
+                    findOrCreateUser(mRealm, id, jsonDoc, settings)
                 }
-                return user
             } catch (err: Exception) {
                 err.printStackTrace()
+                return null
             }
-            return null
         }
 
-        private fun insertIntoUsers(jsonDoc: JsonObject?, user: RealmUserModel, settings: SharedPreferences) {
-            if (jsonDoc == null) return
+        private fun findOrCreateUser(realm: Realm, id: String, jsonDoc: JsonObject, settings: SharedPreferences): RealmUserModel {
+            val user = realm.where(RealmUserModel::class.java)
+                .equalTo("_id", id)
+                .findFirst() ?: realm.createObject(RealmUserModel::class.java, id)
+            populateUserData(jsonDoc, user, settings)
+            return user
+        }
 
-            val planetCodes = JsonUtils.getString("planetCode", jsonDoc)
+        private fun populateUserData(jsonDoc: JsonObject, user: RealmUserModel, settings: SharedPreferences) {
+            val utilsPlanetCode = JsonUtils.getString("planetCode", jsonDoc)
             val rolesArray = JsonUtils.getJsonArray("roles", jsonDoc)
-
+            val userId = JsonUtils.getString("_id", jsonDoc)
             user.apply {
                 _rev = JsonUtils.getString("_rev", jsonDoc)
-                _id = JsonUtils.getString("_id", jsonDoc)
+                _id = userId
                 name = JsonUtils.getString("name", jsonDoc)
-                setRoles(RealmList<String?>().apply {
-                    for (i in 0 until rolesArray.size()) {
-                        add(JsonUtils.getString(rolesArray, i))
-                    }
-                })
+                val roles = RealmList<String?>()
+                for (i in 0 until rolesArray.size()) {
+                    roles.add(JsonUtils.getString(rolesArray, i))
+                }
+                setRoles(roles)
                 userAdmin = JsonUtils.getBoolean("isUserAdmin", jsonDoc)
                 joinDate = JsonUtils.getLong("joinDate", jsonDoc)
                 firstName = JsonUtils.getString("firstName", jsonDoc)
                 lastName = JsonUtils.getString("lastName", jsonDoc)
                 middleName = JsonUtils.getString("middleName", jsonDoc)
-                planetCode = planetCodes
+                planetCode = utilsPlanetCode
                 parentCode = JsonUtils.getString("parentCode", jsonDoc)
                 email = JsonUtils.getString("email", jsonDoc)
                 if (_id?.isEmpty() == true) {
@@ -280,32 +277,20 @@ open class RealmUserModel : RealmObject() {
                 isArchived = JsonUtils.getBoolean("isArchived", jsonDoc)
             }
 
-            if (planetCodes.isNotEmpty()) {
-                settings.edit { putString("planetCode", planetCodes) }
+            if (utilsPlanetCode.isNotEmpty()) {
+                settings.edit { putString("planetCode", utilsPlanetCode) }
             }
 
-            userDataList.add(arrayOf(
-                user.userAdmin.toString(),
-                user._id.toString(),
-                user.name.toString(),
-                user.firstName.toString(),
-                user.lastName.toString(),
-                user.email.toString(),
-                user.phoneNumber.toString(),
-                user.planetCode.toString(),
-                user.parentCode.toString(),
-                user.password_scheme.toString(),
-                user.iterations.toString(),
-                user.derived_key.toString(),
-                user.salt.toString(),
-                user.level.toString(),
-                user.language.toString(),
-                user.gender.toString(),
-                user.dob.toString(),
-                user.birthPlace.toString(),
-                user.userImage.toString(),
-                user.isArchived.toString()
-            ))
+            val userData = arrayOf(
+                "${user.userAdmin}", "${user._id}", "${user.name}", "${user.firstName}",
+                "${user.lastName}", "${user.email}", "${user.phoneNumber}", "${user.planetCode}",
+                "${user.parentCode}", "${user.password_scheme}", "${user.iterations}",
+                "${user.derived_key}", "${user.salt}", "${user.level}", "${user.language}",
+                "${user.gender}", "${user.dob}", "${user.birthPlace}", "${user.userImage}",
+                "${user.isArchived}"
+            )
+
+            userDataList.add(userData)
         }
 
         @JvmStatic
@@ -332,10 +317,9 @@ open class RealmUserModel : RealmObject() {
             writeCsv("${context.getExternalFilesDir(null)}/ole/userData.csv", userDataList)
         }
 
-
         fun updateUserDetails(realm: Realm, userId: String?, firstName: String?, lastName: String?,
-        middleName: String?, email: String?, phoneNumber: String?, level: String?, language: String?,
-        gender: String?, dob: String?, onSuccess: () -> Unit) {
+                              middleName: String?, email: String?, phoneNumber: String?, level: String?, language: String?,
+                              gender: String?, dob: String?, onSuccess: () -> Unit) {
             realm.executeTransactionAsync({ mRealm ->
                 val user = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
                 if (user != null) {
