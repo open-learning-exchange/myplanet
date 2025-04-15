@@ -133,7 +133,7 @@ class SettingActivity : AppCompatActivity() {
             }
 
             val fastSync = findPreference<SwitchPreference>("beta_fast_sync")
-            val isFastSync = settings.getBoolean("fastSync", false)
+            val isFastSync = settings.getBoolean("fastSync", true)
             fastSync?.isChecked = isFastSync
             fastSync?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
                 val isChecked = newValue as Boolean
