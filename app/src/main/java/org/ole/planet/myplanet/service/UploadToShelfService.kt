@@ -29,7 +29,6 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.PerformanceLogger
 import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Response
 import java.io.IOException
@@ -121,7 +120,6 @@ class UploadToShelfService(context: Context) {
 
     @Throws(IOException::class)
     fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject): Boolean {
-        PerformanceLogger.markEvent("UploadToShelfService.saveKeyIv started")
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
         val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
 
@@ -143,24 +141,19 @@ class UploadToShelfService(context: Context) {
         var retryCount = 0
         var success = false
 
-        PerformanceLogger.markEvent("Starting API requests for key/IV")
         while (!success && retryCount < maxRetries) {
             try {
-                PerformanceLogger.markEvent("API attempt #${retryCount + 1}")
                 val response: Response<JsonObject>? = apiInterface?.postDoc(header, "application/json", "${Utilities.getUrl()}/$table", ob)?.execute()
                 if (response?.isSuccessful == true && response.body() != null) {
-                    PerformanceLogger.markEvent("Key/IV saved successfully")
                     success = true
                 } else {
                     retryCount++
                     if (retryCount < maxRetries) {
                         val delayMs = 1000L * (1 shl retryCount)
-                        PerformanceLogger.markEvent("Request failed, retry #$retryCount after ${delayMs}ms")
                         Thread.sleep(delayMs)
                     }
                 }
             } catch (e: Exception) {
-                PerformanceLogger.markEvent("Exception during API request: ${e.message}")
                 e.printStackTrace()
                 retryCount++
 
@@ -172,22 +165,17 @@ class UploadToShelfService(context: Context) {
         }
         if (success) {
             try {
-                PerformanceLogger.markEvent("Starting changeUserSecurity")
-                // OPTIMIZATION: Make this non-blocking if possible
                 serviceScope.launch(Dispatchers.IO) {
                     try {
                         changeUserSecurity(model, obj)
-                        PerformanceLogger.markEvent("changeUserSecurity completed")
                     } catch (e: Exception) {
-                        PerformanceLogger.markEvent("Error in changeUserSecurity: ${e.message}")
+                        e.printStackTrace()
                     }
                 }
             } catch (e: Exception) {
-                PerformanceLogger.markEvent("Error launching changeUserSecurity: ${e.message}")
                 e.printStackTrace()
             }
         }
-        PerformanceLogger.markEvent("saveKeyIv completed")
         return true
     }
 

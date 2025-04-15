@@ -5,7 +5,6 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.*
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.text.*
-import android.util.Log
 import android.view.*
 import android.view.inputmethod.EditorInfo
 import android.widget.*
@@ -96,105 +95,63 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         val password = intent.getStringExtra("password")
 
         if (autoLogin && !username.isNullOrEmpty() && !password.isNullOrEmpty()) {
-            PerformanceLogger.markEvent("Auto-login detected, initiating background sync")
-
-            // Show a progress dialog
             customProgressDialog = DialogUtils.getCustomProgressDialog(this)
             customProgressDialog?.setText("Preparing your account...")
             customProgressDialog?.show()
 
-            // Start tracking time
             val loginStartTime = System.currentTimeMillis()
 
-            // Start a background operation
             CoroutineScope(Dispatchers.Main).launch {
                 try {
-                    // First sync the user data
                     withContext(Dispatchers.IO) {
-                        PerformanceLogger.markEvent("Starting syncFirstBatch")
                         val syncManager = SyncManager.instance
                         syncManager?.mRealm = Realm.getDefaultInstance()
                         syncManager?.initializeSync()
                         syncManager?.syncFirstBatch()
-                        PerformanceLogger.markEvent("syncFirstBatch completed")
                     }
 
-                    Log.d("LoginActivity", "Username: $username, Password: ${password.replace(Regex("."), "*")}")
-
-                    // Set up retry parameters
                     val maxRetries = 5
-                    val initialRetryDelay = 1000L // 1 second initial delay
+                    val initialRetryDelay = 1000L
                     var currentRetry = 0
                     var loginSuccess = false
 
-                    // Retry loop with exponential backoff
                     while (currentRetry < maxRetries && !loginSuccess) {
-                        // Update progress dialog
                         withContext(Dispatchers.Main) {
                             customProgressDialog?.setText("Finalizing account setup... (Attempt ${currentRetry + 1})")
                         }
 
-                        // Log the retry attempt
-                        val currentAttemptTime = System.currentTimeMillis()
-                        val elapsedTime = currentAttemptTime - loginStartTime
-                        PerformanceLogger.markEvent("Auto-login attempt #${currentRetry + 1} at ${elapsedTime}ms from start")
-
-                        // First check if user data is available - this is the key improvement
                         val userDataAvailable = checkUserDataAvailability(username)
-                        PerformanceLogger.markEvent("User data availability check: $userDataAvailable")
 
                         if (!userDataAvailable) {
-                            Log.d("LoginActivity", "User data not yet available for authentication")
-                            // Skip authentication attempt if data isn't ready yet
                             currentRetry++
 
                             if (currentRetry < maxRetries) {
-                                // Calculate delay with exponential backoff (1s, 2s, 4s, 8s...)
                                 val retryDelay = initialRetryDelay * (1 shl currentRetry)
-                                PerformanceLogger.markEvent("User data not ready, waiting ${retryDelay}ms before retry #${currentRetry + 1}")
                                 delay(retryDelay)
-                                continue // Skip to next iteration
+                                continue
                             } else {
-                                break // Exit loop if max retries reached
+                                break
                             }
                         }
 
-                        // Attempt login now that we know data is available
-                        PerformanceLogger.markEvent("Attempting authentication with available user data")
                         loginSuccess = authenticateUser(settings, username, password, false)
 
                         if (loginSuccess) {
-                            // Success! Break out of retry loop
-                            val totalTime = System.currentTimeMillis() - loginStartTime
-                            PerformanceLogger.markEvent("Auto-login successful after ${currentRetry + 1} attempts, total time: ${totalTime}ms")
-                            Log.d("LoginActivity", "Auto-login SUCCESS after ${currentRetry + 1} attempts in ${totalTime}ms")
                             break
                         } else {
-                            // Log failure and prepare for retry
-                            PerformanceLogger.markEvent("Auto-login attempt #${currentRetry + 1} failed despite user data being available")
-                            Log.d("LoginActivity", "Auto-login failed attempt #${currentRetry + 1}")
-
-                            // Debug why authentication failed
                             withContext(Dispatchers.IO) {
                                 debugAuthenticationIssue(username, password)
                             }
 
-                            // Check if this was the last retry
                             if (currentRetry < maxRetries - 1) {
-                                // Calculate delay with exponential backoff (1s, 2s, 4s, 8s...)
                                 val retryDelay = initialRetryDelay * (1 shl currentRetry)
-                                PerformanceLogger.markEvent("Waiting ${retryDelay}ms before next retry")
-
-                                // Wait before retrying
                                 delay(retryDelay)
 
-                                // Force database refresh before next attempt
                                 withContext(Dispatchers.IO) {
                                     try {
                                         TransactionSyncManager.syncDb(Realm.getDefaultInstance(), "tablet_users")
-                                        PerformanceLogger.markEvent("Forced additional tablet_users sync before retry #${currentRetry + 2}")
                                     } catch (e: Exception) {
-                                        Log.e("LoginActivity", "Error during forced sync: ${e.message}")
+                                        e.printStackTrace()
                                     }
                                 }
                             }
@@ -203,66 +160,45 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                         }
                     }
 
-                    // Hide the progress dialog
                     customProgressDialog?.dismiss()
 
-                    // Final outcome
                     if (loginSuccess) {
-                        // Handle successful login
                         Toast.makeText(this@LoginActivity, getString(R.string.welcome, username), Toast.LENGTH_SHORT).show()
                         saveUsers(username, password, "member")
                         onLogin()
                     } else {
-                        // Handle all retries failed
-                        val totalTime = System.currentTimeMillis() - loginStartTime
-                        PerformanceLogger.markEvent("Auto-login failed after $maxRetries attempts, total time: ${totalTime}ms")
-                        Log.d("LoginActivity", "Auto-login FAILED after $maxRetries attempts in ${totalTime}ms")
-
-                        // One last attempt to sync user data
                         withContext(Dispatchers.IO) {
                             try {
-                                PerformanceLogger.markEvent("Final attempt to sync user data after all retries failed")
                                 TransactionSyncManager.syncDb(Realm.getDefaultInstance(), "tablet_users")
-                                delay(1000) // Give it a moment to process
+                                delay(1000)
 
-                                // Check one last time
                                 val finalCheck = checkUserDataAvailability(username)
-                                PerformanceLogger.markEvent("Final user data check: $finalCheck")
 
-                                // Try one last login if data is available
                                 if (finalCheck) {
                                     val finalLoginSuccess = authenticateUser(settings, username, password, false)
-                                    PerformanceLogger.markEvent("Final login attempt result: $finalLoginSuccess")
-
                                     if (finalLoginSuccess) {
                                         withContext(Dispatchers.Main) {
                                             Toast.makeText(this@LoginActivity, getString(R.string.welcome, username), Toast.LENGTH_SHORT).show()
                                             saveUsers(username, password, "member")
                                             onLogin()
-                                            return@withContext // Exit early on success
+                                            return@withContext
                                         }
                                     }
                                 }
                             } catch (e: Exception) {
-                                Log.e("LoginActivity", "Error in final sync attempt: ${e.message}")
+                                e.printStackTrace()
                             }
                         }
 
-                        // Fall back to manual entry if we got here (final attempt failed)
                         activityLoginBinding.inputName.setText(username)
                         activityLoginBinding.inputPassword.setText(password)
                         Toast.makeText(this@LoginActivity, "manual sign in", Toast.LENGTH_SHORT).show()
                     }
 
                 } catch (e: Exception) {
-                    // Handle exceptions
-                    val totalTime = System.currentTimeMillis() - loginStartTime
-                    PerformanceLogger.markEvent("Error during auto-login after ${totalTime}ms: ${e.message}")
-                    Log.e("LoginActivity", "Auto-login error: ${e.message}", e)
-
+                    e.printStackTrace()
                     customProgressDialog?.dismiss()
 
-                    // Fall back to manual login
                     activityLoginBinding.inputName.setText(username)
                     activityLoginBinding.inputPassword.setText(password)
                     Toast.makeText(this@LoginActivity, "manual sign in", Toast.LENGTH_SHORT).show()
@@ -888,13 +824,11 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             val user = realm.where(RealmUserModel::class.java)
                 .equalTo("name", username)
                 .findFirst()
-
-            // Check if user exists and has necessary authentication data
             return user != null &&
                     ((user._id?.isEmpty() == true && !user.password.isNullOrEmpty()) ||
                             (user._id?.isNotEmpty() == true && !user.derived_key.isNullOrEmpty() && !user.salt.isNullOrEmpty()))
         } catch (e: Exception) {
-            Log.e("LoginActivity", "Error checking user data: ${e.message}")
+            e.printStackTrace()
             return false
         } finally {
             realm.close()

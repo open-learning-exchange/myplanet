@@ -10,7 +10,6 @@ import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
-import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -24,7 +23,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
@@ -220,7 +218,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
                 applicationScope.launch {
                     createLog("anr", "ANR detected! Duration: ${duration}ms\n $message")
-                    Log.d("ANRWatchdog", "ANR detected! Duration: ${duration}ms\n $message")
                 }
             }
         })

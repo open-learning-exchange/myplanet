@@ -329,8 +329,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     fun authenticateUser(settings: SharedPreferences?, username: String?, password: String?, isManagerMode: Boolean): Boolean {
         return try {
-            PerformanceLogger.markEvent("Starting authenticateUser for $username")
-
             if (settings != null) {
                 this.settings = settings
             }
@@ -340,16 +338,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
 
             if (mRealm.isEmpty) {
-                PerformanceLogger.markEvent("Authentication failed: Realm is empty")
                 alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
                 false
             } else {
                 val result = checkName(username, password, isManagerMode)
-                PerformanceLogger.markEvent("Authentication result for $username: $result")
                 result
             }
         } catch (e: Exception) {
-            PerformanceLogger.markEvent("Authentication exception: ${e.message}")
             e.printStackTrace()
             false
         }

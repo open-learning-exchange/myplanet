@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.service
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Log
 import io.realm.Realm
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -14,7 +13,6 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.PerformanceLogger
 import org.ole.planet.myplanet.utilities.Utilities
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -49,18 +47,11 @@ class UserProfileDbHandler(context: Context) {
     }
 
     fun onLogin() {
-        PerformanceLogger.markEvent("UserProfileDbHandler.onLogin started")
-
-        // Start a background coroutine to handle the DB operations
         MainApplication.applicationScope.launch(Dispatchers.IO) {
-            PerformanceLogger.markEvent("Starting background DB operation for login record")
-
             try {
                 val realm = Realm.getDefaultInstance()
                 try {
                     realm.executeTransaction { transactionRealm ->
-                        PerformanceLogger.markEvent("Creating login activity record")
-
                         val model = transactionRealm.where(RealmUserModel::class.java)
                             .equalTo("id", settings.getString("userId", ""))
                             .findFirst()
@@ -79,20 +70,14 @@ class UserProfileDbHandler(context: Context) {
                         offlineActivities._id = null
                         offlineActivities.description = "Member login on offline application"
                         offlineActivities.loginTime = Date().time
-
-                        PerformanceLogger.markEvent("Login activity record created")
                     }
                 } finally {
                     realm.close()
-                    PerformanceLogger.markEvent("UserProfileDbHandler background DB operation completed")
                 }
             } catch (e: Exception) {
-                PerformanceLogger.markEvent("Error in background login record creation: ${e.message}")
-                Log.e("UserProfileDbHandler", "Error creating login record", e)
+                e.printStackTrace()
             }
         }
-
-        PerformanceLogger.markEvent("UserProfileDbHandler.onLogin completed (background work continues)")
     }
 
     suspend fun onLogout() {
