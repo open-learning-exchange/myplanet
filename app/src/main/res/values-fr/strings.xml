@@ -114,7 +114,7 @@
     <string name="add_to_mycourses">Ajouter à mesCours</string>
     <string name="added_to">ajouté à</string>
     <string name="removed_from">supprimé de</string>
-    <string name="my_courses">Mes cours</string>
+    <string name="my_courses">Mescours</string>
     <string name="filter_collections">Filtrer les collections</string>
     <string name="select_many_collections">Sélectionner plusieurs collections</string>
     <string name="collections">Collections</string>
@@ -737,7 +737,7 @@
     <string name="enter_resource_detail">Saisissez les détails de la ressource</string>
     <string name="resource_saved_to_my_personal">Ressource enregistrée dans myPersonal</string>
     <string name="invalid_resource_url">URL de ressource invalide</string>
-    <string name="my_library">" ma bibliothèque"</string>
+    <string name="my_library">"mabibliothèque"</string>
     <string name="link_not_available">Lien non disponible</string>
     <string name="success_you_have_added_these_resources_to_your_mylibrary">Succès ! Vous avez ajouté ces ressources à votre bibliothèque:</string>
     <string name="more_resource_s"> autres ressource(s)…</string>
