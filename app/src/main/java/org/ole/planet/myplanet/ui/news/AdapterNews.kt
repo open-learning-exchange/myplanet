@@ -149,7 +149,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 }
                 if (news.userId == currentUser?._id) {
                     holder.rowNewsBinding.imgDelete.setOnClickListener {
-                        AlertDialog.Builder(context)
+                        AlertDialog.Builder(context,R.style.AlertDialogTheme)
                             .setMessage(R.string.delete_record)
                             .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
                                 deletePost(news, context)
