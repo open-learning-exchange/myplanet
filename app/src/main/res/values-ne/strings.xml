@@ -1269,5 +1269,6 @@
     <string name="none">कुनै पनि होइन</string>
     <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">तपाईंले ट्र्याकिङ जारी राख्दा तपाईंको स्वास्थ्य डेटा यहाँ देखिनेछ</string>
     <string name="no_health_records_available">कुनै स्वास्थ्य रेकर्ड उपलब्ध छैन</string>
+    <string name="confirm_share_community">Are you sure you want to share this content with the community?</string>
 
 </resources>
