@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
 import org.ole.planet.myplanet.BuildConfig
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import androidx.core.net.toUri
 

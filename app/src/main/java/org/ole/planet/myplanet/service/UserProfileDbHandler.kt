@@ -3,8 +3,11 @@ package org.ole.planet.myplanet.service
 import android.content.Context
 import android.content.SharedPreferences
 import io.realm.Realm
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmOfflineActivity
@@ -44,36 +47,80 @@ class UserProfileDbHandler(context: Context) {
             .findFirst()
     }
 
+//    fun onLogin() {
+//        MainApplication.applicationScope.launch(Dispatchers.IO) {
+//            try {
+//                val realm = Realm.getDefaultInstance()
+//                try {
+//                    realm.executeTransaction { transactionRealm ->
+//                        val model = transactionRealm.where(RealmUserModel::class.java)
+//                            .equalTo("id", settings.getString("userId", ""))
+//                            .findFirst()
+//
+//                        val offlineActivities = transactionRealm.createObject(
+//                            RealmOfflineActivity::class.java,
+//                            UUID.randomUUID().toString()
+//                        )
+//
+//                        offlineActivities.userId = model?.id
+//                        offlineActivities.userName = model?.name
+//                        offlineActivities.parentCode = model?.parentCode
+//                        offlineActivities.createdOn = model?.planetCode
+//                        offlineActivities.type = KEY_LOGIN
+//                        offlineActivities._rev = null
+//                        offlineActivities._id = null
+//                        offlineActivities.description = "Member login on offline application"
+//                        offlineActivities.loginTime = Date().time
+//                    }
+//                } finally {
+//                    realm.close()
+//                }
+//            } catch (e: Exception) {
+//                e.printStackTrace()
+//            }
+//        }
+//    }
+
     suspend fun onLogin() {
-        withContext(Dispatchers.IO) {
-            val realm = realmService.realmInstance
+        val appScope = MainApplication.applicationScope
+        val deferredDbOperation = CompletableDeferred<Unit>()
+
+        appScope.launch(Dispatchers.IO) {
             try {
-                realm.executeTransaction { r ->
-                    val oldRecords = r.where(RealmOfflineActivity::class.java)
-                        .lessThan("loginTime", System.currentTimeMillis() - 30 * 24 * 60 * 60 * 1000)
-                        .findAll()
+                val realm = Realm.getDefaultInstance()
+                try {
+                    realm.executeTransaction { transactionRealm ->
+                        val model = transactionRealm.where(RealmUserModel::class.java)
+                            .equalTo("id", settings.getString("userId", ""))
+                            .findFirst()
 
-                    if (oldRecords.isNotEmpty()) {
-                        oldRecords.deleteAllFromRealm()
-                    }
+                        val offlineActivities = transactionRealm.createObject(
+                            RealmOfflineActivity::class.java,
+                            UUID.randomUUID().toString()
+                        )
 
-                    val users = mutableListOf<RealmOfflineActivity>()
-                    repeat(10) {
-                        val offlineActivity = RealmOfflineActivity()
-                        offlineActivity.id = UUID.randomUUID().toString()
-                        offlineActivity.type = KEY_LOGIN
-                        offlineActivity.description = "Member login on offline application"
-                        offlineActivity.loginTime = System.currentTimeMillis()
-                        users.add(offlineActivity)
+                        offlineActivities.userId = model?.id
+                        offlineActivities.userName = model?.name
+                        offlineActivities.parentCode = model?.parentCode
+                        offlineActivities.createdOn = model?.planetCode
+                        offlineActivities.type = KEY_LOGIN
+                        offlineActivities._rev = null
+                        offlineActivities._id = null
+                        offlineActivities.description = "Member login on offline application"
+                        offlineActivities.loginTime = Date().time
                     }
-                    r.insertOrUpdate(users)
+                } finally {
+                    realm.close()
                 }
+                deferredDbOperation.complete(Unit)
             } catch (e: Exception) {
                 e.printStackTrace()
-            } finally {
-                realm.close()
+                deferredDbOperation.complete(Unit) // Complete even on error
             }
         }
+
+        // Return when database operation completes
+        deferredDbOperation.await()
     }
 
     suspend fun onLogout() {
@@ -94,6 +141,16 @@ class UserProfileDbHandler(context: Context) {
         if (!mRealm.isClosed) {
             mRealm.close()
         }
+    }
+
+    private fun createUser(): RealmOfflineActivity {
+        val offlineActivities = mRealm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
+        val model = userModel
+        offlineActivities.userId = model?.id
+        offlineActivities.userName = model?.name
+        offlineActivities.parentCode = model?.parentCode
+        offlineActivities.createdOn = model?.planetCode
+        return offlineActivities
     }
 
     val lastVisit: Long? get() = mRealm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?

@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import android.content.Intent
 import android.graphics.Typeface
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.AdapterView
@@ -250,25 +251,29 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     private fun setUpMyLife(userId: String?) {
         val realm = DatabaseService(requireContext()).realmInstance
-        val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings)
-        if (realmObjects.isEmpty()) {
-            if (!realm.isInTransaction) {
-                realm.beginTransaction()
+        // Use Realm's built-in async transaction method
+        realm.executeTransactionAsync({ backgroundRealm ->
+            val realmObjects = RealmMyLife.getMyLifeByUserId(backgroundRealm, settings)
+            if (realmObjects.isEmpty()) {
+                val myLifeListBase = getMyLifeListBase(userId)
+                var weight = 1
+                for (item in myLifeListBase) {
+                    val ml = backgroundRealm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
+                    ml.title = item.title
+                    ml.imageId = item.imageId
+                    ml.weight = weight
+                    ml.userId = item.userId
+                    ml.isVisible = true
+                    weight++
+                }
             }
-            val myLifeListBase = getMyLifeListBase(userId)
-            var ml: RealmMyLife
-            var weight = 1
-            for (item in myLifeListBase) {
-                ml = realm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
-                ml.title = item.title
-                ml.imageId = item.imageId
-                ml.weight = weight
-                ml.userId = item.userId
-                ml.isVisible = true
-                weight++
-            }
-            realm.commitTransaction()
-        }
+        }, {
+            // Success callback - this runs on the UI thread after transaction completes
+            Log.d("BaseDashboardFragment", "Successfully initialized MyLife data")
+        }, { error ->
+            // Error callback - handle any exceptions
+            Log.e("BaseDashboardFragment", "Failed to initialize MyLife data", error)
+        })
     }
 
     private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {

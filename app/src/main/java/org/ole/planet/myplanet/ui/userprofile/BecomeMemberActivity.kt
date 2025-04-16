@@ -168,8 +168,6 @@ class BecomeMemberActivity : BaseActivity() {
                 activityBecomeMemberBinding.etUsername.error = getString(R.string.must_start_with_letter_or_number)
             } else if (hasInvalidCharacters || hasSpecialCharacters || hasDiacriticCharacters) {
                activityBecomeMemberBinding.etUsername.error = getString(R.string.only_letters_numbers_and_are_allowed)
-            } else if (RealmUserModel.isUserExists(mRealm, activityBecomeMemberBinding.etUsername.text.toString())) {
-                activityBecomeMemberBinding.etUsername.error = getString(R.string.username_taken)
             } else if (TextUtils.isEmpty(password)) {
                 activityBecomeMemberBinding.etPassword.error = getString(R.string.please_enter_a_password)
             } else if (password != rePassword) {
@@ -190,6 +188,7 @@ class BecomeMemberActivity : BaseActivity() {
                     password = phoneNumber
                 }
 
+                activityBecomeMemberBinding.pbar.visibility = View.VISIBLE
                 checkMandatoryFieldsAndAddMember(
                     userName, password, rePassword, fName, lName, mName, email, language, level,
                     phoneNumber, birthDate, gender, mRealm
@@ -224,35 +223,30 @@ class BecomeMemberActivity : BaseActivity() {
             obj.addProperty("betaEnabled", false)
             obj.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             obj.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
-            obj.addProperty(
-                "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
-            )
+            obj.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
             val roles = JsonArray()
             roles.add("learner")
             obj.add("roles", roles)
-            activityBecomeMemberBinding.pbar.visibility = View.VISIBLE
             Service(this).becomeMember(mRealm, obj, object : Service.CreateUserCallback {
                 override fun onSuccess(message: String) {
-                    runOnUiThread {
+                    Utilities.toast(this@BecomeMemberActivity, message)
+                    Handler(Looper.getMainLooper()).post {
                         activityBecomeMemberBinding.pbar.visibility = View.GONE
-                        Utilities.toast(this@BecomeMemberActivity, message)
+                        val intent = Intent(this@BecomeMemberActivity, LoginActivity::class.java)
+                        intent.putExtra("username", username)
+                        intent.putExtra("password", password)
+                        intent.putExtra("autoLogin", true)
+
+                        if (guest) {
+                            intent.putExtra("guest", true)
+                        }
+
+                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        startActivity(intent)
+                        finish()
                     }
-                    finish()
                 }
             })
-
-            Handler(Looper.getMainLooper()).postDelayed({
-                val intent = Intent(this, LoginActivity::class.java)
-                if (guest) {
-                    intent.putExtra("guest", guest)
-                }
-                intent.putExtra("username", username)
-                intent.putExtra("autoLogin", true)
-                intent.putExtra("password", password)
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                startActivity(intent)
-                finish()
-            }, 5000)
         }
     }
 

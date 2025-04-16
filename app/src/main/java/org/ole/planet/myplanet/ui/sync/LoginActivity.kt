@@ -11,24 +11,29 @@ import android.widget.*
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.core.content.edit
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.*
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import io.realm.Realm
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.*
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.*
 import org.ole.planet.myplanet.datamanager.*
 import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.service.SyncManager
+import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.userprofile.*
-import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.*
+import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.text.Normalizer
@@ -84,6 +89,123 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         checkUsagesPermission()
         forceSyncTrigger()
 
+        val autoLogin = intent.getBooleanExtra("autoLogin", false)
+        guest = intent.getBooleanExtra("guest", false)
+        val username = intent.getStringExtra("username")
+        val password = intent.getStringExtra("password")
+
+        if (autoLogin && !username.isNullOrEmpty() && !password.isNullOrEmpty()) {
+            customProgressDialog = DialogUtils.getCustomProgressDialog(this)
+            customProgressDialog?.setText("Preparing your account...")
+            customProgressDialog?.show()
+
+            val loginStartTime = System.currentTimeMillis()
+
+            CoroutineScope(Dispatchers.Main).launch {
+                try {
+                    withContext(Dispatchers.IO) {
+                        val syncManager = SyncManager.instance
+                        syncManager?.mRealm = Realm.getDefaultInstance()
+                        syncManager?.initializeSync()
+                        syncManager?.syncFirstBatch()
+                    }
+
+                    val maxRetries = 5
+                    val initialRetryDelay = 1000L
+                    var currentRetry = 0
+                    var loginSuccess = false
+
+                    while (currentRetry < maxRetries && !loginSuccess) {
+                        withContext(Dispatchers.Main) {
+                            customProgressDialog?.setText("Finalizing account setup... (Attempt ${currentRetry + 1})")
+                        }
+
+                        val userDataAvailable = checkUserDataAvailability(username)
+
+                        if (!userDataAvailable) {
+                            currentRetry++
+
+                            if (currentRetry < maxRetries) {
+                                val retryDelay = initialRetryDelay * (1 shl currentRetry)
+                                delay(retryDelay)
+                                continue
+                            } else {
+                                break
+                            }
+                        }
+
+                        loginSuccess = authenticateUser(settings, username, password, false)
+
+                        if (loginSuccess) {
+                            break
+                        } else {
+                            withContext(Dispatchers.IO) {
+                                debugAuthenticationIssue(username, password)
+                            }
+
+                            if (currentRetry < maxRetries - 1) {
+                                val retryDelay = initialRetryDelay * (1 shl currentRetry)
+                                delay(retryDelay)
+
+                                withContext(Dispatchers.IO) {
+                                    try {
+                                        TransactionSyncManager.syncDb(Realm.getDefaultInstance(), "tablet_users")
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                }
+                            }
+
+                            currentRetry++
+                        }
+                    }
+
+                    customProgressDialog?.dismiss()
+
+                    if (loginSuccess) {
+                        Toast.makeText(this@LoginActivity, getString(R.string.welcome, username), Toast.LENGTH_SHORT).show()
+                        saveUsers(username, password, "member")
+                        onLogin()
+                    } else {
+                        withContext(Dispatchers.IO) {
+                            try {
+                                TransactionSyncManager.syncDb(Realm.getDefaultInstance(), "tablet_users")
+                                delay(1000)
+
+                                val finalCheck = checkUserDataAvailability(username)
+
+                                if (finalCheck) {
+                                    val finalLoginSuccess = authenticateUser(settings, username, password, false)
+                                    if (finalLoginSuccess) {
+                                        withContext(Dispatchers.Main) {
+                                            Toast.makeText(this@LoginActivity, getString(R.string.welcome, username), Toast.LENGTH_SHORT).show()
+                                            saveUsers(username, password, "member")
+                                            onLogin()
+                                            return@withContext
+                                        }
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+
+                        activityLoginBinding.inputName.setText(username)
+                        activityLoginBinding.inputPassword.setText(password)
+                        Toast.makeText(this@LoginActivity, "manual sign in", Toast.LENGTH_SHORT).show()
+                    }
+
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    customProgressDialog?.dismiss()
+
+                    activityLoginBinding.inputName.setText(username)
+                    activityLoginBinding.inputPassword.setText(password)
+                    Toast.makeText(this@LoginActivity, "manual sign in", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
         if (getUrl().isNotEmpty()) {
             activityLoginBinding.openCommunity.visibility = View.VISIBLE
             activityLoginBinding.openCommunity.setOnClickListener {
@@ -95,15 +217,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
         activityLoginBinding.btnFeedback.setOnClickListener {
             FeedbackFragment().show(supportFragmentManager, "")
-        }
-
-        guest = intent.getBooleanExtra("guest", false)
-        val username = intent.getStringExtra("username")
-        val password = intent.getStringExtra("password")
-        val autoLogin = intent.getBooleanExtra("autoLogin", false)
-
-        if (autoLogin && username != null && password != null) {
-            submitForm(username, password)
         }
 
         if (guest) {
@@ -129,7 +242,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
     private fun declareElements() {
         if (!defaultPref.contains("beta_addImageToMessage")) {
-            defaultPref.edit { putBoolean("beta_addImageToMessage", true) }
+            defaultPref.edit().putBoolean("beta_addImageToMessage", true).apply()
         }
         activityLoginBinding.customDeviceName.text = getCustomDeviceName()
         activityLoginBinding.btnSignin.setOnClickListener {
@@ -158,11 +271,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 }
             }
         }
-        if (!settings.contains("serverProtocol")) {
-            settings.edit {
-                putString("serverProtocol", "http://")
-            }
-        }
+        if (!settings.contains("serverProtocol")) settings.edit().putString("serverProtocol", "http://").apply()
         activityLoginBinding.becomeMember.setOnClickListener {
             activityLoginBinding.inputName.setText(R.string.empty_text)
             becomeAMember()
@@ -356,7 +465,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             .show()
     }
 
-
     private fun updateConfiguration(languageCode: String) {
         val locale = Locale(languageCode)
         Locale.setDefault(locale)
@@ -427,10 +535,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 if (model == null) {
                     toast(this, getString(R.string.unable_to_login))
                 } else {
-                    lifecycleScope.launch {
-                        saveUserInfoPref(settings, "", model)
-                        onLogin()
-                    }
+                    saveUserInfoPref(settings, "", model)
+                    onLogin()
                 }
             } else {
                 submitForm(user.name, user.password)
@@ -442,29 +548,42 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         if (forceSyncTrigger()) {
             return
         }
-        settings.edit {
-            putString("loginUserName", name)
-            putString("loginUserPassword", password)
-            val isLoggedIn = authenticateUser(settings, name, password, false)
-            if (isLoggedIn) {
-                lifecycleScope.launch {
-                    Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
-                    onLogin()
-                    saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
+        val editor = settings.edit()
+        editor.putString("loginUserName", name)
+        editor.putString("loginUserPassword", password)
+        val isLoggedIn = authenticateUser(settings, name, password, false)
+        if (isLoggedIn) {
+            Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
+            onLogin()
+            saveUsers(activityLoginBinding.inputName.text.toString(), activityLoginBinding.inputPassword.text.toString(), "member")
+        } else {
+            ManagerSync.instance?.login(name, password, object : SyncListener {
+                override fun onSyncStarted() {
+                    customProgressDialog?.setText(getString(R.string.please_wait))
+                    customProgressDialog?.show()
                 }
-            } else {
-                val log = authenticateUser(settings, name, password, true)
-                if (log) {
-                    lifecycleScope.launch {
-                        Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
+                override fun onSyncComplete() {
+                    customProgressDialog?.dismiss()
+                    val log = authenticateUser(settings, name, password, true)
+                    if (log) {
+                        Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
                         onLogin()
-                        saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
+                        saveUsers(activityLoginBinding.inputName.text.toString(), activityLoginBinding.inputPassword.text.toString(), "member")
+                    } else {
+                        alertDialogOkay(getString(R.string.err_msg_login))
                     }
-                } else {
-                    alertDialogOkay(getString(R.string.err_msg_login))
+                    syncIconDrawable.stop()
+                    syncIconDrawable.selectDrawable(0)
                 }
-            }
+                override fun onSyncFailed(msg: String?) {
+                    toast(MainApplication.context, msg)
+                    customProgressDialog?.dismiss()
+                    syncIconDrawable.stop()
+                    syncIconDrawable.selectDrawable(0)
+                }
+            })
         }
+        editor.apply()
     }
 
     private fun showGuestLoginDialog() {
@@ -577,11 +696,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                         if (model == null) {
                             toast(this, getString(R.string.unable_to_login))
                         } else {
-                            lifecycleScope.launch {
-                                saveUsers(username, "", "guest")
-                                saveUserInfoPref(settings, "", model)
-                                onLogin()
-                            }
+                            saveUsers(username, "", "guest")
+                            saveUserInfoPref(settings, "", model)
+                            onLogin()
                         }
                     }
                 }
@@ -606,10 +723,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             if (model == null) {
                 toast(this, getString(R.string.unable_to_login))
             } else {
-                lifecycleScope.launch {
-                    saveUserInfoPref(settings, "", model)
-                    onLogin()
-                }
+                saveUserInfoPref(settings, "", model)
+                onLogin()
             }
         }
         val dialog = builder.create()
@@ -700,6 +815,23 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 }
             }
             prefData.setSavedUsers(existingUsers)
+        }
+    }
+
+    fun checkUserDataAvailability(username: String): Boolean {
+        val realm = Realm.getDefaultInstance()
+        try {
+            val user = realm.where(RealmUserModel::class.java)
+                .equalTo("name", username)
+                .findFirst()
+            return user != null &&
+                    ((user._id?.isEmpty() == true && !user.password.isNullOrEmpty()) ||
+                            (user._id?.isNotEmpty() == true && !user.derived_key.isNullOrEmpty() && !user.salt.isNullOrEmpty()))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return false
+        } finally {
+            realm.close()
         }
     }
 

@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -28,6 +29,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.ole.planet.myplanet.BuildConfig
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
@@ -62,7 +64,6 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import androidx.core.net.toUri
 import kotlinx.coroutines.async
-import org.ole.planet.myplanet.MainApplication
 import androidx.core.content.edit
 
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
@@ -331,12 +332,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             if (settings != null) {
                 this.settings = settings
             }
+
+            if (mRealm.isClosed) {
+                mRealm = Realm.getDefaultInstance()
+            }
+
             if (mRealm.isEmpty) {
                 alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
                 false
-
             } else {
-                checkName(username, password, isManagerMode)
+                val result = checkName(username, password, isManagerMode)
+                result
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -383,7 +389,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 (dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text.toString()
             }
 
-            val uri = url.toUri()
+            val uri = Uri.parse(url)
             val couchdbURL: String
             val urlUser: String
             val urlPwd: String
@@ -574,6 +580,43 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
+    fun onLogin() {
+        editor.putBoolean(Constants.KEY_LOGIN, true).commit()
+        openDashboard()
+
+        MainApplication.applicationScope.launch(Dispatchers.IO) {
+            val handler = UserProfileDbHandler(this@SyncActivity)
+            handler.onLogin()
+            handler.onDestroy()
+
+            val serverUrl = settings.getString("serverURL", "")
+            if (!serverUrl.isNullOrEmpty()) {
+                val canReachServer = MainApplication.isServerReachable(serverUrl)
+                if (canReachServer) {
+                    withContext(Dispatchers.Main) {
+                        startUpload("login")
+                    }
+                    withContext(Dispatchers.Default) {
+                        val backgroundRealm = Realm.getDefaultInstance()
+                        try {
+                            TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
+                        } finally {
+                            backgroundRealm.close()
+                        }
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@SyncActivity, "Server is unreachable.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } else {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@SyncActivity, "Server URL is not set.", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
     fun settingDialog() {
         val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
         spnCloud = dialogServerUrlBinding.spnCloud
@@ -696,42 +739,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
         dialog.show()
         sync(dialog)
-    }
-
-    suspend fun onLogin() {
-        val handler = UserProfileDbHandler(this)
-        handler.onLogin()
-        handler.onDestroy()
-        editor.putBoolean(Constants.KEY_LOGIN, true).commit()
-        openDashboard()
-
-        val updateUrl = "${settings.getString("serverURL", "")}"
-        val serverUrlMapper = ServerUrlMapper(this)
-        val mapping = serverUrlMapper.processUrl(updateUrl)
-
-        CoroutineScope(Dispatchers.IO).launch {
-            val primaryAvailable = MainApplication.Companion.isServerReachable(mapping.primaryUrl)
-            val alternativeAvailable = mapping.alternativeUrl?.let { MainApplication.Companion.isServerReachable(it) } == true
-
-            if (!primaryAvailable && alternativeAvailable) {
-                mapping.alternativeUrl.let { alternativeUrl ->
-                    val uri = updateUrl.toUri()
-                    val editor = settings.edit()
-
-                    serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
-                }
-            }
-
-            withContext(Dispatchers.Main) {
-                startUpload("login")
-                val backgroundRealm = Realm.getDefaultInstance()
-                try {
-                    TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
-                } finally {
-                    backgroundRealm.close()
-                }
-            }
-        }
     }
 
     private fun showConfigurationUIElements(binding: DialogServerUrlBinding, manualSelected: Boolean, dialog: MaterialDialog) {
@@ -1016,10 +1023,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             .setPositiveButton(R.string.login) { _: DialogInterface?, _: Int ->
                 val password = "${layoutChildLoginBinding.etChildPassword.text}"
                 if (authenticateUser(settings, userModel.name, password, false)) {
-                    lifecycleScope.launch {
-                        Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
-                        onLogin() // Now a suspend function
-                    }
+                    Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
+                    onLogin()
                 } else {
                     alertDialogOkay(getString(R.string.err_msg_login))
                 }
@@ -1083,6 +1088,48 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             val mainIntent = Intent.makeRestartActivityTask(intent?.component)
             context.startActivity(mainIntent)
             Runtime.getRuntime().exit(0)
+        }
+    }
+
+    fun debugAuthenticationIssue(username: String?, password: String?) {
+        try {
+            if (mRealm.isClosed) {
+                mRealm = Realm.getDefaultInstance()
+            }
+
+            val user = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
+
+            if (user == null) {
+                Log.d("AuthDebug", "User $username not found in database")
+                return
+            }
+
+            Log.d("AuthDebug", "Found user: ${user.name}, ID: ${user._id}")
+            Log.d("AuthDebug", "User has empty _id: ${user._id?.isEmpty() == true}")
+
+            if (user._id?.isEmpty() == true) {
+                // Local user case
+                val passwordMatches = password == user.password
+                Log.d("AuthDebug", "Local user password match: $passwordMatches")
+            } else {
+                // CouchDB user case
+                Log.d("AuthDebug", "CouchDB user authentication check")
+                Log.d("AuthDebug", "Has derived_key: ${!user.derived_key.isNullOrEmpty()}")
+                Log.d("AuthDebug", "Has salt: ${!user.salt.isNullOrEmpty()}")
+
+                try {
+                    val result = androidDecrypter(username, password, user.derived_key, user.salt)
+                    Log.d("AuthDebug", "androidDecrypter result: $result")
+                } catch (e: Exception) {
+                    Log.e("AuthDebug", "Error in androidDecrypter: ${e.message}", e)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("AuthDebug", "General error in debugAuthentication: ${e.message}", e)
+        } finally {
+            if (!mRealm.isClosed) {
+                mRealm.close()
+            }
         }
     }
 }
