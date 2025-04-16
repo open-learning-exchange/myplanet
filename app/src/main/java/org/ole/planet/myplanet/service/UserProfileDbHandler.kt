@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.service
 import android.content.Context
 import android.content.SharedPreferences
 import io.realm.Realm
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -46,8 +47,45 @@ class UserProfileDbHandler(context: Context) {
             .findFirst()
     }
 
-    fun onLogin() {
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
+//    fun onLogin() {
+//        MainApplication.applicationScope.launch(Dispatchers.IO) {
+//            try {
+//                val realm = Realm.getDefaultInstance()
+//                try {
+//                    realm.executeTransaction { transactionRealm ->
+//                        val model = transactionRealm.where(RealmUserModel::class.java)
+//                            .equalTo("id", settings.getString("userId", ""))
+//                            .findFirst()
+//
+//                        val offlineActivities = transactionRealm.createObject(
+//                            RealmOfflineActivity::class.java,
+//                            UUID.randomUUID().toString()
+//                        )
+//
+//                        offlineActivities.userId = model?.id
+//                        offlineActivities.userName = model?.name
+//                        offlineActivities.parentCode = model?.parentCode
+//                        offlineActivities.createdOn = model?.planetCode
+//                        offlineActivities.type = KEY_LOGIN
+//                        offlineActivities._rev = null
+//                        offlineActivities._id = null
+//                        offlineActivities.description = "Member login on offline application"
+//                        offlineActivities.loginTime = Date().time
+//                    }
+//                } finally {
+//                    realm.close()
+//                }
+//            } catch (e: Exception) {
+//                e.printStackTrace()
+//            }
+//        }
+//    }
+
+    suspend fun onLogin() {
+        val appScope = MainApplication.applicationScope
+        val deferredDbOperation = CompletableDeferred<Unit>()
+
+        appScope.launch(Dispatchers.IO) {
             try {
                 val realm = Realm.getDefaultInstance()
                 try {
@@ -74,10 +112,15 @@ class UserProfileDbHandler(context: Context) {
                 } finally {
                     realm.close()
                 }
+                deferredDbOperation.complete(Unit)
             } catch (e: Exception) {
                 e.printStackTrace()
+                deferredDbOperation.complete(Unit) // Complete even on error
             }
         }
+
+        // Return when database operation completes
+        deferredDbOperation.await()
     }
 
     suspend fun onLogout() {
