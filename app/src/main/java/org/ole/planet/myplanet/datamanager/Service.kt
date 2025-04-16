@@ -55,11 +55,13 @@ import java.util.concurrent.Executors
 import kotlin.math.min
 import androidx.core.net.toUri
 import androidx.core.content.edit
+import java.util.concurrent.ConcurrentHashMap
 
 class Service(private val context: Context) {
     private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val retrofitInterface: ApiInterface? = ApiClient.client?.create(ApiInterface::class.java)
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
     fun healthAccess(listener: SuccessListener) {
         retrofitInterface?.healthAccess(Utilities.getHealthAccessUrl(preferences))?.enqueue(object : Callback<ResponseBody> {
@@ -177,6 +179,17 @@ class Service(private val context: Context) {
 
     fun isPlanetAvailable(callback: PlanetAvailableListener?) {
         val updateUrl = "${preferences.getString("serverURL", "")}"
+        serverAvailabilityCache[updateUrl]?.let { (available, timestamp) ->
+            if (System.currentTimeMillis() - timestamp < 30000) {
+                if (available) {
+                    callback?.isAvailable()
+                } else {
+                    callback?.notAvailable()
+                }
+                return
+            }
+        }
+
         val serverUrlMapper = ServerUrlMapper(context)
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
@@ -194,20 +207,22 @@ class Service(private val context: Context) {
             }
 
             withContext(Dispatchers.Main) {
-                retrofitInterface?.isPlanetAvailable(Utilities.getUpdateUrl(preferences))
-                    ?.enqueue(object : Callback<ResponseBody?> {
-                        override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
-                            if (callback != null && response.code() == 200) {
-                                callback.isAvailable()
-                            } else {
-                                callback?.notAvailable()
-                            }
-                        }
-
-                        override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
+                retrofitInterface?.isPlanetAvailable(Utilities.getUpdateUrl(preferences))?.enqueue(object : Callback<ResponseBody?> {
+                    override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
+                        val isAvailable = callback != null && response.code() == 200
+                        serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
+                        if (isAvailable) {
+                            callback.isAvailable()
+                        } else {
                             callback?.notAvailable()
                         }
-                    })
+                    }
+
+                    override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
+                        serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
+                        callback?.notAvailable()
+                    }
+                })
             }
         }
     }

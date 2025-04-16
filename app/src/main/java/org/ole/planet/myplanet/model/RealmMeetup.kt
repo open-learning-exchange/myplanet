@@ -28,6 +28,7 @@ open class RealmMeetup : RealmObject() {
     var endTime: String? = null
     var category: String? = null
     var meetupLocation: String? = null
+    var meetupLink: String? = null
     var creator: String? = null
     var link: String? = null
     var teamId: String? = null
@@ -62,6 +63,7 @@ open class RealmMeetup : RealmObject() {
             myMeetupsDB?.endTime = JsonUtils.getString("endTime", meetupDoc)
             myMeetupsDB?.category = JsonUtils.getString("category", meetupDoc)
             myMeetupsDB?.meetupLocation = JsonUtils.getString("meetupLocation", meetupDoc)
+            myMeetupsDB?.meetupLink = JsonUtils.getString("meetupLink", meetupDoc)
             myMeetupsDB?.creator = JsonUtils.getString("createdBy", meetupDoc)
             myMeetupsDB?.day = JsonUtils.getJsonArray("day", meetupDoc).toString()
             myMeetupsDB?.link = JsonUtils.getJsonObject("link", meetupDoc).toString()
@@ -80,6 +82,7 @@ open class RealmMeetup : RealmObject() {
                 JsonUtils.getString("endTime", meetupDoc),
                 JsonUtils.getString("category", meetupDoc),
                 JsonUtils.getString("meetupLocation", meetupDoc),
+                JsonUtils.getString("meetupLink", meetupDoc),
                 JsonUtils.getString("createdBy", meetupDoc),
                 JsonUtils.getJsonArray("day", meetupDoc).toString(),
                 JsonUtils.getJsonObject("link", meetupDoc).toString(),
@@ -94,7 +97,7 @@ open class RealmMeetup : RealmObject() {
                 val file = File(filePath)
                 file.parentFile?.mkdirs()
                 val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("meetupId", "userId", "meetupId_rev", "title", "description", "startDate", "endDate", "recurring", "startTime", "endTime", "category", "meetupLocation", "createdBy", "day", "link", "teamId"))
+                writer.writeNext(arrayOf("meetupId", "userId", "meetupId_rev", "title", "description", "startDate", "endDate", "recurring", "startTime", "endTime", "category", "meetupLocation", "meetupLink", "createdBy", "day", "link", "teamId"))
                 for (row in data) {
                     writer.writeNext(row)
                 }
@@ -141,6 +144,7 @@ open class RealmMeetup : RealmObject() {
             }
             map["Recurring Days"] = checkNull(recurringDays)
             map["Location"] = checkNull(meetups.meetupLocation)
+            map["Link"] = checkNull(meetups.meetupLink)
             map["Description"] = checkNull(meetups.description)
             return map
         }
@@ -177,6 +181,7 @@ open class RealmMeetup : RealmObject() {
             `object`.addProperty("endTime", meetup.endTime)
             `object`.addProperty("recurring", meetup.recurring)
             `object`.addProperty("meetupLocation", meetup.meetupLocation)
+            `object`.addProperty("meetupLink", meetup.meetupLink)
             `object`.addProperty("createdBy", meetup.creator)
             `object`.addProperty("teamId", meetup.teamId)
             `object`.addProperty("category", meetup.category)
