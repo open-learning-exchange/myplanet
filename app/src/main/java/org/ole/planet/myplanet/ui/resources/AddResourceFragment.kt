@@ -92,7 +92,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                 }
             } else {
                 if (!shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)) {
-                    AlertDialog.Builder(requireContext())
+                    AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
                         .setTitle("Permission Required")
                         .setMessage("Microphone permission is required to record audio. Please enable it in the app settings.")
                         .setPositiveButton("Settings") { dialog, _ ->
@@ -162,7 +162,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                 != PackageManager.PERMISSION_GRANTED
             ) {
                 if (shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)) {
-                    AlertDialog.Builder(requireContext())
+                    AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
                         .setTitle("Permission Needed")
                         .setMessage("This app needs microphone permission to record audio.")
                         .setPositiveButton("OK") { rationaleDialog, _ ->
