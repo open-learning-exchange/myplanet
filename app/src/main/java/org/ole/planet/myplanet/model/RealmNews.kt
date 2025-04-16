@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -207,6 +208,7 @@ open class RealmNews : RealmObject() {
             `object`.addProperty("createdOn", news.createdOn)
             `object`.addProperty("docType", news.docType)
             addViewIn(`object`, news)
+
             `object`.addProperty("avatar", news.avatar)
             `object`.addProperty("messageType", news.messageType)
             `object`.addProperty("messagePlanetCode", news.messagePlanetCode)
