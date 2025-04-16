@@ -64,6 +64,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         updateMyTeamsUI()
     }
     private lateinit var offlineActivitiesResults: RealmResults<RealmOfflineActivity>
+    private var isSettingUpMyLife = false
+
     fun onLoaded(v: View) {
         profileDbHandler = UserProfileDbHandler(requireContext())
         model = profileDbHandler.userModel
@@ -93,16 +95,11 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             imageView.setImageResource(R.drawable.profile)
         }
 
-        if (mRealm.isInTransaction) {
-            mRealm.commitTransaction()
-        }
-
         offlineActivitiesResults = mRealm.where(RealmOfflineActivity::class.java)
-            .equalTo("userName", profileDbHandler.userModel?.name)
-            .equalTo("type", KEY_LOGIN)
+            .equalTo("userName", profileDbHandler.userModel?.name).equalTo("type", KEY_LOGIN)
             .findAllAsync()
         v.findViewById<TextView>(R.id.txtRole).text = getString(R.string.user_role, model?.getRoleAsString())
-        v.findViewById<TextView>(R.id.txtFullName).text =getString(R.string.user_name, fullName, profileDbHandler.offlineVisits)
+        v.findViewById<TextView>(R.id.txtFullName).text = getString(R.string.user_name, fullName, profileDbHandler.offlineVisits)
     }
 
     override fun forceDownloadNewsImages() {
@@ -242,33 +239,56 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private fun myLifeListInit(flexboxLayout: FlexboxLayout) {
         val dbMylife: MutableList<RealmMyLife> = ArrayList()
         val rawMylife: List<RealmMyLife> = RealmMyLife.getMyLifeByUserId(mRealm, settings)
-        for (item in rawMylife) if (item.isVisible) dbMylife.add(item)
+        for (item in rawMylife) {
+            if (item.isVisible) {
+                dbMylife.add(item)
+            }
+        }
         for ((itemCnt, items) in dbMylife.withIndex()) {
             flexboxLayout.addView(getLayout(itemCnt, items), params)
         }
     }
 
     private fun setUpMyLife(userId: String?) {
-        val realm = DatabaseService(requireContext()).realmInstance
-        val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings)
-        if (realmObjects.isEmpty()) {
-            if (!realm.isInTransaction) {
-                realm.beginTransaction()
+        if (isSettingUpMyLife) return
+        isSettingUpMyLife = true
+        try {
+            val realm = DatabaseService(requireContext()).realmInstance
+            val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings)
+            if (realmObjects.isEmpty()) {
+                realm.executeTransactionAsync({ transactionRealm ->
+                    var ml: RealmMyLife
+                    var weight = 1
+                    for (item in getMyLifeListBase(userId)) {
+                        ml = transactionRealm.createObject(RealmMyLife::class.java, "${UUID.randomUUID()}")
+                        ml.title = item.title
+                        ml.imageId = item.imageId
+                        ml.weight = weight
+                        ml.userId = item.userId
+                        ml.isVisible = true
+                        weight++
+                    }
+                }, {
+                    isSettingUpMyLife = false
+                    activity?.runOnUiThread {
+                        updateMyLifeUI()
+                    }
+                }, { error ->
+                    isSettingUpMyLife = false
+                })
+            } else {
+                isSettingUpMyLife = false
             }
-            val myLifeListBase = getMyLifeListBase(userId)
-            var ml: RealmMyLife
-            var weight = 1
-            for (item in myLifeListBase) {
-                ml = realm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
-                ml.title = item.title
-                ml.imageId = item.imageId
-                ml.weight = weight
-                ml.userId = item.userId
-                ml.isVisible = true
-                weight++
-            }
-            realm.commitTransaction()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            isSettingUpMyLife = false
         }
+    }
+
+    private fun updateMyLifeUI() {
+        val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutMyLife) ?: return
+        flexboxLayout.removeAllViews()
+        setUpMyList(RealmMyLife::class.java, flexboxLayout, requireView())
     }
 
     private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {
@@ -281,7 +301,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     override fun onDestroy() {
         super.onDestroy()
-        profileDbHandler.onDestroy()
         if (::myCoursesResults.isInitialized) {
             myCoursesResults.removeChangeListener(myCoursesChangeListener)
         }
@@ -329,11 +348,13 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         initializeFlexBoxView(view, R.id.flexboxLayoutMeetups, RealmMeetup::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutMyLife, RealmMyLife::class.java)
 
-        if (mRealm.isInTransaction) {
-            mRealm.commitTransaction()
-        }
-        myCoursesResults = RealmMyCourse.getMyByUserId(mRealm, settings)
-        myTeamsResults = RealmMyTeam.getMyTeamsByUserId(mRealm, settings)
+        myCoursesResults = mRealm.where(RealmMyCourse::class.java)
+            .equalTo("userId", settings?.getString("userId", "--"))
+            .findAllAsync()
+
+        myTeamsResults = mRealm.where(RealmMyTeam::class.java)
+            .equalTo("userId", settings?.getString("userId", "--"))
+            .findAllAsync()
 
         myCoursesResults.addChangeListener(myCoursesChangeListener)
         myTeamsResults.addChangeListener(myTeamsChangeListener)
