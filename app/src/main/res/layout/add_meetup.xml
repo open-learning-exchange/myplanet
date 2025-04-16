@@ -16,7 +16,6 @@
         android:textStyle="bold"
         android:textColor="@color/md_white_1000"
         android:padding="10dp"/>
-
     <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
         android:id="@+id/scrollView"
         android:layout_width="match_parent"
@@ -40,7 +39,6 @@
                     android:hint="@string/title_asterisk"
                     android:textColor="@color/daynight_textColor"
                     android:backgroundTint="@color/hint_color" />
-
             </com.google.android.material.textfield.TextInputLayout>
 
             <LinearLayout
@@ -228,6 +226,7 @@
                     android:textColor="@color/daynight_textColor"
                     android:buttonTint="@color/daynight_textColor" />
             </RadioGroup>
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
