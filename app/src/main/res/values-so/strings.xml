@@ -1269,5 +1269,7 @@
     <string name="none">Midna</string>
     <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">Xogtaada caafimaadka waxay halkan ka muuqan doontaa markaad sii waddo la socodka</string>
     <string name="no_health_records_available">Ma jiraan diiwaanada caafimaadka ee la heli karo</string>
+    <string name="permission_required">Ogolaanshaha ayaa loo baahan yahay</string>
+    <string name="microphone_permission_required">Ogolaanshaha makarafoonka ayaa loo baahan yahay si loo duubo codka Fadlan awood u geli goobaha abka</string>
 
 </resources>

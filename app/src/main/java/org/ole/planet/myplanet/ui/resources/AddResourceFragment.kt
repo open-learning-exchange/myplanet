@@ -93,16 +93,16 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             } else {
                 if (!shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)) {
                     AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-                        .setTitle("Permission Required")
-                        .setMessage("Microphone permission is required to record audio. Please enable it in the app settings.")
-                        .setPositiveButton("Settings") { dialog, _ ->
+                        .setTitle(R.string.permission_required)
+                        .setMessage(R.string.microphone_permission_required)
+                        .setPositiveButton(R.string.settings) { dialog, _ ->
                             dialog.dismiss()
                             val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
                             val uri: Uri = Uri.fromParts("package", requireContext().packageName, null)
                             intent.data = uri
                             startActivity(intent)
                         }
-                        .setNegativeButton("Cancel") { dialog, _ -> dialog.dismiss() }
+                        .setNegativeButton(R.string.cancel) { dialog, _ -> dialog.dismiss() }
                         .show()
                 } else {
                     Utilities.toast(requireContext(), "Microphone permission is required to record audio.")
@@ -165,11 +165,11 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                     AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
                         .setTitle("Permission Needed")
                         .setMessage("This app needs microphone permission to record audio.")
-                        .setPositiveButton("OK") { rationaleDialog, _ ->
+                        .setPositiveButton(R.string.ok) { rationaleDialog, _ ->
                             rationaleDialog.dismiss()
                             requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                         }
-                        .setNegativeButton("Cancel") { rationaleDialog, _ ->
+                        .setNegativeButton(R.string.cancel) { rationaleDialog, _ ->
                             rationaleDialog.dismiss()
                         }
                         .show()
