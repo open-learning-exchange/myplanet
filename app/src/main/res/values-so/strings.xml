@@ -33,7 +33,7 @@
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>
     <string name="title_activity_dashboard">Bogga Goobta</string>
-    <string name="menu_myplanet">myPlanet</string>
+    <string name="menu_myplanet">myDashboard</string>
     <string name="menu_home">Guriga</string>
     <string name="menu_library">maktabada</string>
     <string name="menu_courses">Koorsooyin</string>
