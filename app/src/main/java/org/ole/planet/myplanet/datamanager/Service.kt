@@ -230,21 +230,6 @@ class Service(private val context: Context) {
     fun becomeMember(realm: Realm, obj: JsonObject, callback: CreateUserCallback) {
         isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
-                val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                if (isUserExists(realm, obj["name"].asString)) {
-                    callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                    return
-                }
-                realm.beginTransaction()
-                val model = populateUsersTable(obj, realm, settings)
-                val keyString = generateKey()
-                val iv = generateIv()
-                if (model != null) {
-                    model.key = keyString
-                    model.iv = iv
-                }
-                realm.commitTransaction()
-
                 retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}")?.enqueue(object : Callback<JsonObject> {
                     override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
                         if (response.body() != null && response.body()?.has("_id") == true) {
@@ -252,8 +237,9 @@ class Service(private val context: Context) {
                         } else {
                             retrofitInterface.putDoc(null, "application/json", "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
                                 override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                                    if (response.body() != null && response.body()?.has("id") == true) {
+                                    if (response.body() != null && response.body()!!.has("id")) {
                                         uploadToShelf(obj)
+                                        saveUserToDb(realm, response.body()!!.get("id").asString, obj, callback)
                                     } else {
                                         callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                                     }
@@ -299,6 +285,48 @@ class Service(private val context: Context) {
 
             override fun onFailure(call: Call<JsonObject?>, t: Throwable) {}
         })
+    }
+
+    private fun saveUserToDb(realm: Realm, id: String, obj: JsonObject, callback: CreateUserCallback) {
+        val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        realm.executeTransactionAsync({ realm1: Realm? ->
+            try {
+                val res = retrofitInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/" + id)?.execute()
+                if (res?.body() != null) {
+                    val model = populateUsersTable(res.body(), realm1, settings)
+                    if (model != null) {
+                        UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
+                    }
+                }
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }, {
+            callback.onSuccess(context.getString(R.string.user_created_successfully))
+            isNetworkConnectedFlow.onEach { isConnected ->
+                if (isConnected) {
+                    val serverUrl = settings.getString("serverURL", "")
+                    if (!serverUrl.isNullOrEmpty()) {
+                        serviceScope.launch {
+                            val canReachServer = withContext(Dispatchers.IO) {
+                                isServerReachable(serverUrl)
+                            }
+                            if (canReachServer) {
+                                if (context is ProcessUserDataActivity) {
+                                    context.runOnUiThread {
+                                        context.startUpload("becomeMember")
+                                    }
+                                }
+                                TransactionSyncManager.syncDb(realm, "tablet_users")
+                            }
+                        }
+                    }
+                }
+            }.launchIn(serviceScope)
+        }) { error: Throwable ->
+            error.printStackTrace()
+            callback.onSuccess(context.getString(R.string.unable_to_save_user_please_sync))
+        }
     }
 
     fun syncPlanetServers(callback: SuccessListener) {
