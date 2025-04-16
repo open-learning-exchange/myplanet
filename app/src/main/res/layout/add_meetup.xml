@@ -238,15 +238,15 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/cancel"
-                    android:layout_gravity="end"
-                    android:backgroundTint="@color/primary"
-                    android:textColor="@color/md_white_1000" />
+                    android:layout_gravity="end"/>
                 <Button
                     android:id="@+id/btnSave"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/save"
-                    android:layout_gravity="end"/>
+                    android:layout_gravity="end"
+                    android:backgroundTint="@color/primary"
+                    android:textColor="@color/md_white_1000" />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
