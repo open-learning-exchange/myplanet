@@ -1271,5 +1271,6 @@
     <string name="no_health_records_available">لا توجد سجلات صحية متاحة</string>
     <string name="permission_required">مطلوب إذن</string>
     <string name="microphone_permission_required">يلزم الحصول على إذن الميكروفون لتسجيل الصوت. يُرجى تفعيله من إعدادات التطبيق</string>
+    <string name="confirm_share_community">هل أنت متأكد أنك تريد مشاركة هذا المحتوى مع المجتمع؟</string>
 
 </resources>

@@ -1271,5 +1271,6 @@
     <string name="no_health_records_available">कुनै स्वास्थ्य रेकर्ड उपलब्ध छैन</string>
     <string name="permission_required">अनुमति आवश्यक छ</string>
     <string name="microphone_permission_required">अडियो रेकर्ड गर्न माइक्रोफोन अनुमति आवश्यक छ। कृपया एप सेटिङहरूमा गई यसलाई सक्षम पार्नुहोस्।</string>
+    <string name="confirm_share_community">के तपाईं यो सामग्री समुदायसँग साझा गर्न चाहनुहुन्छ?</string>
 
 </resources>
