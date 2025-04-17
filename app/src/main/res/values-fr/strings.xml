@@ -114,7 +114,7 @@
     <string name="add_to_mycourses">Ajouter à mesCours</string>
     <string name="added_to">ajouté à</string>
     <string name="removed_from">supprimé de</string>
-    <string name="my_courses">Mes cours</string>
+    <string name="my_courses">Mescours</string>
     <string name="filter_collections">Filtrer les collections</string>
     <string name="select_many_collections">Sélectionner plusieurs collections</string>
     <string name="collections">Collections</string>
@@ -638,14 +638,14 @@
     <string name="shared_to_community">Partagé avec la communauté</string>
     <string name="no_data_available_please_check_and_try_again">Aucune donnée disponible, veuillez vérifier et réessayer.</string>
     <string name="no_course_matched_filter">Aucun cours correspondant au filtre</string>
-    <string name="added_to_my_library">ajouté à myLibrary</string>
-    <string name="added_to_my_courses">ajouté à myCourses</string>
+    <string name="added_to_my_library">Ressources ajoutées à maBibliothèque</string>
+    <string name="added_to_my_courses">Cours ajouté à mesCours</string>
     <string name="do_you_want_to_stay_online">Voulez-vous rester en ligne ?</string>
     <string name="planet_not_available">Planète non disponible</string>
     <string name="device_not_connected_to_planet">Appareil non connecté à la planète.</string>
     <string name="all_files_downloaded_successfully">Tous les fichiers ont été téléchargés avec succès</string>
-    <string name="removed_from_mylibrary">Supprimé de ma bibliothèque</string>
-    <string name="removed_from_mycourse">Supprimé de mon cours</string>
+    <string name="removed_from_mylibrary">Ressources supprimées de maBibliothèque</string>
+    <string name="removed_from_mycourse">Cours supprimé de mesCours</string>
     <string name="please_allow_usages_permission_to_myplanet_app">Veuillez autoriser les permissions d\'utilisation pour l\'application myPlanet.</string>
     <string name="permissions_granted">Permissions accordées</string>
     <string name="permissions_denied">Permissions refusées</string>
@@ -737,7 +737,7 @@
     <string name="enter_resource_detail">Saisissez les détails de la ressource</string>
     <string name="resource_saved_to_my_personal">Ressource enregistrée dans myPersonal</string>
     <string name="invalid_resource_url">URL de ressource invalide</string>
-    <string name="my_library">" ma bibliothèque"</string>
+    <string name="my_library">"mabibliothèque"</string>
     <string name="link_not_available">Lien non disponible</string>
     <string name="success_you_have_added_these_resources_to_your_mylibrary">Succès ! Vous avez ajouté ces ressources à votre bibliothèque:</string>
     <string name="more_resource_s"> autres ressource(s)…</string>

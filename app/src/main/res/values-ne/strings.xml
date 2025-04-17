@@ -114,7 +114,7 @@
     <string name="add_to_mycourses">मेरो पाठ्यक्रममा थप्नुहोस्</string>
     <string name="added_to">थपिएको</string>
     <string name="removed_from">हटाइएको</string>
-    <string name="my_courses">मेरो पाठ्यक्रमहरू</string>
+    <string name="my_courses">मेरोपाठ्यक्रमहरू</string>
     <string name="filter_collections">संग्रहहरू छान्नुहोस्</string>
     <string name="select_many_collections">धेरै संग्रहहरू छान्नुहोस्</string>
     <string name="collections">संग्रहहरू</string>
@@ -638,14 +638,14 @@
     <string name="shared_to_community">समुदायसँग साझा गरियो</string>
     <string name="no_data_available_please_check_and_try_again">कुनै डाटा उपलब्ध छैन, कृपया जाँच गर्नुहोस् र पुन: प्रयास गर्नुहोस्।</string>
     <string name="no_course_matched_filter">कुनै पाठ्यक्रम मिलेन</string>
-    <string name="added_to_my_library">myLibrary मा थपियो</string>
-    <string name="added_to_my_courses">myCourses मा थपियो</string>
+    <string name="added_to_my_library">स्रोतहरू मेरो पुस्तकालयमा थपिए</string>
+    <string name="added_to_my_courses">पाठ्यक्रम मेरो पाठ्यक्रमहरूमा थपियो</string>
     <string name="do_you_want_to_stay_online">के तपाइँ अनलाइन बस्न चाहनुहुन्छ?</string>
     <string name="planet_not_available">ग्रह उपलब्ध छैन</string>
     <string name="device_not_connected_to_planet">उपकरण ग्रहसँग जडान गरिएको छैन।</string>
     <string name="all_files_downloaded_successfully">सबै फाइलहरू सफलतापूर्वक डाउनलोड भयो</string>
-    <string name="removed_from_mylibrary">मेरो पुस्तकालयबाट हटाइयो</string>
-    <string name="removed_from_mycourse">मेरो पाठ्यक्रमबाट हटाइयो</string>
+    <string name="removed_from_mylibrary">स्रोतहरू मेरो पुस्तकालयबाट हटाइए</string>
+    <string name="removed_from_mycourse">पाठ्यक्रम मेरो पाठ्यक्रमहरूबाट हटाइयो</string>
     <string name="please_allow_usages_permission_to_myplanet_app">कृपया myPlanet अनुप्रयोगमा प्रयोगको अनुमति दिनुहोस्।</string>
     <string name="permissions_granted">अनुमतिहरू प्रदान गरिएको</string>
     <string name="permissions_denied">अनुमतिहरू निषेध गरिएको</string>
@@ -737,7 +737,7 @@
     <string name="enter_resource_detail">स्रोत विवरण राख्नुहोस्</string>
     <string name="resource_saved_to_my_personal">स्रोत myPersonal मा सुरक्षित गरियो।</string>
     <string name="invalid_resource_url">अवैध स्रोत url</string>
-    <string name="my_library">" मेरो पुस्तकालय"</string>
+    <string name="my_library">"मेरोपुस्तकालय"</string>
     <string name="link_not_available">लिंक उपलब्ध छैन</string>
     <string name="success_you_have_added_these_resources_to_your_mylibrary">सफलता! तपाईंले यी स्रोतहरूलाई आफ्नो मेरो पुस्तकालयमा थपेका छौ:\n\n</string>
     <string name="more_resource_s">" थप स्रोत(हरू)…\n"</string>
