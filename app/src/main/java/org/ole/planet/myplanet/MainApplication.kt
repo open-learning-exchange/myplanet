@@ -27,6 +27,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
+import org.ole.planet.myplanet.callback.OnMemberAddedListener
 import org.ole.planet.myplanet.callback.TeamPageListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmApkLog
@@ -66,6 +67,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         var showDownload = false
         var isSyncRunning = false
         var listener: TeamPageListener? = null
+        var memberListener: OnMemberAddedListener? = null
         val androidId: String get() {
             try {
                 return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
