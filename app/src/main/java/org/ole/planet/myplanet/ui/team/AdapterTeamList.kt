@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.team
 
 import android.content.Context
 import android.content.DialogInterface
-import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.Typeface
 import android.os.Bundle
@@ -11,7 +10,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
@@ -91,7 +89,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
             }
 
             joinLeave.setOnClickListener {
-                handleJoinLeaveClick(isMyTeam, team, user, position)
+                handleJoinLeaveClick(isMyTeam, team, user)
             }
         }
     }
@@ -147,7 +145,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         }
     }
 
-    private fun handleJoinLeaveClick(isMyTeam: Boolean, team: RealmMyTeam, user: RealmUserModel?, position: Int) {
+    private fun handleJoinLeaveClick(isMyTeam: Boolean, team: RealmMyTeam, user: RealmUserModel?) {
         if (isMyTeam) {
             if (RealmMyTeam.isTeamLeader(team._id, user?.id, mRealm)) {
                 teamListener?.onEditTeam(team)
