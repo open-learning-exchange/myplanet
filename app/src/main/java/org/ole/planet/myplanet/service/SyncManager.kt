@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.datamanager.ManagerSync
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.insertMyCourses
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.insertMyLibrary
+//import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.insertMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.removeDeletedResource
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.save
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
@@ -41,6 +41,10 @@ import java.io.IOException
 import java.util.Date
 import kotlin.system.measureTimeMillis
 import androidx.core.content.edit
+import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.BATCH_SIZE
+import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.batchInsertMyLibrary
+import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
 
 class SyncManager private constructor(private val context: Context) {
     private var td: Thread? = null
@@ -53,6 +57,9 @@ class SyncManager private constructor(private val context: Context) {
     private val dbService: DatabaseService = DatabaseService(context)
     private var backgroundSync: Job? = null
     val _syncState = MutableLiveData<Boolean>()
+    private val resourceBuffer = ArrayList<JsonObject>()
+    private val userIdBuffer = ArrayList<String?>()
+    private val RESOURCE_BUFFER_SIZE = 100
 
     fun start(listener: SyncListener?, type: String) {
         this.listener = listener
@@ -304,23 +311,146 @@ class SyncManager private constructor(private val context: Context) {
         val allDocs = dbClient?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?include_doc=false")
         val all = allDocs?.execute()
         val rows = getJsonArray("rows", all?.body())
+
+        // Log the total number of resources
+        val totalResources = rows.size()
+        Log.d("SYNC", "Total number of resources to sync: $totalResources")
+
         val keys: MutableList<String> = ArrayList()
+        var processedCount = 0
+
         for (i in 0 until rows.size()) {
             val `object` = rows[i].asJsonObject
             if (!TextUtils.isEmpty(getString("id", `object`))) keys.add(getString("key", `object`))
+
             if (i == rows.size() - 1 || keys.size == 1000) {
                 val obj = JsonObject()
                 obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
                 val response = dbClient?.findDocs(Utilities.header, "application/json", "${Utilities.getUrl()}/resources/_all_docs?include_docs=true", obj)?.execute()
+
                 if (response?.body() != null) {
-                    val ids: List<String?> = save(getJsonArray("rows", response.body()), realmInstance)
-                    newIds.addAll(ids)
+                    val docRows = getJsonArray("rows", response.body())
+                    processedCount += docRows.size()
+
+                    // Log progress
+                    Log.d("SYNC", "Processing batch of ${docRows.size()} resources ($processedCount/$totalResources)")
+
+                    // Create arrays for all, small, and large docs
+                    val allDocsArray = JsonArray()
+                    val smallDocsArray = JsonArray()
+                    val largeDocsArray = JsonArray()
+                    val allUserIds = ArrayList<String?>()
+
+                    // First pass: categorize documents by size
+                    for (j in 0 until docRows.size()) {
+                        val docObj = docRows[j].asJsonObject
+                        val document = getJsonObject("doc", docObj)
+                        val id = getString("_id", document)
+
+                        if (!id.startsWith("_design")) {
+                            newIds.add(id)
+                            allDocsArray.add(document)
+                            allUserIds.add(null) // No specific userId for these docs
+
+                            // Categorize by size
+                            val docSize = document.toString().length
+                            val hasAttachments = document.has("_attachments")
+                            var totalAttachmentSize = 0L
+
+                            if (hasAttachments) {
+                                val attachments = document["_attachments"].asJsonObject
+                                attachments.entrySet().forEach { (_, value) ->
+                                    val attachmentObj = value.asJsonObject
+                                    totalAttachmentSize += attachmentObj.get("length")?.asLong ?: 0
+                                }
+                            }
+
+                            if (docSize > 10000 || totalAttachmentSize > 500000) {
+                                largeDocsArray.add(document)
+                            } else {
+                                smallDocsArray.add(document)
+                            }
+                        }
+                    }
+
+                    Log.d("DocAnalysis", "Total docs: ${allDocsArray.size()}, Small docs: ${smallDocsArray.size()}, Large docs: ${largeDocsArray.size()}")
+
+                    // Create corresponding user ID lists
+                    val smallUserIds = ArrayList<String?>()
+                    val largeUserIds = ArrayList<String?>()
+
+                    // Fill with nulls to match doc counts
+                    for (j in 0 until smallDocsArray.size()) {
+                        smallUserIds.add(null)
+                    }
+
+                    for (j in 0 until largeDocsArray.size()) {
+                        largeUserIds.add(null)
+                    }
+
+                    // Process small docs with normal batch size
+                    if (smallDocsArray.size() > 0) {
+                        Log.d("SYNC", "Processing ${smallDocsArray.size()} small documents with normal batch size")
+                        batchInsertMyLibrary(smallUserIds, smallDocsArray, realmInstance)
+                    }
+
+                    // Process large docs with smaller batch size
+                    if (largeDocsArray.size() > 0) {
+                        Log.d("SYNC", "Processing ${largeDocsArray.size()} large documents with smaller batch size")
+
+                        // Temporarily adjust batch size for large docs
+                        val origBatchSize = BATCH_SIZE
+                        val SMALLER_BATCH_SIZE = 20
+
+                        try {
+                            // Assuming BATCH_SIZE is accessible and mutable
+                            BATCH_SIZE = SMALLER_BATCH_SIZE
+                            batchInsertMyLibrary(largeUserIds, largeDocsArray, realmInstance)
+                        } finally {
+                            // Restore original batch size
+                            BATCH_SIZE = origBatchSize
+                        }
+                    }
                 }
                 keys.clear()
             }
         }
+
+        Log.d("SYNC", "Resource sync completed: $processedCount resources processed")
+
+        // Make sure we're not in a transaction before calling removeDeletedResource
+        if (realmInstance.isInTransaction) {
+            realmInstance.commitTransaction()
+        }
+
+        // Clean up deleted resources
         removeDeletedResource(newIds, realmInstance)
     }
+
+//    @Throws(IOException::class)
+//    private fun syncResource(dbClient: ApiInterface?, backgroundRealm: Realm? = null) {
+//        val realmInstance = backgroundRealm ?: mRealm
+//        val newIds: MutableList<String?> = ArrayList()
+//        val allDocs = dbClient?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?include_doc=false")
+//        val all = allDocs?.execute()
+//        val rows = getJsonArray("rows", all?.body())
+//        val keys: MutableList<String> = ArrayList()
+//        for (i in 0 until rows.size()) {
+//            val `object` = rows[i].asJsonObject
+//            if (!TextUtils.isEmpty(getString("id", `object`))) keys.add(getString("key", `object`))
+//            if (i == rows.size() - 1 || keys.size == 1000) {
+//                val obj = JsonObject()
+//                obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
+//                val response = dbClient?.findDocs(Utilities.header, "application/json", "${Utilities.getUrl()}/resources/_all_docs?include_docs=true", obj)?.execute()
+//                if (response?.body() != null) {
+//                    val ids: List<String?> = save(getJsonArray("rows", response.body()), realmInstance)
+//                    newIds.addAll(ids)
+//                }
+//                keys.clear()
+//            }
+//        }
+//        removeDeletedResource(newIds, realmInstance)
+//    }
 
     private fun myLibraryTransactionSync(backgroundRealm: Realm? = null) {
         val apiInterface = client?.create(ApiInterface::class.java)
@@ -402,12 +532,23 @@ class SyncManager private constructor(private val context: Context) {
 
     private fun triggerInsert(stringArray: Array<String?>, resourceDoc: JsonObject, backgroundRealm: Realm? = null) {
         when (stringArray[2]) {
-            "resources" ->
-                if (backgroundRealm != null) {
-                    insertMyLibrary(stringArray[0], resourceDoc, backgroundRealm)
-                } else {
-                    insertMyLibrary(stringArray[0], resourceDoc, mRealm)
+            "resources" -> {
+                // Add to buffer instead of processing immediately
+                userIdBuffer.add(stringArray[0])
+                resourceBuffer.add(resourceDoc)
+
+                // Process the batch when buffer is full or on forced flush
+                if (resourceBuffer.size >= RESOURCE_BUFFER_SIZE) {
+                    flushResourceBuffer(backgroundRealm ?: mRealm)
                 }
+            }
+
+//            "resources" ->
+//                if (backgroundRealm != null) {
+//                    insertMyLibrary(stringArray[0], resourceDoc, backgroundRealm)
+//                } else {
+//                    insertMyLibrary(stringArray[0], resourceDoc, mRealm)
+//                }
 
             "meetups" ->
                 if (backgroundRealm != null) {
@@ -438,6 +579,23 @@ class SyncManager private constructor(private val context: Context) {
                 }
         }
         saveConcatenatedLinksToPrefs()
+    }
+
+    private fun flushResourceBuffer(realm: Realm) {
+        if (resourceBuffer.isEmpty()) return
+
+        Log.d("SYNC", "Flushing resource buffer with ${resourceBuffer.size} items")
+
+        // Convert the ArrayList to JsonArray
+        val jsonArray = JsonArray()
+        resourceBuffer.forEach { jsonArray.add(it) }
+
+        // Process the batch
+        batchInsertMyLibrary(userIdBuffer, jsonArray, realm)
+
+        // Clear the buffers
+        resourceBuffer.clear()
+        userIdBuffer.clear()
     }
 
     companion object {
