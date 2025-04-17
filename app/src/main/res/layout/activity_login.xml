@@ -346,7 +346,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:orientation="vertical"
-                        app:layout_constraintTop_toBottomOf="@+id/tv_available_space
+                        app:layout_constraintTop_toBottomOf="@+id/tv_available_space">
 
                         <Spinner
                             android:id="@+id/team"
