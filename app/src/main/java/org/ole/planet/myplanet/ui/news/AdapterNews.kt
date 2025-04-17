@@ -149,7 +149,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 }
                 if (news.userId == currentUser?._id) {
                     holder.rowNewsBinding.imgDelete.setOnClickListener {
-                        AlertDialog.Builder(context)
+                        AlertDialog.Builder(context,R.style.AlertDialogTheme)
                             .setMessage(R.string.delete_record)
                             .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
                                 deletePost(news, context)
@@ -500,19 +500,26 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         val viewHolder = holder as ViewHolderNews
         viewHolder.rowNewsBinding.btnShare.visibility = if (news?.isCommunityNews == true || fromLogin || nonTeamMember) View.GONE else View.VISIBLE
         viewHolder.rowNewsBinding.btnShare.setOnClickListener {
-            val array = Gson().fromJson(news?.viewIn, JsonArray::class.java)
-            val ob = JsonObject()
-            ob.addProperty("section", "community")
-            ob.addProperty("_id", currentUser?.planetCode + "@" + currentUser?.parentCode)
-            ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
-            array.add(ob)
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
-            news?.viewIn = Gson().toJson(array)
-            mRealm.commitTransaction()
-            Utilities.toast(context, context.getString(R.string.shared_to_community))
-            viewHolder.rowNewsBinding.btnShare.visibility = View.GONE
+            AlertDialog.Builder(context, R.style.AlertDialogTheme)
+                .setTitle(R.string.share_with_community)
+                .setMessage(R.string.confirm_share_community)
+                .setPositiveButton(R.string.yes) { _, _ ->
+                    val array = Gson().fromJson(news?.viewIn, JsonArray::class.java)
+                    val ob = JsonObject()
+                    ob.addProperty("section", "community")
+                    ob.addProperty("_id", currentUser?.planetCode + "@" + currentUser?.parentCode)
+                    ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
+                    array.add(ob)
+                    if (!mRealm.isInTransaction) {
+                        mRealm.beginTransaction()
+                    }
+                    news?.viewIn = Gson().toJson(array)
+                    mRealm.commitTransaction()
+                    Utilities.toast(context, context.getString(R.string.shared_to_community))
+                    viewHolder.rowNewsBinding.btnShare.visibility = View.GONE
+                }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
         }
     }
 
