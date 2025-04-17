@@ -340,26 +340,38 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/customDeviceName"
                         tools:text="@string/available_space_colon" />
-                    <Spinner
-                        android:id="@+id/team"
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:id="@+id/team_selector_container"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:textSize="16sp"
-                        android:visibility="gone"
-                        app:backgroundTint="@color/daynight_textColor"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/tv_available_space" />
+                        android:layout_marginTop="8dp"
+                        android:orientation="vertical"
+                        app:layout_constraintTop_toBottomOf="@+id/tv_available_space">
+
+                        <Spinner
+                            android:id="@+id/team"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:layout_marginEnd="10dp"
+                            android:textSize="16sp"
+                            android:minHeight="40dp"
+                            app:backgroundTint="@color/daynight_textColor" />
+                    </LinearLayout>
+
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/recyclerView"
                         android:layout_width="match_parent"
                         android:layout_height="0dp"
+                        android:layout_marginTop="8dp"
+                        android:clipToPadding="false"
+                        android:paddingBottom="8dp"
+                        android:scrollbars="vertical"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/team"
-                        app:layout_constraintVertical_bias="0.1" />
-                </androidx.constraintlayout.widget.ConstraintLayout>
+                        app:layout_constraintTop_toBottomOf="@+id/team_selector_container" />
+                    </androidx.constraintlayout.widget.ConstraintLayout>
             </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

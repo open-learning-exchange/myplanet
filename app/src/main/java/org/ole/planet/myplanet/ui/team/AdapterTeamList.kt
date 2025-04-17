@@ -29,8 +29,9 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
     private lateinit var itemTeamListBinding: ItemTeamListBinding
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
-    private var filteredList: List<RealmMyTeam> = list.filter { it.status?.isNotEmpty() == true }
+    private var filteredList: List<RealmMyTeam> = emptyList()
     private lateinit var prefData: SharedPrefManager
+
     interface OnClickTeamItem {
         fun onEditTeam(team: RealmMyTeam?)
     }
@@ -43,6 +44,10 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         itemTeamListBinding = ItemTeamListBinding.inflate(LayoutInflater.from(context), parent, false)
         prefData = SharedPrefManager(context)
         return ViewHolderTeam(itemTeamListBinding)
+    }
+
+    init {
+        updateList()
     }
 
     override fun onBindViewHolder(holder: ViewHolderTeam, position: Int) {
@@ -158,7 +163,19 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
     }
 
     private fun updateList() {
-        filteredList = list.filter { it.status?.isNotEmpty() == true }
+        val user: RealmUserModel? = UserProfileDbHandler(context).userModel
+        val userId = user?.id
+
+        val validTeams = list.filter { it.status?.isNotEmpty() == true }
+        filteredList = validTeams.sortedWith(compareByDescending<RealmMyTeam> { team ->
+            when {
+                userId != null && RealmMyTeam.isTeamLeader(team._id, userId, mRealm) -> 3
+                team.isMyTeam(userId, mRealm) -> 2
+                else -> 1
+            }
+        }.thenByDescending { team ->
+            RealmTeamLog.getVisitByTeam(mRealm, team._id)
+        })
         notifyDataSetChanged()
     }
 
