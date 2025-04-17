@@ -114,6 +114,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
                 map["message"] = msg
                 map["messageType"] = team?.teamType!!
                 map["messagePlanetCode"] = team?.teamPlanetCode!!
+                map["teamOnly"] = "true" //test
                 createNews(map, mRealm, user, imageList)
                 rvDiscussion.adapter?.notifyItemInserted(0)
             }.setNegativeButton(R.string.cancel, null).create()

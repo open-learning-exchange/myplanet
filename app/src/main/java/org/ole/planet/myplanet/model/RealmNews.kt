@@ -53,6 +53,7 @@ open class RealmNews : RealmObject() {
     var chat: Boolean = false
     var isEdited: Boolean = false
     var editedTime: Long = 0
+    var teamOnly: Boolean =false
 
     val imagesArray: JsonArray
         get() = if (images == null) JsonArray() else Gson().fromJson(images, JsonArray::class.java)
@@ -316,6 +317,7 @@ open class RealmNews : RealmObject() {
 
         @JvmStatic
         fun getViewInJson(map: HashMap<String?, String>): String {
+            /*
             val viewInArray = JsonArray()
             if (!TextUtils.isEmpty(map["viewInId"])) {
                 val `object` = JsonObject()
@@ -324,6 +326,28 @@ open class RealmNews : RealmObject() {
                 viewInArray.add(`object`)
             }
             return Gson().toJson(viewInArray)
+
+             */
+
+            val array = JsonArray()
+
+            val section = map["viewInSection"] ?: map["viewableBy"]
+            val id = map["viewInId"] ?: map["viewableId"]
+            val teamOnly = map["teamOnly"]?.toBoolean() ?: false
+
+            if (section != null && id != null) {
+                val obj = JsonObject()
+                obj.addProperty("section", section)
+                obj.addProperty("_id", id)
+
+                if (teamOnly && section == "teams") {
+                    obj.addProperty("teamOnly", true)
+                }
+
+                array.add(obj)
+            }
+
+            return array.toString()
         }
     }
 }
