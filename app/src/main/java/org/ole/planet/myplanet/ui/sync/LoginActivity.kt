@@ -388,6 +388,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             prefData.setSavedUsers(updatedUserList)
         }
 
+        activityLoginBinding.team.visibility = View.VISIBLE
+
         if (mAdapter == null) {
             mAdapter = TeamListAdapter(prefData.getSavedUsers().toMutableList(), this, this)
             activityLoginBinding.recyclerView.layoutManager = LinearLayoutManager(this)
@@ -396,8 +398,13 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             mAdapter?.updateList(prefData.getSavedUsers().toMutableList())
         }
 
-        activityLoginBinding.recyclerView.isNestedScrollingEnabled = false
-        activityLoginBinding.recyclerView.setHasFixedSize(true)
+        activityLoginBinding.recyclerView.isNestedScrollingEnabled = true
+        activityLoginBinding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+        activityLoginBinding.recyclerView.isVerticalScrollBarEnabled = true
+
+        activityLoginBinding.recyclerView.post {
+            mAdapter?.notifyDataSetChanged()
+        }
     }
 
     override fun onItemClick(user: User) {
