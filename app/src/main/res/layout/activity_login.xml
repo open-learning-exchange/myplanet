@@ -346,7 +346,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:orientation="vertical"
-                        app:layout_constraintTop_toBottomOf="@+id/tv_available_space">
+                        app:layout_constraintTop_toBottomOf="@+id/tv_available_space
+
                         <Spinner
                             android:id="@+id/team"
                             android:layout_width="match_parent"
@@ -357,6 +358,7 @@
                             android:minHeight="40dp"
                             app:backgroundTint="@color/daynight_textColor" />
                     </LinearLayout>
+
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/recyclerView"
                         android:layout_width="match_parent"
