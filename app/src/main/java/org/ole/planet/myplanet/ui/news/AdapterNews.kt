@@ -457,13 +457,27 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     private fun deletePost(news: RealmNews?, context: Context) {
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
+        val replies = mRealm.where(RealmNews::class.java)
+            .equalTo("replyTo", news?.id, Case.INSENSITIVE)
+            .findAll()
+
         val position = list.indexOf(news)
         if (position != -1) {
             list.removeAt(position)
             notifyItemRemoved(position)
         }
+
         news?.let {
+            for (reply in replies) {
+                val replyPosition = list.indexOf(reply)
+                if (replyPosition != -1) {
+                    list.removeAt(replyPosition)
+                    notifyItemRemoved(replyPosition)
+                }
+                reply.deleteFromRealm()
+            }
             it.deleteFromRealm()
+
             if (context is ReplyActivity) {
                 val restartIntent = context.intent
                 context.finish()
@@ -472,8 +486,15 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 context.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_OPEN, 0, 0, 0)
             }
         }
+
         mRealm.commitTransaction()
         notifyDataSetChanged()
+
+        recyclerView?.let {
+            it.post {
+                it.adapter?.notifyDataSetChanged()
+            }
+        }
     }
 
     override fun getItemCount(): Int {
