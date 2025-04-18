@@ -236,8 +236,6 @@ class TeamCalendarFragment : BaseTeamFragment() {
         }
         dialogView.findViewById<Button>(R.id.btnClose).setOnClickListener {
             dialog.dismiss()
-            eventDates.add(clickedCalendar)
-            fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
         }
         btnAdd.setOnClickListener {
             if(arguments?.getBoolean("fromLogin", false) != true){
@@ -245,6 +243,11 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 end = clickedCalendar
                 showMeetupAlert()
             }
+        }
+
+        dialog.setOnDismissListener {
+            eventDates.add(clickedCalendar)
+            fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
         }
 
         dialog.show()
