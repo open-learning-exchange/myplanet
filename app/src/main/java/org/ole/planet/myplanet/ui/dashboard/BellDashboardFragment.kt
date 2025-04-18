@@ -131,7 +131,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun checkPendingSurveys() {
-        val pendingSurveys = getPendingSurveys(user?.id, mRealm)
+        val pendingSurveys = getUniquePendingSurveys(user?.id, mRealm)
 
         if (pendingSurveys.isNotEmpty()) {
             val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)
@@ -154,6 +154,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             val adapter = SurveyAdapter(surveyTitles, { position ->
                 val selectedSurvey = pendingSurveys[position].id
                 AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
+                alertDialog.dismiss()
             }, alertDialog)
 
             recyclerView.adapter = adapter
@@ -168,6 +169,25 @@ class BellDashboardFragment : BaseDashboardFragment() {
             .equalTo("type", "survey")
             .equalTo("status", "pending", Case.INSENSITIVE)
             .findAll()
+    }
+
+    private fun getUniquePendingSurveys(userId: String?, realm: Realm): List<RealmSubmission> {
+        val allPendingSurveys = realm.where(RealmSubmission::class.java)
+            .equalTo("userId", userId)
+            .equalTo("type", "survey")
+            .equalTo("status", "pending", Case.INSENSITIVE)
+            .findAll()
+
+        val uniqueSurveys = mutableMapOf<String, RealmSubmission>()
+
+        allPendingSurveys.forEach { submission ->
+            val key = submission.parentId ?: submission.id
+            if (!uniqueSurveys.containsKey(key)) {
+                uniqueSurveys[key.toString()] = submission
+            }
+        }
+
+        return uniqueSurveys.values.toList()
     }
 
     private fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>, realm: Realm): List<String> {
