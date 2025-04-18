@@ -24,51 +24,55 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
     private val list: MutableList<String> = ArrayList()
     private val isEnterprise: Boolean = TextUtils.equals(team?.type, "enterprise")
 
+    private val pages = mutableListOf<Int>()
+
     init {
         if (isInMyTeam || team?.isPublic == true) {
-            list.add(context.getString(R.string.chat))
-            list.add(context.getString(if (isEnterprise) R.string.mission else R.string.plan))
-            list.add(context.getString(if (isEnterprise) R.string.team else R.string.members))
-            list.add(context.getString(R.string.tasks))
-            list.add(context.getString(R.string.calendar))
-            list.add(context.getString(R.string.survey))
-            list.add(context.getString(if (isEnterprise) R.string.finances else R.string.courses))
-            if (isEnterprise) {
-                list.add(context.getString(R.string.reports))
-            }
-            list.add(context.getString(if (isEnterprise) R.string.documents else R.string.resources))
-            list.add(context.getString(if (isEnterprise) R.string.applicants else R.string.join_requests))
+            pages += R.string.chat
+            pages += if (isEnterprise) R.string.mission else R.string.plan
+            pages += if (isEnterprise) R.string.team else R.string.members
+            pages += R.string.tasks
+            pages += R.string.calendar
+            pages += R.string.survey
+            pages += if (isEnterprise) R.string.finances else R.string.courses
+            if (isEnterprise) pages += R.string.reports
+            pages += if (isEnterprise) R.string.documents else R.string.resources
+            pages += if (isEnterprise) R.string.applicants else R.string.join_requests
         } else {
-            list.add(context.getString(if (isEnterprise) R.string.mission else R.string.plan))
-            list.add(context.getString(if (isEnterprise) R.string.team else R.string.members))
+            pages += if (isEnterprise) R.string.mission else R.string.plan
+            pages += if (isEnterprise) R.string.team else R.string.members
         }
     }
 
-    fun getPageTitle(position: Int): CharSequence {
-        return list[position]
-    }
+    override fun getItemCount() = pages.size
+    fun getPageTitle(position: Int) = context.getString(pages[position])
+
+    override fun getItemId(position: Int): Long =
+        pages[position].toLong()
+
+    override fun containsItem(itemId: Long): Boolean =
+        pages.contains(itemId.toInt())
 
     override fun createFragment(position: Int): Fragment {
-        if (position < 0 || position >= list.size) {
-            throw IllegalArgumentException("Invalid position: $position. List size: ${list.size}")
-        }
-        val fragment: Fragment = when (list[position]) {
-            context.getString(R.string.chat) -> DiscussionListFragment()
-            context.getString(R.string.plan), context.getString(R.string.mission) -> PlanFragment()
-            context.getString(R.string.members), context.getString(R.string.team) -> JoinedMemberFragment()
-            context.getString(R.string.tasks) -> TeamTaskFragment()
-            context.getString(R.string.calendar) -> TeamCalendarFragment()
-            context.getString(R.string.survey) -> SurveyFragment().apply {
+        val id = pages[position]
+        println(position)
+        val fragment: Fragment = when (id) {
+            R.string.chat -> DiscussionListFragment()
+            R.string.plan, R.string.mission -> PlanFragment()
+            R.string.members, R.string.team -> JoinedMemberFragment()
+            R.string.tasks -> TeamTaskFragment()
+            R.string.calendar -> TeamCalendarFragment()
+            R.string.survey -> SurveyFragment().apply {
                 arguments = Bundle().apply {
                     putBoolean("isTeam", true)
                     putString("teamId", teamId)
                 }
             }
-            context.getString(R.string.courses) -> TeamCourseFragment()
-            context.getString(R.string.finances) -> FinanceFragment()
-            context.getString(R.string.reports) -> ReportsFragment()
-            context.getString(R.string.resources), context.getString(R.string.documents) -> TeamResourceFragment().apply { MainApplication.listener = this }
-            context.getString(R.string.join_requests), context.getString(R.string.applicants) -> MembersFragment()
+            R.string.courses -> TeamCourseFragment()
+            R.string.finances -> FinanceFragment()
+            R.string.reports -> ReportsFragment()
+            R.string.resources, R.string.documents -> TeamResourceFragment().apply { MainApplication.listener = this }
+            R.string.join_requests, R.string.applicants -> MembersFragment()
             else -> throw IllegalArgumentException("Invalid fragment type for position: $position")
         }
         if (fragment.arguments == null) {
@@ -77,9 +81,5 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
             }
         }
         return fragment
-    }
-
-    override fun getItemCount(): Int {
-        return list.size
     }
 }
