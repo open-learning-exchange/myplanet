@@ -294,6 +294,7 @@ class ChatDetailFragment : Fragment() {
     private fun selectAI(selectedButton: Button, providerName: String, modelName: String) {
         val aiTableRow = fragmentChatDetailBinding.aiTableRow
         val context = requireContext()
+        currentID = ""
 
         for (i in 0 until aiTableRow.childCount) {
             val view = aiTableRow.getChildAt(i)
@@ -466,8 +467,8 @@ class ChatDetailFragment : Fragment() {
             add("conversations", conversationsArray)
         }
 
-        requireActivity().runOnUiThread {
-            RealmChatHistory.insert(mRealm, jsonObject)
+        mRealm.executeTransaction { realm ->
+            RealmChatHistory.insert(realm, jsonObject)
         }
         (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
     }
