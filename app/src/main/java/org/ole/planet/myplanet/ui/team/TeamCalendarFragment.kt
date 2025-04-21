@@ -61,10 +61,10 @@ class TeamCalendarFragment : BaseTeamFragment() {
         }
         val alertDialog = AlertDialog.Builder(requireActivity()).setView(addMeetupBinding.root).create()
         addMeetupBinding.btnSave.setOnClickListener {
-            val title = "${addMeetupBinding.etTitle.text}"
-            val link = "${addMeetupBinding.etLink.text}"
-            val description = "${addMeetupBinding.etDescription.text}"
-            val location = "${addMeetupBinding.etLocation.text}"
+            val title = addMeetupBinding.etTitle.text.toString().trim()
+            val link = addMeetupBinding.etLink.text.toString().trim()
+            val description = addMeetupBinding.etDescription.text.toString().trim()
+            val location = addMeetupBinding.etLocation.text.toString().trim()
             if (title.isEmpty()) {
                 Utilities.toast(activity, getString(R.string.title_is_required))
             } else if (description.isEmpty()) {
