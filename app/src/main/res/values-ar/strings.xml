@@ -125,7 +125,7 @@
     <string name="menu_achievement">الإنجازات</string>
     <string name="edit_achievement">تحرير الإنجازات</string>
     <string name="add_resources">إضافة موارد</string>
-    <string name="description">الوصف</string>
+    <string name="description">الوصف *</string>
     <string name="title_asterisk">العنوان *</string>
     <string name="name_asterisk">الاسم *</string>
     <string name="relationship">العلاقة</string>
