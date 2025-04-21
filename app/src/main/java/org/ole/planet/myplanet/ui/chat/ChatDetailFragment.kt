@@ -295,6 +295,8 @@ class ChatDetailFragment : Fragment() {
         val aiTableRow = fragmentChatDetailBinding.aiTableRow
         val context = requireContext()
         currentID = ""
+        mAdapter.lastAnimatedPosition = -1
+        mAdapter.animatedMessages.clear()
 
         for (i in 0 until aiTableRow.childCount) {
             val view = aiTableRow.getChildAt(i)
