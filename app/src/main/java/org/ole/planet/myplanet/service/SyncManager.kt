@@ -306,6 +306,7 @@ class SyncManager private constructor(private val context: Context) {
 
     @Throws(IOException::class)
     private fun syncResource(dbClient: ApiInterface?, backgroundRealm: Realm? = null) {
+        val startTime = System.currentTimeMillis()
         val realmInstance = backgroundRealm ?: mRealm
         val newIds: MutableList<String?> = ArrayList()
         val allDocs = dbClient?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?include_doc=false")
@@ -417,6 +418,8 @@ class SyncManager private constructor(private val context: Context) {
         }
 
         Log.d("SYNC", "Resource sync completed: $processedCount resources processed")
+        val endTime = System.currentTimeMillis()  // Add this line
+        Log.d("SYNC", "Total resource sync time: ${endTime - startTime}ms for $processedCount resources")
 
         // Make sure we're not in a transaction before calling removeDeletedResource
         if (realmInstance.isInTransaction) {

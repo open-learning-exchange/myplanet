@@ -841,6 +841,31 @@ open class RealmMyLibrary : RealmObject() {
         fun getSubjects(libraries: List<RealmMyLibrary>): Set<String> {
             return libraries.flatMap { it.subject ?: emptyList() }.toSet()
         }
+
+        @JvmStatic
+        fun getLibrarySummary(realm: Realm): String {
+            val totalResources = realm.where(RealmMyLibrary::class.java).count()
+            val offlineResources = realm.where(RealmMyLibrary::class.java).equalTo("resourceOffline", true).count()
+            val byType = mutableMapOf<String?, Long>()
+
+            // Count by media type
+            val mediaTypes = realm.where(RealmMyLibrary::class.java).distinct("mediaType").findAll()
+            mediaTypes.forEach { type ->
+                val count = realm.where(RealmMyLibrary::class.java).equalTo("mediaType", type.mediaType).count()
+                byType[type.mediaType] = count
+            }
+
+            val summaryBuilder = StringBuilder()
+            summaryBuilder.append("Library Summary:\n")
+            summaryBuilder.append("- Total resources: $totalResources\n")
+            summaryBuilder.append("- Offline available: $offlineResources\n")
+            summaryBuilder.append("- By media type:\n")
+            byType.forEach { (type, count) ->
+                summaryBuilder.append("  - ${type ?: "Unknown"}: $count\n")
+            }
+
+            return summaryBuilder.toString()
+        }
     }
 }
 
