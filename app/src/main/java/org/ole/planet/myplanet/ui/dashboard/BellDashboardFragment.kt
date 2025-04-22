@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -45,6 +46,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private var networkStatusJob: Job? = null
     private val viewModel: BellDashboardViewModel by viewModels()
     var user: RealmUserModel? = null
+    data class SurveyInfo(val id: String, val title: String)
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentHomeBellBinding = FragmentHomeBellBinding.inflate(inflater, container, false)
@@ -132,15 +134,20 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun checkPendingSurveys() {
         val pendingSurveys = getPendingSurveys(user?.id, mRealm)
-
+        Log.d("hi", "Pending Surveys: ${pendingSurveys.size}")
         if (pendingSurveys.isNotEmpty()) {
-            val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)
+            val uniqueSurveys = pendingSurveys.groupBy {
+                    submission -> submission.parentId?.split("@")?.firstOrNull() ?: ""
+            }
+
+            val surveyInfoList = getUniqueSurveyInfo(uniqueSurveys.keys.toList(), mRealm)
 
             val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
             val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
             recyclerView.layoutManager = LinearLayoutManager(requireActivity())
             val alertDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
-                .setTitle(getString(R.string.surveys_to_complete, pendingSurveys.size, if (pendingSurveys.size > 1) "surveys" else "survey"))
+                .setTitle(getString(R.string.surveys_to_complete,
+                    surveyInfoList.size, if (surveyInfoList.size > 1) "surveys" else "survey"))
                 .setView(dialogView)
                 .setPositiveButton(getString(R.string.ok)) { dialog, _ ->
                     homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
@@ -151,15 +158,38 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 }
                 .create()
 
-            val adapter = SurveyAdapter(surveyTitles, { position ->
-                val selectedSurvey = pendingSurveys[position].id
-                AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
-            }, alertDialog)
+            val adapter = SurveyAdapter(
+                surveyInfoList.map { it.title },
+                { position ->
+                    val selectedSurveyId = surveyInfoList[position].id
+                    val selectedSubmission = pendingSurveys.find { submission ->
+                        submission.parentId?.split("@")?.firstOrNull() == selectedSurveyId
+                    }
+
+                    selectedSubmission?.let { submission ->
+                        AdapterMySubmission.openSurvey(homeItemClickListener, submission.id, true, false, "")
+                    }
+                },
+                alertDialog
+            )
 
             recyclerView.adapter = adapter
             alertDialog.show()
             alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
         }
+    }
+
+    private fun getUniqueSurveyInfo(examIds: List<String>, realm: Realm): List<SurveyInfo> {
+        val surveyInfo = mutableListOf<SurveyInfo>()
+        examIds.forEach { examId ->
+            val exam = realm.where(RealmStepExam::class.java)
+                .equalTo("id", examId)
+                .findFirst()
+            exam?.name?.let {
+                surveyInfo.add(SurveyInfo(examId, it))
+            }
+        }
+        return surveyInfo
     }
 
     private fun getPendingSurveys(userId: String?, realm: Realm): List<RealmSubmission> {
