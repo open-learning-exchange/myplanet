@@ -4,9 +4,11 @@ import android.content.DialogInterface
 import android.content.res.Configuration
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import com.google.gson.Gson
@@ -163,16 +165,21 @@ class DiscussionListFragment : BaseTeamFragment() {
             .setView(binding.root)
             .setPositiveButton(getString(R.string.save)) { _: DialogInterface?, _: Int ->
                 val msg = "${layout.editText?.text}".trim { it <= ' ' }
+                Log.d("AddMessageDebug", "Save button clicked. Message = $msg, teamId = $teamId") //test
                 if (msg.isEmpty()) {
                     Utilities.toast(activity, getString(R.string.message_is_required))
                     return@setPositiveButton
                 }
+
+                Log.d("TeamDebug", "Before createNews: teamId = $teamId") //test
+                Toast.makeText(context, "teamId = $teamId", Toast.LENGTH_LONG).show() //test
                 val map = HashMap<String?, String>()
                 map["viewInId"] = teamId
                 map["viewInSection"] = "teams"
                 map["message"] = msg
                 map["messageType"] = team?.teamType ?: ""
                 map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
+                //map["teamOnly"] = "true" //test
                 user?.let { createNews(map, mRealm, it, imageList) }
                 fragmentDiscussionListBinding.rvDiscussion.adapter?.notifyDataSetChanged()
                 setData(news)
