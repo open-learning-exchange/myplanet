@@ -286,40 +286,78 @@ class SyncManager private constructor(private val context: Context) {
 
     private fun resourceTransactionSync(backgroundRealm: Realm? = null) {
         val apiInterface = client?.create(ApiInterface::class.java)
+        Log.d("ResourceSync", "Starting resource synchronization...")
+        val startTime = System.currentTimeMillis()
         try {
-            if (backgroundRealm != null) {
+            val resourceCount = if (backgroundRealm != null) {
                 syncResource(apiInterface, backgroundRealm)
             } else {
                 syncResource(apiInterface)
             }
+            val totalTime = System.currentTimeMillis() - startTime
+            Log.d("ResourceSync", "Completed synchronizing $resourceCount resources in $totalTime ms")
         } catch (e: IOException) {
+            Log.e("ResourceSync", "Failed to sync resources: ${e.message}", e)
             e.printStackTrace()
         }
     }
 
     @Throws(IOException::class)
-    private fun syncResource(dbClient: ApiInterface?, backgroundRealm: Realm? = null) {
+    private fun syncResource(dbClient: ApiInterface?, backgroundRealm: Realm? = null): Int {
         val realmInstance = backgroundRealm ?: mRealm
         val newIds: MutableList<String?> = ArrayList()
+        var totalResourceCount = 0
+
+        val syncStartTime = System.currentTimeMillis()
+        Log.d("ResourceSync", "Fetching resource documents...")
+
         val allDocs = dbClient?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?include_doc=false")
         val all = allDocs?.execute()
         val rows = getJsonArray("rows", all?.body())
+
+        Log.d("ResourceSync", "Found ${rows.size()} total resource documents to process")
+
         val keys: MutableList<String> = ArrayList()
+        var batchCount = 0
+
         for (i in 0 until rows.size()) {
             val `object` = rows[i].asJsonObject
             if (!TextUtils.isEmpty(getString("id", `object`))) keys.add(getString("key", `object`))
             if (i == rows.size() - 1 || keys.size == 1000) {
+                val batchStartTime = System.currentTimeMillis()
+                batchCount++
+
                 val obj = JsonObject()
                 obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
+                Log.d("ResourceSync", "Processing batch #$batchCount with ${keys.size} documents")
+
                 val response = dbClient?.findDocs(Utilities.header, "application/json", "${Utilities.getUrl()}/resources/_all_docs?include_docs=true", obj)?.execute()
                 if (response?.body() != null) {
+                    val batchSaveTime = System.currentTimeMillis()
                     val ids: List<String?> = save(getJsonArray("rows", response.body()), realmInstance)
+                    val batchSaveEndTime = System.currentTimeMillis() - batchSaveTime
+
+                    Log.d("ResourceSync", "Saved batch #$batchCount with ${ids.size} resources in $batchSaveEndTime ms")
                     newIds.addAll(ids)
+                    totalResourceCount += ids.size
                 }
+
+                val batchEndTime = System.currentTimeMillis() - batchStartTime
+                Log.d("ResourceSync", "Completed batch #$batchCount in $batchEndTime ms")
                 keys.clear()
             }
         }
-        removeDeletedResource(newIds, realmInstance)
+
+        val cleanupStartTime = System.currentTimeMillis()
+        Log.d("ResourceSync", "Starting cleanup of deleted resources...")
+        val deletedCount = removeDeletedResource(newIds, realmInstance)
+        val cleanupTime = System.currentTimeMillis() - cleanupStartTime
+        Log.d("ResourceSync", "Removed $deletedCount deleted resources in $cleanupTime ms")
+
+        val totalTime = System.currentTimeMillis() - syncStartTime
+        Log.d("ResourceSync", "Resource sync completed: $totalResourceCount resources processed in $totalTime ms")
+
+        return totalResourceCount
     }
 
     private fun myLibraryTransactionSync(backgroundRealm: Realm? = null) {

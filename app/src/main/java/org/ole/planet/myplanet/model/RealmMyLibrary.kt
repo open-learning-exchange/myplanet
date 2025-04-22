@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.model
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
@@ -194,13 +195,19 @@ open class RealmMyLibrary : RealmObject() {
         }
 
         @JvmStatic
-        fun removeDeletedResource(newIds: List<String?>, mRealm: Realm) {
+        fun removeDeletedResource(newIds: List<String?>, mRealm: Realm): Int {
             val ids = getIds(mRealm)
+            var deletedCount = 0
+
             ids.filterNot { it in newIds }.forEach { id ->
                 mRealm.executeTransaction { realm ->
-                    realm.where(RealmMyLibrary::class.java).equalTo("resourceId", id).findAll().deleteAllFromRealm()
+                    val deletedItems = realm.where(RealmMyLibrary::class.java).equalTo("resourceId", id).findAll()
+                    deletedCount += deletedItems.size
+                    deletedItems.deleteAllFromRealm()
                 }
             }
+
+            return deletedCount
         }
 
         @JvmStatic
@@ -234,7 +241,15 @@ open class RealmMyLibrary : RealmObject() {
         }
 
         private fun insertResources(doc: JsonObject, mRealm: Realm) {
+            val startTime = System.currentTimeMillis()
+            val resourceId = JsonUtils.getString("_id", doc)
+
             insertMyLibrary("", doc, mRealm)
+
+            val endTime = System.currentTimeMillis() - startTime
+            if (endTime > 100) {  // Only log slower insertions to avoid log spam
+                Log.d("ResourceSync", "Resource $resourceId inserted in $endTime ms")
+            }
         }
 
         @JvmStatic
@@ -258,15 +273,20 @@ open class RealmMyLibrary : RealmObject() {
 
         @JvmStatic
         fun insertMyLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
+            val startTime = System.currentTimeMillis()
             val resourceId = JsonUtils.getString("_id", doc)
-            val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            var resource = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceId).findFirst()
-            if (resource == null) {
-                resource = mRealm.createObject(RealmMyLibrary::class.java, resourceId)
-            }
+
+            try {
+                if (!mRealm.isInTransaction) {
+                    mRealm.beginTransaction()
+                }
+                val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                var resource = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceId).findFirst()
+                val isNewResource = resource == null
+
+                if (resource == null) {
+                    resource = mRealm.createObject(RealmMyLibrary::class.java, resourceId)
+                }
             resource?.apply {
                 setUserId(userId)
                 _id = resourceId
@@ -369,7 +389,21 @@ open class RealmMyLibrary : RealmObject() {
                 JsonUtils.getString("downloaded", doc),
                 JsonUtils.getBoolean("private", doc).toString(),
             )
-            libraryDataList.add(csvRow)
+                libraryDataList.add(csvRow)
+
+                val endTime = System.currentTimeMillis() - startTime
+                if (isNewResource) {
+                    Log.d("ResourceSync", "Created new resource $resourceId in $endTime ms")
+                } else {
+                    Log.d("ResourceSync", "Updated existing resource $resourceId in $endTime ms")
+                }
+            } catch (e: Exception) {
+                Log.e("ResourceSync", "Error inserting resource $resourceId: ${e.message}", e)
+                if (mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
+                throw e
+            }
         }
 
         fun writeCsv(filePath: String, data: List<Array<String>>) {
@@ -399,14 +433,29 @@ open class RealmMyLibrary : RealmObject() {
         @JvmStatic
         fun save(allDocs: JsonArray, mRealm: Realm): List<String> {
             val list: MutableList<String> = ArrayList()
+            val startTime = System.currentTimeMillis()
+            var processedCount = 0
+
+            Log.d("ResourceSync", "Starting to save ${allDocs.size()} resource documents to Realm")
+
             allDocs.forEach { doc ->
                 val document = JsonUtils.getJsonObject("doc", doc.asJsonObject)
                 val id = JsonUtils.getString("_id", document)
                 if (!id.startsWith("_design")) {
                     list.add(id)
                     insertResources(document, mRealm)
+                    processedCount++
+
+                    // Log progress for every 100 resources
+                    if (processedCount % 100 == 0) {
+                        Log.d("ResourceSync", "Processed $processedCount/${allDocs.size()} resources")
+                    }
                 }
             }
+
+            val totalTime = System.currentTimeMillis() - startTime
+            Log.d("ResourceSync", "Saved $processedCount resources to Realm in $totalTime ms (${totalTime/Math.max(1, processedCount)} ms per resource)")
+
             return list
         }
 
@@ -429,6 +478,31 @@ open class RealmMyLibrary : RealmObject() {
         @JvmStatic
         fun getSubjects(libraries: List<RealmMyLibrary>): Set<String> {
             return libraries.flatMap { it.subject ?: emptyList() }.toSet()
+        }
+
+        @JvmStatic
+        fun getLibrarySummary(realm: Realm): String {
+            val totalResources = realm.where(RealmMyLibrary::class.java).count()
+            val offlineResources = realm.where(RealmMyLibrary::class.java).equalTo("resourceOffline", true).count()
+            val byType = mutableMapOf<String?, Long>()
+
+            // Count by media type
+            val mediaTypes = realm.where(RealmMyLibrary::class.java).distinct("mediaType").findAll()
+            mediaTypes.forEach { type ->
+                val count = realm.where(RealmMyLibrary::class.java).equalTo("mediaType", type.mediaType).count()
+                byType[type.mediaType] = count
+            }
+
+            val summaryBuilder = StringBuilder()
+            summaryBuilder.append("Library Summary:\n")
+            summaryBuilder.append("- Total resources: $totalResources\n")
+            summaryBuilder.append("- Offline available: $offlineResources\n")
+            summaryBuilder.append("- By media type:\n")
+            byType.forEach { (type, count) ->
+                summaryBuilder.append("  - ${type ?: "Unknown"}: $count\n")
+            }
+
+            return summaryBuilder.toString()
         }
     }
 }
