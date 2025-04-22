@@ -125,7 +125,7 @@
     <string name="menu_achievement">Réalisations</string>
     <string name="edit_achievement">Modifier les réalisations</string>
     <string name="add_resources">Ajouter des ressources</string>
-    <string name="description">Description</string>
+    <string name="description">Description *</string>
     <string name="title_asterisk">Titre *</string>
     <string name="name_asterisk">Nom *</string>
     <string name="relationship">Relation</string>

@@ -125,7 +125,7 @@
     <string name="menu_achievement">साधारणता</string>
     <string name="edit_achievement">उपलब्धिहरू सम्पादन गर्नुहोस्</string>
     <string name="add_resources">स्रोतहरू थप्नुहोस्</string>
-    <string name="description">वर्णन</string>
+    <string name="description">वर्णन *</string>
     <string name="title_asterisk">शीर्षक *</string>
     <string name="name_asterisk">नाम *</string>
     <string name="relationship">सम्बन्ध</string>
