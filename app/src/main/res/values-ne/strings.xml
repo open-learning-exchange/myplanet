@@ -1265,7 +1265,7 @@
     <string name="no_resources_to_download">डाउनलोड गर्न कुनै स्रोत छैन</string>
     <string name="response">उत्तर</string>
     <string name="full_conversation_response">पूर्ण वार्तालाप उत्तर</string>
-    <string name="add_new_event">नयाँ घटना थप्नुहोस्</string>
+    <string name="add_new_event">+ नयाँ कार्यक्रम</string>
     <string name="none">कुनै पनि होइन</string>
     <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">तपाईंले ट्र्याकिङ जारी राख्दा तपाईंको स्वास्थ्य डेटा यहाँ देखिनेछ</string>
     <string name="no_health_records_available">कुनै स्वास्थ्य रेकर्ड उपलब्ध छैन</string>
