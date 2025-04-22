@@ -194,7 +194,8 @@
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
                                     android:text="@string/n_a"
-                                    android:textColor="@color/daynight_textColor" />
+                                    android:textColor="@color/daynight_textColor"
+                                    android:clickable="false" />
                             </LinearLayout>
                         </LinearLayout>
 
