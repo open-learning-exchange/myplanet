@@ -189,6 +189,7 @@
                 android:textColor="@color/daynight_textColor"
                 android:backgroundTint="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>
+
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -196,6 +197,7 @@
             android:layout_marginTop="9dp"
             android:layout_marginStart="4dp"
             android:orientation="vertical">
+
             <TextView
                 android:id="@+id/tvBirthTitle"
                 android:layout_width="wrap_content"
@@ -204,7 +206,6 @@
                 android:textColor="@color/hint_color"
                 android:textSize="12sp"
                 android:layout_marginBottom="4dp" />
-
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/ltInputName"
                 android:layout_width="match_parent"
@@ -225,7 +226,6 @@
                     app:drawableRightCompat="@drawable/ic_date"
                     app:drawableTint="@color/daynight_textColor" />
             </com.google.android.material.textfield.TextInputLayout>
-
         </LinearLayout>
     </LinearLayout>
 
@@ -240,7 +240,6 @@
         android:textSize="12sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/lt2" />
-
     <RadioGroup
         android:id="@+id/rdGender"
         android:layout_width="match_parent"
@@ -294,7 +293,6 @@
                 android:textColor="@color/hint_color"
                 android:layout_marginBottom="4dp"
                 android:textSize="12sp" />
-
             <Spinner
                 android:id="@+id/language"
                 android:layout_width="match_parent"
@@ -318,7 +316,6 @@
                 android:textColor="@color/hint_color"
                 android:textSize="12sp"
                 android:layout_marginBottom="4dp" />
-
             <Spinner
                 android:id="@+id/level"
                 android:layout_width="wrap_content"
