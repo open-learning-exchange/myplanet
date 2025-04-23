@@ -20,11 +20,11 @@ import org.ole.planet.myplanet.ui.team.teamResource.TeamResourceFragment
 import org.ole.planet.myplanet.ui.team.teamTask.TeamTaskFragment
 
 class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boolean) : FragmentStateAdapter(fm) {
-    private val teamId: String? = team?._id
-    private val list: MutableList<String> = ArrayList()
-    private val isEnterprise: Boolean = TextUtils.equals(team?.type, "enterprise")
+    private val teamId = team?._id
+    private val isEnterprise = team?.type == "enterprise"
 
     private val pages = mutableListOf<Int>()
+    private val fragments: List<Fragment>
 
     init {
         if (isInMyTeam || team?.isPublic == true) {
@@ -42,10 +42,41 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
             pages += if (isEnterprise) R.string.mission else R.string.plan
             pages += if (isEnterprise) R.string.team else R.string.members
         }
+
+        fragments = pages.map { id ->
+            when (id) {
+                R.string.chat -> DiscussionListFragment()
+                R.string.plan, R.string.mission -> PlanFragment()
+                R.string.members, R.string.team -> JoinedMemberFragment()
+                R.string.tasks -> TeamTaskFragment()
+                R.string.calendar -> TeamCalendarFragment()
+                R.string.survey -> SurveyFragment().apply {
+                    arguments = Bundle().apply {
+                        putBoolean("isTeam", true)
+                        putString("teamId", teamId)
+                    }
+                }
+                R.string.courses -> TeamCourseFragment()
+                R.string.finances -> FinanceFragment()
+                R.string.reports -> ReportsFragment()
+                R.string.resources, R.string.documents -> TeamResourceFragment().apply {
+                    MainApplication.listener = this
+                }
+                R.string.join_requests,
+                R.string.applicants         -> MembersFragment()
+                else -> throw IllegalArgumentException("Unknown page id $id")
+            }.apply {
+                if (arguments == null) {
+                    arguments = Bundle().apply { putString("id", teamId) }
+                }
+            }
+        }
     }
 
-    override fun getItemCount() = pages.size
-    fun getPageTitle(position: Int) = context.getString(pages[position])
+    override fun getItemCount(): Int = fragments.size
+
+    fun getPageTitle(position: Int): CharSequence =
+        context.getString(pages[position])
 
     override fun getItemId(position: Int): Long =
         pages[position].toLong()
@@ -53,33 +84,6 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
     override fun containsItem(itemId: Long): Boolean =
         pages.contains(itemId.toInt())
 
-    override fun createFragment(position: Int): Fragment {
-        val id = pages[position]
-        println(position)
-        val fragment: Fragment = when (id) {
-            R.string.chat -> DiscussionListFragment()
-            R.string.plan, R.string.mission -> PlanFragment()
-            R.string.members, R.string.team -> JoinedMemberFragment()
-            R.string.tasks -> TeamTaskFragment()
-            R.string.calendar -> TeamCalendarFragment()
-            R.string.survey -> SurveyFragment().apply {
-                arguments = Bundle().apply {
-                    putBoolean("isTeam", true)
-                    putString("teamId", teamId)
-                }
-            }
-            R.string.courses -> TeamCourseFragment()
-            R.string.finances -> FinanceFragment()
-            R.string.reports -> ReportsFragment()
-            R.string.resources, R.string.documents -> TeamResourceFragment().apply { MainApplication.listener = this }
-            R.string.join_requests, R.string.applicants -> MembersFragment()
-            else -> throw IllegalArgumentException("Invalid fragment type for position: $position")
-        }
-        if (fragment.arguments == null) {
-            fragment.arguments = Bundle().apply {
-                putString("id", teamId)
-            }
-        }
-        return fragment
-    }
+    override fun createFragment(position: Int): Fragment =
+        fragments[position]
 }
