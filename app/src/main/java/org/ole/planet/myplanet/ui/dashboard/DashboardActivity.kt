@@ -182,11 +182,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
                 is CommunityTabFragment -> 7L
                 is SurveyFragment -> 8L
-                else -> -1
+                else -> null
             }
-            if (idToSelect >= 0) {
-                result?.setSelection(idToSelect, false)
-            }
+            idToSelect?.let { result?.setSelection(it, false) }
         }
         if (!(user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) && resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
             result?.openDrawer()
@@ -908,12 +906,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 changeUX(R.string.menu_myplanet, menuImageList[0]).withIdentifier(0),
                 changeUX(R.string.txt_myLibrary, menuImageList[1]).withIdentifier(1),
                 changeUX(R.string.txt_myCourses, menuImageList[2]).withIdentifier(2),
-                changeUX(R.string.menu_library, menuImageList[3]),
-                changeUX(R.string.menu_courses, menuImageList[4]),
-                changeUX(R.string.team, menuImageList[5]),
-                changeUX(R.string.enterprises, menuImageList[6]),
-                changeUX(R.string.menu_community, menuImageList[7]),
-                changeUX(R.string.menu_surveys, menuImageList[8])
+                changeUX(R.string.menu_library, menuImageList[3]).withIdentifier(3),
+                changeUX(R.string.menu_courses, menuImageList[4]).withIdentifier(4),
+                changeUX(R.string.team, menuImageList[5]).withIdentifier(5),
+                changeUX(R.string.enterprises, menuImageList[6]).withIdentifier(6),
+                changeUX(R.string.menu_community, menuImageList[7]).withIdentifier(7),
+                changeUX(R.string.menu_surveys, menuImageList[8]).withIdentifier(8)
             )
         }
     private val drawerItemsFooter: Array<IDrawerItem<*, *>>
