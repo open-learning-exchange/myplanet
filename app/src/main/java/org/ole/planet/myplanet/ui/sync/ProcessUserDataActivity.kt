@@ -41,7 +41,9 @@ import androidx.core.content.edit
 
 abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     lateinit var settings: SharedPreferences
-    var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+    val customProgressDialog: DialogUtils.CustomProgressDialog by lazy {
+        DialogUtils.CustomProgressDialog(this)
+    }
 
     @JvmField
     var broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
@@ -75,9 +77,9 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     fun checkDownloadResult(download: Download?) {
         runOnUiThread {
             if (!isFinishing && !isDestroyed) {
-                customProgressDialog?.show()
-                customProgressDialog?.setText("${getString(R.string.downloading)} ${download?.progress}% ${getString(R.string.complete)}")
-                customProgressDialog?.setProgress(download?.progress ?: 0)
+                customProgressDialog.show()
+                customProgressDialog.setText("${getString(R.string.downloading)} ${download?.progress}% ${getString(R.string.complete)}")
+                customProgressDialog.setProgress(download?.progress ?: 0)
                 if (download?.completeAll == true) {
                     safelyDismissDialog()
                     installApk(this, download.fileUrl)
@@ -90,9 +92,9 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     }
 
     private fun safelyDismissDialog() {
-        if (customProgressDialog?.isShowing() == true && !isFinishing) {
+        if (customProgressDialog.isShowing() == true && !isFinishing) {
             try {
-                customProgressDialog?.dismiss()
+                customProgressDialog.dismiss()
             } catch (e: IllegalArgumentException) {
                 e.printStackTrace()
             }
@@ -175,8 +177,8 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         } else if (source == "login") {
             UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
         } else {
-            customProgressDialog?.setText(context.getString(R.string.uploading_data_to_server_please_wait))
-            customProgressDialog?.show()
+            customProgressDialog.setText(context.getString(R.string.uploading_data_to_server_please_wait))
+            customProgressDialog.show()
 
             UploadToShelfService.instance?.uploadUserData { UploadToShelfService.instance?.uploadHealth() }
             UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)

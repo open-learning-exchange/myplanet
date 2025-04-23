@@ -61,10 +61,10 @@ class TeamCalendarFragment : BaseTeamFragment() {
         }
         val alertDialog = AlertDialog.Builder(requireActivity()).setView(addMeetupBinding.root).create()
         addMeetupBinding.btnSave.setOnClickListener {
-            val title = "${addMeetupBinding.etTitle.text}"
-            val link = "${addMeetupBinding.etLink.text}"
-            val description = "${addMeetupBinding.etDescription.text}"
-            val location = "${addMeetupBinding.etLocation.text}"
+            val title = "${addMeetupBinding.etTitle.text.trim()}"
+            val link = "${addMeetupBinding.etLink.text.trim()}"
+            val description = "${addMeetupBinding.etDescription.text.trim()}"
+            val location = "${addMeetupBinding.etLocation.text.trim()}"
             if (title.isEmpty()) {
                 Utilities.toast(activity, getString(R.string.title_is_required))
             } else if (description.isEmpty()) {
@@ -242,8 +242,6 @@ class TeamCalendarFragment : BaseTeamFragment() {
         }
         dialogView.findViewById<Button>(R.id.btnClose).setOnClickListener {
             dialog.dismiss()
-            eventDates.add(clickedCalendar)
-            fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
         }
         btnAdd.setOnClickListener {
             if(arguments?.getBoolean("fromLogin", false) != true){
@@ -251,6 +249,11 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 end = clickedCalendar
                 showMeetupAlert()
             }
+        }
+
+        dialog.setOnDismissListener {
+            eventDates.add(clickedCalendar)
+            fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
         }
 
         dialog.show()
