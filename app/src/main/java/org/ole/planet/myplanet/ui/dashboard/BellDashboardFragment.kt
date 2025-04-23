@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import android.os.Bundle
 import android.text.TextUtils
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -134,7 +133,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun checkPendingSurveys() {
         val pendingSurveys = getPendingSurveys(user?.id, mRealm)
-        Log.d("hi", "Pending Surveys: ${pendingSurveys.size}")
         if (pendingSurveys.isNotEmpty()) {
             val uniqueSurveys = pendingSurveys.groupBy {
                     submission -> submission.parentId?.split("@")?.firstOrNull() ?: ""
