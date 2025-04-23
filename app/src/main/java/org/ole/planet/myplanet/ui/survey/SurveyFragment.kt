@@ -12,7 +12,6 @@ import android.widget.RadioButton
 import android.widget.RadioGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import io.realm.Sort
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
@@ -26,7 +25,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     private lateinit var addNewSurvey: FloatingActionButton
     private lateinit var spn: CustomSpinner
     private lateinit var etSearch: EditText
-    private var isTitleAscending = true
     private lateinit var adapter: AdapterSurvey
     private var isTeam: Boolean = false
     private var teamId: String? = null
@@ -153,29 +151,11 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         return startsWithQuery + containsQuery
     }
 
-    fun updateAdapterData(sort: Sort = Sort.ASCENDING, field: String = "name", isTeamShareAllowed: Boolean) {
-        val submissionQuery = mRealm.where(RealmSubmission::class.java)
-            .isNotNull("membershipDoc")
-            .findAll()
+    fun updateAdapterData(isTeamShareAllowed: Boolean) {
+        val submissionQuery = mRealm.where(RealmSubmission::class.java).isNotNull("membershipDoc").findAll()
+        val query = mRealm.where(RealmStepExam::class.java).equalTo("type", "surveys")
 
-        val query = mRealm.where(RealmStepExam::class.java)
-
-        if (isTeamShareAllowed) {
-            val filteredParentIds = submissionQuery
-                .mapNotNull { submission ->
-                    val parentJson = JSONObject(submission.parent ?: "{}")
-                    parentJson.optString("_id")
-                }
-                .filter { it.isNotEmpty() }
-                .toSet()
-
-            query.beginGroup()
-                .equalTo("isTeamShareAllowed", true)
-                .and()
-                .not()
-                .`in`("id", filteredParentIds.toTypedArray())
-            query.endGroup()
-        } else if (!teamId.isNullOrEmpty() && isTeam) {
+        if (isTeam) {
             val teamSpecificExams = submissionQuery
                 .filter { it.membershipDoc?.teamId == teamId }
                 .mapNotNull { submission ->
@@ -185,18 +165,39 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
                 .filter { it.isNotEmpty() }
                 .toSet()
 
-            query.beginGroup()
-                .equalTo("teamId", teamId)
-                .or()
-                .`in`("id", teamSpecificExams.toTypedArray())
-            query.endGroup()
-        }
-        if(etSearch.text.toString().isNotEmpty()){
-            val surveys = query.findAll()
-            adapter.updateData(safeCastList(search(etSearch.text.toString(), surveys), RealmStepExam::class.java))
+            if (isTeamShareAllowed) {
+                val teamSubmissions = submissionQuery
+                    .filter { it.membershipDoc?.teamId == teamId }
+                    .mapNotNull { submission ->
+                        val parentJson = JSONObject(submission.parent ?: "{}")
+                        parentJson.optString("_id")
+                    }
+                    .filter { it.isNotEmpty() }
+                    .toSet()
+
+                query.beginGroup().equalTo("isTeamShareAllowed", true).and()
+                    .not().`in`("id", teamSubmissions.toTypedArray())
+                query.endGroup()
+            } else {
+                query.beginGroup().equalTo("teamId", teamId)
+                    .or()
+                    .`in`("id", teamSpecificExams.toTypedArray())
+                query.endGroup()
+            }
         } else {
-            val surveys = query.findAll()
-            adapter.updateDataAfterSearch(safeCastList(surveys, RealmStepExam::class.java))
+            query.equalTo("isTeamShareAllowed", false)
+        }
+
+        val surveys = query.findAll()
+
+        if (etSearch.text.toString().isNotEmpty()) {
+            adapter.updateData(
+                safeCastList(search(etSearch.text.toString(), surveys), RealmStepExam::class.java)
+            )
+        } else {
+            adapter.updateDataAfterSearch(
+                safeCastList(surveys, RealmStepExam::class.java)
+            )
         }
 
         updateUIState()
@@ -207,12 +208,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         val itemCount = adapter.itemCount
         spn.visibility = if (itemCount == 0) View.GONE else View.VISIBLE
         showNoData(tvMessage, itemCount, "survey")
-    }
-
-    fun toggleTitleSortOrder() {
-        isTitleAscending = !isTitleAscending
-        val sort = if (isTitleAscending) Sort.ASCENDING else Sort.DESCENDING
-        updateAdapterData(sort, "name", isTeamShareAllowed = false)
     }
 
     private fun <T> safeCastList(items: List<Any?>, clazz: Class<T>): List<T> {
