@@ -4,7 +4,6 @@ import android.app.*
 import android.content.Context
 import android.content.res.Resources
 import android.os.*
-import android.util.Patterns
 import android.util.TypedValue
 import android.view.*
 import android.widget.*
