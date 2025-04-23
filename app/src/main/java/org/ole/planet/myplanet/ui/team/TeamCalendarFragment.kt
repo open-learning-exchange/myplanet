@@ -4,6 +4,7 @@ import android.app.*
 import android.content.Context
 import android.content.res.Resources
 import android.os.*
+import android.util.Patterns
 import android.util.TypedValue
 import android.view.*
 import android.widget.*
@@ -30,6 +31,8 @@ import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
 import java.util.*
+import java.net.MalformedURLException
+import java.net.URL
 
 class TeamCalendarFragment : BaseTeamFragment() {
     private lateinit var fragmentEnterpriseCalendarBinding: FragmentEnterpriseCalendarBinding
@@ -48,6 +51,19 @@ class TeamCalendarFragment : BaseTeamFragment() {
         start = Calendar.getInstance()
         end = Calendar.getInstance()
         return fragmentEnterpriseCalendarBinding.root
+    }
+
+    fun String.isValidWebLink(): Boolean {
+        val toCheck = when {
+            startsWith("http://",  ignoreCase = true) || startsWith("https://", ignoreCase = true) -> this
+            else -> "http://$this"
+        }
+        return try {
+            val url = URL(toCheck)
+            url.host.contains(".")
+        } catch (e: MalformedURLException) {
+            false
+        }
     }
 
     private fun showMeetupAlert() {
@@ -69,7 +85,10 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 Utilities.toast(activity, getString(R.string.title_is_required))
             } else if (description.isEmpty()) {
                 Utilities.toast(activity, getString(R.string.description_is_required))
+            } else if (!link.isValidWebLink()) {
+                Utilities.toast(activity, getString(R.string.invalid_url))
             } else {
+                println(link.isValidWebLink())
                 try {
                     if (!mRealm.isInTransaction) {
                         mRealm.beginTransaction()
