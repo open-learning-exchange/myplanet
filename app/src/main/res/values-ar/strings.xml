@@ -91,7 +91,7 @@
     <string name="published_by">نشر بواسطة:</string>
     <string name="author">المؤلف:</string>
     <string name="language_with_colon">اللغة:</string>
-    <string name="subject">الموضوع/الموضوعات:</string>
+    <string name="subject">الموضوع/الموضوعات*:</string>
     <string name="license">الترخيص:</string>
     <string name="type">النوع:</string>
     <string name="resource_colon">المصدر:</string>
@@ -138,7 +138,7 @@
     <string name="show_filter">عرض الفلتر</string>
     <string name="subjects">الموضوعات</string>
     <string name="mediums">وسائط</string>
-    <string name="levels">المستويات</string>
+    <string name="levels">المستويات*</string>
     <string name="languages">اللغات</string>
     <string name="txt_myLife">حياتي</string>
     <string name="achievements">إنجازاتي</string>

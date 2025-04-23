@@ -91,7 +91,7 @@
     <string name="published_by">Publié par:</string>
     <string name="author">Auteur:</string>
     <string name="language_with_colon">Langue:</string>
-    <string name="subject">Sujet(s):</string>
+    <string name="subject">Sujet(s)*:</string>
     <string name="license">Licence:</string>
     <string name="type">Type:</string>
     <string name="resource_colon">Ressource:</string>
@@ -138,7 +138,7 @@
     <string name="show_filter">Afficher le filtre</string>
     <string name="subjects">Sujets</string>
     <string name="mediums">Moyens</string>
-    <string name="levels">Niveaux</string>
+    <string name="levels">Niveaux*</string>
     <string name="languages">Langues</string>
     <string name="txt_myLife">maVie</string>
     <string name="achievements">mesRéalisations</string>
