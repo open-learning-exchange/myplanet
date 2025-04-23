@@ -59,54 +59,60 @@ class TeamCalendarFragment : BaseTeamFragment() {
         if (!::clickedCalendar.isInitialized) {
             clickedCalendar = Calendar.getInstance()
         }
-
-        val alertDialog = AlertDialog.Builder(requireActivity()).setView(addMeetupBinding.root)
-            .setPositiveButton("Save") { _, _ ->
-                val title = "${addMeetupBinding.etTitle.text}"
-                val description = "${addMeetupBinding.etDescription.text}"
-                val location = "${addMeetupBinding.etLocation.text}"
-                if (title.isEmpty()) {
-                    Utilities.toast(activity, getString(R.string.title_is_required))
-                } else if (description.isEmpty()) {
-                    Utilities.toast(activity, getString(R.string.description_is_required))
-                } else {
-                    try {
-                        if (!mRealm.isInTransaction) {
-                            mRealm.beginTransaction()
-                        }
-                        val meetup = mRealm.createObject(RealmMeetup::class.java, "${UUID.randomUUID()}")
-                        meetup.title = title
-                        meetup.description = description
-                        meetup.meetupLocation = location
-                        meetup.creator = user?.name
-                        meetup.startDate = start.timeInMillis
-                        meetup.endDate = end.timeInMillis
-                        meetup.endTime = "${addMeetupBinding.tvEndTime.text}"
-                        meetup.startTime = "${addMeetupBinding.tvStartTime.text}"
-                        meetup.createdDate = System.currentTimeMillis()
-                        meetup.sourcePlanet = team?.teamPlanetCode
-                        val jo = JsonObject()
-                        jo.addProperty("type", "local")
-                        jo.addProperty("planetCode", team?.teamPlanetCode)
-                        meetup.sync = Gson().toJson(jo)
-                        val rb = addMeetupBinding.rgRecuring.findViewById<RadioButton>(addMeetupBinding.rgRecuring.checkedRadioButtonId)
-                        if (rb != null) {
-                            meetup.recurring = "${rb.text}"
-                        }
-                        val ob = JsonObject()
-                        ob.addProperty("teams", teamId)
-                        meetup.link = Gson().toJson(ob)
-                        meetup.teamId = teamId
-                        mRealm.commitTransaction()
-                        Utilities.toast(activity, getString(R.string.meetup_added))
-                        refreshCalendarView()
-                    } catch (e: Exception) {
-                        mRealm.cancelTransaction()
-                        e.printStackTrace()
-                        Utilities.toast(activity, getString(R.string.meetup_not_added))
+        val alertDialog = AlertDialog.Builder(requireActivity()).setView(addMeetupBinding.root).create()
+        addMeetupBinding.btnSave.setOnClickListener {
+            val title = "${addMeetupBinding.etTitle.text}"
+            val link = "${addMeetupBinding.etLink.text}"
+            val description = "${addMeetupBinding.etDescription.text}"
+            val location = "${addMeetupBinding.etLocation.text}"
+            if (title.isEmpty()) {
+                Utilities.toast(activity, getString(R.string.title_is_required))
+            } else if (description.isEmpty()) {
+                Utilities.toast(activity, getString(R.string.description_is_required))
+            } else {
+                try {
+                    if (!mRealm.isInTransaction) {
+                        mRealm.beginTransaction()
                     }
+                    val meetup = mRealm.createObject(RealmMeetup::class.java, "${UUID.randomUUID()}")
+                    meetup.title = title
+                    meetup.meetupLink = link
+                    meetup.description = description
+                    meetup.meetupLocation = location
+                    meetup.creator = user?.name
+                    meetup.startDate = start.timeInMillis
+                    meetup.endDate = end.timeInMillis
+                    meetup.endTime = "${addMeetupBinding.tvEndTime.text}"
+                    meetup.startTime = "${addMeetupBinding.tvStartTime.text}"
+                    meetup.createdDate = System.currentTimeMillis()
+                    meetup.sourcePlanet = team?.teamPlanetCode
+                    val jo = JsonObject()
+                    jo.addProperty("type", "local")
+                    jo.addProperty("planetCode", team?.teamPlanetCode)
+                    meetup.sync = Gson().toJson(jo)
+                    val rb = addMeetupBinding.rgRecuring.findViewById<RadioButton>(addMeetupBinding.rgRecuring.checkedRadioButtonId)
+                    if (rb != null) {
+                        meetup.recurring = "${rb.text}"
+                    }
+                    val ob = JsonObject()
+                    ob.addProperty("teams", teamId)
+                    meetup.link = Gson().toJson(ob)
+                    meetup.teamId = teamId
+                    mRealm.commitTransaction()
+                    Utilities.toast(activity, getString(R.string.meetup_added))
+                    alertDialog.dismiss()
+                    refreshCalendarView()
+                } catch (e: Exception) {
+                    mRealm.cancelTransaction()
+                    e.printStackTrace()
+                    Utilities.toast(activity, getString(R.string.meetup_not_added))
                 }
-            }.setNegativeButton("Cancel", null).create()
+            }
+        }
+
+        addMeetupBinding.btnCancel.setOnClickListener {
+            alertDialog.dismiss()
+        }
 
         alertDialog.setOnDismissListener {
             if (selectedDates.contains(clickedCalendar)) {
@@ -128,11 +134,6 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 date?.set(Calendar.YEAR, year)
                 date?.set(Calendar.MONTH, monthOfYear)
                 date?.set(Calendar.DAY_OF_MONTH, dayOfMonth)
-                if(endDate != null && date == Calendar.getInstance()){
-                    endDate.set(Calendar.YEAR, year)
-                    endDate.set(Calendar.MONTH, monthOfYear)
-                    endDate.set(Calendar.DAY_OF_MONTH, dayOfMonth)
-                }
                 view.text = date?.timeInMillis?.let { it1 -> TimeUtils.formatDate(it1, "yyyy-MM-dd") }
             }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show()
         }
@@ -183,8 +184,8 @@ class TeamCalendarFragment : BaseTeamFragment() {
                     showMeetupDialog(markedDates)
                 } else {
                     if(arguments?.getBoolean("fromLogin", false) != true){
-                        start = clickedCalendar
-                        end = clickedCalendar
+                        start = clickedCalendar.clone() as Calendar
+                        end = clickedCalendar.clone() as Calendar
                         showMeetupAlert()
                     } else{
                         fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
@@ -241,8 +242,6 @@ class TeamCalendarFragment : BaseTeamFragment() {
         }
         dialogView.findViewById<Button>(R.id.btnClose).setOnClickListener {
             dialog.dismiss()
-            eventDates.add(clickedCalendar)
-            fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
         }
         btnAdd.setOnClickListener {
             if(arguments?.getBoolean("fromLogin", false) != true){
@@ -250,6 +249,11 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 end = clickedCalendar
                 showMeetupAlert()
             }
+        }
+
+        dialog.setOnDismissListener {
+            eventDates.add(clickedCalendar)
+            fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
         }
 
         dialog.show()

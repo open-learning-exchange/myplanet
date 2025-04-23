@@ -425,6 +425,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun setupRealmListeners() {
+        if (mRealm.isInTransaction) {
+            mRealm.commitTransaction()
+        }
         setupListener {
             mRealm.where(RealmMyLibrary::class.java).findAllAsync()
         }
