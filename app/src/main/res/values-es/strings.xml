@@ -125,7 +125,7 @@
     <string name="menu_achievement">Logros</string>
     <string name="edit_achievement">Editar logros</string>
     <string name="add_resources">Agregar recursos</string>
-    <string name="description">Descripción</string>
+    <string name="description">Descripción *</string>
     <string name="title_asterisk">Título *</string>
     <string name="name_asterisk">Nombre *</string>
     <string name="relationship">Relación</string>
@@ -1265,10 +1265,13 @@
     <string name="no_resources_to_download">No hay recursos para descargar</string>
     <string name="response">Respuesta</string>
     <string name="full_conversation_response">Respuesta completa de la conversación</string>
-    <string name="add_new_event">agregar nuevo evento</string>
+    <string name="add_new_event">+ nuevo evento</string>
     <string name="none">Ninguno</string>
     <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">Sus datos de salud aparecerán aquí a medida que continúe registrándolos</string>
     <string name="no_health_records_available">No hay registros de salud disponibles</string>
+    <string name="permission_required">Se requiere permiso</string>
+    <string name="microphone_permission_required">Se requiere permiso del micrófono para grabar audio. Actívalo en la configuración de la aplicación.</string>
+    <string name="confirm_share_community">¿Estás seguro de que quieres compartir este contenido con la comunidad?</string>
     <string name="untitled_survey">sin título</string>
 
 </resources>
