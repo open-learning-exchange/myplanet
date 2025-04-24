@@ -1290,6 +1290,7 @@
         <item quantity="one">%d día</item>
         <item quantity="other">%d días</item>
     </plurals>
+
     <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">Sus datos de salud aparecerán aquí a medida que continúe registrándolos</string>
     <string name="no_health_records_available">No hay registros de salud disponibles</string>
 
