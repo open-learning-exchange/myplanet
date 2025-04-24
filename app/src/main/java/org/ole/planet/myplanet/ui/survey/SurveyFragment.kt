@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.survey
 
-import android.annotation.SuppressLint
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -28,13 +27,12 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     private lateinit var adapter: AdapterSurvey
     private var isTeam: Boolean = false
     private var teamId: String? = null
+    private var currentIsTeamShareAllowed: Boolean = false
     lateinit var rbTeamSurvey: RadioButton
     lateinit var rbAdoptSurvey: RadioButton
     lateinit var rgSurvey: RadioGroup
 
-    override fun getLayout(): Int {
-        return R.layout.fragment_survey
-    }
+    override fun getLayout(): Int = R.layout.fragment_survey
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,27 +40,24 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         teamId = arguments?.getString("teamId", null)
         profileDbHandler = UserProfileDbHandler(requireContext())
         val userProfileModel = profileDbHandler.userModel
-        adapter = AdapterSurvey(requireActivity(), mRealm, userProfileModel?.id, isTeam, teamId, this)
+        adapter =
+            AdapterSurvey(requireActivity(), mRealm, userProfileModel?.id, isTeam, teamId, this)
     }
 
     override fun onSurveyAdopted() {
-        updateAdapterData(isTeamShareAllowed = false)
         rbTeamSurvey.isChecked = true
+        updateAdapterData(isTeamShareAllowed = false)
     }
 
-    override fun getAdapter(): RecyclerView.Adapter<*> {
-        return adapter
-    }
+    override fun getAdapter(): RecyclerView.Adapter<*> = adapter
 
-    @SuppressLint("ResourceAsColor")
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         initializeViews(view)
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                updateAdapterData(isTeamShareAllowed = false)
+                updateAdapterData()
                 recyclerView.scrollToPosition(0)
             }
 
@@ -84,10 +79,11 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     private fun initializeViews(view: View) {
         spn = view.findViewById(R.id.spn_sort)
         val adapter = ArrayAdapter.createFromResource(
-            requireContext(), R.array.sort_by_date, R.layout.spinner_text)
+            requireContext(), R.array.sort_by_date, R.layout.spinner_text
+        )
         adapter.setDropDownViewResource(R.layout.spinner_text)
         spn.adapter = adapter
-        etSearch = requireView().findViewById(R.id.et_search)
+        etSearch = view.findViewById(R.id.et_search)
         addNewSurvey = view.findViewById(R.id.fab_add_new_survey)
         rbTeamSurvey = view.findViewById(R.id.rbTeamSurvey)
         rbAdoptSurvey = view.findViewById(R.id.rbAdoptSurvey)
@@ -103,7 +99,12 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         addNewSurvey.setOnClickListener {}
 
         spn.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
+            override fun onItemSelected(
+                adapterView: AdapterView<*>?,
+                view: View?,
+                i: Int,
+                l: Long
+            ) {
                 when (i) {
                     0 -> adapter.SortByDate(false)
                     1 -> adapter.SortByDate(true)
@@ -115,10 +116,13 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         }
 
         spn.onSameItemSelected(object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
-                if (i == 2) {
-                    adapter.toggleTitleSortOrder()
-                }
+            override fun onItemSelected(
+                adapterView: AdapterView<*>?,
+                view: View?,
+                i: Int,
+                l: Long
+            ) {
+                if (i == 2) adapter.toggleTitleSortOrder()
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -140,8 +144,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         val containsQuery = mutableListOf<RealmStepExam>()
 
         for (item in list) {
-            val title = item.name?.let { normalizeText(it) }
-            if(title == null) continue
+            val title = item.name?.let { normalizeText(it) } ?: continue
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                 startsWithQuery.add(item)
             } else if (queryParts.all { title.contains(normalizeText(it), ignoreCase = true) }) {
@@ -151,35 +154,37 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         return startsWithQuery + containsQuery
     }
 
-    fun updateAdapterData(isTeamShareAllowed: Boolean) {
-        val submissionQuery = mRealm.where(RealmSubmission::class.java).isNotNull("membershipDoc").findAll()
+    fun updateAdapterData(isTeamShareAllowed: Boolean? = null) {
+        val useTeamShareAllowed = isTeamShareAllowed ?: currentIsTeamShareAllowed
+        currentIsTeamShareAllowed = useTeamShareAllowed
+
+        val submissionQuery = mRealm.where(RealmSubmission::class.java)
+            .isNotNull("membershipDoc")
+            .findAll()
         val query = mRealm.where(RealmStepExam::class.java).equalTo("type", "surveys")
 
         if (isTeam) {
             val teamSpecificExams = submissionQuery
                 .filter { it.membershipDoc?.teamId == teamId }
-                .mapNotNull { submission ->
-                    val parentJson = JSONObject(submission.parent ?: "{}")
-                    parentJson.optString("_id")
-                }
+                .mapNotNull { JSONObject(it.parent ?: "{}").optString("_id") }
                 .filter { it.isNotEmpty() }
                 .toSet()
 
-            if (isTeamShareAllowed) {
+            if (useTeamShareAllowed) {
                 val teamSubmissions = submissionQuery
                     .filter { it.membershipDoc?.teamId == teamId }
-                    .mapNotNull { submission ->
-                        val parentJson = JSONObject(submission.parent ?: "{}")
-                        parentJson.optString("_id")
-                    }
+                    .mapNotNull { JSONObject(it.parent ?: "{}").optString("_id") }
                     .filter { it.isNotEmpty() }
                     .toSet()
 
-                query.beginGroup().equalTo("isTeamShareAllowed", true).and()
+                query.beginGroup()
+                    .equalTo("isTeamShareAllowed", true)
+                    .and()
                     .not().`in`("id", teamSubmissions.toTypedArray())
                 query.endGroup()
             } else {
-                query.beginGroup().equalTo("teamId", teamId)
+                query.beginGroup()
+                    .equalTo("teamId", teamId)
                     .or()
                     .`in`("id", teamSpecificExams.toTypedArray())
                 query.endGroup()
@@ -190,9 +195,9 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
 
         val surveys = query.findAll()
 
-        if (etSearch.text.toString().isNotEmpty()) {
+        if ("${etSearch.text}".isNotEmpty()) {
             adapter.updateData(
-                safeCastList(search(etSearch.text.toString(), surveys), RealmStepExam::class.java)
+                safeCastList(search("${etSearch.text}", surveys), RealmStepExam::class.java)
             )
         } else {
             adapter.updateDataAfterSearch(
@@ -220,8 +225,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     }
 
     companion object {
-        fun newInstance(): SurveyFragment {
-            return SurveyFragment()
-        }
+        fun newInstance(): SurveyFragment = SurveyFragment()
     }
 }
