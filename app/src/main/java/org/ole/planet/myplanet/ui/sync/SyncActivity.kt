@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -470,6 +471,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 }
 
                 withContext(Dispatchers.Main) {
+                    Log.d("UploadProcess", "1 called when upload is complete")
                     customProgressDialog.dismiss()
 
                     if (::syncIconDrawable.isInitialized) {
@@ -933,6 +935,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     override fun onSuccess(success: String?) {
         if (customProgressDialog.isShowing() == true && success?.contains("Crash") == true) {
             customProgressDialog.dismiss()
+            Log.d("UploadProcess", "2 called when upload is complete")
         }
         if (::btnSignIn.isInitialized) {
             showSnack(btnSignIn, success)

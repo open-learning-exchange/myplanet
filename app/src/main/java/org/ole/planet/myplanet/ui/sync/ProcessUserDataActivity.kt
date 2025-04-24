@@ -11,6 +11,7 @@ import android.graphics.PorterDuff
 import android.net.Uri
 import android.os.Build
 import android.text.TextUtils
+import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
@@ -38,6 +39,16 @@ import org.ole.planet.myplanet.utilities.FileUtils.installApk
 import kotlin.math.roundToInt
 import androidx.core.net.toUri
 import androidx.core.content.edit
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Collections
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.atomic.AtomicInteger
 
 abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     lateinit var settings: SharedPreferences
@@ -171,38 +182,202 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
 
     fun startUpload(source: String) {
         if (source == "becomeMember") {
+            // Original code for becomeMember
             UploadToShelfService.instance?.uploadUserData {
                 UploadToShelfService.instance?.uploadHealth()
             }
+            return
         } else if (source == "login") {
+            // Original code for login
             UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
-        } else {
-            customProgressDialog.setText(context.getString(R.string.uploading_data_to_server_please_wait))
-            customProgressDialog.show()
+            return
+        }
 
-            UploadToShelfService.instance?.uploadUserData { UploadToShelfService.instance?.uploadHealth() }
-            UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
-            UploadManager.instance?.uploadExamResult(this@ProcessUserDataActivity)
-            UploadManager.instance?.uploadFeedback(this@ProcessUserDataActivity)
-            UploadManager.instance?.uploadAchievement()
-            UploadManager.instance?.uploadResourceActivities("")
-            UploadManager.instance?.uploadCourseActivities()
-            UploadManager.instance?.uploadSearchActivity()
-            UploadManager.instance?.uploadNews()
-            UploadManager.instance?.uploadTeams()
-            UploadManager.instance?.uploadResource(this@ProcessUserDataActivity)
-            UploadManager.instance?.uploadRating()
-            UploadManager.instance?.uploadTeamTask()
-            UploadManager.instance?.uploadMeetups()
-            UploadManager.instance?.uploadSubmissions()
-            UploadManager.instance?.uploadCrashLog()
-            UploadManager.instance?.uploadSubmitPhotos(this@ProcessUserDataActivity)
-            UploadManager.instance?.uploadActivities(this@ProcessUserDataActivity)
+        // Full upload process with optimizations
+        val totalStartTime = System.currentTimeMillis()
+        Log.d("UploadProcess", "Starting complete upload process at ${formatTime(totalStartTime)}")
 
-            runOnUiThread {
-                Toast.makeText(this@ProcessUserDataActivity, getString(R.string.uploading_activities_to_server_please_wait), Toast.LENGTH_SHORT).show()
+        customProgressDialog.setText(context.getString(R.string.uploading_data_to_server_please_wait))
+        customProgressDialog.show()
+
+        // Create a counter to track completion of async operations
+        val asyncOperationsCounter = AtomicInteger(0)
+        val totalAsyncOperations = 6 // Count of async operations with callbacks
+
+        // Create a list to store timing information for summary
+        val timingResults = Collections.synchronizedList(mutableListOf<UploadTiming>())
+
+        // Function to check if all operations are complete
+        fun checkAllOperationsComplete() {
+            if (asyncOperationsCounter.incrementAndGet() == totalAsyncOperations) {
+                val totalEndTime = System.currentTimeMillis()
+                val totalDuration = totalEndTime - totalStartTime
+
+                // Generate summary report
+                val sortedResults = timingResults.sortedByDescending { it.duration }
+
+                val sb = StringBuilder()
+                sb.appendLine("====== UPLOAD PROCESS SUMMARY ======")
+                sb.appendLine("Total upload duration: ${totalDuration}ms (${totalDuration/1000.0}s)")
+                sb.appendLine("\nProcess times (sorted by duration):")
+
+                sortedResults.forEachIndexed { index, timing ->
+                    sb.appendLine("${index + 1}. ${timing.name}: ${timing.duration}ms")
+                }
+
+                Log.d("UploadProcess", sb.toString())
+                Log.d("UploadProcess", "Complete upload process finished in ${totalDuration}ms (${totalDuration/1000.0} seconds)")
+
+                runOnUiThread {
+                    if (!isFinishing && !isDestroyed) {
+                        customProgressDialog.dismiss()
+                        Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         }
+
+        // Helper function to time operations
+        fun timeOperation(name: String, operation: () -> Unit) {
+            val startTime = System.currentTimeMillis()
+            Log.d("UploadProcess", "Starting $name upload at ${formatTime(startTime)}")
+
+            operation()
+
+            val endTime = System.currentTimeMillis()
+            val duration = endTime - startTime
+            timingResults.add(UploadTiming(name, duration))
+            Log.d("UploadProcess", "$name upload completed in ${duration}ms")
+        }
+
+        // OPTIMIZATION: Group operations by their threading requirements
+
+        // 1. First group: Operations that can be run sequentially and quickly
+        timeOperation("Achievement") { UploadManager.instance?.uploadAchievement() }
+        timeOperation("News") { UploadManager.instance?.uploadNews() }
+        timeOperation("ResourceActivities") { UploadManager.instance?.uploadResourceActivities("") }
+        timeOperation("CourseActivities") { UploadManager.instance?.uploadCourseActivities() }
+        timeOperation("SearchActivity") { UploadManager.instance?.uploadSearchActivity() }
+        timeOperation("Teams") { UploadManager.instance?.uploadTeams() }
+        timeOperation("Rating") { UploadManager.instance?.uploadRating() }
+        timeOperation("TeamTask") { UploadManager.instance?.uploadTeamTask() }
+        timeOperation("Meetups") { UploadManager.instance?.uploadMeetups() }
+        timeOperation("Submissions") { UploadManager.instance?.uploadSubmissions() }
+        timeOperation("CrashLog") { UploadManager.instance?.uploadCrashLog() }
+
+        // 2. Second group: Operations with callbacks that need to be handled properly
+
+        // UserData + Health (sequential operation with its own callback)
+        val userDataStartTime = System.currentTimeMillis()
+        Log.d("UploadProcess", "Starting UserData upload at ${formatTime(userDataStartTime)}")
+
+        UploadToShelfService.instance?.uploadUserData {
+            val userDataEndTime = System.currentTimeMillis()
+            val userDataDuration = userDataEndTime - userDataStartTime
+            timingResults.add(UploadTiming("UserData", userDataDuration))
+            Log.d("UploadProcess", "User data upload completed in ${userDataDuration}ms")
+
+            // Health data needs to run after user data completes
+            val healthStartTime = System.currentTimeMillis()
+            Log.d("UploadProcess", "Starting Health data upload at ${formatTime(healthStartTime)}")
+
+            UploadToShelfService.instance?.uploadHealth()
+
+            val healthEndTime = System.currentTimeMillis()
+            val healthDuration = healthEndTime - healthStartTime
+            timingResults.add(UploadTiming("Health", healthDuration))
+            Log.d("UploadProcess", "Health data upload completed in ${healthDuration}ms")
+
+            checkAllOperationsComplete()
+        }
+
+        // UserActivities with callback
+        val userActivitiesStartTime = System.currentTimeMillis()
+        Log.d("UploadProcess", "Starting UserActivities upload at ${formatTime(userActivitiesStartTime)}")
+        UploadManager.instance?.uploadUserActivities(object : SuccessListener {
+            override fun onSuccess(message: String?) {
+                val userActivitiesEndTime = System.currentTimeMillis()
+                val userActivitiesDuration = userActivitiesEndTime - userActivitiesStartTime
+                timingResults.add(UploadTiming("UserActivities", userActivitiesDuration))
+                Log.d("UploadProcess", "User activities upload completed in ${userActivitiesDuration}ms")
+                checkAllOperationsComplete()
+            }
+        })
+
+        // ExamResult with callback
+        val examResultStartTime = System.currentTimeMillis()
+        Log.d("UploadProcess", "Starting ExamResult upload at ${formatTime(examResultStartTime)}")
+        UploadManager.instance?.uploadExamResult(object : SuccessListener {
+            override fun onSuccess(message: String?) {
+                val examResultEndTime = System.currentTimeMillis()
+                val examResultDuration = examResultEndTime - examResultStartTime
+                timingResults.add(UploadTiming("ExamResult", examResultDuration))
+                Log.d("UploadProcess", "Exam result upload completed in ${examResultDuration}ms: $message")
+                checkAllOperationsComplete()
+            }
+        })
+
+        // Feedback with callback
+        val feedbackStartTime = System.currentTimeMillis()
+        Log.d("UploadProcess", "Starting Feedback upload at ${formatTime(feedbackStartTime)}")
+        UploadManager.instance?.uploadFeedback(object : SuccessListener {
+            override fun onSuccess(message: String?) {
+                val feedbackEndTime = System.currentTimeMillis()
+                val feedbackDuration = feedbackEndTime - feedbackStartTime
+                timingResults.add(UploadTiming("Feedback", feedbackDuration))
+                Log.d("UploadProcess", "Feedback upload completed in ${feedbackDuration}ms: $message")
+                checkAllOperationsComplete()
+            }
+        })
+
+        // Resource with callback
+        val resourceStartTime = System.currentTimeMillis()
+        Log.d("UploadProcess", "Starting Resource upload at ${formatTime(resourceStartTime)}")
+        UploadManager.instance?.uploadResource(object : SuccessListener {
+            override fun onSuccess(message: String?) {
+                val resourceEndTime = System.currentTimeMillis()
+                val resourceDuration = resourceEndTime - resourceStartTime
+                timingResults.add(UploadTiming("Resource", resourceDuration))
+                Log.d("UploadProcess", "Resource upload completed in ${resourceDuration}ms: $message")
+                checkAllOperationsComplete()
+            }
+        })
+
+        // SubmitPhotos with callback
+        val submitPhotosStartTime = System.currentTimeMillis()
+        Log.d("UploadProcess", "Starting SubmitPhotos upload at ${formatTime(submitPhotosStartTime)}")
+        UploadManager.instance?.uploadSubmitPhotos(object : SuccessListener {
+            override fun onSuccess(message: String?) {
+                val submitPhotosEndTime = System.currentTimeMillis()
+                val submitPhotosDuration = submitPhotosEndTime - submitPhotosStartTime
+                timingResults.add(UploadTiming("SubmitPhotos", submitPhotosDuration))
+                Log.d("UploadProcess", "Submit photos upload completed in ${submitPhotosDuration}ms: $message")
+                checkAllOperationsComplete()
+            }
+        })
+
+        // Activities with callback (needs to run last as it tracks completion)
+        val activitiesStartTime = System.currentTimeMillis()
+        Log.d("UploadProcess", "Starting Activities upload at ${formatTime(activitiesStartTime)}")
+        UploadManager.instance?.uploadActivities(object : SuccessListener {
+            override fun onSuccess(message: String?) {
+                val activitiesEndTime = System.currentTimeMillis()
+                val activitiesDuration = activitiesEndTime - activitiesStartTime
+                timingResults.add(UploadTiming("Activities", activitiesDuration))
+                Log.d("UploadProcess", "Activities upload completed in ${activitiesDuration}ms: $message")
+                checkAllOperationsComplete()
+            }
+        })
+
+        runOnUiThread {
+            Toast.makeText(this@ProcessUserDataActivity, getString(R.string.uploading_activities_to_server_please_wait), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // Helper function to format timestamp
+    private fun formatTime(timestamp: Long): String {
+        val sdf = SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault())
+        return sdf.format(Date(timestamp))
     }
 
     protected fun hideKeyboard(view: View?) {
@@ -254,3 +429,5 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         editor.putString("couchdbURL", couchdbURL)
     }
 }
+
+data class UploadTiming(val name: String, val duration: Long)

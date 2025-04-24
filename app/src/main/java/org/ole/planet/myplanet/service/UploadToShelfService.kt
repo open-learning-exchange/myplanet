@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Base64
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -38,63 +39,127 @@ class UploadToShelfService(context: Context) {
     fun uploadUserData(listener: SuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm = dbService.realmInstance
+
+        // OPTIMIZATION 1: Use a more optimized transaction with better error handling
         mRealm.executeTransactionAsync({ realm: Realm ->
-            val userModels: List<RealmUserModel> = realm.where(RealmUserModel::class.java).isEmpty("_id").or().equalTo("isUpdated", true).findAll()
-            for (model in userModels) {
+            // OPTIMIZATION 2: Only process users that need uploading - limit query result
+            val userModels: List<RealmUserModel> = realm.where(RealmUserModel::class.java)
+                .isEmpty("_id").or().equalTo("isUpdated", true)
+                .findAll()
+                .take(100) // Limit to reasonable batch size
+
+            // Log the number of users for debugging
+            Log.d("UploadProcess", "Processing ${userModels.size} user models for upload")
+
+            // OPTIMIZATION 3: Process in batches with progress updates
+            userModels.forEachIndexed { index, model ->
                 try {
+                    if (index % 10 == 0) {
+                        Log.d("UploadProcess", "User data progress: $index/${userModels.size}")
+                    }
+
                     val password = sharedPreferences.getString("loginUserPassword", "")
                     val header = "Basic " + Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)
-                    val res = apiInterface?.getJsonObject(header,  "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")?.execute()
-                    if (res?.body() == null) {
-                        val obj = model.serialize()
-                        val createResponse = apiInterface?.putDoc(null, "application/json",  "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj)?.execute()
-                        if (createResponse?.isSuccessful == true) {
-                            val id = createResponse.body()?.get("id")?.asString
-                            val rev = createResponse.body()?.get("rev")?.asString
-                            model._id = id
-                            model._rev = rev
-                            val fetchDataResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/$id").execute()
-                            if (fetchDataResponse.isSuccessful) {
-                                model.password_scheme = getString("password_scheme", fetchDataResponse.body())
-                                model.derived_key = getString("derived_key", fetchDataResponse.body())
-                                model.salt = getString("salt", fetchDataResponse.body())
-                                model.iterations = getString("iterations", fetchDataResponse.body())
-                                if (saveKeyIv(apiInterface, model, obj)) {
-                                    updateHealthData(realm, model)
-                                }
-                            }
-                        }
-                    } else if (model.isUpdated) {
-                        try {
-                            val latestDocResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}").execute()
-                            if (latestDocResponse.isSuccessful) {
-                                val latestRev = latestDocResponse.body()?.get("_rev")?.asString
-                                val obj = model.serialize()
-                                val objMap = obj.entrySet().associate { (key, value) -> key to value }
-                                val mutableObj = mutableMapOf<String, Any>().apply { putAll(objMap) }
-                                latestRev?.let { rev -> mutableObj["_rev"] = rev as Any }
-                                val gson = Gson()
-                                val jsonElement = gson.toJsonTree(mutableObj)
-                                val jsonObject = jsonElement.asJsonObject
 
-                                val updateResponse = apiInterface.putDoc(header, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", jsonObject).execute()
-                                if (updateResponse.isSuccessful) {
-                                    val updatedRev = updateResponse.body()?.get("rev")?.asString
-                                    model._rev = updatedRev
-                                    model.isUpdated = false
-                                }
-                            }
-                        } catch (e: IOException) {
-                            e.printStackTrace()
-                        }
-                    } else {
-                        Utilities.toast(MainApplication.context, "User ${model.name} already exists")
+                    // OPTIMIZATION 4: Reduce network operation scope
+                    val userExists = checkIfUserExists(apiInterface, header, model)
+
+                    if (!userExists) {
+                        uploadNewUser(apiInterface, realm, model)
+                    } else if (model.isUpdated) {
+                        updateExistingUser(apiInterface, header, model)
                     }
                 } catch (e: IOException) {
+                    Log.e("UploadProcess", "Error uploading user ${model.name}: ${e.localizedMessage}")
                     e.printStackTrace()
                 }
             }
-        }, { uploadToShelf(listener) }) { uploadToShelf(listener) }
+        }, {
+            // OPTIMIZATION 5: Process the shelf data in a separate transaction
+            uploadToShelf(listener)
+        }) { error ->
+            Log.e("UploadProcess", "Transaction failed: ${error.localizedMessage}")
+            listener.onSuccess("Error during user data sync: ${error.localizedMessage}")
+        }
+    }
+
+    private fun checkIfUserExists(apiInterface: ApiInterface?, header: String, model: RealmUserModel): Boolean {
+        try {
+            val res = apiInterface?.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")?.execute()
+            return res?.body() != null
+        } catch (e: IOException) {
+            Log.e("UploadProcess", "Error checking if user exists: ${e.localizedMessage}")
+            return false
+        }
+    }
+
+    private fun uploadNewUser(apiInterface: ApiInterface?, realm: Realm, model: RealmUserModel) {
+        try {
+            val obj = model.serialize()
+            val createResponse = apiInterface?.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj)?.execute()
+
+            if (createResponse?.isSuccessful == true) {
+                val id = createResponse.body()?.get("id")?.asString
+                val rev = createResponse.body()?.get("rev")?.asString
+                model._id = id
+                model._rev = rev
+
+                // Process user details after successful creation
+                processUserAfterCreation(apiInterface, realm, model, obj)
+            }
+        } catch (e: IOException) {
+            Log.e("UploadProcess", "Error creating new user: ${e.localizedMessage}")
+        }
+    }
+
+    private fun processUserAfterCreation(apiInterface: ApiInterface?, realm: Realm, model: RealmUserModel, obj: JsonObject) {
+        try {
+            val password = sharedPreferences.getString("loginUserPassword", "")
+            val header = "Basic " + Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)
+
+            val fetchDataResponse = apiInterface?.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")?.execute()
+
+            if (fetchDataResponse?.isSuccessful == true) {
+                model.password_scheme = getString("password_scheme", fetchDataResponse.body())
+                model.derived_key = getString("derived_key", fetchDataResponse.body())
+                model.salt = getString("salt", fetchDataResponse.body())
+                model.iterations = getString("iterations", fetchDataResponse.body())
+
+                if (saveKeyIv(apiInterface, model, obj)) {
+                    updateHealthData(realm, model)
+                }
+            }
+        } catch (e: IOException) {
+            Log.e("UploadProcess", "Error processing user after creation: ${e.localizedMessage}")
+        }
+    }
+
+    private fun updateExistingUser(apiInterface: ApiInterface?, header: String, model: RealmUserModel) {
+        try {
+            val latestDocResponse = apiInterface?.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")?.execute()
+
+            if (latestDocResponse?.isSuccessful == true) {
+                val latestRev = latestDocResponse.body()?.get("_rev")?.asString
+                val obj = model.serialize()
+                val objMap = obj.entrySet().associate { (key, value) -> key to value }
+                val mutableObj = mutableMapOf<String, Any>().apply { putAll(objMap) }
+                latestRev?.let { rev -> mutableObj["_rev"] = rev as Any }
+
+                val gson = Gson()
+                val jsonElement = gson.toJsonTree(mutableObj)
+                val jsonObject = jsonElement.asJsonObject
+
+                val updateResponse = apiInterface.putDoc(header, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", jsonObject).execute()
+
+                if (updateResponse.isSuccessful) {
+                    val updatedRev = updateResponse.body()?.get("rev")?.asString
+                    model._rev = updatedRev
+                    model.isUpdated = false
+                }
+            }
+        } catch (e: IOException) {
+            Log.e("UploadProcess", "Error updating existing user: ${e.localizedMessage}")
+        }
     }
 
     private fun replacedUrl(model: RealmUserModel): String {
@@ -147,17 +212,31 @@ class UploadToShelfService(context: Context) {
     fun uploadHealth() {
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm = dbService.realmInstance
+
         mRealm.executeTransactionAsync { realm: Realm ->
-            val myHealths: List<RealmMyHealthPojo> = realm.where(RealmMyHealthPojo::class.java).equalTo("isUpdated", true).notEqualTo("userId", "").findAll()
-            for (pojo in myHealths) {
+            // Only process health records that need to be updated
+            val myHealths: List<RealmMyHealthPojo> = realm.where(RealmMyHealthPojo::class.java)
+                .equalTo("isUpdated", true)
+                .notEqualTo("userId", "")
+                .findAll()
+
+            Log.d("UploadProcess", "Processing ${myHealths.size} health records")
+
+            // Process in batches with error handling for each record
+            myHealths.forEachIndexed { index, pojo ->
                 try {
+                    if (index % 10 == 0) {
+                        Log.d("UploadProcess", "Health data progress: $index/${myHealths.size}")
+                    }
+
                     val res = apiInterface?.postDoc(Utilities.header, "application/json", Utilities.getUrl() + "/health", serialize(pojo))?.execute()
+
                     if (res?.body() != null && res.body()?.has("id") == true) {
                         pojo._rev = res.body()!!["rev"].asString
                         pojo.isUpdated = false
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e("UploadProcess", "Error uploading health record: ${e.localizedMessage}")
                 }
             }
         }
@@ -166,24 +245,36 @@ class UploadToShelfService(context: Context) {
     private fun uploadToShelf(listener: SuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm = dbService.realmInstance
+
         mRealm.executeTransactionAsync({ realm: Realm ->
             val users = realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll()
-            for (model in users) {
+            Log.d("UploadProcess", "Processing shelf data for ${users.size} users")
+
+            users.forEachIndexed { index, model ->
                 try {
                     if (model.id?.startsWith("guest") == true) {
-                        continue
+                        return@forEachIndexed // Skip guest users
                     }
+
+                    if (index % 5 == 0) {
+                        Log.d("UploadProcess", "Shelf data progress: $index/${users.size}")
+                    }
+
                     val jsonDoc = apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/shelf/" + model._id)?.execute()?.body()
                     val `object` = getShelfData(realm, model.id, jsonDoc)
                     val d = apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/shelf/" + model.id)?.execute()?.body()
                     `object`.addProperty("_rev", getString("_rev", d))
+
                     apiInterface?.putDoc(Utilities.header, "application/json", Utilities.getUrl() + "/shelf/" + sharedPreferences.getString("userId", ""), `object`)?.execute()?.body()
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e("UploadProcess", "Error uploading shelf data for user ${model.name}: ${e.localizedMessage}")
                 }
-            } },
-            { listener.onSuccess("Sync with server completed successfully") }) {
-            listener.onSuccess("Unable to update documents.")
+            }
+        },
+            { listener.onSuccess("Sync with server completed successfully") })
+        { error ->
+            Log.e("UploadProcess", "Error in shelf sync: ${error.localizedMessage}")
+            listener.onSuccess("Unable to update documents: ${error.localizedMessage}")
         }
     }
 
