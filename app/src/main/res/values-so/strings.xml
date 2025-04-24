@@ -125,7 +125,7 @@
     <string name="menu_achievement">Guulaha</string>
     <string name="edit_achievement">Wax ka beddel guulaha</string>
     <string name="add_resources">Kudar Khayraadka</string>
-    <string name="description">Sharaxaad</string>
+    <string name="description">Sharaxaad *</string>
     <string name="title_asterisk">Cuqaal *</string>
     <string name="name_asterisk">Magaca *</string>
     <string name="relationship">Xiriirka</string>
@@ -1265,7 +1265,7 @@
     <string name="no_resources_to_download">Ma jiro ilo la soo dejiyo</string>
     <string name="response">Jawaab</string>
     <string name="full_conversation_response">Jawaabta wada hadalka oo dhameystiran</string>
-    <string name="add_new_event">ku dar dhacdo cusub</string>
+    <string name="add_new_event">+ Dhacdo cusub</string>
     <string name="none">Midna</string>
     <string name="remind_later">पछि सम्झाउनुहोस्</string>
     <string name="remind_me_later">मलाई पछि सम्झाउनुहोस्</string>
@@ -1293,5 +1293,8 @@
 
     <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">Xogtaada caafimaadka waxay halkan ka muuqan doontaa markaad sii waddo la socodka</string>
     <string name="no_health_records_available">Ma jiraan diiwaanada caafimaadka ee la heli karo</string>
+    <string name="permission_required">Ogolaanshaha ayaa loo baahan yahay</string>
+    <string name="microphone_permission_required">Ogolaanshaha makarafoonka ayaa loo baahan yahay si loo duubo codka Fadlan awood u geli goobaha abka</string>
+    <string name="confirm_share_community">Ma hubtaa inaad rabto inaad la wadaagto macluumaadkan bulshada?</string>
 
 </resources>

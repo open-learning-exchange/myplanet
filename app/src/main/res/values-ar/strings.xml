@@ -125,7 +125,7 @@
     <string name="menu_achievement">الإنجازات</string>
     <string name="edit_achievement">تحرير الإنجازات</string>
     <string name="add_resources">إضافة موارد</string>
-    <string name="description">الوصف</string>
+    <string name="description">الوصف *</string>
     <string name="title_asterisk">العنوان *</string>
     <string name="name_asterisk">الاسم *</string>
     <string name="relationship">العلاقة</string>
@@ -1265,7 +1265,7 @@
     <string name="no_resources_to_download">لا توجد موارد للتحميل</string>
     <string name="response">استجابة</string>
     <string name="full_conversation_response">استجابة المحادثة الكاملة</string>
-    <string name="add_new_event">إضافة حدث جديد</string>
+    <string name="add_new_event">+ حدث جديد</string>
     <string name="none">لا شيء</string>
     <string name="remind_later">تذكير لاحقاً</string>
     <string name="remind_me_later">ذكرني لاحقاً</string>
@@ -1293,5 +1293,8 @@
 
     <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">ستظهر بيانات صحتك هنا مع استمرارك في تتبعها</string>
     <string name="no_health_records_available">لا توجد سجلات صحية متاحة</string>
+    <string name="permission_required">مطلوب إذن</string>
+    <string name="microphone_permission_required">يلزم الحصول على إذن الميكروفون لتسجيل الصوت. يُرجى تفعيله من إعدادات التطبيق</string>
+    <string name="confirm_share_community">هل أنت متأكد أنك تريد مشاركة هذا المحتوى مع المجتمع؟</string>
 
 </resources>
