@@ -30,6 +30,8 @@ import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
 import java.util.*
+import java.net.MalformedURLException
+import java.net.URL
 
 class TeamCalendarFragment : BaseTeamFragment() {
     private lateinit var fragmentEnterpriseCalendarBinding: FragmentEnterpriseCalendarBinding
@@ -50,6 +52,19 @@ class TeamCalendarFragment : BaseTeamFragment() {
         return fragmentEnterpriseCalendarBinding.root
     }
 
+    fun String.isValidWebLink(): Boolean {
+        val toCheck = when {
+            startsWith("http://",  ignoreCase = true) || startsWith("https://", ignoreCase = true) -> this
+            else -> "http://$this"
+        }
+        return try {
+            val url = URL(toCheck)
+            url.host.contains(".")
+        } catch (e: MalformedURLException) {
+            false
+        }
+    }
+
     private fun showMeetupAlert() {
         val addMeetupBinding = AddMeetupBinding.inflate(layoutInflater)
         setDatePickerListener(addMeetupBinding.tvStartDate, start, end)
@@ -61,15 +76,18 @@ class TeamCalendarFragment : BaseTeamFragment() {
         }
         val alertDialog = AlertDialog.Builder(requireActivity()).setView(addMeetupBinding.root).create()
         addMeetupBinding.btnSave.setOnClickListener {
-            val title = "${addMeetupBinding.etTitle.text}"
-            val link = "${addMeetupBinding.etLink.text}"
-            val description = "${addMeetupBinding.etDescription.text}"
-            val location = "${addMeetupBinding.etLocation.text}"
+            val title = "${addMeetupBinding.etTitle.text.trim()}"
+            val link = "${addMeetupBinding.etLink.text.trim()}"
+            val description = "${addMeetupBinding.etDescription.text.trim()}"
+            val location = "${addMeetupBinding.etLocation.text.trim()}"
             if (title.isEmpty()) {
                 Utilities.toast(activity, getString(R.string.title_is_required))
             } else if (description.isEmpty()) {
                 Utilities.toast(activity, getString(R.string.description_is_required))
+            } else if (!link.isValidWebLink()) {
+                Utilities.toast(activity, getString(R.string.invalid_url))
             } else {
+                println(link.isValidWebLink())
                 try {
                     if (!mRealm.isInTransaction) {
                         mRealm.beginTransaction()
@@ -242,8 +260,6 @@ class TeamCalendarFragment : BaseTeamFragment() {
         }
         dialogView.findViewById<Button>(R.id.btnClose).setOnClickListener {
             dialog.dismiss()
-            eventDates.add(clickedCalendar)
-            fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
         }
         btnAdd.setOnClickListener {
             if(arguments?.getBoolean("fromLogin", false) != true){
@@ -251,6 +267,11 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 end = clickedCalendar
                 showMeetupAlert()
             }
+        }
+
+        dialog.setOnDismissListener {
+            eventDates.add(clickedCalendar)
+            fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
         }
 
         dialog.show()
