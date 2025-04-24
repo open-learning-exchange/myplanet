@@ -125,7 +125,7 @@
     <string name="menu_achievement">Achievements</string>
     <string name="edit_achievement">Edit Achievements</string>
     <string name="add_resources">Add Resources</string>
-    <string name="description">Description</string>
+    <string name="description">Description *</string>
     <string name="title_asterisk">Title *</string>
     <string name="name_asterisk">Name *</string>
     <string name="relationship">Relationship</string>
@@ -1265,9 +1265,12 @@
     <string name="no_resources_to_download">No resources to download</string>
     <string name="response">Response</string>
     <string name="full_conversation_response">Full conversation response</string>
-    <string name="add_new_event">add new event</string>
+    <string name="add_new_event">+ new event</string>
     <string name="none">None</string>
     <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">Your health data will appear here as you continue tracking it</string>
     <string name="no_health_records_available">No health records available</string>
+    <string name="permission_required">Permission Required</string>
+    <string name="microphone_permission_required">Microphone permission is required to record audio. Please enable it in the app settings.</string>
+    <string name="confirm_share_community">Are you sure you want to share this content with the community?</string>
 
 </resources>
