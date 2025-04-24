@@ -1267,6 +1267,30 @@
     <string name="full_conversation_response">Jawaabta wada hadalka oo dhameystiran</string>
     <string name="add_new_event">+ Dhacdo cusub</string>
     <string name="none">Midna</string>
+    <string name="remind_later">पछि सम्झाउनुहोस्</string>
+    <string name="remind_me_later">मलाई पछि सम्झाउनुहोस्</string>
+    <string name="remind_me_in">मलाई यसमा सम्झाउनुहोस्:</string>
+    <string name="minutes">मिनेटहरू</string>
+    <string name="days">दिनहरू</string>
+    <string name="set_reminder">रिमाइन्डर सेट गर्नुहोस्</string>
+    <string name="reminder_set_for">अहिलेबाट %1$s को लागि रिमाइन्डर सेट गरियो</string>
+    <string name="reminder_surveys_to_complete">रिमाइन्डर: तपाईंसँग %1$d %2$s पूरा गर्न बाँकी छ</string>
+
+    <plurals name="minutes">
+        <item quantity="one">%d मिनेट</item>
+        <item quantity="other">%d मिनेटहरू</item>
+    </plurals>
+
+    <plurals name="hours">
+        <item quantity="one">%d घण्टा</item>
+        <item quantity="other">%d घण्टाहरू</item>
+    </plurals>
+
+    <plurals name="days">
+        <item quantity="one">%d दिन</item>
+        <item quantity="other">%d दिनहरू</item>
+    </plurals>
+
     <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">Xogtaada caafimaadka waxay halkan ka muuqan doontaa markaad sii waddo la socodka</string>
     <string name="no_health_records_available">Ma jiraan diiwaanada caafimaadka ee la heli karo</string>
     <string name="permission_required">Ogolaanshaha ayaa loo baahan yahay</string>
