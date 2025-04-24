@@ -111,6 +111,9 @@ class Service(private val context: Context) {
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences) {
         if (!settings.getBoolean("isAlternativeUrl", false)){
             if (settings.getString("couchdbURL", "")?.isEmpty() == true) {
+                if (context is SyncActivity){
+                    context.settingDialog()
+                }
                 return
             }
         }

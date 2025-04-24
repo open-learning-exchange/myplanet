@@ -82,7 +82,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         checkUsagesPermission()
         forceSyncTrigger()
 
-        if (getUrl().isNotEmpty()) {
+        if (getUrl().isNotEmpty() && getUrl() != "/db") {
             activityLoginBinding.openCommunity.visibility = View.VISIBLE
             activityLoginBinding.openCommunity.setOnClickListener {
                 HomeCommunityDialogFragment().show(supportFragmentManager, "")
