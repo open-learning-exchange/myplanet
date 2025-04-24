@@ -12,7 +12,6 @@
             android:textSize="16sp"
             android:textColor="@color/daynight_textColor"
             android:layout_marginBottom="16dp" />
-
     <RadioGroup
             android:id="@+id/radioGroupRemindOptions"
             android:layout_width="match_parent"
@@ -29,7 +28,6 @@
                 android:buttonTint="@color/accent"
                 android:checked="true"
                 android:layout_weight="1" />
-
         <RadioButton
                 android:id="@+id/radioButtonHours"
                 android:layout_width="wrap_content"
@@ -39,7 +37,6 @@
                 android:buttonTint="@color/accent"
                 android:checked="false"
                 android:layout_weight="1" />
-
         <RadioButton
                 android:id="@+id/radioButtonDays"
                 android:layout_width="wrap_content"
@@ -63,7 +60,6 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
                 android:theme="@style/NumberPickerTheme" />
-
         <TextView
                 android:id="@+id/textViewTimeUnit"
                 android:layout_width="wrap_content"
