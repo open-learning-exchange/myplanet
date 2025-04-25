@@ -146,14 +146,13 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 return
             }
             val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)
-            val surveyPairs = getSurveyPairsFromSubmissions(pendingSurveys, mRealm)
 
             val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
             val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
             recyclerView.layoutManager = LinearLayoutManager(requireActivity())
 
             val alertDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
-                .setTitle(getString(R.string.surveys_to_complete, surveyPairs.size, if (surveyPairs.size > 1) "surveys" else "survey"))
+                .setTitle(getString(R.string.surveys_to_complete, pendingSurveys.size, if (pendingSurveys.size > 1) "surveys" else "survey"))
                 .setView(dialogView)
                 .setPositiveButton(getString(R.string.ok)) { dialog, _ ->
                     homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
@@ -330,12 +329,11 @@ class BellDashboardFragment : BaseDashboardFragment() {
             }
             .create()
 
-            val titles = surveyPairs.map { it.second }
 
-            val adapter = SurveyAdapter(titles, { position ->
-                val selectedSurvey = surveyPairs[position].first.id
-                AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
-            }, alertDialog)
+        val adapter = SurveyAdapter(surveyTitles, { position ->
+            val selectedSurvey = pendingSurveys[position].id
+            AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
+        }, alertDialog)
 
         recyclerView.adapter = adapter
         alertDialog.show()
@@ -355,23 +353,16 @@ class BellDashboardFragment : BaseDashboardFragment() {
             .findAll()
     }
 
-    private fun getSurveyPairsFromSubmissions(
-        submissions: List<RealmSubmission>,
-        realm: Realm
-    ): List<Pair<RealmSubmission, String>> {
-        val result = mutableListOf<Pair<RealmSubmission, String>>()
-
+    private fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>, realm: Realm): List<String> {
+        val titles = mutableListOf<String>()
         submissions.forEach { submission ->
             val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
             val exam = realm.where(RealmStepExam::class.java)
                 .equalTo("id", examId)
                 .findFirst()
-
-            val title = exam?.name ?: getString(R.string.untitled_survey)
-            result.add(Pair(submission, title))
+            exam?.name?.let { titles.add(it) }
         }
-
-        return result
+        return titles
     }
 
     private fun showBadges() {
