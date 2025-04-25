@@ -133,7 +133,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
             }
         }
     }
-
     private fun checkPendingSurveys() {
         if (checkScheduledReminders()) {
             return
@@ -329,6 +328,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 dialog.dismiss()
             }
             .create()
+
 
         val adapter = SurveyAdapter(surveyTitles, { position ->
             val selectedSurvey = pendingSurveys[position].id
