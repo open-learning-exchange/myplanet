@@ -1267,6 +1267,30 @@
     <string name="full_conversation_response">Full conversation response</string>
     <string name="add_new_event">+ new event</string>
     <string name="none">None</string>
+    <string name="remind_later">Remind Later</string>
+    <string name="remind_me_later">Remind Me Later</string>
+    <string name="remind_me_in">Remind me in:</string>
+    <string name="minutes">Minutes</string>
+    <string name="days">Days</string>
+    <string name="set_reminder">Set Reminder</string>
+    <string name="reminder_set_for">Reminder set for %1$s from now</string>
+    <string name="reminder_surveys_to_complete">Reminder: You have %1$d %2$s to complete</string>
+
+    <plurals name="minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
+
+    <plurals name="hours">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+
+    <plurals name="days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+
     <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">Your health data will appear here as you continue tracking it</string>
     <string name="no_health_records_available">No health records available</string>
     <string name="permission_required">Permission Required</string>
