@@ -147,7 +147,7 @@ jobs:
           file_glob: 'true'
 
       - name: send success message to discord
-        if: github.event_name != 'workflow_dispatch' && matrix.build != 'lite'
+        if:  matrix.build != 'lite'
         run: |
           sudo npm install -g @treehouses/cli
           export discord_channel="${{ secrets.CHANNEL }}" #remote
