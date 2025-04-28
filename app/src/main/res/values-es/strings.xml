@@ -1296,5 +1296,6 @@
     <string name="permission_required">Se requiere permiso</string>
     <string name="microphone_permission_required">Se requiere permiso del micrófono para grabar audio. Actívalo en la configuración de la aplicación.</string>
     <string name="confirm_share_community">¿Estás seguro de que quieres compartir este contenido con la comunidad?</string>
+    <string name="camera_permission_required">Se requiere permiso para usar la cámara. Actívalo en la configuración de la aplicación.</string>
 
 </resources>

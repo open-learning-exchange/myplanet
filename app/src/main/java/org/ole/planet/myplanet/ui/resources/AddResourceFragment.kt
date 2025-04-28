@@ -60,6 +60,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     private lateinit var captureVideoLauncher: ActivityResultLauncher<Uri>
     private lateinit var openFolderLauncher: ActivityResultLauncher<String>
     private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
+    private lateinit var requestCameraLauncher: ActivityResultLauncher<String>
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -106,6 +107,30 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                         .show()
                 } else {
                     Utilities.toast(requireContext(), "Microphone permission is required to record audio.")
+                }
+            }
+        }
+        requestCameraLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            if (isGranted) {
+                takePhoto()
+            } else {
+                if (!shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)) {
+                    AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+                        .setTitle(R.string.permission_required)
+                        .setMessage(R.string.camera_permission_required)
+                        .setPositiveButton(R.string.settings) { dialog, _ ->
+                            dialog.dismiss()
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                            val uri: Uri = Uri.fromParts("package", requireContext().packageName, null)
+                            intent.data = uri
+                            startActivity(intent)
+                        }
+                        .setNegativeButton(R.string.cancel) { dialog, _ -> dialog.dismiss() }
+                        .show()
+                } else {
+                    Utilities.toast(requireContext(), "camera permission is required.")
                 }
             }
         }
@@ -214,6 +239,11 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     }
 
     private fun dispatchTakeVideoIntent() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
+            != PackageManager.PERMISSION_GRANTED){
+            requestCameraLauncher.launch(Manifest.permission.CAMERA)
+            return
+        }
         val takeVideoIntent = Intent(MediaStore.ACTION_VIDEO_CAPTURE)
         videoUri = createVideoFileUri()
         takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoUri)
@@ -232,6 +262,11 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     }
 
     private fun takePhoto() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
+            != PackageManager.PERMISSION_GRANTED){
+            requestCameraLauncher.launch(Manifest.permission.CAMERA)
+            return
+        }
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.TITLE, "Photo_" + UUID.randomUUID().toString())
             put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
