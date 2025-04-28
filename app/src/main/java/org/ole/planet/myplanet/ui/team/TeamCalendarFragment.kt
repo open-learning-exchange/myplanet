@@ -201,12 +201,12 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 if (markedDates.isNotEmpty()) {
                     showMeetupDialog(markedDates)
                 } else {
-                    if(arguments?.getBoolean("fromLogin", false) != true){
+                    if(arguments?.getBoolean("fromLogin", false) != false || user?.id?.startsWith("guest") == true){
+                        fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
+                    } else{
                         start = clickedCalendar.clone() as Calendar
                         end = clickedCalendar.clone() as Calendar
                         showMeetupAlert()
-                    } else{
-                        fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
                     }
                 }
                 if (!selectedDates.contains(clickedCalendar)) {
