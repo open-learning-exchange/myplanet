@@ -449,6 +449,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
         lifecycleScope.launch(Dispatchers.IO) {
             try {
+                SyncTimingLogger.logOperation("sync_complete_processing_start")
                 var attempt = 0
 
                 while (true) {
@@ -456,10 +457,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     var dataInserted = false
 
                     try {
+                        SyncTimingLogger.logOperation("realm_refresh_attempt_${attempt}")
                         realm.refresh()
                         val realmResults = realm.where(RealmUserModel::class.java).findAll()
                         if (!realmResults.isEmpty()) {
                             dataInserted = true
+                            SyncTimingLogger.logOperation("data_inserted_confirmed")
                             break
                         }
                     } finally {
@@ -470,6 +473,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 }
 
                 withContext(Dispatchers.Main) {
+                    SyncTimingLogger.logOperation("dismiss_progress_dialog")
                     customProgressDialog.dismiss()
 
                     if (::syncIconDrawable.isInitialized) {
@@ -477,25 +481,33 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         syncIconDrawable.stop()
                         syncIconDrawable.selectDrawable(0)
                         syncIcon.invalidateDrawable(syncIconDrawable)
+                        SyncTimingLogger.logOperation("sync_icon_animation_stopped")
                     }
 
                     lifecycleScope.launch {
+                        SyncTimingLogger.logOperation("create_sync_log")
                         createLog("synced successfully", "")
                     }
 
+                    SyncTimingLogger.logOperation("show_sync_complete_snack")
                     showSnack(activityContext.findViewById(android.R.id.content), getString(R.string.sync_completed))
+                    SyncTimingLogger.endSync() // End timing and print summary
 
                     if (settings.getBoolean("isAlternativeUrl", false)) {
                         editor.putString("alternativeUrl", "")
                         editor.putString("processedAlternativeUrl", "")
                         editor.putBoolean("isAlternativeUrl", false)
                         editor.apply()
+                        SyncTimingLogger.logOperation("cleared_alternative_url")
                     }
 
+                    SyncTimingLogger.logOperation("download_additional_resources_start")
                     downloadAdditionalResources()
+                    SyncTimingLogger.logOperation("download_additional_resources_complete")
 
                     val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
                     if (betaAutoDownload) {
+                        SyncTimingLogger.logOperation("beta_auto_download_start")
                         withContext(Dispatchers.IO) {
                             val downloadRealm = Realm.getDefaultInstance()
                             try {
@@ -504,16 +516,20 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                                 downloadRealm.close()
                             }
                         }
+                        SyncTimingLogger.logOperation("beta_auto_download_complete")
                     }
 
+                    SyncTimingLogger.logOperation("cancel_all_notifications")
                     cancelAll(activityContext)
 
                     if (activityContext is LoginActivity) {
+                        SyncTimingLogger.logOperation("update_team_dropdown")
                         activityContext.updateTeamDropdown()
                     }
                 }
 
             } catch (e: Exception) {
+                SyncTimingLogger.logOperation("sync_complete_exception")
                 e.printStackTrace()
             }
         }

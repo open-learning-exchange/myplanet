@@ -42,6 +42,8 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
+import org.ole.planet.myplanet.utilities.RealmTransactionManager
+import org.ole.planet.myplanet.utilities.SyncTimingLogger
 import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Response
 import java.io.IOException
@@ -99,7 +101,6 @@ object TransactionSyncManager {
         val model = UserProfileDbHandler(MainApplication.context).userModel
         val userName = settings.getString("loginUserName", "")
         val password = settings.getString("loginUserPassword", "")
-//        val table = "userdb-" + model?.planetCode?.let { Utilities.toHex(it) } + "-" + model?.name?.let { Utilities.toHex(it) }
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
         val id = model?.id
         mRealm.executeTransactionAsync({ realm: Realm ->
@@ -110,33 +111,61 @@ object TransactionSyncManager {
         }
     }
 
-    fun syncDb(realm: Realm, table: String) {
-        realm.executeTransactionAsync { mRealm: Realm ->
-            val apiInterface = client?.create(ApiInterface::class.java)
-            val allDocs = apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/" + table + "/_all_docs?include_doc=false")
-            try {
-                val all = allDocs?.execute()
-                val rows = getJsonArray("rows", all?.body())
-                val keys: MutableList<String> = ArrayList()
-                for (i in 0 until rows.size()) {
-                    val `object` = rows[i].asJsonObject
-                    if (!TextUtils.isEmpty(getString("id", `object`))) keys.add(getString("key", `object`))
-                    if (i == rows.size() - 1 || keys.size == 1000) {
-                        val obj = JsonObject()
-                        obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
-                        val response = apiInterface?.findDocs(Utilities.header, "application/json", Utilities.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj)?.execute()
-                        if (response?.body() != null) {
-                            val arr = getJsonArray("rows", response.body())
-                            if (table == "chat_history") {
-                                insertToChat(arr, mRealm)
+    fun syncDb(realm: Realm, table: String, batchProcessor: RealmBatchProcessor? = null) {
+        SyncTimingLogger.logOperation("sync_db_${table}_start")
+        val apiInterface = client?.create(ApiInterface::class.java)
+        val allDocs = apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/" + table + "/_all_docs?include_doc=false")
+        try {
+            SyncTimingLogger.logOperation("sync_db_${table}_get_all_docs")
+            val all = allDocs?.execute()
+            val rows = getJsonArray("rows", all?.body())
+            val keys: MutableList<String> = ArrayList()
+
+            for (i in 0 until rows.size()) {
+                val `object` = rows[i].asJsonObject
+                if (!TextUtils.isEmpty(getString("id", `object`))) keys.add(getString("key", `object`))
+
+                if (i == rows.size() - 1 || keys.size == 1000) {
+                    SyncTimingLogger.logOperation("sync_db_${table}_process_batch_${keys.size}")
+                    val obj = JsonObject()
+                    obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
+                    val response = apiInterface?.findDocs(Utilities.header, "application/json", Utilities.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj)?.execute()
+
+                    if (response?.body() != null) {
+                        val arr = getJsonArray("rows", response.body())
+
+                        // Process documents in batches for better performance
+                        if (batchProcessor != null) {
+                            SyncTimingLogger.logOperation("sync_db_${table}_batch_process_docs")
+                            processBatchDocuments(arr, table, batchProcessor)
+                        } else {
+                            SyncTimingLogger.logOperation("sync_db_${table}_direct_process_docs")
+                            RealmTransactionManager.executeInTransaction(realm) { realmInstance ->
+                                if (table == "chat_history") {
+                                    insertToChat(arr, realmInstance)
+                                }
+                                insertDocs(arr, realmInstance, table)
                             }
-                            insertDocs(arr, mRealm, table)
                         }
-                        keys.clear()
                     }
+                    keys.clear()
                 }
-            } catch (e: IOException) {
-                e.printStackTrace()
+            }
+            SyncTimingLogger.logOperation("sync_db_${table}_complete")
+        } catch (e: IOException) {
+            SyncTimingLogger.logOperation("sync_db_${table}_error")
+            e.printStackTrace()
+        }
+    }
+
+    private fun processBatchDocuments(arr: JsonArray, table: String, batchProcessor: RealmBatchProcessor) {
+        for (j in arr) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = getJsonObject("doc", jsonDoc)
+            val id = getString("_id", jsonDoc)
+
+            if (!id.startsWith("_design")) {
+                batchProcessor.addToBatch(table, jsonDoc)
             }
         }
     }
@@ -189,6 +218,7 @@ object TransactionSyncManager {
         val syncFiles = settings.getBoolean("download_sync_files", false)
 
         if (syncFiles) {
+            // Only write CSV files at the end to avoid I/O overhead during sync
             meetupWriteCsv()
             achievementWriteCsv()
             certificationWriteCsv()

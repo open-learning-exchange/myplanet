@@ -41,6 +41,9 @@ import java.io.IOException
 import java.util.Date
 import kotlin.system.measureTimeMillis
 import androidx.core.content.edit
+import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.RealmTransactionManager
+import org.ole.planet.myplanet.utilities.SyncTimingLogger
 
 class SyncManager private constructor(private val context: Context) {
     private var td: Thread? = null
@@ -57,6 +60,7 @@ class SyncManager private constructor(private val context: Context) {
     fun start(listener: SyncListener?, type: String) {
         this.listener = listener
         if (!isSyncing) {
+            SyncTimingLogger.startSync()
             settings.edit { remove("concatenated_links") }
             listener?.onSyncStarted()
             authenticateAndSync(type)
@@ -81,10 +85,13 @@ class SyncManager private constructor(private val context: Context) {
     }
 
     private fun authenticateAndSync(type: String) {
+        SyncTimingLogger.logOperation("authenticate_start")
         td = Thread {
             if (TransactionSyncManager.authenticate()) {
+                SyncTimingLogger.logOperation("authenticate_success")
                 startSync(type)
             } else {
+                SyncTimingLogger.logOperation("authenticate_failed")
                 handleException(context.getString(R.string.invalid_configuration))
                 cleanupMainSync()
             }
@@ -94,59 +101,152 @@ class SyncManager private constructor(private val context: Context) {
 
     private fun startSync(type: String) {
         val isFastSync = settings.getBoolean("fastSync", true)
+        SyncTimingLogger.logOperation("sync_type_decision")
         if (!isFastSync || type == "upload") {
+            SyncTimingLogger.logOperation("start_full_sync")
             startFullSync()
         } else {
+            SyncTimingLogger.logOperation("start_fast_sync")
             startFastSync()
         }
     }
 
     private fun startFullSync() {
+        SyncTimingLogger.logOperation("initialize_sync_start")
         try {
             initializeSync()
-
+            SyncTimingLogger.logOperation("initialize_sync_complete")
             runBlocking {
+                val batchSize = 1000
+                SyncTimingLogger.logOperation("create_batch_processor")
+                val batchProcessor = RealmBatchProcessor(mRealm, batchSize)
+
+                SyncTimingLogger.logOperation("start_parallel_sync_jobs")
                 val syncJobs = listOf(
-                    async { TransactionSyncManager.syncDb(mRealm, "tablet_users") },
-                    async { myLibraryTransactionSync() },
-                    async { TransactionSyncManager.syncDb(mRealm, "courses") },
-                    async { TransactionSyncManager.syncDb(mRealm, "exams") },
-                    async { TransactionSyncManager.syncDb(mRealm, "ratings") },
-                    async { TransactionSyncManager.syncDb(mRealm, "courses_progress") },
-                    async { TransactionSyncManager.syncDb(mRealm, "achievements") },
-                    async { TransactionSyncManager.syncDb(mRealm, "tags") },
-                    async { TransactionSyncManager.syncDb(mRealm, "submissions") },
-                    async { TransactionSyncManager.syncDb(mRealm, "news") },
-                    async { TransactionSyncManager.syncDb(mRealm, "feedback") },
-                    async { TransactionSyncManager.syncDb(mRealm, "teams") },
-                    async { TransactionSyncManager.syncDb(mRealm, "tasks") },
-                    async { TransactionSyncManager.syncDb(mRealm, "login_activities") },
-                    async { TransactionSyncManager.syncDb(mRealm, "meetups") },
-                    async { TransactionSyncManager.syncDb(mRealm, "health") },
-                    async { TransactionSyncManager.syncDb(mRealm, "certifications") },
-                    async { TransactionSyncManager.syncDb(mRealm, "team_activities") },
-                    async { TransactionSyncManager.syncDb(mRealm, "chat_history") }
+                    async {
+                        SyncTimingLogger.logOperation("sync_tablet_users_start")
+                        TransactionSyncManager.syncDb(mRealm, "tablet_users", batchProcessor)
+                        SyncTimingLogger.logOperation("sync_tablet_users_complete")
+                          },
+                    async {
+                        SyncTimingLogger.logOperation("sync_library_start")
+                        myLibraryTransactionSync(batchProcessor = batchProcessor)
+                        SyncTimingLogger.logOperation("sync_library_complete")
+                          },
+                    async {
+                        SyncTimingLogger.logOperation("sync_courses_start")
+                        TransactionSyncManager.syncDb(mRealm, "courses", batchProcessor)
+                        SyncTimingLogger.logOperation("sync_courses_complete")
+                          },
+                    async {
+                        SyncTimingLogger.logOperation("sync_exams_start")
+                        TransactionSyncManager.syncDb(mRealm, "exams", batchProcessor)
+                        SyncTimingLogger.logOperation("sync_exams_complete") },
+                    async {
+                        SyncTimingLogger.logOperation("sync_ratings_start")
+                        TransactionSyncManager.syncDb(mRealm, "ratings", batchProcessor)
+                        SyncTimingLogger.logOperation("sync_ratings_complete") },
+                    async {
+                        SyncTimingLogger.logOperation("sync_course_progress_start")
+                        TransactionSyncManager.syncDb(mRealm, "courses_progress", batchProcessor)
+                        SyncTimingLogger.logOperation("sync_course_progress_complete") },
+                    async {
+                        SyncTimingLogger.logOperation("sync_achievements_start")
+                        TransactionSyncManager.syncDb(mRealm, "achievements", batchProcessor)
+                        SyncTimingLogger.logOperation("sync_achievements_complete") },
+                    async {
+                        SyncTimingLogger.logOperation("sync_tags_start")
+                        TransactionSyncManager.syncDb(mRealm, "tags", batchProcessor)
+                        SyncTimingLogger.logOperation("sync_tags_complete") },
+                    async {
+                        SyncTimingLogger.logOperation("sync_submissions_start")
+                        TransactionSyncManager.syncDb(mRealm, "submissions", batchProcessor)
+                        SyncTimingLogger.logOperation("sync_submissions_complete") },
+                    async {
+                        SyncTimingLogger.logOperation("sync_news_start")
+                        TransactionSyncManager.syncDb(mRealm, "news", batchProcessor)
+                        SyncTimingLogger.logOperation("sync_news_complete") },
+                    async {
+                        SyncTimingLogger.logOperation("sync_feedback_start")
+                        TransactionSyncManager.syncDb(mRealm, "feedback", batchProcessor)
+                        SyncTimingLogger.logOperation("sync_feedback_complete") },
+                    async {
+                        SyncTimingLogger.logOperation("sync_teams_start")
+                        TransactionSyncManager.syncDb(mRealm, "teams", batchProcessor)
+                        SyncTimingLogger.logOperation("sync_teams_complete") },
+                    async {
+                        SyncTimingLogger.logOperation("sync_tasks_start")
+                        TransactionSyncManager.syncDb(mRealm, "tasks", batchProcessor)
+                        SyncTimingLogger.logOperation("sync_tasks_complete") },
+                    async {
+                        SyncTimingLogger.logOperation("sync_login_activities_start")
+                        TransactionSyncManager.syncDb(mRealm, "login_activities", batchProcessor)
+                        SyncTimingLogger.logOperation("sync_login_activities_complete") },
+                    async {
+                        SyncTimingLogger.logOperation("sync_meetups_start")
+                        TransactionSyncManager.syncDb(mRealm, "meetups", batchProcessor)
+                        SyncTimingLogger.logOperation("sync_meetups_complete")
+                          },
+                    async { SyncTimingLogger.logOperation("sync_health_start")
+                        TransactionSyncManager.syncDb(mRealm, "health", batchProcessor)
+                        SyncTimingLogger.logOperation("sync_health_complete") },
+                    async { SyncTimingLogger.logOperation("sync_certifications_start")
+                        TransactionSyncManager.syncDb(mRealm, "certifications", batchProcessor)
+                        SyncTimingLogger.logOperation("sync_certifications_complete") },
+                    async { SyncTimingLogger.logOperation("sync_team_activities_start")
+                        TransactionSyncManager.syncDb(mRealm, "team_activities", batchProcessor)
+                        SyncTimingLogger.logOperation("sync_team_activities_complete") },
+                    async { SyncTimingLogger.logOperation("sync_chat_history_start")
+                        TransactionSyncManager.syncDb(mRealm, "chat_history", batchProcessor)
+                        SyncTimingLogger.logOperation("sync_chat_history_complete")  }
                 )
 
                 syncJobs.awaitAll()
+                SyncTimingLogger.logOperation("all_sync_jobs_complete")
+
+                // Flush any remaining batch operations
+                SyncTimingLogger.logOperation("flush_batch_processor_start")
+                batchProcessor.flushAll()
+                SyncTimingLogger.logOperation("flush_batch_processor_complete")
             }
 
+            SyncTimingLogger.logOperation("sync_admin_start")
             ManagerSync.instance?.syncAdmin()
-            resourceTransactionSync()
+            SyncTimingLogger.logOperation("sync_admin_complete")
+            SyncTimingLogger.logOperation("resource_sync_start")
+            resourceTransactionSync(batchProcessor = RealmBatchProcessor(mRealm, 1000))
+            SyncTimingLogger.logOperation("resource_sync_complete")
+
+            SyncTimingLogger.logOperation("on_synced_start")
             onSynced(mRealm, settings)
+            SyncTimingLogger.logOperation("on_synced_complete")
+
             mRealm.close()
+            SyncTimingLogger.logOperation("realm_closed")
         } catch (err: Exception) {
+            SyncTimingLogger.logOperation("sync_error_occurred: ${err.message}")
             err.printStackTrace()
             handleException(err.message)
         } finally {
+            SyncTimingLogger.logOperation("destroy_start")
             destroy()
+            SyncTimingLogger.logOperation("destroy_complete")
         }
     }
 
     private fun startFastSync() {
         try {
             initializeSync()
-            syncFirstBatch()
+
+            // Create a batch processor for fast sync
+            val batchProcessor = RealmBatchProcessor(mRealm, 1000)
+
+            // Sync only essential data in fast sync mode
+            TransactionSyncManager.syncDb(mRealm, "tablet_users", batchProcessor)
+            ManagerSync.instance?.syncAdmin()
+
+            // Flush any remaining batch operations
+            batchProcessor.flushAll()
 
             settings.edit { putLong("LastSync", Date().time) }
             listener?.onSyncComplete()
@@ -201,6 +301,9 @@ class SyncManager private constructor(private val context: Context) {
                     "meetups", "health", "certifications", "login_activities"
                 )
 
+                // Create batch processor for background sync
+                val batchProcessor = RealmBatchProcessor(Realm.getDefaultInstance(), 1000)
+
                 // Measure the total sync time
                 val totalTime = measureTimeMillis {
                     // Launch sync operations in parallel
@@ -210,7 +313,7 @@ class SyncManager private constructor(private val context: Context) {
                                 // Create a new Realm instance for this coroutine
                                 val realmInstance = Realm.getDefaultInstance()
                                 val timeTaken = measureTimeMillis {
-                                    TransactionSyncManager.syncDb(realmInstance, database)
+                                    TransactionSyncManager.syncDb(realmInstance, database, batchProcessor)
                                 }
                                 Log.d("SYNC", "Sync for $database completed in $timeTaken ms")
                                 realmInstance.close() // Close the Realm instance to avoid leaks
@@ -222,9 +325,15 @@ class SyncManager private constructor(private val context: Context) {
 
                     // Wait for all sync jobs to complete
                     syncJobs.awaitAll()
+
+                    // Flush any remaining batch operations
+                    batchProcessor.flushAll()
                 }
 
                 Log.d("SYNC", "All database syncs completed in $totalTime ms")
+
+                // Create a new batch processor for library and resource syncs
+                val extraBatchProcessor = RealmBatchProcessor(Realm.getDefaultInstance(), 1000)
 
                 // Run additional sync tasks in parallel
                 val extraSyncJobs = listOf(
@@ -232,7 +341,7 @@ class SyncManager private constructor(private val context: Context) {
                         try {
                             val realmInstance = Realm.getDefaultInstance()
                             val timeTaken = measureTimeMillis {
-                                myLibraryTransactionSync(realmInstance)
+                                myLibraryTransactionSync(realmInstance, extraBatchProcessor)
                             }
                             Log.d("SYNC", "Library sync completed in $timeTaken ms")
                             realmInstance.close()
@@ -244,7 +353,7 @@ class SyncManager private constructor(private val context: Context) {
                         try {
                             val realmInstance = Realm.getDefaultInstance()
                             val timeTaken = measureTimeMillis {
-                                resourceTransactionSync(realmInstance)
+                                resourceTransactionSync(realmInstance, extraBatchProcessor)
                             }
                             Log.d("SYNC", "Resource sync completed in $timeTaken ms")
                             realmInstance.close()
@@ -255,6 +364,9 @@ class SyncManager private constructor(private val context: Context) {
                 )
 
                 extraSyncJobs.awaitAll()
+
+                // Flush any remaining operations in the extra batch processor
+                extraBatchProcessor.flushAll()
 
                 // Final sync completion
                 val finalRealm = Realm.getDefaultInstance()
@@ -284,13 +396,13 @@ class SyncManager private constructor(private val context: Context) {
         }
     }
 
-    private fun resourceTransactionSync(backgroundRealm: Realm? = null) {
+    private fun resourceTransactionSync(backgroundRealm: Realm? = null, batchProcessor: RealmBatchProcessor? = null) {
         val apiInterface = client?.create(ApiInterface::class.java)
         try {
             if (backgroundRealm != null) {
-                syncResource(apiInterface, backgroundRealm)
+                syncResource(apiInterface, backgroundRealm, batchProcessor)
             } else {
-                syncResource(apiInterface)
+                syncResource(apiInterface, batchProcessor = batchProcessor)
             }
         } catch (e: IOException) {
             e.printStackTrace()
@@ -298,13 +410,14 @@ class SyncManager private constructor(private val context: Context) {
     }
 
     @Throws(IOException::class)
-    private fun syncResource(dbClient: ApiInterface?, backgroundRealm: Realm? = null) {
+    private fun syncResource(dbClient: ApiInterface?, backgroundRealm: Realm? = null, batchProcessor: RealmBatchProcessor? = null) {
         val realmInstance = backgroundRealm ?: mRealm
         val newIds: MutableList<String?> = ArrayList()
         val allDocs = dbClient?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?include_doc=false")
         val all = allDocs?.execute()
         val rows = getJsonArray("rows", all?.body())
         val keys: MutableList<String> = ArrayList()
+
         for (i in 0 until rows.size()) {
             val `object` = rows[i].asJsonObject
             if (!TextUtils.isEmpty(getString("id", `object`))) keys.add(getString("key", `object`))
@@ -313,25 +426,55 @@ class SyncManager private constructor(private val context: Context) {
                 obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
                 val response = dbClient?.findDocs(Utilities.header, "application/json", "${Utilities.getUrl()}/resources/_all_docs?include_docs=true", obj)?.execute()
                 if (response?.body() != null) {
-                    val ids: List<String?> = save(getJsonArray("rows", response.body()), realmInstance)
-                    newIds.addAll(ids)
+                    if (batchProcessor != null) {
+                        // Process resources in batches for improved performance
+                        val rowsArray = getJsonArray("rows", response.body())
+                        val resourceIds = processBatchResources(rowsArray, realmInstance, batchProcessor)
+                        newIds.addAll(resourceIds)
+                    } else {
+                        // Make sure save() handles its own transaction
+                        val ids: List<String?> = save(getJsonArray("rows", response.body()), realmInstance)
+                        newIds.addAll(ids)
+                    }
                 }
                 keys.clear()
             }
         }
+
+        // Handle removing deleted resources separately, with proper transaction management
         removeDeletedResource(newIds, realmInstance)
     }
 
-    private fun myLibraryTransactionSync(backgroundRealm: Realm? = null) {
+    private fun processBatchResources(rows: JsonArray, realm: Realm, batchProcessor: RealmBatchProcessor): List<String?> {
+        val resourceIds = mutableListOf<String?>()
+
+        for (i in 0 until rows.size()) {
+            val rowObj = rows[i].asJsonObject
+            val document = JsonUtils.getJsonObject("doc", rowObj)
+            val id = getString("_id", document)
+
+            if (!id.startsWith("_design")) {
+                resourceIds.add(id)
+                batchProcessor.addToBatch("resources", document)
+            }
+        }
+
+        return resourceIds
+    }
+
+    private fun myLibraryTransactionSync(backgroundRealm: Realm? = null, batchProcessor: RealmBatchProcessor? = null) {
         val apiInterface = client?.create(ApiInterface::class.java)
         try {
-            val res = apiInterface?.getDocuments(Utilities.header, "${Utilities.getUrl()}/shelf/_all_docs")?.execute()?.body()
+            val res = apiInterface?.getDocuments(
+                Utilities.header,
+                "${Utilities.getUrl()}/shelf/_all_docs"
+            )?.execute()?.body()
             for (i in res?.rows!!.indices) {
                 shelfDoc = res.rows!![i]
                 if (backgroundRealm != null) {
-                    populateShelfItems(apiInterface, backgroundRealm)
+                    populateShelfItems(apiInterface, backgroundRealm, batchProcessor)
                 } else {
-                    populateShelfItems(apiInterface)
+                    populateShelfItems(apiInterface, batchProcessor = batchProcessor)
                 }
             }
         } catch (e: IOException) {
@@ -339,16 +482,16 @@ class SyncManager private constructor(private val context: Context) {
         }
     }
 
-    private fun populateShelfItems(apiInterface: ApiInterface, backgroundRealm: Realm? = null) {
+    private fun populateShelfItems(apiInterface: ApiInterface, backgroundRealm: Realm? = null, batchProcessor: RealmBatchProcessor? = null) {
         try {
             val jsonDoc = apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/${shelfDoc?.id}").execute().body()
             for (i in Constants.shelfDataList.indices) {
                 val shelfData = Constants.shelfDataList[i]
                 val array = getJsonArray(shelfData.key, jsonDoc)
                 if (backgroundRealm != null) {
-                    memberShelfData(array, shelfData, backgroundRealm)
+                    memberShelfData(array, shelfData, backgroundRealm, batchProcessor)
                 } else {
-                    memberShelfData(array, shelfData)
+                    memberShelfData(array, shelfData, batchProcessor = batchProcessor)
                 }
             }
         } catch (err: Exception) {
@@ -356,13 +499,13 @@ class SyncManager private constructor(private val context: Context) {
         }
     }
 
-    private fun memberShelfData(array: JsonArray, shelfData: ShelfData, backgroundRealm: Realm? = null) {
+    private fun memberShelfData(array: JsonArray, shelfData: ShelfData, backgroundRealm: Realm? = null, batchProcessor: RealmBatchProcessor? = null) {
         if (array.size() > 0) {
             triggerInsert(shelfData.categoryKey, shelfData.type)
             if (backgroundRealm != null) {
-                check(array, backgroundRealm)
+                check(array, backgroundRealm, batchProcessor)
             } else {
-                check(array)
+                check(array, batchProcessor = batchProcessor)
             }
         }
     }
@@ -373,68 +516,72 @@ class SyncManager private constructor(private val context: Context) {
         stringArray[2] = categoryDBName
     }
 
-    private fun check(arrayCategoryIds: JsonArray, backgroundRealm: Realm? = null) {
+    private fun check(arrayCategoryIds: JsonArray, backgroundRealm: Realm? = null, batchProcessor: RealmBatchProcessor? = null) {
         for (x in 0 until arrayCategoryIds.size()) {
             if (arrayCategoryIds[x] is JsonNull) {
                 continue
             }
             if (backgroundRealm != null) {
-                validateDocument(arrayCategoryIds, x, backgroundRealm)
+                validateDocument(arrayCategoryIds, x, backgroundRealm, batchProcessor)
             } else {
-                validateDocument(arrayCategoryIds, x)
+                validateDocument(arrayCategoryIds, x, batchProcessor = batchProcessor)
             }
         }
     }
 
-    private fun validateDocument(arrayCategoryIds: JsonArray, x: Int, backgroundRealm: Realm? = null) {
+    private fun validateDocument(arrayCategoryIds: JsonArray, x: Int, backgroundRealm: Realm? = null, batchProcessor: RealmBatchProcessor? = null) {
         val apiInterface = client?.create(ApiInterface::class.java)
         try {
             val resourceDoc = apiInterface?.getJsonObject(Utilities.header,  "${Utilities.getUrl()}/${stringArray[2]}/${arrayCategoryIds[x].asString}")?.execute()?.body()
             if (backgroundRealm != null) {
-                resourceDoc?.let { triggerInsert(stringArray, it, backgroundRealm)}
+                resourceDoc?.let { triggerInsert(stringArray, it, backgroundRealm, batchProcessor) }
             } else {
-                resourceDoc?.let { triggerInsert(stringArray, it) }
+                resourceDoc?.let { triggerInsert(stringArray, it, batchProcessor = batchProcessor) }
             }
         } catch (e: IOException) {
             e.printStackTrace()
         }
     }
 
-    private fun triggerInsert(stringArray: Array<String?>, resourceDoc: JsonObject, backgroundRealm: Realm? = null) {
+    private fun triggerInsert(stringArray: Array<String?>, resourceDoc: JsonObject, backgroundRealm: Realm? = null, batchProcessor: RealmBatchProcessor? = null) {
+        val realm = backgroundRealm ?: mRealm
+
         when (stringArray[2]) {
             "resources" ->
-                if (backgroundRealm != null) {
-                    insertMyLibrary(stringArray[0], resourceDoc, backgroundRealm)
+                if (batchProcessor != null) {
+                    batchProcessor.addToBatch("resources", resourceDoc)
                 } else {
-                    insertMyLibrary(stringArray[0], resourceDoc, mRealm)
+                    RealmTransactionManager.executeInTransaction(realm) { r ->
+                        insertMyLibrary(stringArray[0], resourceDoc, r)
+                    }
                 }
 
             "meetups" ->
-                if (backgroundRealm != null) {
-                    insert(backgroundRealm, resourceDoc)
+                if (batchProcessor != null) {
+                    batchProcessor.addToBatch("meetups", resourceDoc)
                 } else {
-                    insert(mRealm, resourceDoc)
+                    RealmTransactionManager.executeInTransaction(realm) { r ->
+                        insert(r, resourceDoc)
+                    }
                 }
 
             "courses" -> {
-                if (backgroundRealm != null) {
-                    insertMyCourses(stringArray[0], resourceDoc, backgroundRealm)
+                if (batchProcessor != null) {
+                    batchProcessor.addToBatch("courses", resourceDoc)
                 } else {
-                    if (!mRealm.isInTransaction) {
-                        mRealm.beginTransaction()
-                    }
-                    insertMyCourses(stringArray[0], resourceDoc, mRealm)
-                    if (mRealm.isInTransaction) {
-                        mRealm.commitTransaction()
+                    RealmTransactionManager.executeInTransaction(realm) { r ->
+                        insertMyCourses(stringArray[0], resourceDoc, r)
                     }
                 }
             }
 
             "teams" ->
-                if (backgroundRealm != null) {
-                    insertMyTeams(resourceDoc, backgroundRealm)
+                if (batchProcessor != null) {
+                    batchProcessor.addToBatch("teams", resourceDoc)
                 } else {
-                    insertMyTeams(resourceDoc, mRealm)
+                    RealmTransactionManager.executeInTransaction(realm) { r ->
+                        insertMyTeams(resourceDoc, r)
+                    }
                 }
         }
         saveConcatenatedLinksToPrefs()

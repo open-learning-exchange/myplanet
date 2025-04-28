@@ -196,9 +196,16 @@ open class RealmMyLibrary : RealmObject() {
         @JvmStatic
         fun removeDeletedResource(newIds: List<String?>, mRealm: Realm) {
             val ids = getIds(mRealm)
-            ids.filterNot { it in newIds }.forEach { id ->
+            val idsToRemove = ids.filterNot { it in newIds }
+
+            if (idsToRemove.isNotEmpty()) {
                 mRealm.executeTransaction { realm ->
-                    realm.where(RealmMyLibrary::class.java).equalTo("resourceId", id).findAll().deleteAllFromRealm()
+                    for (id in idsToRemove) {
+                        realm.where(RealmMyLibrary::class.java)
+                            .equalTo("resourceId", id)
+                            .findAll()
+                            .deleteAllFromRealm()
+                    }
                 }
             }
         }
