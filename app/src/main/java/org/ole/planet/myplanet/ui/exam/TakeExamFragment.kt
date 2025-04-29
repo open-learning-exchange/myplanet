@@ -239,6 +239,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             } else {
                 "pending"
             }
+            if (isTeam == true) {
+                sub?.team = teamId
+            }
             val list: RealmList<RealmAnswer>? = sub?.answers
             val answer = createAnswer(list)
             val que = questions?.get(currentIndex)?.let { mRealm.copyFromRealm(it) }

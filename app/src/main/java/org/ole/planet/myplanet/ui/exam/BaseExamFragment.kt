@@ -59,8 +59,8 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var date = Date().toString()
     private var photoPath: String? = ""
     var submitId = ""
-    private var isTeam: Boolean = false
-    private var teamId: String? = null
+    var isTeam: Boolean = false
+    var teamId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

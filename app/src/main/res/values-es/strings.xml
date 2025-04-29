@@ -1267,8 +1267,34 @@
     <string name="full_conversation_response">Respuesta completa de la conversación</string>
     <string name="add_new_event">+ nuevo evento</string>
     <string name="none">Ninguno</string>
+    <string name="remind_later">Recordar más tarde</string>
+    <string name="remind_me_later">Recuérdame más tarde</string>
+    <string name="remind_me_in">Recuérdame en:</string>
+    <string name="minutes">Minutos</string>
+    <string name="days">Días</string>
+    <string name="set_reminder">Establecer recordatorio</string>
+    <string name="reminder_set_for">Recordatorio establecido para %1$s a partir de ahora</string>
+    <string name="reminder_surveys_to_complete">Recordatorio: Tienes %1$d %2$s por completar</string>
+
+    <plurals name="minutes">
+        <item quantity="one">%d minuto</item>
+        <item quantity="other">%d minutos</item>
+    </plurals>
+
+    <plurals name="hours">
+        <item quantity="one">%d hora</item>
+        <item quantity="other">%d horas</item>
+    </plurals>
+
+    <plurals name="days">
+        <item quantity="one">%d día</item>
+        <item quantity="other">%d días</item>
+    </plurals>
+
     <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">Sus datos de salud aparecerán aquí a medida que continúe registrándolos</string>
     <string name="no_health_records_available">No hay registros de salud disponibles</string>
+    <string name="permission_required">Se requiere permiso</string>
+    <string name="microphone_permission_required">Se requiere permiso del micrófono para grabar audio. Actívalo en la configuración de la aplicación.</string>
     <string name="confirm_share_community">¿Estás seguro de que quieres compartir este contenido con la comunidad?</string>
 
 </resources>
