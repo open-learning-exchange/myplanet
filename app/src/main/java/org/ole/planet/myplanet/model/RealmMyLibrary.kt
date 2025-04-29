@@ -12,12 +12,20 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.SyncTimingLogger
+import java.io.BufferedWriter
 import java.io.File
 import java.io.FileWriter
 import java.io.IOException
@@ -59,10 +67,13 @@ open class RealmMyLibrary : RealmObject() {
     var author: String? = null
     var year: String? = null
     var medium: String? = null
+    @Index
     var title: String? = null
     var averageRating: String? = null
     var filename: String? = null
+    @Index
     var mediaType: String? = null
+    @Index
     var resourceType: String? = null
     var description: String? = null
     var translationAudioPath: String? = null
@@ -73,7 +84,9 @@ open class RealmMyLibrary : RealmObject() {
     var level: RealmList<String>? = null
     var tag: RealmList<String>? = null
     var languages: RealmList<String>? = null
+    @Index
     var courseId: String? = null
+    @Index
     var stepId: String? = null
     var isPrivate: Boolean = false
     var attachments: RealmList<RealmAttachment>? = null
@@ -336,36 +349,59 @@ open class RealmMyLibrary : RealmObject() {
 
         @JvmStatic
         fun save(allDocs: JsonArray, mRealm: Realm): List<String> {
-            val list: MutableList<String> = ArrayList()
-            val batchSize = 50 // Process in batches of 50
-            val documentBatch = mutableListOf<JsonObject>()
+            val list: MutableList<String> = Collections.synchronizedList(ArrayList())
+            val batchSize = 50
 
-            SyncTimingLogger.logOperation("library_save_start")
+            SyncTimingLogger.logOperation("library_save_parallel_start")
 
             try {
+                // Group documents into batches
+                val batches = mutableListOf<List<JsonObject>>()
+                val currentBatch = mutableListOf<JsonObject>()
+
                 allDocs.forEach { doc ->
                     val document = JsonUtils.getJsonObject("doc", doc.asJsonObject)
                     val id = JsonUtils.getString("_id", document)
                     if (!id.startsWith("_design")) {
                         list.add(id)
-                        documentBatch.add(document)
+                        currentBatch.add(document)
 
-                        // Process batch when it reaches the threshold
-                        if (documentBatch.size >= batchSize) {
-                            batchInsertResources(documentBatch, mRealm)
-                            documentBatch.clear()
+                        if (currentBatch.size >= batchSize) {
+                            batches.add(currentBatch.toList())
+                            currentBatch.clear()
                         }
                     }
                 }
 
-                // Process any remaining documents
-                if (documentBatch.isNotEmpty()) {
-                    batchInsertResources(documentBatch, mRealm)
+                // Add any remaining documents
+                if (currentBatch.isNotEmpty()) {
+                    batches.add(currentBatch.toList())
                 }
 
-                SyncTimingLogger.logOperation("library_save_complete")
+                SyncTimingLogger.logOperation("library_batches_created_${batches.size}")
+
+                // Process batches in parallel using coroutines
+                runBlocking {
+                    val results = batches.mapIndexed { index, batch ->
+                        async(Dispatchers.IO) {
+                            val batchRealm = Realm.getDefaultInstance()
+                            try {
+                                SyncTimingLogger.logOperation("library_batch_${index}_start")
+                                batchInsertResources(batch, batchRealm)
+                                SyncTimingLogger.logOperation("library_batch_${index}_complete")
+                            } finally {
+                                batchRealm.close()
+                            }
+                        }
+                    }
+
+                    // Wait for all batches to complete
+                    results.awaitAll()
+                }
+
+                SyncTimingLogger.logOperation("library_save_parallel_complete")
             } catch (e: Exception) {
-                Log.e(TAG, "Error in save method: ${e.message}", e)
+                Log.e(TAG, "Error in parallel save method: ${e.message}", e)
             }
 
             return list
@@ -487,9 +523,41 @@ open class RealmMyLibrary : RealmObject() {
                 title = JsonUtils.getString("title", doc)
                 description = JsonUtils.getString("description", doc)
 
-                // Process attachments
+                // Process attachments - standard approach without lazy loading
                 if (doc.has("_attachments")) {
-                    processAttachments(this, doc, mRealm, settings)
+                    val attachments = doc["_attachments"].asJsonObject
+
+                    if (this.attachments == null) {
+                        this.attachments = RealmList()
+                    }
+
+                    attachments.entrySet().forEach { (key, attachmentValue) ->
+                        try {
+                            val attachmentObj = attachmentValue.asJsonObject
+
+                            // Create attachment
+                            val realmAttachment = mRealm.createObject(RealmAttachment::class.java, UUID.randomUUID().toString())
+                            realmAttachment.apply {
+                                name = key
+                                contentType = attachmentObj.get("content_type")?.asString
+                                length = attachmentObj.get("length")?.asLong ?: 0
+                                digest = attachmentObj.get("digest")?.asString
+                                isStub = attachmentObj.get("stub")?.asBoolean == true
+                                revpos = attachmentObj.get("revpos")?.asInt ?: 0
+                            }
+
+                            this.attachments?.add(realmAttachment)
+
+                            // Set resource properties based on attachment
+                            if (key.indexOf("/") < 0) {
+                                resourceRemoteAddress = "${settings.getString("couchdbURL", "http://")}/resources/$resourceId/$key"
+                                resourceLocalAddress = key
+                                resourceOffline = FileUtils.checkFileExist(resourceRemoteAddress)
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Error processing attachment $key: ${e.message}")
+                        }
+                    }
                 }
 
                 // Set basic properties
@@ -512,49 +580,26 @@ open class RealmMyLibrary : RealmObject() {
                 medium = JsonUtils.getString("medium", doc)
                 isPrivate = JsonUtils.getBoolean("private", doc)
 
-                // Set list properties
-                setResourceFor(JsonUtils.getJsonArray("resourceFor", doc))
-                setSubject(JsonUtils.getJsonArray("subject", doc))
-                setLevel(JsonUtils.getJsonArray("level", doc))
-                setTag(JsonUtils.getJsonArray("tags", doc))
-                setLanguages(JsonUtils.getJsonArray("languages", doc))
-            }
-        }
-
-        private fun processAttachments(resource: RealmMyLibrary, doc: JsonObject, mRealm: Realm, settings: SharedPreferences) {
-            try {
-                val attachments = doc["_attachments"].asJsonObject
-                if (resource.attachments == null) {
-                    resource.attachments = RealmList()
+                // Set list properties efficiently
+                if (doc.has("resourceFor")) {
+                    setResourceFor(JsonUtils.getJsonArray("resourceFor", doc))
                 }
 
-                attachments.entrySet().forEach { (key, attachmentValue) ->
-                    try {
-                        val attachmentObj = attachmentValue.asJsonObject
-
-                        val realmAttachment = mRealm.createObject(RealmAttachment::class.java, UUID.randomUUID().toString())
-                        realmAttachment.apply {
-                            name = key
-                            contentType = attachmentObj.get("content_type")?.asString
-                            length = attachmentObj.get("length")?.asLong ?: 0
-                            digest = attachmentObj.get("digest")?.asString
-                            isStub = attachmentObj.get("stub")?.asBoolean == true
-                            revpos = attachmentObj.get("revpos")?.asInt ?: 0
-                        }
-
-                        resource.attachments?.add(realmAttachment)
-
-                        if (key.indexOf("/") < 0) {
-                            resource.resourceRemoteAddress = "${settings.getString("couchdbURL", "http://")}/resources/${resource._id}/$key"
-                            resource.resourceLocalAddress = key
-                            resource.resourceOffline = FileUtils.checkFileExist(resource.resourceRemoteAddress)
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error processing attachment $key: ${e.message}")
-                    }
+                if (doc.has("subject")) {
+                    setSubject(JsonUtils.getJsonArray("subject", doc))
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error processing attachments: ${e.message}")
+
+                if (doc.has("level")) {
+                    setLevel(JsonUtils.getJsonArray("level", doc))
+                }
+
+                if (doc.has("tags")) {
+                    setTag(JsonUtils.getJsonArray("tags", doc))
+                }
+
+                if (doc.has("languages")) {
+                    setLanguages(JsonUtils.getJsonArray("languages", doc))
+                }
             }
         }
 
@@ -619,7 +664,7 @@ open class RealmMyLibrary : RealmObject() {
         }
 
         fun libraryWriteCsv() {
-            // Run CSV writing in a background thread
+            // Run CSV writing in a background thread with optimized buffer
             csvWriteExecutor.execute {
                 try {
                     SyncTimingLogger.logOperation("library_csv_write_start")
@@ -629,11 +674,36 @@ open class RealmMyLibrary : RealmObject() {
                         dataToWrite = ArrayList(libraryDataList)
                     }
 
-                    writeCsv("${context.getExternalFilesDir(null)}/ole/library.csv", dataToWrite)
+                    // Use buffered writer with larger buffer size
+                    val file = File("${context.getExternalFilesDir(null)}/ole/library.csv")
+                    file.parentFile?.mkdirs()
+
+                    BufferedWriter(FileWriter(file), 32768).use { writer ->
+                        // Write header
+                        writer.write("libraryId,library_rev,title,description,resourceRemoteAddress,resourceLocalAddress,resourceOffline,resourceId,addedBy,uploadDate,createdDate,openWith,articleDate,kind,language,author,year,medium,filename,mediaType,resourceType,timesRated,averageRating,publisher,linkToLicense,subject,level,tags,languages,courseId,stepId,downloaded,private\n")
+
+                        // Write data with manual CSV formatting for speed
+                        for (row in dataToWrite) {
+                            val line = StringBuilder()
+                            for (i in row.indices) {
+                                if (i > 0) line.append(',')
+
+                                val value = row[i]
+                                // Escape CSV field if needed
+                                if (value.contains(',') || value.contains('"') || value.contains('\n')) {
+                                    line.append('"').append(value.replace("\"", "\"\"")).append('"')
+                                } else {
+                                    line.append(value)
+                                }
+                            }
+                            line.append('\n')
+                            writer.write(line.toString())
+                        }
+                    }
 
                     SyncTimingLogger.logOperation("library_csv_write_complete")
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error in libraryWriteCsv: ${e.message}", e)
+                    Log.e(TAG, "Error in optimized CSV writing: ${e.message}", e)
                 }
             }
         }
