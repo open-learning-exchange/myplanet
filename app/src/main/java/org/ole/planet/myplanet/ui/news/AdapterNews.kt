@@ -339,14 +339,21 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun showReplyButton(holder: RecyclerView.ViewHolder, finalNews: RealmNews?, position: Int) {
         val viewHolder = holder as ViewHolderNews
-        if (listener == null || fromLogin) {
+        val isGuest = user?.id?.startsWith("guest") == true
+        if (listener == null || fromLogin || isGuest) {
             viewHolder.rowNewsBinding.btnShowReply.visibility = View.GONE
+            viewHolder.rowNewsBinding.btnReply.visibility = View.GONE
+        } else {
+            viewHolder.rowNewsBinding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
+            viewHolder.rowNewsBinding.btnReply.setOnClickListener { showEditAlert(finalNews?.id, false) }
         }
-        viewHolder.rowNewsBinding.btnReply.setOnClickListener { showEditAlert(finalNews?.id, false) }
-        val replies: List<RealmNews> = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING).equalTo("replyTo", finalNews?.id, Case.INSENSITIVE).findAll()
+        val replies: List<RealmNews> = mRealm.where(RealmNews::class.java)
+            .sort("time", Sort.DESCENDING)
+            .equalTo("replyTo", finalNews?.id, Case.INSENSITIVE)
+            .findAll()
         viewHolder.rowNewsBinding.btnShowReply.text = String.format(context.getString(R.string.show_replies) + " (%d)", replies.size)
         viewHolder.rowNewsBinding.btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
-        viewHolder.rowNewsBinding.btnShowReply.visibility = if (replies.isNotEmpty()) {
+        viewHolder.rowNewsBinding.btnShowReply.visibility = if (replies.isNotEmpty() && !isGuest) {
             View.VISIBLE
         } else {
             View.GONE
