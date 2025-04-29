@@ -74,23 +74,8 @@ class UserProfileDbHandler(context: Context) {
         }
     }
 
-    suspend fun onLogout() {
-        withContext(Dispatchers.IO) {
-            val realm = realmService.realmInstance
-            try {
-                realm.executeTransaction {
-                    val offlineActivities = RealmOfflineActivity.getRecentLogin(it)
-                    offlineActivities?.logoutTime = Date().time
-                }
-            } finally {
-                realm.close()
-            }
-        }
-    }
-
     fun logoutAsync() {
         val realm = realmService.realmInstance
-        println("L")
         realm.executeTransactionAsync(
             { r ->
                 RealmOfflineActivity.getRecentLogin(r)
@@ -98,14 +83,12 @@ class UserProfileDbHandler(context: Context) {
             },
             {
                 realm.close()
-                println("G")
             },
             { error ->
                 realm.close()
-                println("Error: $error")
+                error.printStackTrace()
             }
         )
-        println("logout")
     }
 
     fun onDestroy() {
