@@ -88,6 +88,26 @@ class UserProfileDbHandler(context: Context) {
         }
     }
 
+    fun logoutAsync() {
+        val realm = realmService.realmInstance
+        println("L")
+        realm.executeTransactionAsync(
+            { r ->
+                RealmOfflineActivity.getRecentLogin(r)
+                    ?.logoutTime = Date().time
+            },
+            {
+                realm.close()
+                println("G")
+            },
+            { error ->
+                realm.close()
+                println("Error: $error")
+            }
+        )
+        println("logout")
+    }
+
     fun onDestroy() {
         if (!mRealm.isClosed) {
             mRealm.close()
