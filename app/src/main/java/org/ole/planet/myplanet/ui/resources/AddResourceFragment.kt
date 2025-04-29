@@ -6,7 +6,6 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.database.Cursor
 import android.net.Uri
 import android.os.Build
@@ -47,11 +46,13 @@ import java.io.FileOutputStream
 import java.util.Date
 import java.util.UUID
 import androidx.core.graphics.drawable.toDrawable
+import org.ole.planet.myplanet.service.AudioRecorderPermission
 
 class AddResourceFragment : BottomSheetDialogFragment() {
     private lateinit var fragmentAddResourceBinding: FragmentAddResourceBinding
     var tvTime: TextView? = null
     var floatingActionButton: FloatingActionButton? = null
+    private lateinit var recordingPermissionManager: AudioRecorderPermission
     private var audioRecorderService: AudioRecorderService? = null
     private var myPersonalsFragment: MyPersonalsFragment? = null
     private var photoURI: Uri? = null
@@ -109,6 +110,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                 }
             }
         }
+        recordingPermissionManager = AudioRecorderPermission(this, requireContext(), audioRecorderService)
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -157,33 +159,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             ).toDrawable())
 
         createAudioRecorderService(dialog)
-        alertSoundRecorderBinding.fabRecord.setOnClickListener {
-            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO)
-                != PackageManager.PERMISSION_GRANTED
-            ) {
-                if (shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)) {
-                    AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-                        .setTitle("Permission Needed")
-                        .setMessage("This app needs microphone permission to record audio.")
-                        .setPositiveButton(R.string.ok) { rationaleDialog, _ ->
-                            rationaleDialog.dismiss()
-                            requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                        }
-                        .setNegativeButton(R.string.cancel) { rationaleDialog, _ ->
-                            rationaleDialog.dismiss()
-                        }
-                        .show()
-                } else {
-                    requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                }
-            } else {
-                if (!audioRecorderService?.isRecording()!!) {
-                    audioRecorderService?.startRecording()
-                } else {
-                    audioRecorderService?.stopRecording()
-                }
-            }
-        }
+        alertSoundRecorderBinding.fabRecord.setOnClickListener { recordingPermissionManager.onRecordClicked() }
         dialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dismiss)) { _: DialogInterface?, _: Int ->
             if (audioRecorderService != null && audioRecorderService?.isRecording() == true) {
                 audioRecorderService?.forceStop()

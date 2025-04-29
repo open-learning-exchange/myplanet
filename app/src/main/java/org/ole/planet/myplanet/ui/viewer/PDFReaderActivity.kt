@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityPdfreaderBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.service.AudioRecorderPermission
 import org.ole.planet.myplanet.service.AudioRecorderService
 import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
@@ -27,6 +28,7 @@ import java.io.File
 class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompleteListener, OnPageErrorListener, AudioRecordListener {
     private lateinit var activityPdfReaderBinding: ActivityPdfreaderBinding
     private var fileName: String? = null
+    private lateinit var recordingPermissionManager: AudioRecorderPermission
     private lateinit var audioRecorderService: AudioRecorderService
     private lateinit var library: RealmMyLibrary
     private lateinit var mRealm: Realm
@@ -35,19 +37,14 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         activityPdfReaderBinding = ActivityPdfreaderBinding.inflate(layoutInflater)
         setContentView(activityPdfReaderBinding.root)
         audioRecorderService = AudioRecorderService().setAudioRecordListener(this)
+        recordingPermissionManager = AudioRecorderPermission(this, this, audioRecorderService)
         mRealm = DatabaseService(this).realmInstance
         if (intent.hasExtra("resourceId")) {
             val resourceID = intent.getStringExtra("resourceId")
             library = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceID).findFirst()!!
         }
         renderPdfFile()
-        activityPdfReaderBinding.fabRecord.setOnClickListener {
-            if (audioRecorderService.isRecording()) {
-                audioRecorderService.stopRecording()
-            } else {
-                audioRecorderService.startRecording()
-            }
-        }
+        activityPdfReaderBinding.fabRecord.setOnClickListener { recordingPermissionManager.onRecordClicked()}
         activityPdfReaderBinding.fabPlay.setOnClickListener {
             if (this::library.isInitialized && !TextUtils.isEmpty(library.translationAudioPath)) {
                 openAudioFile(this, library.translationAudioPath)
