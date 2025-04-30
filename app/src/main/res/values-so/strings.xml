@@ -91,7 +91,7 @@
     <string name="published_by">Waxaa daabacay:</string>
     <string name="author">Qoraaga:</string>
     <string name="language_with_colon">Luuqad:</string>
-    <string name="subject">Mawduuc(s):</string>
+    <string name="subject">Mawduuc(s)*:</string>
     <string name="license">Shatiga:</string>
     <string name="type">Nooca:</string>
     <string name="resource_colon">Ilaha:</string>
@@ -138,7 +138,7 @@
     <string name="show_filter">Show Filter</string>
     <string name="subjects">Mawduucyo</string>
     <string name="mediums">Mediums</string>
-    <string name="levels">Heerarka</string>
+    <string name="levels">Heerarka*</string>
     <string name="languages">Luqadaha</string>
     <string name="txt_myLife">Nolosheyda</string>
     <string name="achievements">Dhamaanada</string>
