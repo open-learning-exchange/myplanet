@@ -91,7 +91,7 @@
     <string name="published_by">प्रकाशित गर्ने:</string>
     <string name="author">लेखक:</string>
     <string name="language_with_colon">भाषा:</string>
-    <string name="subject">विषय/विषयहरू:</string>
+    <string name="subject">विषय/विषयहरू*:</string>
     <string name="license">लाइसेन्स:</string>
     <string name="type">प्रकार:</string>
     <string name="resource_colon">स्रोत:</string>
@@ -138,7 +138,7 @@
     <string name="show_filter">फिल्टर देखाउनुहोस्</string>
     <string name="subjects">विषयहरू</string>
     <string name="mediums">माध्यमहरू</string>
-    <string name="levels">स्तरहरू</string>
+    <string name="levels">स्तरहरू*</string>
     <string name="languages">भाषाहरू</string>
     <string name="txt_myLife">मेरो जीवन</string>
     <string name="achievements">मेरो साधारणता</string>
