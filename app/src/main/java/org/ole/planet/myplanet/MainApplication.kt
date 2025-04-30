@@ -3,6 +3,7 @@ package org.ole.planet.myplanet
 import android.app.Activity
 import android.app.Application
 import android.content.Context
+import android.util.Log
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Configuration
@@ -219,6 +220,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
                 applicationScope.launch {
                     createLog("anr", "ANR detected! Duration: ${duration}ms\n $message")
+                    Log.d("ANRWatchdog", "ANR detected! Duration: ${duration}ms\n $message")
                 }
             }
         })

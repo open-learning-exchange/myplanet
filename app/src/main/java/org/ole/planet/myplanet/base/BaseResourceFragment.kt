@@ -207,14 +207,26 @@ abstract class BaseResourceFragment : Fragment() {
         if (isAdded) {
             Service(requireActivity()).isPlanetAvailable(object : PlanetAvailableListener {
                 override fun isAvailable() {
+                    if (!isAdded || activity == null || requireActivity().isFinishing || requireActivity().isDestroyed) {
+                        return
+                    }
+
                     if (urls.isNotEmpty()) {
-                        prgDialog.show()
-                        Utilities.openDownloadService(activity, urls, false)
+                        try {
+                            activity?.runOnUiThread {
+                                if (isAdded && !requireActivity().isFinishing && !requireActivity().isDestroyed) {
+                                    prgDialog.show()
+                                }
+                            }
+                            Utilities.openDownloadService(activity, urls, false)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
                     }
                 }
 
                 override fun notAvailable() {
-                    if (isAdded) {
+                    if (isAdded && activity != null && !requireActivity().isFinishing) {
                         Utilities.toast(requireActivity(), getString(R.string.device_not_connected_to_planet))
                     }
                 }
