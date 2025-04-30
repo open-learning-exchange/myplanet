@@ -20,44 +20,5 @@ class AudioRecorderPermission(
     private val context: Context,
     private val recorder: AudioRecorderService?
 ){
-    private val permissionLauncher =
-        caller.registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted){
-                toggleRecording()
-            }
-            else {
-                if (!shouldShowRequestPermissionRationale(context as Activity, Manifest.permission.RECORD_AUDIO)) {
-                    AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                        .setTitle(R.string.permission_required)
-                        .setMessage(R.string.microphone_permission_required)
-                        .setPositiveButton(R.string.settings) { dialog, _ ->
-                            dialog.dismiss()
-                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                            val uri: Uri = Uri.fromParts("package", context.packageName, null)
-                            intent.data = uri
-                            context.startActivity(intent)
-                        }
-                        .setNegativeButton(R.string.cancel) { dialog, _ -> dialog.dismiss() }
-                        .show()
-                } else {
-                    Utilities.toast(context, "Microphone permission is required to record audio.")
-                }
-            }
-        }
 
-    fun onRecordClicked() {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
-            == PackageManager.PERMISSION_GRANTED) {
-            toggleRecording()
-        } else {
-            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-        }
-    }
-    private fun toggleRecording() {
-        if (recorder?.isRecording()!!) {
-            recorder.stopRecording()
-        } else {
-            recorder.startRecording()
-        }
-    }
 }
