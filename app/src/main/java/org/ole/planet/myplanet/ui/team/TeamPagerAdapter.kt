@@ -47,7 +47,7 @@ class TeamPagerAdapter(private val activity: FragmentActivity, private val team:
                 3 -> "tasks"
                 4 -> "calendar"
                 5 -> "survey"
-                6 -> if (isEnterprise) "courses" else "finances"
+                6 -> if (isEnterprise) "finances" else "courses"
                 7 -> if (isEnterprise) "reports" else "resources"
                 8 -> if (isEnterprise) "resources" else "requests"
                 9 -> if (isEnterprise) "requests" else ""
