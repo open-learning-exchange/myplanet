@@ -44,7 +44,6 @@ import java.io.FileOutputStream
 import java.util.Date
 import java.util.UUID
 import androidx.core.graphics.drawable.toDrawable
-import org.ole.planet.myplanet.service.AudioRecorderPermission
 
 class AddResourceFragment : BottomSheetDialogFragment() {
     private lateinit var fragmentAddResourceBinding: FragmentAddResourceBinding
