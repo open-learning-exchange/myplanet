@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.resources
 
-import android.Manifest
 import android.app.Dialog
 import android.content.ContentValues
 import android.content.Context
@@ -12,7 +11,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
-import android.provider.Settings
 import android.text.TextUtils
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -52,7 +50,6 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     private lateinit var fragmentAddResourceBinding: FragmentAddResourceBinding
     var tvTime: TextView? = null
     var floatingActionButton: FloatingActionButton? = null
-    private lateinit var recordingPermissionManager: AudioRecorderPermission
     private var audioRecorderService: AudioRecorderService? = null
     private var myPersonalsFragment: MyPersonalsFragment? = null
     private var photoURI: Uri? = null
@@ -60,7 +57,6 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     private lateinit var captureImageLauncher: ActivityResultLauncher<Uri>
     private lateinit var captureVideoLauncher: ActivityResultLauncher<Uri>
     private lateinit var openFolderLauncher: ActivityResultLauncher<String>
-    private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
