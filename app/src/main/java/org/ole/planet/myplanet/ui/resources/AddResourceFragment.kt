@@ -1,16 +1,19 @@
 package org.ole.planet.myplanet.ui.resources
 
+import android.Manifest
 import android.app.Dialog
 import android.content.ContentValues
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.provider.Settings
 import android.text.TextUtils
 import android.view.Gravity
 import android.view.LayoutInflater
