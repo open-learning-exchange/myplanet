@@ -91,7 +91,7 @@
     <string name="published_by">Publié par:</string>
     <string name="author">Auteur:</string>
     <string name="language_with_colon">Langue:</string>
-    <string name="subject">Sujet(s):</string>
+    <string name="subject">Sujet(s)*:</string>
     <string name="license">Licence:</string>
     <string name="type">Type:</string>
     <string name="resource_colon">Ressource:</string>
@@ -138,7 +138,7 @@
     <string name="show_filter">Afficher le filtre</string>
     <string name="subjects">Sujets</string>
     <string name="mediums">Moyens</string>
-    <string name="levels">Niveaux</string>
+    <string name="levels">Niveaux*</string>
     <string name="languages">Langues</string>
     <string name="txt_myLife">maVie</string>
     <string name="achievements">mesRéalisations</string>
@@ -1267,10 +1267,35 @@
     <string name="full_conversation_response">Réponse complète de la conversation</string>
     <string name="add_new_event">+ Nouvel événement</string>
     <string name="none">Aucun</string>
+    <string name="remind_later">Rappeler plus tard</string>
+    <string name="remind_me_later">Me rappeler plus tard</string>
+    <string name="remind_me_in">Me rappeler dans :</string>
+    <string name="minutes">Minutes</string>
+    <string name="days">Jours</string>
+    <string name="set_reminder">Définir un rappel</string>
+    <string name="reminder_set_for">Rappel défini pour %1$s à partir de maintenant</string>
+    <string name="reminder_surveys_to_complete">Rappel : Vous avez %1$d %2$s à compléter</string>
+
+    <plurals name="minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
+
+    <plurals name="hours">
+        <item quantity="one">%d heure</item>
+        <item quantity="other">%d heures</item>
+    </plurals>
+
+    <plurals name="days">
+        <item quantity="one">%d jour</item>
+        <item quantity="other">%d jours</item>
+    </plurals>
+
     <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">Vos données de santé apparaîtront ici au fur et à mesure que vous continuez à les suivre</string>
     <string name="no_health_records_available">Aucun dossier de santé disponible</string>
     <string name="permission_required">Autorisation requise</string>
     <string name="microphone_permission_required">L\'autorisation du microphone est requise pour l\'enregistrement audio. Veuillez l\'activer dans les paramètres de l\'application.</string>
     <string name="confirm_share_community">Êtes-vous sûr de vouloir partager ce contenu avec la communauté ?</string>
+    <string name="camera_permission_required">L\'autorisation de l\'appareil photo est requise. Veuillez l\'activer dans les paramètres de l\'application.</string>
 
 </resources>

@@ -389,7 +389,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             prefData.setSavedUsers(updatedUserList)
         }
 
-        activityLoginBinding.team.visibility = View.VISIBLE
+        updateTeamDropdown()
 
         if (mAdapter == null) {
             mAdapter = TeamListAdapter(prefData.getSavedUsers().toMutableList(), this, this)
