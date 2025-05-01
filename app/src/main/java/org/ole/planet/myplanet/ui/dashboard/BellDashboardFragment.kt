@@ -100,7 +100,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
                     ContextCompat.getColor(context, R.color.md_yellow_600)
 
                 val updateUrl = settings?.getString("serverURL", "") ?: return
-                val serverUrlMapper = ServerUrlMapper(requireContext())
+                val serverUrlMapper = ServerUrlMapper()
                 val mapping = serverUrlMapper.processUrl(updateUrl)
 
                 val serverCheckPrimary = lifecycleScope.async(Dispatchers.IO) {

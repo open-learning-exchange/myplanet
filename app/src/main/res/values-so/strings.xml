@@ -91,7 +91,7 @@
     <string name="published_by">Waxaa daabacay:</string>
     <string name="author">Qoraaga:</string>
     <string name="language_with_colon">Luuqad:</string>
-    <string name="subject">Mawduuc(s):</string>
+    <string name="subject">Mawduuc(s)*:</string>
     <string name="license">Shatiga:</string>
     <string name="type">Nooca:</string>
     <string name="resource_colon">Ilaha:</string>
@@ -138,7 +138,7 @@
     <string name="show_filter">Show Filter</string>
     <string name="subjects">Mawduucyo</string>
     <string name="mediums">Mediums</string>
-    <string name="levels">Heerarka</string>
+    <string name="levels">Heerarka*</string>
     <string name="languages">Luqadaha</string>
     <string name="txt_myLife">Nolosheyda</string>
     <string name="achievements">Dhamaanada</string>
@@ -1296,5 +1296,6 @@
     <string name="permission_required">Ogolaanshaha ayaa loo baahan yahay</string>
     <string name="microphone_permission_required">Ogolaanshaha makarafoonka ayaa loo baahan yahay si loo duubo codka Fadlan awood u geli goobaha abka</string>
     <string name="confirm_share_community">Ma hubtaa inaad rabto inaad la wadaagto macluumaadkan bulshada?</string>
+    <string name="camera_permission_required">ogolaanshaha kamarada ayaa loo baahan yahay. Fadlan awood u geli goobaha abka</string>
 
 </resources>
