@@ -9,7 +9,6 @@ class ChatViewModel : ViewModel() {
     private val selectedChatHistoryLiveData = MutableLiveData<RealmList<Conversation>>()
     private val selectedId = MutableLiveData<String>()
     private val selectedRev = MutableLiveData<String>()
-    private val selectedAiProvider = MutableLiveData<String?>()
 
     fun setSelectedChatHistory(conversations: RealmList<Conversation>) {
         selectedChatHistoryLiveData.value = conversations
@@ -33,13 +32,6 @@ class ChatViewModel : ViewModel() {
 
     fun getSelectedRev(): LiveData<String> {
         return selectedRev
-    }
-
-    fun setSelectedAiProvider(aiProvider: String?) {
-        selectedAiProvider.value = aiProvider
-    }
-    fun getSelectedAiProvider(): LiveData<String?> {
-        return selectedAiProvider
     }
 }
 

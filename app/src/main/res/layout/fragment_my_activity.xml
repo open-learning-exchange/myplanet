@@ -20,21 +20,10 @@
             app:tbgCheckedButton="@+id/btn_year">
         </com.nex3z.togglebuttongroup.SingleSelectToggleGroup>
 
-        <TextView
-            android:id="@+id/chart_label"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/chart_description"
-            android:textColor="@color/daynight_textColor"
-            android:textSize="18sp"
-            android:layout_marginTop="16dp"
-            android:layout_gravity="center"
-            android:textStyle="bold"/>
         <com.github.mikephil.charting.charts.BarChart
             android:id="@+id/chart"
             android:layout_width="match_parent"
-            android:layout_height="300dp"
-            android:layout_marginTop="50dp"/>
+            android:layout_height="300dp" />
         <ListView
             android:id="@+id/activity_type"
             android:layout_width="match_parent"

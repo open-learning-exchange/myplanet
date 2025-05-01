@@ -190,56 +190,32 @@
                 android:backgroundTint="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <LinearLayout
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/ltInputName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="10dp"
             android:layout_weight="0.8"
-            android:layout_marginTop="9dp"
             android:layout_marginStart="4dp"
-            android:orientation="vertical">
+            app:boxBackgroundColor="@color/md_white_1000"
+            app:boxStrokeColor="@color/md_white_1000"
+            app:boxStrokeWidth="0dp"
+            app:boxStrokeWidthFocused="0dp">
 
             <TextView
-                android:id="@+id/tvBirthTitle"
+                android:id="@+id/dateOfBirth"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/birth_date"
-                android:textColor="@color/hint_color"
-                android:textSize="12sp"
-                android:layout_marginBottom="4dp" />
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/ltInputName"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:boxBackgroundColor="@color/md_white_1000"
-                app:boxStrokeColor="@color/md_white_1000"
-                app:boxStrokeWidth="0dp"
-                app:boxStrokeWidthFocused="0dp">
-
-                <TextView
-                    android:id="@+id/dateOfBirth"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="right"
-                    android:hint="@string/birth_date"
-                    android:textColor="@color/daynight_textColor"
-                    android:textSize="16sp"
-                    app:drawableRightCompat="@drawable/ic_date"
-                    app:drawableTint="@color/daynight_textColor" />
-            </com.google.android.material.textfield.TextInputLayout>
-        </LinearLayout>
+                android:layout_gravity="right"
+                android:hint="@string/birth_date"
+                android:textColor="@color/daynight_textColor"
+                android:textSize="16sp"
+                app:drawableRightCompat="@drawable/ic_date"
+                app:drawableTint="@color/daynight_textColor" />
+        </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/tvGenderTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="10dp"
-        android:text="@string/gender"
-        android:textColor="@color/hint_color"
-        android:textSize="12sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/lt2" />
     <RadioGroup
         android:id="@+id/rdGender"
         android:layout_width="match_parent"
@@ -248,7 +224,7 @@
         android:orientation="horizontal"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tvGenderTitle">
+        app:layout_constraintTop_toBottomOf="@+id/lt2">
 
         <RadioButton
             android:id="@+id/rbMale"
@@ -278,51 +254,20 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/rdGender">
 
-        <LinearLayout
-            android:layout_width="0dp"
+        <Spinner
+            android:id="@+id/language"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="10dp"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/languageTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/language"
-                android:textColor="@color/hint_color"
-                android:layout_marginBottom="4dp"
-                android:textSize="12sp" />
-            <Spinner
-                android:id="@+id/language"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:popupBackground="@color/secondary_bg"
-                app:backgroundTint="@color/daynight_textColor" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="0dp"
+            android:popupBackground="@color/secondary_bg"
+            app:backgroundTint="@color/daynight_textColor" />
+        <Spinner
+            android:id="@+id/level"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_marginStart="8dp">
-
-            <TextView
-                android:id="@+id/levelTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/gender"
-                android:textColor="@color/hint_color"
-                android:textSize="12sp"
-                android:layout_marginBottom="4dp" />
-            <Spinner
-                android:id="@+id/level"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:popupBackground="@color/secondary_bg"
-                app:backgroundTint="@color/daynight_textColor" />
-        </LinearLayout>
+            android:popupBackground="@color/secondary_bg"
+            app:backgroundTint="@color/daynight_textColor" />
     </LinearLayout>
 
     <LinearLayout

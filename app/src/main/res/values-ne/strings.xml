@@ -91,7 +91,7 @@
     <string name="published_by">प्रकाशित गर्ने:</string>
     <string name="author">लेखक:</string>
     <string name="language_with_colon">भाषा:</string>
-    <string name="subject">विषय/विषयहरू*:</string>
+    <string name="subject">विषय/विषयहरू:</string>
     <string name="license">लाइसेन्स:</string>
     <string name="type">प्रकार:</string>
     <string name="resource_colon">स्रोत:</string>
@@ -125,7 +125,7 @@
     <string name="menu_achievement">साधारणता</string>
     <string name="edit_achievement">उपलब्धिहरू सम्पादन गर्नुहोस्</string>
     <string name="add_resources">स्रोतहरू थप्नुहोस्</string>
-    <string name="description">वर्णन *</string>
+    <string name="description">वर्णन</string>
     <string name="title_asterisk">शीर्षक *</string>
     <string name="name_asterisk">नाम *</string>
     <string name="relationship">सम्बन्ध</string>
@@ -138,7 +138,7 @@
     <string name="show_filter">फिल्टर देखाउनुहोस्</string>
     <string name="subjects">विषयहरू</string>
     <string name="mediums">माध्यमहरू</string>
-    <string name="levels">स्तरहरू*</string>
+    <string name="levels">स्तरहरू</string>
     <string name="languages">भाषाहरू</string>
     <string name="txt_myLife">मेरो जीवन</string>
     <string name="achievements">मेरो साधारणता</string>
@@ -1265,37 +1265,10 @@
     <string name="no_resources_to_download">डाउनलोड गर्न कुनै स्रोत छैन</string>
     <string name="response">उत्तर</string>
     <string name="full_conversation_response">पूर्ण वार्तालाप उत्तर</string>
-    <string name="add_new_event">+ नयाँ कार्यक्रम</string>
+    <string name="add_new_event">नयाँ घटना थप्नुहोस्</string>
     <string name="none">कुनै पनि होइन</string>
-    <string name="remind_later">Xasuusi hadhow</string>
-    <string name="remind_me_later">Xasuusi hadhow</string>
-    <string name="remind_me_in">Ixasuusi gudaha:</string>
-    <string name="minutes">Daqiiqado</string>
-    <string name="days">Maalmaha</string>
-    <string name="set_reminder">Deji xasuusin</string>
-    <string name="reminder_set_for">Xasuusin ayaa loo dejiyay %1$s laga bilaabo hadda</string>
-    <string name="reminder_surveys_to_complete">Xasuusin: Waxaad haysataa %1$d %2$s oo la buuxinayo</string>
-
-    <plurals name="minutes">
-        <item quantity="one">%d daqiiqad</item>
-        <item quantity="other">%d daqiiqado</item>
-    </plurals>
-
-    <plurals name="hours">
-        <item quantity="one">%d saac</item>
-        <item quantity="other">%d saacadood</item>
-    </plurals>
-
-    <plurals name="days">
-        <item quantity="one">%d maalin</item>
-        <item quantity="other">%d maalmood</item>
-    </plurals>
-
     <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">तपाईंले ट्र्याकिङ जारी राख्दा तपाईंको स्वास्थ्य डेटा यहाँ देखिनेछ</string>
     <string name="no_health_records_available">कुनै स्वास्थ्य रेकर्ड उपलब्ध छैन</string>
-    <string name="permission_required">अनुमति आवश्यक छ</string>
-    <string name="microphone_permission_required">अडियो रेकर्ड गर्न माइक्रोफोन अनुमति आवश्यक छ। कृपया एप सेटिङहरूमा गई यसलाई सक्षम पार्नुहोस्।</string>
     <string name="confirm_share_community">के तपाईं यो सामग्री समुदायसँग साझा गर्न चाहनुहुन्छ?</string>
-    <string name="camera_permission_required">क्यामेरा अनुमति आवश्यक छ। कृपया एप सेटिङहरूमा गई यसलाई सक्षम गर्नुहोस्।</string>
 
 </resources>

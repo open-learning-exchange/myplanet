@@ -21,8 +21,6 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
-import androidx.core.content.edit
-import androidx.core.net.toUri
 import com.google.android.material.textfield.TextInputLayout
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
@@ -37,9 +35,9 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.FileUtils.installApk
-import java.util.Collections
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.roundToInt
+import androidx.core.net.toUri
+import androidx.core.content.edit
 
 abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     lateinit var settings: SharedPreferences
@@ -176,80 +174,35 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             UploadToShelfService.instance?.uploadUserData {
                 UploadToShelfService.instance?.uploadHealth()
             }
-            return
         } else if (source == "login") {
             UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
-            return
-        }
+        } else {
+            customProgressDialog.setText(context.getString(R.string.uploading_data_to_server_please_wait))
+            customProgressDialog.show()
 
-        customProgressDialog.setText(context.getString(R.string.uploading_data_to_server_please_wait))
-        customProgressDialog.show()
-        UploadManager.instance?.uploadAchievement()
-        UploadManager.instance?.uploadNews()
-        UploadManager.instance?.uploadResourceActivities("")
-        UploadManager.instance?.uploadCourseActivities()
-        UploadManager.instance?.uploadSearchActivity()
-        UploadManager.instance?.uploadTeams()
-        UploadManager.instance?.uploadRating()
-        UploadManager.instance?.uploadTeamTask()
-        UploadManager.instance?.uploadMeetups()
-        UploadManager.instance?.uploadSubmissions()
-        UploadManager.instance?.uploadCrashLog()
+            UploadToShelfService.instance?.uploadUserData { UploadToShelfService.instance?.uploadHealth() }
+            UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
+            UploadManager.instance?.uploadExamResult(this@ProcessUserDataActivity)
+            UploadManager.instance?.uploadFeedback(this@ProcessUserDataActivity)
+            UploadManager.instance?.uploadAchievement()
+            UploadManager.instance?.uploadResourceActivities("")
+            UploadManager.instance?.uploadCourseActivities()
+            UploadManager.instance?.uploadSearchActivity()
+            UploadManager.instance?.uploadNews()
+            UploadManager.instance?.uploadTeams()
+            UploadManager.instance?.uploadResource(this@ProcessUserDataActivity)
+            UploadManager.instance?.uploadRating()
+            UploadManager.instance?.uploadTeamTask()
+            UploadManager.instance?.uploadMeetups()
+            UploadManager.instance?.uploadSubmissions()
+            UploadManager.instance?.uploadCrashLog()
+            UploadManager.instance?.uploadSubmitPhotos(this@ProcessUserDataActivity)
+            UploadManager.instance?.uploadActivities(this@ProcessUserDataActivity)
 
-        val asyncOperationsCounter = AtomicInteger(0)
-        val totalAsyncOperations = 6
-
-        fun checkAllOperationsComplete() {
-            if (asyncOperationsCounter.incrementAndGet() == totalAsyncOperations) {
-                runOnUiThread {
-                    if (!isFinishing && !isDestroyed) {
-                        customProgressDialog.dismiss()
-                        Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
-                    }
-                }
+            runOnUiThread {
+                Toast.makeText(this@ProcessUserDataActivity, getString(R.string.uploading_activities_to_server_please_wait), Toast.LENGTH_SHORT).show()
             }
         }
-
-        UploadToShelfService.instance?.uploadUserData {
-            UploadToShelfService.instance?.uploadHealth()
-            checkAllOperationsComplete()
-        }
-
-        UploadManager.instance?.uploadUserActivities(object : SuccessListener {
-            override fun onSuccess(message: String?) {
-                checkAllOperationsComplete()
-            }
-        })
-
-        UploadManager.instance?.uploadExamResult(object : SuccessListener {
-            override fun onSuccess(message: String?) {
-                checkAllOperationsComplete()
-            }
-        })
-
-        UploadManager.instance?.uploadFeedback(object : SuccessListener {
-            override fun onSuccess(message: String?) {
-                checkAllOperationsComplete()
-            }
-        })
-
-        UploadManager.instance?.uploadResource(object : SuccessListener {
-            override fun onSuccess(message: String?) {
-                checkAllOperationsComplete()
-            }
-        })
-
-        UploadManager.instance?.uploadSubmitPhotos(object : SuccessListener {
-            override fun onSuccess(message: String?) {
-                checkAllOperationsComplete()
-            }
-        })
-
-        UploadManager.instance?.uploadActivities(object : SuccessListener {
-            override fun onSuccess(message: String?) {
-                checkAllOperationsComplete()
-            }
-        })
     }
 
     protected fun hideKeyboard(view: View?) {

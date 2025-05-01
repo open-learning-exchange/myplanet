@@ -122,11 +122,11 @@ class ChatHistoryListFragment : Fragment() {
         if (adapter == null) {
             val newAdapter = ChatHistoryListAdapter(requireContext(), list, this)
             newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
-                override fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?, aiProvider: String?) {
+                override fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?) {
                     conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
                     sharedViewModel.setSelectedId(id)
                     rev?.let { sharedViewModel.setSelectedRev(it) }
-                    aiProvider?.let { sharedViewModel.setSelectedAiProvider(it) }
+
                     fragmentChatHistoryListBinding.slidingPaneLayout.openPane()
                 }
             })

@@ -164,28 +164,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         headerResult = accountHeader
         createDrawer()
-        supportFragmentManager.addOnBackStackChangedListener {
-            val frag = supportFragmentManager.findFragmentById(R.id.fragment_container)
-            val idToSelect = when (frag) {
-                is BellDashboardFragment -> 0L
-                is ResourcesFragment -> {
-                    val isMy = frag.arguments?.getBoolean("isMyCourseLib", false) == true
-                    if (isMy) 1L else 3L
-                }
-                is CoursesFragment -> {
-                    val isMy = frag.arguments?.getBoolean("isMyCourseLib", false) == true
-                    if (isMy) 2L else 4L
-                }
-                is TeamFragment -> {
-                    val isEnterprise = frag.arguments?.getString("type") == "enterprise"
-                    if (isEnterprise) 6L else 5L
-                }
-                is CommunityTabFragment -> 7L
-                is SurveyFragment -> 8L
-                else -> null
-            }
-            idToSelect?.let { result?.setSelection(it, false) }
-        }
         if (!(user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) && resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
             result?.openDrawer()
         }
@@ -906,12 +884,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 changeUX(R.string.menu_myplanet, menuImageList[0]).withIdentifier(0),
                 changeUX(R.string.txt_myLibrary, menuImageList[1]).withIdentifier(1),
                 changeUX(R.string.txt_myCourses, menuImageList[2]).withIdentifier(2),
-                changeUX(R.string.menu_library, menuImageList[3]).withIdentifier(3),
-                changeUX(R.string.menu_courses, menuImageList[4]).withIdentifier(4),
-                changeUX(R.string.team, menuImageList[5]).withIdentifier(5),
-                changeUX(R.string.enterprises, menuImageList[6]).withIdentifier(6),
-                changeUX(R.string.menu_community, menuImageList[7]).withIdentifier(7),
-                changeUX(R.string.menu_surveys, menuImageList[8]).withIdentifier(8)
+                changeUX(R.string.menu_library, menuImageList[3]),
+                changeUX(R.string.menu_courses, menuImageList[4]),
+                changeUX(R.string.team, menuImageList[5]),
+                changeUX(R.string.enterprises, menuImageList[6]),
+                changeUX(R.string.menu_community, menuImageList[7]),
+                changeUX(R.string.menu_surveys, menuImageList[8])
             )
         }
     private val drawerItemsFooter: Array<IDrawerItem<*, *>>

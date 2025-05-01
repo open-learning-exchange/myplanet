@@ -91,7 +91,7 @@
     <string name="published_by">Published By:</string>
     <string name="author">Author:</string>
     <string name="language_with_colon">Language:</string>
-    <string name="subject">Subject(s)*:</string>
+    <string name="subject">Subject(s):</string>
     <string name="license">License:</string>
     <string name="type">Type:</string>
     <string name="resource_colon">Resource:</string>
@@ -125,7 +125,7 @@
     <string name="menu_achievement">Achievements</string>
     <string name="edit_achievement">Edit Achievements</string>
     <string name="add_resources">Add Resources</string>
-    <string name="description">Description *</string>
+    <string name="description">Description</string>
     <string name="title_asterisk">Title *</string>
     <string name="name_asterisk">Name *</string>
     <string name="relationship">Relationship</string>
@@ -138,7 +138,7 @@
     <string name="show_filter">Show Filter</string>
     <string name="subjects">Subjects</string>
     <string name="mediums">Mediums</string>
-    <string name="levels">Levels*</string>
+    <string name="levels">Levels</string>
     <string name="languages">Languages</string>
     <string name="txt_myLife">myLife</string>
     <string name="achievements">myAchievements</string>
@@ -1265,37 +1265,10 @@
     <string name="no_resources_to_download">No resources to download</string>
     <string name="response">Response</string>
     <string name="full_conversation_response">Full conversation response</string>
-    <string name="add_new_event">+ new event</string>
+    <string name="add_new_event">add new event</string>
     <string name="none">None</string>
-    <string name="remind_later">Remind Later</string>
-    <string name="remind_me_later">Remind Me Later</string>
-    <string name="remind_me_in">Remind me in:</string>
-    <string name="minutes">Minutes</string>
-    <string name="days">Days</string>
-    <string name="set_reminder">Set Reminder</string>
-    <string name="reminder_set_for">Reminder set for %1$s from now</string>
-    <string name="reminder_surveys_to_complete">Reminder: You have %1$d %2$s to complete</string>
-
-    <plurals name="minutes">
-        <item quantity="one">%d minute</item>
-        <item quantity="other">%d minutes</item>
-    </plurals>
-
-    <plurals name="hours">
-        <item quantity="one">%d hour</item>
-        <item quantity="other">%d hours</item>
-    </plurals>
-
-    <plurals name="days">
-        <item quantity="one">%d day</item>
-        <item quantity="other">%d days</item>
-    </plurals>
-
     <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">Your health data will appear here as you continue tracking it</string>
     <string name="no_health_records_available">No health records available</string>
-    <string name="permission_required">Permission Required</string>
-    <string name="microphone_permission_required">Microphone permission is required to record audio. Please enable it in the app settings.</string>
     <string name="confirm_share_community">Are you sure you want to share this content with the community?</string>
-    <string name="camera_permission_required">Camera permission is required. Please enable it in the app settings.</string>
 
 </resources>

@@ -20,8 +20,8 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
     var responseSource: Int = RESPONSE_SOURCE_UNKNOWN
     private val viewTypeQuery = 1
     private val viewTypeResponse = 2
-    val animatedMessages = HashMap<Int, Boolean>()
-    var lastAnimatedPosition: Int = -1
+    private val animatedMessages = HashMap<Int, Boolean>()
+    private var lastAnimatedPosition: Int = -1
 
     interface OnChatItemClickListener {
         fun onChatItemClick(position: Int, chatItem: String)

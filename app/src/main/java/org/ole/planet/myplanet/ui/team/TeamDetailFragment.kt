@@ -51,10 +51,6 @@ class TeamDetailFragment : BaseTeamFragment() {
         if (!isMyTeam) {
             fragmentTeamDetailBinding.btnAddDoc.isEnabled = false
             fragmentTeamDetailBinding.btnAddDoc.visibility = View.GONE
-            if (user?.id?.startsWith("guest") == true){
-                fragmentTeamDetailBinding.btnLeave.isEnabled = false
-                fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
-            }
             val currentTeam = team
             if (currentTeam != null && !currentTeam._id.isNullOrEmpty()) {
 
