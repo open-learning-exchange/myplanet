@@ -91,7 +91,7 @@
     <string name="published_by">Publicado por:</string>
     <string name="author">Autor:</string>
     <string name="language_with_colon">Idioma:</string>
-    <string name="subject">Asunto(s):</string>
+    <string name="subject">Asunto(s)*:</string>
     <string name="license">Licencia:</string>
     <string name="type">Tipo:</string>
     <string name="resource_colon">Recurso:</string>
@@ -138,7 +138,7 @@
     <string name="show_filter">Mostrar filtro</string>
     <string name="subjects">Asignaturas</string>
     <string name="mediums">Medios</string>
-    <string name="levels">Niveles</string>
+    <string name="levels">Niveles*</string>
     <string name="languages">Idiomas</string>
     <string name="txt_myLife">miVida</string>
     <string name="achievements">misLogros</string>
@@ -1296,5 +1296,6 @@
     <string name="permission_required">Se requiere permiso</string>
     <string name="microphone_permission_required">Se requiere permiso del micrófono para grabar audio. Actívalo en la configuración de la aplicación.</string>
     <string name="confirm_share_community">¿Estás seguro de que quieres compartir este contenido con la comunidad?</string>
+    <string name="camera_permission_required">Se requiere permiso para usar la cámara. Actívalo en la configuración de la aplicación.</string>
 
 </resources>

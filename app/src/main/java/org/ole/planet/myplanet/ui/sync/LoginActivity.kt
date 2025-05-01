@@ -82,7 +82,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         checkUsagesPermission()
         forceSyncTrigger()
 
-        if (getUrl().isNotEmpty()) {
+        val url = getUrl()
+        if (url.isNotEmpty() && url != "/db") {
             activityLoginBinding.openCommunity.visibility = View.VISIBLE
             activityLoginBinding.openCommunity.setOnClickListener {
                 HomeCommunityDialogFragment().show(supportFragmentManager, "")
@@ -388,7 +389,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             prefData.setSavedUsers(updatedUserList)
         }
 
-        activityLoginBinding.team.visibility = View.VISIBLE
+        updateTeamDropdown()
 
         if (mAdapter == null) {
             mAdapter = TeamListAdapter(prefData.getSavedUsers().toMutableList(), this, this)

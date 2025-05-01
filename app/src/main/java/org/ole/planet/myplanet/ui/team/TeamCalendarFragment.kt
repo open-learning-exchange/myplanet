@@ -143,7 +143,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
     }
 
     private fun setDatePickerListener(view: TextView, date: Calendar?, endDate: Calendar?) {
-        val c = Calendar.getInstance()
+        val initCal = date ?: Calendar.getInstance()
         if (date != null && endDate != null) {
             view.text = date.timeInMillis.let { it1 -> TimeUtils.formatDate(it1, "yyyy-MM-dd") }
         }
@@ -153,7 +153,9 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 date?.set(Calendar.MONTH, monthOfYear)
                 date?.set(Calendar.DAY_OF_MONTH, dayOfMonth)
                 view.text = date?.timeInMillis?.let { it1 -> TimeUtils.formatDate(it1, "yyyy-MM-dd") }
-            }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show()
+            }, initCal.get(Calendar.YEAR),
+                initCal.get(Calendar.MONTH),
+                initCal.get(Calendar.DAY_OF_MONTH)).show()
         }
     }
 
@@ -201,12 +203,12 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 if (markedDates.isNotEmpty()) {
                     showMeetupDialog(markedDates)
                 } else {
-                    if(arguments?.getBoolean("fromLogin", false) != true){
+                    if(arguments?.getBoolean("fromLogin", false) != false || user?.id?.startsWith("guest") == true){
+                        fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
+                    } else{
                         start = clickedCalendar.clone() as Calendar
                         end = clickedCalendar.clone() as Calendar
                         showMeetupAlert()
-                    } else{
-                        fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
                     }
                 }
                 if (!selectedDates.contains(clickedCalendar)) {
