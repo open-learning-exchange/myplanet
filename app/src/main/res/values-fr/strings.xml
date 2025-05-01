@@ -91,7 +91,7 @@
     <string name="published_by">Publié par:</string>
     <string name="author">Auteur:</string>
     <string name="language_with_colon">Langue:</string>
-    <string name="subject">Sujet(s):</string>
+    <string name="subject">Sujet(s)*:</string>
     <string name="license">Licence:</string>
     <string name="type">Type:</string>
     <string name="resource_colon">Ressource:</string>
@@ -138,7 +138,7 @@
     <string name="show_filter">Afficher le filtre</string>
     <string name="subjects">Sujets</string>
     <string name="mediums">Moyens</string>
-    <string name="levels">Niveaux</string>
+    <string name="levels">Niveaux*</string>
     <string name="languages">Langues</string>
     <string name="txt_myLife">maVie</string>
     <string name="achievements">mesRéalisations</string>
@@ -1296,5 +1296,6 @@
     <string name="permission_required">Autorisation requise</string>
     <string name="microphone_permission_required">L\'autorisation du microphone est requise pour l\'enregistrement audio. Veuillez l\'activer dans les paramètres de l\'application.</string>
     <string name="confirm_share_community">Êtes-vous sûr de vouloir partager ce contenu avec la communauté ?</string>
+    <string name="camera_permission_required">L\'autorisation de l\'appareil photo est requise. Veuillez l\'activer dans les paramètres de l\'application.</string>
 
 </resources>

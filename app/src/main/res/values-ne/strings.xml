@@ -91,7 +91,7 @@
     <string name="published_by">प्रकाशित गर्ने:</string>
     <string name="author">लेखक:</string>
     <string name="language_with_colon">भाषा:</string>
-    <string name="subject">विषय/विषयहरू:</string>
+    <string name="subject">विषय/विषयहरू*:</string>
     <string name="license">लाइसेन्स:</string>
     <string name="type">प्रकार:</string>
     <string name="resource_colon">स्रोत:</string>
@@ -138,7 +138,7 @@
     <string name="show_filter">फिल्टर देखाउनुहोस्</string>
     <string name="subjects">विषयहरू</string>
     <string name="mediums">माध्यमहरू</string>
-    <string name="levels">स्तरहरू</string>
+    <string name="levels">स्तरहरू*</string>
     <string name="languages">भाषाहरू</string>
     <string name="txt_myLife">मेरो जीवन</string>
     <string name="achievements">मेरो साधारणता</string>
@@ -1296,5 +1296,6 @@
     <string name="permission_required">अनुमति आवश्यक छ</string>
     <string name="microphone_permission_required">अडियो रेकर्ड गर्न माइक्रोफोन अनुमति आवश्यक छ। कृपया एप सेटिङहरूमा गई यसलाई सक्षम पार्नुहोस्।</string>
     <string name="confirm_share_community">के तपाईं यो सामग्री समुदायसँग साझा गर्न चाहनुहुन्छ?</string>
+    <string name="camera_permission_required">क्यामेरा अनुमति आवश्यक छ। कृपया एप सेटिङहरूमा गई यसलाई सक्षम गर्नुहोस्।</string>
 
 </resources>
