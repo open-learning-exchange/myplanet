@@ -59,7 +59,6 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     private lateinit var captureImageLauncher: ActivityResultLauncher<Uri>
     private lateinit var captureVideoLauncher: ActivityResultLauncher<Uri>
     private lateinit var openFolderLauncher: ActivityResultLauncher<String>
-    private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
     private lateinit var requestCameraLauncher: ActivityResultLauncher<String>
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,30 +85,8 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                 Utilities.toast(activity, "no file selected")
             }
         }
-        requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            if (isGranted) {
-                if (!audioRecorderService?.isRecording()!!) {
-                    audioRecorderService?.startRecording()
-                }
-            } else {
-                if (!shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)) {
-                    AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-                        .setTitle(R.string.permission_required)
-                        .setMessage(R.string.microphone_permission_required)
-                        .setPositiveButton(R.string.settings) { dialog, _ ->
-                            dialog.dismiss()
-                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                            val uri: Uri = Uri.fromParts("package", requireContext().packageName, null)
-                            intent.data = uri
-                            startActivity(intent)
-                        }
-                        .setNegativeButton(R.string.cancel) { dialog, _ -> dialog.dismiss() }
-                        .show()
-                } else {
-                    Utilities.toast(requireContext(), "Microphone permission is required to record audio.")
-                }
-            }
-        }
+        audioRecorderService = AudioRecorderService()
+        audioRecorderService?.setCaller(this, requireContext())
         requestCameraLauncher = registerForActivityResult(
             ActivityResultContracts.RequestPermission()
         ) { isGranted ->
@@ -182,33 +159,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             ).toDrawable())
 
         createAudioRecorderService(dialog)
-        alertSoundRecorderBinding.fabRecord.setOnClickListener {
-            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO)
-                != PackageManager.PERMISSION_GRANTED
-            ) {
-                if (shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)) {
-                    AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-                        .setTitle("Permission Needed")
-                        .setMessage("This app needs microphone permission to record audio.")
-                        .setPositiveButton(R.string.ok) { rationaleDialog, _ ->
-                            rationaleDialog.dismiss()
-                            requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                        }
-                        .setNegativeButton(R.string.cancel) { rationaleDialog, _ ->
-                            rationaleDialog.dismiss()
-                        }
-                        .show()
-                } else {
-                    requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                }
-            } else {
-                if (!audioRecorderService?.isRecording()!!) {
-                    audioRecorderService?.startRecording()
-                } else {
-                    audioRecorderService?.stopRecording()
-                }
-            }
-        }
+        alertSoundRecorderBinding.fabRecord.setOnClickListener { audioRecorderService?.onRecordClicked() }
         dialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dismiss)) { _: DialogInterface?, _: Int ->
             if (audioRecorderService != null && audioRecorderService?.isRecording() == true) {
                 audioRecorderService?.forceStop()
@@ -219,7 +170,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     }
 
     private fun createAudioRecorderService(dialog: AlertDialog) {
-        audioRecorderService = AudioRecorderService().setAudioRecordListener(object : AudioRecordListener {
+        audioRecorderService?.setAudioRecordListener(object : AudioRecordListener {
             override fun onRecordStarted() {
                 tvTime?.setText(R.string.recording_audio)
                 floatingActionButton?.setImageResource(R.drawable.ic_stop)
