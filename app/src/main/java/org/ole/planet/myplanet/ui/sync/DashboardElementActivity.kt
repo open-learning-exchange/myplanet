@@ -44,6 +44,7 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import androidx.core.content.edit
+import androidx.lifecycle.lifecycleScope
 
 abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBackStackChangedListener {
     lateinit var navigationView: BottomNavigationView
@@ -218,8 +219,8 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun logout() {
-        CoroutineScope(Dispatchers.Main).launch {
-            profileDbHandler.onLogout()
+        lifecycleScope.launch {
+            profileDbHandler.logoutAsync()
             settings.edit { putBoolean(Constants.KEY_LOGIN, false) }
             settings.edit { putBoolean(Constants.KEY_NOTIFICATION_SHOWN, false) }
             val loginScreen = Intent(this@DashboardElementActivity, LoginActivity::class.java)

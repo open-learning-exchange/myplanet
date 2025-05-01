@@ -62,14 +62,21 @@ class MyHealthFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         view.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
         alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(context))
-        fragmentVitalSignBinding.txtDob.hint = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
-        fragmentVitalSignBinding.txtDob.setOnClickListener {
-            val now = Calendar.getInstance()
-            val dpd = DatePickerDialog(requireContext(), { _, year, month, dayOfMonth ->
-                val selectedDate = String.format(Locale.US, "%04d-%02d-%02dT00:00:00.000Z", year, month + 1, dayOfMonth)
-                fragmentVitalSignBinding.txtDob.text = selectedDate
-            }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH))
-            dpd.show()
+        fragmentVitalSignBinding.txtDob.hint = "yyyy-MM-dd'"
+
+        val allowDateEdit = false
+        if(allowDateEdit) {
+            fragmentVitalSignBinding.txtDob.setOnClickListener {
+                val now = Calendar.getInstance()
+                val dpd = DatePickerDialog(requireContext(), { _, year, month, dayOfMonth ->
+                    val selectedDate =
+                        String.format(Locale.US, "%04d-%02d-%02d", year, month + 1, dayOfMonth)
+                    fragmentVitalSignBinding.txtDob.text = selectedDate
+                }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH))
+                dpd.show()
+            }
+        } else {
+            disableDobField()
         }
         fragmentVitalSignBinding.rvRecords.addItemDecoration(DividerItemDecoration(activity, DividerItemDecoration.VERTICAL))
         profileDbHandler = UserProfileDbHandler(alertMyPersonalBinding.root.context)
@@ -275,5 +282,11 @@ class MyHealthFragment : Fragment() {
                 null
             }
         }
+    }
+
+    private fun disableDobField() {
+        fragmentVitalSignBinding.txtDob.isClickable = false
+        fragmentVitalSignBinding.txtDob.isFocusable = false
+        fragmentVitalSignBinding.txtDob.setOnClickListener(null)
     }
 }
