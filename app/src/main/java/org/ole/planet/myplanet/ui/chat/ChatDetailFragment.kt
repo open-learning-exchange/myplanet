@@ -16,7 +16,6 @@ import androidx.recyclerview.widget.*
 import com.google.gson.*
 import com.google.gson.reflect.TypeToken
 import io.realm.Realm
-import io.realm.Sort
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -40,6 +39,7 @@ import retrofit2.Response
 import java.util.Date
 import java.util.Locale
 import androidx.core.net.toUri
+import androidx.core.view.isNotEmpty
 
 class ChatDetailFragment : Fragment() {
     lateinit var fragmentChatDetailBinding: FragmentChatDetailBinding
@@ -160,16 +160,40 @@ class ChatDetailFragment : Fragment() {
                 mAdapter.clearData()
                 fragmentChatDetailBinding.editGchatMessage.text.clear()
                 fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
-                if (conversations.isValid) {
+                if (conversations != null && conversations.isValid && conversations.isNotEmpty()) {
                     for (conversation in conversations) {
                         val query = conversation.query
                         val response = conversation.response
                         if (query != null) {
                             mAdapter.addQuery(query)
                         }
+
                         mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
+
                         if (response != null) {
                             mAdapter.addResponse(response)
+                        }
+                    }
+                    fragmentChatDetailBinding.recyclerGchat.post {
+                        fragmentChatDetailBinding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
+                    }
+                }
+            }
+            sharedViewModel.getSelectedAiProvider().observe(viewLifecycleOwner) { selectedAiProvider ->
+                aiName = selectedAiProvider ?: aiName
+                if (fragmentChatDetailBinding.aiTableRow.isNotEmpty()) {
+                    for (i in 0 until fragmentChatDetailBinding.aiTableRow.childCount) {
+                        val view = fragmentChatDetailBinding.aiTableRow.getChildAt(i)
+                        if (view is Button && view.text.toString().equals(selectedAiProvider, ignoreCase = true)) {
+                            val modelsString = settings.getString("ai_models", null)
+                            val modelsMap: Map<String, String> = if (modelsString != null) {
+                                Gson().fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type)
+                            } else {
+                                emptyMap()
+                            }
+                            val modelName = modelsMap[selectedAiProvider?.lowercase()] ?: "default-model"
+                            selectAI(view, "$selectedAiProvider", modelName)
+                            break
                         }
                     }
                 }
@@ -287,13 +311,15 @@ class ChatDetailFragment : Fragment() {
                 aiTableRow.addView(divider)
             }
         }
-
         aiTableRow.getChildAt(0)?.performClick()
     }
 
     private fun selectAI(selectedButton: Button, providerName: String, modelName: String) {
         val aiTableRow = fragmentChatDetailBinding.aiTableRow
         val context = requireContext()
+        currentID = ""
+        mAdapter.lastAnimatedPosition = -1
+        mAdapter.animatedMessages.clear()
 
         for (i in 0 until aiTableRow.childCount) {
             val view = aiTableRow.getChildAt(i)
@@ -311,7 +337,6 @@ class ChatDetailFragment : Fragment() {
         aiName = providerName
         aiModel = modelName
 
-        clearChatDetail()
         fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
     }
 
@@ -466,8 +491,8 @@ class ChatDetailFragment : Fragment() {
             add("conversations", conversationsArray)
         }
 
-        requireActivity().runOnUiThread {
-            RealmChatHistory.insert(mRealm, jsonObject)
+        mRealm.executeTransaction { realm ->
+            RealmChatHistory.insert(realm, jsonObject)
         }
         (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
     }

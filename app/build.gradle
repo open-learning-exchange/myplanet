@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 26
         targetSdkVersion 34
-        versionCode 2468
-        versionName "0.24.68"
+        versionCode 2503
+        versionName "0.25.3"
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -168,15 +168,15 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
     implementation 'androidx.annotation:annotation:1.9.1'
-    implementation 'androidx.exifinterface:exifinterface:1.4.0'
+    implementation 'androidx.exifinterface:exifinterface:1.4.1'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation "androidx.core:core-ktx:1.16.0"
-    implementation "androidx.work:work-runtime:2.10.0"
+    implementation "androidx.work:work-runtime:2.10.1"
     implementation "androidx.slidingpanelayout:slidingpanelayout:1.2.0"
     implementation 'androidx.preference:preference-ktx:1.2.1'
 
-    implementation 'com.google.code.gson:gson:2.13.0'
+    implementation 'com.google.code.gson:gson:2.13.1'
     implementation 'com.google.android.material:material:1.12.0'
 
     implementation "com.github.VaibhavLakhera:Circular-Progress-View:0.1.2"

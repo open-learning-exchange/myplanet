@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.net.Uri
-import android.os.*
 import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -111,7 +110,6 @@ class Service(private val context: Context) {
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences) {
         if (!settings.getBoolean("isAlternativeUrl", false)){
             if (settings.getString("couchdbURL", "")?.isEmpty() == true) {
-                callback.onError(context.getString(R.string.config_not_available), true)
                 return
             }
         }
@@ -353,10 +351,6 @@ class Service(private val context: Context) {
                                     community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
                                     community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
                                 }
-                            }
-
-                            Handler(Looper.getMainLooper()).post {
-                                callback.onSuccess(context.getString(R.string.server_sync_successfully))
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()

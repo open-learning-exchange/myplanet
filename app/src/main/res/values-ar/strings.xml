@@ -91,7 +91,7 @@
     <string name="published_by">نشر بواسطة:</string>
     <string name="author">المؤلف:</string>
     <string name="language_with_colon">اللغة:</string>
-    <string name="subject">الموضوع/الموضوعات:</string>
+    <string name="subject">الموضوع/الموضوعات*:</string>
     <string name="license">الترخيص:</string>
     <string name="type">النوع:</string>
     <string name="resource_colon">المصدر:</string>
@@ -125,7 +125,7 @@
     <string name="menu_achievement">الإنجازات</string>
     <string name="edit_achievement">تحرير الإنجازات</string>
     <string name="add_resources">إضافة موارد</string>
-    <string name="description">الوصف</string>
+    <string name="description">الوصف *</string>
     <string name="title_asterisk">العنوان *</string>
     <string name="name_asterisk">الاسم *</string>
     <string name="relationship">العلاقة</string>
@@ -138,7 +138,7 @@
     <string name="show_filter">عرض الفلتر</string>
     <string name="subjects">الموضوعات</string>
     <string name="mediums">وسائط</string>
-    <string name="levels">المستويات</string>
+    <string name="levels">المستويات*</string>
     <string name="languages">اللغات</string>
     <string name="txt_myLife">حياتي</string>
     <string name="achievements">إنجازاتي</string>
@@ -1265,10 +1265,37 @@
     <string name="no_resources_to_download">لا توجد موارد للتحميل</string>
     <string name="response">استجابة</string>
     <string name="full_conversation_response">استجابة المحادثة الكاملة</string>
-    <string name="add_new_event">إضافة حدث جديد</string>
+    <string name="add_new_event">+ حدث جديد</string>
     <string name="none">لا شيء</string>
+    <string name="remind_later">تذكير لاحقاً</string>
+    <string name="remind_me_later">ذكرني لاحقاً</string>
+    <string name="remind_me_in">ذكرني في:</string>
+    <string name="minutes">دقائق</string>
+    <string name="days">أيام</string>
+    <string name="set_reminder">تعيين تذكير</string>
+    <string name="reminder_set_for">تم تعيين التذكير بعد %1$s من الآن</string>
+    <string name="reminder_surveys_to_complete">تذكير: لديك %1$d %2$s للإكمال</string>
+
+    <plurals name="minutes">
+        <item quantity="one">دقيقة واحدة</item>
+        <item quantity="other">%d دقيقة</item>
+    </plurals>
+
+    <plurals name="hours">
+        <item quantity="one">ساعة واحدة</item>
+        <item quantity="other">%d ساعة</item>
+    </plurals>
+
+    <plurals name="days">
+        <item quantity="one">يوم واحد</item>
+        <item quantity="other">%d يوم</item>
+    </plurals>
+
     <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">ستظهر بيانات صحتك هنا مع استمرارك في تتبعها</string>
     <string name="no_health_records_available">لا توجد سجلات صحية متاحة</string>
+    <string name="permission_required">مطلوب إذن</string>
+    <string name="microphone_permission_required">يلزم الحصول على إذن الميكروفون لتسجيل الصوت. يُرجى تفعيله من إعدادات التطبيق</string>
     <string name="confirm_share_community">هل أنت متأكد أنك تريد مشاركة هذا المحتوى مع المجتمع؟</string>
+    <string name="camera_permission_required">يلزم الحصول على إذن الكاميرا. يُرجى تفعيله من إعدادات التطبيق.</string>
 
 </resources>
