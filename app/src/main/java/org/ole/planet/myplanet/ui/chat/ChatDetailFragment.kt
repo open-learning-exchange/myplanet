@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.chat
 import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Typeface
-import android.net.Uri
 import android.os.Bundle
 import android.text.*
 import android.view.*
@@ -214,7 +213,7 @@ class ChatDetailFragment : Fragment() {
 
     private fun checkAiProviders() {
         val updateUrl = "${settings.getString("serverURL", "")}"
-        val serverUrlMapper = ServerUrlMapper(requireContext())
+        val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
         CoroutineScope(Dispatchers.IO).launch {
@@ -375,7 +374,7 @@ class ChatDetailFragment : Fragment() {
 
     private fun processServerUrl(): ServerUrlMapper.UrlMapping {
         val updateUrl = settings.getString("serverURL", "") ?: ""
-        val serverUrlMapper = ServerUrlMapper(requireContext())
+        val serverUrlMapper = ServerUrlMapper()
         return serverUrlMapper.processUrl(updateUrl)
     }
 
@@ -390,7 +389,7 @@ class ChatDetailFragment : Fragment() {
                     val editor = settings.edit()
                     if (uri != null) {
                         if (alternativeUrl != null) {
-                            ServerUrlMapper(requireContext()).updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
+                            ServerUrlMapper().updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
                         }
                     }
                 }
