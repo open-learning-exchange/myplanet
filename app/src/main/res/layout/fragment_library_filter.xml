@@ -1,177 +1,199 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/card_bg"
-    android:orientation="vertical"
-    android:padding="@dimen/padding_normal"
-    tools:context=".ui.resources.ResourcesFilterFragment">
-
-    <LinearLayout
-        android:layout_width="400dp"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:background="@color/card_bg"
+        tools:context=".ui.resources.ResourcesFilterFragment">
+
+    <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true">
 
         <LinearLayout
-            android:layout_width="400dp"
-            android:layout_height="wrap_content"
-            android:layout_gravity="right"
-            android:gravity="right">
-
-            <ImageView
-                android:id="@+id/iv_close"
-                android:layout_width="@dimen/_40dp"
-                android:layout_height="@dimen/_40dp"
-                android:layout_gravity="right"
-                android:layout_marginEnd="35dp"
-                app:tint="@color/daynight_textColor"
-                android:src="@drawable/close_x" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/subjects_layout"
-            android:layout_width="370dp"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="16dp">
-
-            <TextView
-                style="@style/HeaderText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/subjects" />
-            <ImageView
-                android:id="@+id/subjectsDropdownIcon"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/down_arrow" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/expandable_layout_subjects"
-            android:layout_width="370dp"
-            android:layout_height="wrap_content"
-            android:visibility="gone"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <ListView
-                android:id="@+id/list_sub"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:choiceMode="multipleChoice" />
+                android:orientation="vertical">
+
+            <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp">
+
+                <ImageView
+                        android:id="@+id/iv_close"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_alignParentEnd="true"
+                        android:src="@drawable/close_x"
+                        app:tint="@color/daynight_textColor" />
+            </RelativeLayout>
+
+            <RelativeLayout
+                    android:id="@+id/subjects_layout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp">
+
+                <TextView
+                        style="@style/HeaderText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
+                        android:text="@string/subjects"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                <ImageView
+                        android:id="@+id/subjectsDropdownIcon"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:src="@drawable/down_arrow" />
+            </RelativeLayout>
+
+            <LinearLayout
+                    android:id="@+id/expandable_layout_subjects"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:visibility="gone">
+
+                <ListView
+                        android:id="@+id/list_sub"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:choiceMode="multipleChoice" />
+            </LinearLayout>
+
+            <RelativeLayout
+                    android:id="@+id/languages_layout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp">
+
+                <TextView
+                        style="@style/HeaderText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
+                        android:text="@string/languages"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                <ImageView
+                        android:id="@+id/languagesDropdownIcon"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:src="@drawable/down_arrow" />
+            </RelativeLayout>
+
+            <LinearLayout
+                    android:id="@+id/expandable_layout_languages"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:visibility="gone">
+
+                <ListView
+                        android:id="@+id/list_lang"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:choiceMode="multipleChoice" />
+            </LinearLayout>
+
+            <RelativeLayout
+                    android:id="@+id/mediums_layout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp">
+
+                <TextView
+                        style="@style/HeaderText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
+                        android:text="@string/mediums"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                <ImageView
+                        android:id="@+id/mediumsDropdownIcon"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:src="@drawable/down_arrow" />
+            </RelativeLayout>
+
+            <LinearLayout
+                    android:id="@+id/expandable_layout_mediums"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:visibility="gone">
+
+                <ListView
+                        android:id="@+id/list_medium"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:choiceMode="multipleChoice" />
+            </LinearLayout>
+
+            <RelativeLayout
+                    android:id="@+id/levels_layout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="16dp">
+
+                <TextView
+                        style="@style/HeaderText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentStart="true"
+                        android:layout_centerVertical="true"
+                        android:text="@string/levels"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                <ImageView
+                        android:id="@+id/levelsDropdownIcon"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:layout_alignParentEnd="true"
+                        android:layout_centerVertical="true"
+                        android:src="@drawable/down_arrow" />
+            </RelativeLayout>
+
+            <LinearLayout
+                    android:id="@+id/expandable_layout_levels"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:visibility="gone">
+
+                <ListView
+                        android:id="@+id/list_level"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:choiceMode="multipleChoice" />
+            </LinearLayout>
         </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/languages_layout"
-            android:layout_width="370dp"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="16dp"
-            android:gravity="center_vertical">
-
-            <TextView
-                style="@style/HeaderText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/languages" />
-            <ImageView
-                android:id="@+id/languagesDropdownIcon"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/down_arrow" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/expandable_layout_languages"
-            android:layout_width="370dp"
-            android:layout_height="wrap_content"
-            android:visibility="gone"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <ListView
-                android:id="@+id/list_lang"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:choiceMode="multipleChoice" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/mediums_layout"
-            android:layout_width="370dp"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="16dp"
-            android:gravity="center_vertical">
-
-            <TextView
-                style="@style/HeaderText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/mediums" />
-            <ImageView
-                android:id="@+id/mediumsDropdownIcon"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/down_arrow" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/expandable_layout_mediums"
-            android:layout_width="370dp"
-            android:layout_height="wrap_content"
-            android:visibility="gone"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <ListView
-                android:id="@+id/list_medium"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:choiceMode="multipleChoice" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/levels_layout"
-            android:layout_width="370dp"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:padding="16dp"
-            android:gravity="center_vertical">
-
-            <TextView
-                style="@style/HeaderText"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/levels" />
-            <ImageView
-                android:id="@+id/levelsDropdownIcon"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/down_arrow" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/expandable_layout_levels"
-            android:layout_width="370dp"
-            android:layout_height="wrap_content"
-            android:visibility="gone"
-            android:orientation="vertical"
-            android:padding="16dp">
-
-            <ListView
-                android:id="@+id/list_level"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:choiceMode="multipleChoice" />
-        </LinearLayout>
-    </LinearLayout>
+    </ScrollView>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
