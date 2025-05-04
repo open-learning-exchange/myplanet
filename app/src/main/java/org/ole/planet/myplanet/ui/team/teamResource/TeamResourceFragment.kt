@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.team.teamResource
 import android.content.DialogInterface
 import android.graphics.Typeface
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,16 +12,18 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.GridLayoutManager
+import io.realm.RealmList
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.TeamPageListener
-import org.ole.planet.myplanet.ui.team.teamResource.ResourceUpdateListner
 import org.ole.planet.myplanet.databinding.FragmentTeamResourceBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getResourceIds
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
+import org.ole.planet.myplanet.ui.team.teamCourse.TeamCourseFragment
 import org.ole.planet.myplanet.utilities.CheckboxListView
 import java.util.UUID
 
@@ -112,8 +115,13 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
         listSetting(alertDialog, availableLibraries, myLibraryAlertdialogBinding.alertDialogListView)
     }
 
-    private fun listSetting(alertDialog: AlertDialog, libraries: List<RealmMyLibrary>, lv: CheckboxListView) {
-        val names = libraries.map { it.title }
+    private fun <T> listSetting(alertDialog: AlertDialog, items: List<T>, lv: CheckboxListView) {
+        val names = when (items.firstOrNull()) {
+            is RealmMyLibrary -> items.map { (it as RealmMyLibrary).title }
+            is RealmMyCourse -> items.map { (it as RealmMyCourse).courseTitle }
+            else -> return
+        }
+
         val adapter = ArrayAdapter(requireActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, names)
         lv.choiceMode = ListView.CHOICE_MODE_MULTIPLE
         lv.setCheckChangeListener {
@@ -124,6 +132,7 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
         alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = lv.selectedItemsList.isNotEmpty()
     }
 
+
     fun checkAndShowNoData() {
         showNoData(fragmentTeamResourceBinding.tvNodata, adapterLibrary.itemCount, "teamResources")
     }
@@ -133,6 +142,61 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
     }
 
     override fun onAddDocument() {
-        showResourceListDialog()
+        showCoursesListDialog()
     }
+
+    private fun showCoursesListDialog() {
+        if (!isAdded || activity == null) return
+        val safeActivity = activity ?: return
+
+        val titleView = TextView(safeActivity).apply {
+            text = getString(R.string.select_resource)
+            setTextColor(context.getColor(R.color.daynight_textColor))
+            setPadding(75, 50, 0, 0)
+            textSize = 24f
+            typeface = Typeface.DEFAULT_BOLD
+        }
+
+        val myLibraryAlertdialogBinding = MyLibraryAlertdialogBinding.inflate(layoutInflater)
+        val alertDialogBuilder = AlertDialog.Builder(safeActivity)
+            .setCustomTitle(titleView)
+
+        val availableCourses: List<RealmMyCourse> = mRealm.where(RealmMyCourse::class.java)
+            .not().`in`("_id", getResourceIds(teamId, mRealm).toTypedArray())
+            .findAll()
+
+        alertDialogBuilder.setView(myLibraryAlertdialogBinding.root)
+            .setPositiveButton(R.string.add) { _: DialogInterface?, _: Int ->
+                mRealm.executeTransaction { realm ->
+                    val team = realm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()
+                    if (team != null) {
+                        val courseList = team.courses ?: RealmList<String>().also { team.courses = it }
+
+                        for (se in myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList) {
+                            val selectedCourse = availableCourses[se]
+                            if (selectedCourse is RealmMyCourse && !courseList.contains(selectedCourse.courseId)) {
+                                courseList.add(selectedCourse.courseId)
+                            }
+                        }
+                    }
+                }
+
+                // Fetch the updated courses and refresh the fragment
+                val updatedTeam = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()
+                updatedTeam?.courses?.let {
+                    Log.d("TeamCourse", "Fetched Updated Course List After Commit: $it")
+                }
+
+                showLibraryList()  // Refresh resources as well
+                val fragment = parentFragmentManager.findFragmentByTag("TeamCourseFragment") as? TeamCourseFragment
+                fragment?.refreshCourseList()  // This will reload the courses in the TeamCourseFragment
+            }
+
+            .setNegativeButton(R.string.cancel, null)
+
+        val alertDialog = alertDialogBuilder.create()
+        alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
+        listSetting(alertDialog, availableCourses, myLibraryAlertdialogBinding.alertDialogListView)
+    }
+
 }
