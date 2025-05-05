@@ -638,14 +638,14 @@
     <string name="shared_to_community">Compartido con la comunidad.</string>
     <string name="no_data_available_please_check_and_try_again">No hay datos disponibles, por favor verifica e intenta nuevamente.</string>
     <string name="no_course_matched_filter">No hay cursos que coincidan con el filtro</string>
-    <string name="added_to_my_library">agregado a myLibrary</string>
-    <string name="added_to_my_courses">agregado a myCourses</string>
+    <string name="added_to_my_library">Recursos agregados a miLibrería</string>
+    <string name="added_to_my_courses">Curso agregado a misCursos</string>
     <string name="do_you_want_to_stay_online">¿Deseas permanecer en línea?</string>
     <string name="planet_not_available">Planet no disponible.</string>
     <string name="device_not_connected_to_planet">Dispositivo no conectado a Planet.</string>
     <string name="all_files_downloaded_successfully">Todos los archivos se han descargado correctamente.</string>
-    <string name="removed_from_mylibrary">Eliminado de miBiblioteca.</string>
-    <string name="removed_from_mycourse">Eliminado de misCursos.</string>
+    <string name="removed_from_mylibrary">Recursos eliminados de miLibrería</string>
+    <string name="removed_from_mycourse">Curso eliminado de misCursos</string>
     <string name="please_allow_usages_permission_to_myplanet_app">Por favor, permite los permisos de uso a la aplicación myPlanet.</string>
     <string name="permissions_granted">Permisos otorgados.</string>
     <string name="permissions_denied">Permisos denegados.</string>
@@ -737,7 +737,7 @@
     <string name="enter_resource_detail">Ingresa los detalles del recurso</string>
     <string name="resource_saved_to_my_personal">Recurso guardado en myPersonal</string>
     <string name="invalid_resource_url">URL de recurso no válida</string>
-    <string name="my_library">" mi biblioteca"</string>
+    <string name="my_library">"mibiblioteca"</string>
     <string name="link_not_available">Enlace no disponible</string>
     <string name="success_you_have_added_these_resources_to_your_mylibrary">¡Éxito! Has agregado estos recursos a tu mi Biblioteca:\n\n</string>
     <string name="more_resource_s">" más recurso(s)…\n"</string>
