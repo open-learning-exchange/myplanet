@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.userprofile
 
+import android.Manifest
 import android.app.Activity.RESULT_OK
 import android.app.DatePickerDialog
 import android.app.Dialog
@@ -7,12 +8,14 @@ import android.content.ContentValues
 import android.content.Context.MODE_PRIVATE
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.provider.Settings
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
@@ -67,6 +70,7 @@ class UserProfileFragment : Fragment() {
     var date: String? = null
     private var photoURI: Uri? = null
     private lateinit var captureImageLauncher: ActivityResultLauncher<Uri>
+    private lateinit var requestCameraLauncher: ActivityResultLauncher<String>
 
     override fun onDestroy() {
         super.onDestroy()
@@ -92,6 +96,31 @@ class UserProfileFragment : Fragment() {
         captureImageLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
             if (isSuccess) {
                 startIntent(photoURI)
+            }
+        }
+
+        requestCameraLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            if (isGranted) {
+                takePhoto()
+            } else {
+                if (!shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)) {
+                    AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+                        .setTitle(R.string.permission_required)
+                        .setMessage(R.string.camera_permission_required)
+                        .setPositiveButton(R.string.settings) { dialog, _ ->
+                            dialog.dismiss()
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                            val uri: Uri = Uri.fromParts("package", requireContext().packageName, null)
+                            intent.data = uri
+                            startActivity(intent)
+                        }
+                        .setNegativeButton(R.string.cancel) { dialog, _ -> dialog.dismiss() }
+                        .show()
+                } else {
+                    Utilities.toast(requireContext(), "camera permission is required.")
+                }
             }
         }
     }
@@ -331,6 +360,11 @@ class UserProfileFragment : Fragment() {
     }
 
     private fun takePhoto() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
+            != PackageManager.PERMISSION_GRANTED){
+            requestCameraLauncher.launch(Manifest.permission.CAMERA)
+            return
+        }
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.TITLE, "Photo_${UUID.randomUUID()}")
             put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
