@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.model
 
 import android.content.SharedPreferences
+import android.util.Log
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
@@ -41,6 +42,8 @@ open class RealmResourceActivity : RealmObject() {
 
         @JvmStatic
         fun onSynced(mRealm: Realm, settings: SharedPreferences) {
+            val summary = RealmMyLibrary.getLibrarySummary(mRealm)
+            Log.i("ResourceSync", summary)
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
