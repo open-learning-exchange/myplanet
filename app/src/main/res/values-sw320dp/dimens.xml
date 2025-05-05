@@ -7,5 +7,5 @@
     <dimen name="text_size_mid">15sp</dimen>
     <dimen name="layout_height">20dp</dimen>
     <dimen name="padding_normal">6dp</dimen>
-    <dimen name="survey_radio_text_size">18sp</dimen>
+    <dimen name="survey_radio_text_size">14sp</dimen>
 </resources>
