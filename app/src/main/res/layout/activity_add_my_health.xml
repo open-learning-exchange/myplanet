@@ -36,7 +36,8 @@
                         android:hint="@string/first_name"
                         android:padding="@dimen/padding_normal"
                         android:backgroundTint="@color/daynight_textColor"
-                        android:textColor="@color/daynight_textColor" />
+                        android:textColor="@color/daynight_textColor"
+                        android:inputType="textCapWords|textPersonName"/>
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -52,7 +53,8 @@
                         android:hint="@string/middle_name"
                         android:padding="@dimen/padding_normal"
                         android:backgroundTint="@color/daynight_textColor"
-                        android:textColor="@color/daynight_textColor" />
+                        android:textColor="@color/daynight_textColor"
+                        android:inputType="textCapWords|textPersonName"/>
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -68,7 +70,8 @@
                         android:hint="@string/last_name"
                         android:padding="@dimen/padding_normal"
                         android:backgroundTint="@color/daynight_textColor"
-                        android:textColor="@color/daynight_textColor" />
+                        android:textColor="@color/daynight_textColor"
+                        android:inputType="textCapWords|textPersonName"/>
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
