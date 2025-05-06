@@ -124,7 +124,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     fun openResource(items: RealmMyLibrary) {
-        if (items.openWith == "HTML") {
+        if (items.mediaType == "HTML") {
             if (items.resourceOffline) {
                 val intent = Intent(activity, WebViewActivity::class.java)
                 intent.putExtra("RESOURCE_ID", items.id)
