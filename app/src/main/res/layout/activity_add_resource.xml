@@ -67,6 +67,8 @@
                         android:layout_height="wrap_content"
                         android:hint="@string/year"
                         android:textColor="@color/daynight_textColor"
+                        android:inputType="number"
+                        android:maxLength="4"
                         android:backgroundTint="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
