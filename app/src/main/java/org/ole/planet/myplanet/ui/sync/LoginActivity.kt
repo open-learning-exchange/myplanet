@@ -11,15 +11,13 @@ import android.widget.*
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.core.content.edit
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.*
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import io.realm.Realm
-import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.*
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.*
 import org.ole.planet.myplanet.datamanager.*
 import org.ole.planet.myplanet.model.*
@@ -27,8 +25,8 @@ import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.userprofile.*
-import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.*
+import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.text.Normalizer
@@ -84,7 +82,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         checkUsagesPermission()
         forceSyncTrigger()
 
-        if (getUrl().isNotEmpty()) {
+        val url = getUrl()
+        if (url.isNotEmpty() && url != "/db") {
             activityLoginBinding.openCommunity.visibility = View.VISIBLE
             activityLoginBinding.openCommunity.setOnClickListener {
                 HomeCommunityDialogFragment().show(supportFragmentManager, "")
@@ -99,12 +98,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
         guest = intent.getBooleanExtra("guest", false)
         val username = intent.getStringExtra("username")
-        val password = intent.getStringExtra("password")
-        val autoLogin = intent.getBooleanExtra("autoLogin", false)
-
-        if (autoLogin && username != null && password != null) {
-            submitForm(username, password)
-        }
 
         if (guest) {
             resetGuestAsMember(username)
@@ -129,7 +122,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
     private fun declareElements() {
         if (!defaultPref.contains("beta_addImageToMessage")) {
-            defaultPref.edit { putBoolean("beta_addImageToMessage", true) }
+            defaultPref.edit().putBoolean("beta_addImageToMessage", true).apply()
         }
         activityLoginBinding.customDeviceName.text = getCustomDeviceName()
         activityLoginBinding.btnSignin.setOnClickListener {
@@ -158,11 +151,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 }
             }
         }
-        if (!settings.contains("serverProtocol")) {
-            settings.edit {
-                putString("serverProtocol", "http://")
-            }
-        }
+        if (!settings.contains("serverProtocol")) settings.edit().putString("serverProtocol", "http://").apply()
         activityLoginBinding.becomeMember.setOnClickListener {
             activityLoginBinding.inputName.setText(R.string.empty_text)
             becomeAMember()
@@ -400,6 +389,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             prefData.setSavedUsers(updatedUserList)
         }
 
+        updateTeamDropdown()
+
         if (mAdapter == null) {
             mAdapter = TeamListAdapter(prefData.getSavedUsers().toMutableList(), this, this)
             activityLoginBinding.recyclerView.layoutManager = LinearLayoutManager(this)
@@ -408,8 +399,13 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             mAdapter?.updateList(prefData.getSavedUsers().toMutableList())
         }
 
-        activityLoginBinding.recyclerView.isNestedScrollingEnabled = false
-        activityLoginBinding.recyclerView.setHasFixedSize(true)
+        activityLoginBinding.recyclerView.isNestedScrollingEnabled = true
+        activityLoginBinding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+        activityLoginBinding.recyclerView.isVerticalScrollBarEnabled = true
+
+        activityLoginBinding.recyclerView.post {
+            mAdapter?.notifyDataSetChanged()
+        }
     }
 
     override fun onItemClick(user: User) {
@@ -427,10 +423,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 if (model == null) {
                     toast(this, getString(R.string.unable_to_login))
                 } else {
-                    lifecycleScope.launch {
-                        saveUserInfoPref(settings, "", model)
-                        onLogin()
-                    }
+                    saveUserInfoPref(settings, "", model)
+                    onLogin()
                 }
             } else {
                 submitForm(user.name, user.password)
@@ -442,29 +436,42 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         if (forceSyncTrigger()) {
             return
         }
-        settings.edit {
-            putString("loginUserName", name)
-            putString("loginUserPassword", password)
-            val isLoggedIn = authenticateUser(settings, name, password, false)
-            if (isLoggedIn) {
-                lifecycleScope.launch {
-                    Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
-                    onLogin()
-                    saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
+        val editor = settings.edit()
+        editor.putString("loginUserName", name)
+        editor.putString("loginUserPassword", password)
+        val isLoggedIn = authenticateUser(settings, name, password, false)
+        if (isLoggedIn) {
+            Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
+            onLogin()
+            saveUsers(activityLoginBinding.inputName.text.toString(), activityLoginBinding.inputPassword.text.toString(), "member")
+        } else {
+            ManagerSync.instance?.login(name, password, object : SyncListener {
+                override fun onSyncStarted() {
+                    customProgressDialog?.setText(getString(R.string.please_wait))
+                    customProgressDialog?.show()
                 }
-            } else {
-                val log = authenticateUser(settings, name, password, true)
-                if (log) {
-                    lifecycleScope.launch {
-                        Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
+                override fun onSyncComplete() {
+                    customProgressDialog?.dismiss()
+                    val log = authenticateUser(settings, name, password, true)
+                    if (log) {
+                        Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
                         onLogin()
-                        saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
+                        saveUsers(activityLoginBinding.inputName.text.toString(), activityLoginBinding.inputPassword.text.toString(), "member")
+                    } else {
+                        alertDialogOkay(getString(R.string.err_msg_login))
                     }
-                } else {
-                    alertDialogOkay(getString(R.string.err_msg_login))
+                    syncIconDrawable.stop()
+                    syncIconDrawable.selectDrawable(0)
                 }
-            }
+                override fun onSyncFailed(msg: String?) {
+                    toast(MainApplication.context, msg)
+                    customProgressDialog?.dismiss()
+                    syncIconDrawable.stop()
+                    syncIconDrawable.selectDrawable(0)
+                }
+            })
         }
+        editor.apply()
     }
 
     private fun showGuestLoginDialog() {
@@ -577,11 +584,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                         if (model == null) {
                             toast(this, getString(R.string.unable_to_login))
                         } else {
-                            lifecycleScope.launch {
-                                saveUsers(username, "", "guest")
-                                saveUserInfoPref(settings, "", model)
-                                onLogin()
-                            }
+                            saveUsers(username, "", "guest")
+                            saveUserInfoPref(settings, "", model)
+                            onLogin()
                         }
                     }
                 }
@@ -606,10 +611,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             if (model == null) {
                 toast(this, getString(R.string.unable_to_login))
             } else {
-                lifecycleScope.launch {
-                    saveUserInfoPref(settings, "", model)
-                    onLogin()
-                }
+                saveUserInfoPref(settings, "", model)
+                onLogin()
             }
         }
         val dialog = builder.create()

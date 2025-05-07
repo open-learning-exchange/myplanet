@@ -339,11 +339,17 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun showReplyButton(holder: RecyclerView.ViewHolder, finalNews: RealmNews?, position: Int) {
         val viewHolder = holder as ViewHolderNews
-        if (listener == null || fromLogin) {
-            viewHolder.rowNewsBinding.btnShowReply.visibility = View.GONE
+        val isGuest = user?.id?.startsWith("guest") == true
+        if (listener == null || fromLogin || isGuest) {
+            viewHolder.rowNewsBinding.btnReply.visibility = View.GONE
+        } else {
+            viewHolder.rowNewsBinding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
+            viewHolder.rowNewsBinding.btnReply.setOnClickListener { showEditAlert(finalNews?.id, false) }
         }
-        viewHolder.rowNewsBinding.btnReply.setOnClickListener { showEditAlert(finalNews?.id, false) }
-        val replies: List<RealmNews> = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING).equalTo("replyTo", finalNews?.id, Case.INSENSITIVE).findAll()
+        val replies: List<RealmNews> = mRealm.where(RealmNews::class.java)
+            .sort("time", Sort.DESCENDING)
+            .equalTo("replyTo", finalNews?.id, Case.INSENSITIVE)
+            .findAll()
         viewHolder.rowNewsBinding.btnShowReply.text = String.format(context.getString(R.string.show_replies) + " (%d)", replies.size)
         viewHolder.rowNewsBinding.btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
         viewHolder.rowNewsBinding.btnShowReply.visibility = if (replies.isNotEmpty()) {
@@ -352,6 +358,9 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             View.GONE
         }
         if (position == 0 && parentNews != null) {
+            viewHolder.rowNewsBinding.btnShowReply.visibility = View.GONE
+        }
+        if (listener == null || fromLogin) {
             viewHolder.rowNewsBinding.btnShowReply.visibility = View.GONE
         }
         viewHolder.rowNewsBinding.btnShowReply.setOnClickListener {
@@ -498,21 +507,35 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {
         val viewHolder = holder as ViewHolderNews
-        viewHolder.rowNewsBinding.btnShare.visibility = if (news?.isCommunityNews == true || fromLogin || nonTeamMember) View.GONE else View.VISIBLE
+        val isGuest = user?.id?.startsWith("guest") == true
+
+        viewHolder.rowNewsBinding.btnShare.visibility = if (news?.isCommunityNews == true || fromLogin || nonTeamMember || isGuest) {
+            View.GONE
+        } else {
+            View.VISIBLE
+        }
+
         viewHolder.rowNewsBinding.btnShare.setOnClickListener {
-            val array = Gson().fromJson(news?.viewIn, JsonArray::class.java)
-            val ob = JsonObject()
-            ob.addProperty("section", "community")
-            ob.addProperty("_id", currentUser?.planetCode + "@" + currentUser?.parentCode)
-            ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
-            array.add(ob)
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
-            news?.viewIn = Gson().toJson(array)
-            mRealm.commitTransaction()
-            Utilities.toast(context, context.getString(R.string.shared_to_community))
-            viewHolder.rowNewsBinding.btnShare.visibility = View.GONE
+            AlertDialog.Builder(context, R.style.AlertDialogTheme)
+                .setTitle(R.string.share_with_community)
+                .setMessage(R.string.confirm_share_community)
+                .setPositiveButton(R.string.yes) { _, _ ->
+                    val array = Gson().fromJson(news?.viewIn, JsonArray::class.java)
+                    val ob = JsonObject()
+                    ob.addProperty("section", "community")
+                    ob.addProperty("_id", currentUser?.planetCode + "@" + currentUser?.parentCode)
+                    ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
+                    array.add(ob)
+                    if (!mRealm.isInTransaction) {
+                        mRealm.beginTransaction()
+                    }
+                    news?.viewIn = Gson().toJson(array)
+                    mRealm.commitTransaction()
+                    Utilities.toast(context, context.getString(R.string.shared_to_community))
+                    viewHolder.rowNewsBinding.btnShare.visibility = View.GONE
+                }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
         }
     }
 

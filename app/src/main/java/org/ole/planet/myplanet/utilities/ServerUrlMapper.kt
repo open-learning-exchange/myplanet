@@ -1,13 +1,11 @@
 package org.ole.planet.myplanet.utilities
 
-import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
 import org.ole.planet.myplanet.BuildConfig
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import androidx.core.net.toUri
 
-class ServerUrlMapper(private val context: Context, private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE), private val editor: SharedPreferences.Editor = settings.edit()) {
+class ServerUrlMapper() {
     private val serverMappings = mapOf(
         "http://${BuildConfig.PLANET_SANPABLO_URL}" to "https://${BuildConfig.PLANET_SANPABLO_CLONE_URL}",
         "http://${BuildConfig.PLANET_URIUR_URL}" to "https://${BuildConfig.PLANET_URIUR_CLONE_URL}",
@@ -23,7 +21,8 @@ class ServerUrlMapper(private val context: Context, private val settings: Shared
     private fun extractBaseUrl(url: String): String? {
         return try {
             val uri = url.toUri()
-            "${uri.scheme}://${uri.host}${if (uri.port != -1) ":${uri.port}" else ""}"
+            val baseUrl = "${uri.scheme}://${uri.host}${if (uri.port != -1) ":${uri.port}" else ""}"
+            baseUrl
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -32,8 +31,13 @@ class ServerUrlMapper(private val context: Context, private val settings: Shared
 
     fun processUrl(url: String): UrlMapping {
         val extractedUrl = extractBaseUrl(url)
-        val alternativeUrl = extractedUrl?.let { serverMappings[it] }
-        return UrlMapping(url, alternativeUrl, extractedUrl)
+        val alternativeUrl = extractedUrl?.let { baseUrl ->
+            val mappedUrl = serverMappings[baseUrl]
+            mappedUrl
+        }
+
+        val result = UrlMapping(url, alternativeUrl, extractedUrl)
+        return result
     }
 
     fun updateUrlPreferences(editor: SharedPreferences.Editor, uri: Uri, alternativeUrl: String, url: String, settings: SharedPreferences) {
@@ -73,10 +77,11 @@ class ServerUrlMapper(private val context: Context, private val settings: Shared
         val defaultInfo = arrayOf("", "")
         val info = uri.userInfo?.split(":")?.dropLastWhile { it.isEmpty() }?.toTypedArray()
 
-        return if ((info?.size ?: 0) > 1) {
+        val result = if ((info?.size ?: 0) > 1) {
             arrayOf(info!![0], info[1])
         } else {
             defaultInfo
         }
+        return result
     }
 }

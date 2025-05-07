@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
 import android.widget.ArrayAdapter
+import android.widget.EditText
 import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
@@ -63,6 +64,9 @@ class AddResourceActivity : AppCompatActivity() {
     }
 
     private fun initializeViews() {
+        val etYear = findViewById<EditText>(R.id.et_year)
+        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+        etYear.setText(currentYear.toString())
         activityAddResourceBinding.fileUrl.text = getString(R.string.file, resourceUrl)
         activityAddResourceBinding.tvAddedBy.text = userModel?.name
         activityAddResourceBinding.tvLevels.setOnClickListener { view: View ->

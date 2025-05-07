@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.team
 
 import android.content.Context
 import android.content.DialogInterface
-import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.Typeface
 import android.os.Bundle
@@ -11,7 +10,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
@@ -31,8 +29,9 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
     private lateinit var itemTeamListBinding: ItemTeamListBinding
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
-    private var filteredList: List<RealmMyTeam> = list.filter { it.status!!.isNotEmpty() }
+    private var filteredList: List<RealmMyTeam> = emptyList()
     private lateinit var prefData: SharedPrefManager
+
     interface OnClickTeamItem {
         fun onEditTeam(team: RealmMyTeam?)
     }
@@ -45,6 +44,10 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         itemTeamListBinding = ItemTeamListBinding.inflate(LayoutInflater.from(context), parent, false)
         prefData = SharedPrefManager(context)
         return ViewHolderTeam(itemTeamListBinding)
+    }
+
+    init {
+        updateList()
     }
 
     override fun onBindViewHolder(holder: ViewHolderTeam, position: Int) {
@@ -86,7 +89,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
             }
 
             joinLeave.setOnClickListener {
-                handleJoinLeaveClick(isMyTeam, team, user, position)
+                handleJoinLeaveClick(isMyTeam, team, user)
             }
         }
     }
@@ -142,7 +145,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         }
     }
 
-    private fun handleJoinLeaveClick(isMyTeam: Boolean, team: RealmMyTeam, user: RealmUserModel?, position: Int) {
+    private fun handleJoinLeaveClick(isMyTeam: Boolean, team: RealmMyTeam, user: RealmUserModel?) {
         if (isMyTeam) {
             if (RealmMyTeam.isTeamLeader(team._id, user?.id, mRealm)) {
                 teamListener?.onEditTeam(team)
@@ -160,7 +163,19 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
     }
 
     private fun updateList() {
-        filteredList = list.filter { it.status!!.isNotEmpty() }
+        val user: RealmUserModel? = UserProfileDbHandler(context).userModel
+        val userId = user?.id
+
+        val validTeams = list.filter { it.status?.isNotEmpty() == true }
+        filteredList = validTeams.sortedWith(compareByDescending<RealmMyTeam> { team ->
+            when {
+                userId != null && RealmMyTeam.isTeamLeader(team._id, userId, mRealm) -> 3
+                team.isMyTeam(userId, mRealm) -> 2
+                else -> 1
+            }
+        }.thenByDescending { team ->
+            RealmTeamLog.getVisitByTeam(mRealm, team._id)
+        })
         notifyDataSetChanged()
     }
 

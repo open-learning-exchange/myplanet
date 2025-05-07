@@ -91,7 +91,7 @@
     <string name="published_by">Waxaa daabacay:</string>
     <string name="author">Qoraaga:</string>
     <string name="language_with_colon">Luuqad:</string>
-    <string name="subject">Mawduuc(s):</string>
+    <string name="subject">Mawduuc(s)*:</string>
     <string name="license">Shatiga:</string>
     <string name="type">Nooca:</string>
     <string name="resource_colon">Ilaha:</string>
@@ -125,7 +125,7 @@
     <string name="menu_achievement">Guulaha</string>
     <string name="edit_achievement">Wax ka beddel guulaha</string>
     <string name="add_resources">Kudar Khayraadka</string>
-    <string name="description">Sharaxaad</string>
+    <string name="description">Sharaxaad *</string>
     <string name="title_asterisk">Cuqaal *</string>
     <string name="name_asterisk">Magaca *</string>
     <string name="relationship">Xiriirka</string>
@@ -138,7 +138,7 @@
     <string name="show_filter">Show Filter</string>
     <string name="subjects">Mawduucyo</string>
     <string name="mediums">Mediums</string>
-    <string name="levels">Heerarka</string>
+    <string name="levels">Heerarka*</string>
     <string name="languages">Luqadaha</string>
     <string name="txt_myLife">Nolosheyda</string>
     <string name="achievements">Dhamaanada</string>
@@ -1265,9 +1265,37 @@
     <string name="no_resources_to_download">Ma jiro ilo la soo dejiyo</string>
     <string name="response">Jawaab</string>
     <string name="full_conversation_response">Jawaabta wada hadalka oo dhameystiran</string>
-    <string name="add_new_event">ku dar dhacdo cusub</string>
+    <string name="add_new_event">+ Dhacdo cusub</string>
     <string name="none">Midna</string>
+    <string name="remind_later">पछि सम्झाउनुहोस्</string>
+    <string name="remind_me_later">मलाई पछि सम्झाउनुहोस्</string>
+    <string name="remind_me_in">मलाई यसमा सम्झाउनुहोस्:</string>
+    <string name="minutes">मिनेटहरू</string>
+    <string name="days">दिनहरू</string>
+    <string name="set_reminder">रिमाइन्डर सेट गर्नुहोस्</string>
+    <string name="reminder_set_for">अहिलेबाट %1$s को लागि रिमाइन्डर सेट गरियो</string>
+    <string name="reminder_surveys_to_complete">रिमाइन्डर: तपाईंसँग %1$d %2$s पूरा गर्न बाँकी छ</string>
+
+    <plurals name="minutes">
+        <item quantity="one">%d मिनेट</item>
+        <item quantity="other">%d मिनेटहरू</item>
+    </plurals>
+
+    <plurals name="hours">
+        <item quantity="one">%d घण्टा</item>
+        <item quantity="other">%d घण्टाहरू</item>
+    </plurals>
+
+    <plurals name="days">
+        <item quantity="one">%d दिन</item>
+        <item quantity="other">%d दिनहरू</item>
+    </plurals>
+
     <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">Xogtaada caafimaadka waxay halkan ka muuqan doontaa markaad sii waddo la socodka</string>
     <string name="no_health_records_available">Ma jiraan diiwaanada caafimaadka ee la heli karo</string>
+    <string name="permission_required">Ogolaanshaha ayaa loo baahan yahay</string>
+    <string name="microphone_permission_required">Ogolaanshaha makarafoonka ayaa loo baahan yahay si loo duubo codka Fadlan awood u geli goobaha abka</string>
+    <string name="confirm_share_community">Ma hubtaa inaad rabto inaad la wadaagto macluumaadkan bulshada?</string>
+    <string name="camera_permission_required">ogolaanshaha kamarada ayaa loo baahan yahay. Fadlan awood u geli goobaha abka</string>
 
 </resources>

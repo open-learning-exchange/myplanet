@@ -13,8 +13,8 @@ object ApiClient {
     @JvmStatic
     val client: Retrofit?
         get() {
-            val client = OkHttpClient.Builder().connectTimeout(1, TimeUnit.MINUTES)
-                .readTimeout(30, TimeUnit.SECONDS).writeTimeout(30, TimeUnit.SECONDS).build()
+            val client = OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS).writeTimeout(10, TimeUnit.SECONDS).build()
             if (retrofit == null) {
                 retrofit = Retrofit.Builder()
                     .baseUrl(BASE_URL).client(client).addConverterFactory(
