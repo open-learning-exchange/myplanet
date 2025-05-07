@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.datamanager
 
-import android.util.Log
 import com.google.gson.GsonBuilder
 import okhttp3.OkHttpClient
 import retrofit2.Response
@@ -22,42 +21,30 @@ object ApiClient {
                 .readTimeout(10, TimeUnit.SECONDS).writeTimeout(10, TimeUnit.SECONDS).build()
             if (retrofit == null) {
                 retrofit = Retrofit.Builder()
-                    .baseUrl(BASE_URL).client(httpClient).addConverterFactory(
-                        GsonConverterFactory.create(
-                            GsonBuilder()
-                                .excludeFieldsWithModifiers(Modifier.FINAL, Modifier.TRANSIENT, Modifier.STATIC)
-                                .serializeNulls().create()
-                        )
-                    ).build()
+                    .baseUrl(BASE_URL).client(httpClient)
+                    .addConverterFactory(GsonConverterFactory.create(GsonBuilder()
+                        .excludeFieldsWithModifiers(Modifier.FINAL, Modifier.TRANSIENT, Modifier.STATIC)
+                        .serializeNulls().create())).build()
             }
             return retrofit
         }
 
     fun getEnhancedClient(): ApiInterface {
-        val httpClient = OkHttpClient.Builder()
-            .connectTimeout(60, TimeUnit.SECONDS)    // Increased from 10 to 60 seconds
-            .readTimeout(120, TimeUnit.SECONDS)      // Increased from 10 to 120 seconds
-            .writeTimeout(60, TimeUnit.SECONDS)      // Increased from 10 to 60 seconds
-            .build()
+        val httpClient = OkHttpClient.Builder().connectTimeout(60, TimeUnit.SECONDS).readTimeout(120, TimeUnit.SECONDS).writeTimeout(60, TimeUnit.SECONDS).build()
 
-        // Create a new Retrofit instance with the enhanced client
         val enhancedRetrofit = Retrofit.Builder()
-            .baseUrl(BASE_URL)  // Use the constant directly
+            .baseUrl(BASE_URL)
             .client(httpClient)
             .addConverterFactory(
-                GsonConverterFactory.create(
-                    GsonBuilder()
-                        .excludeFieldsWithModifiers(Modifier.FINAL, Modifier.TRANSIENT, Modifier.STATIC)
-                        .serializeNulls().create()
+                GsonConverterFactory.create(GsonBuilder()
+                    .excludeFieldsWithModifiers(Modifier.FINAL, Modifier.TRANSIENT, Modifier.STATIC)
+                    .serializeNulls().create()
                 )
             ).build()
 
         return enhancedRetrofit.create(ApiInterface::class.java)
     }
 
-    /**
-     * Execute a network operation with retry logic
-     */
     fun <T> executeWithRetry(operation: () -> Response<T>?): Response<T>? {
         var retryCount = 0
         var response: Response<T>? = null
@@ -67,35 +54,25 @@ object ApiClient {
             try {
                 response = operation()
                 if (response?.isSuccessful == false) {
-                    Log.e("SYNC", "Request failed with code ${response.code()}")
                     if (retryCount < 2) {
-                        response = null // Force retry
+                        response = null
                     }
                 }
             } catch (e: SocketTimeoutException) {
                 lastException = e
-                Log.e("SYNC", "Timeout on attempt $retryCount: ${e.message}")
             } catch (e: IOException) {
                 lastException = e
-                Log.e("SYNC", "IO error on attempt $retryCount: ${e.message}")
             } catch (e: Exception) {
                 lastException = e
-                Log.e("SYNC", "Error on attempt $retryCount: ${e.message}")
             }
 
             if (response == null && retryCount < 2) {
                 retryCount++
-                // Exponential backoff before retry
                 val sleepTime = (2000L * (retryCount + 1))
-                Log.d("SYNC", "Retrying request in ${sleepTime}ms (attempt ${retryCount + 1})")
                 Thread.sleep(sleepTime)
             } else {
                 break
             }
-        }
-
-        if (response == null && lastException != null) {
-            Log.e("SYNC", "All retry attempts failed", lastException)
         }
 
         return response

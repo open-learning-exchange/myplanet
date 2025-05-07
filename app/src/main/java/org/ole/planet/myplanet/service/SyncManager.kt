@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.wifi.SupplicantState
 import android.net.wifi.WifiManager
-import android.text.TextUtils
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import com.google.gson.Gson
@@ -16,8 +15,6 @@ import kotlinx.coroutines.*
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.datamanager.ApiClient.client
-import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.ManagerSync
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
@@ -28,23 +25,19 @@ import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.removeDeletedResou
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.save
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
 import org.ole.planet.myplanet.model.RealmResourceActivity.Companion.onSynced
-import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.Constants.ShelfData
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancel
 import org.ole.planet.myplanet.utilities.NotificationUtil.create
 import org.ole.planet.myplanet.utilities.Utilities
-import java.io.IOException
 import java.util.Date
 import kotlin.system.measureTimeMillis
 import androidx.core.content.edit
 import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
-import org.ole.planet.myplanet.utilities.SyncTimeLogger
 
 class SyncManager private constructor(private val context: Context) {
     private var td: Thread? = null
@@ -52,7 +45,6 @@ class SyncManager private constructor(private val context: Context) {
     lateinit var mRealm: Realm
     private var isSyncing = false
     private val stringArray = arrayOfNulls<String>(4)
-    private var shelfDoc: Rows? = null
     private var listener: SyncListener? = null
     private val dbService: DatabaseService = DatabaseService(context)
     private var backgroundSync: Job? = null
@@ -107,110 +99,36 @@ class SyncManager private constructor(private val context: Context) {
 
     private fun startFullSync() {
         try {
-            val logger = SyncTimeLogger.getInstance()
-            logger.startLogging()
-
             initializeSync()
-
             runBlocking {
                 val syncJobs = listOf(
-                    async {
-                        logger.startProcess("tablet_users_sync")
-                        TransactionSyncManager.syncDb(mRealm, "tablet_users")
-                        logger.endProcess("tablet_users_sync")
-                          },
-                    async {
-                        logger.startProcess("library_sync")
-                        myLibraryTransactionSync()
-                        logger.endProcess("library_sync")
-                          },
-                    async { logger.startProcess("courses_sync")
-                        TransactionSyncManager.syncDb(mRealm, "courses")
-                          logger.endProcess("courses_sync")
-                          },
-                    async { logger.startProcess("exams_sync")
-                        TransactionSyncManager.syncDb(mRealm, "exams")
-                          logger.endProcess("exams_sync")
-                          },
-                    async { logger.startProcess("ratings_sync")
-                        TransactionSyncManager.syncDb(mRealm, "ratings")
-                          logger.endProcess("ratings_sync")
-                          },
-                    async { logger.startProcess("courses_progress_sync")
-                        TransactionSyncManager.syncDb(mRealm, "courses_progress")
-                          logger.endProcess("courses_progress_sync")
-                          },
-                    async { logger.startProcess("achievements_sync")
-                        TransactionSyncManager.syncDb(mRealm, "achievements")
-                          logger.endProcess("achievements_sync")
-                          },
-                    async { logger.startProcess("tags_sync")
-                        TransactionSyncManager.syncDb(mRealm, "tags")
-                          logger.endProcess("tags_sync")
-                          },
-                    async { logger.startProcess("submissions_sync")
-                        TransactionSyncManager.syncDb(mRealm, "submissions")
-                          logger.endProcess("submissions_sync")
-                          },
-                    async { logger.startProcess("news_sync")
-                        TransactionSyncManager.syncDb(mRealm, "news")
-                          logger.endProcess("news_sync")
-                          },
-                    async { logger.startProcess("feedback_sync")
-                        TransactionSyncManager.syncDb(mRealm, "feedback")
-                          logger.endProcess("feedback_sync")
-                          },
-                    async { logger.startProcess("teams_sync")
-                        TransactionSyncManager.syncDb(mRealm, "teams")
-                          logger.endProcess("teams_sync")
-                          },
-                    async { logger.startProcess("tasks_sync")
-                        TransactionSyncManager.syncDb(mRealm, "tasks")
-                          logger.endProcess("tasks_sync")
-                          },
-                    async { logger.startProcess("login_activities_sync")
-                        TransactionSyncManager.syncDb(mRealm, "login_activities")
-                          logger.endProcess("login_activities_sync")
-                          },
-                    async { logger.startProcess("meetups_sync")
-                        TransactionSyncManager.syncDb(mRealm, "meetups")
-                          logger.endProcess("meetups_sync")
-                          },
-                    async { logger.startProcess("health_sync")
-                        TransactionSyncManager.syncDb(mRealm, "health")
-                          logger.endProcess("health_sync")
-                          },
-                    async { logger.startProcess("certifications_sync")
-                        TransactionSyncManager.syncDb(mRealm, "certifications")
-                          logger.endProcess("certifications_sync")
-                          },
-                    async { logger.startProcess("team_activities_sync")
-                        TransactionSyncManager.syncDb(mRealm, "team_activities")
-                          logger.endProcess("team_activities_sync")
-                          },
-                    async { logger.startProcess("chat_history_sync")
-                        TransactionSyncManager.syncDb(mRealm, "chat_history")
-                        logger.endProcess("chat_history_sync")
-                         }
+                    async { TransactionSyncManager.syncDb(mRealm, "tablet_users") },
+                    async { myLibraryTransactionSync() },
+                    async { TransactionSyncManager.syncDb(mRealm, "courses") },
+                    async { TransactionSyncManager.syncDb(mRealm, "exams") },
+                    async { TransactionSyncManager.syncDb(mRealm, "ratings") },
+                    async { TransactionSyncManager.syncDb(mRealm, "courses_progress") },
+                    async { TransactionSyncManager.syncDb(mRealm, "achievements") },
+                    async { TransactionSyncManager.syncDb(mRealm, "tags") },
+                    async { TransactionSyncManager.syncDb(mRealm, "submissions") },
+                    async { TransactionSyncManager.syncDb(mRealm, "news") },
+                    async { TransactionSyncManager.syncDb(mRealm, "feedback") },
+                    async { TransactionSyncManager.syncDb(mRealm, "teams") },
+                    async { TransactionSyncManager.syncDb(mRealm, "tasks") },
+                    async { TransactionSyncManager.syncDb(mRealm, "login_activities") },
+                    async { TransactionSyncManager.syncDb(mRealm, "meetups") },
+                    async { TransactionSyncManager.syncDb(mRealm, "health") },
+                    async { TransactionSyncManager.syncDb(mRealm, "certifications") },
+                    async { TransactionSyncManager.syncDb(mRealm, "team_activities") },
+                    async { TransactionSyncManager.syncDb(mRealm, "chat_history") }
                 )
-
                 syncJobs.awaitAll()
             }
 
-            logger.startProcess("admin_sync")
             ManagerSync.instance?.syncAdmin()
-            logger.endProcess("admin_sync")
-
-            logger.startProcess("resource_sync")
             resourceTransactionSync()
-            logger.endProcess("resource_sync")
-
-            logger.startProcess("on_synced")
             onSynced(mRealm, settings)
-            logger.endProcess("on_synced")
             mRealm.close()
-
-            logger.stopLogging()
         } catch (err: Exception) {
             err.printStackTrace()
             handleException(err.message)
@@ -361,12 +279,9 @@ class SyncManager private constructor(private val context: Context) {
     }
 
     private fun resourceTransactionSync(backgroundRealm: Realm? = null) {
-        val logger = SyncTimeLogger.getInstance()
-        logger.startProcess("resource_sync")
         var processedItems = 0
 
         try {
-            // Get enhanced API client with longer timeouts
             val apiInterface = ApiClient.getEnhancedClient()
             val realmInstance = backgroundRealm ?: mRealm
             val newIds: MutableList<String?> = ArrayList()
@@ -502,64 +417,12 @@ class SyncManager private constructor(private val context: Context) {
                 Log.e("SYNC", "Error removing deleted resources: ${e.message}")
             }
 
-            logger.endProcess("resource_sync", processedItems)
         } catch (e: Exception) {
             Log.e("SYNC", "Error in resourceTransactionSync: ${e.message}", e)
-            logger.endProcess("resource_sync", processedItems)
         }
-    }
-
-    @Throws(IOException::class)
-    private fun syncResourceThreadSafe(dbClient: ApiInterface?, backgroundRealm: Realm? = null) {
-        val realmInstance = backgroundRealm ?: mRealm
-        val newIds: MutableList<String?> = ArrayList()
-
-        // Get all resource documents
-        val allDocs = dbClient?.getJsonObject(
-            Utilities.header,
-            "${Utilities.getUrl()}/resources/_all_docs?include_doc=false"
-        )
-        val all = allDocs?.execute()
-        val rows = getJsonArray("rows", all?.body())
-
-        // Collect all keys first
-        val allKeys = mutableListOf<String>()
-        for (i in 0 until rows.size()) {
-            val `object` = rows[i].asJsonObject
-            if (!TextUtils.isEmpty(getString("id", `object`))) {
-                allKeys.add(getString("key", `object`))
-            }
-        }
-
-        // Process in larger batches (2000 instead of 1000)
-        val batchSize = 2000
-        allKeys.chunked(batchSize).forEach { keys ->
-            if (keys.isNotEmpty()) {
-                val obj = JsonObject()
-                obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
-
-                val response = dbClient?.findDocs(
-                    Utilities.header,
-                    "application/json",
-                    "${Utilities.getUrl()}/resources/_all_docs?include_docs=true",
-                    obj
-                )?.execute()
-
-                if (response?.body() != null) {
-                    // Save is called on the same thread that created the Realm instance
-                    val ids: List<String?> = save(getJsonArray("rows", response.body()), realmInstance)
-                    newIds.addAll(ids)
-                }
-            }
-        }
-
-        // Remove deleted resources
-        removeDeletedResource(newIds, realmInstance)
     }
 
     private fun myLibraryTransactionSync(backgroundRealm: Realm? = null) {
-        val logger = SyncTimeLogger.getInstance()
-        logger.startProcess("library_sync")
         var processedItems = 0
 
         try {
@@ -578,13 +441,12 @@ class SyncManager private constructor(private val context: Context) {
                 shelfResponse = it.body()
             }
 
-            if (shelfResponse?.rows == null || shelfResponse?.rows!!.isEmpty()) {
-                logger.endProcess("library_sync", 0)
+            if (shelfResponse?.rows == null || shelfResponse.rows?.isEmpty() == true) {
                 return
             }
 
             // Process each shelf
-            for (row in shelfResponse?.rows!!) {
+            for (row in shelfResponse.rows) {
                 val shelfId = row.id
 
                 // Get shelf document with all content types
@@ -692,244 +554,9 @@ class SyncManager private constructor(private val context: Context) {
             // Save concatenated links
             saveConcatenatedLinksToPrefs()
 
-            logger.endProcess("library_sync", processedItems)
         } catch (e: Exception) {
             Log.e("SYNC", "Error in myLibraryTransactionSync: ${e.message}", e)
-            logger.endProcess("library_sync", processedItems)
         }
-    }
-
-    private fun populateShelfItemsOptimized(apiInterface: ApiInterface?, realmInstance: Realm) {
-        try {
-            // Get the complete shelf document
-            val jsonDoc = apiInterface?.getJsonObject(
-                Utilities.header,
-                "${Utilities.getUrl()}/shelf/${shelfDoc?.id}"
-            )?.execute()?.body()
-
-            // Pre-fetch all documents that will be needed
-            val allIdsToFetch = mutableMapOf<String, MutableList<String>>()
-
-            // First pass - collect all IDs that need to be fetched, grouped by type
-            for (shelfData in Constants.shelfDataList) {
-                val array = getJsonArray(shelfData.key, jsonDoc)
-                if (array.size() > 0) {
-                    val ids = mutableListOf<String>()
-                    for (x in 0 until array.size()) {
-                        if (array[x] !is JsonNull) {
-                            ids.add(array[x].asString)
-                        }
-                    }
-                    if (ids.isNotEmpty()) {
-                        allIdsToFetch[shelfData.type] = ids
-                    }
-                }
-            }
-
-            // Second pass - fetch documents in batches for each type
-            for ((type, ids) in allIdsToFetch) {
-                // Process in batches of 100
-                val batchSize = 100
-                ids.chunked(batchSize).forEach { batch ->
-                    val obj = JsonObject()
-                    obj.add("keys", Gson().fromJson(Gson().toJson(batch), JsonArray::class.java))
-
-                    val response = apiInterface?.findDocs(
-                        Utilities.header,
-                        "application/json",
-                        "${Utilities.getUrl()}/$type/_all_docs?include_docs=true",
-                        obj
-                    )?.execute()
-
-                    if (response?.body() != null) {
-                        val rows = getJsonArray("rows", response.body())
-
-                        // Process all documents in one transaction
-                        realmInstance.executeTransaction { realm ->
-                            for (j in 0 until rows.size()) {
-                                val rowObj = rows[j].asJsonObject
-                                val doc = getJsonObject("doc", rowObj)
-
-                                // Set up string array for proper insertion
-                                stringArray[0] = shelfDoc?.id
-                                stringArray[1] = "" // Set appropriate category ID if needed
-                                stringArray[2] = type
-
-                                // Insert based on type
-                                when (type) {
-                                    "resources" -> insertMyLibrary(shelfDoc?.id, doc, realm)
-                                    "meetups" -> insert(realm, doc)
-                                    "courses" -> insertMyCourses(shelfDoc?.id, doc, realm)
-                                    "teams" -> insertMyTeams(doc, realm)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Save concatenated links
-            saveConcatenatedLinksToPrefs()
-
-        } catch (e: Exception) {
-            Log.e("SYNC", "Error in populateShelfItemsOptimized: ${e.message}", e)
-        }
-    }
-
-//    private fun resourceTransactionSync(backgroundRealm: Realm? = null) {
-//        val apiInterface = client?.create(ApiInterface::class.java)
-//        try {
-//            if (backgroundRealm != null) {
-//                syncResource(apiInterface, backgroundRealm)
-//            } else {
-//                syncResource(apiInterface)
-//            }
-//        } catch (e: IOException) {
-//            e.printStackTrace()
-//        }
-//    }
-
-    @Throws(IOException::class)
-    private fun syncResource(dbClient: ApiInterface?, backgroundRealm: Realm? = null) {
-        val realmInstance = backgroundRealm ?: mRealm
-        val newIds: MutableList<String?> = ArrayList()
-        val allDocs = dbClient?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?include_doc=false")
-        val all = allDocs?.execute()
-        val rows = getJsonArray("rows", all?.body())
-        val keys: MutableList<String> = ArrayList()
-        for (i in 0 until rows.size()) {
-            val `object` = rows[i].asJsonObject
-            if (!TextUtils.isEmpty(getString("id", `object`))) keys.add(getString("key", `object`))
-            if (i == rows.size() - 1 || keys.size == 1000) {
-                val obj = JsonObject()
-                obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
-                val response = dbClient?.findDocs(Utilities.header, "application/json", "${Utilities.getUrl()}/resources/_all_docs?include_docs=true", obj)?.execute()
-                if (response?.body() != null) {
-                    val ids: List<String?> = save(getJsonArray("rows", response.body()), realmInstance)
-                    newIds.addAll(ids)
-                }
-                keys.clear()
-            }
-        }
-        removeDeletedResource(newIds, realmInstance)
-    }
-
-//    private fun myLibraryTransactionSync(backgroundRealm: Realm? = null) {
-//        val apiInterface = client?.create(ApiInterface::class.java)
-//        try {
-//            val res = apiInterface?.getDocuments(Utilities.header, "${Utilities.getUrl()}/shelf/_all_docs")?.execute()?.body()
-//            for (i in res?.rows!!.indices) {
-//                shelfDoc = res.rows!![i]
-//                if (backgroundRealm != null) {
-//                    populateShelfItems(apiInterface, backgroundRealm)
-//                } else {
-//                    populateShelfItems(apiInterface)
-//                }
-//            }
-//        } catch (e: IOException) {
-//            e.printStackTrace()
-//        }
-//    }
-
-    private fun populateShelfItems(apiInterface: ApiInterface, backgroundRealm: Realm? = null) {
-        try {
-            val jsonDoc = apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/${shelfDoc?.id}").execute().body()
-            for (i in Constants.shelfDataList.indices) {
-                val shelfData = Constants.shelfDataList[i]
-                val array = getJsonArray(shelfData.key, jsonDoc)
-                if (backgroundRealm != null) {
-                    memberShelfData(array, shelfData, backgroundRealm)
-                } else {
-                    memberShelfData(array, shelfData)
-                }
-            }
-        } catch (err: Exception) {
-            err.printStackTrace()
-        }
-    }
-
-    private fun memberShelfData(array: JsonArray, shelfData: ShelfData, backgroundRealm: Realm? = null) {
-        if (array.size() > 0) {
-            triggerInsert(shelfData.categoryKey, shelfData.type)
-            if (backgroundRealm != null) {
-                check(array, backgroundRealm)
-            } else {
-                check(array)
-            }
-        }
-    }
-
-    private fun triggerInsert(categoryId: String, categoryDBName: String) {
-        stringArray[0] = shelfDoc?.id
-        stringArray[1] = categoryId
-        stringArray[2] = categoryDBName
-    }
-
-    private fun check(arrayCategoryIds: JsonArray, backgroundRealm: Realm? = null) {
-        for (x in 0 until arrayCategoryIds.size()) {
-            if (arrayCategoryIds[x] is JsonNull) {
-                continue
-            }
-            if (backgroundRealm != null) {
-                validateDocument(arrayCategoryIds, x, backgroundRealm)
-            } else {
-                validateDocument(arrayCategoryIds, x)
-            }
-        }
-    }
-
-    private fun validateDocument(arrayCategoryIds: JsonArray, x: Int, backgroundRealm: Realm? = null) {
-        val apiInterface = client?.create(ApiInterface::class.java)
-        try {
-            val resourceDoc = apiInterface?.getJsonObject(Utilities.header,  "${Utilities.getUrl()}/${stringArray[2]}/${arrayCategoryIds[x].asString}")?.execute()?.body()
-            if (backgroundRealm != null) {
-                resourceDoc?.let { triggerInsert(stringArray, it, backgroundRealm)}
-            } else {
-                resourceDoc?.let { triggerInsert(stringArray, it) }
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun triggerInsert(stringArray: Array<String?>, resourceDoc: JsonObject, backgroundRealm: Realm? = null) {
-        when (stringArray[2]) {
-            "resources" ->
-                if (backgroundRealm != null) {
-                    insertMyLibrary(stringArray[0], resourceDoc, backgroundRealm)
-                } else {
-                    insertMyLibrary(stringArray[0], resourceDoc, mRealm)
-                }
-
-            "meetups" ->
-                if (backgroundRealm != null) {
-                    insert(backgroundRealm, resourceDoc)
-                } else {
-                    insert(mRealm, resourceDoc)
-                }
-
-            "courses" -> {
-                if (backgroundRealm != null) {
-                    insertMyCourses(stringArray[0], resourceDoc, backgroundRealm)
-                } else {
-                    if (!mRealm.isInTransaction) {
-                        mRealm.beginTransaction()
-                    }
-                    insertMyCourses(stringArray[0], resourceDoc, mRealm)
-                    if (mRealm.isInTransaction) {
-                        mRealm.commitTransaction()
-                    }
-                }
-            }
-
-            "teams" ->
-                if (backgroundRealm != null) {
-                    insertMyTeams(resourceDoc, backgroundRealm)
-                } else {
-                    insertMyTeams(resourceDoc, mRealm)
-                }
-        }
-        saveConcatenatedLinksToPrefs()
     }
 
     companion object {
