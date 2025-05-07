@@ -23,8 +23,8 @@ object ApiClient {
                     .baseUrl(BASE_URL).client(client).addConverterFactory(
                         GsonConverterFactory.create(
                             GsonBuilder()
-                        .excludeFieldsWithModifiers(Modifier.FINAL, Modifier.TRANSIENT, Modifier.STATIC)
-                        .serializeNulls().create()
+                                .excludeFieldsWithModifiers(Modifier.FINAL, Modifier.TRANSIENT, Modifier.STATIC)
+                                .serializeNulls().create()
                         )
                     ).build()
             }
