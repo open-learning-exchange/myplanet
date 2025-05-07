@@ -13,18 +13,20 @@ import java.util.concurrent.TimeUnit
 object ApiClient {
     private const val BASE_URL = "https://vi.media.mit.edu/"
     private var retrofit: Retrofit? = null
-
     @JvmStatic
     val client: Retrofit?
         get() {
-            val httpClient = OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS)
+            val client = OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(10, TimeUnit.SECONDS).writeTimeout(10, TimeUnit.SECONDS).build()
             if (retrofit == null) {
                 retrofit = Retrofit.Builder()
-                    .baseUrl(BASE_URL).client(httpClient)
-                    .addConverterFactory(GsonConverterFactory.create(GsonBuilder()
+                    .baseUrl(BASE_URL).client(client).addConverterFactory(
+                        GsonConverterFactory.create(
+                            GsonBuilder()
                         .excludeFieldsWithModifiers(Modifier.FINAL, Modifier.TRANSIENT, Modifier.STATIC)
-                        .serializeNulls().create())).build()
+                        .serializeNulls().create()
+                        )
+                    ).build()
             }
             return retrofit
         }
