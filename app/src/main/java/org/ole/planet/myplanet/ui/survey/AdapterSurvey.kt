@@ -115,15 +115,6 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
             }
         }
 
-        val filteredParentIds = mRealm.where(RealmSubmission::class.java)
-            .isNotNull("membershipDoc").findAll()
-            .mapNotNull { submission ->
-                val parentJson = JSONObject(submission.parent ?: "{}")
-                parentJson.optString("_id")
-            }
-            .filter { it.isNotEmpty() }
-            .toSet()
-
         fun bind(exam: RealmStepExam) {
             binding.apply {
                 startSurvey.visibility = View.VISIBLE
@@ -133,18 +124,20 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
                     tvDescription.text = exam.description
                 }
                 startSurvey.setOnClickListener {
-                    val isSurveyAdopted = adoptedSurveyIds.contains(exam.id)
-                    if (isSurveyAdopted) {
-                        AdapterMySubmission.openSurvey(listener, exam.id, false, isTeam, teamId)
-                    } else if (exam.id !in filteredParentIds && exam.isTeamShareAllowed) {
+                    val isTeamSubmission = mRealm.where(RealmSubmission::class.java)
+                        .equalTo("parentId", exam.id).equalTo("membershipDoc.teamId", teamId)
+                        .findFirst() != null
+
+                    val shouldAdopt = exam.isTeamShareAllowed && !isTeamSubmission
+
+                    if (shouldAdopt) {
                         adoptSurvey(exam, teamId)
                     } else {
                         AdapterMySubmission.openSurvey(listener, exam.id, false, isTeam, teamId)
                     }
                 }
 
-                val questions = mRealm.where(RealmExamQuestion::class.java)
-                    .equalTo("examId", exam.id)
+                val questions = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam.id)
                     .findAll()
 
                 if (questions.isEmpty()) {
@@ -152,14 +145,16 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
                     startSurvey.visibility = View.GONE
                 }
 
-                if (adoptedSurveyIds.contains(exam.id)) {
-                    startSurvey.text = context.getString(R.string.record_survey)
-                } else {
-                    startSurvey.text = when {
-                        exam.id !in filteredParentIds && exam.isTeamShareAllowed -> context.getString(R.string.adopt_survey)
-                        exam.isFromNation -> context.getString(R.string.take_survey)
-                        else -> context.getString(R.string.record_survey)
-                    }
+                val isTeamSubmission = mRealm.where(RealmSubmission::class.java)
+                    .equalTo("parentId", exam.id).equalTo("membershipDoc.teamId", teamId)
+                    .findFirst() != null
+
+                val shouldShowAdopt = exam.isTeamShareAllowed && !isTeamSubmission
+
+                startSurvey.text = when {
+                    shouldShowAdopt -> context.getString(R.string.adopt_survey)
+                    exam.isFromNation -> context.getString(R.string.take_survey)
+                    else -> context.getString(R.string.record_survey)
                 }
 
                 if (userId?.startsWith("guest") == true) {
@@ -215,24 +210,34 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
                 "{}"
             }
 
-            mRealm.executeTransaction { realm ->
-                realm.createObject(RealmSubmission::class.java, UUID.randomUUID().toString()).apply {
-                    parentId = exam.id
-                    parent = parentJsonString
-                    userId = userModel?.id
-                    user = userJsonString
-                    type = "survey"
-                    status = ""
-                    uploaded = false
-                    source = planetCode ?: ""
-                    parentCode = sParentCode ?: ""
-                    startTime = System.currentTimeMillis()
-                    lastUpdateTime = System.currentTimeMillis()
-                    isUpdated = true
+            val adoptionId = "${UUID.randomUUID()}"
 
-                    if (isTeam && teamId != null) {
-                        membershipDoc = realm.createObject(RealmMembershipDoc::class.java).apply {
-                            this.teamId = teamId
+            mRealm.executeTransaction { realm ->
+                val existingAdoption = realm.where(RealmSubmission::class.java)
+                    .equalTo("userId", userModel?.id)
+                    .equalTo("parentId", exam.id)
+                    .equalTo("status", "")
+                    .findFirst()
+
+                if (existingAdoption == null) {
+                    realm.createObject(RealmSubmission::class.java, adoptionId).apply {
+                        parentId = exam.id
+                        parent = parentJsonString
+                        userId = userModel?.id
+                        user = userJsonString
+                        type = "survey"
+                        status = ""
+                        uploaded = false
+                        source = planetCode ?: ""
+                        parentCode = sParentCode ?: ""
+                        startTime = System.currentTimeMillis()
+                        lastUpdateTime = System.currentTimeMillis()
+                        isUpdated = true
+
+                        if (isTeam && teamId != null) {
+                            membershipDoc = realm.createObject(RealmMembershipDoc::class.java).apply {
+                                this.teamId = teamId
+                            }
                         }
                     }
                 }

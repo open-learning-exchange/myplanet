@@ -14,11 +14,13 @@ import com.google.gson.JsonObject
 import io.realm.RealmList
 import io.realm.RealmQuery
 import io.realm.Sort
+import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeExamBinding
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCertification.Companion.isCourseCertified
 import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -75,7 +77,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
     private fun createSubmission() {
         mRealm.executeTransaction { realm ->
-            sub = createSubmission(sub, realm)
+            sub = createSubmission(null, realm)
             if (!TextUtils.isEmpty(exam?.id)) {
                 sub?.parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
                     "${exam?.id}@${exam?.courseId}"
@@ -93,11 +95,32 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             sub?.status = "pending"
             sub?.type = type
             sub?.startTime = Date().time
-            if (sub?.answers != null) {
-                currentIndex = sub?.answers?.size ?: 0
+            sub?.lastUpdateTime = Date().time
+            if (sub?.answers == null) {
+                sub?.answers = RealmList()
             }
-            if (sub?.answers?.size == questions?.size && sub?.type == "survey") {
-                currentIndex = 0
+
+            currentIndex = 0
+            if (isTeam == true && teamId != null) {
+                sub?.team = teamId
+                val membershipDoc = realm.createObject(RealmMembershipDoc::class.java)
+                membershipDoc.teamId = teamId
+                sub?.membershipDoc = membershipDoc
+
+                val userModel = UserProfileDbHandler(requireActivity()).userModel
+
+                try {
+                    val userJson = JSONObject()
+                    userJson.put("age", userModel?.dob ?: "")
+                    userJson.put("gender", userModel?.gender ?: "")
+                    val membershipJson = JSONObject()
+                    membershipJson.put("teamId", teamId)
+                    userJson.put("membershipDoc", membershipJson)
+
+                    sub?.user = userJson.toString()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         }
     }
@@ -238,6 +261,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 }
             } else {
                 "pending"
+            }
+            if (isTeam == true) {
+                sub?.team = teamId
             }
             val list: RealmList<RealmAnswer>? = sub?.answers
             val answer = createAnswer(list)
