@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.util.Calendar
 import java.util.UUID
+import kotlin.toString
 
 class AddResourceActivity : AppCompatActivity() {
     private lateinit var activityAddResourceBinding: ActivityAddResourceBinding
@@ -141,6 +142,11 @@ class AddResourceActivity : AppCompatActivity() {
     private fun validate(title: String): Boolean {
         if (title.isEmpty()) {
             activityAddResourceBinding.tlTitle.error = getString(R.string.title_is_required)
+            return false
+        }
+        val description = activityAddResourceBinding.etDescription.text.toString().trim()
+        if (description.isEmpty()) {
+            activityAddResourceBinding.etDescription.error = getString(R.string.description_is_required)
             return false
         }
         if (levels?.isEmpty() == true) {
