@@ -87,26 +87,30 @@ object FileUtils {
 
     @JvmStatic
     fun getFileNameFromUrl(url: String?): String {
-        try {
-            if (url != null) {
-                val parts = url.split("/resources/${getIdFromUrl(url)}/")
-                return if (parts.size > 1) parts[1] else ""
-            }
+        return try {
+            if (url.isNullOrEmpty()) return ""
+            val id = getIdFromUrl(url)
+            if (id.isEmpty()) return ""
+            val parts = url.split("/resources/$id/")
+            if (parts.size > 1) parts[1] else ""
         } catch (e: Exception) {
             e.printStackTrace()
+            ""
         }
-        return ""
     }
 
     @JvmStatic
     fun getIdFromUrl(url: String?): String {
-        try {
-            val sp = url?.substring(url.indexOf("resources/"))?.split("/".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
-            return sp?.get(1) ?: ""
+        return try {
+            if (url.isNullOrEmpty()) return ""
+            val index = url.indexOf("resources/")
+            if (index == -1) return ""
+            val sp = url.substring(index).split("/").filter { it.isNotEmpty() }
+            sp.getOrNull(1) ?: ""
         } catch (e: Exception) {
             e.printStackTrace()
+            ""
         }
-        return ""
     }
 
     @JvmStatic

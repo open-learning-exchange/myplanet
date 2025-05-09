@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.wifi.SupplicantState
 import android.net.wifi.WifiManager
-import android.text.TextUtils
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import com.google.gson.Gson
@@ -16,8 +15,6 @@ import kotlinx.coroutines.*
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.datamanager.ApiClient.client
-import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.ManagerSync
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
@@ -28,19 +25,19 @@ import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.removeDeletedResou
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.save
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
 import org.ole.planet.myplanet.model.RealmResourceActivity.Companion.onSynced
-import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.Constants.ShelfData
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancel
 import org.ole.planet.myplanet.utilities.NotificationUtil.create
 import org.ole.planet.myplanet.utilities.Utilities
-import java.io.IOException
 import java.util.Date
 import kotlin.system.measureTimeMillis
 import androidx.core.content.edit
+import org.ole.planet.myplanet.datamanager.ApiClient
+import org.ole.planet.myplanet.model.DocumentResponse
+import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
 
 class SyncManager private constructor(private val context: Context) {
     private var td: Thread? = null
@@ -48,7 +45,6 @@ class SyncManager private constructor(private val context: Context) {
     lateinit var mRealm: Realm
     private var isSyncing = false
     private val stringArray = arrayOfNulls<String>(4)
-    private var shelfDoc: Rows? = null
     private var listener: SyncListener? = null
     private val dbService: DatabaseService = DatabaseService(context)
     private var backgroundSync: Job? = null
@@ -104,7 +100,6 @@ class SyncManager private constructor(private val context: Context) {
     private fun startFullSync() {
         try {
             initializeSync()
-
             runBlocking {
                 val syncJobs = listOf(
                     async { TransactionSyncManager.syncDb(mRealm, "tablet_users") },
@@ -127,7 +122,6 @@ class SyncManager private constructor(private val context: Context) {
                     async { TransactionSyncManager.syncDb(mRealm, "team_activities") },
                     async { TransactionSyncManager.syncDb(mRealm, "chat_history") }
                 )
-
                 syncJobs.awaitAll()
             }
 
@@ -285,159 +279,213 @@ class SyncManager private constructor(private val context: Context) {
     }
 
     private fun resourceTransactionSync(backgroundRealm: Realm? = null) {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        var processedItems = 0
+
         try {
-            if (backgroundRealm != null) {
-                syncResource(apiInterface, backgroundRealm)
-            } else {
-                syncResource(apiInterface)
+            val apiInterface = ApiClient.getEnhancedClient()
+            val realmInstance = backgroundRealm ?: mRealm
+            val newIds: MutableList<String?> = ArrayList()
+
+            var totalRows = 0
+            ApiClient.executeWithRetry {
+                apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?limit=0").execute()
+            }?.let { response ->
+                response.body()?.let { body ->
+                    if (body.has("total_rows")) {
+                        totalRows = body.get("total_rows").asInt
+                    }
+                }
             }
-        } catch (e: IOException) {
+
+            val batchSize = 200
+            var skip = 0
+
+            while (skip < totalRows || (totalRows == 0 && skip == 0)) {
+                try {
+                    var response: JsonObject? = null
+                    ApiClient.executeWithRetry {
+                        apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip").execute()
+                    }?.let {
+                        response = it.body()
+                    }
+
+                    if (response == null) {
+                        skip += batchSize
+                        continue
+                    }
+
+                    val rows = getJsonArray("rows", response)
+
+                    if (rows.size() == 0) {
+                        break
+                    }
+
+                    for (i in 0 until rows.size()) {
+                        val rowObj = rows[i].asJsonObject
+                        if (rowObj.has("doc")) {
+                            val doc = getJsonObject("doc", rowObj)
+                            val id = getString("_id", doc)
+
+                            if (!id.startsWith("_design")) {
+                                try {
+                                    realmInstance.beginTransaction()
+                                    val singleDocArray = JsonArray()
+                                    singleDocArray.add(doc)
+
+                                    val ids = save(singleDocArray, realmInstance)
+                                    if (ids.isNotEmpty()) {
+                                        newIds.addAll(ids)
+                                        processedItems++
+                                    }
+
+                                    if (realmInstance.isInTransaction) {
+                                        realmInstance.commitTransaction()
+                                    }
+                                } catch (e: Exception) {
+                                    if (realmInstance.isInTransaction) {
+                                        realmInstance.cancelTransaction()
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    skip += rows.size()
+
+                    val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                    settings.edit {
+                        putLong("ResourceLastSyncTime", System.currentTimeMillis())
+                        putInt("ResourceSyncPosition", skip)
+                    }
+
+                } catch (e: Exception) {
+                    skip += batchSize
+                }
+            }
+
+            try {
+                realmInstance.beginTransaction()
+                removeDeletedResource(newIds, realmInstance)
+
+                if (realmInstance.isInTransaction) {
+                    realmInstance.commitTransaction()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                if (realmInstance.isInTransaction) {
+                    realmInstance.cancelTransaction()
+                }
+            }
+
+        } catch (e: Exception) {
             e.printStackTrace()
         }
-    }
-
-    @Throws(IOException::class)
-    private fun syncResource(dbClient: ApiInterface?, backgroundRealm: Realm? = null) {
-        val realmInstance = backgroundRealm ?: mRealm
-        val newIds: MutableList<String?> = ArrayList()
-        val allDocs = dbClient?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?include_doc=false")
-        val all = allDocs?.execute()
-        val rows = getJsonArray("rows", all?.body())
-        val keys: MutableList<String> = ArrayList()
-        for (i in 0 until rows.size()) {
-            val `object` = rows[i].asJsonObject
-            if (!TextUtils.isEmpty(getString("id", `object`))) keys.add(getString("key", `object`))
-            if (i == rows.size() - 1 || keys.size == 1000) {
-                val obj = JsonObject()
-                obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
-                val response = dbClient?.findDocs(Utilities.header, "application/json", "${Utilities.getUrl()}/resources/_all_docs?include_docs=true", obj)?.execute()
-                if (response?.body() != null) {
-                    val ids: List<String?> = save(getJsonArray("rows", response.body()), realmInstance)
-                    newIds.addAll(ids)
-                }
-                keys.clear()
-            }
-        }
-        removeDeletedResource(newIds, realmInstance)
     }
 
     private fun myLibraryTransactionSync(backgroundRealm: Realm? = null) {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        var processedItems = 0
+
         try {
-            val res = apiInterface?.getDocuments(Utilities.header, "${Utilities.getUrl()}/shelf/_all_docs")?.execute()?.body()
-            for (i in res?.rows!!.indices) {
-                shelfDoc = res.rows!![i]
-                if (backgroundRealm != null) {
-                    populateShelfItems(apiInterface, backgroundRealm)
-                } else {
-                    populateShelfItems(apiInterface)
-                }
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-    }
+            val apiInterface = ApiClient.getEnhancedClient()
+            val realmInstance = backgroundRealm ?: mRealm
 
-    private fun populateShelfItems(apiInterface: ApiInterface, backgroundRealm: Realm? = null) {
-        try {
-            val jsonDoc = apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/${shelfDoc?.id}").execute().body()
-            for (i in Constants.shelfDataList.indices) {
-                val shelfData = Constants.shelfDataList[i]
-                val array = getJsonArray(shelfData.key, jsonDoc)
-                if (backgroundRealm != null) {
-                    memberShelfData(array, shelfData, backgroundRealm)
-                } else {
-                    memberShelfData(array, shelfData)
-                }
+            var shelfResponse: DocumentResponse? = null
+            ApiClient.executeWithRetry {
+                apiInterface.getDocuments(Utilities.header, "${Utilities.getUrl()}/shelf/_all_docs?include_docs=true").execute()
+            }?.let {
+                shelfResponse = it.body()
             }
-        } catch (err: Exception) {
-            err.printStackTrace()
-        }
-    }
 
-    private fun memberShelfData(array: JsonArray, shelfData: ShelfData, backgroundRealm: Realm? = null) {
-        if (array.size() > 0) {
-            triggerInsert(shelfData.categoryKey, shelfData.type)
-            if (backgroundRealm != null) {
-                check(array, backgroundRealm)
-            } else {
-                check(array)
+            if (shelfResponse?.rows == null || shelfResponse.rows?.isEmpty() == true) {
+                return
             }
-        }
-    }
 
-    private fun triggerInsert(categoryId: String, categoryDBName: String) {
-        stringArray[0] = shelfDoc?.id
-        stringArray[1] = categoryId
-        stringArray[2] = categoryDBName
-    }
+            for (row in shelfResponse.rows) {
+                val shelfId = row.id
 
-    private fun check(arrayCategoryIds: JsonArray, backgroundRealm: Realm? = null) {
-        for (x in 0 until arrayCategoryIds.size()) {
-            if (arrayCategoryIds[x] is JsonNull) {
-                continue
-            }
-            if (backgroundRealm != null) {
-                validateDocument(arrayCategoryIds, x, backgroundRealm)
-            } else {
-                validateDocument(arrayCategoryIds, x)
-            }
-        }
-    }
-
-    private fun validateDocument(arrayCategoryIds: JsonArray, x: Int, backgroundRealm: Realm? = null) {
-        val apiInterface = client?.create(ApiInterface::class.java)
-        try {
-            val resourceDoc = apiInterface?.getJsonObject(Utilities.header,  "${Utilities.getUrl()}/${stringArray[2]}/${arrayCategoryIds[x].asString}")?.execute()?.body()
-            if (backgroundRealm != null) {
-                resourceDoc?.let { triggerInsert(stringArray, it, backgroundRealm)}
-            } else {
-                resourceDoc?.let { triggerInsert(stringArray, it) }
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun triggerInsert(stringArray: Array<String?>, resourceDoc: JsonObject, backgroundRealm: Realm? = null) {
-        when (stringArray[2]) {
-            "resources" ->
-                if (backgroundRealm != null) {
-                    insertMyLibrary(stringArray[0], resourceDoc, backgroundRealm)
-                } else {
-                    insertMyLibrary(stringArray[0], resourceDoc, mRealm)
+                var shelfDoc: JsonObject? = null
+                ApiClient.executeWithRetry {
+                    apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/$shelfId").execute()
+                }?.let {
+                    shelfDoc = it.body()
                 }
 
-            "meetups" ->
-                if (backgroundRealm != null) {
-                    insert(backgroundRealm, resourceDoc)
-                } else {
-                    insert(mRealm, resourceDoc)
-                }
+                if (shelfDoc == null) continue
 
-            "courses" -> {
-                if (backgroundRealm != null) {
-                    insertMyCourses(stringArray[0], resourceDoc, backgroundRealm)
-                } else {
-                    if (!mRealm.isInTransaction) {
-                        mRealm.beginTransaction()
+                for (shelfData in Constants.shelfDataList) {
+                    val array = getJsonArray(shelfData.key, shelfDoc)
+                    if (array.size() == 0) continue
+
+                    stringArray[0] = shelfId
+                    stringArray[1] = shelfData.categoryKey
+                    stringArray[2] = shelfData.type
+
+                    val validIds = mutableListOf<String>()
+                    for (i in 0 until array.size()) {
+                        if (array[i] !is JsonNull) {
+                            validIds.add(array[i].asString)
+                        }
                     }
-                    insertMyCourses(stringArray[0], resourceDoc, mRealm)
-                    if (mRealm.isInTransaction) {
-                        mRealm.commitTransaction()
+
+                    if (validIds.isEmpty()) continue
+                    val batchSize = 50
+
+                    for (i in 0 until validIds.size step batchSize) {
+                        val end = minOf(i + batchSize, validIds.size)
+                        val batch = validIds.subList(i, end)
+
+                        try {
+                            val keysObject = JsonObject()
+                            keysObject.add("keys", Gson().fromJson(Gson().toJson(batch), JsonArray::class.java))
+
+                            var response: JsonObject? = null
+                            ApiClient.executeWithRetry {
+                                apiInterface.findDocs(Utilities.header, "application/json", "${Utilities.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject).execute()
+                            }?.let {
+                                response = it.body()
+                            }
+
+                            if (response == null) continue
+
+                            val rows = getJsonArray("rows", response)
+
+                            for (j in 0 until rows.size()) {
+                                val rowObj = rows[j].asJsonObject
+                                if (rowObj.has("doc")) {
+                                    val doc = getJsonObject("doc", rowObj)
+
+                                    try {
+                                        realmInstance.beginTransaction()
+                                        when (shelfData.type) {
+                                            "resources" -> insertMyLibrary(shelfId, doc, realmInstance)
+                                            "meetups" -> insert(realmInstance, doc)
+                                            "courses" -> insertMyCourses(shelfId, doc, realmInstance)
+                                            "teams" -> insertMyTeams(doc, realmInstance)
+                                        }
+
+                                        if (realmInstance.isInTransaction) {
+                                            realmInstance.commitTransaction()
+                                            processedItems++
+                                        }
+                                    } catch (e: Exception) {
+                                        if (realmInstance.isInTransaction) {
+                                            realmInstance.cancelTransaction()
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
                     }
                 }
             }
 
-            "teams" ->
-                if (backgroundRealm != null) {
-                    insertMyTeams(resourceDoc, backgroundRealm)
-                } else {
-                    insertMyTeams(resourceDoc, mRealm)
-                }
+            saveConcatenatedLinksToPrefs()
+
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-        saveConcatenatedLinksToPrefs()
     }
 
     companion object {
