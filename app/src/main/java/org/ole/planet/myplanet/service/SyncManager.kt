@@ -89,7 +89,7 @@ class SyncManager private constructor(private val context: Context) {
     }
 
     private fun startSync(type: String) {
-        val isFastSync = settings.getBoolean("fastSync", true)
+        val isFastSync = settings.getBoolean("fastSync", false)
         if (!isFastSync || type == "upload") {
             startFullSync()
         } else {
