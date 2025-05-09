@@ -416,8 +416,9 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         map["replyTo"] = news?.id ?: ""
         map["messageType"] = news?.messageType ?: ""
         map["messagePlanetCode"] = news?.messagePlanetCode ?: ""
+        map["viewIn"] = news?.viewIn ?: ""
 
-        currentUser?.let { createNews(map, mRealm, it, imageList) }
+        currentUser?.let { createNews(map, mRealm, it, imageList, true) }
         notifyDataSetChanged()
         listener?.clearImages()
     }

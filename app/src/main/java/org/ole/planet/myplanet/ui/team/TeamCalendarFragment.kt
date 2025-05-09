@@ -281,6 +281,10 @@ class TeamCalendarFragment : BaseTeamFragment() {
 
         dialog.setOnDismissListener {
             eventDates.add(clickedCalendar)
+            lifecycleScope.launch(Dispatchers.Main) {
+                fragmentEnterpriseCalendarBinding.calendarView.selectedDates = emptyList()
+                fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates.toList()
+            }
             fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
         }
 
@@ -293,6 +297,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         }
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             var meetupList = mutableListOf<RealmMeetup>()
+            val newDates = mutableListOf<Calendar>()
             val realm = Realm.getDefaultInstance()
             try {
                 meetupList = realm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
@@ -301,7 +306,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 for (meetup in meetupList) {
                     val startDateMillis = meetup.startDate
                     calendarInstance.timeInMillis = startDateMillis
-                    eventDates.add(calendarInstance.clone() as Calendar)
+                    newDates.add(calendarInstance.clone() as Calendar)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -310,7 +315,9 @@ class TeamCalendarFragment : BaseTeamFragment() {
             }
             withContext(Dispatchers.Main) {
                 if (isAdded && activity != null) {
-                    fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
+                    eventDates.clear()
+                    eventDates.addAll(newDates)
+                    fragmentEnterpriseCalendarBinding.calendarView.selectedDates = ArrayList(newDates)
                 }
             }
         }
