@@ -105,7 +105,7 @@ class UserProfileFragment : Fragment() {
             if (isGranted) {
                 takePhoto()
             } else {
-                if (!shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)) {
+                if (!shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
                     AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
                         .setTitle(R.string.permission_required)
                         .setMessage(R.string.camera_permission_required)
