@@ -299,7 +299,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             btnArchive.visibility = View.GONE
         } else {
             val allMyCourses = adapterCourses.getCourseList().all { it?.isMyCourse == true }
-            selectAll.visibility = if (allMyCourses) View.GONE else View.VISIBLE
+            if (userModel?.isGuest() == false) {
+                selectAll.visibility = if (allMyCourses) View.GONE else View.VISIBLE
+            }
         }
     }
 

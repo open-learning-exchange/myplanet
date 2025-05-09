@@ -34,4 +34,5 @@
     <dimen name="_1000dp">1000dp</dimen>
     <dimen name="dialog_min_width_major">65%</dimen>
     <dimen name="dialog_min_width_minor">95%</dimen>
+    <dimen name="survey_radio_text_size">12sp</dimen>
 </resources>

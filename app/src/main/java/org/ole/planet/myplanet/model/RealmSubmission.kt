@@ -38,6 +38,7 @@ open class RealmSubmission : RealmObject() {
     var startTime: Long = 0
     var lastUpdateTime: Long = 0
     var answers: RealmList<RealmAnswer>? = null
+    var team: String? = null
     var grade: Long = 0
     var status: String? = null
     var uploaded = false
@@ -84,6 +85,7 @@ open class RealmSubmission : RealmObject() {
                 sub?.parentCode = JsonUtils.getString("parentCode", submission)
                 sub?.parent = Gson().toJson(JsonUtils.getJsonObject("parent", submission))
                 sub?.user = Gson().toJson(JsonUtils.getJsonObject("user", submission))
+                sub.team = JsonUtils.getString("team", submission)
 
                 val userJson = JsonUtils.getJsonObject("user", submission)
                 if (userJson.has("membershipDoc")) {
@@ -101,6 +103,7 @@ open class RealmSubmission : RealmObject() {
                     JsonUtils.getString("type", submission),
                     JsonUtils.getString("status", submission),
                     JsonUtils.getString("grade", submission),
+                    JsonUtils.getString("team", submission),
                     JsonUtils.getString("startTime", submission),
                     JsonUtils.getString("lastUpdateTime", submission),
                     JsonUtils.getString("sender", submission),
@@ -164,6 +167,7 @@ open class RealmSubmission : RealmObject() {
             }
             `object`.addProperty("parentId", sub.parentId)
             `object`.addProperty("type", sub.type)
+            `object`.addProperty("team", sub.team)
             `object`.addProperty("grade", sub.grade)
             `object`.addProperty("startTime", sub.startTime)
             `object`.addProperty("lastUpdateTime", sub.lastUpdateTime)
@@ -308,6 +312,7 @@ open class RealmSubmission : RealmObject() {
                 jsonObject.addProperty("type", submission.type ?: "survey")
                 jsonObject.addProperty("userId", submission.userId ?: "")
                 jsonObject.addProperty("status", submission.status ?: "pending")
+                jsonObject.addProperty("team", submission.team ?: "")
                 jsonObject.addProperty("uploaded", submission.uploaded)
                 jsonObject.addProperty("sender", submission.sender ?: "")
                 jsonObject.addProperty("source", submission.source ?: "")

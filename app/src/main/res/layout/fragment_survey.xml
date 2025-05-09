@@ -34,7 +34,7 @@
                 android:paddingVertical="3dp"
                 android:text="Team surveys"
                 android:textColor="@color/toggle_text_color"
-                android:textSize="18sp" />
+                android:textSize="@dimen/survey_radio_text_size" />
             <RadioButton
                 android:id="@+id/rbAdoptSurvey"
                 android:layout_width="wrap_content"
@@ -47,7 +47,7 @@
                 android:paddingVertical="3dp"
                 android:text="Adopt a survey"
                 android:textColor="@color/toggle_text_color"
-                android:textSize="18sp" />
+                android:textSize="@dimen/survey_radio_text_size" />
         </RadioGroup>
 
         <LinearLayout

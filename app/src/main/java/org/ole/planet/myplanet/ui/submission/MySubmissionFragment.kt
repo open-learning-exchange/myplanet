@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmQuery
+import io.realm.Sort
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -31,6 +32,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     var exams: HashMap<String?, RealmStepExam>? = null
     private var submissions: List<RealmSubmission>? = null
     var user: RealmUserModel? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) type = requireArguments().getString("type")
@@ -86,21 +88,44 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     }
 
     private fun setData(s: String) {
-        val q: RealmQuery<*>? = when (type) {
-            "survey" -> mRealm.where(RealmSubmission::class.java).equalTo("userId", user?.id)
+        val q: RealmQuery<RealmSubmission>? = when (type) {
+            "survey" -> mRealm.where(RealmSubmission::class.java)
+                .equalTo("userId", user?.id)
                 .equalTo("type", "survey")
-            "survey_submission" -> mRealm.where(RealmSubmission::class.java).equalTo("userId", user?.id)
-                .notEqualTo("status", "pending").equalTo("type", "survey")
-            else -> mRealm.where(RealmSubmission::class.java).equalTo("userId", user?.id)
+                .sort("lastUpdateTime", Sort.DESCENDING)
+
+            "survey_submission" -> mRealm.where(RealmSubmission::class.java)
+                .equalTo("userId", user?.id)
+                .notEqualTo("status", "pending")
+                .equalTo("type", "survey")
+                .sort("lastUpdateTime", Sort.DESCENDING)
+
+            else -> mRealm.where(RealmSubmission::class.java)
+                .equalTo("userId", user?.id)
                 .notEqualTo("type", "survey")
+                .sort("lastUpdateTime", Sort.DESCENDING)
         }
+
         if (!TextUtils.isEmpty(s)) {
             val ex: List<RealmStepExam> = mRealm.where(RealmStepExam::class.java)
                 .contains("name", s, Case.INSENSITIVE).findAll()
             q?.`in`("parentId", getIds(ex))
         }
+
         if (q != null) {
-            submissions = q.findAll().mapNotNull { it as? RealmSubmission }
+            // Get all submissions first
+            val allSubmissions = q.findAll().mapNotNull { it as? RealmSubmission }
+
+            // Group submissions by parentId (the survey/exam they belong to)
+            // Then take only the most recent submission for each unique parentId
+            val uniqueSubmissions = allSubmissions
+                .groupBy { it.parentId }
+                .mapValues { entry -> entry.value.maxByOrNull { it.lastUpdateTime ?: 0 } }
+                .values
+                .filterNotNull()
+                .toList()
+
+            submissions = uniqueSubmissions
         }
 
         val adapter = AdapterMySubmission(requireActivity(), submissions, exams)
@@ -112,7 +137,6 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
             if (fragmentMySubmissionBinding.rbSurvey.isChecked || type == "survey") {
                 fragmentMySubmissionBinding.tvFragmentInfo.text = "mySurveys"
                 showNoData(fragmentMySubmissionBinding.tvMessage, itemCount, "survey_submission")
-
             } else {
                 fragmentMySubmissionBinding.tvFragmentInfo.text = "mySubmissions"
                 showNoData(fragmentMySubmissionBinding.tvMessage, itemCount, "exam_submission")

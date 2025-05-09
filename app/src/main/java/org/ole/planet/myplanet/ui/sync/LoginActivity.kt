@@ -82,7 +82,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         checkUsagesPermission()
         forceSyncTrigger()
 
-        if (getUrl().isNotEmpty()) {
+        val url = getUrl()
+        if (url.isNotEmpty() && url != "/db") {
             activityLoginBinding.openCommunity.visibility = View.VISIBLE
             activityLoginBinding.openCommunity.setOnClickListener {
                 HomeCommunityDialogFragment().show(supportFragmentManager, "")
@@ -388,6 +389,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             prefData.setSavedUsers(updatedUserList)
         }
 
+        updateTeamDropdown()
+
         if (mAdapter == null) {
             mAdapter = TeamListAdapter(prefData.getSavedUsers().toMutableList(), this, this)
             activityLoginBinding.recyclerView.layoutManager = LinearLayoutManager(this)
@@ -396,8 +399,13 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             mAdapter?.updateList(prefData.getSavedUsers().toMutableList())
         }
 
-        activityLoginBinding.recyclerView.isNestedScrollingEnabled = false
-        activityLoginBinding.recyclerView.setHasFixedSize(true)
+        activityLoginBinding.recyclerView.isNestedScrollingEnabled = true
+        activityLoginBinding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+        activityLoginBinding.recyclerView.isVerticalScrollBarEnabled = true
+
+        activityLoginBinding.recyclerView.post {
+            mAdapter?.notifyDataSetChanged()
+        }
     }
 
     override fun onItemClick(user: User) {

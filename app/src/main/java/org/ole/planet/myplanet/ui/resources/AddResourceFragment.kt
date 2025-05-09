@@ -1,17 +1,19 @@
 package org.ole.planet.myplanet.ui.resources
 
+import android.Manifest
 import android.app.Dialog
 import android.content.ContentValues
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.database.Cursor
-import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.provider.Settings
 import android.text.TextUtils
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -57,6 +59,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     private lateinit var captureImageLauncher: ActivityResultLauncher<Uri>
     private lateinit var captureVideoLauncher: ActivityResultLauncher<Uri>
     private lateinit var openFolderLauncher: ActivityResultLauncher<String>
+    private lateinit var requestCameraLauncher: ActivityResultLauncher<String>
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -80,6 +83,32 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                 startIntent(uri, REQUEST_FILE_SELECTION)
             } else {
                 Utilities.toast(activity, "no file selected")
+            }
+        }
+        audioRecorderService = AudioRecorderService()
+        audioRecorderService?.setCaller(this, requireContext())
+        requestCameraLauncher = registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            if (isGranted) {
+                takePhoto()
+            } else {
+                if (!shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO)) {
+                    AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+                        .setTitle(R.string.permission_required)
+                        .setMessage(R.string.camera_permission_required)
+                        .setPositiveButton(R.string.settings) { dialog, _ ->
+                            dialog.dismiss()
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                            val uri: Uri = Uri.fromParts("package", requireContext().packageName, null)
+                            intent.data = uri
+                            startActivity(intent)
+                        }
+                        .setNegativeButton(R.string.cancel) { dialog, _ -> dialog.dismiss() }
+                        .show()
+                } else {
+                    Utilities.toast(requireContext(), "camera permission is required.")
+                }
             }
         }
     }
@@ -130,13 +159,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             ).toDrawable())
 
         createAudioRecorderService(dialog)
-        alertSoundRecorderBinding.fabRecord.setOnClickListener {
-            if (!audioRecorderService?.isRecording()!!) {
-                audioRecorderService?.startRecording()
-            } else {
-                audioRecorderService?.stopRecording()
-            }
-        }
+        alertSoundRecorderBinding.fabRecord.setOnClickListener { audioRecorderService?.onRecordClicked() }
         dialog.setButton(AlertDialog.BUTTON_POSITIVE, getString(R.string.dismiss)) { _: DialogInterface?, _: Int ->
             if (audioRecorderService != null && audioRecorderService?.isRecording() == true) {
                 audioRecorderService?.forceStop()
@@ -147,7 +170,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     }
 
     private fun createAudioRecorderService(dialog: AlertDialog) {
-        audioRecorderService = AudioRecorderService().setAudioRecordListener(object : AudioRecordListener {
+        audioRecorderService?.setAudioRecordListener(object : AudioRecordListener {
             override fun onRecordStarted() {
                 tvTime?.setText(R.string.recording_audio)
                 floatingActionButton?.setImageResource(R.drawable.ic_stop)
@@ -167,6 +190,11 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     }
 
     private fun dispatchTakeVideoIntent() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
+            != PackageManager.PERMISSION_GRANTED){
+            requestCameraLauncher.launch(Manifest.permission.CAMERA)
+            return
+        }
         val takeVideoIntent = Intent(MediaStore.ACTION_VIDEO_CAPTURE)
         videoUri = createVideoFileUri()
         takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoUri)
@@ -185,6 +213,11 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     }
 
     private fun takePhoto() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
+            != PackageManager.PERMISSION_GRANTED){
+            requestCameraLauncher.launch(Manifest.permission.CAMERA)
+            return
+        }
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.TITLE, "Photo_" + UUID.randomUUID().toString())
             put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")

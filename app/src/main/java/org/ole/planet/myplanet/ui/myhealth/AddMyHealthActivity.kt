@@ -67,6 +67,7 @@ class AddMyHealthActivity : AppCompatActivity() {
                 val selectedDate = String.format(Locale.US, "%04d-%02d-%02d", year, month + 1, dayOfMonth)
                 activityAddMyHealthBinding.etBirthdateLayout.editText?.setText(selectedDate)
             }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH))
+            dpd.datePicker.maxDate = System.currentTimeMillis()
             dpd.show()
         }
         activityAddMyHealthBinding.etBirthdateLayout.editText?.setOnClickListener(datePickerClickListener)
