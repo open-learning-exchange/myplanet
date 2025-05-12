@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.text.Normalizer
 import java.util.Locale
 import java.util.regex.Pattern
+import androidx.core.content.edit
 
 class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private lateinit var activityLoginBinding: ActivityLoginBinding
@@ -95,9 +96,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         val password = intent.getStringExtra("password")
 
         if (autoLogin && !username.isNullOrEmpty() && !password.isNullOrEmpty()) {
-            customProgressDialog = DialogUtils.getCustomProgressDialog(this)
-            customProgressDialog?.setText("Preparing your account...")
-            customProgressDialog?.show()
+            customProgressDialog.setText("Preparing your account...")
+            customProgressDialog.show()
 
             val loginStartTime = System.currentTimeMillis()
 
@@ -117,7 +117,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
                     while (currentRetry < maxRetries && !loginSuccess) {
                         withContext(Dispatchers.Main) {
-                            customProgressDialog?.setText("Finalizing account setup... (Attempt ${currentRetry + 1})")
+                            customProgressDialog.setText("Finalizing account setup... (Attempt ${currentRetry + 1})")
                         }
 
                         val userDataAvailable = checkUserDataAvailability(username)
@@ -160,7 +160,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                         }
                     }
 
-                    customProgressDialog?.dismiss()
+                    customProgressDialog.dismiss()
 
                     if (loginSuccess) {
                         Toast.makeText(this@LoginActivity, getString(R.string.welcome, username), Toast.LENGTH_SHORT).show()
@@ -197,7 +197,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    customProgressDialog?.dismiss()
+                    customProgressDialog.dismiss()
 
                     activityLoginBinding.inputName.setText(username)
                     activityLoginBinding.inputPassword.setText(password)
@@ -242,7 +242,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
     private fun declareElements() {
         if (!defaultPref.contains("beta_addImageToMessage")) {
-            defaultPref.edit().putBoolean("beta_addImageToMessage", true).apply()
+            defaultPref.edit { putBoolean("beta_addImageToMessage", true) }
         }
         activityLoginBinding.customDeviceName.text = getCustomDeviceName()
         activityLoginBinding.btnSignin.setOnClickListener {
@@ -271,7 +271,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 }
             }
         }
-        if (!settings.contains("serverProtocol")) settings.edit().putString("serverProtocol", "http://").apply()
+        if (!settings.contains("serverProtocol")) settings.edit {
+            putString("serverProtocol", "http://")
+        }
         activityLoginBinding.becomeMember.setOnClickListener {
             activityLoginBinding.inputName.setText(R.string.empty_text)
             becomeAMember()
@@ -508,6 +510,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             prefData.setSavedUsers(updatedUserList)
         }
 
+        updateTeamDropdown()
+
         if (mAdapter == null) {
             mAdapter = TeamListAdapter(prefData.getSavedUsers().toMutableList(), this, this)
             activityLoginBinding.recyclerView.layoutManager = LinearLayoutManager(this)
@@ -516,8 +520,13 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             mAdapter?.updateList(prefData.getSavedUsers().toMutableList())
         }
 
-        activityLoginBinding.recyclerView.isNestedScrollingEnabled = false
-        activityLoginBinding.recyclerView.setHasFixedSize(true)
+        activityLoginBinding.recyclerView.isNestedScrollingEnabled = true
+        activityLoginBinding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+        activityLoginBinding.recyclerView.isVerticalScrollBarEnabled = true
+
+        activityLoginBinding.recyclerView.post {
+            mAdapter?.notifyDataSetChanged()
+        }
     }
 
     override fun onItemClick(user: User) {
@@ -548,42 +557,45 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         if (forceSyncTrigger()) {
             return
         }
-        val editor = settings.edit()
-        editor.putString("loginUserName", name)
-        editor.putString("loginUserPassword", password)
-        val isLoggedIn = authenticateUser(settings, name, password, false)
-        if (isLoggedIn) {
-            Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
-            onLogin()
-            saveUsers(activityLoginBinding.inputName.text.toString(), activityLoginBinding.inputPassword.text.toString(), "member")
-        } else {
-            ManagerSync.instance?.login(name, password, object : SyncListener {
-                override fun onSyncStarted() {
-                    customProgressDialog?.setText(getString(R.string.please_wait))
-                    customProgressDialog?.show()
-                }
-                override fun onSyncComplete() {
-                    customProgressDialog?.dismiss()
-                    val log = authenticateUser(settings, name, password, true)
-                    if (log) {
-                        Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
-                        onLogin()
-                        saveUsers(activityLoginBinding.inputName.text.toString(), activityLoginBinding.inputPassword.text.toString(), "member")
-                    } else {
-                        alertDialogOkay(getString(R.string.err_msg_login))
+        settings.edit {
+            putString("loginUserName", name)
+            putString("loginUserPassword", password)
+            val isLoggedIn = authenticateUser(settings, name, password, false)
+            if (isLoggedIn) {
+                Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT)
+                    .show()
+                onLogin()
+                saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
+            } else {
+                ManagerSync.instance?.login(name, password, object : SyncListener {
+                    override fun onSyncStarted() {
+                        customProgressDialog.setText(getString(R.string.please_wait))
+                        customProgressDialog.show()
                     }
-                    syncIconDrawable.stop()
-                    syncIconDrawable.selectDrawable(0)
-                }
-                override fun onSyncFailed(msg: String?) {
-                    toast(MainApplication.context, msg)
-                    customProgressDialog?.dismiss()
-                    syncIconDrawable.stop()
-                    syncIconDrawable.selectDrawable(0)
-                }
-            })
+
+                    override fun onSyncComplete() {
+                        customProgressDialog.dismiss()
+                        val log = authenticateUser(settings, name, password, true)
+                        if (log) {
+                            Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
+                            onLogin()
+                            saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
+                        } else {
+                            alertDialogOkay(getString(R.string.err_msg_login))
+                        }
+                        syncIconDrawable.stop()
+                        syncIconDrawable.selectDrawable(0)
+                    }
+
+                    override fun onSyncFailed(msg: String?) {
+                        toast(context, msg)
+                        customProgressDialog.dismiss()
+                        syncIconDrawable.stop()
+                        syncIconDrawable.selectDrawable(0)
+                    }
+                })
+            }
         }
-        editor.apply()
     }
 
     private fun showGuestLoginDialog() {

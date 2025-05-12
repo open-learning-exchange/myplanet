@@ -125,7 +125,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
 
         suspend fun isServerReachable(urlString: String): Boolean {
-            val serverUrlMapper = ServerUrlMapper(context)
+            val serverUrlMapper = ServerUrlMapper()
             val mapping = serverUrlMapper.processUrl(urlString)
 
             val urlsToTry = mutableListOf(urlString)
