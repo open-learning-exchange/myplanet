@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Base64
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -42,6 +43,7 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
+import org.ole.planet.myplanet.utilities.SyncTimeLogger
 import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Response
 import java.io.IOException
@@ -110,33 +112,136 @@ object TransactionSyncManager {
         }
     }
 
-    fun syncDb(realm: Realm, table: String) {
-        realm.executeTransactionAsync { mRealm: Realm ->
+    fun syncDb(realm: Realm, table: String): Boolean {
+        val logger = SyncTimeLogger.getInstance()
+        logger.startResourceSync("sync_db_$table")
+        var success = true
+
+        realm.executeTransactionAsync({ mRealm: Realm ->
             val apiInterface = client?.create(ApiInterface::class.java)
-            val allDocs = apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/" + table + "/_all_docs?include_doc=false")
             try {
+                // Start timing for fetching all docs
+                logger.startResourceSync("${table}_fetch_all_docs")
+
+                val allDocs = apiInterface?.getJsonObject(
+                    Utilities.header,
+                    "${Utilities.getUrl()}/$table/_all_docs?include_doc=false"
+                )
                 val all = allDocs?.execute()
+
+                // End timing for fetching all docs
+                logger.endResourceSync("${table}_fetch_all_docs")
+
                 val rows = getJsonArray("rows", all?.body())
                 val keys: MutableList<String> = ArrayList()
+
+                // Track total number of documents
+                val totalDocs = rows.size()
+                var processedDocs = 0
+
+                logger.startResourceSync("${table}_process_docs")
+
                 for (i in 0 until rows.size()) {
                     val `object` = rows[i].asJsonObject
-                    if (!TextUtils.isEmpty(getString("id", `object`))) keys.add(getString("key", `object`))
+                    if (!TextUtils.isEmpty(getString("id", `object`))) {
+                        keys.add(getString("key", `object`))
+                    }
+
                     if (i == rows.size() - 1 || keys.size == 1000) {
+                        // Start timing for batch processing
+                        val batchId = "${table}_batch_${processedDocs}_to_${processedDocs + keys.size}"
+                        logger.startResourceSync(batchId)
+
                         val obj = JsonObject()
                         obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
-                        val response = apiInterface?.findDocs(Utilities.header, "application/json", Utilities.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj)?.execute()
+
+                        // Start timing for API request
+                        logger.startResourceSync("${batchId}_api_request")
+
+                        val response = apiInterface?.findDocs(
+                            Utilities.header,
+                            "application/json",
+                            "${Utilities.getUrl()}/$table/_all_docs?include_docs=true",
+                            obj
+                        )?.execute()
+
+                        // End timing for API request
+                        logger.endResourceSync("${batchId}_api_request")
+
                         if (response?.body() != null) {
                             val arr = getJsonArray("rows", response.body())
+
+                            // Start timing for document insertion
+                            logger.startResourceSync("${batchId}_insert_docs")
+
                             if (table == "chat_history") {
                                 insertToChat(arr, mRealm)
+                            } else {
+                                // Process documents individually to track timing
+                                processDocsWithTiming(arr, mRealm, table, logger)
                             }
-                            insertDocs(arr, mRealm, table)
+
+                            // End timing for document insertion
+                            logger.endResourceSync("${batchId}_insert_docs")
                         }
+
+                        processedDocs += keys.size
+
+                        // Log progress
+                        val progress = (processedDocs * 100.0 / totalDocs).toInt()
+                        Log.d("SYNC", "$table sync progress: $progress% ($processedDocs/$totalDocs)")
+
+                        // End timing for batch processing
+                        logger.endResourceSync(batchId)
+
                         keys.clear()
                     }
                 }
+
+                // End timing for processing all docs
+                logger.endResourceSync("${table}_process_docs")
+
             } catch (e: IOException) {
+                Log.e("SYNC", "Error in syncDb for $table: ${e.message}", e)
                 e.printStackTrace()
+                success = false
+            } catch (e: Exception) {
+                Log.e("SYNC", "Unexpected error in syncDb for $table: ${e.message}", e)
+                e.printStackTrace()
+                success = false
+            }
+        })
+
+        // End timing for the whole syncDb operation
+        logger.endResourceSync("sync_db_$table")
+
+        return success
+    }
+
+    private fun processDocsWithTiming(arr: JsonArray, mRealm: Realm, table: String, logger: SyncTimeLogger) {
+        val documentList = mutableListOf<JsonObject>()
+
+        // Extract documents first
+        for (j in arr) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = getJsonObject("doc", jsonDoc)
+            val id = getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                documentList.add(jsonDoc)
+            }
+        }
+
+        // Process each document with timing
+        documentList.forEach { jsonDoc ->
+            val docId = getString("_id", jsonDoc)
+            logger.startResourceSync("${table}_doc_$docId")
+
+            try {
+                continueInsert(mRealm, table, jsonDoc)
+            } catch (e: Exception) {
+                Log.e("SYNC", "Error processing doc $docId in $table: ${e.message}", e)
+            } finally {
+                logger.endResourceSync("${table}_doc_$docId")
             }
         }
     }

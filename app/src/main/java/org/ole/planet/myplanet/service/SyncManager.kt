@@ -45,6 +45,7 @@ import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utilities.SyncTimeLogger
+import java.util.concurrent.atomic.AtomicInteger
 
 class SyncManager private constructor(private val context: Context) {
     private var td: Thread? = null
@@ -116,94 +117,153 @@ class SyncManager private constructor(private val context: Context) {
                 val syncJobs = listOf(
                     async {
                         logger.startProcess("tablet_users_sync")
-                        TransactionSyncManager.syncDb(mRealm, "tablet_users")
-                        logger.endProcess("tablet_users_sync")
-                          },
+                        val tabletUserItems = measureAndCount {
+                            TransactionSyncManager.syncDb(mRealm, "tablet_users")
+                        }
+                        logger.endProcess("tablet_users_sync", tabletUserItems)
+                    },
                     async {
                         logger.startProcess("library_sync")
-                        myLibraryTransactionSync()
-                        logger.endProcess("library_sync")
-                          },
-                    async { logger.startProcess("courses_sync")
-                        TransactionSyncManager.syncDb(mRealm, "courses")
-                          logger.endProcess("courses_sync")
-                          },
-                    async { logger.startProcess("exams_sync")
-                        TransactionSyncManager.syncDb(mRealm, "exams")
-                          logger.endProcess("exams_sync")
-                          },
-                    async { logger.startProcess("ratings_sync")
-                        TransactionSyncManager.syncDb(mRealm, "ratings")
-                          logger.endProcess("ratings_sync")
-                          },
-                    async { logger.startProcess("courses_progress_sync")
-                        TransactionSyncManager.syncDb(mRealm, "courses_progress")
-                          logger.endProcess("courses_progress_sync")
-                          },
-                    async { logger.startProcess("achievements_sync")
-                        TransactionSyncManager.syncDb(mRealm, "achievements")
-                          logger.endProcess("achievements_sync")
-                          },
-                    async { logger.startProcess("tags_sync")
-                        TransactionSyncManager.syncDb(mRealm, "tags")
-                          logger.endProcess("tags_sync")
-                          },
-                    async { logger.startProcess("submissions_sync")
-                        TransactionSyncManager.syncDb(mRealm, "submissions")
-                          logger.endProcess("submissions_sync")
-                          },
-                    async { logger.startProcess("news_sync")
-                        TransactionSyncManager.syncDb(mRealm, "news")
-                          logger.endProcess("news_sync")
-                          },
-                    async { logger.startProcess("feedback_sync")
-                        TransactionSyncManager.syncDb(mRealm, "feedback")
-                          logger.endProcess("feedback_sync")
-                          },
-                    async { logger.startProcess("teams_sync")
-                        TransactionSyncManager.syncDb(mRealm, "teams")
-                          logger.endProcess("teams_sync")
-                          },
-                    async { logger.startProcess("tasks_sync")
-                        TransactionSyncManager.syncDb(mRealm, "tasks")
-                          logger.endProcess("tasks_sync")
-                          },
-                    async { logger.startProcess("login_activities_sync")
-                        TransactionSyncManager.syncDb(mRealm, "login_activities")
-                          logger.endProcess("login_activities_sync")
-                          },
-                    async { logger.startProcess("meetups_sync")
-                        TransactionSyncManager.syncDb(mRealm, "meetups")
-                          logger.endProcess("meetups_sync")
-                          },
-                    async { logger.startProcess("health_sync")
-                        TransactionSyncManager.syncDb(mRealm, "health")
-                          logger.endProcess("health_sync")
-                          },
-                    async { logger.startProcess("certifications_sync")
-                        TransactionSyncManager.syncDb(mRealm, "certifications")
-                          logger.endProcess("certifications_sync")
-                          },
-                    async { logger.startProcess("team_activities_sync")
-                        TransactionSyncManager.syncDb(mRealm, "team_activities")
-                          logger.endProcess("team_activities_sync")
-                          },
-                    async { logger.startProcess("chat_history_sync")
-                        TransactionSyncManager.syncDb(mRealm, "chat_history")
-                        logger.endProcess("chat_history_sync")
-                         }
+                        val libraryItems = measureAndCount {
+                            myLibraryTransactionSync()
+                        }
+                        logger.endProcess("library_sync", libraryItems)
+                    },
+                    async {
+                        logger.startProcess("courses_sync")
+                        val courseItems = measureAndCount {
+                            TransactionSyncManager.syncDb(mRealm, "courses")
+                        }
+                        logger.endProcess("courses_sync", courseItems)
+                    },
+                    async {
+                        logger.startProcess("exams_sync")
+                        val examItems = measureAndCount {
+                            TransactionSyncManager.syncDb(mRealm, "exams")
+                        }
+                        logger.endProcess("exams_sync", examItems)
+                    },
+                    async {
+                        logger.startProcess("ratings_sync")
+                        val ratingItems = measureAndCount {
+                            TransactionSyncManager.syncDb(mRealm, "ratings")
+                        }
+                        logger.endProcess("ratings_sync", ratingItems)
+                    },
+                    async {
+                        logger.startProcess("courses_progress_sync")
+                        val progressItems = measureAndCount {
+                            TransactionSyncManager.syncDb(mRealm, "courses_progress")
+                        }
+                        logger.endProcess("courses_progress_sync", progressItems)
+                    },
+                    async {
+                        logger.startProcess("achievements_sync")
+                        val achievementItems = measureAndCount {
+                            TransactionSyncManager.syncDb(mRealm, "achievements")
+                        }
+                        logger.endProcess("achievements_sync", achievementItems)
+                    },
+                    async {
+                        logger.startProcess("tags_sync")
+                        val tagItems = measureAndCount {
+                            TransactionSyncManager.syncDb(mRealm, "tags")
+                        }
+                        logger.endProcess("tags_sync", tagItems)
+                    },
+                    async {
+                        logger.startProcess("submissions_sync")
+                        val submissionItems = measureAndCount {
+                            TransactionSyncManager.syncDb(mRealm, "submissions")
+                        }
+                        logger.endProcess("submissions_sync", submissionItems)
+                    },
+                    async {
+                        logger.startProcess("news_sync")
+                        val newsItems = measureAndCount {
+                            TransactionSyncManager.syncDb(mRealm, "news")
+                        }
+                        logger.endProcess("news_sync", newsItems)
+                    },
+                    async {
+                        logger.startProcess("feedback_sync")
+                        val feedbackItems = measureAndCount {
+                            TransactionSyncManager.syncDb(mRealm, "feedback")
+                        }
+                        logger.endProcess("feedback_sync", feedbackItems)
+                    },
+                    async {
+                        logger.startProcess("teams_sync")
+                        val teamItems = measureAndCount {
+                            TransactionSyncManager.syncDb(mRealm, "teams")
+                        }
+                        logger.endProcess("teams_sync", teamItems)
+                    },
+                    async {
+                        logger.startProcess("tasks_sync")
+                        val taskItems = measureAndCount {
+                            TransactionSyncManager.syncDb(mRealm, "tasks")
+                        }
+                        logger.endProcess("tasks_sync", taskItems)
+                    },
+                    async {
+                        logger.startProcess("login_activities_sync")
+                        val loginItems = measureAndCount {
+                            TransactionSyncManager.syncDb(mRealm, "login_activities")
+                        }
+                        logger.endProcess("login_activities_sync", loginItems)
+                    },
+                    async {
+                        logger.startProcess("meetups_sync")
+                        val meetupItems = measureAndCount {
+                            TransactionSyncManager.syncDb(mRealm, "meetups")
+                        }
+                        logger.endProcess("meetups_sync", meetupItems)
+                    },
+                    async {
+                        logger.startProcess("health_sync")
+                        val healthItems = measureAndCount {
+                            TransactionSyncManager.syncDb(mRealm, "health")
+                        }
+                        logger.endProcess("health_sync", healthItems)
+                    },
+                    async {
+                        logger.startProcess("certifications_sync")
+                        val certItems = measureAndCount {
+                            TransactionSyncManager.syncDb(mRealm, "certifications")
+                        }
+                        logger.endProcess("certifications_sync", certItems)
+                    },
+                    async {
+                        logger.startProcess("team_activities_sync")
+                        val teamActivityItems = measureAndCount {
+                            TransactionSyncManager.syncDb(mRealm, "team_activities")
+                        }
+                        logger.endProcess("team_activities_sync", teamActivityItems)
+                    },
+                    async {
+                        logger.startProcess("chat_history_sync")
+                        val chatItems = measureAndCount {
+                            TransactionSyncManager.syncDb(mRealm, "chat_history")
+                        }
+                        logger.endProcess("chat_history_sync", chatItems)
+                    }
                 )
 
                 syncJobs.awaitAll()
             }
 
             logger.startProcess("admin_sync")
-            ManagerSync.instance?.syncAdmin()
-            logger.endProcess("admin_sync")
+            val adminItems = measureAndCount {
+                ManagerSync.instance?.syncAdmin()
+            }
+            logger.endProcess("admin_sync", adminItems)
 
             logger.startProcess("resource_sync")
-            resourceTransactionSync()
-            logger.endProcess("resource_sync")
+            val resourceItems = measureAndCount {
+                resourceTransactionSync()
+            }
+            logger.endProcess("resource_sync", resourceItems)
 
             logger.startProcess("on_synced")
             onSynced(mRealm, settings)
@@ -217,6 +277,20 @@ class SyncManager private constructor(private val context: Context) {
         } finally {
             destroy()
         }
+    }
+
+    // Helper function to measure execution time and count processed items
+    private fun <T> measureAndCount(block: () -> T): Int {
+        val itemCounter = AtomicInteger(0)
+
+        // Hook into the item processing to count items
+        // This is a placeholder - in a real implementation,
+        // you would need to modify your sync methods to return counts
+
+        block()
+
+        // For now, returning 0 as we don't have a way to count items yet
+        return itemCounter.get()
     }
 
     private fun startFastSync() {
@@ -427,6 +501,9 @@ class SyncManager private constructor(private val context: Context) {
 
                             if (!id.startsWith("_design")) {
                                 try {
+                                    // Start tracking this resource
+                                    logger.startResourceSync(id)
+
                                     // Begin transaction for each document
                                     realmInstance.beginTransaction()
 
@@ -445,12 +522,18 @@ class SyncManager private constructor(private val context: Context) {
                                     if (realmInstance.isInTransaction) {
                                         realmInstance.commitTransaction()
                                     }
+
+                                    // End tracking for this resource
+                                    logger.endResourceSync(id)
                                 } catch (e: Exception) {
                                     // Cancel transaction if error occurs
                                     if (realmInstance.isInTransaction) {
                                         realmInstance.cancelTransaction()
                                     }
                                     Log.e("SYNC", "Error saving resource: ${e.message}")
+
+                                    // Still end the tracking even if there was an error
+                                    logger.endResourceSync(id)
                                 }
                             }
                         }
@@ -484,6 +567,9 @@ class SyncManager private constructor(private val context: Context) {
 
             // Remove deleted resources in its own transaction
             try {
+                // Start tracking this resource operation
+                logger.startResourceSync("remove_deleted_resources")
+
                 // Start transaction
                 realmInstance.beginTransaction()
 
@@ -494,12 +580,18 @@ class SyncManager private constructor(private val context: Context) {
                 if (realmInstance.isInTransaction) {
                     realmInstance.commitTransaction()
                 }
+
+                // End tracking this resource operation
+                logger.endResourceSync("remove_deleted_resources")
             } catch (e: Exception) {
                 // Cancel transaction if error occurs
                 if (realmInstance.isInTransaction) {
                     realmInstance.cancelTransaction()
                 }
                 Log.e("SYNC", "Error removing deleted resources: ${e.message}")
+
+                // Still end tracking even if there was an error
+                logger.endResourceSync("remove_deleted_resources")
             }
 
             logger.endProcess("resource_sync", processedItems)
@@ -586,6 +678,7 @@ class SyncManager private constructor(private val context: Context) {
             // Process each shelf
             for (row in shelfResponse?.rows!!) {
                 val shelfId = row.id
+                logger.startResourceSync("shelf_$shelfId")
 
                 // Get shelf document with all content types
                 var shelfDoc: JsonObject? = null
@@ -598,12 +691,21 @@ class SyncManager private constructor(private val context: Context) {
                     shelfDoc = it.body()
                 }
 
-                if (shelfDoc == null) continue
+                if (shelfDoc == null) {
+                    logger.endResourceSync("shelf_$shelfId")
+                    continue
+                }
 
                 // Process each shelf data type
                 for (shelfData in Constants.shelfDataList) {
+                    val dataTypeKey = "${shelfId}_${shelfData.type}"
+                    logger.startResourceSync(dataTypeKey)
+
                     val array = getJsonArray(shelfData.key, shelfDoc)
-                    if (array.size() == 0) continue
+                    if (array.size() == 0) {
+                        logger.endResourceSync(dataTypeKey)
+                        continue
+                    }
 
                     // Set up the category information
                     stringArray[0] = shelfId
@@ -618,7 +720,10 @@ class SyncManager private constructor(private val context: Context) {
                         }
                     }
 
-                    if (validIds.isEmpty()) continue
+                    if (validIds.isEmpty()) {
+                        logger.endResourceSync(dataTypeKey)
+                        continue
+                    }
 
                     // Process in smaller batches to avoid timeouts
                     val batchSize = 50
@@ -626,6 +731,8 @@ class SyncManager private constructor(private val context: Context) {
                     for (i in 0 until validIds.size step batchSize) {
                         val end = minOf(i + batchSize, validIds.size)
                         val batch = validIds.subList(i, end)
+                        val batchKey = "${dataTypeKey}_batch_$i"
+                        logger.startResourceSync(batchKey)
 
                         try {
                             // Fetch documents in bulk
@@ -644,7 +751,10 @@ class SyncManager private constructor(private val context: Context) {
                                 response = it.body()
                             }
 
-                            if (response == null) continue
+                            if (response == null) {
+                                logger.endResourceSync(batchKey)
+                                continue
+                            }
 
                             val rows = getJsonArray("rows", response)
 
@@ -653,6 +763,8 @@ class SyncManager private constructor(private val context: Context) {
                                 val rowObj = rows[j].asJsonObject
                                 if (rowObj.has("doc")) {
                                     val doc = getJsonObject("doc", rowObj)
+                                    val docId = getString("_id", doc)
+                                    logger.startResourceSync("${shelfData.type}_$docId")
 
                                     try {
                                         // Begin transaction for each document
@@ -677,6 +789,8 @@ class SyncManager private constructor(private val context: Context) {
                                             realmInstance.cancelTransaction()
                                         }
                                         Log.e("SYNC", "Error in document transaction: ${e.message}")
+                                    } finally {
+                                        logger.endResourceSync("${shelfData.type}_$docId")
                                     }
                                 }
                             }
@@ -684,13 +798,21 @@ class SyncManager private constructor(private val context: Context) {
                             Log.d("SYNC", "Processed ${rows.size()} ${shelfData.type} items for shelf $shelfId")
                         } catch (e: Exception) {
                             Log.e("SYNC", "Error processing batch of ${shelfData.type}: ${e.message}")
+                        } finally {
+                            logger.endResourceSync(batchKey)
                         }
                     }
+
+                    logger.endResourceSync(dataTypeKey)
                 }
+
+                logger.endResourceSync("shelf_$shelfId")
             }
 
             // Save concatenated links
+            logger.startResourceSync("save_concatenated_links")
             saveConcatenatedLinksToPrefs()
+            logger.endResourceSync("save_concatenated_links")
 
             logger.endProcess("library_sync", processedItems)
         } catch (e: Exception) {
