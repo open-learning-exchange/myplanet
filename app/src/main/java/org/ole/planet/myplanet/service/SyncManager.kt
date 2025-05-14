@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.wifi.SupplicantState
 import android.net.wifi.WifiManager
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import com.google.gson.Gson
@@ -433,6 +435,7 @@ class SyncManager private constructor(private val context: Context) {
                     for (i in 0 until validIds.size step batchSize) {
                         val end = minOf(i + batchSize, validIds.size)
                         val batch = validIds.subList(i, end)
+                        if (batch.isEmpty()) continue
 
                         try {
                             val keysObject = JsonObject()
@@ -449,31 +452,29 @@ class SyncManager private constructor(private val context: Context) {
 
                             val rows = getJsonArray("rows", response)
 
-                            for (j in 0 until rows.size()) {
-                                val rowObj = rows[j].asJsonObject
-                                if (rowObj.has("doc")) {
+                            realmInstance.executeTransactionAsync({ realm ->
+                                for (j in 0 until rows.size()) {
+                                    val rowObj = rows[j].asJsonObject
+                                    if (!rowObj.has("doc")) continue
+
                                     val doc = getJsonObject("doc", rowObj)
-
-                                    try {
-                                        realmInstance.beginTransaction()
-                                        when (shelfData.type) {
-                                            "resources" -> insertMyLibrary(shelfId, doc, realmInstance)
-                                            "meetups" -> insert(realmInstance, doc)
-                                            "courses" -> insertMyCourses(shelfId, doc, realmInstance)
-                                            "teams" -> insertMyTeams(doc, realmInstance)
-                                        }
-
-                                        if (realmInstance.isInTransaction) {
-                                            realmInstance.commitTransaction()
-                                            processedItems++
-                                        }
-                                    } catch (e: Exception) {
-                                        if (realmInstance.isInTransaction) {
-                                            realmInstance.cancelTransaction()
-                                        }
+                                    if (doc.entrySet().isEmpty()) {
+                                        println("empty doc")
+                                        continue
+                                    }
+                                    when (shelfData.type) {
+                                        "resources" -> insertMyLibrary(shelfId, doc, realm)
+                                        "meetups"   -> insert(realm, doc)
+                                        "courses"   -> insertMyCourses(shelfId, doc, realm)
+                                        "teams"     -> insertMyTeams(doc, realm)
                                     }
                                 }
-                            }
+                            }, {
+                                println("success")
+                            }, { error ->
+                                error.printStackTrace()
+                            })
+
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }

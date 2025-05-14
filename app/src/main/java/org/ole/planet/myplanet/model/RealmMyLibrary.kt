@@ -258,6 +258,7 @@ open class RealmMyLibrary : RealmObject() {
 
         @JvmStatic
         fun insertMyLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm) {
+            if (doc.entrySet().isEmpty()) return
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
