@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.ui.exam
 
 import android.os.Bundle
+import android.text.Editable
 import android.text.TextUtils
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -68,6 +70,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         if ((questions?.size ?: 0) > 0) {
             createSubmission()
             startExam(questions?.get(currentIndex))
+            updateNavButtons()
         } else {
             container?.visibility = View.GONE
             fragmentTakeExamBinding.btnSubmit.visibility = View.GONE
@@ -83,6 +86,14 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             saveCurrentAnswer()
             goToNextQuestion()
         }
+
+        fragmentTakeExamBinding.etAnswer.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                updateNavButtons()
+            }
+        })
     }
 
     private fun saveCurrentAnswer() {
@@ -100,6 +111,8 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun goToNextQuestion() {
+        saveCurrentAnswer()
+
         if (currentIndex < (questions?.size ?: 0) - 1) {
             currentIndex++
             startExam(questions?.get(currentIndex))
@@ -108,13 +121,31 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun updateNavButtons() {
-        fragmentTakeExamBinding.btnBack.visibility =
-            if (currentIndex == 0) View.GONE else View.VISIBLE
+        fragmentTakeExamBinding.btnBack.visibility = if (currentIndex == 0) View.GONE else View.VISIBLE
+        val isLastQuestion = currentIndex == (questions?.size ?: 0) - 1
+        val isCurrentQuestionAnswered = isQuestionAnswered()
 
-        fragmentTakeExamBinding.btnNext.visibility =
-            if (currentIndex == (questions?.size ?: 0) - 1) View.GONE else View.VISIBLE
+        fragmentTakeExamBinding.btnNext.visibility = if (isLastQuestion || !isCurrentQuestionAnswered) View.GONE else View.VISIBLE
 
         setButtonText()
+    }
+
+    private fun isQuestionAnswered(): Boolean {
+        val currentQuestion = questions?.get(currentIndex)
+
+        return when {
+            currentQuestion?.type.equals("select", ignoreCase = true) -> {
+                ans.isNotEmpty()
+            }
+            currentQuestion?.type.equals("selectMultiple", ignoreCase = true) -> {
+                listAns?.isNotEmpty() == true
+            }
+            currentQuestion?.type.equals("input", ignoreCase = true) ||
+                    currentQuestion?.type.equals("textarea", ignoreCase = true) -> {
+                fragmentTakeExamBinding.etAnswer.text.toString().isNotEmpty()
+            }
+            else -> false
+        }
     }
 
     private fun createSubmission() {
@@ -177,7 +208,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         fragmentTakeExamBinding.llCheckbox.visibility = View.GONE
         clearAnswer()
 
-        loadSavedAnswer()  // Load saved answer before setting up UI
+        loadSavedAnswer()
 
         when {
             question?.type.equals("select", ignoreCase = true) -> {
@@ -200,6 +231,8 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         fragmentTakeExamBinding.tvHeader.text = question?.header
         question?.body?.let { setMarkdownText(fragmentTakeExamBinding.tvBody, it) }
         fragmentTakeExamBinding.btnSubmit.setOnClickListener(this)
+
+        updateNavButtons()
     }
 
     private fun loadSavedAnswer() {
@@ -210,16 +243,21 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         val currentQuestion = questions?.get(currentIndex)
 
         if (savedAnswer != null) {
-            ans = savedAnswer.value ?: ""
-            val questionType = currentQuestion?.type
-
             when {
-                questionType.equals("select", ignoreCase = true) -> {
-                    // For radio buttons (single select)
-                    ans = savedAnswer.value ?: ""
+                currentQuestion?.type.equals("select", ignoreCase = true) -> {
+                    if (savedAnswer.valueChoices != null && savedAnswer.valueChoices?.isNotEmpty() == true) {
+                        try {
+                            val choiceJson = savedAnswer.valueChoices?.first()
+                            val jsonObject = Gson().fromJson(choiceJson, JsonObject::class.java)
+                            ans = jsonObject.get("id").asString
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    } else {
+                        ans = savedAnswer.value ?: ""
+                    }
                 }
-                questionType.equals("selectMultiple", ignoreCase = true) -> {
-                    // For checkboxes (multiple select)
+                currentQuestion?.type.equals("selectMultiple", ignoreCase = true) -> {
                     if (savedAnswer.valueChoices != null) {
                         try {
                             for (choiceJson in savedAnswer.valueChoices ?: emptyList()) {
@@ -233,9 +271,8 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                         }
                     }
                 }
-                questionType.equals("input", ignoreCase = true) ||
-                        questionType.equals("textarea", ignoreCase = true) -> {
-                    // For text input
+                currentQuestion?.type.equals("input", ignoreCase = true) || currentQuestion?.type.equals("textarea", ignoreCase = true) -> {
+                    ans = savedAnswer.value ?: ""
                     fragmentTakeExamBinding.etAnswer.setText(ans)
                 }
             }
@@ -365,14 +402,35 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             if (isTeam == true) {
                 sub?.team = teamId
             }
+
+            val currentQuestion = questions?.get(currentIndex)
+            val isAnswerEmpty = when {
+                currentQuestion?.type.equals("select", ignoreCase = true) -> {
+                    ans.isEmpty()
+                }
+                currentQuestion?.type.equals("selectMultiple", ignoreCase = true) -> {
+                    listAns?.isEmpty() == true
+                }
+                else -> {
+                    ans.isEmpty()
+                }
+            }
+
             val list: RealmList<RealmAnswer>? = sub?.answers
+            val existingAnswerIndex = list?.indexOfFirst { it.questionId == currentQuestion?.id }
+
+            if (isAnswerEmpty && (existingAnswerIndex == null || existingAnswerIndex == -1)) {
+                return@executeTransaction
+            }
+
             val answer = createAnswer(list)
-            val que = questions?.get(currentIndex)?.let { mRealm.copyFromRealm(it) }
+            val que = currentQuestion?.let { mRealm.copyFromRealm(it) }
             answer?.questionId = que?.id
             answer?.value = ans
             answer?.setValueChoices(listAns, isLastAnsvalid)
             answer?.submissionId = sub?.id
             submitId = answer?.submissionId ?: ""
+
             if ((que?.getCorrectChoice()?.size ?: 0) == 0) {
                 answer?.grade = 0
                 answer?.mistakes = 0
@@ -381,13 +439,13 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 flag = checkCorrectAns(answer, que)
             }
 
-            val existingAnswerIndex = list?.indexOfFirst { it.questionId == answer?.questionId }
             if (existingAnswerIndex != null && existingAnswerIndex != -1) {
                 list.removeAt(existingAnswerIndex)
             }
 
             answer?.let { list?.add(it) }
             sub?.answers = list
+            sub?.lastUpdateTime = Date().time
         }
         return flag
     }
@@ -426,8 +484,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     override fun onCheckedChanged(compoundButton: CompoundButton, b: Boolean) {
         if (b) {
             addAnswer(compoundButton)
-        } else if (compoundButton.tag != null) {
+        } else if (compoundButton.tag != null && compoundButton !is RadioButton) {
             listAns?.remove("${compoundButton.text}")
         }
+        updateNavButtons()
     }
 }

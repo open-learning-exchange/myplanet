@@ -10,8 +10,10 @@ import android.text.TextUtils
 import android.text.TextWatcher
 import android.view.Gravity
 import android.view.View
+import android.widget.CheckBox
 import android.widget.CompoundButton
 import android.widget.EditText
+import android.widget.RadioButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -208,10 +210,13 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     fun addAnswer(compoundButton: CompoundButton) {
-        if (compoundButton.tag != null) {
-            listAns?.set(compoundButton.text.toString() + "", compoundButton.tag.toString() + "")
-        } else {
-            ans = compoundButton.text.toString() + ""
+        val btnText = compoundButton.text.toString()
+        val btnId = compoundButton.tag?.toString() ?: ""
+
+        if (compoundButton is RadioButton) {
+            ans = btnId
+        } else if (compoundButton is CheckBox) {
+            listAns?.put(btnText, btnId)
         }
     }
 
