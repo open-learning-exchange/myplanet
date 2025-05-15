@@ -6,215 +6,218 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true">
-<FrameLayout
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".ui.userprofile.EditAchievementFragment">
 
-    <androidx.core.widget.NestedScrollView
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/secondary_bg">
+        tools:context=".ui.userprofile.EditAchievementFragment">
 
-        <LinearLayout
+        <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical">
-
-            <androidx.constraintlayout.widget.ConstraintLayout
-                xmlns:android="http://schemas.android.com/apk/res/android"
-                xmlns:app="http://schemas.android.com/apk/res-auto"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@color/colorPrimary"
-                android:padding="@dimen/padding_large">
-
-                <androidx.appcompat.widget.Toolbar
-                    android:id="@+id/toolbar"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="?attr/colorPrimary"
-                    android:theme="?attr/actionBarTheme"
-                    app:navigationIcon="@drawable/baseline_arrow_back_24"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toStartOf="@id/edt_achivement"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent"/>
-                <TextView
-                    android:id="@+id/edt_achivement"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/edit_achievement"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/bg_white"
-                    app:layout_constraintStart_toEndOf="@id/toolbar"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent"/>
-            </androidx.constraintlayout.widget.ConstraintLayout>
+            android:background="@color/secondary_bg">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_gravity="center"
-                android:orientation="vertical"
-                android:padding="@dimen/padding_large">
+                android:orientation="vertical">
 
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    xmlns:android="http://schemas.android.com/apk/res/android"
+                    xmlns:app="http://schemas.android.com/apk/res-auto"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/colorPrimary"
+                    android:padding="@dimen/padding_large">
+
+                    <androidx.appcompat.widget.Toolbar
+                        android:id="@+id/toolbar"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/colorPrimary"
+                        android:theme="?attr/actionBarTheme"
+                        app:navigationIcon="@drawable/baseline_arrow_back_24"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/edt_achivement"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"/>
+                    <TextView
+                        android:id="@+id/edt_achivement"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/edit_achievement"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/bg_white"
+                        app:layout_constraintStart_toEndOf="@id/toolbar"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"/>
+                </androidx.constraintlayout.widget.ConstraintLayout>
+    
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center"
+                    android:orientation="vertical"
+                    android:padding="@dimen/padding_large">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:padding="@dimen/padding_normal"
+                            android:textColorHint="@color/hint_color">
+
+                            <EditText
+                                android:id="@+id/et_fname"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:hint="@string/first_name"
+                                android:textColor="@color/daynight_textColor"
+                                android:backgroundTint="@color/daynight_textColor" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:padding="@dimen/padding_normal"
+                            android:textColorHint="@color/hint_color">
+
+                            <EditText
+                                android:id="@+id/et_mname"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:hint="@string/middle_name"
+                                android:textColor="@color/daynight_textColor"
+                                android:backgroundTint="@color/daynight_textColor" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:padding="@dimen/padding_normal"
+                            android:textColorHint="@color/hint_color">
+
+                            <EditText
+                                android:id="@+id/et_lname"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:hint="@string/last_name"
+                                android:textColor="@color/daynight_textColor"
+                                android:backgroundTint="@color/daynight_textColor" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <TextView
+                            android:id="@+id/txt_dob"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:layout_weight="1"
+                            android:background="?attr/selectableItemBackground"
+                            android:foregroundGravity="center"
+                            android:gravity="center_vertical"
+                            android:padding="@dimen/padding_normal"
+                            android:text="@string/birth_date"
+                            android:textSize="17dp"
+                            android:textColor="@color/daynight_textColor"
+                            app:drawableRightCompat="@drawable/ic_date"
+                            app:drawableTint="@color/daynight_textColor" />
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:padding="@dimen/padding_normal"
+                            android:textColorHint="@color/hint_color">
+
+                            <EditText
+                                android:id="@+id/et_birthplace"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:hint="@string/birth_place"
+                                android:textColor="@color/daynight_textColor"
+                                android:backgroundTint="@color/daynight_textColor" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:padding="@dimen/padding_normal"
                         android:textColorHint="@color/hint_color">
 
                         <EditText
-                            android:id="@+id/et_fname"
+                            android:id="@+id/et_purpose"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="@string/first_name"
+                            android:layout_gravity="center"
+                            android:hint="@string/my_purpose_description"
+                            android:textSize="20sp"
                             android:textColor="@color/daynight_textColor"
                             android:backgroundTint="@color/daynight_textColor" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:padding="@dimen/padding_normal"
                         android:textColorHint="@color/hint_color">
 
                         <EditText
-                            android:id="@+id/et_mname"
+                            android:id="@+id/et_goals"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="@string/middle_name"
+                            android:layout_gravity="center"
+                            android:hint="@string/my_goals_description"
+                            android:textSize="20sp"
                             android:textColor="@color/daynight_textColor"
                             android:backgroundTint="@color/daynight_textColor" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:padding="@dimen/padding_normal"
                         android:textColorHint="@color/hint_color">
 
                         <EditText
-                            android:id="@+id/et_lname"
+                            android:id="@+id/et_achievement"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="@string/last_name"
+                            android:layout_gravity="center"
+                            android:hint="@string/summary_of_achievemnets"
+                            android:textSize="20sp"
                             android:textColor="@color/daynight_textColor"
                             android:backgroundTint="@color/daynight_textColor" />
                     </com.google.android.material.textfield.TextInputLayout>
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
 
                     <TextView
-                        android:id="@+id/txt_dob"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center_vertical"
-                        android:layout_weight="1"
-                        android:background="?attr/selectableItemBackground"
-                        android:foregroundGravity="center"
-                        android:gravity="center_vertical"
-                        android:padding="@dimen/padding_normal"
-                        android:text="@string/birth_date"
-                        android:textSize="17dp"
-                        android:textColor="@color/daynight_textColor"
-                        app:drawableRightCompat="@drawable/ic_date"
-                        app:drawableTint="@color/daynight_textColor" />
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:padding="@dimen/padding_normal"
-                        android:textColorHint="@color/hint_color">
-
-                        <EditText
-                            android:id="@+id/et_birthplace"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:hint="@string/birth_place"
-                            android:textColor="@color/daynight_textColor"
-                            android:backgroundTint="@color/daynight_textColor" />
-                    </com.google.android.material.textfield.TextInputLayout>
-                </LinearLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_normal"
-                    android:textColorHint="@color/hint_color">
-
-                    <EditText
-                        android:id="@+id/et_purpose"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:hint="@string/my_purpose_description"
-                        android:textSize="20sp"
+                        android:padding="@dimen/padding_small"
+                        android:text="@string/add_materials"
                         android:textColor="@color/daynight_textColor"
-                        android:backgroundTint="@color/daynight_textColor" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_normal"
-                    android:textColorHint="@color/hint_color">
-
-                    <EditText
-                        android:id="@+id/et_goals"
+                        android:visibility="invisible"/>
+                    <LinearLayout
+                        android:id="@+id/ll_attachment"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:hint="@string/my_goals_description"
-                        android:textSize="20sp"
-                        android:textColor="@color/daynight_textColor"
-                        android:backgroundTint="@color/daynight_textColor" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_normal"
-                    android:textColorHint="@color/hint_color">
-
-                    <EditText
-                        android:id="@+id/et_achievement"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:hint="@string/summary_of_achievemnets"
-                        android:textSize="20sp"
-                        android:textColor="@color/daynight_textColor"
-                        android:backgroundTint="@color/daynight_textColor" />
-                </com.google.android.material.textfield.TextInputLayout>
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_small"
-                    android:text="@string/add_materials"
-                    android:textColor="@color/daynight_textColor"
-                    android:visibility="invisible"/>
-                <LinearLayout
-                    android:id="@+id/ll_attachment"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical" />
+                        android:orientation="vertical" />
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity= "right">
+
                         <Button
                             android:id="@+id/btn_achievement"
                             android:layout_width="wrap_content"
@@ -223,23 +226,25 @@
                             android:contentDescription="@string/add_an_achievement"
                             android:text="@string/add_an_achievement"
                             android:theme="@style/PrimaryButton" />
-                </LinearLayout>
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_small"
-                    android:text="Add any references below"
-                    android:textColor="@color/daynight_textColor"
-                    android:visibility="invisible"/>
-                <LinearLayout
-                    android:id="@+id/ll_other_info"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="@dimen/padding_small"
+                        android:text="Add any references below"
+                        android:textColor="@color/daynight_textColor"
+                        android:visibility="invisible"/>
+                    <LinearLayout
+                        android:id="@+id/ll_other_info"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
                     <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="right" >
+                        android:layout_gravity="right">
+
                         <Button
                             android:id="@+id/btn_other"
                             android:layout_width="wrap_content"
@@ -249,38 +254,40 @@
                             android:text="@string/add_a_reference"
                             android:theme="@style/PrimaryButton" />
                     </LinearLayout>
-                <CheckBox
-                    android:id="@+id/cb_send_to_nation"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:padding="@dimen/padding_normal"
-                    android:text="@string/send_to_nation"
-                    android:textSize="@dimen/text_size_large"
-                    android:textColor="@color/daynight_textColor"
-                    app:buttonTint="@color/daynight_textColor" />
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="right">
-                    <Button
-                        android:id="@+id/btn_update"
+
+                    <CheckBox
+                        android:id="@+id/cb_send_to_nation"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:padding="@dimen/padding_normal"
+                        android:text="@string/send_to_nation"
+                        android:textSize="@dimen/text_size_large"
+                        android:textColor="@color/daynight_textColor"
+                        app:buttonTint="@color/daynight_textColor" />
+                    <LinearLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:contentDescription="@string/button_update"
-                        android:text="@string/button_update"
-                        android:theme="@style/PrimaryButton"
-                        android:backgroundTint="@color/md_amber_500" />
-                    <Button
-                        android:id="@+id/btn_cancel"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:contentDescription="@string/button_cancel"
-                        android:text="@string/button_cancel"
-                        android:theme="@style/AccentButton" />
+                        android:layout_gravity="right">
+
+                        <Button
+                            android:id="@+id/btn_update"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:contentDescription="@string/button_update"
+                            android:text="@string/button_update"
+                            android:theme="@style/PrimaryButton"
+                            android:backgroundTint="@color/md_amber_500" />
+                        <Button
+                            android:id="@+id/btn_cancel"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:contentDescription="@string/button_cancel"
+                            android:text="@string/button_cancel"
+                            android:theme="@style/AccentButton" />
+                    </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
-        </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
-</FrameLayout>
+        </androidx.core.widget.NestedScrollView>
+    </FrameLayout>
 </ScrollView>
