@@ -385,11 +385,13 @@ class SyncManager private constructor(private val context: Context) {
     }
 
     private fun myLibraryTransactionSync(backgroundRealm: Realm? = null) {
+        val realm = Realm.getDefaultInstance()
         var processedItems = 0
 
         try {
             val apiInterface = ApiClient.getEnhancedClient()
             val realmInstance = backgroundRealm ?: mRealm
+            var toInsert = mutableListOf<Triple<String, String, JsonObject>>()
 
             var shelfResponse: DocumentResponse? = null
             ApiClient.executeWithRetry {
@@ -403,7 +405,8 @@ class SyncManager private constructor(private val context: Context) {
             }
 
             for (row in shelfResponse.rows) {
-                val shelfId = row.id
+                val shelfId = row.id ?: continue
+
 
                 var shelfDoc: JsonObject? = null
                 ApiClient.executeWithRetry {
@@ -451,29 +454,15 @@ class SyncManager private constructor(private val context: Context) {
                             if (response == null) continue
 
                             val rows = getJsonArray("rows", response)
+                            for (rowObj in rows) {
+                                val docEl = rowObj.asJsonObject
+                                if (!docEl.has("doc")) continue
+                                val doc = getJsonObject("doc", docEl)
+                                if (doc.entrySet().isEmpty()) continue
 
-                            realmInstance.executeTransactionAsync({ realm ->
-                                for (j in 0 until rows.size()) {
-                                    val rowObj = rows[j].asJsonObject
-                                    if (!rowObj.has("doc")) continue
-
-                                    val doc = getJsonObject("doc", rowObj)
-                                    if (doc.entrySet().isEmpty()) {
-                                        println("empty doc")
-                                        continue
-                                    }
-                                    when (shelfData.type) {
-                                        "resources" -> insertMyLibrary(shelfId, doc, realm)
-                                        "meetups"   -> insert(realm, doc)
-                                        "courses"   -> insertMyCourses(shelfId, doc, realm)
-                                        "teams"     -> insertMyTeams(doc, realm)
-                                    }
-                                }
-                            }, {
-                                println("success")
-                            }, { error ->
-                                error.printStackTrace()
-                            })
+                                // stash for later bulk‐insert
+                                toInsert += Triple(shelfData.type, shelfId, doc)
+                            }
 
                         } catch (e: Exception) {
                             e.printStackTrace()
@@ -482,10 +471,30 @@ class SyncManager private constructor(private val context: Context) {
                 }
             }
 
+            realmInstance.executeTransaction { bgRealm ->
+                println("bb ${toInsert.size}")
+                for ((type, shelfId, doc) in toInsert) {
+//                            val rowObj = rows[j].asJsonObject
+//                            if (!rowObj.has("doc")) continue
+//                            val doc = getJsonObject("doc", rowObj)
+//                            if (doc.entrySet().isEmpty()) continue
+
+                    when (type) {
+                        "resources" -> insertMyLibrary(shelfId, doc, bgRealm)
+                        "meetups"   -> insert(bgRealm, doc)
+                        "courses"   -> insertMyCourses(shelfId, doc, bgRealm)
+                        "teams"     -> insertMyTeams(doc, bgRealm)
+                        else        -> println("‼️ unrecognized shelfData.type=${type}")
+                    }
+                }
+            }
+
             saveConcatenatedLinksToPrefs()
 
         } catch (e: Exception) {
             e.printStackTrace()
+        } finally {
+            realm.close()
         }
     }
 
