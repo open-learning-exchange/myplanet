@@ -44,7 +44,6 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:tint="@color/md_black_1000" />
-
                     <TextView
                         android:id="@+id/tv_question_count"
                         android:layout_width="wrap_content"
@@ -61,7 +60,6 @@
                         app:layout_constraintEnd_toStartOf="@+id/btnNext"
                         app:layout_constraintStart_toEndOf="@+id/btnBack"
                         app:layout_constraintTop_toTopOf="parent" />
-
                     <ImageButton
                         android:id="@+id/btnNext"
                         style="@style/YellowButtons"
@@ -78,9 +76,7 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:tint="@color/md_black_1000" />
-
                 </androidx.constraintlayout.widget.ConstraintLayout>
-
 
                 <androidx.core.widget.NestedScrollView
                     android:id="@+id/container"
@@ -109,7 +105,6 @@
                                 android:layout_gravity="center"
                                 android:textColor="@color/daynight_textColor"
                                 android:textSize="18sp" />
-
                             <TextView
                                 android:id="@+id/tv_body"
                                 android:layout_width="match_parent"
@@ -126,7 +121,6 @@
                             android:layout_gravity="center_vertical"
                             android:orientation="vertical"
                             android:visibility="gone" />
-
                         <LinearLayout
                             android:id="@+id/ll_checkbox"
                             android:layout_width="match_parent"
