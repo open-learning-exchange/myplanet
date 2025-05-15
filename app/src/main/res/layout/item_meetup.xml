@@ -31,7 +31,6 @@
                 android:text="@string/title_colon"
                 android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/tvTitle"
                 android:layout_width="wrap_content"
@@ -55,7 +54,6 @@
                 android:text="@string/description_colon"
                 android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/tvDescription"
                 android:layout_width="wrap_content"
@@ -79,7 +77,6 @@
                 android:text="@string/date_from_colon"
                 android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/tvDateFrom"
                 android:layout_width="wrap_content"
@@ -103,7 +100,6 @@
                 android:text="@string/date_to_colon"
                 android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/tvDateTo"
                 android:layout_width="wrap_content"
@@ -128,9 +124,33 @@
                 android:text="@string/location_colon"
                 android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/tvLocation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/daynight_textColor" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/ltLink"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="4dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/ltLocation">
+
+            <TextView
+                android:id="@+id/Link"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Link: "
+                android:textColor="@color/daynight_textColor"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/tvLink"
+                android:autoLink="web"
+                android:linksClickable="true"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="@color/daynight_textColor" />
@@ -143,7 +163,7 @@
             android:padding="4dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/ltLocation">
+            app:layout_constraintTop_toBottomOf="@+id/ltLink">
 
             <TextView
                 android:id="@+id/recurring"
@@ -152,7 +172,6 @@
                 android:text="@string/recurring_colon"
                 android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/tvRecurring"
                 android:layout_width="wrap_content"
@@ -176,7 +195,6 @@
                 android:text="@string/created_by_colon"
                 android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
-
             <TextView
                 android:id="@+id/tvCreator"
                 android:layout_width="wrap_content"

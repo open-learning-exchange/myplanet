@@ -35,19 +35,14 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         activityPdfReaderBinding = ActivityPdfreaderBinding.inflate(layoutInflater)
         setContentView(activityPdfReaderBinding.root)
         audioRecorderService = AudioRecorderService().setAudioRecordListener(this)
+        audioRecorderService.setCaller(this, this)
         mRealm = DatabaseService(this).realmInstance
         if (intent.hasExtra("resourceId")) {
             val resourceID = intent.getStringExtra("resourceId")
             library = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceID).findFirst()!!
         }
         renderPdfFile()
-        activityPdfReaderBinding.fabRecord.setOnClickListener {
-            if (audioRecorderService.isRecording()) {
-                audioRecorderService.stopRecording()
-            } else {
-                audioRecorderService.startRecording()
-            }
-        }
+        activityPdfReaderBinding.fabRecord.setOnClickListener { audioRecorderService.onRecordClicked()}
         activityPdfReaderBinding.fabPlay.setOnClickListener {
             if (this::library.isInitialized && !TextUtils.isEmpty(library.translationAudioPath)) {
                 openAudioFile(this, library.translationAudioPath)

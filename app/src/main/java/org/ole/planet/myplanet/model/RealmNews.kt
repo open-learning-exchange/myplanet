@@ -241,7 +241,7 @@ open class RealmNews : RealmObject() {
         }
 
         @JvmStatic
-        fun createNews(map: HashMap<String?, String>, mRealm: Realm, user: RealmUserModel?, imageUrls: RealmList<String>?): RealmNews {
+        fun createNews(map: HashMap<String?, String>, mRealm: Realm, user: RealmUserModel?, imageUrls: RealmList<String>?, isReply: Boolean = false): RealmNews {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
@@ -256,7 +256,11 @@ open class RealmNews : RealmObject() {
             news.parentCode = user?.parentCode
             news.messagePlanetCode = map["messagePlanetCode"]
             news.messageType = map["messageType"]
-            news.viewIn = getViewInJson(map)
+            if(isReply){
+                news.viewIn = map["viewIn"]
+            } else {
+                news.viewIn = getViewInJson(map)
+            }
             news.chat = map["chat"]?.toBoolean() ?: false
 
             try {

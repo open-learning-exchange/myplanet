@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 
 object DialogUtils {
@@ -112,7 +113,11 @@ object DialogUtils {
             AlertDialog.Builder(context, R.style.AlertDialogTheme)
                 .setTitle(title)
                 .setMessage(message)
-                .setPositiveButton(R.string.finish, null)
+                .setPositiveButton(R.string.finish) { _, _ ->
+                    if (context is SyncActivity && message == context.getString(R.string.invalid_configuration)) {
+                        context.settingDialog()
+                    }
+                }
                 .show()
         }
     }
