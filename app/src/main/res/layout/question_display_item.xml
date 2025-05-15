@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="16dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="1dp"
+    app:strokeColor="?attr/colorPrimary"
+    app:strokeWidth="4dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Question Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="12dp"
+            android:background="?attr/colorSurfaceVariant">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvQuestionHeader"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="2dp"
+                    tools:text="Question Header" />
+
+                <TextView
+                    android:id="@+id/tvQuestionBody"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="15sp"
+                    tools:text="What is your favorite color?" />
+            </LinearLayout>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipQuestionType"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="8dp"
+                tools:text="input" />
+        </LinearLayout>
+
+        <!-- Answer Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Answer:"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <!-- For Text Input Answer -->
+            <TextView
+                android:id="@+id/tvTextAnswer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_answer_container"
+                android:padding="8dp"
+                android:visibility="gone"
+                tools:text="This is a text answer"
+                tools:visibility="visible" />
+
+            <!-- For Single Choice Answer -->
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipSingleChoice"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                tools:text="Selected option"
+                tools:visibility="visible" />
+
+            <!-- For Multiple Choice Answers -->
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupMultipleChoice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                app:chipSpacingHorizontal="4dp"
+                app:chipSpacingVertical="4dp"
+                tools:visibility="visible">
+
+                <com.google.android.material.chip.Chip
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    tools:text="Option 1" />
+
+                <com.google.android.material.chip.Chip
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    tools:text="Option 2" />
+            </com.google.android.material.chip.ChipGroup>
+
+            <!-- For Textarea Answer -->
+            <TextView
+                android:id="@+id/tvTextareaAnswer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_answer_container"
+                android:padding="8dp"
+                android:visibility="gone"
+                tools:text="This is a long text answer that might span multiple lines and provide detailed information about something the user wanted to share."
+                tools:visibility="visible" />
+
+            <!-- No Answer View -->
+            <TextView
+                android:id="@+id/tvNoAnswer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="No answer provided"
+                android:textStyle="italic"
+                android:visibility="gone"
+                tools:visibility="visible" />
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>
