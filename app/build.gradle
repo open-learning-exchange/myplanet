@@ -237,7 +237,7 @@ dependencies {
     implementation "io.noties.markwon:image:$markwon_version"
     implementation "io.noties.markwon:html:$markwon_version"
     implementation "io.noties.markwon:ext-tables:$markwon_version"
-    implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.1.20"))
+    implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.1.21"))
 
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
 }
