@@ -193,22 +193,6 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         return false
     }
 
-    fun createAnswer(answerList: RealmList<RealmAnswer>?): RealmAnswer? {
-        var list = answerList
-        if (list == null) {
-            list = RealmList()
-        }
-        val answer: RealmAnswer? = if (list.size > currentIndex) {
-            list[currentIndex]
-        } else {
-            mRealm.createObject(
-                RealmAnswer::class.java,
-                UUID.randomUUID().toString()
-            )
-        }
-        return answer
-    }
-
     fun addAnswer(compoundButton: CompoundButton) {
         val btnText = compoundButton.text.toString()
         val btnId = compoundButton.tag?.toString() ?: ""

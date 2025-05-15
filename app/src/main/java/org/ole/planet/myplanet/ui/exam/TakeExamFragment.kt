@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import java.util.Arrays
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 
 class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {
     private lateinit var fragmentTakeExamBinding: FragmentTakeExamBinding
@@ -103,6 +104,8 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun goToPreviousQuestion() {
+        saveCurrentAnswer()
+
         if (currentIndex > 0) {
             currentIndex--
             startExam(questions?.get(currentIndex))
@@ -239,39 +242,36 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         ans = ""
         listAns?.clear()
 
-        val savedAnswer = sub?.answers?.find { it.questionId == questions?.get(currentIndex)?.id }
         val currentQuestion = questions?.get(currentIndex)
+        val savedAnswer = sub?.answers?.find { it.questionId == currentQuestion?.id }
 
         if (savedAnswer != null) {
             when {
                 currentQuestion?.type.equals("select", ignoreCase = true) -> {
-                    if (savedAnswer.valueChoices != null && savedAnswer.valueChoices?.isNotEmpty() == true) {
+                    ans = savedAnswer.valueChoices?.firstOrNull()?.let {
                         try {
-                            val choiceJson = savedAnswer.valueChoices?.first()
-                            val jsonObject = Gson().fromJson(choiceJson, JsonObject::class.java)
-                            ans = jsonObject.get("id").asString
+                            val jsonObject = Gson().fromJson(it, JsonObject::class.java)
+                            jsonObject.get("id").asString
                         } catch (e: Exception) {
                             e.printStackTrace()
+                            savedAnswer.value ?: ""
                         }
-                    } else {
-                        ans = savedAnswer.value ?: ""
-                    }
+                    } ?: savedAnswer.value ?: ""
                 }
                 currentQuestion?.type.equals("selectMultiple", ignoreCase = true) -> {
-                    if (savedAnswer.valueChoices != null) {
+                    savedAnswer.valueChoices?.forEach { choiceJson ->
                         try {
-                            for (choiceJson in savedAnswer.valueChoices ?: emptyList()) {
-                                val jsonObject = Gson().fromJson(choiceJson, JsonObject::class.java)
-                                val id = jsonObject.get("id").asString
-                                val text = jsonObject.get("text").asString
-                                listAns?.put(text, id)
-                            }
+                            val jsonObject = Gson().fromJson(choiceJson, JsonObject::class.java)
+                            val id = jsonObject.get("id").asString
+                            val text = jsonObject.get("text").asString
+                            listAns?.put(text, id)
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
                     }
                 }
-                currentQuestion?.type.equals("input", ignoreCase = true) || currentQuestion?.type.equals("textarea", ignoreCase = true) -> {
+                currentQuestion?.type.equals("input", ignoreCase = true) ||
+                        currentQuestion?.type.equals("textarea", ignoreCase = true) -> {
                     ans = savedAnswer.value ?: ""
                     fragmentTakeExamBinding.etAnswer.setText(ans)
                 }
@@ -359,14 +359,17 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 if (showErrorMessage(getString(R.string.please_select_write_your_answer_to_continue))) {
                     return
                 }
+
                 val cont = updateAnsDb()
+                val currentQuestion = questions?.get(currentIndex)
+                val currentAnswer = sub?.answers?.find { it.questionId == currentQuestion?.id }
+                if (this.type == "exam" && currentAnswer != null && currentQuestion != null) {
+                    checkCorrectAns(currentAnswer, currentQuestion)
+                }
+
                 capturePhoto()
                 hideSoftKeyboard(requireActivity())
                 checkAnsAndContinue(cont)
-            }
-
-            if (currentIndex > 0) {
-                fragmentTakeExamBinding.btnBack.visibility = View.VISIBLE
             }
         }
     }
@@ -390,64 +393,64 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private fun updateAnsDb(): Boolean {
         var flag = false
         mRealm.executeTransaction { realm ->
-            sub?.status = if (currentIndex == (questions?.size ?: 0) - 1) {
-                if (sub?.type == "survey") {
-                    "complete"
-                } else {
-                    "requires grading"
+            val currentQuestion = questions?.get(currentIndex) ?: return@executeTransaction
+
+            val existingAnswer = sub?.answers?.find { it.questionId == currentQuestion.id }
+            val answer = existingAnswer ?: realm.createObject(RealmAnswer::class.java, UUID.randomUUID().toString())
+            when {
+                currentQuestion.type.equals("select", ignoreCase = true) -> {
+                    val choiceText = getChoiceTextById(currentQuestion, ans)
+                    answer.value = choiceText
+                    answer.valueChoices = RealmList<String>().apply {
+                        if (ans.isNotEmpty()) {
+                            add("""{"id":"$ans","text":"$choiceText"}""")
+                        }
+                    }
                 }
+                currentQuestion.type.equals("selectMultiple", ignoreCase = true) -> {
+                    answer.value = ""
+                    answer.valueChoices = RealmList<String>().apply {
+                        listAns?.forEach { (text, id) ->
+                            add("""{"id":"$id","text":"$text"}""")
+                        }
+                    }
+                }
+                else -> {
+                    answer.value = ans
+                    answer.valueChoices = null
+                }
+            }
+
+            answer.questionId = currentQuestion.id
+            answer.submissionId = sub?.id
+
+            if (existingAnswer == null) {
+                sub?.answers?.add(answer)
+            }
+
+            sub?.lastUpdateTime = Date().time
+            sub?.status = if (currentIndex == (questions?.size ?: 0) - 1) {
+                if (type == "survey") "complete" else "requires grading"
             } else {
                 "pending"
             }
-            if (isTeam == true) {
-                sub?.team = teamId
-            }
 
-            val currentQuestion = questions?.get(currentIndex)
-            val isAnswerEmpty = when {
-                currentQuestion?.type.equals("select", ignoreCase = true) -> {
-                    ans.isEmpty()
-                }
-                currentQuestion?.type.equals("selectMultiple", ignoreCase = true) -> {
-                    listAns?.isEmpty() == true
-                }
-                else -> {
-                    ans.isEmpty()
-                }
-            }
-
-            val list: RealmList<RealmAnswer>? = sub?.answers
-            val existingAnswerIndex = list?.indexOfFirst { it.questionId == currentQuestion?.id }
-
-            if (isAnswerEmpty && (existingAnswerIndex == null || existingAnswerIndex == -1)) {
-                return@executeTransaction
-            }
-
-            val answer = createAnswer(list)
-            val que = currentQuestion?.let { mRealm.copyFromRealm(it) }
-            answer?.questionId = que?.id
-            answer?.value = ans
-            answer?.setValueChoices(listAns, isLastAnsvalid)
-            answer?.submissionId = sub?.id
-            submitId = answer?.submissionId ?: ""
-
-            if ((que?.getCorrectChoice()?.size ?: 0) == 0) {
-                answer?.grade = 0
-                answer?.mistakes = 0
-                flag = true
-            } else {
-                flag = checkCorrectAns(answer, que)
-            }
-
-            if (existingAnswerIndex != null && existingAnswerIndex != -1) {
-                list.removeAt(existingAnswerIndex)
-            }
-
-            answer?.let { list?.add(it) }
-            sub?.answers = list
-            sub?.lastUpdateTime = Date().time
+            flag = true
         }
         return flag
+    }
+
+    private fun getChoiceTextById(question: RealmExamQuestion, id: String): String {
+        val choices = getStringAsJsonArray(question.choices)
+        for (i in 0 until choices.size()) {
+            if (choices[i].isJsonObject) {
+                val obj = choices[i].asJsonObject
+                if (obj.get("id").asString == id) {
+                    return obj.get("text").asString
+                }
+            }
+        }
+        return id
     }
 
     private fun checkCorrectAns(answer: RealmAnswer?, que: RealmExamQuestion?): Boolean {
