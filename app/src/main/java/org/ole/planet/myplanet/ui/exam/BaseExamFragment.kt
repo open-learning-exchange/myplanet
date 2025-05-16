@@ -10,8 +10,10 @@ import android.text.TextUtils
 import android.text.TextWatcher
 import android.view.Gravity
 import android.view.View
+import android.widget.CheckBox
 import android.widget.CompoundButton
 import android.widget.EditText
+import android.widget.RadioButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -22,11 +24,9 @@ import io.noties.markwon.Markwon
 import io.noties.markwon.editor.MarkwonEditor
 import io.noties.markwon.editor.MarkwonEditorTextWatcher
 import io.realm.Realm
-import io.realm.RealmList
 import io.realm.RealmResults
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
@@ -191,27 +191,14 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         return false
     }
 
-    fun createAnswer(answerList: RealmList<RealmAnswer>?): RealmAnswer? {
-        var list = answerList
-        if (list == null) {
-            list = RealmList()
-        }
-        val answer: RealmAnswer? = if (list.size > currentIndex) {
-            list[currentIndex]
-        } else {
-            mRealm.createObject(
-                RealmAnswer::class.java,
-                UUID.randomUUID().toString()
-            )
-        }
-        return answer
-    }
-
     fun addAnswer(compoundButton: CompoundButton) {
-        if (compoundButton.tag != null) {
-            listAns?.set(compoundButton.text.toString() + "", compoundButton.tag.toString() + "")
-        } else {
-            ans = compoundButton.text.toString() + ""
+        val btnText = compoundButton.text.toString()
+        val btnId = compoundButton.tag?.toString() ?: ""
+
+        if (compoundButton is RadioButton) {
+            ans = btnId
+        } else if (compoundButton is CheckBox) {
+            listAns?.put(btnText, btnId)
         }
     }
 

@@ -89,6 +89,7 @@
                 android:id="@+id/viewPager2"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:saveEnabled="false"
                 android:background="@color/secondary_bg" />
         </LinearLayout>
     </LinearLayout>
