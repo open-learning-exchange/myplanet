@@ -603,19 +603,22 @@ class SyncManager private constructor(private val context: Context) {
             Lrealm.executeTransaction { bgRealm ->
                 println("bb ${toInsert.size}")
                 println("TRANSACTION BEGIN: isInTransaction=${bgRealm.isInTransaction}, instance=$bgRealm, thread=${Thread.currentThread().name}")
-                for ((type, shelfId, doc) in toInsert) {
-                    println("CALL insertMyLibrary on thread: ${Thread.currentThread().name}, instance=$bgRealm")
-//                            val rowObj = rows[j].asJsonObject
-//                            if (!rowObj.has("doc")) continue
-//                            val doc = getJsonObject("doc", rowObj)
-//                            if (doc.entrySet().isEmpty()) continue
-
-                    when (type) {
-                        "resources" -> insertMyLibrary(shelfId, doc, bgRealm)
-                        "meetups"   -> insert(bgRealm, doc)
-                        "courses"   -> insertMyCourses(shelfId, doc, bgRealm)
-                        "teams"     -> insertMyTeams(doc, bgRealm)
-                        else        -> println("‼️ unrecognized shelfData.type=${type}")
+                for ((i, entry) in toInsert.withIndex()) {
+                    val (type, shelfId, doc) = entry
+                    println("Inserting item $i/${toInsert.size} type=$type shelfId=$shelfId")
+                    try {
+                        println(shelfId)
+                        println("CALL insertMyLibrary on thread: ${Thread.currentThread().name}, instance=$bgRealm")
+                        when (type) {
+                            "resources" -> insertMyLibrary(shelfId, doc, bgRealm)
+                            "meetups"   -> insert(bgRealm, doc)
+                            "courses"   -> insertMyCourses(shelfId, doc, bgRealm)
+                            "teams"     -> insertMyTeams(doc, bgRealm)
+                            else        -> println("‼️ unrecognized shelfData.type=${type}")
+                        }
+                    } catch (e: Exception) {
+                        println("‼️ Exception during insert: $e")
+                        e.printStackTrace()
                     }
                 }
             }

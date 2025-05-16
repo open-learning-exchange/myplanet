@@ -262,11 +262,6 @@ open class RealmMyLibrary : RealmObject() {
         fun insertMyLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm) {
             println("DEEP insertMyLibrary: isInTransaction=${mRealm.isInTransaction}, instance=$mRealm, thread=${Thread.currentThread().name}")
             if (doc.entrySet().isEmpty()) return
-            val ownTx = !mRealm.isInTransaction
-            if (ownTx){
-                println("own transaction")
-
-            }
             val resourceId = JsonUtils.getString("_id", doc)
             val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             var resource = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceId).findFirst()
