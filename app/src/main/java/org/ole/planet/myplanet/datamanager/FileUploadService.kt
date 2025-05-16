@@ -28,7 +28,7 @@ open class FileUploadService {
 
     fun uploadAttachment(id: String, rev: String, personal: RealmMyLibrary, listener: SuccessListener) {
         val f = personal.resourceLocalAddress?.let { File(it) }
-        val name = FileUtils.getFileNameFromUrl(personal.resourceLocalAddress)
+        val name = FileUtils.getFileNameFromLocalAddress(personal.resourceLocalAddress)
         if (f != null) {
             uploadDoc(id, rev, "%s/resources/%s/%s", f, name, listener)
         }

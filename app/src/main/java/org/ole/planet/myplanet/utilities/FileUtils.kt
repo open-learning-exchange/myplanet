@@ -86,6 +86,12 @@ object FileUtils {
     }
 
     @JvmStatic
+    fun getFileNameFromLocalAddress(path: String?): String {
+        if (path.isNullOrBlank()) return ""
+        return path.substringAfterLast('/')
+    }
+
+    @JvmStatic
     fun getFileNameFromUrl(url: String?): String {
         return try {
             if (url.isNullOrEmpty()) return ""
