@@ -91,7 +91,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                         log.time = "${Date().time}"
                         log.page = ""
                         log.version = getVersionName(context)
-                        if (type == "File Not Found" || type == "anr") {
+                        if (type == "File Not Found" || type == "anr" || type == "sync summary") {
                             log.type = type
                             log.error = error
                         } else {
