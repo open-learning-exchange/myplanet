@@ -620,23 +620,42 @@ class UploadManager(var context: Context) : FileUploadService() {
     fun uploadCrashLog() {
         mRealm = getRealm()
         val apiInterface = client?.create(ApiInterface::class.java)
+        try {
+            mRealm.beginTransaction()
+            val logs: RealmResults<RealmApkLog> = mRealm.where(RealmApkLog::class.java).isNull("_rev").findAll()
+            val logList = mRealm.copyFromRealm(logs)
+            mRealm.commitTransaction()
 
-        mRealm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
-            val logs: RealmResults<RealmApkLog> = realm.where(RealmApkLog::class.java).isNull("_rev").findAll()
-
-            logs.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
+            logList.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
                 batch.forEach { act ->
                     try {
                         val o = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/apk_logs", RealmApkLog.serialize(act, context))?.execute()?.body()
                         if (o != null) {
-                            act._rev = getString("rev", o)
+                            if (act.id.isNullOrEmpty() || getString("rev", o).isEmpty()) return
+
+                            try {
+                                val realm = getRealm()
+                                realm.executeTransaction { r ->
+                                    val log = r.where(RealmApkLog::class.java).equalTo("id", act.id).findFirst()
+                                    log?.let {
+                                        it._rev = getString("rev", o)
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
                         }
                     } catch (e: IOException) {
                         e.printStackTrace()
                     }
                 }
             }
-        }, Realm.Transaction.OnSuccess {})
+        } catch (e: Exception) {
+            e.printStackTrace()
+            if (mRealm.isInTransaction) {
+                mRealm.cancelTransaction()
+            }
+        }
     }
 
     fun uploadSearchActivity() {
