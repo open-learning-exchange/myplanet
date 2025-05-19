@@ -603,7 +603,6 @@ class SyncManager private constructor(private val context: Context) {
                 for ((i, entry) in toInsert.withIndex()) {
                     val (type, shelfId, doc) = entry
                     try {
-                        println(shelfId)
                         when (type) {
                             "resources" -> insertMyLibrary(shelfId, doc, bgRealm)
                             "meetups"   -> insert(bgRealm, doc)
