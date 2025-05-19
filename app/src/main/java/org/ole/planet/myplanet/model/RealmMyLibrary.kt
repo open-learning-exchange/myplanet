@@ -244,8 +244,6 @@ open class RealmMyLibrary : RealmObject() {
 
         @JvmStatic
         fun insertMyLibrary(userId: String?, doc: JsonObject, mRealm: Realm) {
-            println("insertMyLibrary: isInTransaction=${mRealm.isInTransaction}, instance=$mRealm, thread=${Thread.currentThread().name}")
-            println("$userId $doc")
             insertMyLibrary(userId, "", "", doc, mRealm)
         }
 
@@ -260,7 +258,6 @@ open class RealmMyLibrary : RealmObject() {
 
         @JvmStatic
         fun insertMyLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm) {
-            println("DEEP insertMyLibrary: isInTransaction=${mRealm.isInTransaction}, instance=$mRealm, thread=${Thread.currentThread().name}")
             if (doc.entrySet().isEmpty()) return
             val resourceId = JsonUtils.getString("_id", doc)
             val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
