@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.ui.exam
 
 import android.os.Bundle
+import android.text.Editable
 import android.text.TextUtils
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,6 +12,7 @@ import android.widget.RadioButton
 import androidx.core.content.ContextCompat
 import androidx.core.widget.NestedScrollView
 import com.google.android.material.snackbar.Snackbar
+import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.RealmList
 import io.realm.RealmQuery
@@ -33,6 +36,7 @@ import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import java.util.Arrays
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 
 class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {
     private lateinit var fragmentTakeExamBinding: FragmentTakeExamBinding
@@ -67,11 +71,83 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         if ((questions?.size ?: 0) > 0) {
             createSubmission()
             startExam(questions?.get(currentIndex))
+            updateNavButtons()
         } else {
             container?.visibility = View.GONE
             fragmentTakeExamBinding.btnSubmit.visibility = View.GONE
             fragmentTakeExamBinding.tvQuestionCount.setText(R.string.no_questions)
             Snackbar.make(fragmentTakeExamBinding.tvQuestionCount, R.string.no_questions_available, Snackbar.LENGTH_LONG).show()
+        }
+
+        fragmentTakeExamBinding.btnBack.setOnClickListener {
+            saveCurrentAnswer()
+            goToPreviousQuestion()
+        }
+        fragmentTakeExamBinding.btnNext.setOnClickListener {
+            saveCurrentAnswer()
+            goToNextQuestion()
+        }
+
+        fragmentTakeExamBinding.etAnswer.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                updateNavButtons()
+            }
+        })
+    }
+
+    private fun saveCurrentAnswer() {
+        val type = questions?.get(currentIndex)?.type
+        showTextInput(type)
+        updateAnsDb()
+    }
+
+    private fun goToPreviousQuestion() {
+        saveCurrentAnswer()
+
+        if (currentIndex > 0) {
+            currentIndex--
+            startExam(questions?.get(currentIndex))
+            updateNavButtons()
+        }
+    }
+
+    private fun goToNextQuestion() {
+        saveCurrentAnswer()
+
+        if (currentIndex < (questions?.size ?: 0) - 1) {
+            currentIndex++
+            startExam(questions?.get(currentIndex))
+            updateNavButtons()
+        }
+    }
+
+    private fun updateNavButtons() {
+        fragmentTakeExamBinding.btnBack.visibility = if (currentIndex == 0) View.GONE else View.VISIBLE
+        val isLastQuestion = currentIndex == (questions?.size ?: 0) - 1
+        val isCurrentQuestionAnswered = isQuestionAnswered()
+
+        fragmentTakeExamBinding.btnNext.visibility = if (isLastQuestion || !isCurrentQuestionAnswered) View.GONE else View.VISIBLE
+
+        setButtonText()
+    }
+
+    private fun isQuestionAnswered(): Boolean {
+        val currentQuestion = questions?.get(currentIndex)
+
+        return when {
+            currentQuestion?.type.equals("select", ignoreCase = true) -> {
+                ans.isNotEmpty()
+            }
+            currentQuestion?.type.equals("selectMultiple", ignoreCase = true) -> {
+                listAns?.isNotEmpty() == true
+            }
+            currentQuestion?.type.equals("input", ignoreCase = true) ||
+                    currentQuestion?.type.equals("textarea", ignoreCase = true) -> {
+                fragmentTakeExamBinding.etAnswer.text.toString().isNotEmpty()
+            }
+            else -> false
         }
     }
 
@@ -134,26 +210,73 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         fragmentTakeExamBinding.groupChoices.visibility = View.GONE
         fragmentTakeExamBinding.llCheckbox.visibility = View.GONE
         clearAnswer()
-        if ((sub?.answers?.size ?: 0) > currentIndex) {
-            ans = sub?.answers?.get(currentIndex)?.value ?: ""
-        }
-        if (question?.type.equals("select", ignoreCase = true)) {
-            fragmentTakeExamBinding.groupChoices.visibility = View.VISIBLE
-            fragmentTakeExamBinding.etAnswer.visibility = View.GONE
-            selectQuestion(question, ans)
-        } else if (question?.type.equals("input", ignoreCase = true) ||
-            question?.type.equals("textarea", ignoreCase = true)) {
-            question?.type?.let {
-                setMarkdownViewAndShowInput(fragmentTakeExamBinding.etAnswer, it, ans)
+
+        loadSavedAnswer()
+
+        when {
+            question?.type.equals("select", ignoreCase = true) -> {
+                fragmentTakeExamBinding.groupChoices.visibility = View.VISIBLE
+                fragmentTakeExamBinding.etAnswer.visibility = View.GONE
+                selectQuestion(question, ans)
             }
-        } else if (question?.type.equals("selectMultiple", ignoreCase = true)) {
-            fragmentTakeExamBinding.llCheckbox.visibility = View.VISIBLE
-            fragmentTakeExamBinding.etAnswer.visibility = View.GONE
-            showCheckBoxes(question, ans)
+            question?.type.equals("input", ignoreCase = true) ||
+                    question?.type.equals("textarea", ignoreCase = true) -> {
+                question?.type?.let {
+                    setMarkdownViewAndShowInput(fragmentTakeExamBinding.etAnswer, it, ans)
+                }
+            }
+            question?.type.equals("selectMultiple", ignoreCase = true) -> {
+                fragmentTakeExamBinding.llCheckbox.visibility = View.VISIBLE
+                fragmentTakeExamBinding.etAnswer.visibility = View.GONE
+                showCheckBoxes(question, ans)
+            }
         }
         fragmentTakeExamBinding.tvHeader.text = question?.header
         question?.body?.let { setMarkdownText(fragmentTakeExamBinding.tvBody, it) }
         fragmentTakeExamBinding.btnSubmit.setOnClickListener(this)
+
+        updateNavButtons()
+    }
+
+    private fun loadSavedAnswer() {
+        ans = ""
+        listAns?.clear()
+
+        val currentQuestion = questions?.get(currentIndex)
+        val savedAnswer = sub?.answers?.find { it.questionId == currentQuestion?.id }
+
+        if (savedAnswer != null) {
+            when {
+                currentQuestion?.type.equals("select", ignoreCase = true) -> {
+                    ans = savedAnswer.valueChoices?.firstOrNull()?.let {
+                        try {
+                            val jsonObject = Gson().fromJson(it, JsonObject::class.java)
+                            jsonObject.get("id").asString
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            savedAnswer.value ?: ""
+                        }
+                    } ?: savedAnswer.value ?: ""
+                }
+                currentQuestion?.type.equals("selectMultiple", ignoreCase = true) -> {
+                    savedAnswer.valueChoices?.forEach { choiceJson ->
+                        try {
+                            val jsonObject = Gson().fromJson(choiceJson, JsonObject::class.java)
+                            val id = jsonObject.get("id").asString
+                            val text = jsonObject.get("text").asString
+                            listAns?.put(text, id)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+                currentQuestion?.type.equals("input", ignoreCase = true) ||
+                        currentQuestion?.type.equals("textarea", ignoreCase = true) -> {
+                    ans = savedAnswer.value ?: ""
+                    fragmentTakeExamBinding.etAnswer.setText(ans)
+                }
+            }
+        }
     }
 
     private fun clearAnswer() {
@@ -205,9 +328,19 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 R.layout.item_checkbox
             }, null
         ) as CompoundButton
-        rdBtn.text = getString("text", choice)
-        rdBtn.tag = getString("id", choice)
-        rdBtn.isChecked = getString("id", choice) == oldAnswer
+
+        val choiceText = getString("text", choice)
+        val choiceId = getString("id", choice)
+
+        rdBtn.text = choiceText
+        rdBtn.tag = choiceId
+
+        if (isRadio) {
+            rdBtn.isChecked = choiceId == oldAnswer
+        } else {
+            rdBtn.isChecked = listAns?.get(choiceText) == choiceId
+        }
+
         rdBtn.setOnCheckedChangeListener(this)
         if (isRadio) {
             fragmentTakeExamBinding.groupChoices.addView(rdBtn)
@@ -226,7 +359,14 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 if (showErrorMessage(getString(R.string.please_select_write_your_answer_to_continue))) {
                     return
                 }
+
                 val cont = updateAnsDb()
+                val currentQuestion = questions?.get(currentIndex)
+                val currentAnswer = sub?.answers?.find { it.questionId == currentQuestion?.id }
+                if (this.type == "exam" && currentAnswer != null && currentQuestion != null) {
+                    checkCorrectAns(currentAnswer, currentQuestion)
+                }
+
                 capturePhoto()
                 hideSoftKeyboard(requireActivity())
                 checkAnsAndContinue(cont)
@@ -253,46 +393,64 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private fun updateAnsDb(): Boolean {
         var flag = false
         mRealm.executeTransaction { realm ->
-            sub?.status = if (currentIndex == (questions?.size ?: 0) - 1) {
-                if (sub?.type == "survey") {
-                    "complete"
-                } else {
-                    "requires grading"
+            val currentQuestion = questions?.get(currentIndex) ?: return@executeTransaction
+
+            val existingAnswer = sub?.answers?.find { it.questionId == currentQuestion.id }
+            val answer = existingAnswer ?: realm.createObject(RealmAnswer::class.java, UUID.randomUUID().toString())
+            when {
+                currentQuestion.type.equals("select", ignoreCase = true) -> {
+                    val choiceText = getChoiceTextById(currentQuestion, ans)
+                    answer.value = choiceText
+                    answer.valueChoices = RealmList<String>().apply {
+                        if (ans.isNotEmpty()) {
+                            add("""{"id":"$ans","text":"$choiceText"}""")
+                        }
+                    }
                 }
+                currentQuestion.type.equals("selectMultiple", ignoreCase = true) -> {
+                    answer.value = ""
+                    answer.valueChoices = RealmList<String>().apply {
+                        listAns?.forEach { (text, id) ->
+                            add("""{"id":"$id","text":"$text"}""")
+                        }
+                    }
+                }
+                else -> {
+                    answer.value = ans
+                    answer.valueChoices = null
+                }
+            }
+
+            answer.questionId = currentQuestion.id
+            answer.submissionId = sub?.id
+
+            if (existingAnswer == null) {
+                sub?.answers?.add(answer)
+            }
+
+            sub?.lastUpdateTime = Date().time
+            sub?.status = if (currentIndex == (questions?.size ?: 0) - 1) {
+                if (type == "survey") "complete" else "requires grading"
             } else {
                 "pending"
             }
-            if (isTeam == true) {
-                sub?.team = teamId
-            }
-            val list: RealmList<RealmAnswer>? = sub?.answers
-            val answer = createAnswer(list)
-            val que = questions?.get(currentIndex)?.let { mRealm.copyFromRealm(it) }
-            answer?.questionId = que?.id
-            answer?.value = ans
-            answer?.setValueChoices(listAns, isLastAnsvalid)
-            answer?.submissionId = sub?.id
-            submitId = answer?.submissionId ?: ""
-            if ((que?.getCorrectChoice()?.size ?: 0) == 0) {
-                answer?.grade = 0
-                answer?.mistakes = 0
-                flag = true
-            } else {
-                flag = checkCorrectAns(answer, que)
-            }
-            removeOldAnswer(list)
-            list?.add(currentIndex, answer)
-            sub?.answers = list
+
+            flag = true
         }
         return flag
     }
 
-    private fun removeOldAnswer(list: RealmList<RealmAnswer>?) {
-        if (sub?.type == "survey" && (list?.size ?: 0) > currentIndex) {
-            list?.removeAt(currentIndex)
-        } else if ((list?.size ?: 0) > currentIndex && !isLastAnsvalid) {
-            list?.removeAt(currentIndex)
+    private fun getChoiceTextById(question: RealmExamQuestion, id: String): String {
+        val choices = getStringAsJsonArray(question.choices)
+        for (i in 0 until choices.size()) {
+            if (choices[i].isJsonObject) {
+                val obj = choices[i].asJsonObject
+                if (obj.get("id").asString == id) {
+                    return obj.get("text").asString
+                }
+            }
         }
+        return id
     }
 
     private fun checkCorrectAns(answer: RealmAnswer?, que: RealmExamQuestion?): Boolean {
@@ -329,8 +487,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     override fun onCheckedChanged(compoundButton: CompoundButton, b: Boolean) {
         if (b) {
             addAnswer(compoundButton)
-        } else if (compoundButton.tag != null) {
+        } else if (compoundButton.tag != null && compoundButton !is RadioButton) {
             listAns?.remove("${compoundButton.text}")
         }
+        updateNavButtons()
     }
 }

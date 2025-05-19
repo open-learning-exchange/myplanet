@@ -346,11 +346,24 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun getPendingSurveys(userId: String?, realm: Realm): List<RealmSubmission> {
-        return realm.where(RealmSubmission::class.java)
-            .equalTo("userId", userId)
-            .equalTo("type", "survey")
-            .equalTo("status", "pending", Case.INSENSITIVE)
-            .findAll()
+        val pendingSurveys = realm.where(RealmSubmission::class.java).equalTo("userId", userId)
+            .equalTo("type", "survey").equalTo("status", "pending", Case.INSENSITIVE).findAll()
+
+        val uniqueSurveyMap = mutableMapOf<String, RealmSubmission>()
+
+        pendingSurveys.forEach { submission ->
+            val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
+
+            val exam = realm.where(RealmStepExam::class.java)
+                .equalTo("id", examId)
+                .findFirst()
+
+            if (exam != null && !uniqueSurveyMap.containsKey(examId)) {
+                uniqueSurveyMap[examId] = submission
+            }
+        }
+
+        return uniqueSurveyMap.values.toList()
     }
 
     private fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>, realm: Realm): List<String> {
