@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.news
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Dialog
 import android.content.Context
@@ -7,6 +8,7 @@ import android.content.DialogInterface
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Build
+import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -53,7 +55,7 @@ import java.io.File
 import java.util.Calendar
 import androidx.core.graphics.drawable.toDrawable
 
-class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
+class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "") : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
     private lateinit var rowNewsBinding: RowNewsBinding
     private var listener: OnNewsItemClickListener? = null
     private var imageList: RealmList<String>? = null
@@ -99,6 +101,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         return ViewHolderNews(rowNewsBinding)
     }
 
+    @SuppressLint("SetTextI18n")
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         if (holder is ViewHolderNews) {
@@ -106,6 +109,18 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             val news = getNews(holder, position)
 
             if (news?.isValid == true) {
+                var sharedTeamName = ""
+                if(!TextUtils.isEmpty(news.viewIn)){
+                    val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
+                    if(ar.size() > 1){
+                        val ob = ar[0].asJsonObject
+                        if (ob.has("name") && !ob.get("name").isJsonNull) {
+                            sharedTeamName = ob.get("name").asString
+                        }
+                    }
+                }
+                val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
+                println(ar)
                 holder.rowNewsBinding.tvName.text = ""
                 holder.rowNewsBinding.imgUser.setImageResource(0)
                 holder.rowNewsBinding.llEditDelete.visibility = View.GONE
@@ -141,7 +156,11 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 } else {
                     holder.rowNewsBinding.linearLayout51.visibility = View.GONE
                 }
-                holder.rowNewsBinding.tvDate.text = formatDate(news.time)
+                if(sharedTeamName.isEmpty() || teamName.isNotEmpty()){
+                    holder.rowNewsBinding.tvDate.text = formatDate(news.time)
+                } else{
+                    holder.rowNewsBinding.tvDate.text = "${formatDate(news.time)} | Shared from $sharedTeamName"
+                }
                 if (news.isEdited) {
                     holder.rowNewsBinding.tvEdited.visibility = View.VISIBLE
                 } else {
