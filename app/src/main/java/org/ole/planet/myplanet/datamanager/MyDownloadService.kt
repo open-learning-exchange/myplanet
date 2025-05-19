@@ -41,13 +41,27 @@ class MyDownloadService : Service() {
     private var request: Call<ResponseBody>? = null
     private var fromSync = false
 
+    private var totalDownloadsCount = 0
+    private var completedDownloadsCount = 0
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
-        startForegroundServiceWithNotification()
+        initializeNotificationChannels()
+        val initialNotification = NotificationCompat.Builder(this, "DownloadChannel")
+            .setContentTitle(getString(R.string.downloading_files))
+            .setContentText(getString(R.string.preparing_download))
+            .setSmallIcon(R.drawable.ic_download)
+            .setProgress(100, 0, true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setOngoing(true)
+            .setSilent(true)
+            .build()
+
+        startForeground(ONGOING_NOTIFICATION_ID, initialNotification)
 
         val urlsKey = intent?.getStringExtra("urls_key") ?: "url_list_key"
         val urlSet = preferences.getStringSet(urlsKey, emptySet()) ?: emptySet()
@@ -58,7 +72,10 @@ class MyDownloadService : Service() {
         }
 
         urls = urlSet.toTypedArray()
+        totalDownloadsCount = urls.size
         fromSync = intent?.getBooleanExtra("fromSync", false) == true
+
+        updateNotificationForBatchDownload()
 
         CoroutineScope(Dispatchers.IO).launch {
             urls.forEachIndexed { index, url ->
@@ -70,21 +87,33 @@ class MyDownloadService : Service() {
         return START_STICKY
     }
 
-    private fun startForegroundServiceWithNotification() {
+    private fun initializeNotificationChannels() {
         val channelId = "DownloadChannel"
         if (notificationManager?.getNotificationChannel(channelId) == null) {
-            val channel = NotificationChannel(channelId, "Download Service", NotificationManager.IMPORTANCE_HIGH)
+            val channel = NotificationChannel(channelId, "Download Service", NotificationManager.IMPORTANCE_HIGH).apply {
+                setSound(null, null)
+            }
             notificationManager?.createNotificationChannel(channel)
         }
 
-        notificationBuilder = NotificationCompat.Builder(this, channelId)
-            .setContentTitle(getString(R.string.downloading_files))
-            .setContentText(getString(R.string.preparing_download))
-            .setSmallIcon(R.drawable.ic_download)
-            .setProgress(100, 0, true)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+        val completionChannelId = "DownloadCompletionChannel"
+        if (notificationManager?.getNotificationChannel(completionChannelId) == null) {
+            val channel = NotificationChannel(completionChannelId, "Download Completion", NotificationManager.IMPORTANCE_HIGH)
+            notificationManager?.createNotificationChannel(channel)
+        }
+    }
 
-        startForeground(1, notificationBuilder?.build())
+    private fun updateNotificationForBatchDownload() {
+        notificationBuilder = NotificationCompat.Builder(this, "DownloadChannel")
+            .setContentTitle(getString(R.string.downloading_files))
+            .setContentText("Starting downloads (0/$totalDownloadsCount)")
+            .setSmallIcon(R.drawable.ic_download)
+            .setProgress(totalDownloadsCount, 0, false)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setOngoing(true)
+            .setSilent(true)
+
+        notificationManager?.notify(ONGOING_NOTIFICATION_ID, notificationBuilder?.build())
     }
 
     private fun initDownload(url: String, fromSync: Boolean) {
@@ -124,14 +153,20 @@ class MyDownloadService : Service() {
 
     private fun downloadFailed(message: String, fromSync: Boolean) {
         notificationBuilder?.apply {
-            setContentText(message)
-            notificationManager?.notify(0, build())
+            setContentText("Error: $message (${currentIndex + 1}/$totalDownloadsCount)")
+            notificationManager?.notify(ONGOING_NOTIFICATION_ID, build())
         }
+
         val download = Download().apply {
             failed = true
             this.message = message
         }
         sendIntent(download, fromSync)
+        completedDownloadsCount++
+
+        if (completedDownloadsCount >= totalDownloadsCount) {
+            showCompletionNotification(true)
+        }
 
         if (!fromSync) {
             if (message == "File Not Found") {
@@ -214,9 +249,9 @@ class MyDownloadService : Service() {
 
         if (NotificationManagerCompat.from(this).areNotificationsEnabled()) {
             notificationBuilder?.apply {
-                setProgress(100, download.progress, false)
-                setContentText("Downloading file ${download.currentFileSize}/$totalFileSize KB")
-                notificationManager?.notify(0, build())
+                setProgress(totalDownloadsCount, completedDownloadsCount, false)
+                setContentText("Downloading ${currentIndex + 1}/$totalDownloadsCount: ${getFileNameFromUrl(url)}")
+                notificationManager?.notify(ONGOING_NOTIFICATION_ID, build())
             }
         }
     }
@@ -233,20 +268,39 @@ class MyDownloadService : Service() {
         if ((outputFile?.length() ?: 0) > 0) {
             changeOfflineStatus(url)
         }
+        completedDownloadsCount++
+
         val download = Download().apply {
             fileName = getFileNameFromUrl(url)
             fileUrl = url
             progress = 100
-            completeAll = (currentIndex == urls.size - 1)
+            completeAll = (completedDownloadsCount >= totalDownloadsCount)
         }
-        if (download.completeAll) stopSelf()
 
         sendIntent(download, fromSync)
         notificationBuilder?.apply {
-            setProgress(0, 0, false)
-            setContentText("File Downloaded")
-            notificationManager?.notify(0, build())
+            setProgress(totalDownloadsCount, completedDownloadsCount, false)
+            setContentText("Downloaded ${completedDownloadsCount}/${totalDownloadsCount} files")
+            notificationManager?.notify(ONGOING_NOTIFICATION_ID, build())
         }
+
+        if (completedDownloadsCount >= totalDownloadsCount) {
+            showCompletionNotification(false)
+            stopSelf()
+        }
+    }
+
+    private fun showCompletionNotification(hadErrors: Boolean) {
+        val completionChannelId = "DownloadCompletionChannel"
+        val completionNotification = NotificationCompat.Builder(this, completionChannelId)
+            .setContentTitle("Downloads Completed")
+            .setContentText("$completedDownloadsCount of $totalDownloadsCount files downloaded" +
+                    if (hadErrors) " (with some errors)" else "")
+            .setSmallIcon(R.drawable.ic_download)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+
+        notificationManager?.notify(COMPLETION_NOTIFICATION_ID, completionNotification.build())
     }
 
     private fun changeOfflineStatus(url: String) {
@@ -256,8 +310,9 @@ class MyDownloadService : Service() {
                 val backgroundRealm = Realm.getDefaultInstance()
                 backgroundRealm.use { realm ->
                     realm.executeTransaction {
-                        realm.where(RealmMyLibrary::class.java).equalTo("resourceLocalAddress", currentFileName).findAll()
-                            ?.forEach {
+                        realm.where(RealmMyLibrary::class.java)
+                            .equalTo("resourceLocalAddress", currentFileName)
+                            .findAll()?.forEach {
                                 it.resourceOffline = true
                                 it.downloadedRev = it._rev
                             }
@@ -273,6 +328,9 @@ class MyDownloadService : Service() {
         const val PREFS_NAME = "MyPrefsFile"
         const val MESSAGE_PROGRESS = "message_progress"
         const val RESOURCE_NOT_FOUND_ACTION = "resource_not_found_action"
+        const val ONGOING_NOTIFICATION_ID = 1
+        const val COMPLETION_NOTIFICATION_ID = 2
+
         fun startService(context: Context, urlsKey: String, fromSync: Boolean) {
             val intent = Intent(context, MyDownloadService::class.java).apply {
                 putExtra("urls_key", urlsKey)
