@@ -4,14 +4,13 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.wifi.SupplicantState
 import android.net.wifi.WifiManager
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
+import io.realm.Realm
 import kotlinx.coroutines.*
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -36,7 +35,6 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 import kotlin.system.measureTimeMillis
 import androidx.core.content.edit
-import io.realm.Realm
 import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
@@ -44,6 +42,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
 class SyncManager private constructor(private val context: Context) {
     private var td: Thread? = null
     private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    lateinit var mRealm: Realm
     private var isSyncing = false
     private val stringArray = arrayOfNulls<String>(4)
     private var listener: SyncListener? = null
@@ -67,6 +66,14 @@ class SyncManager private constructor(private val context: Context) {
         ourInstance = null
         settings.edit { putLong("LastSync", Date().time) }
         listener?.onSyncComplete()
+        try {
+            if (::mRealm.isInitialized && !mRealm.isClosed) {
+                mRealm.close()
+                td?.interrupt()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun authenticateAndSync(type: String) {
@@ -95,14 +102,7 @@ class SyncManager private constructor(private val context: Context) {
             initializeSync()
             runBlocking {
                 val syncJobs = listOf(
-                    async {
-                        val realm = Realm.getDefaultInstance()
-                        try {
-                            TransactionSyncManager.syncDb(realm, "tablet_users")
-                        } finally {
-                            realm.close()
-                        }
-                    },
+                    async { TransactionSyncManager.syncDb(mRealm, "tablet_users") },
                     async {
                         val realm = Realm.getDefaultInstance()
                         try {
@@ -111,160 +111,31 @@ class SyncManager private constructor(private val context: Context) {
                             realm.close()
                         }
                     },
-                    async {
-                        val realm = Realm.getDefaultInstance()
-                        try {
-                            TransactionSyncManager.syncDb(realm, "courses")
-                        } finally {
-                            realm.close()
-                        }
-                    },
-                    async {
-                        val realm = Realm.getDefaultInstance()
-                        try {
-                            TransactionSyncManager.syncDb(realm, "exams")
-                        } finally {
-                            realm.close()
-                        }
-                    },
-                    async {
-                        val realm = Realm.getDefaultInstance()
-                        try {
-                            TransactionSyncManager.syncDb(realm, "ratings")
-                        } finally {
-                            realm.close()
-                        }
-                    },
-                    async {
-                        val realm = Realm.getDefaultInstance()
-                        try {
-                            TransactionSyncManager.syncDb(realm, "courses_progress")
-                        } finally {
-                            realm.close()
-                        }
-                    },
-                    async {
-                        val realm = Realm.getDefaultInstance()
-                        try {
-                            TransactionSyncManager.syncDb(realm, "achievements")
-                        } finally {
-                            realm.close()
-                        }
-                    },
-                    async {
-                        val realm = Realm.getDefaultInstance()
-                        try {
-                            TransactionSyncManager.syncDb(realm, "tags")
-                        } finally {
-                            realm.close()
-                        }
-                    },
-                    async {
-                        val realm = Realm.getDefaultInstance()
-                        try {
-                            TransactionSyncManager.syncDb(realm, "submissions")
-                        } finally {
-                            realm.close()
-                        }
-                    },
-                    async {
-                        val realm = Realm.getDefaultInstance()
-                        try {
-                            TransactionSyncManager.syncDb(realm, "news")
-                        } finally {
-                            realm.close()
-                        }
-                    },
-                    async {
-                        val realm = Realm.getDefaultInstance()
-                        try {
-                            TransactionSyncManager.syncDb(realm, "feedback")
-                        } finally {
-                            realm.close()
-                        }
-                    },
-                    async {
-                        val realm = Realm.getDefaultInstance()
-                        try {
-                            TransactionSyncManager.syncDb(realm, "teams")
-                        } finally {
-                            realm.close()
-                        }
-                    },
-                    async {
-                        val realm = Realm.getDefaultInstance()
-                        try {
-                            TransactionSyncManager.syncDb(realm, "tasks")
-                        } finally {
-                            realm.close()
-                        }
-                    },
-                    async {
-                        val realm = Realm.getDefaultInstance()
-                        try {
-                            TransactionSyncManager.syncDb(realm, "login_activities")
-                        } finally {
-                            realm.close()
-                        }
-                    },
-                    async {
-                        val realm = Realm.getDefaultInstance()
-                        try {
-                            TransactionSyncManager.syncDb(realm, "meetups")
-                        } finally {
-                            realm.close()
-                        }
-                    },
-                    async {
-                        val realm = Realm.getDefaultInstance()
-                        try {
-                            TransactionSyncManager.syncDb(realm, "health")
-                        } finally {
-                            realm.close()
-                        }
-                    },
-                    async {
-                        val realm = Realm.getDefaultInstance()
-                        try {
-                            TransactionSyncManager.syncDb(realm, "certifications")
-                        } finally {
-                            realm.close()
-                        }
-                    },
-                    async {
-                        val realm = Realm.getDefaultInstance()
-                        try {
-                            TransactionSyncManager.syncDb(realm, "team_activities")
-                        } finally {
-                            realm.close()
-                        }
-                    },
-                    async {
-                        val realm = Realm.getDefaultInstance()
-                        try {
-                            TransactionSyncManager.syncDb(realm, "chat_history")
-                        } finally {
-                            realm.close()
-                        }
-                    }
+                    async { TransactionSyncManager.syncDb(mRealm, "courses") },
+                    async { TransactionSyncManager.syncDb(mRealm, "exams") },
+                    async { TransactionSyncManager.syncDb(mRealm, "ratings") },
+                    async { TransactionSyncManager.syncDb(mRealm, "courses_progress") },
+                    async { TransactionSyncManager.syncDb(mRealm, "achievements") },
+                    async { TransactionSyncManager.syncDb(mRealm, "tags") },
+                    async { TransactionSyncManager.syncDb(mRealm, "submissions") },
+                    async { TransactionSyncManager.syncDb(mRealm, "news") },
+                    async { TransactionSyncManager.syncDb(mRealm, "feedback") },
+                    async { TransactionSyncManager.syncDb(mRealm, "teams") },
+                    async { TransactionSyncManager.syncDb(mRealm, "tasks") },
+                    async { TransactionSyncManager.syncDb(mRealm, "login_activities") },
+                    async { TransactionSyncManager.syncDb(mRealm, "meetups") },
+                    async { TransactionSyncManager.syncDb(mRealm, "health") },
+                    async { TransactionSyncManager.syncDb(mRealm, "certifications") },
+                    async { TransactionSyncManager.syncDb(mRealm, "team_activities") },
+                    async { TransactionSyncManager.syncDb(mRealm, "chat_history") }
                 )
                 syncJobs.awaitAll()
             }
 
-
             ManagerSync.instance?.syncAdmin()
-            val realm = Realm.getDefaultInstance()
-            try {
-                resourceTransactionSync(realm)
-            } finally {
-                realm.close()
-            }
-            val srealm = Realm.getDefaultInstance()
-            try {
-                onSynced(srealm, settings)
-            } finally {
-                srealm.close()
-            }
+            resourceTransactionSync()
+            onSynced(mRealm, settings)
+            mRealm.close()
         } catch (err: Exception) {
             err.printStackTrace()
             handleException(err.message)
@@ -292,6 +163,10 @@ class SyncManager private constructor(private val context: Context) {
     private fun cleanupMainSync() {
         cancel(context, 111)
         isSyncing = false
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+            td?.interrupt()
+        }
     }
 
     private fun cleanupBackgroundSync() {
@@ -307,11 +182,11 @@ class SyncManager private constructor(private val context: Context) {
         }
         isSyncing = true
         create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")
+        mRealm = dbService.realmInstance
     }
 
     private fun syncFirstBatch() {
-        val fRealm = Realm.getDefaultInstance()
-        TransactionSyncManager.syncDb(fRealm, "tablet_users")
+        TransactionSyncManager.syncDb(mRealm, "tablet_users")
         ManagerSync.instance?.syncAdmin()
     }
 
@@ -415,7 +290,7 @@ class SyncManager private constructor(private val context: Context) {
 
         try {
             val apiInterface = ApiClient.getEnhancedClient()
-            val realmInstance = backgroundRealm ?: Realm.getDefaultInstance()
+            val realmInstance = backgroundRealm ?: mRealm
             val newIds: MutableList<String?> = ArrayList()
 
             var totalRows = 0
