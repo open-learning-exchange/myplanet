@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.ui.userprofile
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -186,6 +188,7 @@ class BecomeMemberActivity : BaseActivity() {
                     password = phoneNumber
                 }
 
+                activityBecomeMemberBinding.pbar.visibility = View.VISIBLE
                 checkMandatoryFieldsAndAddMember(
                     userName, password, rePassword, fName, lName, mName, email, language, level,
                     phoneNumber, birthDate, gender, mRealm
@@ -220,31 +223,30 @@ class BecomeMemberActivity : BaseActivity() {
             obj.addProperty("betaEnabled", false)
             obj.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             obj.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
-            obj.addProperty(
-                "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
-            )
+            obj.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
             val roles = JsonArray()
             roles.add("learner")
             obj.add("roles", roles)
-            activityBecomeMemberBinding.pbar.visibility = View.VISIBLE
             Service(this).becomeMember(mRealm, obj, object : Service.CreateUserCallback {
                 override fun onSuccess(message: String) {
-                    runOnUiThread {
+                    Utilities.toast(this@BecomeMemberActivity, message)
+                    Handler(Looper.getMainLooper()).post {
                         activityBecomeMemberBinding.pbar.visibility = View.GONE
-                        Utilities.toast(this@BecomeMemberActivity, message)
+                        val intent = Intent(this@BecomeMemberActivity, LoginActivity::class.java)
+                        intent.putExtra("username", username)
+                        intent.putExtra("password", password)
+                        intent.putExtra("autoLogin", true)
+
+                        if (guest) {
+                            intent.putExtra("guest", true)
+                        }
+
+                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        startActivity(intent)
+                        finish()
                     }
-                    finish()
                 }
             })
-
-            val intent = Intent(this, LoginActivity::class.java)
-            if (guest){
-                intent.putExtra("username", username)
-                intent.putExtra("guest", guest)
-            }
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            startActivity(intent)
-            finish()
         }
     }
 

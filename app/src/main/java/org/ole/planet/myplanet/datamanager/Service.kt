@@ -202,7 +202,6 @@ class Service(private val context: Context) {
                 mapping.alternativeUrl.let { alternativeUrl ->
                     val uri = updateUrl.toUri()
                     val editor = preferences.edit()
-
                     serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, preferences)
                 }
             }
@@ -239,8 +238,18 @@ class Service(private val context: Context) {
                             retrofitInterface.putDoc(null, "application/json", "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
                                 override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
                                     if (response.body() != null && response.body()!!.has("id")) {
-                                        uploadToShelf(obj)
-                                        saveUserToDb(realm, response.body()!!.get("id").asString, obj, callback)
+                                        serviceScope.launch {
+                                            val uploadJob = async(Dispatchers.IO) {
+                                                uploadToShelf(obj)
+                                            }
+
+                                            val saveUserJob = async(Dispatchers.Main) {
+                                                saveUserToDb(realm, response.body()!!.get("id").asString, obj, callback)
+                                            }
+
+                                            uploadJob.await()
+                                            saveUserJob.await()
+                                        }
                                     } else {
                                         callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                                     }
@@ -292,7 +301,7 @@ class Service(private val context: Context) {
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         realm.executeTransactionAsync({ realm1: Realm? ->
             try {
-                val res = retrofitInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/" + id)?.execute()
+                val res = retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/$id")?.execute()
                 if (res?.body() != null) {
                     val model = populateUsersTable(res.body(), realm1, settings)
                     if (model != null) {

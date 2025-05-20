@@ -299,7 +299,7 @@ class SyncManager private constructor(private val context: Context) {
         ourInstance = null
     }
 
-    private fun initializeSync() {
+    fun initializeSync() {
         val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
         val wifiInfo = wifiManager.connectionInfo
         if (wifiInfo.supplicantState == SupplicantState.COMPLETED) {
@@ -308,6 +308,7 @@ class SyncManager private constructor(private val context: Context) {
         isSyncing = true
         create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")
     }
+
 
     private fun syncFirstBatch() {
         val fRealm = Realm.getDefaultInstance()
