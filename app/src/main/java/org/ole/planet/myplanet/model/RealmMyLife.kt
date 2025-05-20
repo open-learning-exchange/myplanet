@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import java.util.concurrent.Executors
 
 open class RealmMyLife : RealmObject {
     @PrimaryKey
@@ -36,32 +37,46 @@ open class RealmMyLife : RealmObject {
         }
 
         @JvmStatic
-        fun updateWeight(weight: Int, id: String?, realm: Realm, userId: String?) {
-            realm.executeTransaction { mRealm ->
-                var currentWeight = -1
-                val myLifeList = getMyLifeByUserId(mRealm, userId)
-                for (item in myLifeList) {
-                    if (id?.let { item._id?.contains(it) } == true) {
-                        currentWeight = item.weight
-                        item.weight = weight
+        fun updateWeight(weight: Int, id: String?, userId: String?) {
+            val executor = Executors.newSingleThreadExecutor()
+            executor.execute {
+                val backgroundRealm = Realm.getDefaultInstance()
+                try {
+                    backgroundRealm.executeTransaction { mRealm ->
+                        val targetItem = mRealm.where(RealmMyLife::class.java).equalTo("_id", id)
+                            .findFirst()
+
+                        targetItem?.let {
+                            val currentWeight = it.weight
+                            it.weight = weight
+
+                            val otherItem = mRealm.where(RealmMyLife::class.java)
+                                .equalTo("userId", userId).equalTo("weight", weight)
+                                .notEqualTo("_id", id).findFirst()
+
+                            otherItem?.weight = currentWeight
+                        }
                     }
-                }
-                for (item in myLifeList) {
-                    if (currentWeight != -1 && item.weight == weight && !id?.let { item._id?.contains(it) }!!) {
-                        item.weight = currentWeight
-                    }
+                } finally {
+                    backgroundRealm.close()
+                    executor.shutdown()
                 }
             }
         }
 
         @JvmStatic
-        fun updateVisibility(isVisible: Boolean, id: String?, realm: Realm, userId: String?) {
-            realm.executeTransaction { mRealm ->
-                val myLifeList = getMyLifeByUserId(mRealm, userId)
-                for (item in myLifeList) {
-                    if (id?.let { item._id?.contains(it) } == true) {
-                        item.isVisible = isVisible
+        fun updateVisibility(isVisible: Boolean, id: String?) {
+            val executor = Executors.newSingleThreadExecutor()
+            executor.execute {
+                val backgroundRealm = Realm.getDefaultInstance()
+                try {
+                    backgroundRealm.executeTransaction { mRealm ->
+                        mRealm.where(RealmMyLife::class.java).equalTo("_id", id).findFirst()
+                            ?.isVisible = isVisible
                     }
+                } finally {
+                    backgroundRealm.close()
+                    executor.shutdown()
                 }
             }
         }

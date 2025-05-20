@@ -712,7 +712,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data), false)
         }
 
-        val isFastSync = settings.getBoolean("fastSync", true)
+        val isFastSync = settings.getBoolean("fastSync", false)
         dialogServerUrlBinding.fastSync.isChecked = isFastSync
         dialogServerUrlBinding.fastSync.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
             editor.putBoolean("fastSync", b).apply()

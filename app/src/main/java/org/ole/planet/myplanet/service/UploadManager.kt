@@ -4,7 +4,7 @@ import android.content.*
 import android.text.TextUtils
 import com.google.gson.*
 import io.realm.*
-import okhttp3.MediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
@@ -571,7 +571,7 @@ class UploadManager(var context: Context) : FileUploadService() {
                                     val format = "%s/resources/%s/%s"
                                     val connection = f.toURI().toURL().openConnection()
                                     val mimeType = connection.contentType
-                                    val body = RequestBody.create(MediaType.parse("application/octet"), FileUtils.fullyReadFileToBytes(f))
+                                    val body = RequestBody.create("application/octet-stream".toMediaTypeOrNull(), FileUtils.fullyReadFileToBytes(f))
                                     val url = String.format(format, Utilities.getUrl(), id, name)
 
                                     val res = apiInterface?.uploadResource(getHeaderMap(mimeType, rev), url, body)?.execute()
