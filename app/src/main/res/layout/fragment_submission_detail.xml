@@ -99,19 +99,6 @@ tools:context=".ui.submission.SubmissionDetailFragment">
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     tools:text="John Doe (john@example.com)" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Status"
-                    android:layout_marginEnd="8dp" />
-
-                <TextView
-                    android:id="@+id/tvStatus"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textStyle="bold"
-                    tools:text="Complete" />
             </GridLayout>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
