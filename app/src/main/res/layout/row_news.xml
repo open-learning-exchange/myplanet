@@ -18,8 +18,7 @@
             android:layout_height="69dp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
-
-            <ImageView
+            <de.hdodenhof.circleimageview.CircleImageView
                 android:id="@+id/img_user"
                 android:layout_width="@dimen/_40dp"
                 android:layout_height="@dimen/_40dp"
