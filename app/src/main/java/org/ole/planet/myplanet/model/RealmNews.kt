@@ -325,6 +325,7 @@ open class RealmNews : RealmObject() {
                 val `object` = JsonObject()
                 `object`.addProperty("_id", map["viewInId"])
                 `object`.addProperty("section", map["viewInSection"])
+                `object`.addProperty("name", map["name"])
                 viewInArray.add(`object`)
             }
             return Gson().toJson(viewInArray)
