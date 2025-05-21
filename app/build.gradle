@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 26
         targetSdkVersion 34
-        versionCode 2530
-        versionName "0.25.30"
+        versionCode 2540
+        versionName "0.25.40"
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -219,15 +219,16 @@ dependencies {
     implementation "com.google.dagger:hilt-android:$dagger_hilt_version"
     kapt "com.google.dagger:hilt-android-compiler:$dagger_hilt_version"
 
-    def retrofit2_version = "2.11.0"
+    def retrofit2_version = "3.0.0"
     implementation "com.squareup.retrofit2:retrofit:$retrofit2_version"
     implementation "com.squareup.retrofit2:converter-gson:$retrofit2_version"
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
     def glide_version = "4.16.0"
     implementation "com.github.bumptech.glide:glide:$glide_version"
     kapt "com.github.bumptech.glide:compiler:$glide_version"
 
-    def media3_version = "1.6.1"
+    def media3_version = "1.7.1"
     implementation "androidx.media3:media3-exoplayer:$media3_version"
     implementation "androidx.media3:media3-ui:$media3_version"
     implementation "androidx.media3:media3-common:$media3_version"

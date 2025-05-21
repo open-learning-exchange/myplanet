@@ -439,17 +439,9 @@ class SyncManager private constructor(private val context: Context) {
             }
 
             try {
-                realmInstance.beginTransaction()
                 removeDeletedResource(newIds, realmInstance)
-
-                if (realmInstance.isInTransaction) {
-                    realmInstance.commitTransaction()
-                }
             } catch (e: Exception) {
                 e.printStackTrace()
-                if (realmInstance.isInTransaction) {
-                    realmInstance.cancelTransaction()
-                }
             }
             logger.endProcess("resource_sync", processedItems)
         } catch (e: Exception) {
@@ -461,12 +453,13 @@ class SyncManager private constructor(private val context: Context) {
     private fun myLibraryTransactionSync(backgroundRealm: Realm? = null) {
         val logger = SyncTimeLogger.getInstance()
         logger.startProcess("library_sync")
+        val Lrealm = backgroundRealm
 
         var processedItems = 0
 
         try {
             val apiInterface = ApiClient.getEnhancedClient()
-            val realmInstance = backgroundRealm ?: mRealm
+            var toInsert = mutableListOf<Triple<String, String, JsonObject>>()
 
             var shelfResponse: DocumentResponse? = null
             ApiClient.executeWithRetry {
@@ -480,8 +473,7 @@ class SyncManager private constructor(private val context: Context) {
             }
 
             for (row in shelfResponse.rows) {
-                val shelfId = row.id
-
+                val shelfId = row.id ?: continue
                 var shelfDoc: JsonObject? = null
                 ApiClient.executeWithRetry {
                     apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/$shelfId").execute()
@@ -512,6 +504,7 @@ class SyncManager private constructor(private val context: Context) {
                     for (i in 0 until validIds.size step batchSize) {
                         val end = minOf(i + batchSize, validIds.size)
                         val batch = validIds.subList(i, end)
+                        if (batch.isEmpty()) continue
 
                         try {
                             val keysObject = JsonObject()
@@ -527,37 +520,35 @@ class SyncManager private constructor(private val context: Context) {
                             if (response == null) continue
 
                             val rows = getJsonArray("rows", response)
+                            for (rowObj in rows) {
+                                val docEl = rowObj.asJsonObject
+                                if (!docEl.has("doc")) continue
+                                val doc = getJsonObject("doc", docEl)
+                                if (doc.entrySet().isEmpty()) continue
 
-                            for (j in 0 until rows.size()) {
-                                val rowObj = rows[j].asJsonObject
-                                if (rowObj.has("doc")) {
-                                    val doc = getJsonObject("doc", rowObj)
-
-                                    try {
-                                        realmInstance.beginTransaction()
-                                        when (shelfData.type) {
-                                            "resources" -> insertMyLibrary(shelfId, doc, realmInstance)
-                                            "meetups" -> insert(realmInstance, doc)
-                                            "courses" -> insertMyCourses(shelfId, doc, realmInstance)
-                                            "teams" -> insertMyTeams(doc, realmInstance)
-                                        }
-
-                                        if (realmInstance.isInTransaction) {
-                                            realmInstance.commitTransaction()
-                                            processedItems++
-                                        }
-                                    } catch (e: Exception) {
-                                        if (realmInstance.isInTransaction) {
-                                            realmInstance.cancelTransaction()
-                                        }
-                                    }
-                                }
+                                toInsert += Triple(shelfData.type, shelfId, doc)
                             }
                             logger.endProcess("library_sync", processedItems)
                         } catch (e: Exception) {
                             e.printStackTrace()
                             logger.endProcess("library_sync", processedItems)
                         }
+                    }
+                }
+            }
+
+            Lrealm?.executeTransaction { bgRealm ->
+                for ((_, entry) in toInsert.withIndex()) {
+                    val (type, shelfId, doc) = entry
+                    try {
+                        when (type) {
+                            "resources" -> insertMyLibrary(shelfId, doc, bgRealm)
+                            "meetups"   -> insert(bgRealm, doc)
+                            "courses"   -> insertMyCourses(shelfId, doc, bgRealm)
+                            "teams"     -> insertMyTeams(doc, bgRealm)
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
                 }
             }
