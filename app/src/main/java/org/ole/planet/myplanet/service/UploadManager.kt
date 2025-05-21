@@ -47,7 +47,6 @@ class UploadManager(var context: Context) : FileUploadService() {
         }
     }
 
-
     private fun uploadNewsActivities() {
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm = getRealm()
