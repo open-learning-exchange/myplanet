@@ -119,8 +119,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                         }
                     }
                 }
-                val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
-                println(ar)
                 holder.rowNewsBinding.tvName.text = ""
                 holder.rowNewsBinding.imgUser.setImageResource(0)
                 holder.rowNewsBinding.llEditDelete.visibility = View.GONE
