@@ -196,10 +196,27 @@ open class RealmMyLibrary : RealmObject() {
         @JvmStatic
         fun removeDeletedResource(newIds: List<String?>, mRealm: Realm) {
             val ids = getIds(mRealm)
-            ids.filterNot { it in newIds }.forEach { id ->
-                mRealm.executeTransaction { realm ->
-                    realm.where(RealmMyLibrary::class.java).equalTo("resourceId", id).findAll().deleteAllFromRealm()
+            val wasInTransaction = mRealm.isInTransaction
+
+            if (!wasInTransaction) {
+                mRealm.beginTransaction()
+            }
+
+            try {
+                ids.filterNot { it in newIds }.forEach { id ->
+                    mRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", id)
+                        .findAll()
+                        .deleteAllFromRealm()
                 }
+
+                if (!wasInTransaction) {
+                    mRealm.commitTransaction()
+                }
+            } catch (e: Exception) {
+                if (!wasInTransaction && mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
+                throw e
             }
         }
 
@@ -258,9 +275,7 @@ open class RealmMyLibrary : RealmObject() {
 
         @JvmStatic
         fun insertMyLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
+            if (doc.entrySet().isEmpty()) return
             val resourceId = JsonUtils.getString("_id", doc)
             val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             var resource = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceId).findFirst()
@@ -332,7 +347,7 @@ open class RealmMyLibrary : RealmObject() {
                 isPrivate = JsonUtils.getBoolean("private", doc)
                 setLanguages(JsonUtils.getJsonArray("languages", doc), this)
             }
-            mRealm.commitTransaction()
+
 
             val csvRow = arrayOf(
                 JsonUtils.getString("_id", doc),

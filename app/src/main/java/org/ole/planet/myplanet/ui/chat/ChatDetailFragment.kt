@@ -317,6 +317,11 @@ class ChatDetailFragment : Fragment() {
     private fun selectAI(selectedButton: Button, providerName: String, modelName: String) {
         val aiTableRow = fragmentChatDetailBinding.aiTableRow
         val context = requireContext()
+
+        if (aiName != providerName && aiName.isNotEmpty()) {
+            clearConversation()
+        }
+
         currentID = ""
         mAdapter.lastAnimatedPosition = -1
         mAdapter.animatedMessages.clear()
@@ -337,6 +342,15 @@ class ChatDetailFragment : Fragment() {
         aiName = providerName
         aiModel = modelName
 
+        fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
+    }
+
+    private fun clearConversation() {
+        mAdapter.clearData()
+        _id = ""
+        _rev = ""
+        currentID = ""
+        fragmentChatDetailBinding.editGchatMessage.text.clear()
         fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
     }
 
