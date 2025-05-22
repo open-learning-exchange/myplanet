@@ -483,21 +483,33 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     private fun deletePost(news: RealmNews?, context: Context) {
+        val ar = Gson().fromJson(news?.viewIn, JsonArray::class.java)
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
         val position = list.indexOf(news)
         if (position != -1) {
             list.removeAt(position)
             notifyItemRemoved(position)
         }
-        news?.let {
-            it.deleteFromRealm()
-            if (context is ReplyActivity) {
-                val restartIntent = context.intent
-                context.finish()
-                context.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_OPEN, 0, 0, 0)
-                context.startActivity(restartIntent)
-                context.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_OPEN, 0, 0, 0)
+        if(teamName.isNotEmpty() || ar.size() < 2){
+            news?.let {
+                it.deleteFromRealm()
+                if (context is ReplyActivity) {
+                    val restartIntent = context.intent
+                    context.finish()
+                    context.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_OPEN, 0, 0, 0)
+                    context.startActivity(restartIntent)
+                    context.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_OPEN, 0, 0, 0)
+                }
             }
+        } else {
+            val filtered = JsonArray().apply {
+                ar.forEach { elem ->
+                    if (!elem.asJsonObject.has("sharedDate")) {
+                        add(elem)
+                    }
+                }
+            }
+            news?.viewIn = Gson().toJson(filtered)
         }
         mRealm.commitTransaction()
         notifyDataSetChanged()
