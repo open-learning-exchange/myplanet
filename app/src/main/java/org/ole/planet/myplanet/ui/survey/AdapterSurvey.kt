@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.survey
 
 import android.content.Context
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,6 +18,7 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSubmissionByTeam
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSubmissionByUser
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getRecentSubmissionDate
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -117,6 +119,15 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
 
         fun bind(exam: RealmStepExam) {
             binding.apply {
+                val teamSubmissions = mRealm.where(RealmSubmission::class.java)
+                    .equalTo("parentId", "32dfda6f117ffca1403f2192d275064b")
+                    .equalTo("membershipDoc.teamId", teamId)
+                    .findAll()
+
+                logLargeString("okuro", "teamSubmission: $teamSubmissions")
+
+                Log.d("TAG", "teamId: ${teamSubmissions.size}")
+
                 startSurvey.visibility = View.VISIBLE
                 tvTitle.text = exam.name
                 if (exam.description?.isNotEmpty() == true) {
@@ -161,6 +172,7 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
                     startSurvey.visibility = View.GONE
                 }
 
+                Log.d("okuro", "teamSubmissions: ${getNoOfSubmissionByTeam(exam.id, exam.courseId, teamId, mRealm)}")
                 tvNoSubmissions.text = getNoOfSubmissionByUser(exam.id, exam.courseId, userId, mRealm)
                 tvDateCompleted.text = getRecentSubmissionDate(exam.id, exam.courseId, userId, mRealm)
                 tvDate.text = formatDate(RealmStepExam.getSurveyCreationTime(exam.id!!, mRealm)!!, "MMM dd, yyyy")
@@ -252,6 +264,15 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
 
             Snackbar.make(binding.root, context.getString(R.string.survey_adopted_successfully), Snackbar.LENGTH_LONG).show()
             surveyAdoptListener.onSurveyAdopted()
+        }
+
+        fun logLargeString(tag: String, content: String) {
+            if (content.length > 3000) {
+                Log.d(tag, content.substring(0, 3000))
+                logLargeString(tag, content.substring(3000))
+            } else {
+                Log.d(tag, content)
+            }
         }
     }
 }
