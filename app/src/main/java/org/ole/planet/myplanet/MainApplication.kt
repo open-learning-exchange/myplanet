@@ -79,19 +79,20 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         fun createLog(type: String, error: String) {
             applicationScope.launch(Dispatchers.IO) {
                 val realm = Realm.getDefaultInstance()
+                val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
                 try {
                     realm.executeTransaction { r ->
                         val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
                         val model = UserProfileDbHandler(context).userModel
+                        log.parentCode = settings.getString("parentCode", "")
+                        log.createdOn = settings.getString("planetCode", "")
                         if (model != null) {
-                            log.parentCode = model.parentCode
-                            log.createdOn = model.planetCode
                             log.userId = model.id
                         }
                         log.time = "${Date().time}"
                         log.page = ""
                         log.version = getVersionName(context)
-                        if (type == "File Not Found" || type == "anr") {
+                        if (type == "File Not Found" || type == "anr" || type == "sync summary") {
                             log.type = type
                             log.error = error
                         } else {
