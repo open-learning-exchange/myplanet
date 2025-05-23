@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.submission
 
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -53,10 +54,12 @@ class AdapterMySubmission(private val context: Context, private val list: List<R
         if (examHashMap?.containsKey(list?.get(position)?.parentId) == true)
             rowMySurveyBinding.title.text = examHashMap[list?.get(position)?.parentId]?.name
         holder.itemView.setOnClickListener {
-            if (type == "survey")
+            if (type == "survey") {
                 openSurvey(listener, list?.get(position)?.id, true, false, "")
-            else
-                openSubmissionDetail(listener, list?.get(position)?.id)
+            } else {
+                openSubmissionDetail(listener, list?.get(position))
+            }
+            Log.d("TAG", "onBindViewHolder: ${list?.get(position)}")
         }
     }
 
@@ -75,13 +78,16 @@ class AdapterMySubmission(private val context: Context, private val list: List<R
         }
     }
 
-    private fun openSubmissionDetail(listener: OnHomeItemClickListener?, id: String?) {
-        if (listener != null) {
+    private fun openSubmissionDetail(listener: OnHomeItemClickListener?, submission: RealmSubmission?) {
+        if (listener != null && submission != null) {
             val b = Bundle()
-            b.putString("id", id)
+            b.putString("id", submission.id)
+            // Since we can't pass Realm objects directly through bundles,
+            // we'll still send the ID but then retrieve it in the fragment
             val f: Fragment = SubmissionDetailFragment()
             f.arguments = b
-            listener.openCallFragment(f)}
+            listener.openCallFragment(f)
+        }
     }
 
     override fun getItemCount(): Int {
