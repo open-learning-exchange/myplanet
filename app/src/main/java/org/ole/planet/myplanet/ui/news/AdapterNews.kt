@@ -147,6 +147,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     showHideButtons(userModel, holder)
                 } else {
                     holder.rowNewsBinding.tvName.text = news.userName
+                    Utilities.loadImage(null, holder.rowNewsBinding.imgUser)
                 }
                 showShareButton(holder, news)
                 if ("${news.messageWithoutMarkdown}" != "</br>") {
