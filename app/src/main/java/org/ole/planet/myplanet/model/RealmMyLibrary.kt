@@ -196,27 +196,13 @@ open class RealmMyLibrary : RealmObject() {
         @JvmStatic
         fun removeDeletedResource(newIds: List<String?>, mRealm: Realm) {
             val ids = getIds(mRealm)
-            val wasInTransaction = mRealm.isInTransaction
+            val idsToRemove = ids.filterNot { it in newIds }
 
-            if (!wasInTransaction) {
-                mRealm.beginTransaction()
-            }
-
-            try {
-                ids.filterNot { it in newIds }.forEach { id ->
-                    mRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", id)
-                        .findAll()
-                        .deleteAllFromRealm()
-                }
-
-                if (!wasInTransaction) {
-                    mRealm.commitTransaction()
-                }
-            } catch (e: Exception) {
-                if (!wasInTransaction && mRealm.isInTransaction) {
-                    mRealm.cancelTransaction()
-                }
-                throw e
+            idsToRemove.forEach { id ->
+                mRealm.where(RealmMyLibrary::class.java)
+                    .equalTo("resourceId", id)
+                    .findAll()
+                    .deleteAllFromRealm()
             }
         }
 
@@ -251,7 +237,14 @@ open class RealmMyLibrary : RealmObject() {
         }
 
         private fun insertResources(doc: JsonObject, mRealm: Realm) {
-            insertMyLibrary("", doc, mRealm)
+            try {
+                insertMyLibrary("", doc, mRealm)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                if (mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
+            }
         }
 
         @JvmStatic
@@ -278,113 +271,135 @@ open class RealmMyLibrary : RealmObject() {
             if (doc.entrySet().isEmpty()) return
             val resourceId = JsonUtils.getString("_id", doc)
             val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            var resource = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceId).findFirst()
-            if (resource == null) {
-                resource = mRealm.createObject(RealmMyLibrary::class.java, resourceId)
-            }
-            resource?.apply {
-                setUserId(userId)
-                _id = resourceId
-                if (!stepId.isNullOrBlank()) {
-                    this.stepId = stepId
+            if (resourceId.isBlank()) return
+
+            try {
+                val shouldCommit = !mRealm.isInTransaction
+                if (shouldCommit) {
+                    mRealm.beginTransaction()
                 }
-                if (!courseId.isNullOrBlank()) {
-                    this.courseId = courseId
+
+                var resource = mRealm.where(RealmMyLibrary::class.java)
+                    .equalTo("id", resourceId)
+                    .findFirst()
+
+                if (resource == null) {
+                    resource = mRealm.createObject(RealmMyLibrary::class.java, resourceId)
                 }
-                _rev = JsonUtils.getString("_rev", doc)
-                this.resourceId = resourceId
-                title = JsonUtils.getString("title", doc)
-                description = JsonUtils.getString("description", doc)
-                if (doc.has("_attachments")) {
-                    val attachments = doc["_attachments"].asJsonObject
-                    if (this.attachments == null) {
-                        this.attachments = RealmList()
+                resource?.apply {
+                    setUserId(userId)
+                    _id = resourceId
+                    if (!stepId.isNullOrBlank()) {
+                        this.stepId = stepId
                     }
-
-                    attachments.entrySet().forEach { (key, attachmentValue) ->
-                        val attachmentObj = attachmentValue.asJsonObject
-
-                        val realmAttachment = mRealm.createObject(RealmAttachment::class.java, UUID.randomUUID().toString())
-                        realmAttachment.apply {
-                            name = key
-                            contentType = attachmentObj.get("content_type")?.asString
-                            length = attachmentObj.get("length")?.asLong ?: 0
-                            digest = attachmentObj.get("digest")?.asString
-                            isStub = attachmentObj.get("stub")?.asBoolean == true
-                            revpos = attachmentObj.get("revpos")?.asInt ?: 0
+                    if (!courseId.isNullOrBlank()) {
+                        this.courseId = courseId
+                    }
+                    _rev = JsonUtils.getString("_rev", doc)
+                    this.resourceId = resourceId
+                    title = JsonUtils.getString("title", doc)
+                    description = JsonUtils.getString("description", doc)
+                    if (doc.has("_attachments")) {
+                        val attachments = doc["_attachments"].asJsonObject
+                        if (this.attachments == null) {
+                            this.attachments = RealmList()
                         }
 
-                        this.attachments?.add(realmAttachment)
+                        attachments.entrySet().forEach { (key, attachmentValue) ->
+                            val attachmentObj = attachmentValue.asJsonObject
 
-                        if (key.indexOf("/") < 0) {
-                            resourceRemoteAddress = "${settings.getString("couchdbURL", "http://")}/resources/$resourceId/$key"
-                            resourceLocalAddress = key
-                            resourceOffline = FileUtils.checkFileExist(resourceRemoteAddress)
+                            val realmAttachment = mRealm.createObject(
+                                RealmAttachment::class.java,
+                                UUID.randomUUID().toString()
+                            )
+                            realmAttachment.apply {
+                                name = key
+                                contentType = attachmentObj.get("content_type")?.asString
+                                length = attachmentObj.get("length")?.asLong ?: 0
+                                digest = attachmentObj.get("digest")?.asString
+                                isStub = attachmentObj.get("stub")?.asBoolean == true
+                                revpos = attachmentObj.get("revpos")?.asInt ?: 0
+                            }
+
+                            this.attachments?.add(realmAttachment)
+
+                            if (key.indexOf("/") < 0) {
+                                resourceRemoteAddress = "${settings.getString("couchdbURL", "http://")}/resources/$resourceId/$key"
+                                resourceLocalAddress = key
+                                resourceOffline = FileUtils.checkFileExist(resourceRemoteAddress)
+                            }
                         }
                     }
+                    filename = JsonUtils.getString("filename", doc)
+                    averageRating = JsonUtils.getString("averageRating", doc)
+                    uploadDate = JsonUtils.getString("uploadDate", doc)
+                    year = JsonUtils.getString("year", doc)
+                    addedBy = JsonUtils.getString("addedBy", doc)
+                    publisher = JsonUtils.getString("publisher", doc)
+                    linkToLicense = JsonUtils.getString("linkToLicense", doc)
+                    openWith = JsonUtils.getString("openWith", doc)
+                    articleDate = JsonUtils.getString("articleDate", doc)
+                    kind = JsonUtils.getString("kind", doc)
+                    createdDate = JsonUtils.getLong("createdDate", doc)
+                    language = JsonUtils.getString("language", doc)
+                    author = JsonUtils.getString("author", doc)
+                    mediaType = JsonUtils.getString("mediaType", doc)
+                    resourceType = JsonUtils.getString("resourceType", doc)
+                    timesRated = JsonUtils.getInt("timesRated", doc)
+                    medium = JsonUtils.getString("medium", doc)
+                    setResourceFor(JsonUtils.getJsonArray("resourceFor", doc), this)
+                    setSubject(JsonUtils.getJsonArray("subject", doc), this)
+                    setLevel(JsonUtils.getJsonArray("level", doc), this)
+                    setTag(JsonUtils.getJsonArray("tags", doc), this)
+                    isPrivate = JsonUtils.getBoolean("private", doc)
+                    setLanguages(JsonUtils.getJsonArray("languages", doc), this)
                 }
-                filename = JsonUtils.getString("filename", doc)
-                averageRating = JsonUtils.getString("averageRating", doc)
-                uploadDate = JsonUtils.getString("uploadDate", doc)
-                year = JsonUtils.getString("year", doc)
-                addedBy = JsonUtils.getString("addedBy", doc)
-                publisher = JsonUtils.getString("publisher", doc)
-                linkToLicense = JsonUtils.getString("linkToLicense", doc)
-                openWith = JsonUtils.getString("openWith", doc)
-                articleDate = JsonUtils.getString("articleDate", doc)
-                kind = JsonUtils.getString("kind", doc)
-                createdDate = JsonUtils.getLong("createdDate", doc)
-                language = JsonUtils.getString("language", doc)
-                author = JsonUtils.getString("author", doc)
-                mediaType = JsonUtils.getString("mediaType", doc)
-                resourceType = JsonUtils.getString("resourceType", doc)
-                timesRated = JsonUtils.getInt("timesRated", doc)
-                medium = JsonUtils.getString("medium", doc)
-                setResourceFor(JsonUtils.getJsonArray("resourceFor", doc), this)
-                setSubject(JsonUtils.getJsonArray("subject", doc), this)
-                setLevel(JsonUtils.getJsonArray("level", doc), this)
-                setTag(JsonUtils.getJsonArray("tags", doc), this)
-                isPrivate = JsonUtils.getBoolean("private", doc)
-                setLanguages(JsonUtils.getJsonArray("languages", doc), this)
+
+                val csvRow = arrayOf(
+                    JsonUtils.getString("_id", doc),
+                    JsonUtils.getString("_rev", doc),
+                    JsonUtils.getString("title", doc),
+                    JsonUtils.getString("description", doc),
+                    JsonUtils.getString("resourceRemoteAddress", doc),
+                    JsonUtils.getString("resourceLocalAddress", doc),
+                    JsonUtils.getBoolean("resourceOffline", doc).toString(),
+                    JsonUtils.getString("resourceId", doc),
+                    JsonUtils.getString("addedBy", doc),
+                    JsonUtils.getString("uploadDate", doc),
+                    JsonUtils.getLong("createdDate", doc).toString(),
+                    JsonUtils.getString("openWith", doc),
+                    JsonUtils.getString("articleDate", doc),
+                    JsonUtils.getString("kind", doc),
+                    JsonUtils.getString("language", doc),
+                    JsonUtils.getString("author", doc),
+                    JsonUtils.getString("year", doc),
+                    JsonUtils.getString("medium", doc),
+                    JsonUtils.getString("filename", doc),
+                    JsonUtils.getString("mediaType", doc),
+                    JsonUtils.getString("resourceType", doc),
+                    JsonUtils.getInt("timesRated", doc).toString(),
+                    JsonUtils.getString("averageRating", doc),
+                    JsonUtils.getString("publisher", doc),
+                    JsonUtils.getString("linkToLicense", doc),
+                    JsonUtils.getString("subject", doc),
+                    JsonUtils.getString("level", doc),
+                    JsonUtils.getString("tags", doc),
+                    JsonUtils.getString("languages", doc),
+                    JsonUtils.getString("courseId", doc),
+                    JsonUtils.getString("stepId", doc),
+                    JsonUtils.getString("downloaded", doc),
+                    JsonUtils.getBoolean("private", doc).toString(),
+                )
+                libraryDataList.add(csvRow)
+                if (shouldCommit) {
+                    mRealm.commitTransaction()
+                }
+            } catch (e: Exception) {
+                if (mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
+                throw e
             }
-
-
-            val csvRow = arrayOf(
-                JsonUtils.getString("_id", doc),
-                JsonUtils.getString("_rev", doc),
-                JsonUtils.getString("title", doc),
-                JsonUtils.getString("description", doc),
-                JsonUtils.getString("resourceRemoteAddress", doc),
-                JsonUtils.getString("resourceLocalAddress", doc),
-                JsonUtils.getBoolean("resourceOffline", doc).toString(),
-                JsonUtils.getString("resourceId", doc),
-                JsonUtils.getString("addedBy", doc),
-                JsonUtils.getString("uploadDate", doc),
-                JsonUtils.getLong("createdDate", doc).toString(),
-                JsonUtils.getString("openWith", doc),
-                JsonUtils.getString("articleDate", doc),
-                JsonUtils.getString("kind", doc),
-                JsonUtils.getString("language", doc),
-                JsonUtils.getString("author", doc),
-                JsonUtils.getString("year", doc),
-                JsonUtils.getString("medium", doc),
-                JsonUtils.getString("filename", doc),
-                JsonUtils.getString("mediaType", doc),
-                JsonUtils.getString("resourceType", doc),
-                JsonUtils.getInt("timesRated", doc).toString(),
-                JsonUtils.getString("averageRating", doc),
-                JsonUtils.getString("publisher", doc),
-                JsonUtils.getString("linkToLicense", doc),
-                JsonUtils.getString("subject", doc),
-                JsonUtils.getString("level", doc),
-                JsonUtils.getString("tags", doc),
-                JsonUtils.getString("languages", doc),
-                JsonUtils.getString("courseId", doc),
-                JsonUtils.getString("stepId", doc),
-                JsonUtils.getString("downloaded", doc),
-                JsonUtils.getBoolean("private", doc).toString(),
-            )
-            libraryDataList.add(csvRow)
         }
 
         fun writeCsv(filePath: String, data: List<Array<String>>) {
@@ -413,15 +428,34 @@ open class RealmMyLibrary : RealmObject() {
 
         @JvmStatic
         fun save(allDocs: JsonArray, mRealm: Realm): List<String> {
-            val list: MutableList<String> = ArrayList()
-            allDocs.forEach { doc ->
-                val document = JsonUtils.getJsonObject("doc", doc.asJsonObject)
-                val id = JsonUtils.getString("_id", document)
-                if (!id.startsWith("_design")) {
-                    list.add(id)
-                    insertResources(document, mRealm)
+            val list = mutableListOf<String>()
+            var transactionStarted = false
+
+            try {
+                if (!mRealm.isInTransaction) {
+                    mRealm.beginTransaction()
+                    transactionStarted = true
                 }
+
+                allDocs.forEach { doc ->
+                    val document = doc.asJsonObject
+                    val id = JsonUtils.getString("_id", document)
+                    if (!id.startsWith("_design")) {
+                        list.add(id)
+                        insertResources(document, mRealm)
+                    }
+                }
+
+                if (transactionStarted) {
+                    mRealm.commitTransaction()
+                }
+            } catch (e: Exception) {
+                if (transactionStarted && mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
+                throw e
             }
+
             return list
         }
 
@@ -438,7 +472,7 @@ open class RealmMyLibrary : RealmObject() {
 
         @JvmStatic
         fun getArrayList(libraries: List<RealmMyLibrary>, type: String): Set<String?> {
-            return libraries.mapNotNull { if (type == "mediums") it.mediaType else it.language }.filterNot { it.isNullOrBlank() }.toSet()
+            return libraries.mapNotNull { if (type == "mediums") it.mediaType else it.language }.filterNot { it.isBlank() }.toSet()
         }
 
         @JvmStatic
