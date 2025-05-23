@@ -30,7 +30,7 @@ class MembersFragment : BaseMemberFragment() {
         get() = getRequestedMember(teamId, mRealm)
 
     override val adapter: RecyclerView.Adapter<*>
-        get() = AdapterMemberRequest(requireActivity(), list.toMutableList(), mRealm, isTeamLeader()).apply { setTeamId(teamId) }
+        get() = AdapterMemberRequest(requireActivity(), list.toMutableList(), mRealm).apply { setTeamId(teamId) }
 
     override val layoutManager: RecyclerView.LayoutManager
         get() {
