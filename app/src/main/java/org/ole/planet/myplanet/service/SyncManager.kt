@@ -439,8 +439,13 @@ class SyncManager private constructor(private val context: Context) {
             }
 
             try {
+                val realmInstance = backgroundRealm ?: mRealm
+                realmInstance.beginTransaction()
                 removeDeletedResource(newIds, realmInstance)
+
+                realmInstance.commitTransaction()
             } catch (e: Exception) {
+                realmInstance.cancelTransaction()
                 e.printStackTrace()
             }
             logger.endProcess("resource_sync", processedItems)
