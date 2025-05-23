@@ -253,15 +253,11 @@ open class RealmSubmission : RealmObject() {
         }
 
         @JvmStatic
-        fun getNoOfSubmissionByTeam(id: String?, courseId: String?, teamId: String?, mRealm: Realm): String {
-            if (id == null || teamId == null) return "No Submissions Found"
-
-            val submissionParentId = generateParentId(courseId, id)
-            if (submissionParentId.isNullOrEmpty()) return "No Submissions Found"
-
+        fun getNoOfSubmissionByTeam(teamId: String?, examId: String?, mRealm: Realm): String {
             val submissionCount = mRealm.where(RealmSubmission::class.java)
-                .equalTo("parentId", submissionParentId)
-                .equalTo("membershipDoc.teamId", teamId)
+                .equalTo("team", teamId)
+                .equalTo("type", "survey")
+                .equalTo("parentId", examId)
                 .equalTo("status", "complete")
                 .count().toInt()
 
