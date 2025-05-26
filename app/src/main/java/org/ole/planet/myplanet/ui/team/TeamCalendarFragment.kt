@@ -1,12 +1,18 @@
 package org.ole.planet.myplanet.ui.team
 
-import android.app.*
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.content.Context
 import android.content.res.Resources
-import android.os.*
+import android.graphics.Color
+import android.os.Bundle
 import android.util.TypedValue
-import android.view.*
-import android.widget.*
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.RadioButton
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -14,24 +20,31 @@ import androidx.recyclerview.widget.RecyclerView
 import com.applandeo.materialcalendarview.CalendarDay
 import com.applandeo.materialcalendarview.CalendarView
 import com.applandeo.materialcalendarview.listeners.OnCalendarDayClickListener
-import com.google.gson.*
+import com.google.gson.Gson
+import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmResults
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.*
+import org.ole.planet.myplanet.databinding.AddMeetupBinding
+import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.ui.mymeetup.AdapterMeetup
-import org.ole.planet.myplanet.utilities.*
+import org.ole.planet.myplanet.utilities.TimeUtils
+import org.ole.planet.myplanet.utilities.Utilities
+import java.net.MalformedURLException
+import java.net.URL
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
-import java.util.*
-import java.net.MalformedURLException
-import java.net.URL
+import java.util.Calendar
+import java.util.Locale
+import java.util.UUID
+
 
 class TeamCalendarFragment : BaseTeamFragment() {
     private lateinit var fragmentEnterpriseCalendarBinding: FragmentEnterpriseCalendarBinding
@@ -296,16 +309,29 @@ class TeamCalendarFragment : BaseTeamFragment() {
             return
         }
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            val calendarDays: MutableList<CalendarDay> = ArrayList<CalendarDay>()
             var meetupList = mutableListOf<RealmMeetup>()
+            var taskList = mutableListOf<RealmTeamTask>()
             val newDates = mutableListOf<Calendar>()
             val realm = Realm.getDefaultInstance()
             try {
                 meetupList = realm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
+                taskList = realm.where(RealmTeamTask::class.java).equalTo("teamId", teamId).findAll()
                 val calendarInstance = Calendar.getInstance()
 
                 for (meetup in meetupList) {
                     val startDateMillis = meetup.startDate
                     calendarInstance.timeInMillis = startDateMillis
+                    val calendarDay = CalendarDay(calendarInstance.clone() as Calendar).apply {
+                        selectedLabelColor = R.color.daynight_white_grey
+                        selectedBackgroundResource = R.drawable.calendar_meetup_circle
+                    }
+                    calendarDays.add(calendarDay)
+                    newDates.add(calendarInstance.clone() as Calendar)
+                }
+                for (task in taskList) {
+                    val deadlineMillis = task.deadline
+                    calendarInstance.timeInMillis = deadlineMillis
                     newDates.add(calendarInstance.clone() as Calendar)
                 }
             } catch (e: Exception) {
@@ -317,6 +343,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 if (isAdded && activity != null) {
                     eventDates.clear()
                     eventDates.addAll(newDates)
+                    fragmentEnterpriseCalendarBinding.calendarView.setCalendarDays(calendarDays)
                     fragmentEnterpriseCalendarBinding.calendarView.selectedDates = ArrayList(newDates)
                 }
             }
