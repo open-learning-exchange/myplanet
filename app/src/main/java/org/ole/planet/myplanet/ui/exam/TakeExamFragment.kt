@@ -361,10 +361,10 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 }
 
                 val cont = updateAnsDb()
-                val currentQuestion = questions?.get(currentIndex)
-                val currentAnswer = sub?.answers?.find { it.questionId == currentQuestion?.id }
-                if (this.type == "exam" && currentAnswer != null && currentQuestion != null) {
-                    checkCorrectAns(currentAnswer, currentQuestion)
+
+                if (this.type == "exam" && !cont) {
+                    Snackbar.make(fragmentTakeExamBinding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
+                    return
                 }
 
                 capturePhoto()
@@ -392,6 +392,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
     private fun updateAnsDb(): Boolean {
         var flag = false
+        var isAnswerCorrect = true
         mRealm.executeTransaction { realm ->
             val currentQuestion = questions?.get(currentIndex) ?: return@executeTransaction
 
@@ -428,6 +429,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 sub?.answers?.add(answer)
             }
 
+            if (this@TakeExamFragment.type == "exam" && answer != null && currentQuestion != null) {
+                isAnswerCorrect = checkCorrectAns(answer, currentQuestion)
+            }
             sub?.lastUpdateTime = Date().time
             sub?.status = if (currentIndex == (questions?.size ?: 0) - 1) {
                 if (type == "survey") "complete" else "requires grading"
@@ -437,7 +441,8 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
             flag = true
         }
-        return flag
+
+        return if (this.type == "exam") isAnswerCorrect else flag
     }
 
     private fun getChoiceTextById(question: RealmExamQuestion, id: String): String {
@@ -455,18 +460,40 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
     private fun checkCorrectAns(answer: RealmAnswer?, que: RealmExamQuestion?): Boolean {
         var flag = false
-        answer?.isPassed = que?.getCorrectChoice()?.contains(ans.lowercase(Locale.getDefault())) == true
+        val questionType = que?.type
+        val correctChoices = que?.getCorrectChoice()
+
+        when {
+            questionType.equals("select", ignoreCase = true) -> {
+                val isCorrect = correctChoices?.contains(ans.lowercase(Locale.getDefault())) == true
+                answer?.isPassed = isCorrect
+                flag = isCorrect
+            }
+            questionType.equals("selectMultiple", ignoreCase = true) -> {
+                val selectedAns = listAns?.values?.toTypedArray<String>()
+                val correctChoicesArray = correctChoices?.toTypedArray<String>()
+                val isCorrect = isEqual(selectedAns, correctChoicesArray)
+                answer?.isPassed = isCorrect
+                flag = isCorrect
+            }
+            else -> {
+                val isCorrect = correctChoices?.any {
+                    ans.lowercase(Locale.getDefault()).contains(it.lowercase(Locale.getDefault()))
+                } == true
+                answer?.isPassed = isCorrect
+                flag = isCorrect
+            }
+        }
+
         answer?.grade = 1
         var mistake = answer?.mistakes
-        val selectedAns = listAns?.values?.toTypedArray<String>()
-        val correctChoices = que?.getCorrectChoice()?.toTypedArray<String>()
-        if (!isEqual(selectedAns, correctChoices)) {
+
+        if (!flag) {
             if (mistake != null) {
                 mistake += 1
             }
-        } else {
-            flag = true
         }
+
         if (answer != null) {
             answer.mistakes = mistake ?: 0
         }
