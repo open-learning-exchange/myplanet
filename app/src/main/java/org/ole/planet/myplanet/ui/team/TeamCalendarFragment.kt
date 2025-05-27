@@ -332,6 +332,11 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 for (task in taskList) {
                     val deadlineMillis = task.deadline
                     calendarInstance.timeInMillis = deadlineMillis
+                    val calendarDay = CalendarDay(calendarInstance.clone() as Calendar).apply {
+                        selectedLabelColor = R.color.daynight_white_grey
+                        selectedBackgroundResource = R.drawable.calendar_uncompeleted_task_circle
+                    }
+                    calendarDays.add(calendarDay)
                     newDates.add(calendarInstance.clone() as Calendar)
                 }
             } catch (e: Exception) {
