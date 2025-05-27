@@ -40,8 +40,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         teamId = arguments?.getString("teamId", null)
         profileDbHandler = UserProfileDbHandler(requireContext())
         val userProfileModel = profileDbHandler.userModel
-        adapter =
-            AdapterSurvey(requireActivity(), mRealm, userProfileModel?.id, isTeam, teamId, this)
+        adapter = AdapterSurvey(requireActivity(), mRealm, userProfileModel?.id, isTeam, teamId, this)
     }
 
     override fun onSurveyAdopted() {
