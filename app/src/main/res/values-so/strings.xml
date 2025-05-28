@@ -1298,5 +1298,6 @@
     <string name="confirm_share_community">Ma hubtaa inaad rabto inaad la wadaagto macluumaadkan bulshada?</string>
     <string name="camera_permission_required">ogolaanshaha kamarada ayaa loo baahan yahay. Fadlan awood u geli goobaha abka</string>
     <string name="clearing_data">Tirtiridda xogta…</string>
+    <string name="time_colon">waqtiga:&#160;</string>
 
 </resources>

@@ -1298,5 +1298,6 @@
     <string name="confirm_share_community">¿Estás seguro de que quieres compartir este contenido con la comunidad?</string>
     <string name="camera_permission_required">Se requiere permiso para usar la cámara. Actívalo en la configuración de la aplicación.</string>
     <string name="clearing_data">Borrando datos…</string>
+    <string name="time_colon">tiempo:&#160;</string>
 
 </resources>

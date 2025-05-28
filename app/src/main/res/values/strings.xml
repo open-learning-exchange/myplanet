@@ -1298,5 +1298,6 @@
     <string name="confirm_share_community">Are you sure you want to share this content with the community?</string>
     <string name="camera_permission_required">Camera permission is required. Please enable it in the app settings.</string>
     <string name="clearing_data">Clearing data…</string>
+    <string name="time_colon">Time:&#160;</string>
 
 </resources>
