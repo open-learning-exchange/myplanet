@@ -78,9 +78,6 @@ open class RealmMyCourse : RealmObject() {
         @JvmStatic
         fun insertMyCourses(userId: String?, myCoursesDoc: JsonObject?, mRealm: Realm) {
             context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
             val id = JsonUtils.getString("_id", myCoursesDoc)
             var myMyCoursesDB = mRealm.where(RealmMyCourse::class.java).equalTo("id", id).findFirst()
             if (myMyCoursesDB == null) {
@@ -128,17 +125,8 @@ open class RealmMyCourse : RealmObject() {
                 step.courseId = myMyCoursesDB?.courseId
                 courseStepsList.add(step)
             }
-
-            if (mRealm.isInTransaction) {
-                mRealm.commitTransaction()
-            }
-
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
             myMyCoursesDB?.courseSteps = RealmList()
             myMyCoursesDB?.courseSteps?.addAll(courseStepsList)
-            mRealm.commitTransaction()
 
             val csvRow = arrayOf(
                 JsonUtils.getString("_id", myCoursesDoc),
@@ -286,7 +274,11 @@ open class RealmMyCourse : RealmObject() {
 
         @JvmStatic
         fun insert(mRealm: Realm, myCoursesDoc: JsonObject?) {
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
+            }
             insertMyCourses("", myCoursesDoc, mRealm)
+            mRealm.commitTransaction()
         }
 
         @JvmStatic

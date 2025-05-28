@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.ui.exam
 
 import android.app.DatePickerDialog
+import android.content.Context
 import android.content.DialogInterface
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -9,14 +11,15 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.RadioButton
-import android.widget.TextView
-import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.isVisible
+import androidx.fragment.app.FragmentManager
 import com.google.gson.JsonObject
 import io.realm.Realm
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDialogFragment
-import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentUserInformationBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -26,7 +29,14 @@ import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Calendar
 import java.util.Locale
-import androidx.core.view.isVisible
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.callback.SuccessListener
+import org.ole.planet.myplanet.service.UploadManager
+import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
 
 class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     private lateinit var fragmentUserInformationBinding: FragmentUserInformationBinding
@@ -223,23 +233,86 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
-        if (teamId == null) {
+        val safeTeamId = arguments?.getString("teamId") ?: ""
+
+        if (safeTeamId.isEmpty()) {
             Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
             BaseExamFragment.navigateToSurveyList(requireActivity())
-        } else if (teamId == "") {
+        } else if (safeTeamId == "") {
             return
         } else {
             Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
-            if (context is OnHomeItemClickListener) {
-                val f = TeamDetailFragment()
-                val b = Bundle()
-                b.putString("id", teamId)
-                b.putBoolean("isMyTeam", true)
-                b.putInt("navigateToPage", 6)
-                f.arguments = b
-                (context as OnHomeItemClickListener).openCallFragment(f)
+            val settings = MainApplication.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+            checkAvailableServer(settings)
+            navigateToTeamSurveys(safeTeamId)
+        }
+    }
+
+    private fun navigateToTeamSurveys(teamId: String?) {
+        val activity = requireActivity()
+        if (activity is AppCompatActivity) {
+            val teamDetailFragment = TeamDetailFragment().apply {
+                arguments = Bundle().apply {
+                    putString("id", teamId)
+                    putBoolean("isMyTeam", true)
+                    putInt("navigateToPage", 5)
+                }
+            }
+
+            activity.supportFragmentManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE)
+            activity.supportFragmentManager.beginTransaction()
+                .replace(R.id.fragment_container, teamDetailFragment).commit()
+        }
+    }
+
+    private fun checkAvailableServer(settings: SharedPreferences) {
+        val updateUrl = "${settings.getString("serverURL", "")}"
+        val serverUrlMapper = ServerUrlMapper()
+        val mapping = serverUrlMapper.processUrl(updateUrl)
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
+            val alternativeAvailable =
+                mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
+
+            if (!primaryAvailable && alternativeAvailable) {
+                mapping.alternativeUrl.let { alternativeUrl ->
+                    val uri = updateUrl.toUri()
+                    val editor = settings.edit()
+
+                    serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
+                }
+            }
+
+            withContext(Dispatchers.Main) {
+                uploadSubmissions()
             }
         }
+    }
+
+    private fun uploadSubmissions() {
+        MainApplication.applicationScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    UploadManager.instance?.uploadSubmissions()
+                }
+
+                withContext(Dispatchers.Main) {
+                    uploadExamResultWrapper()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun uploadExamResultWrapper() {
+        val successListener = object : SuccessListener {
+            override fun onSuccess(message: String?) {}
+        }
+
+        val newUploadManager = UploadManager(MainApplication.context)
+        newUploadManager.uploadExamResult(successListener)
     }
 
     private fun showDatePickerDialog() {
