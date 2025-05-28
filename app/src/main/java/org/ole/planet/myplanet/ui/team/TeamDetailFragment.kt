@@ -66,7 +66,7 @@ class TeamDetailFragment : BaseTeamFragment() {
                 } else {
                     fragmentTeamDetailBinding.btnLeave.text = getString(R.string.join)
                     fragmentTeamDetailBinding.btnLeave.setOnClickListener {
-                        RealmMyTeam.requestToJoin(currentTeam._id!!, user, mRealm)
+                        RealmMyTeam.requestToJoin(currentTeam._id!!, user, mRealm, team?.teamType)
                         fragmentTeamDetailBinding.btnLeave.text = getString(R.string.requested)
                         fragmentTeamDetailBinding.btnLeave.isEnabled = false
                         syncTeamActivities(requireContext())

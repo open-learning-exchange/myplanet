@@ -158,7 +158,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                     }.setNegativeButton(R.string.no, null).show()
             }
         } else {
-            RealmMyTeam.requestToJoin(team._id, user, mRealm)
+            RealmMyTeam.requestToJoin(team._id, user, mRealm, team.teamType)
             updateList()
         }
         syncTeamActivities(context)

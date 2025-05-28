@@ -329,16 +329,17 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun requestToJoin(teamId: String?, userModel: RealmUserModel?, mRealm: Realm) {
+        fun requestToJoin(teamId: String?, userModel: RealmUserModel?, mRealm: Realm, teamType: String?) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             val team = mRealm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
             team.docType = "request"
             team.createdDate = Date().time
-            team.teamType = "sync"
+            team.teamType = teamType
             team.userId = userModel?.id
             team.teamId = teamId
             team.updated = true
             team.teamPlanetCode = userModel?.planetCode
+            team.userPlanetCode = userModel?.planetCode
             mRealm.commitTransaction()
         }
 
@@ -449,23 +450,25 @@ open class RealmMyTeam : RealmObject() {
             JsonUtils.addString(`object`, "_rev", team._rev)
             `object`.addProperty("name", team.name)
             `object`.addProperty("userId", team.userId)
-            if (team.docType != "report") {
+            if (team.docType != "report" && team.docType != "request") {
                 `object`.addProperty("limit", team.limit)
                 `object`.addProperty("amount", team.amount)
                 `object`.addProperty("date", team.date)
                 `object`.addProperty("public", team.isPublic)
                 `object`.addProperty("isLeader", team.isLeader)
             }
-            `object`.addProperty("createdDate", team.createdDate)
-            `object`.addProperty("description", team.description)
-            `object`.addProperty("beginningBalance", team.beginningBalance)
-            `object`.addProperty("sales", team.sales)
-            `object`.addProperty("otherIncome", team.otherIncome)
-            `object`.addProperty("wages", team.wages)
-            `object`.addProperty("otherExpenses", team.otherExpenses)
-            `object`.addProperty("startDate", team.startDate)
-            `object`.addProperty("endDate", team.endDate)
-            `object`.addProperty("updatedDate", team.updatedDate)
+            if (team.docType != "request") {
+                `object`.addProperty("createdDate", team.createdDate)
+                `object`.addProperty("description", team.description)
+                `object`.addProperty("beginningBalance", team.beginningBalance)
+                `object`.addProperty("sales", team.sales)
+                `object`.addProperty("otherIncome", team.otherIncome)
+                `object`.addProperty("wages", team.wages)
+                `object`.addProperty("otherExpenses", team.otherExpenses)
+                `object`.addProperty("startDate", team.startDate)
+                `object`.addProperty("endDate", team.endDate)
+                `object`.addProperty("updatedDate", team.updatedDate)
+            }
             JsonUtils.addString(`object`, "teamId", team.teamId)
             `object`.addProperty("teamType", team.teamType)
             `object`.addProperty("teamPlanetCode", team.teamPlanetCode)
@@ -473,7 +476,6 @@ open class RealmMyTeam : RealmObject() {
             `object`.addProperty("status", team.status)
             `object`.addProperty("userPlanetCode", team.userPlanetCode)
             `object`.addProperty("parentCode", team.parentCode)
-
             `object`.addProperty("type", team.type)
             `object`.addProperty("route", team.route)
             `object`.addProperty("sourcePlanet", team.sourcePlanet)
