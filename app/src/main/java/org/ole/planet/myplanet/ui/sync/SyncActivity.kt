@@ -189,17 +189,33 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private fun clearDataDialog(message: String, config: Boolean, onCancel: () -> Unit = {}) {
         AlertDialog.Builder(this, R.style.AlertDialogTheme)
             .setMessage(message)
-            .setPositiveButton(getString(R.string.clear_data)) { _, _ ->
-                CoroutineScope(Dispatchers.Main).launch {
-                    clearRealmDb()
-                    prefData.setManualConfig(config)
-                    clearSharedPref()
-                    restartApp()
+            .setPositiveButton(getString(R.string.clear_data)) { dialog, _ ->
+                (dialog as AlertDialog).getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = false
+                dialog.getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled = false
+
+                lifecycleScope.launch {
+                    try {
+                        customProgressDialog.setText("Clearing data...")
+                        customProgressDialog.show()
+
+                        clearRealmDb()
+                        prefData.setManualConfig(config)
+                        clearSharedPref()
+
+                        delay(500)
+                        restartApp()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        customProgressDialog.dismiss()
+                        dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
+                        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled = true
+                    }
                 }
             }
             .setNegativeButton(getString(R.string.cancel)) { _, _ ->
                 onCancel()
             }
+            .setCancelable(false)
             .show()
     }
 
