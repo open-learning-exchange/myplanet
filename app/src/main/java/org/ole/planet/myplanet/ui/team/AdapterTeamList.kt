@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 import androidx.core.graphics.toColorInt
+import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 
 class AdapterTeamList(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm, private val fragmentManager: FragmentManager) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private lateinit var itemTeamListBinding: ItemTeamListBinding
@@ -160,6 +161,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
             RealmMyTeam.requestToJoin(team._id, user, mRealm)
             updateList()
         }
+        syncTeamActivities(context)
     }
 
     private fun updateList() {
