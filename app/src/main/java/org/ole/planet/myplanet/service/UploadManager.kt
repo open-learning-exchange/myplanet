@@ -486,7 +486,7 @@ class UploadManager(var context: Context) : FileUploadService() {
         }
     }
 
-    private fun uploadTeamActivities(realm: Realm, apiInterface: ApiInterface?) {
+    fun uploadTeamActivities(realm: Realm, apiInterface: ApiInterface?) {
         val logs = realm.where(RealmTeamLog::class.java).isNull("_rev").findAll()
         logs.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
             batch.forEach { log ->
@@ -501,7 +501,6 @@ class UploadManager(var context: Context) : FileUploadService() {
                 }
             }
         }
-
     }
 
     fun uploadRating() {
