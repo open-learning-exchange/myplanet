@@ -8,6 +8,7 @@ import io.realm.Realm
 import org.ole.planet.myplanet.databinding.RowMemberRequestBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
+import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 import org.ole.planet.myplanet.model.RealmUserModel
 
 class AdapterMemberRequest(private val context: Context, private val list: MutableList<RealmUserModel>, private val mRealm: Realm) : RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser>() {
@@ -78,6 +79,8 @@ class AdapterMemberRequest(private val context: Context, private val list: Mutab
         list.removeAt(position)
         notifyItemRemoved(position)
         notifyItemRangeChanged(position, list.size)
+
+        syncTeamActivities(context)
     }
 
     override fun getItemCount(): Int {
