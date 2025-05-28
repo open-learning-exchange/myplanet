@@ -165,7 +165,10 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 } else {
                     holder.rowNewsBinding.tvEdited.visibility = View.GONE
                 }
-                if (news.userId == currentUser?._id) {
+                if(news.sharedBy == currentUser?._id && !fromLogin && !nonTeamMember && teamName.isEmpty()){
+                    holder.rowNewsBinding.imgDelete.visibility = View.VISIBLE
+                }
+                if (news.userId == currentUser?._id || news.sharedBy == currentUser?._id) {
                     holder.rowNewsBinding.imgDelete.setOnClickListener {
                         AlertDialog.Builder(context,R.style.AlertDialogTheme)
                             .setMessage(R.string.delete_record)
@@ -173,13 +176,14 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                                 deletePost(news, context)
                             }.setNegativeButton(R.string.cancel, null).show()
                     }
+                }
+                if (news.userId == currentUser?._id) {
                     holder.rowNewsBinding.imgEdit.setOnClickListener {
                         showEditAlert(news.id, true)
                     }
                     holder.rowNewsBinding.btnAddLabel.visibility = if (fromLogin || nonTeamMember) View.GONE else View.VISIBLE
                 } else {
                     holder.rowNewsBinding.imgEdit.visibility = View.GONE
-                    holder.rowNewsBinding.imgDelete.visibility = View.GONE
                     holder.rowNewsBinding.btnAddLabel.visibility = View.GONE
                 }
                 holder.rowNewsBinding.llEditDelete.visibility = if (fromLogin || nonTeamMember) View.GONE else View.VISIBLE
@@ -560,6 +564,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     if (!mRealm.isInTransaction) {
                         mRealm.beginTransaction()
                     }
+                    news?.sharedBy = currentUser?.id
                     news?.viewIn = Gson().toJson(array)
                     mRealm.commitTransaction()
                     Utilities.toast(context, context.getString(R.string.shared_to_community))
