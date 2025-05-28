@@ -63,6 +63,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import androidx.core.net.toUri
 import androidx.core.content.edit
+import kotlin.isInitialized
 
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
     OnUserSelectedListener, ConfigurationIdListener {
@@ -188,17 +189,33 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private fun clearDataDialog(message: String, config: Boolean, onCancel: () -> Unit = {}) {
         AlertDialog.Builder(this, R.style.AlertDialogTheme)
             .setMessage(message)
-            .setPositiveButton(getString(R.string.clear_data)) { _, _ ->
-                CoroutineScope(Dispatchers.Main).launch {
-                    clearRealmDb()
-                    prefData.setManualConfig(config)
-                    clearSharedPref()
-                    restartApp()
+            .setPositiveButton(getString(R.string.clear_data)) { dialog, _ ->
+                (dialog as AlertDialog).getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = false
+                dialog.getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled = false
+
+                lifecycleScope.launch {
+                    try {
+                        customProgressDialog.setText(getString(R.string.clearing_data))
+                        customProgressDialog.show()
+
+                        clearRealmDb()
+                        prefData.setManualConfig(config)
+                        clearSharedPref()
+
+                        delay(500)
+                        restartApp()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        customProgressDialog.dismiss()
+                        dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
+                        dialog.getButton(AlertDialog.BUTTON_NEGATIVE).isEnabled = true
+                    }
                 }
             }
             .setNegativeButton(getString(R.string.cancel)) { _, _ ->
                 onCancel()
             }
+            .setCancelable(false)
             .show()
     }
 
@@ -470,6 +487,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 }
 
                 withContext(Dispatchers.Main) {
+                    val syncedUrl = settings.getString("serverURL", null)?.let { removeProtocol(it) }
+                    if (syncedUrl != null && serverListAddresses.any { it.url.replace(Regex("^https?://"), "") == syncedUrl }) {
+                        editor.putString("pinnedServerUrl", syncedUrl).apply()
+                    }
+
                     customProgressDialog.dismiss()
 
                     if (::syncIconDrawable.isInitialized) {
@@ -706,11 +728,44 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             editor.putBoolean("fastSync", b).apply()
         }
 
+        showAdditionalServers = false
+
+        if (::serverListAddresses.isInitialized && settings.getString("serverURL", "")?.isNotEmpty() == true) {
+            val filteredList = getFilteredServerList()
+            serverAddressAdapter?.updateList(filteredList)
+
+            val pinnedUrl = settings.getString("serverURL", "")
+            val pinnedIndex = filteredList.indexOfFirst {
+                it.url.replace(Regex("^https?://"), "") == pinnedUrl?.replace(
+                    Regex("^https?://"),
+                    ""
+                )
+            }
+            if (pinnedIndex != -1) {
+                serverAddressAdapter?.setSelectedPosition(pinnedIndex)
+            }
+        }
+
         neutralAction.setOnClickListener {
             if (!prefData.getManualConfig()) {
                 showAdditionalServers = !showAdditionalServers
-                serverAddressAdapter?.updateList(getFilteredServerList())
-                dialog.getActionButton(DialogAction.NEUTRAL).text = if (showAdditionalServers) getString(R.string.show_less) else getString(R.string.show_more)
+                val filteredList = getFilteredServerList()
+                serverAddressAdapter?.updateList(filteredList)
+
+                val pinnedUrl = settings.getString("serverURL", "")
+                val pinnedIndex = filteredList.indexOfFirst {
+                    it.url.replace(Regex("^https?://"), "") == pinnedUrl?.replace(Regex("^https?://"), "")
+                }
+                if (pinnedIndex != -1) {
+                    serverAddressAdapter?.setSelectedPosition(pinnedIndex)
+                }
+
+                dialog.getActionButton(DialogAction.NEUTRAL).text =
+                    if (showAdditionalServers) {
+                        getString(R.string.show_less)
+                    } else {
+                        getString(R.string.show_more)
+                    }
             } else {
                 serverConfigAction = "save"
                 val protocol = "${settings.getString("serverProtocol", "")}"
@@ -725,15 +780,25 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
         dialog.show()
         sync(dialog)
+        if (!prefData.getManualConfig()) {
+            dialog.getActionButton(DialogAction.NEUTRAL).text = getString(R.string.show_more)
+        }
     }
 
     private fun showConfigurationUIElements(binding: DialogServerUrlBinding, manualSelected: Boolean, dialog: MaterialDialog) {
         serverAddresses.visibility = if (manualSelected) View.GONE else View.VISIBLE
         syncToServerText.visibility = if (manualSelected) View.GONE else View.VISIBLE
         positiveAction.visibility = if (manualSelected) View.VISIBLE else View.GONE
-        dialog.getActionButton(DialogAction.NEUTRAL).text = if (manualSelected) getString(R.string.btn_sync_save) else {
-            if (showAdditionalServers) getString(R.string.show_less) else getString(R.string.show_more)
-        }
+        dialog.getActionButton(DialogAction.NEUTRAL).text =
+            if (manualSelected) {
+                getString(R.string.btn_sync_save)
+            } else {
+                if (showAdditionalServers) {
+                    getString(R.string.show_less)
+                } else {
+                    getString(R.string.show_more)
+                }
+            }
         binding.ltAdvanced.visibility = if (manualSelected) View.VISIBLE else View.GONE
         binding.switchServerUrl.visibility = if (manualSelected) View.VISIBLE else View.GONE
 
@@ -824,10 +889,18 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     private fun getFilteredServerList(): List<ServerAddressesModel> {
+        val pinnedUrl = settings.getString("pinnedServerUrl", null)
+        val pinnedServer = serverListAddresses.find { it.url == pinnedUrl }
+
         return if (showAdditionalServers) {
             serverListAddresses
         } else {
-            serverListAddresses.take(3)
+            val topThree = serverListAddresses.take(3).toMutableList()
+            if (pinnedServer != null && !topThree.contains(pinnedServer)) {
+                listOf(pinnedServer) + topThree
+            } else {
+                topThree
+            }
         }
     }
 
