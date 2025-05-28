@@ -1297,5 +1297,6 @@
     <string name="microphone_permission_required">L\'autorisation du microphone est requise pour l\'enregistrement audio. Veuillez l\'activer dans les paramètres de l\'application.</string>
     <string name="confirm_share_community">Êtes-vous sûr de vouloir partager ce contenu avec la communauté ?</string>
     <string name="camera_permission_required">L\'autorisation de l\'appareil photo est requise. Veuillez l\'activer dans les paramètres de l\'application.</string>
+    <string name="clearing_data">Suppression des données…</string>
 
 </resources>

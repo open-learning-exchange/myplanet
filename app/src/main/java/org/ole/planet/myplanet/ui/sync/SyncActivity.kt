@@ -195,7 +195,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
                 lifecycleScope.launch {
                     try {
-                        customProgressDialog.setText("Clearing data...")
+                        customProgressDialog.setText(getString(R.string.clearing_data))
                         customProgressDialog.show()
 
                         clearRealmDb()
