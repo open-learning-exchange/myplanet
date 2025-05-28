@@ -15,19 +15,14 @@ import androidx.recyclerview.widget.*
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import io.realm.Realm
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import org.ole.planet.myplanet.*
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.*
 import org.ole.planet.myplanet.datamanager.*
 import org.ole.planet.myplanet.model.*
-import org.ole.planet.myplanet.service.SyncManager
-import org.ole.planet.myplanet.service.TransactionSyncManager
+import org.ole.planet.myplanet.service.*
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
@@ -139,10 +134,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                         if (loginSuccess) {
                             break
                         } else {
-                            withContext(Dispatchers.IO) {
-                                debugAuthenticationIssue(username, password)
-                            }
-
                             if (currentRetry < maxRetries - 1) {
                                 val retryDelay = initialRetryDelay * (1 shl currentRetry)
                                 delay(retryDelay)
