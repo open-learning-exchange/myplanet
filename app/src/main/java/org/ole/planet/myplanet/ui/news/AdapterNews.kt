@@ -20,6 +20,7 @@ import android.widget.PopupMenu
 import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
@@ -54,6 +55,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
 import java.util.Calendar
 import androidx.core.graphics.drawable.toDrawable
+import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
+import kotlin.toString
 
 class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "") : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
     private lateinit var rowNewsBinding: RowNewsBinding
@@ -66,6 +69,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private var recyclerView: RecyclerView? = null
     var user: RealmUserModel? = null
     private var currentZoomDialog: Dialog? = null
+    private val profileDbHandler = UserProfileDbHandler(context)
 
     fun setImageList(imageList: RealmList<String>?) {
         this.imageList = imageList
@@ -225,8 +229,38 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     holder.rowNewsBinding.recyclerGchat.visibility = View.GONE
                     holder.rowNewsBinding.sharedChat.visibility = View.GONE
                 }
+                holder.rowNewsBinding.imgUser.setOnClickListener {
+                    showMemberDetails(userModel, it)
+                }
+                holder.rowNewsBinding.tvName.setOnClickListener {
+                    showMemberDetails(userModel, it)
+                }
             }
         }
+    }
+    private fun showMemberDetails(userModel: RealmUserModel?, it: View){
+        val activity = it.context as AppCompatActivity
+        val userName = if ("${userModel?.firstName} ${userModel?.lastName}".trim().isBlank()) {
+            userModel?.name
+        } else {
+            "${userModel?.firstName} ${userModel?.lastName}".trim()
+        }
+        val fragment = MemberDetailFragment.newInstance(
+            userName.toString(),
+            userModel?.email.toString(),
+            userModel?.dob.toString().substringBefore("T"),
+            userModel?.language.toString(),
+            userModel?.phoneNumber.toString(),
+            profileDbHandler.getOfflineVisits(userModel).toString(),
+            profileDbHandler.getLastVisit(userModel!!),
+            "${userModel.firstName} ${userModel.lastName}",
+            userModel.level.toString(),
+            userModel.userImage
+        )
+        activity.supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, fragment)
+            .addToBackStack(null)
+            .commit()
     }
 
     private fun addLabels(holder: RecyclerView.ViewHolder, news: RealmNews?) {
