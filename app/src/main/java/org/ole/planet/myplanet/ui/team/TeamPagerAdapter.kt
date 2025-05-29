@@ -25,6 +25,7 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
 
     private val pages = mutableListOf<Int>()
     private val fragments: List<Fragment>
+    fun getFragmentAt(position: Int): Fragment = fragments[position]
 
     init {
         if (isInMyTeam || team?.isPublic == true) {
@@ -59,9 +60,7 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
                 R.string.courses -> TeamCourseFragment()
                 R.string.finances -> FinanceFragment()
                 R.string.reports -> ReportsFragment()
-                R.string.resources, R.string.documents -> TeamResourceFragment().apply {
-                    MainApplication.listener = this
-                }
+                R.string.resources, R.string.documents -> TeamResourceFragment()
                 R.string.join_requests,
                 R.string.applicants         -> MembersFragment()
                 else -> throw IllegalArgumentException("Unknown page id $id")

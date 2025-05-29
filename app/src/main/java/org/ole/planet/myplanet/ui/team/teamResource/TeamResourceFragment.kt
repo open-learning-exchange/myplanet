@@ -27,6 +27,7 @@ import java.util.UUID
 class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdateListner  {
     private lateinit var fragmentTeamResourceBinding: FragmentTeamResourceBinding
     private lateinit var adapterLibrary: AdapterTeamResource
+    private var pendingShowDialog = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTeamResourceBinding = FragmentTeamResourceBinding.inflate(inflater, container, false)
@@ -133,6 +134,20 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
     }
 
     override fun onAddDocument() {
-        showResourceListDialog()
+        println(activity == null)
+        if ( activity != null){
+            showResourceListDialog()
+        }else{
+            pendingShowDialog = true
+        }
+
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (pendingShowDialog) {
+            pendingShowDialog = false
+            showResourceListDialog()
+        }
     }
 }
