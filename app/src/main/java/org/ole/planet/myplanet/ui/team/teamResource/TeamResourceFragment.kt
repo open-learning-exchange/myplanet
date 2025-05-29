@@ -134,7 +134,6 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
     }
 
     override fun onAddDocument() {
-        println(activity == null)
         if ( activity != null){
             showResourceListDialog()
         }else{

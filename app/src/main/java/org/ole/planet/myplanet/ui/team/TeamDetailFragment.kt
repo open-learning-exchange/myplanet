@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
-import androidx.fragment.app.Fragment
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,7 +23,6 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 import java.util.UUID
 import androidx.viewpager2.widget.ViewPager2
-import androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback
 import org.ole.planet.myplanet.ui.team.teamResource.ResourceUpdateListner
 
 class TeamDetailFragment : BaseTeamFragment() {
@@ -54,7 +52,6 @@ class TeamDetailFragment : BaseTeamFragment() {
                     title == titleResources || title == titleDocuments
                 } ?: -1
         }
-        println("resourcePosition: $resourcePosition")
 
         val pageIndex = arguments?.getInt("navigateToPage", -1) ?: -1
         if (pageIndex >= 0 && pageIndex < (fragmentTeamDetailBinding.viewPager2.adapter?.itemCount ?: 0)) {
@@ -115,13 +112,10 @@ class TeamDetailFragment : BaseTeamFragment() {
                         super.onPageSelected(pos)
                         if (pos == resourcePosition && MainApplication.showDownload) {
                             MainApplication.showDownload = false
-                            // grab the adapter
                             val adapter = fragmentTeamDetailBinding
                                 .viewPager2
                                 .adapter as TeamPagerAdapter
-                            // directly pull out the fragment
                             val frag = adapter.getFragmentAt(pos) as? ResourceUpdateListner
-                            println("frag: $frag")
                             frag?.onAddDocument()
                         }
                     }
@@ -131,11 +125,9 @@ class TeamDetailFragment : BaseTeamFragment() {
             val adapter = vp.adapter as TeamPagerAdapter
             fragmentTeamDetailBinding.btnAddDoc.setOnClickListener {
                 if (vp.currentItem == resourcePosition) {
-                    // already here → show right away
                     (adapter.getFragmentAt(resourcePosition) as? ResourceUpdateListner)
                         ?.onAddDocument()
                 } else {
-                    // first set the flag so onPageSelected will fire it
                     MainApplication.showDownload = true
                     vp.setCurrentItem(resourcePosition, false)
                 }
