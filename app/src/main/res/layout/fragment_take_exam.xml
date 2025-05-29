@@ -23,19 +23,60 @@
                 android:layout_height="match_parent"
                 android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/tv_question_count"
+                <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
-                    android:layout_height="?attr/actionBarSize"
-                    android:layout_gravity="center"
-                    android:background="@color/colorPrimary"
-                    android:gravity="center_vertical"
-                    android:padding="@dimen/padding_normal"
-                    android:text="@string/step"
-                    android:textAllCaps="true"
-                    android:textColor="@color/md_white_1000"
-                    android:textSize="@dimen/text_size_mid"
-                    android:textStyle="bold" />
+                    android:layout_height="wrap_content"
+                    android:background="@color/colorPrimary">
+
+                    <ImageButton
+                        android:id="@+id/btnBack"
+                        style="@style/YellowButtons"
+                        android:layout_width="@dimen/_50dp"
+                        android:layout_height="@dimen/_50dp"
+                        android:layout_gravity="center_vertical"
+                        android:background="@drawable/buttonyellow"
+                        android:contentDescription="@string/btn_back"
+                        android:padding="8dp"
+                        android:src="@drawable/ic_left_arrow"
+                        android:text="@string/btn_back"
+                        android:visibility="gone"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:tint="@color/md_black_1000" />
+                    <TextView
+                        android:id="@+id/tv_question_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="?attr/actionBarSize"
+                        android:layout_gravity="center"
+                        android:gravity="center_vertical"
+                        android:padding="@dimen/padding_normal"
+                        android:text="@string/step"
+                        android:textAllCaps="true"
+                        android:textColor="@color/md_white_1000"
+                        android:textSize="@dimen/text_size_mid"
+                        android:textStyle="bold"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toStartOf="@+id/btnNext"
+                        app:layout_constraintStart_toEndOf="@+id/btnBack"
+                        app:layout_constraintTop_toTopOf="parent" />
+                    <ImageButton
+                        android:id="@+id/btnNext"
+                        style="@style/YellowButtons"
+                        android:layout_width="@dimen/_50dp"
+                        android:layout_height="@dimen/_50dp"
+                        android:layout_gravity="center_vertical"
+                        android:background="@drawable/buttonyellow"
+                        android:contentDescription="@string/btn_back"
+                        android:padding="8dp"
+                        android:visibility="gone"
+                        android:src="@drawable/ic_right_arrow"
+                        android:text="@string/btn_back"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:tint="@color/md_black_1000" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <androidx.core.widget.NestedScrollView
                     android:id="@+id/container"
@@ -94,8 +135,8 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_small"
-                    android:background="@color/card_bg">
+                    android:background="@color/card_bg"
+                    android:padding="@dimen/padding_small">
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tl_answer"
@@ -111,9 +152,9 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_gravity="center_vertical"
+                            android:backgroundTint="@color/hint_color"
                             android:hint="@string/your_ans"
-                            android:textColor="@color/daynight_textColor"
-                            android:backgroundTint="@color/hint_color" />
+                            android:textColor="@color/daynight_textColor" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <Button

@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.isTeamLeader
+import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -59,24 +60,22 @@ class TeamDetailFragment : BaseTeamFragment() {
             if (currentTeam != null && !currentTeam._id.isNullOrEmpty()) {
 
                 val isUserRequested = currentTeam.requested(user?.id, mRealm)
-
                 if (isUserRequested) {
                     fragmentTeamDetailBinding.btnLeave.text = getString(R.string.requested)
                     fragmentTeamDetailBinding.btnLeave.isEnabled = false
                 } else {
                     fragmentTeamDetailBinding.btnLeave.text = getString(R.string.join)
                     fragmentTeamDetailBinding.btnLeave.setOnClickListener {
-                        RealmMyTeam.requestToJoin(currentTeam._id!!, user, mRealm)
+                        RealmMyTeam.requestToJoin(currentTeam._id!!, user, mRealm, team?.teamType)
                         fragmentTeamDetailBinding.btnLeave.text = getString(R.string.requested)
                         fragmentTeamDetailBinding.btnLeave.isEnabled = false
+                        syncTeamActivities(requireContext())
                     }
                 }
             } else {
                 throw IllegalStateException("Team or team ID is null, cannot proceed.")
             }
-
         } else {
-
             fragmentTeamDetailBinding.btnAddDoc.isEnabled = true
             fragmentTeamDetailBinding.btnAddDoc.visibility = View.VISIBLE
             fragmentTeamDetailBinding.btnLeave.isEnabled = true

@@ -134,7 +134,7 @@ class DiscussionListFragment : BaseTeamFragment() {
 
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
         val adapterNews = activity?.let {
-            realmNewsList?.let { it1 -> AdapterNews(it, it1.toMutableList(), user, null) }
+            realmNewsList?.let { it1 -> AdapterNews(it, it1.toMutableList(), user, null, team?.name.toString()) }
         }
         adapterNews?.setmRealm(mRealm)
         adapterNews?.setListener(this)
@@ -173,6 +173,7 @@ class DiscussionListFragment : BaseTeamFragment() {
                 map["message"] = msg
                 map["messageType"] = team?.teamType ?: ""
                 map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
+                map["name"] = team?.name.toString()
                 user?.let { createNews(map, mRealm, it, imageList) }
                 fragmentDiscussionListBinding.rvDiscussion.adapter?.notifyDataSetChanged()
                 setData(news)

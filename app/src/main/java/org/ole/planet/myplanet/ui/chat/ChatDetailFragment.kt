@@ -39,6 +39,7 @@ import java.util.Date
 import java.util.Locale
 import androidx.core.net.toUri
 import androidx.core.view.isNotEmpty
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 
 class ChatDetailFragment : Fragment() {
     lateinit var fragmentChatDetailBinding: FragmentChatDetailBinding
@@ -99,19 +100,19 @@ class ChatDetailFragment : Fragment() {
                     val newRev = getLatestRev(_id) ?: _rev
                     val continueChatData = ContinueChatModel(data = Data("${user?.name}", message, aiProvider, _id, newRev), save = true)
                     val jsonContent = Gson().toJson(continueChatData)
-                    val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
+                    val requestBody = RequestBody.create("application/json".toMediaTypeOrNull(), jsonContent)
                     continueChatRequest(requestBody, _id, message)
                 }
                 else if (currentID != "") {
                     val continueChatData = ContinueChatModel(data = Data("${user?.name}", message, aiProvider, currentID, _rev), save = true)
                     val jsonContent = Gson().toJson(continueChatData)
-                    val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
+                    val requestBody = RequestBody.create("application/json".toMediaTypeOrNull(), jsonContent)
                     continueChatRequest(requestBody, currentID, message)
                 }
                 else {
                     val chatData = ChatRequestModel(data = ContentData("${user?.name}", message, aiProvider), save = true)
                     val jsonContent = Gson().toJson(chatData)
-                    val requestBody = RequestBody.create(MediaType.parse("application/json"), jsonContent)
+                    val requestBody = RequestBody.create("application/json".toMediaTypeOrNull(), jsonContent)
                     makePostRequest(requestBody, message)
                 }
                 fragmentChatDetailBinding.editGchatMessage.text.clear()
@@ -316,6 +317,11 @@ class ChatDetailFragment : Fragment() {
     private fun selectAI(selectedButton: Button, providerName: String, modelName: String) {
         val aiTableRow = fragmentChatDetailBinding.aiTableRow
         val context = requireContext()
+
+        if (aiName != providerName && aiName.isNotEmpty()) {
+            clearConversation()
+        }
+
         currentID = ""
         mAdapter.lastAnimatedPosition = -1
         mAdapter.animatedMessages.clear()
@@ -336,6 +342,15 @@ class ChatDetailFragment : Fragment() {
         aiName = providerName
         aiModel = modelName
 
+        fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
+    }
+
+    private fun clearConversation() {
+        mAdapter.clearData()
+        _id = ""
+        _rev = ""
+        currentID = ""
+        fragmentChatDetailBinding.editGchatMessage.text.clear()
         fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
     }
 
