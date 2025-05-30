@@ -1300,5 +1300,7 @@
     <string name="clearing_data">جارٍ مسح البيانات…</string>
     <string name="time_colon">&#160;الوقت:</string>
     <string name="a_few_seconds_ago">منذ بضع ثوانٍ</string>
+    <string name="no_teams_found">لم يتم العثور على فرق</string>
+    <string name="no_teams_found_for_search">لم يتم العثور على فرق لـ "%1$s"</string>
 
 </resources>

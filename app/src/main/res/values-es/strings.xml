@@ -1300,5 +1300,7 @@
     <string name="clearing_data">Borrando datos…</string>
     <string name="time_colon">tiempo:&#160;</string>
     <string name="a_few_seconds_ago">hace unos segundos</string>
+    <string name="no_teams_found">No se encontraron equipos</string>
+    <string name="no_teams_found_for_search">No se encontraron equipos para "%1$s"</string>
 
 </resources>
