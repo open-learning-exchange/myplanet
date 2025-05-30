@@ -1300,5 +1300,7 @@
     <string name="clearing_data">Tirtiridda xogta…</string>
     <string name="time_colon">waqtiga:&#160;</string>
     <string name="a_few_seconds_ago">dhawr ilbiriqsi ka hor</string>
+    <string name="no_teams_found">Koox laguma helin</string>
+    <string name="no_teams_found_for_search">Koox laguma helin "%1$s"</string>
 
 </resources>
