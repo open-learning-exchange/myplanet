@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.sync
 
 import android.Manifest
+import android.app.Activity
 import android.content.*
 import android.graphics.drawable.AnimationDrawable
 import android.net.Uri
@@ -63,12 +64,23 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import androidx.core.net.toUri
 import androidx.core.content.edit
+import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import kotlin.isInitialized
 
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
     OnUserSelectedListener, ConfigurationIdListener {
     private lateinit var syncDate: TextView
     lateinit var lblLastSyncDate: TextView
+    lateinit var btnSignin: Button
+    lateinit var lblVersion: TextView
+    lateinit var tvAvailableSpace: TextView
+    lateinit var btnGuestLogin: Button
+    lateinit var becomeMember: Button
+    lateinit var btnFeedback: Button
+    lateinit var openCommunity: Button
+    lateinit var btnLang: Button
+    lateinit var inputName: EditText
+    lateinit var inputPassword: EditText
     private lateinit var intervalLabel: TextView
     lateinit var spinner: Spinner
     private lateinit var syncSwitch: SwitchCompat
@@ -506,6 +518,18 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         createLog("synced successfully", "")
                     }
 
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        val pendingLanguage = settings.getString("pendingLanguageChange", null)
+                        if (pendingLanguage != null) {
+                            withContext(Dispatchers.Main) {
+                                editor.remove("pendingLanguageChange").apply()
+
+                                LocaleHelper.setLocale(this@SyncActivity, pendingLanguage)
+                                updateUIWithNewLanguage()
+                            }
+                        }
+                    }
+
                     showSnack(activityContext.findViewById(android.R.id.content), getString(R.string.sync_completed))
 
                     if (settings.getBoolean("isAlternativeUrl", false)) {
@@ -538,6 +562,47 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
+    }
+
+    private fun updateUIWithNewLanguage() {
+        try {
+            if (::lblLastSyncDate.isInitialized) {
+                lblLastSyncDate.text = getString(R.string.last_sync, getRelativeTime(Date().time))
+            }
+
+            lblVersion.text = getString(R.string.app_version)
+            tvAvailableSpace.text = buildString {
+                append(getString(R.string.available_space_colon))
+                append(" ")
+                append(availableOverTotalMemoryFormattedString)
+            }
+
+            inputName.hint = getString(R.string.hint_name)
+            inputPassword.hint = getString(R.string.password)
+            btnSignin.text = getString(R.string.btn_sign_in)
+            btnGuestLogin.text = getString(R.string.btn_guest_login)
+            becomeMember.text = getString(R.string.become_a_member)
+            btnFeedback.text = getString(R.string.feedback)
+            openCommunity.text = getString(R.string.open_community)
+            val currentLanguage = LocaleHelper.getLanguage(this)
+            btnLang.text = getLanguageString(currentLanguage)
+            invalidateOptionsMenu()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            recreate()
+        }
+    }
+
+    fun getLanguageString(languageCode: String): String {
+        return when (languageCode) {
+            "en" -> getString(R.string.english)
+            "es" -> getString(R.string.spanish)
+            "so" -> getString(R.string.somali)
+            "ne" -> getString(R.string.nepali)
+            "ar" -> getString(R.string.arabic)
+            "fr" -> getString(R.string.french)
+            else -> getString(R.string.english)
         }
     }
 
