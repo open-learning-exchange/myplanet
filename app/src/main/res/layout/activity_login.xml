@@ -226,7 +226,6 @@
                                     android:text="@string/feedback"
                                     android:textColor="@color/daynight_textColor"
                                     android:theme="@style/PrimaryFlatButton" />
-
                                 <Button
                                     android:id="@+id/open_community"
                                     android:layout_width="wrap_content"
