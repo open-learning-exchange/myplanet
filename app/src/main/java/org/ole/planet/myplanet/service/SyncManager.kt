@@ -240,7 +240,7 @@ class SyncManager private constructor(private val context: Context) {
         ourInstance = null
     }
 
-    private fun initializeSync() {
+    fun initializeSync() {
         val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
         val wifiInfo = wifiManager.connectionInfo
         if (wifiInfo.supplicantState == SupplicantState.COMPLETED) {
@@ -251,7 +251,7 @@ class SyncManager private constructor(private val context: Context) {
         mRealm = dbService.realmInstance
     }
 
-    private fun syncFirstBatch() {
+    fun syncFirstBatch() {
         TransactionSyncManager.syncDb(mRealm, "tablet_users")
         ManagerSync.instance?.syncAdmin()
     }

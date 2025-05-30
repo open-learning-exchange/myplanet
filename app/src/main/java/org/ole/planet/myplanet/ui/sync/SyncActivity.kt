@@ -23,7 +23,6 @@ import io.realm.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -54,7 +53,6 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showWifiSettingDialog
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
-import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
@@ -346,11 +344,17 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             if (settings != null) {
                 this.settings = settings
             }
+
+            if (mRealm.isClosed) {
+                mRealm = Realm.getDefaultInstance()
+            }
+
             if (mRealm.isEmpty) {
                 alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
                 false
             } else {
-                checkName(username, password, isManagerMode)
+                val result = checkName(username, password, isManagerMode)
+                result
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -601,35 +605,40 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun onLogin() {
-        val handler = UserProfileDbHandler(this)
-        handler.onLogin()
-        handler.onDestroy()
         editor.putBoolean(Constants.KEY_LOGIN, true).commit()
         openDashboard()
 
-        isNetworkConnectedFlow.onEach { isConnected ->
-            if (isConnected) {
-                val serverUrl = settings.getString("serverURL", "")
-                if (!serverUrl.isNullOrEmpty()) {
-                    MainApplication.applicationScope.launch(Dispatchers.IO) {
-                        val canReachServer = MainApplication.Companion.isServerReachable(serverUrl)
-                        if (canReachServer) {
-                            withContext(Dispatchers.Main) {
-                                startUpload("login")
-                            }
-                            withContext(Dispatchers.Default) {
-                                val backgroundRealm = Realm.getDefaultInstance()
-                                try {
-                                    TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
-                                } finally {
-                                    backgroundRealm.close()
-                                }
-                            }
+        MainApplication.applicationScope.launch(Dispatchers.IO) {
+            val handler = UserProfileDbHandler(this@SyncActivity)
+            handler.onLogin()
+            handler.onDestroy()
+
+            val serverUrl = settings.getString("serverURL", "")
+            if (!serverUrl.isNullOrEmpty()) {
+                val canReachServer = MainApplication.isServerReachable(serverUrl)
+                if (canReachServer) {
+                    withContext(Dispatchers.Main) {
+                        startUpload("login")
+                    }
+                    withContext(Dispatchers.Default) {
+                        val backgroundRealm = Realm.getDefaultInstance()
+                        try {
+                            TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
+                        } finally {
+                            backgroundRealm.close()
                         }
                     }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(this@SyncActivity, "Server is unreachable.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } else {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@SyncActivity, "Server URL is not set.", Toast.LENGTH_SHORT).show()
                 }
             }
-        }.launchIn(MainApplication.applicationScope)
+        }
     }
 
     fun settingDialog() {
