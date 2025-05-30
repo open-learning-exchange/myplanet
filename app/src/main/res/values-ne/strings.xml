@@ -737,7 +737,7 @@
     <string name="enter_resource_detail">स्रोत विवरण राख्नुहोस्</string>
     <string name="resource_saved_to_my_personal">स्रोत myPersonal मा सुरक्षित गरियो।</string>
     <string name="invalid_resource_url">अवैध स्रोत url</string>
-    <string name="my_library">" मेरो पुस्तकालय"</string>
+    <string name="my_library">"मेरोपुस्तकालय"</string>
     <string name="link_not_available">लिंक उपलब्ध छैन</string>
     <string name="success_you_have_added_these_resources_to_your_mylibrary">सफलता! तपाईंले यी स्रोतहरूलाई आफ्नो मेरो पुस्तकालयमा थपेका छौ:\n\n</string>
     <string name="more_resource_s">" थप स्रोत(हरू)…\n"</string>
