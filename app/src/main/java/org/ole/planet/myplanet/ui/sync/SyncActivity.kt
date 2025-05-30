@@ -487,6 +487,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 }
 
                 withContext(Dispatchers.Main) {
+                    forceSyncTrigger()
                     val syncedUrl = settings.getString("serverURL", null)?.let { removeProtocol(it) }
                     if (syncedUrl != null && serverListAddresses.any { it.url.replace(Regex("^https?://"), "") == syncedUrl }) {
                         editor.putString("pinnedServerUrl", syncedUrl).apply()
@@ -534,7 +535,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         activityContext.updateTeamDropdown()
                     }
                 }
-
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -553,7 +553,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         if (settings.getLong(getString(R.string.last_syncs), 0) <= 0) {
             lblLastSyncDate.text = getString(R.string.last_synced_never)
         } else {
-            lblLastSyncDate.text = getString(R.string.last_sync, getRelativeTime(settings.getLong(getString(R.string.last_syncs), 0)))
+            val lastSyncMillis = settings.getLong(getString(R.string.last_syncs), 0)
+            var relativeTime = getRelativeTime(lastSyncMillis)
+
+            if (relativeTime.matches(Regex("^\\d{1,2} seconds ago$"))) {
+                relativeTime = getString(R.string.a_few_seconds_ago)
+            }
+
+            lblLastSyncDate.text = getString(R.string.last_sync, relativeTime)
         }
         if (autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext) && autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, applicationContext)) {
             return checkForceSync(7)
