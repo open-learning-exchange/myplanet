@@ -229,11 +229,13 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     holder.rowNewsBinding.recyclerGchat.visibility = View.GONE
                     holder.rowNewsBinding.sharedChat.visibility = View.GONE
                 }
-                holder.rowNewsBinding.imgUser.setOnClickListener {
-                    showMemberDetails(userModel, it)
-                }
-                holder.rowNewsBinding.tvName.setOnClickListener {
-                    showMemberDetails(userModel, it)
+                if(!fromLogin){
+                    holder.rowNewsBinding.imgUser.setOnClickListener {
+                        showMemberDetails(userModel, it)
+                    }
+                    holder.rowNewsBinding.tvName.setOnClickListener {
+                        showMemberDetails(userModel, it)
+                    }
                 }
             }
         }
