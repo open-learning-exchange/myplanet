@@ -54,6 +54,7 @@ import kotlin.math.min
 import androidx.core.net.toUri
 import androidx.core.content.edit
 import kotlinx.coroutines.awaitAll
+import org.ole.planet.myplanet.utilities.LocaleHelper
 import java.util.concurrent.ConcurrentHashMap
 
 class Service(private val context: Context) {
@@ -429,6 +430,20 @@ class Service(private val context: Context) {
                                                 }
                                             }
 
+                                            if (doc.has("preferredLang")) {
+                                                val preferredLang = doc.getAsJsonPrimitive("preferredLang").asString
+                                                val languageCode = getLanguageCodeFromName(preferredLang)
+
+                                                if (languageCode != null) {
+                                                    withContext(Dispatchers.IO) {
+                                                        LocaleHelper.setLocale(context, languageCode)
+                                                        preferences.edit {
+                                                            putString("pendingLanguageChange", languageCode)
+                                                        }
+                                                    }
+                                                }
+                                            }
+
                                             if (doc.has("models")) {
                                                 val modelsMap = doc.getAsJsonObject("models").entrySet()
                                                     .associate { it.key to it.value.asString }
@@ -509,6 +524,18 @@ class Service(private val context: Context) {
             }
         }
         return parts1.size.compareTo(parts2.size)
+    }
+
+    private fun getLanguageCodeFromName(languageName: String): String? {
+        return when (languageName.lowercase()) {
+            "english" -> "en"
+            "spanish", "español" -> "es"
+            "somali" -> "so"
+            "nepali" -> "ne"
+            "arabic", "العربية" -> "ar"
+            "french", "français" -> "fr"
+            else -> null
+        }
     }
 
     fun showAlertDialog(message: String?, playStoreRedirect: Boolean) {

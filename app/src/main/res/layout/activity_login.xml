@@ -113,7 +113,6 @@
                                 android:layout_width="200dp"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="10dp"
-                                android:hint="@string/hint_name"
                                 android:textColorHint="@color/hint_color"
                                 android:labelFor="@+id/inputName"
                                 app:boxBackgroundColor="@color/md_white_1000"
@@ -131,6 +130,7 @@
                                     android:layout_centerHorizontal="true"
                                     android:layout_centerVertical="true"
                                     android:autofillHints=""
+                                    android:hint="@string/hint_name"
                                     android:backgroundTint="@color/daynight_textColor"
                                     android:drawablePadding="12dp"
                                     android:inputType="text"
@@ -164,6 +164,7 @@
                                     android:layout_centerHorizontal="true"
                                     android:layout_centerVertical="true"
                                     android:autofillHints=""
+                                    android:hint="@string/password"
                                     android:backgroundTint="@color/daynight_textColor"
                                     android:drawablePadding="12dp"
                                     android:inputType="textPassword"
@@ -225,6 +226,7 @@
                                     android:text="@string/feedback"
                                     android:textColor="@color/daynight_textColor"
                                     android:theme="@style/PrimaryFlatButton" />
+
                                 <Button
                                     android:id="@+id/open_community"
                                     android:layout_width="wrap_content"
