@@ -361,33 +361,63 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun showReplyButton(holder: RecyclerView.ViewHolder, finalNews: RealmNews?, position: Int) {
         val viewHolder = holder as ViewHolderNews
-        val isGuest = user?.id?.startsWith("guest") == true
-        if (listener == null || fromLogin || isGuest) {
-            viewHolder.rowNewsBinding.btnReply.visibility = View.GONE
-        } else {
-            viewHolder.rowNewsBinding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
-            viewHolder.rowNewsBinding.btnReply.setOnClickListener { showEditAlert(finalNews?.id, false) }
+        if (listener == null || fromLogin || finalNews == null) {
+            viewHolder.rowNewsBinding.btnShowReply.visibility = View.GONE
+            viewHolder.rowNewsBinding.btnReply.setOnClickListener(null)
+            return
         }
-        val replies: List<RealmNews> = mRealm.where(RealmNews::class.java)
-            .sort("time", Sort.DESCENDING)
-            .equalTo("replyTo", finalNews?.id, Case.INSENSITIVE)
-            .findAll()
-        viewHolder.rowNewsBinding.btnShowReply.text = String.format(context.getString(R.string.show_replies) + " (%d)", replies.size)
+        val newsStillExists = try {
+            finalNews.isValid() && mRealm.where(RealmNews::class.java)
+                .equalTo("id", finalNews.id)
+                .count() > 0
+        } catch (e: Exception) {
+            false
+        }
+
+        if (!newsStillExists) {
+            viewHolder.rowNewsBinding.btnShowReply.visibility = View.GONE
+            viewHolder.rowNewsBinding.btnReply.setOnClickListener(null)
+            return
+        }
+        viewHolder.rowNewsBinding.btnReply.setOnClickListener {
+            if (finalNews.isValid()) {
+                showEditAlert(finalNews.id, false)
+            }
+        }
+        val replies = try {
+            mRealm.where(RealmNews::class.java)
+                .sort("time", Sort.DESCENDING)
+                .equalTo("replyTo", finalNews.id, Case.INSENSITIVE)
+                .findAll()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList<RealmNews>()
+        }
+        val replyCount = replies.size
+        viewHolder.rowNewsBinding.btnShowReply.text = String.format(
+            context.getString(R.string.show_replies) + " (%d)",
+            replyCount
+        )
         viewHolder.rowNewsBinding.btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
-        viewHolder.rowNewsBinding.btnShowReply.visibility = if (replies.isNotEmpty()) {
-            View.VISIBLE
-        } else {
-            View.GONE
-        }
-        if (position == 0 && parentNews != null) {
-            viewHolder.rowNewsBinding.btnShowReply.visibility = View.GONE
-        }
-        if (listener == null || fromLogin) {
-            viewHolder.rowNewsBinding.btnShowReply.visibility = View.GONE
-        }
+        val showReplyButton = replyCount > 0 && !(position == 0 && parentNews != null)
+        viewHolder.rowNewsBinding.btnShowReply.visibility = if (showReplyButton) View.VISIBLE else View.GONE
         viewHolder.rowNewsBinding.btnShowReply.setOnClickListener {
-            sharedPreferences?.setRepliedNewsId(finalNews?.id)
-            listener?.showReply(finalNews, fromLogin, nonTeamMember)
+            try {
+                if (finalNews.isValid() && mRealm.where(RealmNews::class.java)
+                        .equalTo("id", finalNews.id)
+                        .count() > 0) {
+                    sharedPreferences?.setRepliedNewsId(finalNews.id)
+                    listener?.showReply(finalNews, fromLogin, nonTeamMember)
+                } else {
+                    Utilities.toast(context, "This post no longer exists")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Utilities.toast(context, "Cannot access this post")
+            }
+        }
+        if (nonTeamMember) {
+            viewHolder.rowNewsBinding.btnShowReply.visibility = View.GONE
         }
     }
 
@@ -438,9 +468,8 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         map["replyTo"] = news?.id ?: ""
         map["messageType"] = news?.messageType ?: ""
         map["messagePlanetCode"] = news?.messagePlanetCode ?: ""
-        map["viewIn"] = news?.viewIn ?: ""
 
-        currentUser?.let { createNews(map, mRealm, it, imageList, true) }
+        currentUser?.let { createNews(map, mRealm, it, imageList) }
         notifyDataSetChanged()
         listener?.clearImages()
     }
@@ -488,36 +517,78 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     private fun deletePost(news: RealmNews?, context: Context) {
-        val ar = Gson().fromJson(news?.viewIn, JsonArray::class.java)
+        if (news == null || !news.isValid()) {
+            Utilities.toast(context, "Cannot delete: The post no longer exists")
+            return
+        }
+        val newsId = news.id
+        val replyToId = news.replyTo
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        val position = list.indexOf(news)
-        if (position != -1) {
-            list.removeAt(position)
-            notifyItemRemoved(position)
-        }
-        if(teamName.isNotEmpty() || ar.size() < 2){
-            news?.let {
-                it.deleteFromRealm()
-                if (context is ReplyActivity) {
-                    val restartIntent = context.intent
-                    context.finish()
-                    context.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_OPEN, 0, 0, 0)
-                    context.startActivity(restartIntent)
-                    context.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_OPEN, 0, 0, 0)
+        try {
+            val replies = mRealm.where(RealmNews::class.java)
+                .equalTo("replyTo", newsId, Case.INSENSITIVE)
+                .findAll()
+                .createSnapshot()
+            val position = list.indexOf(news)
+            if (position != -1) {
+                list.removeAt(position)
+                notifyItemRemoved(position)
+            }
+            for (reply in replies) {
+                deleteRepliesRecursively(reply.id)
+                val replyPosition = list.indexOf(reply)
+                if (replyPosition != -1) {
+                    list.removeAt(replyPosition)
+                    notifyItemRemoved(replyPosition)
+                }
+                if (reply.isValid()) {
+                    reply.deleteFromRealm()
                 }
             }
-        } else {
-            val filtered = JsonArray().apply {
-                ar.forEach { elem ->
-                    if (!elem.asJsonObject.has("sharedDate")) {
-                        add(elem)
-                    }
+            if (news.isValid()) {
+                news.deleteFromRealm()
+            }
+            mRealm.commitTransaction()
+            if (context is ReplyActivity) {
+                context.setResult(Activity.RESULT_OK)
+                context.finish()
+            }
+            notifyDataSetChanged()
+
+            recyclerView?.post {
+                recyclerView?.adapter?.notifyDataSetChanged()
+            }
+        } catch (e: Exception) {
+            if (mRealm.isInTransaction) {
+                mRealm.cancelTransaction()
+            }
+            e.printStackTrace()
+            Utilities.toast(context, "Error deleting post: ${e.message}")
+        }
+    }
+    private fun deleteRepliesRecursively(parentId: String?) {
+        if (parentId.isNullOrEmpty()) return
+
+        try {
+            val replies = mRealm.where(RealmNews::class.java)
+                .equalTo("replyTo", parentId, Case.INSENSITIVE)
+                .findAll()
+                .createSnapshot()
+
+            for (reply in replies) {
+                deleteRepliesRecursively(reply.id)
+                val position = list.indexOf(reply)
+                if (position != -1) {
+                    list.removeAt(position)
+                    notifyItemRemoved(position)
+                }
+                if (reply.isValid()) {
+                    reply.deleteFromRealm()
                 }
             }
-            news?.viewIn = Gson().toJson(filtered)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-        mRealm.commitTransaction()
-        notifyDataSetChanged()
     }
 
     override fun getItemCount(): Int {
@@ -542,14 +613,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {
         val viewHolder = holder as ViewHolderNews
-        val isGuest = user?.id?.startsWith("guest") == true
-
-        viewHolder.rowNewsBinding.btnShare.visibility = if (news?.isCommunityNews == true || fromLogin || nonTeamMember || isGuest) {
-            View.GONE
-        } else {
-            View.VISIBLE
-        }
-
+        viewHolder.rowNewsBinding.btnShare.visibility = if (news?.isCommunityNews == true || fromLogin || nonTeamMember) View.GONE else View.VISIBLE
         viewHolder.rowNewsBinding.btnShare.setOnClickListener {
             AlertDialog.Builder(context, R.style.AlertDialogTheme)
                 .setTitle(R.string.share_with_community)
