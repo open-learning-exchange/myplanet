@@ -46,6 +46,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
     var user: RealmUserModel? = null
     private var surveyReminderJob: Job? = null
 
+    data class SurveyInfo(val id: String, val title: String)
+
     companion object {
         private const val PREF_SURVEY_REMINDERS = "survey_reminders"
     }
@@ -141,19 +143,21 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val pendingSurveys = getPendingSurveys(user?.id, mRealm)
 
         if (pendingSurveys.isNotEmpty()) {
-            val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
+            val uniqueSurveys = pendingSurveys.groupBy {
+                    submission -> submission.parentId?.split("@")?.firstOrNull() ?: ""
+            }
+            val surveyInfoList = getUniqueSurveyInfo(uniqueSurveys.keys.toList(), mRealm)
+            val surveyExamIds = uniqueSurveys.keys.joinToString(",")
             val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
-            if (preferences.contains("reminder_time_$surveyIds")) {
+            if (preferences.contains("reminder_time_$surveyExamIds")) {
                 return
             }
-            val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)
-
             val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
             val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
             recyclerView.layoutManager = LinearLayoutManager(requireActivity())
-
             val alertDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
-                .setTitle(getString(R.string.surveys_to_complete, pendingSurveys.size, if (pendingSurveys.size > 1) "surveys" else "survey"))
+                .setTitle(getString(R.string.surveys_to_complete, surveyInfoList.size,
+                    if (surveyInfoList.size > 1) "surveys" else "survey"))
                 .setView(dialogView)
                 .setPositiveButton(getString(R.string.ok)) { dialog, _ ->
                     homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
@@ -166,10 +170,20 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 }
                 .create()
 
-            val adapter = SurveyAdapter(surveyTitles, { position ->
-                val selectedSurvey = pendingSurveys[position].id
-                AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
-            }, alertDialog)
+            val adapter = SurveyAdapter(
+                surveyInfoList.map { it.title },
+                { position ->
+                    val selectedExamId = surveyInfoList[position].id
+                    val selectedSubmission = pendingSurveys.find { submission ->
+                        submission.parentId?.split("@")?.firstOrNull() == selectedExamId
+                    }
+
+                    selectedSubmission?.let { submission ->
+                        AdapterMySubmission.openSurvey(homeItemClickListener, submission.id, true, false, "")
+                    }
+                },
+                alertDialog
+            )
 
             recyclerView.adapter = adapter
             alertDialog.show()
@@ -237,12 +251,16 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private fun scheduleReminder(pendingSurveys: List<RealmSubmission>, value: Int, timeUnit: TimeUnit) {
         val currentTime = System.currentTimeMillis()
         val reminderTime = currentTime + timeUnit.toMillis(value.toLong())
+        val uniqueExamIds = pendingSurveys
+            .map { it.parentId?.split("@")?.firstOrNull() ?: "" }
+            .distinct()
+            .joinToString(",")
 
-        val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
         val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
         preferences.edit()
-            .putLong("reminder_time_$surveyIds", reminderTime)
-            .putString("reminder_surveys_$surveyIds", surveyIds)
+            .putLong("reminder_time_$uniqueExamIds", reminderTime)
+            .putString("reminder_surveys_$uniqueExamIds",
+                pendingSurveys.joinToString(",") { it.id.toString() })
             .apply()
 
         val unitString = when (timeUnit) {
@@ -308,16 +326,33 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     }
 
+    private fun getUniqueSurveyInfo(examIds: List<String>, realm: Realm): List<SurveyInfo> {
+        val surveyInfo = mutableListOf<SurveyInfo>()
+        examIds.forEach { examId ->
+            val exam = realm.where(RealmStepExam::class.java)
+                .equalTo("id", examId)
+                .findFirst()
+            exam?.name?.let {
+                surveyInfo.add(SurveyInfo(examId, it))
+            }
+        }
+        return surveyInfo
+    }
+
     private fun showPendingSurveysReminder(pendingSurveys: List<RealmSubmission>) {
-        val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)
+        val uniqueSurveys = pendingSurveys.groupBy {
+                submission -> submission.parentId?.split("@")?.firstOrNull() ?: ""
+        }
+
+        val surveyInfoList = getUniqueSurveyInfo(uniqueSurveys.keys.toList(), mRealm)
 
         val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
         val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
         recyclerView.layoutManager = LinearLayoutManager(requireActivity())
 
         val alertDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
-            .setTitle(getString(R.string.reminder_surveys_to_complete, pendingSurveys.size,
-                if (pendingSurveys.size > 1) "surveys" else "survey"))
+            .setTitle(getString(R.string.reminder_surveys_to_complete, surveyInfoList.size,
+                if (surveyInfoList.size > 1) "surveys" else "survey"))
             .setView(dialogView)
             .setPositiveButton(getString(R.string.ok)) { dialog, _ ->
                 homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
@@ -330,10 +365,20 @@ class BellDashboardFragment : BaseDashboardFragment() {
             }
             .create()
 
-        val adapter = SurveyAdapter(surveyTitles, { position ->
-            val selectedSurvey = pendingSurveys[position].id
-            AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
-        }, alertDialog)
+        val adapter = SurveyAdapter(
+            surveyInfoList.map { it.title },
+            { position ->
+                val selectedExamId = surveyInfoList[position].id
+                val selectedSubmission = pendingSurveys.find { submission ->
+                    submission.parentId?.split("@")?.firstOrNull() == selectedExamId
+                }
+
+                selectedSubmission?.let { submission ->
+                    AdapterMySubmission.openSurvey(homeItemClickListener, submission.id, true, false, "")
+                }
+            },
+            alertDialog
+        )
 
         recyclerView.adapter = adapter
         alertDialog.show()
