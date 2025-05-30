@@ -107,6 +107,28 @@
                 android:textColor="@color/daynight_textColor" />
         </LinearLayout>
 
+        <LinearLayout
+            android:id="@+id/ltTime"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="4dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/ltDateTo">
+
+            <TextView
+                android:id="@+id/Time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/time_colon"
+                android:textColor="@color/daynight_textColor"
+                android:textStyle="bold" />
+            <TextView
+                android:id="@+id/tvTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/daynight_textColor" />
+        </LinearLayout>
 
         <LinearLayout
             android:id="@+id/ltLocation"
@@ -115,7 +137,7 @@
             android:padding="4dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/ltDateTo">
+            app:layout_constraintTop_toBottomOf="@+id/ltTime">
 
             <TextView
                 android:id="@+id/location"

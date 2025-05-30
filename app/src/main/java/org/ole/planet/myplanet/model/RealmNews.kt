@@ -53,6 +53,7 @@ open class RealmNews : RealmObject() {
     var chat: Boolean = false
     var isEdited: Boolean = false
     var editedTime: Long = 0
+    var sharedBy: String? = null
 
     val imagesArray: JsonArray
         get() = if (images == null) JsonArray() else Gson().fromJson(images, JsonArray::class.java)
@@ -151,6 +152,7 @@ open class RealmNews : RealmObject() {
             news?.conversations = Gson().toJson(JsonUtils.getJsonArray("conversations", newsObj))
             news?.newsCreatedDate = JsonUtils.getLong("createdDate", newsObj)
             news?.newsUpdatedDate = JsonUtils.getLong("updatedDate", newsObj)
+            news?.sharedBy = JsonUtils.getString("sharedBy", newsObj)
 
             val csvRow = arrayOf(
                 JsonUtils.getString("_id", doc),
@@ -172,7 +174,8 @@ open class RealmNews : RealmObject() {
                 JsonUtils.getString("labels", doc),
                 JsonUtils.getString("viewIn", doc),
                 JsonUtils.getBoolean("chat", doc).toString(),
-                JsonUtils.getString("news", doc)
+                JsonUtils.getString("news", doc),
+                JsonUtils.getString("sharedBy", doc).toString()
             )
             newsDataList.add(csvRow)
         }
@@ -182,7 +185,7 @@ open class RealmNews : RealmObject() {
                 val file = File(filePath)
                 file.parentFile?.mkdirs()
                 val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("_id", "_rev", "viewableBy", "docType", "avatar", "updatedDate", "viewableId", "createdOn", "messageType", "messagePlanetCode", "replyTo", "parentCode", "user", "time", "message", "images", "labels", "viewIn", "chat", "news"))
+                writer.writeNext(arrayOf("_id", "_rev", "viewableBy", "docType", "avatar", "updatedDate", "viewableId", "createdOn", "messageType", "messagePlanetCode", "replyTo", "parentCode", "user", "time", "message", "images", "labels", "viewIn", "chat", "news", "sharedBy"))
                 for (row in data) {
                     writer.writeNext(row)
                 }
@@ -225,6 +228,7 @@ open class RealmNews : RealmObject() {
             newsObject.add("conversations", Gson().fromJson(news.conversations, JsonArray::class.java))
             newsObject.addProperty("createdDate", news.newsCreatedDate)
             newsObject.addProperty("updatedDate", news.newsUpdatedDate)
+            newsObject.addProperty("sharedBy", news.sharedBy)
             `object`.add("news", newsObject)
             return `object`
         }
@@ -241,7 +245,7 @@ open class RealmNews : RealmObject() {
         }
 
         @JvmStatic
-        fun createNews(map: HashMap<String?, String>, mRealm: Realm, user: RealmUserModel?, imageUrls: RealmList<String>?): RealmNews {
+        fun createNews(map: HashMap<String?, String>, mRealm: Realm, user: RealmUserModel?, imageUrls: RealmList<String>?, isReply: Boolean = false): RealmNews {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
@@ -256,7 +260,12 @@ open class RealmNews : RealmObject() {
             news.parentCode = user?.parentCode
             news.messagePlanetCode = map["messagePlanetCode"]
             news.messageType = map["messageType"]
-            news.viewIn = getViewInJson(map)
+            news.sharedBy = ""
+            if(isReply){
+                news.viewIn = map["viewIn"]
+            } else {
+                news.viewIn = getViewInJson(map)
+            }
             news.chat = map["chat"]?.toBoolean() ?: false
 
             try {
@@ -321,6 +330,7 @@ open class RealmNews : RealmObject() {
                 val `object` = JsonObject()
                 `object`.addProperty("_id", map["viewInId"])
                 `object`.addProperty("section", map["viewInSection"])
+                `object`.addProperty("name", map["name"])
                 viewInArray.add(`object`)
             }
             return Gson().toJson(viewInArray)

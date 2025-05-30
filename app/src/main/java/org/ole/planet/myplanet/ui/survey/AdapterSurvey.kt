@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSubmissionByTeam
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSubmissionByUser
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getRecentSubmissionDate
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -161,7 +162,10 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
                     startSurvey.visibility = View.GONE
                 }
 
-                tvNoSubmissions.text = getNoOfSubmissionByUser(exam.id, exam.courseId, userId, mRealm)
+                tvNoSubmissions.text = when {
+                    isTeam -> getNoOfSubmissionByTeam(teamId, exam.id, mRealm)
+                    else -> getNoOfSubmissionByUser(exam.id, exam.courseId, userId, mRealm)
+                }
                 tvDateCompleted.text = getRecentSubmissionDate(exam.id, exam.courseId, userId, mRealm)
                 tvDate.text = formatDate(RealmStepExam.getSurveyCreationTime(exam.id!!, mRealm)!!, "MMM dd, yyyy")
             }
@@ -210,24 +214,34 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
                 "{}"
             }
 
-            mRealm.executeTransaction { realm ->
-                realm.createObject(RealmSubmission::class.java, UUID.randomUUID().toString()).apply {
-                    parentId = exam.id
-                    parent = parentJsonString
-                    userId = userModel?.id
-                    user = userJsonString
-                    type = "survey"
-                    status = ""
-                    uploaded = false
-                    source = planetCode ?: ""
-                    parentCode = sParentCode ?: ""
-                    startTime = System.currentTimeMillis()
-                    lastUpdateTime = System.currentTimeMillis()
-                    isUpdated = true
+            val adoptionId = "${UUID.randomUUID()}"
 
-                    if (isTeam && teamId != null) {
-                        membershipDoc = realm.createObject(RealmMembershipDoc::class.java).apply {
-                            this.teamId = teamId
+            mRealm.executeTransaction { realm ->
+                val existingAdoption = realm.where(RealmSubmission::class.java)
+                    .equalTo("userId", userModel?.id)
+                    .equalTo("parentId", exam.id)
+                    .equalTo("status", "")
+                    .findFirst()
+
+                if (existingAdoption == null) {
+                    realm.createObject(RealmSubmission::class.java, adoptionId).apply {
+                        parentId = exam.id
+                        parent = parentJsonString
+                        userId = userModel?.id
+                        user = userJsonString
+                        type = "survey"
+                        status = ""
+                        uploaded = false
+                        source = planetCode ?: ""
+                        parentCode = sParentCode ?: ""
+                        startTime = System.currentTimeMillis()
+                        lastUpdateTime = System.currentTimeMillis()
+                        isUpdated = true
+
+                        if (isTeam && teamId != null) {
+                            membershipDoc = realm.createObject(RealmMembershipDoc::class.java).apply {
+                                this.teamId = teamId
+                            }
                         }
                     }
                 }

@@ -1297,5 +1297,8 @@
     <string name="microphone_permission_required">يلزم الحصول على إذن الميكروفون لتسجيل الصوت. يُرجى تفعيله من إعدادات التطبيق</string>
     <string name="confirm_share_community">هل أنت متأكد أنك تريد مشاركة هذا المحتوى مع المجتمع؟</string>
     <string name="camera_permission_required">يلزم الحصول على إذن الكاميرا. يُرجى تفعيله من إعدادات التطبيق.</string>
+    <string name="clearing_data">جارٍ مسح البيانات…</string>
+    <string name="time_colon">&#160;الوقت:</string>
+    <string name="a_few_seconds_ago">منذ بضع ثوانٍ</string>
 
 </resources>

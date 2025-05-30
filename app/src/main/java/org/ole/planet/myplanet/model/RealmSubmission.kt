@@ -253,6 +253,19 @@ open class RealmSubmission : RealmObject() {
         }
 
         @JvmStatic
+        fun getNoOfSubmissionByTeam(teamId: String?, examId: String?, mRealm: Realm): String {
+            val submissionCount = mRealm.where(RealmSubmission::class.java)
+                .equalTo("team", teamId)
+                .equalTo("type", "survey")
+                .equalTo("parentId", examId)
+                .equalTo("status", "complete")
+                .count().toInt()
+
+            val pluralizedString = if (submissionCount == 1) "time" else "times"
+            return "${context.getString(R.string.survey_taken)} $submissionCount $pluralizedString"
+        }
+
+        @JvmStatic
         fun getNoOfSurveySubmissionByUser(userId: String?, mRealm: Realm): Int {
             if (userId == null) return 0
 
