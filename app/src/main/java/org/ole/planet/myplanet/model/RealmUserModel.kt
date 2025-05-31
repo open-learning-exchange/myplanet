@@ -25,6 +25,8 @@ import java.util.Locale
 import java.util.UUID
 import androidx.core.net.toUri
 import androidx.core.content.edit
+import org.json.JSONException
+import org.json.JSONObject
 
 open class RealmUserModel : RealmObject() {
     @PrimaryKey
@@ -356,6 +358,33 @@ open class RealmUserModel : RealmObject() {
             }) {
                 Utilities.toast(context, "User details update failed")
             }
+        }
+
+        @JvmStatic
+        fun parseLeadersJson(jsonString: String): List<RealmUserModel> {
+            val leadersList = mutableListOf<RealmUserModel>()
+            try {
+                val jsonObject = JSONObject(jsonString)
+                val docsArray = jsonObject.getJSONArray("docs")
+                for (i in 0 until docsArray.length()) {
+                    val docObject = docsArray.getJSONObject(i)
+                    val user = RealmUserModel()
+                    user.name = docObject.getString("name")
+                    if (!docObject.isNull("firstName")) {
+                        user.firstName = docObject.getString("firstName")
+                    }
+                    if (!docObject.isNull("lastName")) {
+                        user.lastName = docObject.getString("lastName")
+                    }
+                    if (!docObject.isNull("email")) {
+                        user.email = docObject.getString("email")
+                    }
+                    leadersList.add(user)
+                }
+            } catch (e: JSONException) {
+                e.printStackTrace()
+            }
+            return leadersList
         }
     }
 }

@@ -47,13 +47,18 @@ class MemberDetailFragment : Fragment() {
     }
 
     private fun setFieldOrHide(view: View, value: String?) {
-        if (!value.isNullOrEmpty()) {
+        val shouldShow = value != null
+                && value != "null"
+                && !value.isBlank()
+        if (shouldShow) {
+            println("t")
             when (view) {
                 is androidx.appcompat.widget.AppCompatTextView -> view.text = value
             }
             view.visibility = View.VISIBLE
             (view.parent as? View)?.visibility = View.VISIBLE
         } else {
+            view.visibility = View.GONE
             (view.parent as? View)?.visibility = View.GONE
         }
     }

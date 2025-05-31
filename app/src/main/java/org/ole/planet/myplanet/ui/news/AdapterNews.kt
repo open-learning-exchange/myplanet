@@ -5,8 +5,8 @@ import android.app.Activity
 import android.app.Dialog
 import android.content.Context
 import android.content.DialogInterface
+import android.content.SharedPreferences
 import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -20,6 +20,7 @@ import android.widget.PopupMenu
 import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
@@ -54,6 +55,11 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
 import java.util.Calendar
 import androidx.core.graphics.drawable.toDrawable
+import org.json.JSONException
+import org.json.JSONObject
+import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import kotlin.toString
 
 class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "") : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
     private lateinit var rowNewsBinding: RowNewsBinding
@@ -66,6 +72,12 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private var recyclerView: RecyclerView? = null
     var user: RealmUserModel? = null
     private var currentZoomDialog: Dialog? = null
+    private val profileDbHandler = UserProfileDbHandler(context)
+    lateinit var settings: SharedPreferences
+    private val leadersList: List<RealmUserModel> by lazy {
+        val raw = settings.getString("communityLeaders", "") ?: ""
+        RealmUserModel.parseLeadersJson(raw)
+    }
 
     fun setImageList(imageList: RealmList<String>?) {
         this.imageList = imageList
@@ -98,6 +110,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         rowNewsBinding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         sharedPreferences = SharedPrefManager(context)
         user = UserProfileDbHandler(context).userModel
+        settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return ViewHolderNews(rowNewsBinding)
     }
 
@@ -225,8 +238,58 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     holder.rowNewsBinding.recyclerGchat.visibility = View.GONE
                     holder.rowNewsBinding.sharedChat.visibility = View.GONE
                 }
+
+                var currentLeader: RealmUserModel? = null
+                if(userModel == null){
+                    for (leader in leadersList) {
+                        if(leader.name == news.userName){
+                            currentLeader = leader
+                        }
+                    }
+                }
+
+                if(!fromLogin){
+                    holder.rowNewsBinding.imgUser.setOnClickListener {
+                        if(userModel == null){
+                            showMemberDetails(currentLeader, it)
+                        } else {
+                            showMemberDetails(userModel, it)
+                        }
+                    }
+                    holder.rowNewsBinding.tvName.setOnClickListener {
+                        if(userModel == null){
+                            showMemberDetails(currentLeader, it)
+                        } else {
+                            showMemberDetails(userModel, it)
+                        }
+                    }
+                }
             }
         }
+    }
+    private fun showMemberDetails(userModel: RealmUserModel?, it: View){
+        val activity = it.context as AppCompatActivity
+        val userName = if ("${userModel?.firstName} ${userModel?.lastName}".trim().isBlank()) {
+            userModel?.name
+        } else {
+            "${userModel?.firstName} ${userModel?.lastName}".trim()
+        }
+        val fragment = MemberDetailFragment.newInstance(
+            userName.toString(),
+            userModel?.email.toString(),
+            userModel?.dob.toString().substringBefore("T"),
+            userModel?.language.toString(),
+            userModel?.phoneNumber.toString(),
+            profileDbHandler.getOfflineVisits(userModel).toString(),
+            profileDbHandler.getLastVisit(userModel!!),
+            "${userModel.firstName} ${userModel.lastName}",
+            userModel.level.toString(),
+            userModel.userImage
+        )
+        activity.supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, fragment)
+            .addToBackStack(null)
+            .commit()
     }
 
     private fun addLabels(holder: RecyclerView.ViewHolder, news: RealmNews?) {
