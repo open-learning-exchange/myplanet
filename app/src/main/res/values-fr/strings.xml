@@ -65,8 +65,8 @@
     <string name="your_ans">Votre réponse</string>
     <string name="delete_my_course">Supprimer mon cours</string>
     <string name="invite_member">Inviter un membre</string>
-    <string name="is_urgent">Votre retour d\'information est-il urgent ?</string>
-    <string name="feedback_type">Type de retour d\'information :</string>
+    <string name="is_urgent">Votre retour d\'information est-il urgent ? *</string>
+    <string name="feedback_type">Type de retour d\'information : *</string>
     <string name="suggestion">Suggestion</string>
     <string name="no">Non</string>
     <string name="yes">Oui</string>

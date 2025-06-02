@@ -65,8 +65,8 @@
     <string name="your_ans">إجابتك</string>
     <string name="delete_my_course">حذف دورتي</string>
     <string name="invite_member">دعوة عضو</string>
-    <string name="is_urgent">هل تحتاج ملاحظاتك إلى إجراء عاجل؟</string>
-    <string name="feedback_type">نوع التعليق:</string>
+    <string name="is_urgent">هل تحتاج ملاحظاتك إلى إجراء عاجل؟ *</string>
+    <string name="feedback_type">نوع التعليق: *</string>
     <string name="suggestion">اقتراح</string>
     <string name="no">لا</string>
     <string name="yes">نعم</string>

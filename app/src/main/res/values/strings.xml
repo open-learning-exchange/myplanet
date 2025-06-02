@@ -65,8 +65,8 @@
     <string name="your_ans">Your Answer</string>
     <string name="delete_my_course">Delete myCourse</string>
     <string name="invite_member">Invite Member</string>
-    <string name="is_urgent">Is your feedback Urgent?</string>
-    <string name="feedback_type">Feedback Type:</string>
+    <string name="is_urgent">Is your feedback Urgent? *</string>
+    <string name="feedback_type">Feedback Type: *</string>
     <string name="suggestion">Suggestion</string>
     <string name="no">No</string>
     <string name="yes">Yes</string>
