@@ -56,6 +56,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private lateinit var clickedCalendar: Calendar
     private lateinit var calendarEventsMap: MutableMap<CalendarDay, RealmMeetup>
     private lateinit var meetupList: RealmResults<RealmMeetup>
+    private lateinit var taskList: RealmResults<RealmTeamTask>
     private val eventDates: MutableList<Calendar> = mutableListOf()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -208,19 +209,27 @@ class TeamCalendarFragment : BaseTeamFragment() {
         fragmentEnterpriseCalendarBinding.calendarView.setOnCalendarDayClickListener(object : OnCalendarDayClickListener {
             override fun onClick(calendarDay: CalendarDay) {
                 meetupList = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
+                taskList = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId).findAll()
                 clickedCalendar = calendarDay.calendar
                 val clickedDateInMillis = clickedCalendar.timeInMillis
                 val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
                     .atZone(ZoneId.systemDefault())
                     .toLocalDate()
 
-                val markedDates = meetupList.mapNotNull { meetup ->
+                val markedMeetups = meetupList.mapNotNull { meetup ->
                     val meetupDate = Instant.ofEpochMilli(meetup.startDate)
                         .atZone(ZoneId.systemDefault())
                         .toLocalDate()
                     if (meetupDate == clickedDate) meetup else null
                 }
 
+                val markedTasks = taskList.mapNotNull { task ->
+                    val taskDate = Instant.ofEpochMilli(task.deadline)
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate()
+                    if (taskDate == clickedDate) task else null
+                }
+                val markedDates = markedMeetups + markedTasks
                 if (markedDates.isNotEmpty()) {
                     showMeetupDialog(markedDates)
                 } else {
@@ -257,7 +266,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         return view.measuredHeight
     }
 
-    private fun showMeetupDialog(meetupList: List<RealmMeetup>) {
+    private fun showMeetupDialog(meetupList: List<Any>) {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.meetup_dialog, null)
         val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMeetups)
         val dialogTitle = dialogView.findViewById< TextView>(R.id.tvTitle)
