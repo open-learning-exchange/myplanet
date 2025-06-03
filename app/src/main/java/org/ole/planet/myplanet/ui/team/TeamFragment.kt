@@ -201,6 +201,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
                 if (TextUtils.isEmpty(charSequence)) {
+                    showNoResultsMessage(false)
                     updatedTeamList()
                     return
                 }
@@ -211,11 +212,9 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                 val (list, conditionApplied) = getList(query)
 
                 if (list.isEmpty()) {
-                    // Show no results message
                     showNoResultsMessage(true, charSequence.toString())
                     fragmentTeamBinding.rvTeamList.adapter = null
                 } else {
-                    // Show results
                     showNoResultsMessage(false)
                     val sortedList = list.sortedWith(compareByDescending<RealmMyTeam> {
                         it.name?.startsWith(charSequence.toString(), ignoreCase = true)
