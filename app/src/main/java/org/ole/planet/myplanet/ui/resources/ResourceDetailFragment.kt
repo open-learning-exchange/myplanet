@@ -154,9 +154,11 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             setLibraryData()
         }
         fragmentLibraryDetailBinding.btnBack.setOnClickListener {
-            val currentFragment = parentFragmentManager.findFragmentById(R.id.fragment_container)
-            if (currentFragment is ResourceDetailFragment) {
-                requireActivity().finish()
+            val activity = requireActivity()
+            if (activity is AddResourceActivity) {
+                activity.finish()
+            } else {
+                parentFragmentManager.popBackStack()
             }
         }
     }

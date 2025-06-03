@@ -65,8 +65,8 @@
     <string name="your_ans">Tu respuesta</string>
     <string name="delete_my_course">Eliminar miCurso</string>
     <string name="invite_member">Invitar miembro</string>
-    <string name="is_urgent">¿Tu retroalimentación es urgente?</string>
-    <string name="feedback_type">Tipo de retroalimentación:</string>
+    <string name="is_urgent">¿Tu retroalimentación es urgente? *</string>
+    <string name="feedback_type">Tipo de retroalimentación: *</string>
     <string name="suggestion">Sugerencia</string>
     <string name="no">No</string>
     <string name="yes">Sí</string>
@@ -737,7 +737,7 @@
     <string name="enter_resource_detail">Ingresa los detalles del recurso</string>
     <string name="resource_saved_to_my_personal">Recurso guardado en myPersonal</string>
     <string name="invalid_resource_url">URL de recurso no válida</string>
-    <string name="my_library">" mi biblioteca"</string>
+    <string name="my_library">mylibrary"</string>
     <string name="link_not_available">Enlace no disponible</string>
     <string name="success_you_have_added_these_resources_to_your_mylibrary">¡Éxito! Has agregado estos recursos a tu mi Biblioteca:\n\n</string>
     <string name="more_resource_s">" más recurso(s)…\n"</string>
