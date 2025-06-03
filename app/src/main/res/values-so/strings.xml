@@ -65,8 +65,8 @@
     <string name="your_ans">jawaabtaada</string>
     <string name="delete_my_course">Tirtir MyCourse</string>
     <string name="invite_member">Casuuma Xubin</string>
-    <string name="is_urgent">jawaab celintaadu ma degdegbaa?</string>
-    <string name="feedback_type">Nooca jawaab celinta:</string>
+    <string name="is_urgent">jawaab celintaadu ma degdegbaa? *</string>
+    <string name="feedback_type">Nooca jawaab celinta: *</string>
     <string name="suggestion">talo soo jeedin</string>
     <string name="no">Maya</string>
     <string name="yes">Haa</string>

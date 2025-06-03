@@ -65,8 +65,8 @@
     <string name="your_ans">तपाईंको उत्तर</string>
     <string name="delete_my_course">मेरो पाठ्यक्रम मेटाउनुहोस्</string>
     <string name="invite_member">सदस्यलाई आमन्त्रित गर्नुहोस्</string>
-    <string name="is_urgent">तपाईंको प्रतिक्रिया अत्यावश्यक छ?</string>
-    <string name="feedback_type">प्रतिक्रिया प्रकार:</string>
+    <string name="is_urgent">तपाईंको प्रतिक्रिया अत्यावश्यक छ? *</string>
+    <string name="feedback_type">प्रतिक्रिया प्रकार: *</string>
     <string name="suggestion">सुझाव</string>
     <string name="no">होइन</string>
     <string name="yes">हो</string>

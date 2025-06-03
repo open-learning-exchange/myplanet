@@ -65,8 +65,8 @@
     <string name="your_ans">Tu respuesta</string>
     <string name="delete_my_course">Eliminar miCurso</string>
     <string name="invite_member">Invitar miembro</string>
-    <string name="is_urgent">¿Tu retroalimentación es urgente?</string>
-    <string name="feedback_type">Tipo de retroalimentación:</string>
+    <string name="is_urgent">¿Tu retroalimentación es urgente? *</string>
+    <string name="feedback_type">Tipo de retroalimentación: *</string>
     <string name="suggestion">Sugerencia</string>
     <string name="no">No</string>
     <string name="yes">Sí</string>
