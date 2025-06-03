@@ -529,7 +529,7 @@
     <string name="recording_audio">Recording audio…</string>
     <string name="show_replies">"Show replies "</string>
     <string name="selected">"Selected: "</string>
-    <string name="last_sync">Last sync with server: %s></string>
+    <string name="last_sync">Last sync with server: %s</string>
     <string name="last_syncs">LastSync</string>
     <string name="login_user">loginUserName</string>
     <string name="login_password">loginUserPassword</string>
@@ -1299,5 +1299,6 @@
     <string name="camera_permission_required">Camera permission is required. Please enable it in the app settings.</string>
     <string name="clearing_data">Clearing data…</string>
     <string name="time_colon">Time:&#160;</string>
+    <string name="a_few_seconds_ago">a few seconds ago</string>
 
 </resources>
