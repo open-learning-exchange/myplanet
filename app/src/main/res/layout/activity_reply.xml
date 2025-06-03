@@ -7,7 +7,6 @@
     android:background="@color/secondary_bg"
     tools:context=".ui.news.ReplyActivity">
 
-
     <FrameLayout
         android:id="@+id/fragment_container"
         android:layout_width="match_parent"
@@ -25,7 +24,6 @@
                 android:text="@string/showing_reply_of"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="@dimen/text_size_large" />
-
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rv_reply"
                 android:layout_width="match_parent"
@@ -33,5 +31,4 @@
                 android:layout_weight="1" />
         </LinearLayout>
     </FrameLayout>
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
