@@ -124,7 +124,6 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     }
 
     override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
-        // Validate the news object still exists
         if (news == null || news.id == null) {
             Utilities.toast(this, "This post no longer exists")
             return
