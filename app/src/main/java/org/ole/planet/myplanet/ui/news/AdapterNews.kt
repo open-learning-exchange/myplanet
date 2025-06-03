@@ -523,35 +523,55 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         }
         val newsId = news.id
         val replyToId = news.replyTo
+        val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
         try {
-            val replies = mRealm.where(RealmNews::class.java)
-                .equalTo("replyTo", newsId, Case.INSENSITIVE)
-                .findAll()
-                .createSnapshot()
             val position = list.indexOf(news)
             if (position != -1) {
                 list.removeAt(position)
                 notifyItemRemoved(position)
             }
-            for (reply in replies) {
-                deleteRepliesRecursively(reply.id)
-                val replyPosition = list.indexOf(reply)
-                if (replyPosition != -1) {
-                    list.removeAt(replyPosition)
-                    notifyItemRemoved(replyPosition)
+            if (teamName.isEmpty() && ar.size() >= 2) {
+                val filtered = JsonArray().apply {
+                    ar.forEach { elem ->
+                        if (!elem.asJsonObject.has("sharedDate")) {
+                            add(elem)
+                        }
+                    }
                 }
-                if (reply.isValid()) {
-                    reply.deleteFromRealm()
+                news.viewIn = Gson().toJson(filtered)
+            } else {
+                val replies = mRealm.where(RealmNews::class.java)
+                    .equalTo("replyTo", newsId, Case.INSENSITIVE)
+                    .findAll()
+                    .createSnapshot()
+                for (reply in replies) {
+                    deleteRepliesRecursively(reply.id)
+                    val replyPosition = list.indexOf(reply)
+                    if (replyPosition != -1) {
+                        list.removeAt(replyPosition)
+                        notifyItemRemoved(replyPosition)
+                    }
+                    if (reply.isValid()) {
+                        reply.deleteFromRealm()
+                    }
                 }
-            }
-            if (news.isValid()) {
-                news.deleteFromRealm()
+                if (news.isValid()) {
+                    news.deleteFromRealm()
+                }
             }
             mRealm.commitTransaction()
             if (context is ReplyActivity) {
-                context.setResult(Activity.RESULT_OK)
-                context.finish()
+                if (teamName.isEmpty() && ar.size() >= 2) {
+                    val restartIntent = context.intent
+                    context.finish()
+                    context.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_OPEN, 0, 0, 0)
+                    context.startActivity(restartIntent)
+                    context.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_OPEN, 0, 0, 0)
+                } else {
+                    context.setResult(Activity.RESULT_OK)
+                    context.finish()
+                }
             }
             notifyDataSetChanged()
 
