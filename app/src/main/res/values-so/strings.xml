@@ -27,7 +27,7 @@
     <string name="err_msg_name">Geli magaca isticmaalaha</string>
     <string name="err_msg_password">Geli erayga sirta ah</string>
     <string name="err_msg_login">Magaca isticmaalaha iyo/ama erayga sirta ah isma dhigmaan</string>
-    <string name="hint_serverURl">planet ip</string>
+    <string name="hint_serverURL">planet ip</string>
     <string name="hint_serverPin">pin-ka adeegsiga</string>
     <string name="radio_protocol">Protokolka:</string>
     <string name="radio_http">http</string>

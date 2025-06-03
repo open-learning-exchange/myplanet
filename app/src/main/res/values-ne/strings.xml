@@ -27,7 +27,7 @@
     <string name="err_msg_name">तपाईंको प्रयोगकर्तानाम लेख्नुहोस्</string>
     <string name="err_msg_password">पासवर्ड लेख्नुहोस्</string>
     <string name="err_msg_login">प्रयोगकर्तानाम र/वा पासवर्ड मेल खान्छैन</string>
-    <string name="hint_serverURl">planet आईपि</string>
+    <string name="hint_serverURL">planet आईपि</string>
     <string name="hint_serverPin">सर्भर पिन</string>
     <string name="radio_protocol">प्रोटोकल:</string>
     <string name="radio_http">http</string>
