@@ -27,7 +27,7 @@
     <string name="err_msg_name">Geli magaca isticmaalaha</string>
     <string name="err_msg_password">Geli erayga sirta ah</string>
     <string name="err_msg_login">Magaca isticmaalaha iyo/ama erayga sirta ah isma dhigmaan</string>
-    <string name="hint_serverURl">planet ip</string>
+    <string name="hint_serverURL">planet ip</string>
     <string name="hint_serverPin">pin-ka adeegsiga</string>
     <string name="radio_protocol">Protokolka:</string>
     <string name="radio_http">http</string>
@@ -1014,7 +1014,7 @@
     <string name="progress_bar">balka soo socda</string>
     <string name="web_view">barashada webka</string>
     <string name="invalid_configuration">Dhamaan Suurtagal ah oo Serveryaasha ah</string>
-    <string name="welcome_to_myPlanet">Soo dhawow myPlanet</string>
+    <string name="welcome_to_myPlanet">Soo dhawoow myPlanet</string>
     <string name="learn_offline">Baro horumarinta</string>
     <string name="open_learning">Waxbarasho Fur</string>
     <string name="unleash_learning_power">Ku Xir Barashada Xoojinta</string>
@@ -1239,7 +1239,7 @@
     <string name="go_to_mylibrary">Tag Maktabaddayda</string>
     <string name="choose_an_option">Dooro ikhtiyaar</string>
     <string name="welcome_back">Soo dhawoow %1$s</string>
-    <string name="welcome">Soo dhawoow 1$s</string>
+    <string name="welcome">Soo dhawoow %1$s</string>
     <string name="edit_plan">Wax ka beddel qorshaha</string>
     <string name="show_additional_fields">muuji beeraha dheeraadka ah</string>
     <string name="hide_additional_fields">qari beeraha dheeraadka ah</string>
