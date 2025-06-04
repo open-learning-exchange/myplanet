@@ -131,7 +131,7 @@ class NewsFragment : BaseNewsFragment() {
     }
 
     private val newsList: List<RealmNews?> get() {
-        val allNews: List<RealmNews> = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING).isEmpty("replyTo")
+        val allNews: List<RealmNews> = mRealm.where(RealmNews::class.java).isEmpty("replyTo")
             .equalTo("docType", "message", Case.INSENSITIVE).findAll()
         val list: MutableList<RealmNews?> = ArrayList()
         for (news in allNews) {
@@ -175,9 +175,14 @@ class NewsFragment : BaseNewsFragment() {
                 .`in`("_id", stringArray)
                 .findAll()
             getUrlsAndStartDownload(lib, urls)
-            adapterNews = activity?.let {
-                AdapterNews(it, list?.toMutableList() ?: mutableListOf(), user, null)
-            }
+//            adapterNews = activity?.let {
+//                AdapterNews(it, list?.toMutableList() ?: mutableListOf(), user, null)
+//            }
+            val updatedListAsMutable: MutableList<RealmNews?> = list?.toMutableList() ?: mutableListOf()
+            val sortedList = updatedListAsMutable.sortedWith(compareByDescending { news ->
+                getSortDate(news)
+            })
+            adapterNews = activity?.let { AdapterNews(it, sortedList.toMutableList(), user, null) }
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
             adapterNews?.setListener(this)
@@ -231,5 +236,22 @@ class NewsFragment : BaseNewsFragment() {
         override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
             adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount, "news") }
         }
+    }
+    private fun getSortDate(news: RealmNews?): Long {
+        if (news == null) return 0
+        try {
+            if (!news.viewIn.isNullOrEmpty()) {
+                val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
+                for (elem in ar) {
+                    val obj = elem.asJsonObject
+                    if (obj.has("section") && obj.get("section").asString.equals("community", true) && obj.has("sharedDate")) {
+                        return obj.get("sharedDate").asLong
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return news.time
     }
 }
