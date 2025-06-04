@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import io.realm.Realm
+import kotlinx.coroutines.*
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
@@ -30,7 +31,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private lateinit var lRealm: Realm
     private lateinit var library: RealmMyLibrary
     var userModel: RealmUserModel? = null
-
+    private val fragmentScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -40,14 +41,34 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     override fun onDownloadComplete() {
         super.onDownloadComplete()
-
-        fragmentLibraryDetailBinding.btnDownload.setImageResource(R.drawable.ic_play)
-        if (!library.userId?.contains(profileDbHandler.userModel?.id)!!) {
-            if (!lRealm.isInTransaction) lRealm.beginTransaction()
-            library.setUserId(profileDbHandler.userModel?.id)
-            onAdd(lRealm, "resources", profileDbHandler.userModel?.id, libraryId)
-            Utilities.toast(activity, getString(R.string.added_to_my_library))
-            fragmentLibraryDetailBinding.btnRemove.setImageResource(R.drawable.close_x)
+        fragmentScope.launch {
+            withContext(Dispatchers.IO) {
+                val backgroundRealm = Realm.getDefaultInstance()
+                try {
+                    val backgroundLibrary = backgroundRealm.where(RealmMyLibrary::class.java)
+                        .equalTo("resourceId", libraryId).findFirst()
+                    if (backgroundLibrary != null && !backgroundLibrary.userId?.contains(profileDbHandler.userModel?.id)!!) {
+                        if (!backgroundRealm.isInTransaction) backgroundRealm.beginTransaction()
+                        backgroundLibrary.setUserId(profileDbHandler.userModel?.id)
+                        onAdd(backgroundRealm, "resources", profileDbHandler.userModel?.id, libraryId)
+                        backgroundRealm.commitTransaction()
+                    }
+                } catch (e: Exception) {
+                    if (backgroundRealm.isInTransaction) {
+                        backgroundRealm.cancelTransaction()
+                    }
+                    e.printStackTrace()
+                } finally {
+                    backgroundRealm.close()
+                }
+            }
+            withContext(Dispatchers.Main) {
+                fragmentLibraryDetailBinding.btnDownload.setImageResource(R.drawable.ic_play)
+                if (!library.userId?.contains(profileDbHandler.userModel?.id)!!) {
+                    Utilities.toast(activity, getString(R.string.added_to_my_library))
+                    fragmentLibraryDetailBinding.btnRemove.setImageResource(R.drawable.close_x)
+                }
+            }
         }
     }
 
@@ -80,12 +101,27 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             setTextViewVisibility(tvResource, llResource, listToString(library.resourceFor))
             setTextViewVisibility(tvType, llType, library.resourceType)
         }
-        profileDbHandler.setResourceOpenCount(library)
-        try {
-            onRatingChanged()
-        } catch (ex: Exception) {
-            ex.printStackTrace()
+        fragmentScope.launch {
+            withContext(Dispatchers.IO) {
+                try {
+                    profileDbHandler.setResourceOpenCount(library)
+                } catch (ex: Exception) {
+                    ex.printStackTrace()
+                }
+            }
+            withContext(Dispatchers.Main) {
+                try {
+                    onRatingChanged()
+                } catch (ex: Exception) {
+                    ex.printStackTrace()
+                }
+                setupDownloadButton()
+                setClickListeners()
+            }
         }
+    }
+
+    private fun setupDownloadButton() {
         fragmentLibraryDetailBinding.btnDownload.visibility = if (TextUtils.isEmpty(library.resourceLocalAddress)) View.GONE else View.VISIBLE
         fragmentLibraryDetailBinding.btnDownload.setImageResource(
             if (!library.resourceOffline || library.isResourceOffline()) {
@@ -102,7 +138,6 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         if (getFileExtension(library.resourceLocalAddress) == "mp4") {
             fragmentLibraryDetailBinding.btnDownload.setImageResource(R.drawable.ic_play)
         }
-        setClickListeners()
     }
 
     private fun setTextViewVisibility(textView: TextView, layout: View, text: String?) {
@@ -137,21 +172,44 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 } else {
                     getString(R.string.btn_remove_lib)
                 }
-        }
-        else {
+        } else {
             fragmentLibraryDetailBinding.btnRemove.visibility = View.GONE
         }
         fragmentLibraryDetailBinding.btnRemove.setOnClickListener {
-            if (!lRealm.isInTransaction) lRealm.beginTransaction()
-            if (isAdd) {
-                library.setUserId(profileDbHandler.userModel?.id)
-                onAdd(lRealm, "resources", profileDbHandler.userModel?.id, libraryId)
-            } else {
-                library.removeUserId(profileDbHandler.userModel?.id)
-                onRemove(lRealm, "resources", profileDbHandler.userModel?.id, libraryId)
+            fragmentScope.launch {
+                withContext(Dispatchers.IO) {
+                    val backgroundRealm = Realm.getDefaultInstance()
+                    try {
+                        val backgroundLibrary = backgroundRealm.where(RealmMyLibrary::class.java)
+                            .equalTo("resourceId", libraryId).findFirst()
+
+                        if (backgroundLibrary != null) {
+                            if (!backgroundRealm.isInTransaction) backgroundRealm.beginTransaction()
+                            if (isAdd) {
+                                backgroundLibrary.setUserId(profileDbHandler.userModel?.id)
+                                onAdd(backgroundRealm, "resources", profileDbHandler.userModel?.id, libraryId)
+                            } else {
+                                backgroundLibrary.removeUserId(profileDbHandler.userModel?.id)
+                                onRemove(backgroundRealm, "resources", profileDbHandler.userModel?.id, libraryId)
+                            }
+                            backgroundRealm.commitTransaction()
+                        }
+                    } catch (e: Exception) {
+                        if (backgroundRealm.isInTransaction) {
+                            backgroundRealm.cancelTransaction()
+                        }
+                        e.printStackTrace()
+                    } finally {
+                        backgroundRealm.close()
+                    }
+                }
+                withContext(Dispatchers.Main) {
+                    Utilities.toast(activity, getString(R.string.resources) + " " +
+                            if (isAdd) getString(R.string.added_to) + getString(R.string.my_library)
+                            else getString(R.string.removed_from) + getString(R.string.my_library))
+                    setLibraryData()
+                }
             }
-            Utilities.toast(activity, getString(R.string.resources) +" " + if (isAdd) getString(R.string.added_to) + getString(R.string.my_library) else getString(R.string.removed_from) + getString(R.string.my_library))
-            setLibraryData()
         }
         fragmentLibraryDetailBinding.btnBack.setOnClickListener {
             val activity = requireActivity()
@@ -166,5 +224,9 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onRatingChanged() {
         val `object` = getRatingsById(lRealm, "resource", library.resourceId, userModel?.id)
         setRatings(`object`)
+    }
+    override fun onDestroy() {
+        super.onDestroy()
+        fragmentScope.cancel()
     }
 }
