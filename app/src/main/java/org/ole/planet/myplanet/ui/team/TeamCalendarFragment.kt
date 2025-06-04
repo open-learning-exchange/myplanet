@@ -275,7 +275,12 @@ class TeamCalendarFragment : BaseTeamFragment() {
         val extraHeight = TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP, 12f, resources.displayMetrics
         ).toInt()
-        val cardHeight = getCardViewHeight(requireContext())
+        var cardHeight = getCardViewHeight(requireContext())
+        if(meetupList.size <= 1 && (meetupList[0] is RealmTeamTask)){
+            cardHeight = TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP, 120f, resources.displayMetrics
+            ).toInt()
+        }
         recyclerView.layoutParams.height = cardHeight + extraHeight
         recyclerView.requestLayout()
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
