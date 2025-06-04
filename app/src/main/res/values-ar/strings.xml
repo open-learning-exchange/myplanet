@@ -27,7 +27,7 @@
     <string name="err_msg_name">الرجاء إدخال اسم المستخدم</string>
     <string name="err_msg_password">الرجاء إدخال كلمة المرور</string>
     <string name="err_msg_login">اسم المستخدم و/أو كلمة المرور غير متطابقة</string>
-    <string name="hint_serverURl">planet الملكية الفكرية</string>
+    <string name="hint_serverURL">planet الملكية الفكرية</string>
     <string name="hint_serverPin">رمز الخادم</string>
     <string name="radio_protocol">البروتوكول:</string>
     <string name="radio_http">http</string>

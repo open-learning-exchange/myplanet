@@ -87,7 +87,7 @@
                 android:layout_marginTop="16dp"
                 app:hintTextColor="@color/hint_color"
                 app:boxStrokeColor="@color/daynight_textColor"
-                android:hint="@string/hint_serverURl"
+                android:hint="@string/hint_serverURL"
                 app:layout_constraintTop_toBottomOf="@+id/spn_cloud">
 
                 <EditText
