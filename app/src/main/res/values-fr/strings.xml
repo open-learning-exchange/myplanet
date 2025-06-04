@@ -27,7 +27,7 @@
     <string name="err_msg_name">Entrez votre nom d\'utilisateur</string>
     <string name="err_msg_password">Entrez le mot de passe</string>
     <string name="err_msg_login">Le nom d\'utilisateur et/ou le mot de passe ne correspondent pas</string>
-    <string name="hint_serverURl">planet adresse IP</string>
+    <string name="hint_serverURL">planet adresse IP</string>
     <string name="hint_serverPin">code serveur</string>
     <string name="radio_protocol">Protocole:</string>
     <string name="radio_http">http</string>
