@@ -175,9 +175,6 @@ class NewsFragment : BaseNewsFragment() {
                 .`in`("_id", stringArray)
                 .findAll()
             getUrlsAndStartDownload(lib, urls)
-//            adapterNews = activity?.let {
-//                AdapterNews(it, list?.toMutableList() ?: mutableListOf(), user, null)
-//            }
             val updatedListAsMutable: MutableList<RealmNews?> = list?.toMutableList() ?: mutableListOf()
             val sortedList = updatedListAsMutable.sortedWith(compareByDescending { news ->
                 getSortDate(news)
