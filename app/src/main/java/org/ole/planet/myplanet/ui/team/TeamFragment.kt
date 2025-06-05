@@ -311,9 +311,17 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private fun showNoResultsMessage(show: Boolean, searchQuery: String = "") {
         if (show) {
             fragmentTeamBinding.tvMessage.text = if (searchQuery.isNotEmpty()) {
-                getString(R.string.no_teams_found_for_search, searchQuery)
+                if (TextUtils.equals(type, "enterprise")){
+                    getString(R.string.no_enterprises_found_for_search, searchQuery)
+                } else {
+                    getString(R.string.no_teams_found_for_search, searchQuery)
+                }
             } else {
-                getString(R.string.no_teams_found)
+                if (TextUtils.equals(type, "enterprise")) {
+                    getString(R.string.no_enterprises_found)
+                } else {
+                    getString(R.string.no_teams_found)
+                }
             }
             fragmentTeamBinding.tvMessage.visibility = View.VISIBLE
             fragmentTeamBinding.etSearch.visibility = View.VISIBLE

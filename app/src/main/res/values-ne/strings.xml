@@ -1302,5 +1302,7 @@
     <string name="a_few_seconds_ago">केही सेकेन्ड अगाडि</string>
     <string name="no_teams_found">कुनै टिम फेला परेन</string>
     <string name="no_teams_found_for_search">"%1$s" का लागि कुनै टिम फेला परेन</string>
+    <string name="no_enterprises_found_for_search">"%1$s" को लागि कुनै उद्यमहरू फेला परेनन्</string>
+    <string name="no_enterprises_found">कुनै उद्यमहरू फेला परेनन्</string>
 
 </resources>

@@ -1302,5 +1302,7 @@
     <string name="a_few_seconds_ago">dhawr ilbiriqsi ka hor</string>
     <string name="no_teams_found">Koox laguma helin</string>
     <string name="no_teams_found_for_search">Koox laguma helin "%1$s"</string>
+    <string name="no_enterprises_found_for_search">Ma jiro ganacsi laga helay "%1$s"</string>
+    <string name="no_enterprises_found">Ma jiro ganacsi laga helay</string>
 
 </resources>
