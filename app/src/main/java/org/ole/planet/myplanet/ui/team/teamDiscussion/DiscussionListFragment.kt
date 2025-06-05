@@ -39,9 +39,6 @@ class DiscussionListFragment : BaseTeamFragment() {
         fragmentDiscussionListBinding = FragmentDiscussionListBinding.inflate(inflater, container, false)
         fragmentDiscussionListBinding.addMessage.setOnClickListener { showAddMessage() }
         team =  mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst() ?: throw IllegalArgumentException("Team not found for ID: $teamId")
-        if (!isMember()) {
-            fragmentDiscussionListBinding.addMessage.visibility = View.GONE
-        }
 
         updatedNewsList = mRealm.where(RealmNews::class.java).isEmpty("replyTo").sort("time", Sort.DESCENDING).findAllAsync()
 
