@@ -32,7 +32,6 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
-import fisk.chipcloud.ChipCloudConfig
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
@@ -55,10 +54,11 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
 import java.util.Calendar
 import androidx.core.graphics.drawable.toDrawable
-import org.json.JSONException
-import org.json.JSONObject
+import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.ui.courses.CourseStepFragment.Companion.prependBaseUrlToImages
 import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import kotlin.toString
 
 class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "") : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
@@ -163,11 +163,8 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     Utilities.loadImage(null, holder.rowNewsBinding.imgUser)
                 }
                 showShareButton(holder, news)
-                if ("${news.messageWithoutMarkdown}" != "</br>") {
-                    holder.rowNewsBinding.tvMessage.text = news.messageWithoutMarkdown
-                } else {
-                    holder.rowNewsBinding.linearLayout51.visibility = View.GONE
-                }
+                val markdownContentWithLocalPaths = prependBaseUrlToImages(news.message, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/")
+                setMarkdownText(holder.rowNewsBinding.tvMessage, markdownContentWithLocalPaths)
                 if(sharedTeamName.isEmpty() || teamName.isNotEmpty()){
                     holder.rowNewsBinding.tvDate.text = formatDate(news.time)
                 } else{
