@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.R.array.status_options
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentNotificationsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmTeamTask
@@ -125,12 +126,17 @@ class NotificationsFragment : Fragment() {
                 val teamId = linkJson.optString("teams")
                 if (teamId.isNotEmpty()) {
                     if (context is OnHomeItemClickListener) {
-                        val f = TeamDetailFragment()
-                        val b = Bundle()
-                        b.putString("id", teamId)
-                        b.putBoolean("isMyTeam", true)
-                        b.putInt("navigateToPage", 3)
-                        f.arguments = b
+                        // Get team data for optimization
+                        val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", teamId)?.findFirst()
+
+                        val f = TeamDetailFragment.newInstance(
+                            teamId = teamId,
+                            teamName = teamObject?.name ?: "",
+                            teamType = teamObject?.type ?: "",
+                            isMyTeam = true,
+                            navigateToPage = 3
+                        )
+
                         (context as OnHomeItemClickListener).openCallFragment(f)
                     }
                 }

@@ -83,27 +83,43 @@ class ServicesFragment : BaseTeamFragment() {
 
     private fun setRecyclerView(links: RealmResults<RealmMyTeam>?) {
         fragmentServicesBinding.llServices.removeAllViews()
-        if (links != null) {
-            links.forEach { team ->
-                val b: TextView = LayoutInflater.from(activity).inflate(R.layout.button_single, fragmentServicesBinding.llServices, false) as TextView
-                b.setPadding(8, 8, 8, 8)
-                b.text = team.title
-                b.setOnClickListener {
-                    val route = team.route?.split("/")
-                    if (route != null) {
-                        if (route.size >= 3) {
-                            val f = TeamDetailFragment()
-                            val c = Bundle()
-                            val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", route[3])?.findFirst()
-                            c.putString("id", route[3])
-                            teamObject?.isMyTeam(user?.id, mRealm)?.let { it1 -> c.putBoolean("isMyTeam", it1) }
-                            f.arguments = c
-                            (context as OnHomeItemClickListener).openCallFragment(f)
-                        }
+        links?.forEach { team ->
+            val b: TextView = LayoutInflater.from(activity).inflate(R.layout.button_single, fragmentServicesBinding.llServices, false) as TextView
+            b.setPadding(8, 8, 8, 8)
+            b.text = team.title
+//            b.setOnClickListener {
+//                val route = team.route?.split("/")
+//                if (route != null) {
+//                    if (route.size >= 3) {
+//                        val f = TeamDetailFragment()
+//                        val c = Bundle()
+//                        val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", route[3])?.findFirst()
+//                        c.putString("id", route[3])
+//                        teamObject?.isMyTeam(user?.id, mRealm)?.let { it1 -> c.putBoolean("isMyTeam", it1) }
+//                        f.arguments = c
+//                        (context as OnHomeItemClickListener).openCallFragment(f)
+//                    }
+//                }
+//            }
+            b.setOnClickListener {
+                val route = team.route?.split("/")
+                if (route != null) {
+                    if (route.size >= 3) {
+                        val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", route[3])?.findFirst()
+                        val isMyTeam = teamObject?.isMyTeam(user?.id, mRealm) == true
+
+                        val f = TeamDetailFragment.newInstance(
+                            teamId = route[3],
+                            teamName = teamObject?.name ?: "",
+                            teamType = teamObject?.type ?: "",
+                            isMyTeam = isMyTeam
+                        )
+
+                        (context as OnHomeItemClickListener).openCallFragment(f)
                     }
                 }
-                fragmentServicesBinding.llServices.addView(b)
             }
+            fragmentServicesBinding.llServices.addView(b)
         }
     }
 }

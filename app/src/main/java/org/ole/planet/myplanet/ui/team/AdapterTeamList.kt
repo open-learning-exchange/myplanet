@@ -65,23 +65,47 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
             val isMyTeam = team.isMyTeam(user?.id, mRealm)
             showActionButton(isMyTeam, team, user)
 
+//            root.setOnClickListener {
+//                if (context is OnHomeItemClickListener) {
+//                    val fragmentManager = (context as AppCompatActivity).supportFragmentManager
+//                    val existingFragment = fragmentManager.findFragmentByTag("TeamDetailFragment")
+//                    val b = Bundle()
+//                    b.putString("id", team._id)
+//                    b.putBoolean("isMyTeam", isMyTeam)
+//                    if (existingFragment is TeamDetailFragment) {
+//                        existingFragment.arguments?.clear()
+//                        existingFragment.arguments = b
+//                    }
+//                    val f = TeamDetailFragment()
+//                    f.arguments = b
+//                    (context as OnHomeItemClickListener).openCallFragment(f)
+//                    prefData.setTeamName(team.name)
+//                }
+//            }
             root.setOnClickListener {
                 if (context is OnHomeItemClickListener) {
                     val fragmentManager = (context as AppCompatActivity).supportFragmentManager
                     val existingFragment = fragmentManager.findFragmentByTag("TeamDetailFragment")
-                    val b = Bundle()
-                    b.putString("id", team._id)
-                    b.putBoolean("isMyTeam", isMyTeam)
+
+                    // Use new optimized approach
+                    val f = TeamDetailFragment.newInstance(
+                        teamId = "${team._id}",
+                        teamName = "${team.name}",
+                        teamType = "${team.type}",
+                        isMyTeam = isMyTeam
+                    )
+
+                    // Keep existing fragment replacement logic if needed
                     if (existingFragment is TeamDetailFragment) {
                         existingFragment.arguments?.clear()
-                        existingFragment.arguments = b
+                        existingFragment.arguments = f.arguments
                     }
-                    val f = TeamDetailFragment()
-                    f.arguments = b
+
                     (context as OnHomeItemClickListener).openCallFragment(f)
                     prefData.setTeamName(team.name)
                 }
             }
+
 
             btnFeedback.setOnClickListener {
                 val feedbackFragment = FeedbackFragment()

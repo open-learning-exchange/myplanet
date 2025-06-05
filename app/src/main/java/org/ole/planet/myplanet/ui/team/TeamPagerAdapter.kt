@@ -63,7 +63,7 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
                     MainApplication.listener = this
                 }
                 R.string.join_requests,
-                R.string.applicants         -> MembersFragment()
+                R.string.applicants -> MembersFragment()
                 else -> throw IllegalArgumentException("Unknown page id $id")
             }.apply {
                 if (arguments == null) {

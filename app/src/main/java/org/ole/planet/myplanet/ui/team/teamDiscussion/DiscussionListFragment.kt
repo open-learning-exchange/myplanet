@@ -38,7 +38,27 @@ class DiscussionListFragment : BaseTeamFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentDiscussionListBinding = FragmentDiscussionListBinding.inflate(inflater, container, false)
         fragmentDiscussionListBinding.addMessage.setOnClickListener { showAddMessage() }
-        team =  mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst() ?: throw IllegalArgumentException("Team not found for ID: $teamId")
+
+        // UPDATED: Use the same pattern as BaseTeamFragment
+        // Only query Realm if direct data wasn't provided, and handle potential null case
+        if (shouldQueryTeamFromRealm()) {
+            team = try {
+                mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+
+            // If team is still null, try alternative query
+            if (team == null) {
+                try {
+                    team = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+
         if (!isMember()) {
             fragmentDiscussionListBinding.addMessage.visibility = View.GONE
         }
@@ -57,10 +77,10 @@ class DiscussionListFragment : BaseTeamFragment() {
         val realmNewsList = news
         val count = realmNewsList.size
         mRealm.executeTransactionAsync { realm: Realm ->
-            var notification = realm.where(RealmTeamNotification::class.java).equalTo("type", "chat").equalTo("parentId", teamId).findFirst()
+            var notification = realm.where(RealmTeamNotification::class.java).equalTo("type", "chat").equalTo("parentId", getEffectiveTeamId()).findFirst()
             if (notification == null) {
                 notification = realm.createObject(RealmTeamNotification::class.java, UUID.randomUUID().toString())
-                notification.parentId = teamId
+                notification.parentId = getEffectiveTeamId()
                 notification.type = "chat"
             }
             notification?.lastCount = count
@@ -91,14 +111,16 @@ class DiscussionListFragment : BaseTeamFragment() {
 
     private fun filterNewsList(results: RealmResults<RealmNews>): List<RealmNews?> {
         val filteredList: MutableList<RealmNews?> = ArrayList()
+        val effectiveTeamId = getEffectiveTeamId() // Use helper method
+
         for (news in results) {
-            if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(team?._id, ignoreCase = true)) {
+            if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(effectiveTeamId, ignoreCase = true)) {
                 filteredList.add(news)
             } else if (!TextUtils.isEmpty(news.viewIn)) {
                 val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
                 for (e in ar) {
                     val ob = e.asJsonObject
-                    if (ob["_id"].asString.equals(team?._id, ignoreCase = true)) {
+                    if (ob["_id"].asString.equals(effectiveTeamId, ignoreCase = true)) {
                         filteredList.add(news)
                     }
                 }
@@ -111,14 +133,16 @@ class DiscussionListFragment : BaseTeamFragment() {
         get() {
             val realmNewsList: List<RealmNews> = mRealm.where(RealmNews::class.java).isEmpty("replyTo").sort("time", Sort.DESCENDING).findAll()
             val list: MutableList<RealmNews> = ArrayList()
+            val effectiveTeamId = getEffectiveTeamId() // Use helper method
+
             for (news in realmNewsList) {
-                if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(team?._id, ignoreCase = true)) {
+                if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(effectiveTeamId, ignoreCase = true)) {
                     list.add(news)
                 } else if (!TextUtils.isEmpty(news.viewIn)) {
                     val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
                     for (e in ar) {
                         val ob = e.asJsonObject
-                        if (ob["_id"].asString.equals(team?._id, ignoreCase = true)) {
+                        if (ob["_id"].asString.equals(effectiveTeamId, ignoreCase = true)) {
                             list.add(news)
                         }
                     }
@@ -134,7 +158,7 @@ class DiscussionListFragment : BaseTeamFragment() {
 
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
         val adapterNews = activity?.let {
-            realmNewsList?.let { it1 -> AdapterNews(it, it1.toMutableList(), user, null, team?.name.toString()) }
+            realmNewsList?.let { it1 -> AdapterNews(it, it1.toMutableList(), user, null, getEffectiveTeamName()) }
         }
         adapterNews?.setmRealm(mRealm)
         adapterNews?.setListener(this)
@@ -168,12 +192,12 @@ class DiscussionListFragment : BaseTeamFragment() {
                     return@setPositiveButton
                 }
                 val map = HashMap<String?, String>()
-                map["viewInId"] = teamId
+                map["viewInId"] = getEffectiveTeamId() // Use helper method
                 map["viewInSection"] = "teams"
                 map["message"] = msg
-                map["messageType"] = team?.teamType ?: ""
+                map["messageType"] = getEffectiveTeamType() // Use helper method
                 map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
-                map["name"] = team?.name.toString()
+                map["name"] = getEffectiveTeamName() // Use helper method
                 user?.let { createNews(map, mRealm, it, imageList) }
                 fragmentDiscussionListBinding.rvDiscussion.adapter?.notifyDataSetChanged()
                 setData(news)
@@ -194,5 +218,30 @@ class DiscussionListFragment : BaseTeamFragment() {
 
     override fun setData(list: List<RealmNews?>?) {
         showRecyclerView(list)
+    }
+
+    // NEW HELPER METHOD - Add this to check if Realm query is needed
+    private fun shouldQueryTeamFromRealm(): Boolean {
+        // Check if direct team data was provided
+        val hasDirectData = requireArguments().containsKey("teamName") &&
+                requireArguments().containsKey("teamType") &&
+                requireArguments().containsKey("teamId")
+        return !hasDirectData
+    }
+
+    // NEW FACTORY METHOD for creating fragment with direct data
+    companion object {
+        fun newInstance(teamId: String, teamName: String, teamType: String): DiscussionListFragment {
+            val fragment = DiscussionListFragment()
+            val args = Bundle().apply {
+                putString("teamId", teamId)
+                putString("teamName", teamName)
+                putString("teamType", teamType)
+                // Keep the original "id" key for backward compatibility
+                putString("id", teamId)
+            }
+            fragment.arguments = args
+            return fragment
+        }
     }
 }

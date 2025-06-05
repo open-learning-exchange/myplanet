@@ -15,6 +15,7 @@ import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
@@ -32,18 +33,47 @@ import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.Utilities
 
 open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
+//    fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
+//        v.text = title
+//        v.setOnClickListener {
+//            if (homeItemClickListener != null) {
+//                val b = Bundle()
+//                b.putString("id", id)
+//                if (f is TeamDetailFragment) {
+//                    b.putBoolean("isMyTeam", true)
+//                }
+//                prefData.setTeamName(title)
+//                f.arguments = b
+//                homeItemClickListener?.openCallFragment(f)
+//            }
+//        }
+//    }
+
     fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
         v.text = title
         v.setOnClickListener {
             if (homeItemClickListener != null) {
-                val b = Bundle()
-                b.putString("id", id)
                 if (f is TeamDetailFragment) {
-                    b.putBoolean("isMyTeam", true)
+                    // Need to get team data for optimization
+                    val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", id)?.findFirst()
+
+                    val optimizedFragment = TeamDetailFragment.newInstance(
+                        teamId = id ?: "",
+                        teamName = title ?: "",
+                        teamType = teamObject?.type ?: "",
+                        isMyTeam = true
+                    )
+
+                    prefData.setTeamName(title)
+                    homeItemClickListener?.openCallFragment(optimizedFragment)
+                } else {
+                    // Keep original logic for other fragments
+                    val b = Bundle()
+                    b.putString("id", id)
+                    f.arguments = b
+                    prefData.setTeamName(title)
+                    homeItemClickListener?.openCallFragment(f)
                 }
-                prefData.setTeamName(title)
-                f.arguments = b
-                homeItemClickListener?.openCallFragment(f)
             }
         }
     }

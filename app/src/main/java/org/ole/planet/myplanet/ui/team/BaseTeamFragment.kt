@@ -21,21 +21,27 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val sParentCode = settings?.getString("parentCode", "")
         val communityName = settings?.getString("communityName", "")
+
+        // Original logic - unchanged
         teamId = requireArguments().getString("id", "") ?: "$communityName@$sParentCode"
         dbService = DatabaseService(requireActivity())
         mRealm = dbService.realmInstance
         user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
-        team = try {
-            mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-                ?: throw IllegalArgumentException("Team not found for ID: $teamId")
-        } catch (e: IllegalArgumentException) {
-            e.printStackTrace()
-            try {
-                mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()
+
+        // Only query if direct data wasn't provided
+        if (shouldQueryTeamFromRealm()) {
+            team = try {
+                mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
                     ?: throw IllegalArgumentException("Team not found for ID: $teamId")
             } catch (e: IllegalArgumentException) {
                 e.printStackTrace()
-                return
+                try {
+                    mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()
+                        ?: throw IllegalArgumentException("Team not found for ID: $teamId")
+                } catch (e: IllegalArgumentException) {
+                    e.printStackTrace()
+                    return
+                }
             }
         }
     }
@@ -48,6 +54,29 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
             .equalTo("teamId", teamId)
             .equalTo("docType", "membership")
             .count() > 0
+    }
+
+    // NEW HELPER METHODS - Only additions
+
+    private fun shouldQueryTeamFromRealm(): Boolean {
+        // Check if direct team data was provided
+        val hasDirectData = requireArguments().containsKey("teamName") &&
+                requireArguments().containsKey("teamType") &&
+                requireArguments().containsKey("teamId")
+        return !hasDirectData
+    }
+
+    // Helper methods to get team data from either direct args or Realm object
+    protected fun getEffectiveTeamName(): String {
+        return requireArguments().getString("teamName") ?: team?.name ?: ""
+    }
+
+    protected fun getEffectiveTeamType(): String {
+        return requireArguments().getString("teamType") ?: team?.type ?: ""
+    }
+
+    protected fun getEffectiveTeamId(): String {
+        return requireArguments().getString("teamId") ?: teamId
     }
 
     companion object {
