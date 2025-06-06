@@ -68,9 +68,6 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                     Utilities.toast(activity, getString(R.string.added_to_my_library))
                     fragmentLibraryDetailBinding.btnRemove.setImageResource(R.drawable.close_x)
                 }
-                if (!TextUtils.isEmpty(library.resourceLocalAddress)) {
-                    openResource(library)
-                }
             }
         }
     }
