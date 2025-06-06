@@ -26,7 +26,6 @@ import java.util.UUID
 
 class TeamDetailFragment : BaseTeamFragment() {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
-
     private var directTeamName: String? = null
     private var directTeamType: String? = null
     private var directTeamId: String? = null
@@ -138,7 +137,6 @@ class TeamDetailFragment : BaseTeamFragment() {
 
     private fun createTeamLog() {
         val userModel = UserProfileDbHandler(requireContext()).userModel ?: return
-
         val userName = userModel.name
         val userPlanetCode = userModel.planetCode
         val userParentCode = userModel.parentCode
@@ -161,8 +159,6 @@ class TeamDetailFragment : BaseTeamFragment() {
             realm.close()
         }
     }
-
-
 
     private fun shouldQueryRealm(teamId: String): Boolean {
         return teamId.isNotEmpty()

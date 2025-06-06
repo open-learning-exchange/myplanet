@@ -83,7 +83,7 @@ class NotificationsFragment : Fragment() {
         }
 
         val filteredNotifications = notifications.filter { notification ->
-             !notification.message.isNullOrEmpty() && notification.message != "INVALID"
+             notification.message.isNotEmpty() && notification.message != "INVALID"
         }
 
         adapter = AdapterNotification(filteredNotifications,
@@ -126,7 +126,6 @@ class NotificationsFragment : Fragment() {
                 val teamId = linkJson.optString("teams")
                 if (teamId.isNotEmpty()) {
                     if (context is OnHomeItemClickListener) {
-                        // Get team data for optimization
                         val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", teamId)?.findFirst()
 
                         val f = TeamDetailFragment.newInstance(

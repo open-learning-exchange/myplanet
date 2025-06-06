@@ -39,8 +39,6 @@ class DiscussionListFragment : BaseTeamFragment() {
         fragmentDiscussionListBinding = FragmentDiscussionListBinding.inflate(inflater, container, false)
         fragmentDiscussionListBinding.addMessage.setOnClickListener { showAddMessage() }
 
-        // UPDATED: Use the same pattern as BaseTeamFragment
-        // Only query Realm if direct data wasn't provided, and handle potential null case
         if (shouldQueryTeamFromRealm()) {
             team = try {
                 mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
@@ -49,7 +47,6 @@ class DiscussionListFragment : BaseTeamFragment() {
                 null
             }
 
-            // If team is still null, try alternative query
             if (team == null) {
                 try {
                     team = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()
@@ -111,7 +108,7 @@ class DiscussionListFragment : BaseTeamFragment() {
 
     private fun filterNewsList(results: RealmResults<RealmNews>): List<RealmNews?> {
         val filteredList: MutableList<RealmNews?> = ArrayList()
-        val effectiveTeamId = getEffectiveTeamId() // Use helper method
+        val effectiveTeamId = getEffectiveTeamId()
 
         for (news in results) {
             if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(effectiveTeamId, ignoreCase = true)) {
@@ -133,7 +130,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         get() {
             val realmNewsList: List<RealmNews> = mRealm.where(RealmNews::class.java).isEmpty("replyTo").sort("time", Sort.DESCENDING).findAll()
             val list: MutableList<RealmNews> = ArrayList()
-            val effectiveTeamId = getEffectiveTeamId() // Use helper method
+            val effectiveTeamId = getEffectiveTeamId()
 
             for (news in realmNewsList) {
                 if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(effectiveTeamId, ignoreCase = true)) {
@@ -192,12 +189,12 @@ class DiscussionListFragment : BaseTeamFragment() {
                     return@setPositiveButton
                 }
                 val map = HashMap<String?, String>()
-                map["viewInId"] = getEffectiveTeamId() // Use helper method
+                map["viewInId"] = getEffectiveTeamId()
                 map["viewInSection"] = "teams"
                 map["message"] = msg
-                map["messageType"] = getEffectiveTeamType() // Use helper method
+                map["messageType"] = getEffectiveTeamType()
                 map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
-                map["name"] = getEffectiveTeamName() // Use helper method
+                map["name"] = getEffectiveTeamName()
                 user?.let { createNews(map, mRealm, it, imageList) }
                 fragmentDiscussionListBinding.rvDiscussion.adapter?.notifyDataSetChanged()
                 setData(news)
@@ -220,16 +217,13 @@ class DiscussionListFragment : BaseTeamFragment() {
         showRecyclerView(list)
     }
 
-    // NEW HELPER METHOD - Add this to check if Realm query is needed
     private fun shouldQueryTeamFromRealm(): Boolean {
-        // Check if direct team data was provided
         val hasDirectData = requireArguments().containsKey("teamName") &&
                 requireArguments().containsKey("teamType") &&
                 requireArguments().containsKey("teamId")
         return !hasDirectData
     }
 
-    // NEW FACTORY METHOD for creating fragment with direct data
     companion object {
         fun newInstance(teamId: String, teamName: String, teamType: String): DiscussionListFragment {
             val fragment = DiscussionListFragment()
@@ -237,7 +231,6 @@ class DiscussionListFragment : BaseTeamFragment() {
                 putString("teamId", teamId)
                 putString("teamName", teamName)
                 putString("teamType", teamType)
-                // Keep the original "id" key for backward compatibility
                 putString("id", teamId)
             }
             fragment.arguments = args
