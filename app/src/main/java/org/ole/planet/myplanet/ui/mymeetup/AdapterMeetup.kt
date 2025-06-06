@@ -45,6 +45,8 @@ class AdapterMeetup(private val list: List<Any>) : RecyclerView.Adapter<AdapterM
             itemMeetupBinding.tvCreator.text = context.getString(R.string.message_placeholder, meetup.creator)
         } else if(meetup is RealmTeamTask){
             itemMeetupBinding.date.text = "Deadline:"
+            itemMeetupBinding.creator.text = "Assigned to:"
+            itemMeetupBinding.tvCreator.text = context.getString(R.string.message_placeholder, meetup.assignee)
             itemMeetupBinding.ltDateTo.visibility = View.GONE
             itemMeetupBinding.ltTime.visibility = View.GONE
             itemMeetupBinding.ltLink.visibility = View.GONE
