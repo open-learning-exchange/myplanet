@@ -737,7 +737,7 @@
     <string name="enter_resource_detail">Geli faahfaahinta khadka</string>
     <string name="resource_saved_to_my_personal">Khayraadka waxaa lagu keydiyay myPersonal</string>
     <string name="invalid_resource_url">url kheyraad aan sax ahayn</string>
-    <string name="my_library">"mylibrary"</string>
+    <string name="my_library">" mylibrary"</string>
     <string name="link_not_available">Xogta lama helin</string>
     <string name="success_you_have_added_these_resources_to_your_mylibrary">Guul! Waxaad ka daraysay khadkaan maktabaddaaga:\n\n</string>
     <string name="more_resource_s">" khadka dheer…\n"</string>
