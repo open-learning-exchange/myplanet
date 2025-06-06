@@ -49,8 +49,8 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 //    private var currentLibrary: RealmMyLibrary? = null
 //    private lateinit var installApkLauncher: ActivityResultLauncher<Intent>
     lateinit var prefData: SharedPrefManager
-     private var pendingAutoOpenLibrary: RealmMyLibrary? = null
-     private var shouldAutoOpenAfterDownload = false
+    private var pendingAutoOpenLibrary: RealmMyLibrary? = null
+    private var shouldAutoOpenAfterDownload = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         profileDbHandler = UserProfileDbHandler(requireActivity())
