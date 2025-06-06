@@ -27,29 +27,30 @@ import java.util.UUID
 class TeamDetailFragment : BaseTeamFragment() {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
 
-    // Add these new properties for direct data passing
     private var directTeamName: String? = null
     private var directTeamType: String? = null
     private var directTeamId: String? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTeamDetailBinding = FragmentTeamDetailBinding.inflate(inflater, container, false)
-
-        // Get direct data if passed (new approach)
         directTeamId = requireArguments().getString("teamId")
         directTeamName = requireArguments().getString("teamName")
         directTeamType = requireArguments().getString("teamType")
 
-        // Original logic - unchanged
         val teamId = requireArguments().getString("id" ) ?: ""
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
         val user = UserProfileDbHandler(requireContext()).userModel
         mRealm = DatabaseService(requireActivity()).realmInstance
 
-        // Only query Realm if direct data wasn't provided
         if (shouldQueryRealm(teamId)) {
             if (teamId.isNotEmpty()) {
-                team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst() ?: throw IllegalArgumentException("Team not found for ID: $teamId")
+                team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+                    ?: throw IllegalArgumentException("Team not found for ID: $teamId")
+            }
+        } else {
+            val effectiveTeamId = directTeamId ?: teamId
+            if (effectiveTeamId.isNotEmpty()) {
+                team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", effectiveTeamId).findFirst()
             }
         }
 
@@ -63,7 +64,6 @@ class TeamDetailFragment : BaseTeamFragment() {
             fragmentTeamDetailBinding.viewPager2.currentItem = pageIndex
         }
 
-        // Use direct data if available, otherwise use team object
         fragmentTeamDetailBinding.title.text = getEffectiveTeamName()
         fragmentTeamDetailBinding.subtitle.text = getEffectiveTeamType()
 
@@ -142,14 +142,14 @@ class TeamDetailFragment : BaseTeamFragment() {
         val userName = userModel.name
         val userPlanetCode = userModel.planetCode
         val userParentCode = userModel.parentCode
-        val teamType = getEffectiveTeamType() // Use new helper method
+        val teamType = getEffectiveTeamType()
 
         CoroutineScope(Dispatchers.IO).launch {
             val realm = DatabaseService(requireActivity()).realmInstance
 
             realm.executeTransaction { r ->
-                val log = r.createObject(RealmTeamLog::class.java, UUID.randomUUID().toString())
-                log.teamId = getEffectiveTeamId() // Use new helper method
+                val log = r.createObject(RealmTeamLog::class.java, "${UUID.randomUUID()}")
+                log.teamId = getEffectiveTeamId()
                 log.user = userName
                 log.createdOn = userPlanetCode
                 log.type = "teamVisit"
@@ -162,26 +162,12 @@ class TeamDetailFragment : BaseTeamFragment() {
         }
     }
 
-    // NEW HELPER METHODS - Only additions, no changes to existing code
+
 
     private fun shouldQueryRealm(teamId: String): Boolean {
-        // Only query Realm if we don't have direct data
-        return directTeamId == null || directTeamName == null || directTeamType == null
+        return teamId.isNotEmpty()
     }
 
-//    private fun getDisplayTeamName(): String {
-//        return directTeamName ?: team?.name ?: ""
-//    }
-//
-//    private fun getDisplayTeamType(): String {
-//        return directTeamType ?: team?.type ?: ""
-//    }
-//
-//    private fun getEffectiveTeamId(): String {
-//        return directTeamId ?: team?._id ?: ""
-//    }
-
-    // NEW FACTORY METHOD for easier fragment creation with direct data
     companion object {
         fun newInstance(teamId: String, teamName: String, teamType: String, isMyTeam: Boolean, navigateToPage: Int = -1): TeamDetailFragment {
             val fragment = TeamDetailFragment()

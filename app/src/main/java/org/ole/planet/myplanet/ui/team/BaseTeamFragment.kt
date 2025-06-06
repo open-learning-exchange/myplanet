@@ -21,14 +21,11 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val sParentCode = settings?.getString("parentCode", "")
         val communityName = settings?.getString("communityName", "")
-
-        // Original logic - unchanged
         teamId = requireArguments().getString("id", "") ?: "$communityName@$sParentCode"
         dbService = DatabaseService(requireActivity())
         mRealm = dbService.realmInstance
         user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
 
-        // Only query if direct data wasn't provided
         if (shouldQueryTeamFromRealm()) {
             team = try {
                 mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
@@ -56,17 +53,13 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
             .count() > 0
     }
 
-    // NEW HELPER METHODS - Only additions
-
     private fun shouldQueryTeamFromRealm(): Boolean {
-        // Check if direct team data was provided
         val hasDirectData = requireArguments().containsKey("teamName") &&
                 requireArguments().containsKey("teamType") &&
                 requireArguments().containsKey("teamId")
         return !hasDirectData
     }
 
-    // Helper methods to get team data from either direct args or Realm object
     protected fun getEffectiveTeamName(): String {
         return requireArguments().getString("teamName") ?: team?.name ?: ""
     }
