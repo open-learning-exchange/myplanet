@@ -23,9 +23,12 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 import java.util.UUID
+import androidx.viewpager2.widget.ViewPager2
+import org.ole.planet.myplanet.ui.team.teamResource.ResourceUpdateListner
 
 class TeamDetailFragment : BaseTeamFragment() {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
+    private var resourcePosition: Int = -1
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTeamDetailBinding = FragmentTeamDetailBinding.inflate(inflater, container, false)
         val teamId = requireArguments().getString("id" ) ?: ""
@@ -40,6 +43,16 @@ class TeamDetailFragment : BaseTeamFragment() {
         TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
             tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
         }.attach()
+
+        (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).let { adapter ->
+            val titleResources = getString(R.string.resources)
+            val titleDocuments = getString(R.string.documents)
+            resourcePosition = (0 until adapter.itemCount)
+                .firstOrNull { i ->
+                    val title = adapter.getPageTitle(i)
+                    title == titleResources || title == titleDocuments
+                } ?: -1
+        }
 
         val pageIndex = arguments?.getInt("navigateToPage", -1) ?: -1
         if (pageIndex >= 0 && pageIndex < (fragmentTeamDetailBinding.viewPager2.adapter?.itemCount ?: 0)) {
@@ -92,12 +105,30 @@ class TeamDetailFragment : BaseTeamFragment() {
                         fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
                     }.setNegativeButton(R.string.no, null).show()
             }
+            fragmentTeamDetailBinding.viewPager2.registerOnPageChangeCallback(
+                object : ViewPager2.OnPageChangeCallback() {
+                    override fun onPageSelected(pos: Int) {
+                        super.onPageSelected(pos)
+                        if (pos == resourcePosition && MainApplication.showDownload) {
+                            MainApplication.showDownload = false
+                            val adapter = fragmentTeamDetailBinding
+                                .viewPager2
+                                .adapter as TeamPagerAdapter
+                            val frag = adapter.getFragmentAt(pos) as? ResourceUpdateListner
+                            frag?.onAddDocument()
+                        }
+                    }
+                }
+            )
+            val vp = fragmentTeamDetailBinding.viewPager2
+            val adapter = vp.adapter as TeamPagerAdapter
             fragmentTeamDetailBinding.btnAddDoc.setOnClickListener {
-                MainApplication.showDownload = true
-                fragmentTeamDetailBinding.viewPager2.currentItem = 6
-                MainApplication.showDownload = false
-                if (MainApplication.listener != null) {
-                    MainApplication.listener?.onAddDocument()
+                if (vp.currentItem == resourcePosition) {
+                    (adapter.getFragmentAt(resourcePosition) as? ResourceUpdateListner)
+                        ?.onAddDocument()
+                } else {
+                    MainApplication.showDownload = true
+                    vp.setCurrentItem(resourcePosition, false)
                 }
             }
         }
