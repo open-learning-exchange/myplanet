@@ -737,7 +737,7 @@
     <string name="enter_resource_detail">Ingresa los detalles del recurso</string>
     <string name="resource_saved_to_my_personal">Recurso guardado en myPersonal</string>
     <string name="invalid_resource_url">URL de recurso no válida</string>
-    <string name="my_library">mylibrary"</string>
+    <string name="my_library"> mylibrary"</string>
     <string name="link_not_available">Enlace no disponible</string>
     <string name="success_you_have_added_these_resources_to_your_mylibrary">¡Éxito! Has agregado estos recursos a tu mi Biblioteca:\n\n</string>
     <string name="more_resource_s">" más recurso(s)…\n"</string>
