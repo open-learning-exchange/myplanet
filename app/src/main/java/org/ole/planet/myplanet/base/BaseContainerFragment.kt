@@ -49,7 +49,8 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private var currentLibrary: RealmMyLibrary? = null
     private lateinit var installApkLauncher: ActivityResultLauncher<Intent>
     lateinit var prefData: SharedPrefManager
-
+    private var pendingAutoOpenLibrary: RealmMyLibrary? = null
+    private var shouldAutoOpenAfterDownload = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         profileDbHandler = UserProfileDbHandler(requireActivity())
@@ -78,6 +79,24 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
         if (urls.isNotEmpty()) {
             startDownload(urls)
+        }
+    }
+    fun startDownloadWithAutoOpen(urls: ArrayList<String>, libraryToOpen: RealmMyLibrary? = null) {
+        if (libraryToOpen != null) {
+            pendingAutoOpenLibrary = libraryToOpen
+            shouldAutoOpenAfterDownload = true
+        }
+        startDownload(urls)
+    }
+    override fun onDownloadComplete() {
+        super.onDownloadComplete()
+        if (shouldAutoOpenAfterDownload && pendingAutoOpenLibrary != null) {
+            val library = pendingAutoOpenLibrary!!
+            shouldAutoOpenAfterDownload = false
+            pendingAutoOpenLibrary = null
+            if (library.isResourceOffline() || FileUtils.checkFileExist(Utilities.getUrl(library))) {
+                openFileType(library, "offline")
+            }
         }
     }
     fun initRatingView(type: String?, id: String?, title: String?, listener: OnRatingChangeListener?) {
@@ -149,7 +168,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 }
 
                 if (downloadUrls.isNotEmpty()) {
-                    startDownload(downloadUrls)
+                    startDownloadWithAutoOpen(downloadUrls, items)
                 }
             }
         } else {
@@ -168,7 +187,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 } else {
                     val arrayList = ArrayList<String>()
                     arrayList.add(Utilities.getUrl(items))
-                    startDownload(arrayList)
+                    startDownloadWithAutoOpen(arrayList, items)
                     profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
                 }
             }
