@@ -1,12 +1,18 @@
 package org.ole.planet.myplanet.ui.team
 
-import android.app.*
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.content.Context
 import android.content.res.Resources
-import android.os.*
+import android.graphics.Color
+import android.os.Bundle
 import android.util.TypedValue
-import android.view.*
-import android.widget.*
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.RadioButton
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -14,24 +20,31 @@ import androidx.recyclerview.widget.RecyclerView
 import com.applandeo.materialcalendarview.CalendarDay
 import com.applandeo.materialcalendarview.CalendarView
 import com.applandeo.materialcalendarview.listeners.OnCalendarDayClickListener
-import com.google.gson.*
+import com.google.gson.Gson
+import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmResults
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.*
+import org.ole.planet.myplanet.databinding.AddMeetupBinding
+import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.ui.mymeetup.AdapterMeetup
-import org.ole.planet.myplanet.utilities.*
+import org.ole.planet.myplanet.utilities.TimeUtils
+import org.ole.planet.myplanet.utilities.Utilities
+import java.net.MalformedURLException
+import java.net.URL
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.ZoneId
-import java.util.*
-import java.net.MalformedURLException
-import java.net.URL
+import java.util.Calendar
+import java.util.Locale
+import java.util.UUID
+
 
 class TeamCalendarFragment : BaseTeamFragment() {
     private lateinit var fragmentEnterpriseCalendarBinding: FragmentEnterpriseCalendarBinding
@@ -43,6 +56,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private lateinit var clickedCalendar: Calendar
     private lateinit var calendarEventsMap: MutableMap<CalendarDay, RealmMeetup>
     private lateinit var meetupList: RealmResults<RealmMeetup>
+    private lateinit var taskList: RealmResults<RealmTeamTask>
     private val eventDates: MutableList<Calendar> = mutableListOf()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -195,19 +209,27 @@ class TeamCalendarFragment : BaseTeamFragment() {
         fragmentEnterpriseCalendarBinding.calendarView.setOnCalendarDayClickListener(object : OnCalendarDayClickListener {
             override fun onClick(calendarDay: CalendarDay) {
                 meetupList = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
+                taskList = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId).findAll()
                 clickedCalendar = calendarDay.calendar
                 val clickedDateInMillis = clickedCalendar.timeInMillis
                 val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
                     .atZone(ZoneId.systemDefault())
                     .toLocalDate()
 
-                val markedDates = meetupList.mapNotNull { meetup ->
+                val markedMeetups = meetupList.mapNotNull { meetup ->
                     val meetupDate = Instant.ofEpochMilli(meetup.startDate)
                         .atZone(ZoneId.systemDefault())
                         .toLocalDate()
                     if (meetupDate == clickedDate) meetup else null
                 }
 
+                val markedTasks = taskList.mapNotNull { task ->
+                    val taskDate = Instant.ofEpochMilli(task.deadline)
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate()
+                    if (taskDate == clickedDate) task else null
+                }
+                val markedDates = markedMeetups + markedTasks
                 if (markedDates.isNotEmpty()) {
                     showMeetupDialog(markedDates)
                 } else {
@@ -244,7 +266,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         return view.measuredHeight
     }
 
-    private fun showMeetupDialog(meetupList: List<RealmMeetup>) {
+    private fun showMeetupDialog(meetupList: List<Any>) {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.meetup_dialog, null)
         val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMeetups)
         val dialogTitle = dialogView.findViewById< TextView>(R.id.tvTitle)
@@ -253,7 +275,12 @@ class TeamCalendarFragment : BaseTeamFragment() {
         val extraHeight = TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP, 12f, resources.displayMetrics
         ).toInt()
-        val cardHeight = getCardViewHeight(requireContext())
+        var cardHeight = getCardViewHeight(requireContext())
+        if(meetupList.size <= 1 && (meetupList[0] is RealmTeamTask)){
+            cardHeight = TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP, 120f, resources.displayMetrics
+            ).toInt()
+        }
         recyclerView.layoutParams.height = cardHeight + extraHeight
         recyclerView.requestLayout()
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -296,16 +323,39 @@ class TeamCalendarFragment : BaseTeamFragment() {
             return
         }
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+            val calendarDays: MutableList<CalendarDay> = ArrayList<CalendarDay>()
             var meetupList = mutableListOf<RealmMeetup>()
+            var taskList = mutableListOf<RealmTeamTask>()
             val newDates = mutableListOf<Calendar>()
             val realm = Realm.getDefaultInstance()
             try {
                 meetupList = realm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
+                taskList = realm.where(RealmTeamTask::class.java).equalTo("teamId", teamId).findAll()
                 val calendarInstance = Calendar.getInstance()
 
                 for (meetup in meetupList) {
                     val startDateMillis = meetup.startDate
                     calendarInstance.timeInMillis = startDateMillis
+                    val calendarDay = CalendarDay(calendarInstance.clone() as Calendar).apply {
+                        selectedLabelColor = R.color.daynight_white_grey
+                        selectedBackgroundResource = R.drawable.calendar_meetup_circle
+                    }
+                    calendarDays.add(calendarDay)
+                    newDates.add(calendarInstance.clone() as Calendar)
+                }
+                for (task in taskList) {
+                    val deadlineMillis = task.deadline
+                    calendarInstance.timeInMillis = deadlineMillis
+                    val calendarDay = CalendarDay(calendarInstance.clone() as Calendar).apply {
+                        selectedLabelColor = R.color.daynight_white_grey
+                        if (task.completed) {
+                            selectedBackgroundResource = R.drawable.calendar_completed_task_circle
+                        } else{
+                            selectedBackgroundResource = R.drawable.calendar_uncompeleted_task_circle
+                        }
+
+                    }
+                    calendarDays.add(calendarDay)
                     newDates.add(calendarInstance.clone() as Calendar)
                 }
             } catch (e: Exception) {
@@ -317,6 +367,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 if (isAdded && activity != null) {
                     eventDates.clear()
                     eventDates.addAll(newDates)
+                    fragmentEnterpriseCalendarBinding.calendarView.setCalendarDays(calendarDays)
                     fragmentEnterpriseCalendarBinding.calendarView.selectedDates = ArrayList(newDates)
                 }
             }
