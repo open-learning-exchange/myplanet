@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.team.teamCourse
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,7 +20,10 @@ class TeamCourseFragment : BaseTeamFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
+        val courses = mRealm.where(RealmMyCourse::class.java).`in`("courseId", team?.courses?.toTypedArray<String>()).findAll()
+        courses?.let {
+            Log.d("TeamCourse", "Fetched Course List from TeamCourseFragment: $it")
+        }
         val adapterTeamCourse = settings?.let { AdapterTeamCourse(requireActivity(), courses, mRealm, teamId, it) }
         fragmentTeamCourseBinding.rvCourse.layoutManager = LinearLayoutManager(activity)
         fragmentTeamCourseBinding.rvCourse.adapter = adapterTeamCourse
@@ -27,6 +31,26 @@ class TeamCourseFragment : BaseTeamFragment() {
             showNoData(fragmentTeamCourseBinding.tvNodata, adapterTeamCourse.itemCount, "teamCourses")
         }
     }
+
+    fun refreshCourseList() {
+        val courses = mRealm.where(RealmMyCourse::class.java)
+            .`in`("courseId", team?.courses?.toTypedArray())
+            .findAll()
+
+        courses?.let {
+            Log.d("TeamCourse", "Fetched Updated Course List: $it")
+        }
+
+        val adapterTeamCourse = settings?.let { AdapterTeamCourse(requireActivity(), courses, mRealm, teamId, it) }
+        fragmentTeamCourseBinding.rvCourse.layoutManager = LinearLayoutManager(activity)
+        fragmentTeamCourseBinding.rvCourse.adapter = adapterTeamCourse
+
+        if (adapterTeamCourse != null) {
+            showNoData(fragmentTeamCourseBinding.tvNodata, adapterTeamCourse.itemCount, "teamCourses")
+        }
+    }
+
+
 
     override fun onNewsItemClick(news: RealmNews?) {}
     override fun clearImages() {
