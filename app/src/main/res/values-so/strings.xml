@@ -27,7 +27,7 @@
     <string name="err_msg_name">Geli magaca isticmaalaha</string>
     <string name="err_msg_password">Geli erayga sirta ah</string>
     <string name="err_msg_login">Magaca isticmaalaha iyo/ama erayga sirta ah isma dhigmaan</string>
-    <string name="hint_serverURl">planet ip</string>
+    <string name="hint_serverURL">planet ip</string>
     <string name="hint_serverPin">pin-ka adeegsiga</string>
     <string name="radio_protocol">Protokolka:</string>
     <string name="radio_http">http</string>
@@ -65,8 +65,8 @@
     <string name="your_ans">jawaabtaada</string>
     <string name="delete_my_course">Tirtir MyCourse</string>
     <string name="invite_member">Casuuma Xubin</string>
-    <string name="is_urgent">jawaab celintaadu ma degdegbaa?</string>
-    <string name="feedback_type">Nooca jawaab celinta:</string>
+    <string name="is_urgent">jawaab celintaadu ma degdegbaa? *</string>
+    <string name="feedback_type">Nooca jawaab celinta: *</string>
     <string name="suggestion">talo soo jeedin</string>
     <string name="no">Maya</string>
     <string name="yes">Haa</string>
@@ -737,7 +737,7 @@
     <string name="enter_resource_detail">Geli faahfaahinta khadka</string>
     <string name="resource_saved_to_my_personal">Khayraadka waxaa lagu keydiyay myPersonal</string>
     <string name="invalid_resource_url">url kheyraad aan sax ahayn</string>
-    <string name="my_library">"Maktabaddayda"</string>
+    <string name="my_library">"mylibrary"</string>
     <string name="link_not_available">Xogta lama helin</string>
     <string name="success_you_have_added_these_resources_to_your_mylibrary">Guul! Waxaad ka daraysay khadkaan maktabaddaaga:\n\n</string>
     <string name="more_resource_s">" khadka dheer…\n"</string>
@@ -1014,7 +1014,7 @@
     <string name="progress_bar">balka soo socda</string>
     <string name="web_view">barashada webka</string>
     <string name="invalid_configuration">Dhamaan Suurtagal ah oo Serveryaasha ah</string>
-    <string name="welcome_to_myPlanet">Soo dhawow myPlanet</string>
+    <string name="welcome_to_myPlanet">Soo dhawoow myPlanet</string>
     <string name="learn_offline">Baro horumarinta</string>
     <string name="open_learning">Waxbarasho Fur</string>
     <string name="unleash_learning_power">Ku Xir Barashada Xoojinta</string>
@@ -1239,7 +1239,7 @@
     <string name="go_to_mylibrary">Tag Maktabaddayda</string>
     <string name="choose_an_option">Dooro ikhtiyaar</string>
     <string name="welcome_back">Soo dhawoow %1$s</string>
-    <string name="welcome">Soo dhawoow 1$s</string>
+    <string name="welcome">Soo dhawoow %1$s</string>
     <string name="edit_plan">Wax ka beddel qorshaha</string>
     <string name="show_additional_fields">muuji beeraha dheeraadka ah</string>
     <string name="hide_additional_fields">qari beeraha dheeraadka ah</string>

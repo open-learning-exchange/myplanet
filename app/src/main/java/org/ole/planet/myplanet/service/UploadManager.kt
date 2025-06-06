@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.service
 
 import android.content.*
+import android.os.Looper
 import android.text.TextUtils
 import com.google.gson.*
 import io.realm.*
@@ -616,22 +617,39 @@ class UploadManager(var context: Context) : FileUploadService() {
         val realm = getRealm()
         val apiInterface = client?.create(ApiInterface::class.java)
 
-        realm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
-            val logs: RealmResults<RealmApkLog> = realm.where(RealmApkLog::class.java).isNull("_rev").findAll()
+        try {
+            val hasLooper = Looper.myLooper() != null
 
-            logs.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
-                batch.forEach { act ->
-                    try {
-                        val o = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/apk_logs", RealmApkLog.serialize(act, context))?.execute()?.body()
-                        if (o != null) {
-                            act._rev = getString("rev", o)
-                        }
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                    }
+            if (hasLooper) {
+                realm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
+                    uploadCrashLogData(realm, apiInterface)
+                })
+            } else {
+                realm.executeTransaction { realm: Realm ->
+                    uploadCrashLogData(realm, apiInterface)
                 }
             }
-        }, Realm.Transaction.OnSuccess {})
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun uploadCrashLogData(realm: Realm, apiInterface: ApiInterface?) {
+        val logs: RealmResults<RealmApkLog> = realm.where(RealmApkLog::class.java).isNull("_rev").findAll()
+
+        logs.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
+            batch.forEach { act ->
+                try {
+                    val o = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/apk_logs", RealmApkLog.serialize(act, context))?.execute()?.body()
+
+                    if (o != null) {
+                        act._rev = getString("rev", o)
+                    }
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                }
+            }
+        }
     }
 
     fun uploadSearchActivity() {

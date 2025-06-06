@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.sync
 
+import android.app.Activity
 import android.content.*
 import android.graphics.drawable.AnimationDrawable
 import android.os.*
@@ -11,10 +12,13 @@ import android.widget.*
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.recyclerview.widget.*
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import io.realm.Realm
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.*
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.callback.SyncListener
@@ -50,6 +54,15 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         lblLastSyncDate = activityLoginBinding.lblLastSyncDate
         btnSignIn = activityLoginBinding.btnSignin
         syncIcon = activityLoginBinding.syncIcon
+        lblVersion = activityLoginBinding.lblVersion
+        tvAvailableSpace = activityLoginBinding.tvAvailableSpace
+        btnGuestLogin = activityLoginBinding.btnGuestLogin
+        becomeMember = activityLoginBinding.becomeMember
+        btnFeedback = activityLoginBinding.btnFeedback
+        openCommunity = activityLoginBinding.openCommunity
+        btnLang = activityLoginBinding.btnLang
+        inputName = activityLoginBinding.inputName
+        inputPassword = activityLoginBinding.inputPassword
         service = Service(this)
 
         activityLoginBinding.tvAvailableSpace.text = buildString {
@@ -301,18 +314,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         activityLoginBinding.btnLang.text = getLanguageString(currentLanguage)
     }
 
-    private fun getLanguageString(languageCode: String): String {
-        return when (languageCode) {
-            "en" -> getString(R.string.english)
-            "es" -> getString(R.string.spanish)
-            "so" -> getString(R.string.somali)
-            "ne" -> getString(R.string.nepali)
-            "ar" -> getString(R.string.arabic)
-            "fr" -> getString(R.string.french)
-            else -> getString(R.string.english)
-        }
-    }
-
     private fun showLanguageSelectionDialog() {
         val currentLanguage = LocaleHelper.getLanguage(this)
         val options = arrayOf(
@@ -344,7 +345,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             .setNegativeButton(R.string.cancel, null)
             .show()
     }
-
 
     private fun updateConfiguration(languageCode: String) {
         val locale = Locale(languageCode)
