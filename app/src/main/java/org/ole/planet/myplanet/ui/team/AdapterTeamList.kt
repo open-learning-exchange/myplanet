@@ -69,15 +69,17 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                 if (context is OnHomeItemClickListener) {
                     val fragmentManager = (context as AppCompatActivity).supportFragmentManager
                     val existingFragment = fragmentManager.findFragmentByTag("TeamDetailFragment")
-                    val b = Bundle()
-                    b.putString("id", team._id)
-                    b.putBoolean("isMyTeam", isMyTeam)
+
+                    val f = TeamDetailFragment.newInstance(
+                        teamId = "${team._id}",
+                        teamName = "${team.name}",
+                        teamType = "${team.type}",
+                        isMyTeam = isMyTeam
+                    )
                     if (existingFragment is TeamDetailFragment) {
                         existingFragment.arguments?.clear()
-                        existingFragment.arguments = b
+                        existingFragment.arguments = f.arguments
                     }
-                    val f = TeamDetailFragment()
-                    f.arguments = b
                     (context as OnHomeItemClickListener).openCallFragment(f)
                     prefData.setTeamName(team.name)
                 }
