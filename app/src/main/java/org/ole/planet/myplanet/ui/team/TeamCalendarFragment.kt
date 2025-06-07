@@ -4,7 +4,6 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
 import android.content.res.Resources
-import android.graphics.Color
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.LayoutInflater
@@ -318,6 +317,11 @@ class TeamCalendarFragment : BaseTeamFragment() {
         dialog.show()
     }
 
+    private fun Calendar.sameDay(other: Calendar): Boolean =
+        get(Calendar.YEAR)  == other.get(Calendar.YEAR) &&
+                get(Calendar.MONTH) == other.get(Calendar.MONTH) &&
+                get(Calendar.DAY_OF_MONTH) == other.get(Calendar.DAY_OF_MONTH)
+
     private fun refreshCalendarView() {
         if (teamId.isEmpty()) {
             return
@@ -346,14 +350,42 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 for (task in taskList) {
                     val deadlineMillis = task.deadline
                     calendarInstance.timeInMillis = deadlineMillis
-                    val calendarDay = CalendarDay(calendarInstance.clone() as Calendar).apply {
-                        selectedLabelColor = R.color.daynight_white_grey
-                        if (task.completed) {
-                            selectedBackgroundResource = R.drawable.calendar_completed_task_circle
-                        } else{
-                            selectedBackgroundResource = R.drawable.calendar_uncompeleted_task_circle
-                        }
+                    val taskCal = calendarInstance.clone() as Calendar
+                    val idx = calendarDays.indexOfFirst { it.calendar.sameDay(taskCal) }
+                    var oldBgRes: Int? = null
 
+                    if(idx != -1){
+                        val oldDay = calendarDays[idx]
+                        oldBgRes = oldDay.selectedBackgroundResource
+                        calendarDays.removeAt(idx)
+                    }
+                    println(oldBgRes)
+                    println(oldBgRes == R.drawable.calendar_meetup_circle && task.completed)
+                    val bgRes = if(oldBgRes == R.drawable.calendar_event_and_uncomplete_task && !task.completed){
+                        R.drawable.calendar_event_and_uncomplete_task
+                    } else if(oldBgRes == R.drawable.calendar_event_and_completed_task && task.completed){
+                        R.drawable.calendar_event_and_completed_task
+                    } else if(oldBgRes == R.drawable.calendar_event_and_uncomplete_task || oldBgRes == R.drawable.calendar_event_and_completed_task){
+                        R.drawable.calendar_three_dot
+                    }  else if(!task.completed && idx != -1 && oldBgRes == R.drawable.calendar_meetup_circle){
+                        R.drawable.calendar_event_and_uncomplete_task
+                    } else if(task.completed && idx != -1 && oldBgRes == R.drawable.calendar_meetup_circle){
+                        R.drawable.calendar_event_and_completed_task
+                    } else if(task.completed){
+                        R.drawable.calendar_completed_task_circle
+                    } else{
+                        R.drawable.calendar_uncompeleted_task_circle
+                    }
+
+                    val labelColor = if(idx != -1){
+                        R.color.daynight_textColor
+                    } else{
+                        R.color.daynight_white_grey
+                    }
+
+                    val calendarDay = CalendarDay(taskCal).apply {
+                        selectedLabelColor = labelColor
+                        selectedBackgroundResource = bgRes
                     }
                     calendarDays.add(calendarDay)
                     newDates.add(calendarInstance.clone() as Calendar)
