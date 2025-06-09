@@ -277,7 +277,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         var cardHeight = getCardViewHeight(requireContext())
         if(meetupList.size <= 1 && (meetupList[0] is RealmTeamTask)){
             cardHeight = TypedValue.applyDimension(
-                TypedValue.COMPLEX_UNIT_DIP, 120f, resources.displayMetrics
+                TypedValue.COMPLEX_UNIT_DIP, 145f, resources.displayMetrics
             ).toInt()
         }
         recyclerView.layoutParams.height = cardHeight + extraHeight
