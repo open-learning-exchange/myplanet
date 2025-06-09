@@ -142,7 +142,19 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         startActivity(fileOpenIntent)
     }
 
+    private fun dismissProgressDialog() {
+        try {
+            if (prgDialog.isShowing()) {
+                prgDialog.dismiss()
+            }
+        } catch (e: UninitializedPropertyAccessException) {
+            e.printStackTrace()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
     fun openResource(items: RealmMyLibrary) {
+        dismissProgressDialog()
         if (items.mediaType == "HTML") {
             if (items.resourceOffline) {
                 val intent = Intent(activity, WebViewActivity::class.java)
@@ -270,6 +282,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     private fun openFileType(items: RealmMyLibrary, videoType: String) {
+        dismissProgressDialog()
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
         if (mimetype == null) {
             Utilities.toast(activity, getString(R.string.unable_to_open_resource))
@@ -363,5 +376,15 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     open fun handleBackPressed() {
         val fragmentManager = parentFragmentManager
         fragmentManager.popBackStack()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        dismissProgressDialog()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        dismissProgressDialog()
     }
 }
