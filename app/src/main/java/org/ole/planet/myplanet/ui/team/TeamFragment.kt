@@ -200,6 +200,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
                 if (TextUtils.isEmpty(charSequence)) {
+                    showNoResultsMessage(false)
                     updatedTeamList()
                     return
                 }
@@ -207,14 +208,23 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                     .notEqualTo("status", "archived")
                     .contains("name", charSequence.toString(), Case.INSENSITIVE)
                 val (list, conditionApplied) = getList(query)
-                val sortedList = list.sortedWith(compareByDescending<RealmMyTeam> { it.name?.startsWith(charSequence.toString(), ignoreCase = true) }
-                    .thenBy { it.name })
-                val adapterTeamList = AdapterTeamList(
-                    activity as Context, sortedList, mRealm, childFragmentManager
-                )
-                adapterTeamList.setTeamListener(this@TeamFragment)
-                fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
-                listContentDescription(conditionApplied)
+
+                if (list.isEmpty()) {
+                    showNoResultsMessage(true, charSequence.toString())
+                    fragmentTeamBinding.rvTeamList.adapter = null
+                } else {
+                    showNoResultsMessage(false)
+                    val sortedList = list.sortedWith(compareByDescending<RealmMyTeam> {
+                        it.name?.startsWith(charSequence.toString(), ignoreCase = true)
+                    }.thenBy { it.name })
+
+                    val adapterTeamList = AdapterTeamList(
+                        activity as Context, sortedList, mRealm, childFragmentManager
+                    )
+                    adapterTeamList.setTeamListener(this@TeamFragment)
+                    fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
+                    listContentDescription(conditionApplied)
+                }
             }
 
             override fun afterTextChanged(editable: Editable) {}
@@ -252,10 +262,11 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
         listContentDescription(conditionApplied)
         val itemCount = adapterTeamList.itemCount
-        showNoData(fragmentTeamBinding.tvMessage, itemCount, "$type")
+
         if (itemCount == 0) {
-            fragmentTeamBinding.etSearch.visibility = View.GONE
-            fragmentTeamBinding.tableTitle.visibility = View.GONE
+            showNoResultsMessage(true)
+        } else {
+            showNoResultsMessage(false)
         }
     }
 
@@ -294,6 +305,31 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             fragmentTeamBinding.rvTeamList.contentDescription = getString(R.string.enterprise_list)
         } else {
             fragmentTeamBinding.rvTeamList.contentDescription = getString(R.string.list_of_teams)
+        }
+    }
+
+    private fun showNoResultsMessage(show: Boolean, searchQuery: String = "") {
+        if (show) {
+            fragmentTeamBinding.tvMessage.text = if (searchQuery.isNotEmpty()) {
+                if (TextUtils.equals(type, "enterprise")){
+                    getString(R.string.no_enterprises_found_for_search, searchQuery)
+                } else {
+                    getString(R.string.no_teams_found_for_search, searchQuery)
+                }
+            } else {
+                if (TextUtils.equals(type, "enterprise")) {
+                    getString(R.string.no_enterprises_found)
+                } else {
+                    getString(R.string.no_teams_found)
+                }
+            }
+            fragmentTeamBinding.tvMessage.visibility = View.VISIBLE
+            fragmentTeamBinding.etSearch.visibility = View.VISIBLE
+            fragmentTeamBinding.tableTitle.visibility = View.GONE
+        } else {
+            fragmentTeamBinding.tvMessage.visibility = View.GONE
+            fragmentTeamBinding.etSearch.visibility = View.VISIBLE
+            fragmentTeamBinding.tableTitle.visibility = View.VISIBLE
         }
     }
 }
