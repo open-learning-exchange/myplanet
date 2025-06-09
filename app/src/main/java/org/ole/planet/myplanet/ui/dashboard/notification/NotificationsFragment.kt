@@ -82,7 +82,7 @@ class NotificationsFragment : Fragment() {
         }
 
         val filteredNotifications = notifications.filter { notification ->
-             !notification.message.isNullOrEmpty() && notification.message != "INVALID"
+            !notification.message.isNullOrEmpty() && notification.message != "INVALID"
         }
 
         adapter = AdapterNotification(filteredNotifications,
@@ -133,6 +133,18 @@ class NotificationsFragment : Fragment() {
                         f.arguments = b
                         (context as OnHomeItemClickListener).openCallFragment(f)
                     }
+                }
+            }
+            "join_request" -> {
+                val teamId = notification.relatedId
+                if (teamId?.isNotEmpty() == true && context is OnHomeItemClickListener) {
+                    val f = TeamDetailFragment()
+                    val b = Bundle()
+                    b.putString("id", teamId)
+                    b.putBoolean("isMyTeam", true)
+                    b.putInt("navigateToPage", 8)
+                    f.arguments = b
+                    (context as OnHomeItemClickListener).openCallFragment(f)
                 }
             }
             "resource" -> {

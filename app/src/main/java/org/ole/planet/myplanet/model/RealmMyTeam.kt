@@ -33,6 +33,7 @@ import java.io.File
 import java.io.FileWriter
 import java.io.IOException
 import java.util.Date
+import java.util.UUID
 
 open class RealmMyTeam : RealmObject() {
     @PrimaryKey
@@ -502,6 +503,54 @@ open class RealmMyTeam : RealmObject() {
             return mRealm.where(RealmMyTeam::class.java)
                 .`in`("_id", teamIds)
                 .findAll()
+        }
+
+        @JvmStatic
+        fun requestToJoinWithNotification(
+            teamId: String?,
+            userModel: RealmUserModel?,
+            mRealm: Realm,
+            teamType: String?
+        ) {
+            if (!mRealm.isInTransaction) mRealm.beginTransaction()
+            val team = mRealm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
+            team.docType = "request"
+            team.createdDate = Date().time
+            team.teamType = teamType
+            team.userId = userModel?.id
+            team.teamId = teamId
+            team.updated = true
+            team.teamPlanetCode = userModel?.planetCode
+            team.userPlanetCode = userModel?.planetCode
+            val teamInfo = mRealm.where(RealmMyTeam::class.java)
+                .equalTo("_id", teamId)
+                .findFirst()
+            val teamName = teamInfo?.name ?: "Unknown Team"
+            sendJoinRequestNotifications(
+                teamId = teamId ?: "",
+                requesterName = userModel?.name ?: "Unknown User",
+                teamName = teamName,
+                realm = mRealm
+            )
+            mRealm.commitTransaction()
+        }
+
+        fun sendJoinRequestNotifications(teamId: String, requesterName: String, teamName: String, realm: Realm) {
+            val teamLeaders = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("docType", "membership")
+                .equalTo("isLeader", true)
+                .findAll()
+            teamLeaders.forEach { leader ->
+                val notification = realm.createObject(RealmNotification::class.java, UUID.randomUUID().toString())
+                notification.userId = leader.userId.toString()
+                notification.type = "join_request"
+                notification.relatedId = teamId
+                notification.message = "$requesterName has requested to join $teamName"
+                notification.title = "New Join Request"
+                notification.createdAt = Date()
+                notification.isRead = false
+            }
         }
     }
 

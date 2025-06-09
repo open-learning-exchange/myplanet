@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.courses.TakeCourseFragment.Companion.userModel
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 import java.util.UUID
@@ -67,6 +68,7 @@ class TeamDetailFragment : BaseTeamFragment() {
                     fragmentTeamDetailBinding.btnLeave.text = getString(R.string.join)
                     fragmentTeamDetailBinding.btnLeave.setOnClickListener {
                         RealmMyTeam.requestToJoin(currentTeam._id!!, user, mRealm, team?.teamType)
+                        RealmMyTeam.requestToJoinWithNotification(teamId, user, mRealm, team?.teamType)
                         fragmentTeamDetailBinding.btnLeave.text = getString(R.string.requested)
                         fragmentTeamDetailBinding.btnLeave.isEnabled = false
                         syncTeamActivities(requireContext())
