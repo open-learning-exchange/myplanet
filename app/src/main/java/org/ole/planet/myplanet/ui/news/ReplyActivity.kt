@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
+import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
 
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
@@ -55,6 +56,19 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         title = "Reply"
         imageList = RealmList()
         id = intent.getStringExtra("id")
+        if (id != null) {
+            val newsExists = mRealm.where(RealmNews::class.java)
+                .equalTo("id", id)
+                .count() > 0
+            if (!newsExists) {
+                Utilities.toast(this, "This post is no longer available")
+                finish()
+                return
+            }
+        } else {
+            finish()
+            return
+        }
         user = UserProfileDbHandler(this).userModel
         activityReplyBinding.rvReply.layoutManager = LinearLayoutManager(this)
         activityReplyBinding.rvReply.isNestedScrollingEnabled = false
@@ -68,19 +82,61 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         setResult(Activity.RESULT_OK)
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (id != null) {
+            val newsExists = mRealm.where(RealmNews::class.java)
+                .equalTo("id", id)
+                .count() > 0
+            if (!newsExists) {
+                setResult(Activity.RESULT_OK)
+                finish()
+                return
+            }
+            showData(id)
+        }
+    }
+
     private fun showData(id: String?) {
-        val news = mRealm.where(RealmNews::class.java).equalTo("id", id).findFirst()
-        val list: List<RealmNews?> = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING).equalTo("replyTo", id, Case.INSENSITIVE).findAll()
-        newsAdapter = AdapterNews(this, list.toMutableList(), user, news)
-        newsAdapter.setListener(this)
-        newsAdapter.setmRealm(mRealm)
-        newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
-        newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
-        activityReplyBinding.rvReply.adapter = newsAdapter
+        try {
+            if (id == null) return
+            val news = mRealm.where(RealmNews::class.java).equalTo("id", id).findFirst()
+            if (news == null) {
+                setResult(Activity.RESULT_OK)
+                finish()
+                return
+            }
+            val list: List<RealmNews?> = mRealm.where(RealmNews::class.java)
+                .sort("time", Sort.DESCENDING)
+                .equalTo("replyTo", id, Case.INSENSITIVE)
+                .findAll()
+            newsAdapter = AdapterNews(this, list.toMutableList(), user, news)
+            newsAdapter.setListener(this)
+            newsAdapter.setmRealm(mRealm)
+            newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
+            newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
+            activityReplyBinding.rvReply.adapter = newsAdapter
+        } catch (e: Exception) {
+            e.printStackTrace()
+            setResult(Activity.RESULT_OK)
+            finish()
+        }
     }
 
     override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
-        startActivity(Intent(this, ReplyActivity::class.java).putExtra("id", news?.id))
+        if (news == null || news.id == null) {
+            Utilities.toast(this, "This post no longer exists")
+            return
+        }
+        val exists = mRealm.where(RealmNews::class.java)
+            .equalTo("id", news.id)
+            .count() > 0
+
+        if (!exists) {
+            Utilities.toast(this, "This post no longer exists")
+            return
+        }
+        startActivity(Intent(this, ReplyActivity::class.java).putExtra("id", news.id))
     }
 
     override fun addImage(llImage: LinearLayout?) {
