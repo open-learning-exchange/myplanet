@@ -205,8 +205,8 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 }
                 withContext(Dispatchers.Main) {
                     Utilities.toast(activity, getString(R.string.resources) + " " +
-                            if (isAdd) getString(R.string.added_to) + getString(R.string.my_library)
-                            else getString(R.string.removed_from) + getString(R.string.my_library))
+                            if (isAdd) getString(R.string.added_to) + getString(R.string.my_library_with_space)
+                            else getString(R.string.removed_from) + getString(R.string.my_library_with_space))
                     setLibraryData()
                 }
             }
