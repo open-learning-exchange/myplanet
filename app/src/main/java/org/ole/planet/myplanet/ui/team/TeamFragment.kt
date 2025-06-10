@@ -84,9 +84,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                 conditionApplied = true
                 query.equalTo("type", "enterprise").findAllAsync()
             }
-//
-//            teamList = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId")
-//                .notEqualTo("status", "archived").findAllAsync()
         }
 
         teamList?.addChangeListener { _ ->
