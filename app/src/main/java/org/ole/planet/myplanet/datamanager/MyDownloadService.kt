@@ -103,11 +103,7 @@ class MyDownloadService : Service() {
     private fun initializeNotificationChannels() {
         val channelId = "DownloadChannel"
         if (notificationManager?.getNotificationChannel(channelId) == null) {
-            val channel = NotificationChannel(
-                channelId,
-                "Download Service",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
+            val channel = NotificationChannel(channelId, "Download Service", NotificationManager.IMPORTANCE_HIGH).apply {
                 setSound(null, null)
                 description = "Shows download progress for files"
             }
@@ -116,11 +112,7 @@ class MyDownloadService : Service() {
 
         val completionChannelId = "DownloadCompletionChannel"
         if (notificationManager?.getNotificationChannel(completionChannelId) == null) {
-            val channel = NotificationChannel(
-                completionChannelId,
-                "Download Completion",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
+            val channel = NotificationChannel(completionChannelId, "Download Completion", NotificationManager.IMPORTANCE_HIGH).apply {
                 description = "Notifies when downloads are completed"
             }
             notificationManager?.createNotificationChannel(channel)
