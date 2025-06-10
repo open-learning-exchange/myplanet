@@ -286,10 +286,14 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             userModel.level.toString(),
             userModel.userImage
         )
-        activity.supportFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, fragment)
-            .addToBackStack(null)
-            .commit()
+        val fm = activity.supportFragmentManager
+        val tx = fm.beginTransaction()
+        fm.findFragmentById(R.id.fragment_container)?.let { currentFragment ->
+            tx.hide(currentFragment)
+        }
+        tx.add(R.id.fragment_container, fragment)
+        tx.addToBackStack(null)
+        tx.commit()
     }
 
     private fun addLabels(holder: RecyclerView.ViewHolder, news: RealmNews?) {

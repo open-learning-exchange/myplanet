@@ -27,7 +27,7 @@
     <string name="err_msg_name">तपाईंको प्रयोगकर्तानाम लेख्नुहोस्</string>
     <string name="err_msg_password">पासवर्ड लेख्नुहोस्</string>
     <string name="err_msg_login">प्रयोगकर्तानाम र/वा पासवर्ड मेल खान्छैन</string>
-    <string name="hint_serverURl">planet आईपि</string>
+    <string name="hint_serverURL">planet आईपि</string>
     <string name="hint_serverPin">सर्भर पिन</string>
     <string name="radio_protocol">प्रोटोकल:</string>
     <string name="radio_http">http</string>
@@ -1300,5 +1300,9 @@
     <string name="clearing_data">डाटा मेटाउँदै…</string>
     <string name="time_colon">समय:&#160;</string>
     <string name="a_few_seconds_ago">केही सेकेन्ड अगाडि</string>
+    <string name="no_teams_found">कुनै टिम फेला परेन</string>
+    <string name="no_teams_found_for_search">"%1$s" का लागि कुनै टिम फेला परेन</string>
+    <string name="no_enterprises_found_for_search">"%1$s" को लागि कुनै उद्यमहरू फेला परेनन्</string>
+    <string name="no_enterprises_found">कुनै उद्यमहरू फेला परेनन्</string>
 
 </resources>
