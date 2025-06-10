@@ -4,7 +4,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.CoroutineWorker
@@ -29,7 +28,6 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
         try {
             val urlsKey = inputData.getString("urls_key") ?: "url_list_key"
             val fromSync = inputData.getBoolean("fromSync", false)
-
             val urlSet = preferences.getStringSet(urlsKey, emptySet()) ?: emptySet()
 
             if (urlSet.isEmpty()) {
@@ -51,21 +49,18 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
                     completedCount++
 
                     showProgressNotification(completedCount, urls.size, context.getString(R.string.downloaded_files, "$completedCount", "${urls.size}"))
-
                     sendDownloadUpdate(url, success, completedCount >= urls.size, fromSync)
-
                 } catch (e: Exception) {
-                    Log.e("DownloadWorker", "Error downloading $url", e)
+                    e.printStackTrace()
                     results.add(false)
                     completedCount++
                 }
             }
 
             showCompletionNotification(completedCount, urls.size, results.any { !it })
-
             Result.success()
         } catch (e: Exception) {
-            Log.e("DownloadWorker", "Worker failed", e)
+            e.printStackTrace()
             Result.failure()
         }
     }
@@ -85,12 +80,11 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
                     } == true
                 }
                 else -> {
-                    Log.e("DownloadWorker", "Download failed: ${response.code()}")
                     false
                 }
             }
         } catch (e: Exception) {
-            Log.e("DownloadWorker", "Download error for $url", e)
+            e.printStackTrace()
             false
         }
     }
@@ -112,8 +106,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
                     totalBytes += readCount
                     output.write(data, 0, readCount)
 
-                    // Update progress periodically
-                    if (totalBytes % (1024 * 100) == 0L) { // Every 100KB
+                    if (totalBytes % (1024 * 100) == 0L) {
                         val progress = if (fileSize > 0) {
                             (totalBytes * 100 / fileSize).toInt()
                         } else 0
@@ -127,8 +120,6 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
             output.close()
             bis.close()
         }
-
-        // Update offline status
         changeOfflineStatus(url)
     }
 
@@ -145,7 +136,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
 
     private fun showProgressNotification(current: Int, total: Int, text: String) {
         val notification = NotificationCompat.Builder(applicationContext, "DownloadWorkerChannel")
-            .setContentTitle("Downloading Files")
+            .setContentTitle(context.getString(R.string.downloading_files))
             .setContentText(text)
             .setSmallIcon(R.drawable.ic_download)
             .setProgress(total, current, false)
@@ -158,9 +149,14 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
 
     private fun showCompletionNotification(completed: Int, total: Int, hadErrors: Boolean) {
         val notification = NotificationCompat.Builder(applicationContext, "DownloadWorkerChannel")
-            .setContentTitle("Downloads Completed")
-            .setContentText("$completed of $total files downloaded" +
-                    if (hadErrors) " (with some errors)" else "")
+            .setContentTitle(context.getString(R.string.downloads_completed))
+            .setContentText(
+                if (hadErrors) {
+                    context.getString(R.string.download_progress_with_errors, completed, total)
+                } else {
+                    context.getString(R.string.download_progress, completed, total)
+                }
+            )
             .setSmallIcon(R.drawable.ic_download)
             .setAutoCancel(true)
             .build()
@@ -176,7 +172,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
             failed = !success
             completeAll = isComplete
             if (!success) {
-                message = "Download failed"
+                message = context.getString(R.string.download_failed)
             }
         }
 
@@ -202,7 +198,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
                 }
             }
         } catch (e: Exception) {
-            Log.e("DownloadWorker", "Error updating offline status", e)
+            e.printStackTrace()
         }
     }
 

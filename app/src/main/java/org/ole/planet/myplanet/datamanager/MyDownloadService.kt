@@ -11,7 +11,6 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.IBinder
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -61,7 +60,6 @@ class MyDownloadService : Service() {
 
         initializeNotificationChannels()
 
-        // Create notification immediately before startForeground
         val initialNotification = createInitialNotification()
         startForeground(ONGOING_NOTIFICATION_ID, initialNotification)
 
@@ -363,13 +361,10 @@ class MyDownloadService : Service() {
                 putExtra("fromSync", fromSync)
             }
 
-            // Check if we can start foreground service
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                // Android 12+ - Check if we have permission
                 val canStart = when {
-                    context is Activity -> true // Activity context can always start
+                    context is Activity -> true
                     Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> {
-                        // Android 14+ - Check for exact alarm permission or other conditions
                         hasValidForegroundServiceContext(context)
                     }
                     else -> true
@@ -379,19 +374,18 @@ class MyDownloadService : Service() {
                     try {
                         ContextCompat.startForegroundService(context, intent)
                     } catch (e: Exception) {
-                        // Fallback to WorkManager or regular service
-                        handleForegroundServiceError(context, urlsKey, fromSync, e)
+                        e.printStackTrace()
+                        handleForegroundServiceError(context, urlsKey, fromSync)
                     }
                 } else {
-                    // Use WorkManager as fallback
                     startDownloadWork(context, urlsKey, fromSync)
                 }
             } else {
-                // Android 11 and below
                 try {
                     ContextCompat.startForegroundService(context, intent)
                 } catch (e: Exception) {
-                    handleForegroundServiceError(context, urlsKey, fromSync, e)
+                    e.printStackTrace()
+                    handleForegroundServiceError(context, urlsKey, fromSync)
                 }
             }
         }
@@ -402,15 +396,7 @@ class MyDownloadService : Service() {
             return activityManager.isBackgroundRestricted.not()
         }
 
-        private fun handleForegroundServiceError(
-            context: Context,
-            urlsKey: String,
-            fromSync: Boolean,
-            error: Exception
-        ) {
-            Log.e("MyDownloadService", "Failed to start foreground service", error)
-
-            // Try to start as regular service (limited functionality)
+        private fun handleForegroundServiceError(context: Context, urlsKey: String, fromSync: Boolean) {
             try {
                 val intent = Intent(context, MyDownloadService::class.java).apply {
                     putExtra("urls_key", urlsKey)
@@ -418,13 +404,12 @@ class MyDownloadService : Service() {
                 }
                 context.startService(intent)
             } catch (e: Exception) {
-                // Last resort: Use WorkManager
+                e.printStackTrace()
                 startDownloadWork(context, urlsKey, fromSync)
             }
         }
 
         private fun startDownloadWork(context: Context, urlsKey: String, fromSync: Boolean) {
-            // Implement WorkManager fallback
             val workRequest = OneTimeWorkRequestBuilder<DownloadWorker>()
                 .setInputData(workDataOf(
                     "urls_key" to urlsKey,

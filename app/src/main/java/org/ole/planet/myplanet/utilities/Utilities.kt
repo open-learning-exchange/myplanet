@@ -5,8 +5,6 @@ import android.app.AlarmManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.graphics.Color
-import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -75,44 +73,28 @@ object Utilities {
             preferences.edit {
                 putStringSet("url_list_key", urls.toSet())
             }
-
-            // Enhanced service starting with better error handling
             startDownloadServiceSafely(ctx, "url_list_key", fromSync)
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
     private fun startDownloadServiceSafely(context: Context, urlsKey: String, fromSync: Boolean) {
-        try {
-            // First attempt: Try foreground service
-            MyDownloadService.startService(context, urlsKey, fromSync)
-        } catch (e: Exception) {
-            Log.e("Utilities", "Failed to start download service", e)
-
-            when (e) {
-                is android.app.ForegroundServiceStartNotAllowedException -> {
-                    // Handle the specific case we're dealing with
-                    handleForegroundServiceNotAllowed(context, urlsKey, fromSync)
-                }
-                else -> {
-                    // Other exceptions
-                    Log.e("Utilities", "Unexpected error starting service", e)
-                    // Could fallback to WorkManager here too
-                    startDownloadWork(context, urlsKey, fromSync)
-                }
+        if (canStartForegroundService(context)) {
+            try {
+                MyDownloadService.startService(context, urlsKey, fromSync)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                handleForegroundServiceNotAllowed(context, urlsKey, fromSync)
             }
+        } else {
+            handleForegroundServiceNotAllowed(context, urlsKey, fromSync)
         }
     }
 
     private fun handleForegroundServiceNotAllowed(context: Context, urlsKey: String, fromSync: Boolean) {
-        Log.w("Utilities", "Foreground service not allowed, using WorkManager fallback")
-
-        // Show user notification about the limitation
-        if (!fromSync) { // Don't show toast during sync to avoid interruption
-            toast(context, "Starting download in background...")
+        if (!fromSync) {
+            toast(context, context.getString(R.string.download_in_background))
         }
-
-        // Use WorkManager as fallback
         startDownloadWork(context, urlsKey, fromSync)
     }
 
@@ -148,19 +130,16 @@ object Utilities {
 
         val packageName = context.packageName
         return appProcesses.any { processInfo ->
-            processInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND &&
-                    processInfo.processName == packageName
+            processInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND && processInfo.processName == packageName
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
     private fun hasSpecialForegroundPermissions(context: Context): Boolean {
-        // Check for conditions that allow foreground service start on Android 12+
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
         return when {
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-                // Can start if app has exact alarm permission (one example)
                 alarmManager.canScheduleExactAlarms()
             }
             else -> false
