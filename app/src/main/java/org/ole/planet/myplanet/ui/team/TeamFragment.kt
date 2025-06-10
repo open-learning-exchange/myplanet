@@ -215,10 +215,20 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                     updatedTeamList()
                     return
                 }
-                val query = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId")
-                    .notEqualTo("status", "archived")
-                    .contains("name", charSequence.toString(), Case.INSENSITIVE)
-                val (list, conditionApplied) = getList(query)
+                var list: List<RealmMyTeam>
+                var conditionApplied = false
+                if(fromDashboard){
+                    list = teamList!!.filter {
+                        it.name?.contains(charSequence.toString(), ignoreCase = true) == true
+                    }
+                } else {
+                    val query = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId")
+                        .notEqualTo("status", "archived")
+                        .contains("name", charSequence.toString(), Case.INSENSITIVE)
+                    val result = getList(query)
+                    list = result.first
+                    conditionApplied = result.second
+                }
 
                 if (list.isEmpty()) {
                     showNoResultsMessage(true, charSequence.toString())
@@ -259,10 +269,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private fun setTeamList() {
         var list: List<RealmMyTeam>
         var conditionApplied = false
-        println(fromDashboard)
         if(fromDashboard){
-            list = getMyTeamsByUserId(mRealm, settings)
-            println(list.size)
+            list = teamList!!
         } else {
             val query = mRealm.where(RealmMyTeam::class.java)
                 .isEmpty("teamId")
