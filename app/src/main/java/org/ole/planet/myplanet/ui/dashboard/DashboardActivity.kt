@@ -177,8 +177,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     if (isMy) 2L else 4L
                 }
                 is TeamFragment -> {
+                    val isDashboard = frag.arguments?.getBoolean("fromDashboard", false) == true
                     val isEnterprise = frag.arguments?.getString("type") == "enterprise"
-                    if (isEnterprise) 6L else 5L
+                    if(isDashboard) 0L
+                    else if (isEnterprise) 6L else 5L
                 }
                 is CommunityTabFragment -> 7L
                 is SurveyFragment -> 8L
@@ -830,7 +832,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     openMyFragment(ResourcesFragment())
                 }
             }
-            R.string.team -> openMyFragment(TeamFragment())
+            R.string.team -> openMyFragment(TeamFragment().apply {
+                arguments = Bundle().apply {
+                    putBoolean("fromDashboard", false)
+                }
+            })
             R.string.txt_myCourses -> {
                 if (user?.id?.startsWith("guest") == true) {
                     guestDialog(this)
@@ -846,16 +852,21 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun openMyFragment(f: Fragment) {
         val fragmentName = f::class.java.simpleName
-        val tag = "My$fragmentName"
+        var tag = "My$fragmentName"
+        val isDashboard = f.arguments?.getBoolean("fromDashboard", false) == true
         if(tag != "MyTeamFragment") {
             val b = Bundle()
             b.putBoolean("isMyCourseLib", true)
             f.arguments = b
         }
+        if (isDashboard) {
+            tag = "MyTeamDashboardFragment"
+        }
         when (tag) {
             "MyCoursesFragment" -> result?.setSelection(2, false)
             "MyResourcesFragment" -> result?.setSelection(1, false)
-            "MyTeamFragment" -> result?.setSelection(-5, false)
+            "MyTeamDashboardFragment" -> result?.setSelection(0, false)
+            "MyTeamFragment" ->  result?.setSelection(5, false)
             else -> {
                 result?.setSelection(0, false)
             }
