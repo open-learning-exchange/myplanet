@@ -159,6 +159,8 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
             }
         } else {
             RealmMyTeam.requestToJoin(team._id, user, mRealm, team.teamType)
+            RealmMyTeam.requestToJoinWithNotification(team._id, user, mRealm, team?.teamType)
+
             updateList()
         }
         syncTeamActivities(context)
