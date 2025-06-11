@@ -21,9 +21,11 @@ import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getMyTeamsByUserId
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
+import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 
@@ -32,13 +34,19 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
     private lateinit var mRealm: Realm
     var type: String? = null
+    private var fromDashboard: Boolean = false
     var user: RealmUserModel? = null
     private var teamList: RealmResults<RealmMyTeam>? = null
     private lateinit var adapterTeamList: AdapterTeamList
+    private var conditionApplied: Boolean = false
+    private val settings by lazy {
+        requireActivity().getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
+            fromDashboard = requireArguments().getBoolean("fromDashboard")
             type = requireArguments().getString("type")
             if (TextUtils.isEmpty(type)) {
                 type = "team"
@@ -63,8 +71,20 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         } else {
             getString(R.string.team)
         }
-        teamList = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId")
-            .notEqualTo("status", "archived").findAllAsync()
+        if (fromDashboard) {
+            teamList = getMyTeamsByUserId(mRealm, settings)
+        } else {
+            val query = mRealm.where(RealmMyTeam::class.java)
+                .isEmpty("teamId")
+                .notEqualTo("status", "archived")
+            teamList = if (TextUtils.isEmpty(type) || type == "team") {
+                conditionApplied = false
+                query.notEqualTo("type", "enterprise").findAllAsync()
+            } else {
+                conditionApplied = true
+                query.equalTo("type", "enterprise").findAllAsync()
+            }
+        }
 
         teamList?.addChangeListener { _ ->
             updatedTeamList()
@@ -200,21 +220,41 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
                 if (TextUtils.isEmpty(charSequence)) {
+                    showNoResultsMessage(false)
                     updatedTeamList()
                     return
                 }
-                val query = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId")
-                    .notEqualTo("status", "archived")
-                    .contains("name", charSequence.toString(), Case.INSENSITIVE)
-                val (list, conditionApplied) = getList(query)
-                val sortedList = list.sortedWith(compareByDescending<RealmMyTeam> { it.name?.startsWith(charSequence.toString(), ignoreCase = true) }
-                    .thenBy { it.name })
-                val adapterTeamList = AdapterTeamList(
-                    activity as Context, sortedList, mRealm, childFragmentManager
-                )
-                adapterTeamList.setTeamListener(this@TeamFragment)
-                fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
-                listContentDescription(conditionApplied)
+                var list: List<RealmMyTeam>
+                var conditionApplied = false
+                if(fromDashboard){
+                    list = teamList!!.filter {
+                        it.name?.contains(charSequence.toString(), ignoreCase = true) == true
+                    }
+                } else {
+                    val query = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId")
+                        .notEqualTo("status", "archived")
+                        .contains("name", charSequence.toString(), Case.INSENSITIVE)
+                    val result = getList(query)
+                    list = result.first
+                    conditionApplied = result.second
+                }
+
+                if (list.isEmpty()) {
+                    showNoResultsMessage(true, charSequence.toString())
+                    fragmentTeamBinding.rvTeamList.adapter = null
+                } else {
+                    showNoResultsMessage(false)
+                    val sortedList = list.sortedWith(compareByDescending<RealmMyTeam> {
+                        it.name?.startsWith(charSequence.toString(), ignoreCase = true)
+                    }.thenBy { it.name })
+
+                    val adapterTeamList = AdapterTeamList(
+                        activity as Context, sortedList, mRealm, childFragmentManager
+                    )
+                    adapterTeamList.setTeamListener(this@TeamFragment)
+                    fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
+                    listContentDescription(conditionApplied)
+                }
             }
 
             override fun afterTextChanged(editable: Editable) {}
@@ -236,10 +276,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     }
 
     private fun setTeamList() {
-        val query = mRealm.where(RealmMyTeam::class.java)
-            .isEmpty("teamId")
-            .notEqualTo("status", "archived")
-        val (list, conditionApplied) = getList(query)
+        val list = teamList!!
         adapterTeamList = activity?.let { AdapterTeamList(it, list, mRealm, childFragmentManager) } ?: return
         adapterTeamList.setType(type)
         adapterTeamList.setTeamListener(this@TeamFragment)
@@ -252,10 +289,11 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
         listContentDescription(conditionApplied)
         val itemCount = adapterTeamList.itemCount
-        showNoData(fragmentTeamBinding.tvMessage, itemCount, "$type")
+
         if (itemCount == 0) {
-            fragmentTeamBinding.etSearch.visibility = View.GONE
-            fragmentTeamBinding.tableTitle.visibility = View.GONE
+            showNoResultsMessage(true)
+        } else {
+            showNoResultsMessage(false)
         }
     }
 
@@ -276,9 +314,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     private fun updatedTeamList() {
         activity?.runOnUiThread {
-            val query = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").notEqualTo("status", "archived")
-            val (filteredList, conditionApplied) = getList(query)
-            val sortedList = sortTeams(filteredList)
+            val sortedList = sortTeams(teamList!!)
             val adapterTeamList = AdapterTeamList(activity as Context, sortedList, mRealm, childFragmentManager).apply {
                 setType(type)
                 setTeamListener(this@TeamFragment)
@@ -294,6 +330,31 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             fragmentTeamBinding.rvTeamList.contentDescription = getString(R.string.enterprise_list)
         } else {
             fragmentTeamBinding.rvTeamList.contentDescription = getString(R.string.list_of_teams)
+        }
+    }
+
+    private fun showNoResultsMessage(show: Boolean, searchQuery: String = "") {
+        if (show) {
+            fragmentTeamBinding.tvMessage.text = if (searchQuery.isNotEmpty()) {
+                if (TextUtils.equals(type, "enterprise")){
+                    getString(R.string.no_enterprises_found_for_search, searchQuery)
+                } else {
+                    getString(R.string.no_teams_found_for_search, searchQuery)
+                }
+            } else {
+                if (TextUtils.equals(type, "enterprise")) {
+                    getString(R.string.no_enterprises_found)
+                } else {
+                    getString(R.string.no_teams_found)
+                }
+            }
+            fragmentTeamBinding.tvMessage.visibility = View.VISIBLE
+            fragmentTeamBinding.etSearch.visibility = View.VISIBLE
+            fragmentTeamBinding.tableTitle.visibility = View.GONE
+        } else {
+            fragmentTeamBinding.tvMessage.visibility = View.GONE
+            fragmentTeamBinding.etSearch.visibility = View.VISIBLE
+            fragmentTeamBinding.tableTitle.visibility = View.VISIBLE
         }
     }
 }
