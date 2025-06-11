@@ -1304,5 +1304,12 @@
     <string name="no_teams_found_for_search">لم يتم العثور على فرق لـ "%1$s"</string>
     <string name="no_enterprises_found_for_search">لم يتم العثور على مؤسسات لـ "%1$s"</string>
     <string name="no_enterprises_found">لم يتم العثور على مؤسسات</string>
+    <string name="starting_downloads">بدء التنزيلات…</string>
+    <string name="downloaded_files">تم تنزيل %1$s/%2$s ملفات</string>
+    <string name="download_failed">فشل التنزيل</string>
+    <string name="downloads_completed">اكتملت التنزيلات</string>
+    <string name="download_progress">تم تنزيل %1$d من %2$d ملفات</string>
+    <string name="download_progress_with_errors">تم تنزيل %1$d من %2$d ملفات (مع بعض الأخطاء)</string>
+    <string name="download_in_background">بدء التنزيل في الخلفية…</string>
 
 </resources>
