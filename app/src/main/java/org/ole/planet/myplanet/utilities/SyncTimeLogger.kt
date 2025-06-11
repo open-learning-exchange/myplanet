@@ -133,7 +133,6 @@ class SyncTimeLogger private constructor() {
             }
 
         summaryBuilder.append("=========================")
-        Log.d("SyncTimeLogger", summaryBuilder.toString())
         return summaryBuilder.toString()
     }
 
