@@ -341,7 +341,18 @@ open class RealmMyTeam : RealmObject() {
             team.updated = true
             team.teamPlanetCode = userModel?.planetCode
             team.userPlanetCode = userModel?.planetCode
+            val teamInfo = mRealm.where(RealmMyTeam::class.java)
+                .equalTo("_id", teamId)
+                .findFirst()
+            val teamName = teamInfo?.name ?: "Unknown Team"
+            sendJoinRequestNotifications(
+                teamId = teamId ?: "",
+                requesterName = userModel?.name ?: "Unknown User",
+                teamName = teamName,
+                realm = mRealm
+            )
             mRealm.commitTransaction()
+//            mRealm.commitTransaction()
         }
 
         @JvmStatic
@@ -506,33 +517,51 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun requestToJoinWithNotification(
-            teamId: String?,
-            userModel: RealmUserModel?,
-            mRealm: Realm,
-            teamType: String?
-        ) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            val team = mRealm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
-            team.docType = "request"
-            team.createdDate = Date().time
-            team.teamType = teamType
-            team.userId = userModel?.id
-            team.teamId = teamId
-            team.updated = true
-            team.teamPlanetCode = userModel?.planetCode
-            team.userPlanetCode = userModel?.planetCode
-            val teamInfo = mRealm.where(RealmMyTeam::class.java)
-                .equalTo("_id", teamId)
+        fun syncJoinRequestNotifications(realm: Realm) {
+            val joinRequests = realm.where(RealmMyTeam::class.java)
+                .equalTo("docType", "request")
+                .findAll()
+
+            joinRequests.forEach { joinRequest ->
+                val existingNotification = realm.where(RealmNotification::class.java)
+                    .equalTo("type", "join_request")
+                    .equalTo("relatedId", joinRequest._id)
+                    .findFirst()
+
+                if (existingNotification == null) {
+                    createNotificationFromJoinRequest(joinRequest, realm)
+                }
+            }
+        }
+
+        @JvmStatic
+        private fun createNotificationFromJoinRequest(joinRequest: RealmMyTeam, realm: Realm) {
+            val requester = realm.where(RealmUserModel::class.java)
+                .equalTo("id", joinRequest.userId)
+                .findFirst()
+            val requesterName = requester?.name ?: "Unknown User"
+
+            val teamInfo = realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", joinRequest.teamId)
                 .findFirst()
             val teamName = teamInfo?.name ?: "Unknown Team"
-            sendJoinRequestNotifications(
-                teamId = teamId ?: "",
-                requesterName = userModel?.name ?: "Unknown User",
-                teamName = teamName,
-                realm = mRealm
-            )
-            mRealm.commitTransaction()
+
+            val teamLeaders = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", joinRequest.teamId)
+                .equalTo("docType", "membership")
+                .equalTo("isLeader", true)
+                .findAll()
+
+            teamLeaders.forEach { leader ->
+                val notification = realm.createObject(RealmNotification::class.java, UUID.randomUUID().toString())
+                notification.userId = leader.userId.toString()
+                notification.type = "join_request"
+                notification.relatedId = joinRequest._id
+                notification.message = "$requesterName has requested to join $teamName"
+                notification.title = "New Join Request"
+                notification.createdAt = Date(joinRequest.createdDate)
+                notification.isRead = false
+            }
         }
 
         fun sendJoinRequestNotifications(teamId: String, requesterName: String, teamName: String, realm: Realm) {
@@ -550,6 +579,13 @@ open class RealmMyTeam : RealmObject() {
                 notification.title = "New Join Request"
                 notification.createdAt = Date()
                 notification.isRead = false
+            }
+        }
+
+        @JvmStatic
+        fun initializeNotifications(realm: Realm) {
+            realm.executeTransaction { transactionRealm ->
+                syncJoinRequestNotifications(transactionRealm)
             }
         }
     }

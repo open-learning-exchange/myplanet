@@ -479,8 +479,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 var attempt = 0
-
-                while (true) {
+                // After your team sync is complete
+                val realm = DatabaseService(context).realmInstance
+                RealmMyTeam.initializeNotifications(realm);                while (true) {
                     val realm = Realm.getDefaultInstance()
                     var dataInserted = false
 
