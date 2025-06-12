@@ -435,7 +435,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-
     private fun setupRealmListeners() {
         if (mRealm.isInTransaction) {
             mRealm.commitTransaction()
@@ -540,7 +539,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         dashboardViewModel.createNotificationIfNotExists(realm, "storage", "$storageRatio", "storage", userId)
     }
 
-
     private fun openNotificationsList(userId: String) {
         val fragment = NotificationsFragment().apply {
             arguments = Bundle().apply {
@@ -556,7 +554,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             openNotificationsList(user?.id ?: "")
         }
     }
-
 
     private fun updateNotificationBadge(count: Int, onClickListener: View.OnClickListener) {
         val menuItem = activityDashboardBinding.appBarBell.bellToolbar.menu.findItem(R.id.action_notifications)
@@ -849,6 +846,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 changeUX(R.string.menu_surveys, menuImageList[8]).withIdentifier(8)
             )
         }
+
     private val drawerItemsFooter: Array<IDrawerItem<*, *>>
         get() {
             val menuImageListFooter = ArrayList<Drawable>()
