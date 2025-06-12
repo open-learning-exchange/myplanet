@@ -13,9 +13,9 @@ This repository uses specific conventions for branches, commit messages, and pul
 ## Pull requests
 - Title should mirror the commit message format and the summary must start with "smoother": `<component>: smoother <summary> (fixes #issue)`.
 - PR body must include `(fixes #<issue number>)` on its own line and a brief explanation of the change.
-- Always link a well-described issue. Create one with `gh issue create` if needed before opening the PR.
+- Every PR should reference a descriptive issue. Use `gh issue create` to open one if none exists.
 - Target the `master` branch.
-- After creating the PR, trigger a GitHub Actions build with `gh workflow run`.
+- After opening the PR, trigger the build workflow with `gh workflow run build.yaml`.
 - Verify `gh` is installed by running `gh --version` before executing any GitHub CLI steps.
 
 ## Testing
