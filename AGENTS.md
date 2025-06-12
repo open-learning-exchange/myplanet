@@ -19,5 +19,4 @@ This repository uses specific conventions for branches, commit messages, and pul
 - Verify `gh` is installed by running `gh --version` before executing any GitHub CLI steps.
 
 ## Testing
-- No automated tests are defined. Ensure the app builds with `./gradlew assembleDebug` before submitting.
-- Builds in Codex fail because the Android SDK is missing.
+- No automated tests are defined. Verify the build with `./gradlew assembleDebug --dry-run` before submitting.
