@@ -1,16 +1,24 @@
 package org.ole.planet.myplanet.datamanager
 
+import android.app.Activity
+import android.app.ActivityManager
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.os.Build
 import android.os.IBinder
+import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import io.realm.Realm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -51,16 +59,8 @@ class MyDownloadService : Service() {
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
         initializeNotificationChannels()
-        val initialNotification = NotificationCompat.Builder(this, "DownloadChannel")
-            .setContentTitle(getString(R.string.downloading_files))
-            .setContentText(getString(R.string.preparing_download))
-            .setSmallIcon(R.drawable.ic_download)
-            .setProgress(100, 0, true)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setOngoing(true)
-            .setSilent(true)
-            .build()
 
+        val initialNotification = createInitialNotification()
         startForeground(ONGOING_NOTIFICATION_ID, initialNotification)
 
         val urlsKey = intent?.getStringExtra("urls_key") ?: "url_list_key"
@@ -87,18 +87,34 @@ class MyDownloadService : Service() {
         return START_STICKY
     }
 
+    private fun createInitialNotification(): Notification {
+        return NotificationCompat.Builder(this, "DownloadChannel")
+            .setContentTitle(getString(R.string.downloading_files))
+            .setContentText(getString(R.string.preparing_download))
+            .setSmallIcon(R.drawable.ic_download)
+            .setProgress(100, 0, true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setOngoing(true)
+            .setSilent(true)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            .build()
+    }
+
     private fun initializeNotificationChannels() {
         val channelId = "DownloadChannel"
         if (notificationManager?.getNotificationChannel(channelId) == null) {
             val channel = NotificationChannel(channelId, "Download Service", NotificationManager.IMPORTANCE_HIGH).apply {
                 setSound(null, null)
+                description = "Shows download progress for files"
             }
             notificationManager?.createNotificationChannel(channel)
         }
 
         val completionChannelId = "DownloadCompletionChannel"
         if (notificationManager?.getNotificationChannel(completionChannelId) == null) {
-            val channel = NotificationChannel(completionChannelId, "Download Completion", NotificationManager.IMPORTANCE_HIGH)
+            val channel = NotificationChannel(completionChannelId, "Download Completion", NotificationManager.IMPORTANCE_HIGH).apply {
+                description = "Notifies when downloads are completed"
+            }
             notificationManager?.createNotificationChannel(channel)
         }
     }
@@ -336,7 +352,64 @@ class MyDownloadService : Service() {
                 putExtra("urls_key", urlsKey)
                 putExtra("fromSync", fromSync)
             }
-            ContextCompat.startForegroundService(context, intent)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val canStart = when {
+                    context is Activity -> true
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> {
+                        hasValidForegroundServiceContext(context)
+                    }
+                    else -> true
+                }
+
+                if (canStart) {
+                    try {
+                        ContextCompat.startForegroundService(context, intent)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        handleForegroundServiceError(context, urlsKey, fromSync)
+                    }
+                } else {
+                    startDownloadWork(context, urlsKey, fromSync)
+                }
+            } else {
+                try {
+                    ContextCompat.startForegroundService(context, intent)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    handleForegroundServiceError(context, urlsKey, fromSync)
+                }
+            }
+        }
+
+        @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+        private fun hasValidForegroundServiceContext(context: Context): Boolean {
+            val activityManager = context.getSystemService(ACTIVITY_SERVICE) as ActivityManager
+            return activityManager.isBackgroundRestricted.not()
+        }
+
+        private fun handleForegroundServiceError(context: Context, urlsKey: String, fromSync: Boolean) {
+            try {
+                val intent = Intent(context, MyDownloadService::class.java).apply {
+                    putExtra("urls_key", urlsKey)
+                    putExtra("fromSync", fromSync)
+                }
+                context.startService(intent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                startDownloadWork(context, urlsKey, fromSync)
+            }
+        }
+
+        private fun startDownloadWork(context: Context, urlsKey: String, fromSync: Boolean) {
+            val workRequest = OneTimeWorkRequestBuilder<DownloadWorker>()
+                .setInputData(workDataOf(
+                    "urls_key" to urlsKey,
+                    "fromSync" to fromSync
+                ))
+                .build()
+
+            WorkManager.getInstance(context).enqueue(workRequest)
         }
     }
 }
