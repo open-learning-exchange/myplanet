@@ -15,7 +15,7 @@ This repository uses specific conventions for branches, commit messages, and pul
 - PR body must include `(fixes #<issue number>)` on its own line and a brief explanation of the change.
 - Every PR should reference a descriptive issue. Use `gh issue create` to open one if none exists.
 - Target the `master` branch.
-- After opening the PR, trigger the build workflow with `gh workflow run android-build.yml`.
+- After opening the PR, trigger the build workflow with `gh workflow run android-build.yml --ref <branch>` to run it on your PR branch.
 - Verify `gh` is installed by running `gh --version` before executing any GitHub CLI steps.
 
 ## Testing
