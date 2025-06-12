@@ -16,6 +16,7 @@ This repository uses specific conventions for branches, commit messages, and pul
 - Always link a well-described issue. Create one with `gh issue create` if needed before opening the PR.
 - Target the `master` branch.
 - After creating the PR, trigger a GitHub Actions build with `gh workflow run`.
+- Ensure the `gh` command is available before running GitHub CLI steps.
 
 ## Testing
 - No automated tests are defined. Ensure the app builds with `./gradlew assembleDebug` before submitting.
