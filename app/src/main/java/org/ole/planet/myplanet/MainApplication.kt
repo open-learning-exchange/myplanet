@@ -1,15 +1,18 @@
 package org.ole.planet.myplanet
 
 import android.app.Activity
+import android.app.ActivityManager
 import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.os.Bundle
+import android.os.Debug
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
+import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -20,6 +23,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -35,12 +39,14 @@ import org.ole.planet.myplanet.service.TaskNotificationWorker
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.ANRWatchdog
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.CpuMonitoring
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.initialize
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
+import org.ole.planet.myplanet.utilities.PerformanceAnalyzer
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.ThemeMode
 import org.ole.planet.myplanet.utilities.Utilities
@@ -199,6 +205,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     private var isActivityChangingConfigurations = false
     private var isFirstLaunch = true
     private lateinit var anrWatchdog: ANRWatchdog
+    private lateinit var cpuMonitor: CpuMonitoring
+    private lateinit var performanceAnalyzer: PerformanceAnalyzer
 
     override fun onCreate() {
         super.onCreate()
@@ -210,6 +218,10 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         service = DatabaseService(context)
         mRealm = service.realmInstance
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
+        cpuMonitor = CpuMonitoring.getInstance(this)
+        performanceAnalyzer = PerformanceAnalyzer(this)
+
+        cpuMonitor.startMonitoring(intervalMs = 5000L, maxHistory = 100)
 
         val builder = VmPolicy.Builder()
         StrictMode.setVmPolicy(builder.build())
@@ -218,6 +230,13 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         anrWatchdog = ANRWatchdog(timeout = 5000L, listener = object : ANRWatchdog.ANRListener {
             override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
                 applicationScope.launch {
+                    val performanceReport = cpuMonitor.generatePerformanceReport()
+                    val actionableAnalysis = performanceAnalyzer.generateActionableReport(performanceReport)
+                    val optimizationSuggestions = performanceAnalyzer.getOptimizationSuggestions(performanceReport)
+
+                    // Create detailed ANR report
+//                    val performanceReport = cpuMonitor.getFormattedReport()
+                    logCurrentPerformance("manual_performance_check")
                     createLog("anr", "ANR detected! Duration: ${duration}ms\n $message")
                 }
             }
@@ -259,6 +278,103 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 }
             }
         }.launchIn(applicationScope)
+    }
+
+    // Add this method to get CPU monitor instance
+    fun getCpuMonitor(): CpuMonitoring = cpuMonitor
+    fun getPerformanceAnalyzer(): PerformanceAnalyzer = performanceAnalyzer
+
+    fun generatePerformanceReport(): String {
+        return if (::cpuMonitor.isInitialized) {
+            cpuMonitor.getFormattedReport()
+        } else {
+            "CPU monitoring not initialized"
+        }
+    }
+
+    fun getCurrentSystemPerformance(): String {
+        return buildString {
+            try {
+                val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                val memoryInfo = ActivityManager.MemoryInfo()
+                activityManager.getMemoryInfo(memoryInfo)
+
+                val totalMemoryMb = memoryInfo.totalMem / (1024.0 * 1024.0)
+                val availableMemoryMb = memoryInfo.availMem / (1024.0 * 1024.0)
+                val usedMemoryMb = totalMemoryMb - availableMemoryMb
+                val memoryUsagePercent = (usedMemoryMb / totalMemoryMb) * 100
+
+                val runtime = Runtime.getRuntime()
+                val heapSizeMb = runtime.totalMemory() / (1024.0 * 1024.0)
+                val heapFreeMb = runtime.freeMemory() / (1024.0 * 1024.0)
+                val heapUsedMb = heapSizeMb - heapFreeMb
+
+                val appMemoryInfo = Debug.MemoryInfo()
+                Debug.getMemoryInfo(appMemoryInfo)
+                val appMemoryUsageMb = appMemoryInfo.totalPss / 1024.0
+
+                appendLine("=== CURRENT SYSTEM PERFORMANCE ===")
+                appendLine("Timestamp: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date())}")
+                appendLine("System Memory: ${String.format("%.1f", usedMemoryMb)}MB / ${String.format("%.1f", totalMemoryMb)}MB (${String.format("%.1f", memoryUsagePercent)}%)")
+                appendLine("Available Memory: ${String.format("%.1f", availableMemoryMb)}MB")
+                appendLine("App Memory Usage: ${String.format("%.1f", appMemoryUsageMb)}MB")
+                appendLine("Heap Size: ${String.format("%.1f", heapSizeMb)}MB")
+                appendLine("Heap Used: ${String.format("%.1f", heapUsedMb)}MB")
+                appendLine("Heap Free: ${String.format("%.1f", heapFreeMb)}MB")
+                appendLine("Active Threads: ${Thread.activeCount()}")
+                appendLine("Available Processors: ${Runtime.getRuntime().availableProcessors()}")
+                appendLine("Low Memory: ${memoryInfo.lowMemory}")
+                appendLine("Memory Threshold: ${memoryInfo.threshold / (1024 * 1024)} MB")
+
+            } catch (e: Exception) {
+                appendLine("Error getting system performance: ${e.message}")
+            }
+        }
+    }
+
+    fun logCurrentPerformance(tag: String) {
+        applicationScope.launch {
+            val report = if (::cpuMonitor.isInitialized) {
+                cpuMonitor.getFormattedReport()
+            } else {
+                getCurrentSystemPerformance()
+            }
+            Log.d(tag, report)
+        }
+    }
+
+    fun performHealthCheck(): String {
+        return try {
+            val report = cpuMonitor.generatePerformanceReport()
+            performanceAnalyzer.generateActionableReport(report)
+        } catch (e: Exception) {
+            "Health check failed: ${e.message}"
+        }
+    }
+
+    // Add performance alerts for proactive monitoring
+    fun checkPerformanceAlerts(): List<String> {
+        val alerts = mutableListOf<String>()
+
+        try {
+            val report = cpuMonitor.generatePerformanceReport()
+            val insights = performanceAnalyzer.analyzePerformanceReport(report)
+
+            // Filter for high and critical issues
+            val criticalInsights = insights.filter {
+                it.severity == PerformanceAnalyzer.Severity.CRITICAL ||
+                        it.severity == PerformanceAnalyzer.Severity.HIGH
+            }
+
+            criticalInsights.forEach { insight ->
+                alerts.add("${insight.severity}: ${insight.title} - ${insight.description}")
+            }
+
+        } catch (e: Exception) {
+            alerts.add("Performance check failed: ${e.message}")
+        }
+
+        return alerts
     }
 
     private fun scheduleAutoSyncWork(syncInterval: Int?) {
@@ -350,11 +466,64 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         } else {
             applicationScope.launch {
                 createLog("foreground", "")
+
+                val alerts = checkPerformanceAlerts()
+                if (alerts.isNotEmpty()) {
+                    val alertMessage = buildString {
+                        appendLine("Performance alerts detected on foreground:")
+                        alerts.forEach { alert -> appendLine("• $alert") }
+                    }
+                    Log.d("performance_alert_foreground", alertMessage)
+                }
             }
         }
     }
 
-    private fun onAppBackgrounded() {}
+    private fun onAppBackgrounded() {
+        applicationScope.launch {
+            val healthCheck = performHealthCheck()
+            Log.d("performance_background", healthCheck)
+        }
+    }
+
+    fun analyzeAndOptimize(): String {
+        return try {
+            val report = cpuMonitor.generatePerformanceReport()
+            val analysis = performanceAnalyzer.generateActionableReport(report)
+            val suggestions = performanceAnalyzer.getOptimizationSuggestions(report)
+
+            buildString {
+                appendLine(analysis)
+                appendLine()
+                appendLine("=== PERSONALIZED OPTIMIZATION PLAN ===")
+                appendLine("Based on your app's specific performance patterns:")
+                suggestions.forEachIndexed { index, suggestion ->
+                    appendLine("${index + 1}. $suggestion")
+                }
+            }
+        } catch (e: Exception) {
+            "Analysis failed: ${e.message}"
+        }
+    }
+
+    // Proactive performance monitoring - call this periodically
+    fun schedulePerformanceCheck() {
+        applicationScope.launch {
+            while (true) {
+                delay(30000L) // Check every 30 seconds
+
+                val alerts = checkPerformanceAlerts()
+                if (alerts.isNotEmpty()) {
+                    val alertMessage = buildString {
+                        appendLine("Proactive performance alert:")
+                        alerts.forEach { alert -> appendLine("• $alert") }
+                    }
+                    createLog("performance_proactive_alert", alertMessage)
+                }
+            }
+        }
+    }
+
 
     private fun onAppStarted() {
         applicationScope.launch {
@@ -365,9 +534,24 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     private fun onAppClosed() {}
 
     override fun onTerminate() {
+        // Generate final performance report before shutdown
+        applicationScope.launch {
+            try {
+                val finalReport = performHealthCheck()
+                createLog("performance_shutdown", finalReport)
+            } catch (e: Exception) {
+                createLog("performance_shutdown", "Failed to generate shutdown report: ${e.message}")
+            }
+        }
+
+        if (::cpuMonitor.isInitialized) {
+            cpuMonitor.stopMonitoring()
+        }
+
         if (::anrWatchdog.isInitialized) {
             anrWatchdog.stop()
         }
+
         super.onTerminate()
         onAppClosed()
         applicationScope.cancel()
