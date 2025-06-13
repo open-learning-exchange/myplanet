@@ -10,8 +10,13 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 26
         targetSdkVersion 34
+<<<<<<< 5978-apk-logs-not-being-synced-to-planet
         versionCode 2582
         versionName "0.25.82"
+=======
+        versionCode 2581
+        versionName "0.25.81"
+>>>>>>> master
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
