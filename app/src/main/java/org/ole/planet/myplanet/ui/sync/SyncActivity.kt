@@ -475,13 +475,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     override fun onSyncComplete() {
         val activityContext = this@SyncActivity
-
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 var attempt = 0
-                // After your team sync is complete
-                val realm = DatabaseService(context).realmInstance
-                RealmMyTeam.initializeNotifications(realm);                while (true) {
+                while (true) {
                     val realm = Realm.getDefaultInstance()
                     var dataInserted = false
 
