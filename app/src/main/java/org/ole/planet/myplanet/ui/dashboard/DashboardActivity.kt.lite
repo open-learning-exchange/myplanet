@@ -515,30 +515,45 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
         }
+        createJoinRequestNotifications(realm, userId)
     }
 
-    private fun createNotifications(realm: Realm, userId: String?) {
-        dashboardViewModel.updateResourceNotification(realm, userId)
-
-        val pendingSurveys = dashboardViewModel.getPendingSurveys(realm, userId)
-        val surveyTitles = dashboardViewModel.getSurveyTitlesFromSubmissions(realm, pendingSurveys)
-        surveyTitles.forEach { title ->
-            dashboardViewModel.createNotificationIfNotExists(realm, "survey", "$title", title, userId)
-        }
-
-        val tasks = realm.where(RealmTeamTask::class.java)
-            .notEqualTo("status", "archived")
-            .equalTo("completed", false)
-            .equalTo("assignee", userId)
+    private fun createJoinRequestNotifications(realm: Realm, userId: String?) {
+        val teamLeaderMemberships = realm.where(RealmMyTeam::class.java)
+            .equalTo("userId", userId)
+            .equalTo("docType", "membership")
+            .equalTo("isLeader", true)
             .findAll()
-        tasks.forEach { task ->
-            dashboardViewModel.createNotificationIfNotExists(realm, "task", "${task.title} ${formatDate(task.deadline)}", task.id, userId)
+
+        teamLeaderMemberships.forEach { leadership ->
+            val pendingJoinRequests = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", leadership.teamId)
+                .equalTo("docType", "request")
+                .findAll()
+
+            pendingJoinRequests.forEach { joinRequest ->
+                val team = realm.where(RealmMyTeam::class.java)
+                    .equalTo("_id", leadership.teamId)
+                    .findFirst()
+
+                val requester = realm.where(RealmUserModel::class.java)
+                    .equalTo("id", joinRequest.userId)
+                    .findFirst()
+
+                val requesterName = requester?.name ?: "Unknown User"
+                val teamName = team?.name ?: "Unknown Team"
+                val message = "$requesterName has requested to join $teamName"
+
+                dashboardViewModel.createNotificationIfNotExists(
+                    realm,
+                    "join_request",
+                    message,
+                    joinRequest._id,
+                    userId
+                )
+            }
         }
-
-        val storageRatio = totalAvailableMemoryRatio
-        dashboardViewModel.createNotificationIfNotExists(realm, "storage", "$storageRatio", "storage", userId)
     }
-
     private fun openNotificationsList(userId: String) {
         val fragment = NotificationsFragment().apply {
             arguments = Bundle().apply {
