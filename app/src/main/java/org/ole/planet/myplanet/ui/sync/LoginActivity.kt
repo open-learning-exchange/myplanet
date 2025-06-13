@@ -138,7 +138,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             defaultPref.edit().putBoolean("beta_addImageToMessage", true).apply()
         }
         activityLoginBinding.customDeviceName.text = getCustomDeviceName()
-        activityLoginBinding.btnSignin.setOnClickListener {
+        btnSignIn.setOnClickListener {
             if (TextUtils.isEmpty(activityLoginBinding.inputName.text.toString())) {
                 activityLoginBinding.inputName.error = getString(R.string.err_msg_name)
             } else if (TextUtils.isEmpty(activityLoginBinding.inputPassword.text.toString())) {
@@ -217,7 +217,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             activityLoginBinding.inputPassword.addTextChangedListener(MyTextWatcher(activityLoginBinding.inputPassword))
             activityLoginBinding.inputPassword.setOnEditorActionListener { _: TextView?, actionId: Int, event: KeyEvent? ->
                 if (actionId == EditorInfo.IME_ACTION_DONE || event != null && event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_ENTER) {
-                    activityLoginBinding.btnSignin.performClick()
+                    btnSignIn.performClick()
                     return@setOnEditorActionListener true
                 }
                 false

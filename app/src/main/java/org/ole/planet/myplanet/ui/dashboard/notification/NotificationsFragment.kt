@@ -140,6 +140,32 @@ class NotificationsFragment : Fragment() {
                     }
                 }
             }
+            "join_request" -> {
+                val joinRequestId = notification.relatedId
+                if (joinRequestId?.isNotEmpty() == true && context is OnHomeItemClickListener) {
+                    val actualJoinRequestId = if (joinRequestId.startsWith("join_request_")) {
+                        joinRequestId.removePrefix("join_request_")
+                    } else {
+                        joinRequestId
+                    }
+                    val joinRequest = mRealm.where(RealmMyTeam::class.java)
+                        .equalTo("_id", actualJoinRequestId)
+                        .equalTo("docType", "request")
+                        .findFirst()
+
+                    val teamId = joinRequest?.teamId
+
+                    if (teamId?.isNotEmpty() == true) {
+                        val f = TeamDetailFragment()
+                        val b = Bundle()
+                        b.putString("id", teamId)
+                        b.putBoolean("isMyTeam", true)
+                        b.putInt("navigateToPage", 8)
+                        f.arguments = b
+                        (context as OnHomeItemClickListener).openCallFragment(f)
+                    }
+                }
+            }
             "resource" -> {
                 dashboardActivity.openMyFragment(ResourcesFragment())
             }
