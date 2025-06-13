@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.team
 
 import android.os.Bundle
-import android.text.TextUtils
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
@@ -63,7 +62,7 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
                     MainApplication.listener = this
                 }
                 R.string.join_requests,
-                R.string.applicants         -> MembersFragment()
+                R.string.applicants -> MembersFragment()
                 else -> throw IllegalArgumentException("Unknown page id $id")
             }.apply {
                 if (arguments == null) {
