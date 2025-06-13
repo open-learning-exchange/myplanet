@@ -45,33 +45,39 @@ class UserProfileDbHandler(context: Context) {
     }
 
     fun onLogin() {
-        if (mRealm.isClosed) {
-            mRealm = realmService.realmInstance
-        }
+        val backgroundRealm = realmService.realmInstance
 
-        if (!mRealm.isInTransaction) {
-            mRealm.beginTransaction()
-        } else {
-            try {
-                mRealm.commitTransaction()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                mRealm.cancelTransaction()
+        backgroundRealm.executeTransactionAsync(
+            { realm ->
+                val offlineActivities = realm.copyToRealm(createUserForRealm(realm))
+                offlineActivities.type = KEY_LOGIN
+                offlineActivities._rev = null
+                offlineActivities._id = null
+                offlineActivities.description = "Member login on offline application"
+                offlineActivities.loginTime = Date().time
+            },
+            {
+                backgroundRealm.close()
+            },
+            { error ->
+                error.printStackTrace()
+                backgroundRealm.close()
             }
-            mRealm.beginTransaction()
-        }
-        try {
-            val offlineActivities = mRealm.copyToRealm(createUser())
-            offlineActivities.type = KEY_LOGIN
-            offlineActivities._rev = null
-            offlineActivities._id = null
-            offlineActivities.description = "Member login on offline application"
-            offlineActivities.loginTime = Date().time
-            mRealm.commitTransaction()
-        } catch (e: Exception) {
-            mRealm.cancelTransaction()
-            throw e
-        }
+        )
+    }
+
+    private fun createUserForRealm(realm: Realm): RealmOfflineActivity {
+        val offlineActivities = realm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
+
+        val model = realm.where(RealmUserModel::class.java)
+            .equalTo("id", settings.getString("userId", ""))
+            .findFirst()
+
+        offlineActivities.userId = model?.id
+        offlineActivities.userName = model?.name
+        offlineActivities.parentCode = model?.parentCode
+        offlineActivities.createdOn = model?.planetCode
+        return offlineActivities
     }
 
     fun logoutAsync() {
