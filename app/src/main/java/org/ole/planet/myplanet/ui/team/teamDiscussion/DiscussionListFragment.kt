@@ -59,7 +59,9 @@ class DiscussionListFragment : BaseTeamFragment() {
         if (!isMember()) {
             fragmentDiscussionListBinding.addMessage.visibility = View.GONE
         }
-
+        if(team?.isPublic!!){
+            fragmentDiscussionListBinding.addMessage.visibility = View.VISIBLE
+        }
         updatedNewsList = mRealm.where(RealmNews::class.java).isEmpty("replyTo").sort("time", Sort.DESCENDING).findAllAsync()
 
         updatedNewsList?.addChangeListener { results ->
