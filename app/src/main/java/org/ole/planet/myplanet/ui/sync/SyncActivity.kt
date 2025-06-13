@@ -666,35 +666,35 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun onLogin() {
-        val handler = UserProfileDbHandler(this)
-        handler.onLogin()
-        handler.onDestroy()
         editor.putBoolean(Constants.KEY_LOGIN, true).commit()
         openDashboard()
 
-        isNetworkConnectedFlow.onEach { isConnected ->
-            if (isConnected) {
-                val serverUrl = settings.getString("serverURL", "")
-                if (!serverUrl.isNullOrEmpty()) {
-                    MainApplication.applicationScope.launch(Dispatchers.IO) {
-                        val canReachServer = MainApplication.Companion.isServerReachable(serverUrl)
-                        if (canReachServer) {
-                            withContext(Dispatchers.Main) {
-                                startUpload("login")
-                            }
-                            withContext(Dispatchers.Default) {
-                                val backgroundRealm = Realm.getDefaultInstance()
-                                try {
-                                    TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
-                                } finally {
-                                    backgroundRealm.close()
-                                }
-                            }
+        MainApplication.applicationScope.launch(Dispatchers.IO) {
+            try {
+                val handler = UserProfileDbHandler(this@SyncActivity)
+                handler.onLogin()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            val serverUrl = settings.getString("serverURL", "")
+            if (!serverUrl.isNullOrEmpty()) {
+                val canReachServer = MainApplication.isServerReachable(serverUrl)
+                if (canReachServer) {
+                    withContext(Dispatchers.Main) {
+                        startUpload("login")
+                    }
+                    withContext(Dispatchers.Default) {
+                        val backgroundRealm = Realm.getDefaultInstance()
+                        try {
+                            TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
+                        } finally {
+                            backgroundRealm.close()
                         }
                     }
                 }
             }
-        }.launchIn(MainApplication.applicationScope)
+        }
     }
 
     fun settingDialog() {
