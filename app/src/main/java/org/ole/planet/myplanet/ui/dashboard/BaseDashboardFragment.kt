@@ -56,6 +56,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
     private lateinit var myCoursesResults: RealmResults<RealmMyCourse>
+
     private val myCoursesChangeListener = RealmChangeListener<RealmResults<RealmMyCourse>> { _ ->
         updateMyCoursesUI()
     }
@@ -248,27 +249,28 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
     }
 
-    private fun setUpMyLife(userId: String?) {
+    private fun setUpMyLife(userIds: String?) {
         val realm = DatabaseService(requireContext()).realmInstance
-        val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings)
-        if (realmObjects.isEmpty()) {
-            if (!realm.isInTransaction) {
-                realm.beginTransaction()
+        realm.executeTransactionAsync({ backgroundRealm ->
+            val realmObjects = RealmMyLife.getMyLifeByUserId(backgroundRealm, settings)
+            if (realmObjects.isEmpty()) {
+                val myLifeListBase = getMyLifeListBase(userIds)
+
+                val realmObjects = myLifeListBase.mapIndexed { index, item ->
+                    RealmMyLife().apply {
+                        _id = "${UUID.randomUUID()}"
+                        imageId = item.imageId
+                        userId = item.userId
+                        title = item.title
+                        isVisible = item.isVisible
+                        weight = index + 1
+                    }
+                }
+                backgroundRealm.copyToRealm(realmObjects)
             }
-            val myLifeListBase = getMyLifeListBase(userId)
-            var ml: RealmMyLife
-            var weight = 1
-            for (item in myLifeListBase) {
-                ml = realm.createObject(RealmMyLife::class.java, UUID.randomUUID().toString())
-                ml.title = item.title
-                ml.imageId = item.imageId
-                ml.weight = weight
-                ml.userId = item.userId
-                ml.isVisible = true
-                weight++
-            }
-            realm.commitTransaction()
-        }
+        }, {}, { error ->
+            error.printStackTrace()
+        })
     }
 
     private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {
