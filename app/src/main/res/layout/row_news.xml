@@ -148,7 +148,6 @@
                 app:layout_constraintHorizontal_chainStyle="spread_inside"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
-
             <Button
                 android:id="@+id/btn_show_reply"
                 android:layout_width="wrap_content"
@@ -164,7 +163,6 @@
                 app:layout_constraintEnd_toStartOf="@+id/btn_add_label"
                 app:layout_constraintStart_toEndOf="@+id/btn_reply"
                 app:layout_constraintTop_toTopOf="parent" />
-
             <Button
                 android:id="@+id/btn_add_label"
                 android:layout_width="0dp"
@@ -175,7 +173,6 @@
                 app:layout_constraintEnd_toStartOf="@+id/btn_share"
                 app:layout_constraintStart_toEndOf="@+id/btn_show_reply"
                 app:layout_constraintTop_toTopOf="parent" />
-
             <Button
                 android:id="@+id/btn_share"
                 android:layout_width="0dp"
