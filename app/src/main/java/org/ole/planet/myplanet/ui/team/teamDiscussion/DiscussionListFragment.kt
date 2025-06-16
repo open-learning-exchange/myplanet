@@ -4,6 +4,7 @@ import android.content.DialogInterface
 import android.content.res.Configuration
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,6 +23,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
+import org.ole.planet.myplanet.ui.courses.TakeCourseFragment.Companion.userModel
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.Constants
@@ -39,10 +41,11 @@ class DiscussionListFragment : BaseTeamFragment() {
         fragmentDiscussionListBinding = FragmentDiscussionListBinding.inflate(inflater, container, false)
         fragmentDiscussionListBinding.addMessage.setOnClickListener { showAddMessage() }
         team =  mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst() ?: throw IllegalArgumentException("Team not found for ID: $teamId")
-        if (!isMember()) {
+        if (user?.id?.startsWith("guest") == true) {
             fragmentDiscussionListBinding.addMessage.visibility = View.GONE
-        }
-        if(team?.isPublic!!){
+        }else if(isMember()) {
+            fragmentDiscussionListBinding.addMessage.visibility = View.VISIBLE
+        } else if(team?.isPublic == true && !isMember()) {
             fragmentDiscussionListBinding.addMessage.visibility = View.VISIBLE
         }
         updatedNewsList = mRealm.where(RealmNews::class.java).isEmpty("replyTo").sort("time", Sort.DESCENDING).findAllAsync()
