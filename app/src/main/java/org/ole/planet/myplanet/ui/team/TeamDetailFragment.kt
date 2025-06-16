@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.courses.TakeCourseFragment.Companion.userModel
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 import java.util.UUID
