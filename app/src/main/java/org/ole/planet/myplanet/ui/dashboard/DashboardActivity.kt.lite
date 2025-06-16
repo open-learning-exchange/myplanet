@@ -515,7 +515,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
         }
-        createJoinRequestNotifications(realm, userId)
     }
 
     private fun createJoinRequestNotifications(realm: Realm, userId: String?) {
