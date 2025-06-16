@@ -60,7 +60,7 @@ abstract class BaseResourceFragment : Fragment() {
     var editor: SharedPreferences.Editor? = null
     var lv: CheckboxListView? = null
     var convertView: View? = null
-    internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
+    private lateinit var prgDialog: DialogUtils.CustomProgressDialog
     private var resourceNotFoundDialog: AlertDialog? = null
 
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {

@@ -176,7 +176,6 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             fragmentLibraryDetailBinding.btnRemove.visibility = View.GONE
         }
         fragmentLibraryDetailBinding.btnRemove.setOnClickListener {
-            val userId = profileDbHandler.userModel?.id
             fragmentScope.launch {
                 withContext(Dispatchers.IO) {
                     val backgroundRealm = Realm.getDefaultInstance()
@@ -187,11 +186,11 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                         if (backgroundLibrary != null) {
                             if (!backgroundRealm.isInTransaction) backgroundRealm.beginTransaction()
                             if (isAdd) {
-                                backgroundLibrary.setUserId(userId)
-                                onAdd(backgroundRealm, "resources", userId, libraryId)
+                                backgroundLibrary.setUserId(profileDbHandler.userModel?.id)
+                                onAdd(backgroundRealm, "resources", profileDbHandler.userModel?.id, libraryId)
                             } else {
-                                backgroundLibrary.removeUserId(userId)
-                                onRemove(backgroundRealm, "resources", userId, libraryId)
+                                backgroundLibrary.removeUserId(profileDbHandler.userModel?.id)
+                                onRemove(backgroundRealm, "resources", profileDbHandler.userModel?.id, libraryId)
                             }
                             backgroundRealm.commitTransaction()
                         }
@@ -206,8 +205,8 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 }
                 withContext(Dispatchers.Main) {
                     Utilities.toast(activity, getString(R.string.resources) + " " +
-                            if (isAdd) getString(R.string.added_to_my_library)
-                            else getString(R.string.removed_from_mylibrary))
+                            if (isAdd) getString(R.string.added_to) + getString(R.string.my_library)
+                            else getString(R.string.removed_from) + getString(R.string.my_library))
                     setLibraryData()
                 }
             }

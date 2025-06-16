@@ -15,7 +15,6 @@ import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
@@ -37,23 +36,14 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
         v.text = title
         v.setOnClickListener {
             if (homeItemClickListener != null) {
+                val b = Bundle()
+                b.putString("id", id)
                 if (f is TeamDetailFragment) {
-                    val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", id)?.findFirst()
-                    val optimizedFragment = TeamDetailFragment.newInstance(
-                        teamId = id ?: "",
-                        teamName = title ?: "",
-                        teamType = teamObject?.type ?: "",
-                        isMyTeam = true
-                    )
-                    prefData.setTeamName(title)
-                    homeItemClickListener?.openCallFragment(optimizedFragment)
-                } else {
-                    val b = Bundle()
-                    b.putString("id", id)
-                    f.arguments = b
-                    prefData.setTeamName(title)
-                    homeItemClickListener?.openCallFragment(f)
+                    b.putBoolean("isMyTeam", true)
                 }
+                prefData.setTeamName(title)
+                f.arguments = b
+                homeItemClickListener?.openCallFragment(f)
             }
         }
     }

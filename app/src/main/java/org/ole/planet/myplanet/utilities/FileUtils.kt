@@ -14,8 +14,6 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import java.io.*
 import java.util.UUID
 import androidx.core.net.toUri
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
 
 object FileUtils {
     @JvmStatic
@@ -100,12 +98,7 @@ object FileUtils {
             val id = getIdFromUrl(url)
             if (id.isEmpty()) return ""
             val parts = url.split("/resources/$id/")
-            if (parts.size > 1) {
-                val encodedFileName = parts[1]
-                URLDecoder.decode(encodedFileName, StandardCharsets.UTF_8.toString())
-            } else {
-                ""
-            }
+            if (parts.size > 1) parts[1] else ""
         } catch (e: Exception) {
             e.printStackTrace()
             ""

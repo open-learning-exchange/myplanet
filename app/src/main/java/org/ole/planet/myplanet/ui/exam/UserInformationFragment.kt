@@ -34,7 +34,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.SuccessListener
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
@@ -252,15 +251,13 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     private fun navigateToTeamSurveys(teamId: String?) {
         val activity = requireActivity()
         if (activity is AppCompatActivity) {
-            val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", teamId)?.findFirst()
-
-            val teamDetailFragment = TeamDetailFragment.newInstance(
-                teamId = teamId ?: "",
-                teamName = teamObject?.name ?: "",
-                teamType = teamObject?.type ?: "",
-                isMyTeam = true,
-                navigateToPage = 5
-            )
+            val teamDetailFragment = TeamDetailFragment().apply {
+                arguments = Bundle().apply {
+                    putString("id", teamId)
+                    putBoolean("isMyTeam", true)
+                    putInt("navigateToPage", 5)
+                }
+            }
 
             activity.supportFragmentManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE)
             activity.supportFragmentManager.beginTransaction()

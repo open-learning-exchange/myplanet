@@ -51,6 +51,7 @@ class MemberDetailFragment : Fragment() {
                 && value != "null"
                 && !value.isBlank()
         if (shouldShow) {
+            println("t")
             when (view) {
                 is androidx.appcompat.widget.AppCompatTextView -> view.text = value
             }

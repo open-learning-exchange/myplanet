@@ -71,7 +71,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     OnUserSelectedListener, ConfigurationIdListener {
     private lateinit var syncDate: TextView
     lateinit var lblLastSyncDate: TextView
-    lateinit var btnSignIn: Button
+    lateinit var btnSignin: Button
     lateinit var lblVersion: TextView
     lateinit var tvAvailableSpace: TextView
     lateinit var btnGuestLogin: Button
@@ -104,6 +104,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     var isSync = false
     var forceSync = false
     private var syncFailed = false
+    lateinit var btnSignIn: Button
     lateinit var defaultPref: SharedPreferences
     lateinit var service: Service
     var currentDialog: MaterialDialog? = null
@@ -579,7 +580,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
             inputName.hint = getString(R.string.hint_name)
             inputPassword.hint = getString(R.string.password)
-            btnSignIn.text = getString(R.string.btn_sign_in)
+            btnSignin.text = getString(R.string.btn_sign_in)
             btnGuestLogin.text = getString(R.string.btn_guest_login)
             becomeMember.text = getString(R.string.become_a_member)
             btnFeedback.text = getString(R.string.feedback)

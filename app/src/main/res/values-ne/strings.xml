@@ -1300,16 +1300,5 @@
     <string name="clearing_data">डाटा मेटाउँदै…</string>
     <string name="time_colon">समय:&#160;</string>
     <string name="a_few_seconds_ago">केही सेकेन्ड अगाडि</string>
-    <string name="no_teams_found">कुनै टिम फेला परेन</string>
-    <string name="no_teams_found_for_search">"%1$s" का लागि कुनै टिम फेला परेन</string>
-    <string name="no_enterprises_found_for_search">"%1$s" को लागि कुनै उद्यमहरू फेला परेनन्</string>
-    <string name="no_enterprises_found">कुनै उद्यमहरू फेला परेनन्</string>
-    <string name="starting_downloads">डाउनलोडहरू सुरु गर्दै…</string>
-    <string name="downloaded_files">%1$s/%2$s फाइलहरू डाउनलोड भएका छन्</string>
-    <string name="download_failed">डाउनलोड असफल भयो</string>
-    <string name="downloads_completed">डाउनलोडहरू पूरा भयो</string>
-    <string name="download_progress">%2$d मध्ये %1$d फाइलहरू डाउनलोड भएका छन्</string>
-    <string name="download_progress_with_errors">%2$d मध्ये %1$d फाइलहरू डाउनलोड भएका छन् (केही त्रुटिहरूसहित)</string>
-    <string name="download_in_background">पृष्ठभूमिमा डाउनलोड सुरु गर्दै…</string>
 
 </resources>

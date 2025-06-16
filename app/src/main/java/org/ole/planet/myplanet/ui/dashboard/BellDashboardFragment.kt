@@ -425,14 +425,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun declareElements() {
-        fragmentHomeBellBinding.homeCardTeams.llHomeTeam.setOnClickListener {
-            val fragment = TeamFragment().apply {
-                arguments = Bundle().apply {
-                    putBoolean("fromDashboard", true)
-                }
-            }
-            homeItemClickListener?.openMyFragment(fragment)
-        }
+        fragmentHomeBellBinding.homeCardTeams.llHomeTeam.setOnClickListener { homeItemClickListener?.openMyFragment(TeamFragment()) }
         fragmentHomeBellBinding.homeCardLibrary.myLibraryImageButton.setOnClickListener {
             if (user?.id?.startsWith("guest") == true) {
                 guestDialog(requireContext())
