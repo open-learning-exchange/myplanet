@@ -517,6 +517,29 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
+    private fun createNotifications(realm: Realm, userId: String?) {
+        dashboardViewModel.updateResourceNotification(realm, userId)
+
+        val pendingSurveys = dashboardViewModel.getPendingSurveys(realm, userId)
+        val surveyTitles = dashboardViewModel.getSurveyTitlesFromSubmissions(realm, pendingSurveys)
+        surveyTitles.forEach { title ->
+            dashboardViewModel.createNotificationIfNotExists(realm, "survey", "$title", title, userId)
+        }
+
+        val tasks = realm.where(RealmTeamTask::class.java)
+            .notEqualTo("status", "archived")
+            .equalTo("completed", false)
+            .equalTo("assignee", userId)
+            .findAll()
+        tasks.forEach { task ->
+            dashboardViewModel.createNotificationIfNotExists(realm, "task", "${task.title} ${formatDate(task.deadline)}", task.id, userId)
+        }
+
+        val storageRatio = totalAvailableMemoryRatio
+        dashboardViewModel.createNotificationIfNotExists(realm, "storage", "$storageRatio", "storage", userId)
+        createJoinRequestNotifications(realm, userId)
+    }
+
     private fun createJoinRequestNotifications(realm: Realm, userId: String?) {
         val teamLeaderMemberships = realm.where(RealmMyTeam::class.java)
             .equalTo("userId", userId)
