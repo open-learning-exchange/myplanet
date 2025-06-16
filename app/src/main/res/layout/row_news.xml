@@ -148,16 +148,23 @@
                 app:layout_constraintHorizontal_chainStyle="spread_inside"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
+
             <Button
                 android:id="@+id/btn_show_reply"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/show_reply"
+                android:minWidth="0dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:drawableStart="@drawable/show_replies"
+                android:drawablePadding="4dp"
+                android:drawableTint="@color/daynight_textColor"
                 android:textColor="@color/daynight_textColor"
                 android:theme="@style/PrimaryFlatButton"
                 app:layout_constraintEnd_toStartOf="@+id/btn_add_label"
                 app:layout_constraintStart_toEndOf="@+id/btn_reply"
                 app:layout_constraintTop_toTopOf="parent" />
+
             <Button
                 android:id="@+id/btn_add_label"
                 android:layout_width="0dp"
@@ -168,13 +175,15 @@
                 app:layout_constraintEnd_toStartOf="@+id/btn_share"
                 app:layout_constraintStart_toEndOf="@+id/btn_show_reply"
                 app:layout_constraintTop_toTopOf="parent" />
+
             <Button
                 android:id="@+id/btn_share"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:text="@string/share_with_community"
                 android:textColor="@color/daynight_textColor"
                 android:theme="@style/PrimaryFlatButton"
+                android:drawableStart="@drawable/share_with_community"
+                android:drawableTint="@color/daynight_textColor"
                 app:layout_constraintEnd_toStartOf="@+id/ll_edit_delete"
                 app:layout_constraintStart_toEndOf="@+id/btn_add_label"
                 app:layout_constraintTop_toTopOf="parent" />
