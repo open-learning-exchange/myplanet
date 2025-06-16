@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utilities.SyncTimeLogger
+import org.ole.planet.myplanet.utilities.ThreadMonitor
 import java.util.concurrent.ConcurrentHashMap
 
 class SyncManager private constructor(private val context: Context) {
@@ -58,6 +59,9 @@ class SyncManager private constructor(private val context: Context) {
     fun start(listener: SyncListener?, type: String) {
         this.listener = listener
         if (!isSyncing) {
+            ThreadMonitor.startMonitoring()
+            ThreadMonitor.logThreadState("SYNC_START")
+
             settings.edit { remove("concatenated_links") }
             listener?.onSyncStarted()
             authenticateAndSync(type)
@@ -65,6 +69,8 @@ class SyncManager private constructor(private val context: Context) {
     }
 
     private fun destroy() {
+        ThreadMonitor.logThreadState("SYNC_DESTROY_START")
+
         if (betaSync) {
             cleanup()
         }
@@ -74,6 +80,7 @@ class SyncManager private constructor(private val context: Context) {
         ourInstance = null
         settings.edit { putLong("LastSync", Date().time) }
         listener?.onSyncComplete()
+
         try {
             if (!betaSync) {
                 if (::mRealm.isInitialized && !mRealm.isClosed) {
@@ -86,6 +93,9 @@ class SyncManager private constructor(private val context: Context) {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+
+        ThreadMonitor.logThreadState("SYNC_DESTROY_END")
+        ThreadMonitor.stopMonitoring()
     }
 
     private fun authenticateAndSync(type: String) {
@@ -224,84 +234,252 @@ class SyncManager private constructor(private val context: Context) {
     private fun startFastSync() {
         betaSync = true
         var mainRealm: Realm? = null
+
+        ThreadMonitor.logThreadState("FAST_SYNC_START")
+        ThreadMonitor.logCoroutineScope("SyncScope", syncScope)
+
         try {
             val logger = SyncTimeLogger.getInstance()
             logger.startLogging()
 
             initializeSync()
             mainRealm = dbService.realmInstance
+
+            ThreadMonitor.logThreadState("AFTER_INIT")
+
             runBlocking {
+                ThreadMonitor.logThreadState("RUNBLOCKING_START")
+                ThreadMonitor.enterOperation("RUNBLOCKING_FAST_SYNC")
+
                 // Phase 1: Critical syncs (sequential)
+                ThreadMonitor.logThreadState("PHASE1_START")
                 async {
-                    syncWithSemaphore("tablet_users") {
-                        safeRealmOperation { realm ->
-                            TransactionSyncManager.syncDb(realm, "tablet_users")
+                    ThreadMonitor.enterOperation("PHASE1_TABLET_USERS")
+                    try {
+                        syncWithSemaphore("tablet_users") {
+                            safeRealmOperation { realm ->
+                                TransactionSyncManager.syncDb(realm, "tablet_users")
+                            }
                         }
+                    } finally {
+                        ThreadMonitor.exitOperation("PHASE1_TABLET_USERS")
                     }
                 }.await()
 
-                // Phase 2: Major syncs in parallel (this is the key optimization)
-                val majorSyncs = listOf(
-                    async(Dispatchers.IO) { fastResourceTransactionSync() },
-                    async(Dispatchers.IO) { fastMyLibraryTransactionSync() }
-                )
-                majorSyncs.awaitAll()
+                ThreadMonitor.logThreadState("PHASE1_END")
 
-                // Phase 3: Remaining syncs in parallel
-                val remainingSyncs = listOf(
-                    async { syncWithSemaphore("courses") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "courses") }
-                    }},
-                    async { syncWithSemaphore("exams") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "exams") }
-                    }},
-                    async { syncWithSemaphore("ratings") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "ratings") }
-                    }},
-                    async { syncWithSemaphore("achievements") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "achievements") }
-                    }},
-                    async { syncWithSemaphore("tags") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "tags") }
-                    }},
-                    async { syncWithSemaphore("news") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "news") }
-                    }},
-                    async { syncWithSemaphore("feedback") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "feedback") }
-                    }},
-                    async { syncWithSemaphore("teams") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "teams") }
-                    }},
-                    async { syncWithSemaphore("meetups") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "meetups") }
-                    }},
-                    async { syncWithSemaphore("health") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "health") }
-                    }},
-                    async { syncWithSemaphore("certifications") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "certifications") }
-                    }},
-                    async { syncWithSemaphore("courses_progress") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "courses_progress") }
-                    }},
-                    async { syncWithSemaphore("submissions") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "submissions") }
-                    }},
-                    async { syncWithSemaphore("tasks") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "tasks") }
-                    }},
-                    async { syncWithSemaphore("login_activities") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "login_activities") }
-                    }},
-                    async { syncWithSemaphore("team_activities") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "team_activities") }
-                    }},
-                    async { syncWithSemaphore("chat_history") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "chat_history") }
-                    }}
+                // Phase 2: Major syncs in parallel (this is likely the problem area)
+                ThreadMonitor.logThreadState("PHASE2_START")
+                ThreadMonitor.enterOperation("PHASE2_MAJOR_SYNCS")
+
+                val majorSyncs = listOf(
+                    async(Dispatchers.IO) {
+                        ThreadMonitor.enterOperation("FAST_RESOURCE_SYNC")
+                        try {
+                            fastResourceTransactionSync()
+                        } finally {
+                            ThreadMonitor.exitOperation("FAST_RESOURCE_SYNC")
+                        }
+                    },
+                    async(Dispatchers.IO) {
+                        ThreadMonitor.enterOperation("FAST_LIBRARY_SYNC")
+                        try {
+                            fastMyLibraryTransactionSync()
+                        } finally {
+                            ThreadMonitor.exitOperation("FAST_LIBRARY_SYNC")
+                        }
+                    }
                 )
+
+                ThreadMonitor.logThreadState("BEFORE_MAJOR_SYNCS_AWAIT")
+                majorSyncs.awaitAll()
+                ThreadMonitor.logThreadState("AFTER_MAJOR_SYNCS_AWAIT")
+                ThreadMonitor.exitOperation("PHASE2_MAJOR_SYNCS")
+
+                // Phase 3: Remaining syncs in parallel - THIS IS LIKELY THE MAIN CULPRIT
+                ThreadMonitor.logThreadState("PHASE3_START")
+                ThreadMonitor.enterOperation("PHASE3_REMAINING_SYNCS")
+
+                // 🚨 PROBLEM: You're creating 17 async operations simultaneously!
+                val remainingSyncs = listOf(
+                    async {
+                        ThreadMonitor.enterOperation("SYNC_COURSES")
+                        try {
+                            syncWithSemaphore("courses") {
+                                safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "courses") }
+                            }
+                        } finally {
+                            ThreadMonitor.exitOperation("SYNC_COURSES")
+                        }
+                    },
+                    async {
+                        ThreadMonitor.enterOperation("SYNC_EXAMS")
+                        try {
+                            syncWithSemaphore("exams") {
+                                safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "exams") }
+                            }
+                        } finally {
+                            ThreadMonitor.exitOperation("SYNC_EXAMS")
+                        }
+                    },
+                    async {
+                        ThreadMonitor.enterOperation("SYNC_RATINGS")
+                        try {
+                            syncWithSemaphore("ratings") {
+                                safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "ratings") }
+                            }
+                        } finally {
+                            ThreadMonitor.exitOperation("SYNC_RATINGS")
+                        }
+                    },
+                    async {
+                        ThreadMonitor.enterOperation("SYNC_ACHIEVEMENTS")
+                        try {
+                            syncWithSemaphore("achievements") {
+                                safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "achievements") }
+                            }
+                        } finally {
+                            ThreadMonitor.exitOperation("SYNC_ACHIEVEMENTS")
+                        }
+                    },
+                    async {
+                        ThreadMonitor.enterOperation("SYNC_TAGS")
+                        try {
+                            syncWithSemaphore("tags") {
+                                safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "tags") }
+                            }
+                        } finally {
+                            ThreadMonitor.exitOperation("SYNC_TAGS")
+                        }
+                    },
+                    async {
+                        ThreadMonitor.enterOperation("SYNC_NEWS")
+                        try {
+                            syncWithSemaphore("news") {
+                                safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "news") }
+                            }
+                        } finally {
+                            ThreadMonitor.exitOperation("SYNC_NEWS")
+                        }
+                    },
+                    async {
+                        ThreadMonitor.enterOperation("SYNC_FEEDBACK")
+                        try {
+                            syncWithSemaphore("feedback") {
+                                safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "feedback") }
+                            }
+                        } finally {
+                            ThreadMonitor.exitOperation("SYNC_FEEDBACK")
+                        }
+                    },
+                    async {
+                        ThreadMonitor.enterOperation("SYNC_TEAMS")
+                        try {
+                            syncWithSemaphore("teams") {
+                                safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "teams") }
+                            }
+                        } finally {
+                            ThreadMonitor.exitOperation("SYNC_TEAMS")
+                        }
+                    },
+                    async {
+                        ThreadMonitor.enterOperation("SYNC_MEETUPS")
+                        try {
+                            syncWithSemaphore("meetups") {
+                                safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "meetups") }
+                            }
+                        } finally {
+                            ThreadMonitor.exitOperation("SYNC_MEETUPS")
+                        }
+                    },
+                    async {
+                        ThreadMonitor.enterOperation("SYNC_HEALTH")
+                        try {
+                            syncWithSemaphore("health") {
+                                safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "health") }
+                            }
+                        } finally {
+                            ThreadMonitor.exitOperation("SYNC_HEALTH")
+                        }
+                    },
+                    async {
+                        ThreadMonitor.enterOperation("SYNC_CERTIFICATIONS")
+                        try {
+                            syncWithSemaphore("certifications") {
+                                safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "certifications") }
+                            }
+                        } finally {
+                            ThreadMonitor.exitOperation("SYNC_CERTIFICATIONS")
+                        }
+                    },
+                    async {
+                        ThreadMonitor.enterOperation("SYNC_COURSES_PROGRESS")
+                        try {
+                            syncWithSemaphore("courses_progress") {
+                                safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "courses_progress") }
+                            }
+                        } finally {
+                            ThreadMonitor.exitOperation("SYNC_COURSES_PROGRESS")
+                        }
+                    },
+                    async {
+                        ThreadMonitor.enterOperation("SYNC_SUBMISSIONS")
+                        try {
+                        syncWithSemaphore("submissions") {
+                            safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "submissions") }
+                        }
+                        } finally {
+                            ThreadMonitor.exitOperation("SYNC_SUBMISSIONS")
+                        }
+                    },
+                    async {
+                        ThreadMonitor.enterOperation("SYNC_TASKS")
+                        try {
+                            syncWithSemaphore("tasks") {
+                                safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "tasks") }
+                            }
+                        } finally {
+                            ThreadMonitor.exitOperation("SYNC_TASKS")
+                        }
+                    },
+                    async {
+                        ThreadMonitor.enterOperation("SYNC_LOGIN_ACTIVITIES")
+                        try {
+                            syncWithSemaphore("login_activities") {
+                                safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "login_activities") }
+                            }
+                        } finally {
+                            ThreadMonitor.exitOperation("SYNC_LOGIN_ACTIVITIES")
+                        }
+                    },
+                    async {
+                        ThreadMonitor.enterOperation("SYNC_TEAM_ACTIVITIES")
+                        try {
+                            syncWithSemaphore("team_activities") {
+                                safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "team_activities") }
+                            }
+                        } finally {
+                            ThreadMonitor.exitOperation("SYNC_TEAM_ACTIVITIES")
+                        }
+                    },
+                    async {
+                        ThreadMonitor.enterOperation("SYNC_CHAT_HISTORY")
+                        try {
+                            syncWithSemaphore("chat_history") {
+                                safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "chat_history") }
+                            }
+                        } finally {
+                            ThreadMonitor.exitOperation("SYNC_CHAT_HISTORY")
+                        }
+                    }
+                )
+                ThreadMonitor.logThreadState("BEFORE_REMAINING_SYNCS_AWAIT")
                 remainingSyncs.awaitAll()
+                ThreadMonitor.logThreadState("AFTER_REMAINING_SYNCS_AWAIT")
+                ThreadMonitor.exitOperation("PHASE3_REMAINING_SYNCS")
+
+                ThreadMonitor.exitOperation("RUNBLOCKING_FAST_SYNC")
+                ThreadMonitor.logThreadState("RUNBLOCKING_END")
             }
 
             logger.startProcess("admin_sync")
@@ -311,9 +489,7 @@ class SyncManager private constructor(private val context: Context) {
             logger.startProcess("on_synced")
             onSynced(mainRealm, settings)
             logger.endProcess("on_synced")
-
             logger.stopLogging()
-
         } catch (err: Exception) {
             err.printStackTrace()
             handleException(err.message)
@@ -353,13 +529,19 @@ class SyncManager private constructor(private val context: Context) {
     }
 
     private suspend fun syncWithSemaphore(name: String, syncOperation: suspend () -> Unit) {
+        ThreadMonitor.logSemaphoreOperation("MainSemaphore", semaphore.availablePermits)
+        ThreadMonitor.enterOperation("SEMAPHORE_$name")
+
         semaphore.withPermit {
+            ThreadMonitor.logSemaphoreOperation("MainSemaphore", semaphore.availablePermits)
             val logger = SyncTimeLogger.getInstance()
             logger.startProcess("${name}_sync")
+
             try {
                 syncOperation()
             } finally {
                 logger.endProcess("${name}_sync")
+                ThreadMonitor.exitOperation("SEMAPHORE_$name")
             }
         }
     }
@@ -482,6 +664,9 @@ class SyncManager private constructor(private val context: Context) {
     }
 
     private fun fastResourceTransactionSync() {
+        ThreadMonitor.logThreadState("FAST_RESOURCE_START")
+        ThreadMonitor.enterOperation("FAST_RESOURCE_TRANSACTION")
+
         val logger = SyncTimeLogger.getInstance()
         logger.startProcess("resource_sync")
         var processedItems = 0
@@ -504,22 +689,40 @@ class SyncManager private constructor(private val context: Context) {
             val batchSize = 1000
             val numBatches = (totalRows + batchSize - 1) / batchSize
 
+            ThreadMonitor.logThreadState("BEFORE_RESOURCE_RUNBLOCKING")
+
             runBlocking {
+                ThreadMonitor.logThreadState("RESOURCE_RUNBLOCKING_START")
+                ThreadMonitor.enterOperation("RESOURCE_RUNBLOCKING")
+
                 val semaphore = Semaphore(3)
+                ThreadMonitor.logSemaphoreOperation("ResourceSemaphore", 3)
+
+                // 🚨 ANOTHER PROBLEM: Creating many async operations for batches
                 val batches = (0 until numBatches).map { batchIndex ->
                     async(Dispatchers.IO) {
-                        semaphore.withPermit {
-                            processBatchOptimized(
-                                batchIndex * batchSize,
-                                batchSize,
-                                apiInterface,
-                                newIds
-                            )
+                        ThreadMonitor.enterOperation("RESOURCE_BATCH_$batchIndex")
+                        try {
+                            semaphore.withPermit {
+                                ThreadMonitor.logSemaphoreOperation("ResourceSemaphore", semaphore.availablePermits)
+                                processBatchOptimized(
+                                    batchIndex * batchSize,
+                                    batchSize,
+                                    apiInterface,
+                                    newIds
+                                )
+                            }
+                        } finally {
+                            ThreadMonitor.exitOperation("RESOURCE_BATCH_$batchIndex")
                         }
                     }
                 }
 
+                ThreadMonitor.logThreadState("BEFORE_RESOURCE_BATCHES_AWAIT")
                 processedItems = batches.awaitAll().sum()
+                ThreadMonitor.logThreadState("AFTER_RESOURCE_BATCHES_AWAIT")
+
+                ThreadMonitor.exitOperation("RESOURCE_RUNBLOCKING")
             }
 
             safeRealmOperation { realmInstance ->
@@ -532,6 +735,9 @@ class SyncManager private constructor(private val context: Context) {
         } catch (e: Exception) {
             e.printStackTrace()
             logger.endProcess("resource_sync", processedItems)
+        } finally {
+            ThreadMonitor.exitOperation("FAST_RESOURCE_TRANSACTION")
+            ThreadMonitor.logThreadState("FAST_RESOURCE_END")
         }
     }
 
@@ -721,6 +927,8 @@ class SyncManager private constructor(private val context: Context) {
     }
 
     private fun fastMyLibraryTransactionSync() {
+        ThreadMonitor.logThreadState("FAST_LIBRARY_START")
+        ThreadMonitor.enterOperation("FAST_LIBRARY_TRANSACTION")
         val logger = SyncTimeLogger.getInstance()
         logger.startProcess("library_sync")
         var processedItems = 0
@@ -741,16 +949,32 @@ class SyncManager private constructor(private val context: Context) {
             }
 
             runBlocking {
+                ThreadMonitor.logThreadState("LIBRARY_RUNBLOCKING_START")
+                ThreadMonitor.enterOperation("LIBRARY_RUNBLOCKING")
+
                 val semaphore = Semaphore(4)
+                ThreadMonitor.logSemaphoreOperation("LibrarySemaphore", 4)
+
+                // 🚨 MORE ASYNC OPERATIONS: One per shelf
                 val shelfJobs = rows.map { row ->
                     async(Dispatchers.IO) {
-                        semaphore.withPermit {
-                            processShelfUltraOptimized(row, apiInterface)
+                        ThreadMonitor.enterOperation("SHELF_${row.id}")
+                        try {
+                            semaphore.withPermit {
+                                ThreadMonitor.logSemaphoreOperation("LibrarySemaphore", semaphore.availablePermits)
+                                processShelfUltraOptimized(row, apiInterface)
+                            }
+                        } finally {
+                            ThreadMonitor.exitOperation("SHELF_${row.id}")
                         }
                     }
                 }
 
+                ThreadMonitor.logThreadState("BEFORE_SHELF_JOBS_AWAIT")
                 processedItems = shelfJobs.awaitAll().sum()
+                ThreadMonitor.logThreadState("AFTER_SHELF_JOBS_AWAIT")
+
+                ThreadMonitor.exitOperation("LIBRARY_RUNBLOCKING")
             }
 
             saveConcatenatedLinksToPrefs()
@@ -759,6 +983,9 @@ class SyncManager private constructor(private val context: Context) {
         } catch (e: Exception) {
             e.printStackTrace()
             logger.endProcess("library_sync", processedItems)
+        } finally {
+            ThreadMonitor.exitOperation("FAST_LIBRARY_TRANSACTION")
+            ThreadMonitor.logThreadState("FAST_LIBRARY_END")
         }
     }
 
