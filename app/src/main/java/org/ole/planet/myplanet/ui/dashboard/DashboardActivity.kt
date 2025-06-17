@@ -86,6 +86,7 @@ import java.time.LocalDate
 import java.util.Date
 import kotlin.math.ceil
 import kotlinx.coroutines.*
+import org.ole.planet.myplanet.model.RealmMyTeam
 
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
@@ -537,8 +538,45 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val storageRatio = totalAvailableMemoryRatio
         dashboardViewModel.createNotificationIfNotExists(realm, "storage", "$storageRatio", "storage", userId)
+        createJoinRequestNotifications(realm, userId)
     }
 
+    private fun createJoinRequestNotifications(realm: Realm, userId: String?) {
+        val teamLeaderMemberships = realm.where(RealmMyTeam::class.java)
+            .equalTo("userId", userId)
+            .equalTo("docType", "membership")
+            .equalTo("isLeader", true)
+            .findAll()
+
+        teamLeaderMemberships.forEach { leadership ->
+            val pendingJoinRequests = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", leadership.teamId)
+                .equalTo("docType", "request")
+                .findAll()
+
+            pendingJoinRequests.forEach { joinRequest ->
+                val team = realm.where(RealmMyTeam::class.java)
+                    .equalTo("_id", leadership.teamId)
+                    .findFirst()
+
+                val requester = realm.where(RealmUserModel::class.java)
+                    .equalTo("id", joinRequest.userId)
+                    .findFirst()
+
+                val requesterName = requester?.name ?: "Unknown User"
+                val teamName = team?.name ?: "Unknown Team"
+                val message = "$requesterName has requested to join $teamName"
+
+                dashboardViewModel.createNotificationIfNotExists(
+                    realm,
+                    "join_request",
+                    message,
+                    joinRequest._id,
+                    userId
+                )
+            }
+        }
+    }
     private fun openNotificationsList(userId: String) {
         val fragment = NotificationsFragment().apply {
             arguments = Bundle().apply {
