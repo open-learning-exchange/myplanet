@@ -25,5 +25,26 @@ open class RealmUserChallengeActions : RealmObject() {
                 action.time = System.currentTimeMillis()
             }
         }
+
+        fun createActionAsync(
+            realm: Realm,
+            userId: String,
+            resourceId: String?,
+            actionType: String
+        ) {
+            realm.executeTransactionAsync({ bgRealm ->
+                val action = bgRealm.createObject(
+                    RealmUserChallengeActions::class.java,
+                    UUID.randomUUID().toString()
+                )
+                action.userId     = userId
+                action.actionType = actionType
+                action.resourceId = resourceId
+                action.time       = System.currentTimeMillis()
+            }, {
+            }, { e ->
+                e.printStackTrace()
+            })
+        }
     }
 }
