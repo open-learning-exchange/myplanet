@@ -319,7 +319,7 @@ class Service(private val context: Context) {
                                         context.startUpload("becomeMember")
                                     }
                                 }
-                                TransactionSyncManager.syncDb(realm, "tablet_users")
+//                                TransactionSyncManager.syncDb(realm, "tablet_users")
                             }
                         }
                     }

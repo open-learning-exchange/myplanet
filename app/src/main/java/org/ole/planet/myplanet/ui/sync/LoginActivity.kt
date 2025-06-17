@@ -6,6 +6,7 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.*
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.view.inputmethod.EditorInfo
 import android.widget.*
@@ -440,6 +441,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         editor.putString("loginUserName", name)
         editor.putString("loginUserPassword", password)
         val isLoggedIn = authenticateUser(settings, name, password, false)
+        Log.d("ManagerSync", "Login user: $name, password: $password, isLoggedIn: $isLoggedIn")
         if (isLoggedIn) {
             Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
             onLogin()

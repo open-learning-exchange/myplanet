@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -353,6 +354,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun authenticateUser(settings: SharedPreferences?, username: String?, password: String?, isManagerMode: Boolean): Boolean {
+        Log.d("ManagerSync", "checkName: ${checkName(username, password, isManagerMode)}")
         return try {
             if (settings != null) {
                 this.settings = settings
@@ -370,16 +372,20 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
+
         try {
             val user = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
             user?.let {
                 if (it._id?.isEmpty() == true) {
+                    Log.d("ManagerSync", "1name: ${it.name}, password: ${it.password}")
                     if (username == it.name && password == it.password) {
                         saveUserInfoPref(settings, password, it)
                         return true
                     }
                 } else {
+                    Log.d("ManagerSync", "2name: ${it.name}, password: ${it.password}")
                     if (androidDecrypter(username, password, it.derived_key, it.salt)) {
+                        Log.d("ManagerSync", "ManagerMode: ${isManagerMode && !it.isManager()}")
                         if (isManagerMode && !it.isManager()) return false
                         saveUserInfoPref(settings, password, it)
                         return true
