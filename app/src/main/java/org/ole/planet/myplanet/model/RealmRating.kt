@@ -88,9 +88,6 @@ open class RealmRating : RealmObject() {
 
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
             var rating = mRealm.where(RealmRating::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
             if (rating == null) {
                 rating = mRealm.createObject(RealmRating::class.java, JsonUtils.getString("_id", act))
@@ -111,7 +108,6 @@ open class RealmRating : RealmObject() {
                 rating.parentCode = JsonUtils.getString("planetCode", act)
                 rating.createdOn = JsonUtils.getString("createdOn", act)
             }
-            mRealm.commitTransaction()
 
             val csvRow = arrayOf(
                 JsonUtils.getString("_id", act),

@@ -13,7 +13,7 @@
     <string name="course_in_progress">Geli koorsada %1$s dhameystir (%2$d ka %3$d la sameeyay)</string>
     <string name="course_not_started">%1$s lama bilaabin</string>
     <string name="app_name">My Planet</string>
-    <string name="planet">Meerah</string>
+    <string name="planet">Planet</string>
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">goobooyinka</string>
     <string name="hint_name">Magaca isticmaalaha</string>
@@ -27,7 +27,7 @@
     <string name="err_msg_name">Geli magaca isticmaalaha</string>
     <string name="err_msg_password">Geli erayga sirta ah</string>
     <string name="err_msg_login">Magaca isticmaalaha iyo/ama erayga sirta ah isma dhigmaan</string>
-    <string name="hint_serverURl">planet ip</string>
+    <string name="hint_serverURL">planet ip</string>
     <string name="hint_serverPin">pin-ka adeegsiga</string>
     <string name="radio_protocol">Protokolka:</string>
     <string name="radio_http">http</string>
@@ -65,8 +65,8 @@
     <string name="your_ans">jawaabtaada</string>
     <string name="delete_my_course">Tirtir MyCourse</string>
     <string name="invite_member">Casuuma Xubin</string>
-    <string name="is_urgent">jawaab celintaadu ma degdegbaa?</string>
-    <string name="feedback_type">Nooca jawaab celinta:</string>
+    <string name="is_urgent">jawaab celintaadu ma degdegbaa? *</string>
+    <string name="feedback_type">Nooca jawaab celinta: *</string>
     <string name="suggestion">talo soo jeedin</string>
     <string name="no">Maya</string>
     <string name="yes">Haa</string>
@@ -91,7 +91,7 @@
     <string name="published_by">Waxaa daabacay:</string>
     <string name="author">Qoraaga:</string>
     <string name="language_with_colon">Luuqad:</string>
-    <string name="subject">Mawduuc(s):</string>
+    <string name="subject">Mawduuc(s)*:</string>
     <string name="license">Shatiga:</string>
     <string name="type">Nooca:</string>
     <string name="resource_colon">Ilaha:</string>
@@ -125,7 +125,7 @@
     <string name="menu_achievement">Guulaha</string>
     <string name="edit_achievement">Wax ka beddel guulaha</string>
     <string name="add_resources">Kudar Khayraadka</string>
-    <string name="description">Sharaxaad</string>
+    <string name="description">Sharaxaad *</string>
     <string name="title_asterisk">Cuqaal *</string>
     <string name="name_asterisk">Magaca *</string>
     <string name="relationship">Xiriirka</string>
@@ -138,7 +138,7 @@
     <string name="show_filter">Show Filter</string>
     <string name="subjects">Mawduucyo</string>
     <string name="mediums">Mediums</string>
-    <string name="levels">Heerarka</string>
+    <string name="levels">Heerarka*</string>
     <string name="languages">Luqadaha</string>
     <string name="txt_myLife">Nolosheyda</string>
     <string name="achievements">Dhamaanada</string>
@@ -592,7 +592,7 @@
     <string name="level_colon">Heer: %s</string>
     <string name="method">Hab:</string>
     <string name="number_of_exams">Tirada Baaristada:</string>
-    <string name="description_colon">Sharaxaad:</string>
+    <string name="description_colon">Sharaxaad:&#160;</string>
     <string name="download_resources">Dhig Resources</string>
     <string name="take_test">Barto Imtixaan [%d]</string>
     <string name="search">Raadi</string>
@@ -737,7 +737,7 @@
     <string name="enter_resource_detail">Geli faahfaahinta khadka</string>
     <string name="resource_saved_to_my_personal">Khayraadka waxaa lagu keydiyay myPersonal</string>
     <string name="invalid_resource_url">url kheyraad aan sax ahayn</string>
-    <string name="my_library">"Maktabaddayda"</string>
+    <string name="my_library">"mylibrary"</string>
     <string name="link_not_available">Xogta lama helin</string>
     <string name="success_you_have_added_these_resources_to_your_mylibrary">Guul! Waxaad ka daraysay khadkaan maktabaddaaga:\n\n</string>
     <string name="more_resource_s">" khadka dheer…\n"</string>
@@ -1014,7 +1014,7 @@
     <string name="progress_bar">balka soo socda</string>
     <string name="web_view">barashada webka</string>
     <string name="invalid_configuration">Dhamaan Suurtagal ah oo Serveryaasha ah</string>
-    <string name="welcome_to_myPlanet">Soo dhawow myPlanet</string>
+    <string name="welcome_to_myPlanet">Soo dhawoow myPlanet</string>
     <string name="learn_offline">Baro horumarinta</string>
     <string name="open_learning">Waxbarasho Fur</string>
     <string name="unleash_learning_power">Ku Xir Barashada Xoojinta</string>
@@ -1066,12 +1066,12 @@
     <string name="compulsory_phone_number">numberka telefoonka loo baahan yahay</string>
     <string name="compulsory_date_of_birth">taariikhda dhalashada loo baahan yahay</string>
     <string name="gender_not_picked">nooca loo dooran maayo</string>
-    <string name="title_colon">saraakiisha:</string>
-    <string name="date_from_colon">taariikhda:</string>
-    <string name="date_to_colon">ilaa:</string>
-    <string name="location_colon">goobta:</string>
-    <string name="recurring_colon">ku dhaqan:</string>
-    <string name="created_by_colon">lagu sameeyay:</string>
+    <string name="title_colon">saraakiisha:&#160;</string>
+    <string name="date_from_colon">taariikhda:&#160;</string>
+    <string name="date_to_colon">ilaa:&#160;</string>
+    <string name="location_colon">goobta:&#160;</string>
+    <string name="recurring_colon">ku dhaqan:&#160;</string>
+    <string name="created_by_colon">lagu sameeyay:&#160;</string>
     <string name="failed_to_get_configuration_id">Ma jirin ID-ka qaababka. Fadlan la xiriir maamulaha</string>
     <string name="you_want_to_connect_to_a_different_server">Waxaad rabtaa inaad ku xirto server kale. Tirtir xogta barnaamijka si aad u sii wadato</string>
     <string name="are_you_sure_you_want_to_clear_data">Ma hubtaa inaad diiwaangelisid dhammaan xogta?</string>
@@ -1239,7 +1239,7 @@
     <string name="go_to_mylibrary">Tag Maktabaddayda</string>
     <string name="choose_an_option">Dooro ikhtiyaar</string>
     <string name="welcome_back">Soo dhawoow %1$s</string>
-    <string name="welcome">Soo dhawoow 1$s</string>
+    <string name="welcome">Soo dhawoow %1$s</string>
     <string name="edit_plan">Wax ka beddel qorshaha</string>
     <string name="show_additional_fields">muuji beeraha dheeraadka ah</string>
     <string name="hide_additional_fields">qari beeraha dheeraadka ah</string>
@@ -1265,5 +1265,51 @@
     <string name="no_resources_to_download">Ma jiro ilo la soo dejiyo</string>
     <string name="response">Jawaab</string>
     <string name="full_conversation_response">Jawaabta wada hadalka oo dhameystiran</string>
+    <string name="add_new_event">+ Dhacdo cusub</string>
+    <string name="none">Midna</string>
+    <string name="remind_later">पछि सम्झाउनुहोस्</string>
+    <string name="remind_me_later">मलाई पछि सम्झाउनुहोस्</string>
+    <string name="remind_me_in">मलाई यसमा सम्झाउनुहोस्:</string>
+    <string name="minutes">मिनेटहरू</string>
+    <string name="days">दिनहरू</string>
+    <string name="set_reminder">रिमाइन्डर सेट गर्नुहोस्</string>
+    <string name="reminder_set_for">अहिलेबाट %1$s को लागि रिमाइन्डर सेट गरियो</string>
+    <string name="reminder_surveys_to_complete">रिमाइन्डर: तपाईंसँग %1$d %2$s पूरा गर्न बाँकी छ</string>
+
+    <plurals name="minutes">
+        <item quantity="one">%d मिनेट</item>
+        <item quantity="other">%d मिनेटहरू</item>
+    </plurals>
+
+    <plurals name="hours">
+        <item quantity="one">%d घण्टा</item>
+        <item quantity="other">%d घण्टाहरू</item>
+    </plurals>
+
+    <plurals name="days">
+        <item quantity="one">%d दिन</item>
+        <item quantity="other">%d दिनहरू</item>
+    </plurals>
+
+    <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">Xogtaada caafimaadka waxay halkan ka muuqan doontaa markaad sii waddo la socodka</string>
+    <string name="no_health_records_available">Ma jiraan diiwaanada caafimaadka ee la heli karo</string>
+    <string name="permission_required">Ogolaanshaha ayaa loo baahan yahay</string>
+    <string name="microphone_permission_required">Ogolaanshaha makarafoonka ayaa loo baahan yahay si loo duubo codka Fadlan awood u geli goobaha abka</string>
+    <string name="confirm_share_community">Ma hubtaa inaad rabto inaad la wadaagto macluumaadkan bulshada?</string>
+    <string name="camera_permission_required">ogolaanshaha kamarada ayaa loo baahan yahay. Fadlan awood u geli goobaha abka</string>
+    <string name="clearing_data">Tirtiridda xogta…</string>
+    <string name="time_colon">waqtiga:&#160;</string>
+    <string name="a_few_seconds_ago">dhawr ilbiriqsi ka hor</string>
+    <string name="no_teams_found">Koox laguma helin</string>
+    <string name="no_teams_found_for_search">Koox laguma helin "%1$s"</string>
+    <string name="no_enterprises_found_for_search">Ma jiro ganacsi laga helay "%1$s"</string>
+    <string name="no_enterprises_found">Ma jiro ganacsi laga helay</string>
+    <string name="starting_downloads">Bilaabida soo dejinta…</string>
+    <string name="downloaded_files">Waxaa la soo dejiyay %1$s/%2$s faylal</string>
+    <string name="download_failed">Soo dejintu way fashilantay</string>
+    <string name="downloads_completed">Soo dejintu way dhammaatay</string>
+    <string name="download_progress">%1$d faylal oo ka mid ah %2$d ayaa la soo dejiyay</string>
+    <string name="download_progress_with_errors">%1$d faylal oo ka mid ah %2$d ayaa la soo dejiyay (iyada oo jira qalado)</string>
+    <string name="download_in_background">Bilaabida soo dejinta gadaal…</string>
 
 </resources>

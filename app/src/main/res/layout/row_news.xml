@@ -19,7 +19,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
-            <ImageView
+            <de.hdodenhof.circleimageview.CircleImageView
                 android:id="@+id/img_user"
                 android:layout_width="@dimen/_40dp"
                 android:layout_height="@dimen/_40dp"
@@ -53,8 +53,8 @@
                         android:id="@+id/tv_date"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textColor="@color/daynight_textColor"
-                        android:textSize="14sp" />
+                        android:textColor="@color/hint_color"
+                        android:textSize="12sp" />
                     <TextView
                         android:id="@+id/tv_edited"
                         android:layout_width="wrap_content"

@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
 import android.widget.ArrayAdapter
+import android.widget.EditText
 import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
@@ -25,6 +26,7 @@ import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.util.Calendar
 import java.util.UUID
+import kotlin.toString
 
 class AddResourceActivity : AppCompatActivity() {
     private lateinit var activityAddResourceBinding: ActivityAddResourceBinding
@@ -63,6 +65,9 @@ class AddResourceActivity : AppCompatActivity() {
     }
 
     private fun initializeViews() {
+        val etYear = findViewById<EditText>(R.id.et_year)
+        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+        etYear.setText(currentYear.toString())
         activityAddResourceBinding.fileUrl.text = getString(R.string.file, resourceUrl)
         activityAddResourceBinding.tvAddedBy.text = userModel?.name
         activityAddResourceBinding.tvLevels.setOnClickListener { view: View ->
@@ -143,6 +148,11 @@ class AddResourceActivity : AppCompatActivity() {
             activityAddResourceBinding.tlTitle.error = getString(R.string.title_is_required)
             return false
         }
+        val description = activityAddResourceBinding.etDescription.text.toString().trim()
+        if (description.isEmpty()) {
+            activityAddResourceBinding.etDescription.error = getString(R.string.description_is_required)
+            return false
+        }
         if (levels?.isEmpty() == true) {
             toast(this, getString(R.string.level_is_required))
             return false
@@ -188,7 +198,12 @@ class AddResourceActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             android.R.id.home -> {
-                showExitConfirmationDialog()
+                val currentFragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
+                if (currentFragment is ResourceDetailFragment) {
+                    finish()
+                }else {
+                    showExitConfirmationDialog()
+                }
                 true
             }
             else -> super.onOptionsItemSelected(item)

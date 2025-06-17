@@ -13,7 +13,7 @@
     <string name="course_in_progress">Ingresa al curso %1$s completalo (%2$d de %3$d hecho)</string>
     <string name="course_not_started">%1$s no iniciado</string>
     <string name="app_name">My Planet</string>
-    <string name="planet">Planeta</string>
+    <string name="planet">Planet</string>
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">configuración</string>
     <string name="hint_name">Nombre</string>
@@ -27,7 +27,7 @@
     <string name="err_msg_name">Ingresa tu nombre de usuario</string>
     <string name="err_msg_password">Ingresa la contraseña</string>
     <string name="err_msg_login">El nombre de usuario y/o la contraseña no coinciden</string>
-    <string name="hint_serverURl">planet ipag</string>
+    <string name="hint_serverURL">planet ipag</string>
     <string name="hint_serverPin">pin del servidor</string>
     <string name="radio_protocol">Protocolo:</string>
     <string name="radio_http">http</string>
@@ -65,8 +65,8 @@
     <string name="your_ans">Tu respuesta</string>
     <string name="delete_my_course">Eliminar miCurso</string>
     <string name="invite_member">Invitar miembro</string>
-    <string name="is_urgent">¿Tu retroalimentación es urgente?</string>
-    <string name="feedback_type">Tipo de retroalimentación:</string>
+    <string name="is_urgent">¿Tu retroalimentación es urgente? *</string>
+    <string name="feedback_type">Tipo de retroalimentación: *</string>
     <string name="suggestion">Sugerencia</string>
     <string name="no">No</string>
     <string name="yes">Sí</string>
@@ -91,7 +91,7 @@
     <string name="published_by">Publicado por:</string>
     <string name="author">Autor:</string>
     <string name="language_with_colon">Idioma:</string>
-    <string name="subject">Asunto(s):</string>
+    <string name="subject">Asunto(s)*:</string>
     <string name="license">Licencia:</string>
     <string name="type">Tipo:</string>
     <string name="resource_colon">Recurso:</string>
@@ -125,7 +125,7 @@
     <string name="menu_achievement">Logros</string>
     <string name="edit_achievement">Editar logros</string>
     <string name="add_resources">Agregar recursos</string>
-    <string name="description">Descripción</string>
+    <string name="description">Descripción *</string>
     <string name="title_asterisk">Título *</string>
     <string name="name_asterisk">Nombre *</string>
     <string name="relationship">Relación</string>
@@ -138,7 +138,7 @@
     <string name="show_filter">Mostrar filtro</string>
     <string name="subjects">Asignaturas</string>
     <string name="mediums">Medios</string>
-    <string name="levels">Niveles</string>
+    <string name="levels">Niveles*</string>
     <string name="languages">Idiomas</string>
     <string name="txt_myLife">miVida</string>
     <string name="achievements">misLogros</string>
@@ -592,7 +592,7 @@
     <string name="level_colon">Nivel: %s</string>
     <string name="method">Método:</string>
     <string name="number_of_exams">Número de exámenes:</string>
-    <string name="description_colon">Descripción:</string>
+    <string name="description_colon">Descripción:&#160;</string>
     <string name="download_resources">Descargar Recursos</string>
     <string name="take_test">Realizar Examen [%d]</string>
     <string name="search">Buscar</string>
@@ -737,7 +737,7 @@
     <string name="enter_resource_detail">Ingresa los detalles del recurso</string>
     <string name="resource_saved_to_my_personal">Recurso guardado en myPersonal</string>
     <string name="invalid_resource_url">URL de recurso no válida</string>
-    <string name="my_library">" mi biblioteca"</string>
+    <string name="my_library">mylibrary"</string>
     <string name="link_not_available">Enlace no disponible</string>
     <string name="success_you_have_added_these_resources_to_your_mylibrary">¡Éxito! Has agregado estos recursos a tu mi Biblioteca:\n\n</string>
     <string name="more_resource_s">" más recurso(s)…\n"</string>
@@ -1066,12 +1066,12 @@
     <string name="compulsory_phone_number">número de teléfono requerido</string>
     <string name="compulsory_date_of_birth">fecha de nacimiento requerida</string>
     <string name="gender_not_picked">género no seleccionado</string>
-    <string name="title_colon">título:</string>
-    <string name="date_from_colon">fecha desde:</string>
-    <string name="date_to_colon">fecha hasta:</string>
-    <string name="location_colon">ubicación:</string>
-    <string name="recurring_colon">recurrente:</string>
-    <string name="created_by_colon">creado por:</string>
+    <string name="title_colon">título:&#160;</string>
+    <string name="date_from_colon">fecha desde:&#160;</string>
+    <string name="date_to_colon">fecha hasta:&#160;</string>
+    <string name="location_colon">ubicación:&#160;</string>
+    <string name="recurring_colon">recurrente:&#160;</string>
+    <string name="created_by_colon">creado por:&#160;</string>
     <string name="failed_to_get_configuration_id">No se pudo obtener el ID de configuración. Por favor, contacte al administrador</string>
     <string name="you_want_to_connect_to_a_different_server">Desea conectarse a un servidor diferente. Borre los datos de la aplicación para continuar</string>
     <string name="are_you_sure_you_want_to_clear_data">¿Estás seguro de que deseas borrar todos los datos?</string>
@@ -1265,5 +1265,51 @@
     <string name="no_resources_to_download">No hay recursos para descargar</string>
     <string name="response">Respuesta</string>
     <string name="full_conversation_response">Respuesta completa de la conversación</string>
+    <string name="add_new_event">+ nuevo evento</string>
+    <string name="none">Ninguno</string>
+    <string name="remind_later">Recordar más tarde</string>
+    <string name="remind_me_later">Recuérdame más tarde</string>
+    <string name="remind_me_in">Recuérdame en:</string>
+    <string name="minutes">Minutos</string>
+    <string name="days">Días</string>
+    <string name="set_reminder">Establecer recordatorio</string>
+    <string name="reminder_set_for">Recordatorio establecido para %1$s a partir de ahora</string>
+    <string name="reminder_surveys_to_complete">Recordatorio: Tienes %1$d %2$s por completar</string>
+
+    <plurals name="minutes">
+        <item quantity="one">%d minuto</item>
+        <item quantity="other">%d minutos</item>
+    </plurals>
+
+    <plurals name="hours">
+        <item quantity="one">%d hora</item>
+        <item quantity="other">%d horas</item>
+    </plurals>
+
+    <plurals name="days">
+        <item quantity="one">%d día</item>
+        <item quantity="other">%d días</item>
+    </plurals>
+
+    <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">Sus datos de salud aparecerán aquí a medida que continúe registrándolos</string>
+    <string name="no_health_records_available">No hay registros de salud disponibles</string>
+    <string name="permission_required">Se requiere permiso</string>
+    <string name="microphone_permission_required">Se requiere permiso del micrófono para grabar audio. Actívalo en la configuración de la aplicación.</string>
+    <string name="confirm_share_community">¿Estás seguro de que quieres compartir este contenido con la comunidad?</string>
+    <string name="camera_permission_required">Se requiere permiso para usar la cámara. Actívalo en la configuración de la aplicación.</string>
+    <string name="clearing_data">Borrando datos…</string>
+    <string name="time_colon">tiempo:&#160;</string>
+    <string name="a_few_seconds_ago">hace unos segundos</string>
+    <string name="no_teams_found">No se encontraron equipos</string>
+    <string name="no_teams_found_for_search">No se encontraron equipos para "%1$s"</string>
+    <string name="no_enterprises_found_for_search">No se encontraron empresas para "%1$s"</string>
+    <string name="no_enterprises_found">No se encontraron empresas</string>
+    <string name="starting_downloads">Iniciando descargas…</string>
+    <string name="downloaded_files">%1$s/%2$s archivos descargados</string>
+    <string name="download_failed">Descarga fallida</string>
+    <string name="downloads_completed">Descargas completadas</string>
+    <string name="download_progress">%1$d de %2$d archivos descargados</string>
+    <string name="download_progress_with_errors">%1$d de %2$d archivos descargados (con algunos errores)</string>
+    <string name="download_in_background">Iniciando descarga en segundo plano…</string>
 
 </resources>

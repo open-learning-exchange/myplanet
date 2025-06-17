@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.OnCompletedListener
+import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
@@ -63,8 +64,8 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             deadline?.set(Calendar.HOUR_OF_DAY, hourOfDay)
             deadline?.set(Calendar.MINUTE, minute)
             if (datePicker != null) {
-                datePicker?.text = deadline?.let {
-                    formatDate(it.timeInMillis, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+                datePicker?.text = deadline?.timeInMillis?.let {
+                    TimeUtils.getFormatedDateWithTime(it)
                 }
             }
         }, deadline!![Calendar.HOUR_OF_DAY], deadline!![Calendar.MINUTE], true)

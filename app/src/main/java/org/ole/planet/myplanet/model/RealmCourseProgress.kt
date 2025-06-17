@@ -88,9 +88,6 @@ open class RealmCourseProgress : RealmObject() {
 
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
             var courseProgress = mRealm.where(RealmCourseProgress::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
             if (courseProgress == null) {
                 courseProgress = mRealm.createObject(RealmCourseProgress::class.java, JsonUtils.getString("_id", act))
@@ -105,7 +102,6 @@ open class RealmCourseProgress : RealmObject() {
             courseProgress?.createdOn = JsonUtils.getString("createdOn", act)
             courseProgress?.createdDate = JsonUtils.getLong("createdDate", act)
             courseProgress?.updatedDate = JsonUtils.getLong("updatedDate", act)
-            mRealm.commitTransaction()
 
             val csvRow = arrayOf(
                 JsonUtils.getString("_id", act),

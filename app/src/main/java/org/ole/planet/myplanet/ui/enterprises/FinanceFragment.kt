@@ -8,7 +8,6 @@ import android.view.ViewGroup
 import android.widget.DatePicker
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.borax12.materialdaterangepicker.date.DatePickerDialog
 import io.realm.Realm
 import io.realm.RealmResults
 import io.realm.Sort
@@ -77,10 +76,9 @@ class FinanceFragment : BaseTeamFragment() {
 
         fragmentFinanceBinding.llDate.setOnClickListener {
             fragmentFinanceBinding.imgDate.rotation += 180
-            list = fRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
-                .equalTo("teamId", teamId).equalTo("docType", "transaction")
-                .sort("date", if (isAsc) Sort.DESCENDING else Sort.ASCENDING).findAll()
-            updatedFinanceList(list as RealmResults<RealmMyTeam>)
+            val sortOrder = if (isAsc) Sort.DESCENDING else Sort.ASCENDING
+            val sortedResults: RealmResults<RealmMyTeam> = list!!.sort("date", sortOrder)
+            updatedFinanceList(sortedResults)
             isAsc = !isAsc
         }
         fragmentFinanceBinding.btnReset.setOnClickListener {
@@ -90,6 +88,7 @@ class FinanceFragment : BaseTeamFragment() {
                 .equalTo("teamId", teamId).equalTo("docType", "transaction")
                 .sort("date", Sort.DESCENDING).findAll()
             updatedFinanceList(list as RealmResults<RealmMyTeam>)
+            showNoData(fragmentFinanceBinding.tvNodata, adapterFinance?.itemCount, "finances")
         }
         return fragmentFinanceBinding.root
     }
@@ -147,14 +146,14 @@ class FinanceFragment : BaseTeamFragment() {
             val start = dateFormat.parse(fromDate)?.time ?: throw IllegalArgumentException("Invalid fromDate format")
             val end = dateFormat.parse(toDate)?.time ?: throw IllegalArgumentException("Invalid toDate format")
 
-            val list = fRealm.where(RealmMyTeam::class.java)
+            list = fRealm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
                 .equalTo("docType", "transaction")
                 .between("date", start, end)
-                .sort("date", Sort.DESCENDING)
+                .sort("date", if (isAsc) Sort.ASCENDING else Sort.DESCENDING)
                 .findAll()
 
-            updatedFinanceList(list)
+            updatedFinanceList(list!!)
 
         } catch (e: ParseException) {
             e.printStackTrace()

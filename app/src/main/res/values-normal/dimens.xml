@@ -3,4 +3,5 @@
     <dimen name="image_size_home_card">24dp</dimen>
     <dimen name="icon_size_mid">24dp</dimen>
     <dimen name="calendar_width">320dp</dimen>
+    <dimen name="survey_radio_text_size">14sp</dimen>
 </resources>

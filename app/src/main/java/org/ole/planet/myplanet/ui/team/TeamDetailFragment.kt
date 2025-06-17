@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.isTeamLeader
+import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -25,14 +26,31 @@ import java.util.UUID
 
 class TeamDetailFragment : BaseTeamFragment() {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
+    private var directTeamName: String? = null
+    private var directTeamType: String? = null
+    private var directTeamId: String? = null
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTeamDetailBinding = FragmentTeamDetailBinding.inflate(inflater, container, false)
+        directTeamId = requireArguments().getString("teamId")
+        directTeamName = requireArguments().getString("teamName")
+        directTeamType = requireArguments().getString("teamType")
+
         val teamId = requireArguments().getString("id" ) ?: ""
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
         val user = UserProfileDbHandler(requireContext()).userModel
         mRealm = DatabaseService(requireActivity()).realmInstance
-        if (teamId.isNotEmpty()) {
-            team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst() ?: throw IllegalArgumentException("Team not found for ID: $teamId")
+
+        if (shouldQueryRealm(teamId)) {
+            if (teamId.isNotEmpty()) {
+                team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+                    ?: throw IllegalArgumentException("Team not found for ID: $teamId")
+            }
+        } else {
+            val effectiveTeamId = directTeamId ?: teamId
+            if (effectiveTeamId.isNotEmpty()) {
+                team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", effectiveTeamId).findFirst()
+            }
         }
 
         fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, isMyTeam)
@@ -45,34 +63,36 @@ class TeamDetailFragment : BaseTeamFragment() {
             fragmentTeamDetailBinding.viewPager2.currentItem = pageIndex
         }
 
-        fragmentTeamDetailBinding.title.text = team?.name
-        fragmentTeamDetailBinding.subtitle.text = team?.type
+        fragmentTeamDetailBinding.title.text = getEffectiveTeamName()
+        fragmentTeamDetailBinding.subtitle.text = getEffectiveTeamType()
 
         if (!isMyTeam) {
             fragmentTeamDetailBinding.btnAddDoc.isEnabled = false
             fragmentTeamDetailBinding.btnAddDoc.visibility = View.GONE
+            if (user?.id?.startsWith("guest") == true){
+                fragmentTeamDetailBinding.btnLeave.isEnabled = false
+                fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
+            }
             val currentTeam = team
             if (currentTeam != null && !currentTeam._id.isNullOrEmpty()) {
 
                 val isUserRequested = currentTeam.requested(user?.id, mRealm)
-
                 if (isUserRequested) {
                     fragmentTeamDetailBinding.btnLeave.text = getString(R.string.requested)
                     fragmentTeamDetailBinding.btnLeave.isEnabled = false
                 } else {
                     fragmentTeamDetailBinding.btnLeave.text = getString(R.string.join)
                     fragmentTeamDetailBinding.btnLeave.setOnClickListener {
-                        RealmMyTeam.requestToJoin(currentTeam._id!!, user, mRealm)
+                        RealmMyTeam.requestToJoin(currentTeam._id!!, user, mRealm, team?.teamType)
                         fragmentTeamDetailBinding.btnLeave.text = getString(R.string.requested)
                         fragmentTeamDetailBinding.btnLeave.isEnabled = false
+                        syncTeamActivities(requireContext())
                     }
                 }
             } else {
                 throw IllegalStateException("Team or team ID is null, cannot proceed.")
             }
-
         } else {
-
             fragmentTeamDetailBinding.btnAddDoc.isEnabled = true
             fragmentTeamDetailBinding.btnAddDoc.visibility = View.VISIBLE
             fragmentTeamDetailBinding.btnLeave.isEnabled = true
@@ -117,18 +137,17 @@ class TeamDetailFragment : BaseTeamFragment() {
 
     private fun createTeamLog() {
         val userModel = UserProfileDbHandler(requireContext()).userModel ?: return
-        
         val userName = userModel.name
         val userPlanetCode = userModel.planetCode
         val userParentCode = userModel.parentCode
-        val teamType = team?.teamType
+        val teamType = getEffectiveTeamType()
 
         CoroutineScope(Dispatchers.IO).launch {
             val realm = DatabaseService(requireActivity()).realmInstance
 
             realm.executeTransaction { r ->
-                val log = r.createObject(RealmTeamLog::class.java, UUID.randomUUID().toString())
-                log.teamId = teamId
+                val log = r.createObject(RealmTeamLog::class.java, "${UUID.randomUUID()}")
+                log.teamId = getEffectiveTeamId()
                 log.user = userName
                 log.createdOn = userPlanetCode
                 log.type = "teamVisit"
@@ -138,6 +157,27 @@ class TeamDetailFragment : BaseTeamFragment() {
             }
 
             realm.close()
+        }
+    }
+
+    private fun shouldQueryRealm(teamId: String): Boolean {
+        return teamId.isNotEmpty()
+    }
+
+    companion object {
+        fun newInstance(teamId: String, teamName: String, teamType: String, isMyTeam: Boolean, navigateToPage: Int = -1): TeamDetailFragment {
+            val fragment = TeamDetailFragment()
+            val args = Bundle().apply {
+                putString("teamId", teamId)
+                putString("teamName", teamName)
+                putString("teamType", teamType)
+                putBoolean("isMyTeam", isMyTeam)
+                if (navigateToPage >= 0) {
+                    putInt("navigateToPage", navigateToPage)
+                }
+            }
+            fragment.arguments = args
+            return fragment
         }
     }
 }

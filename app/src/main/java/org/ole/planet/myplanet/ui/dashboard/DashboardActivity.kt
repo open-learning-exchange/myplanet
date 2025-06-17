@@ -13,6 +13,7 @@ import android.os.Looper
 import android.view.*
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
@@ -41,6 +42,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.base.BaseResourceFragment
+import org.ole.planet.myplanet.ui.dashboard.DashboardViewModel
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
@@ -48,7 +50,6 @@ import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
@@ -71,7 +72,6 @@ import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
-import org.ole.planet.myplanet.utilities.BottomNavigationViewHelper.disableShiftMode
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
@@ -84,7 +84,6 @@ import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.Date
-import java.util.UUID
 import kotlin.math.ceil
 import kotlinx.coroutines.*
 
@@ -102,6 +101,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var tl: TabLayout? = null
     private var dl: DrawerLayout? = null
     private val realmListeners = mutableListOf<RealmListener>()
+    private val dashboardViewModel: DashboardViewModel by viewModels()
 
     private interface RealmListener {
         fun removeListener()
@@ -123,7 +123,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         activityDashboardBinding.myToolbar.setTitleTextColor(Color.WHITE)
         activityDashboardBinding.myToolbar.setSubtitleTextColor(Color.WHITE)
         navigationView = activityDashboardBinding.topBarNavigation
-        disableShiftMode(navigationView)
+        navigationView.labelVisibilityMode = NavigationBarView.LABEL_VISIBILITY_LABELED
         activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
         service = Service(this)
         tl = findViewById(R.id.tab_layout)
@@ -137,7 +137,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 if (name.isNullOrBlank()) {
                     name = profileDbHandler.userModel?.name
                 }
-                activityDashboardBinding.appBarBell.appTitleName.text = getString(R.string.planet_name, name)
+                val communityName = settings.getString("communityName", "")
+                activityDashboardBinding.appBarBell.appTitleName.text = if (user?.planetCode == "") {
+                    "${getString(R.string.planet)} $communityName"
+                } else {
+                    "${getString(R.string.planet)} ${user?.planetCode}"
+                }
             } else {
                 activityDashboardBinding.appBarBell.appTitleName.text = getString(R.string.app_project_name)
             }
@@ -160,6 +165,30 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         headerResult = accountHeader
         createDrawer()
+        supportFragmentManager.addOnBackStackChangedListener {
+            val frag = supportFragmentManager.findFragmentById(R.id.fragment_container)
+            val idToSelect = when (frag) {
+                is BellDashboardFragment -> 0L
+                is ResourcesFragment -> {
+                    val isMy = frag.arguments?.getBoolean("isMyCourseLib", false) == true
+                    if (isMy) 1L else 3L
+                }
+                is CoursesFragment -> {
+                    val isMy = frag.arguments?.getBoolean("isMyCourseLib", false) == true
+                    if (isMy) 2L else 4L
+                }
+                is TeamFragment -> {
+                    val isDashboard = frag.arguments?.getBoolean("fromDashboard", false) == true
+                    val isEnterprise = frag.arguments?.getString("type") == "enterprise"
+                    if(isDashboard) 0L
+                    else if (isEnterprise) 6L else 5L
+                }
+                is CommunityTabFragment -> 7L
+                is SurveyFragment -> 8L
+                else -> null
+            }
+            idToSelect?.let { result?.setSelection(it, false) }
+        }
         if (!(user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) && resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
             result?.openDrawer()
         }
@@ -382,8 +411,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (isCompleted && !hasShownCongrats) {
             editor.putBoolean("has_shown_congrats", true).apply()
             val markdownContent = """
-        ${getString(R.string.community_earnings, calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey))}
-        ${getString(R.string.your_earnings, calculateIndividualProgress(voiceCount, hasUnfinishedSurvey))}
+        ${getString(R.string.community_earnings, dashboardViewModel.calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey))}
+        ${getString(R.string.your_earnings, dashboardViewModel.calculateIndividualProgress(voiceCount, hasUnfinishedSurvey))}
         ### ${getString(R.string.congratulations)} <br/>
     """.trimIndent()
             MarkdownDialog.newInstance(markdownContent, courseStatus, voiceCount, allVoiceCount, hasUnfinishedSurvey).show(supportFragmentManager, "markdown_dialog")
@@ -395,8 +424,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 ""
             }
             val markdownContent = """
-        ${getString(R.string.community_earnings, calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey))}
-        ${getString(R.string.your_earnings, calculateIndividualProgress(voiceCount, hasUnfinishedSurvey))}
+        ${getString(R.string.community_earnings, dashboardViewModel.calculateCommunityProgress(allVoiceCount, hasUnfinishedSurvey))}
+        ${getString(R.string.your_earnings, dashboardViewModel.calculateIndividualProgress(voiceCount, hasUnfinishedSurvey))}
         ### ${getString(R.string.per_survey, courseTaskDone)} <br/>
         ### ${getString(R.string.share_opinion)} $voicesText <br/>
         ### ${getString(R.string.remember_sync)} <br/>
@@ -406,21 +435,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
-        val earnedDollarsVoice = minOf(voiceCount, 5) * 2
-        val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
-        val total = earnedDollarsVoice + earnedDollarsSurvey
-        return total.coerceAtMost(500)
-    }
-
-    private fun calculateCommunityProgress (allVoiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
-        val earnedDollarsVoice = minOf(allVoiceCount, 5) * 2
-        val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
-        val total = earnedDollarsVoice + earnedDollarsSurvey
-        return total.coerceAtMost(11)
-    }
-
     private fun setupRealmListeners() {
+        if (mRealm.isInTransaction) {
+            mRealm.commitTransaction()
+        }
         setupListener {
             mRealm.where(RealmMyLibrary::class.java).findAllAsync()
         }
@@ -469,7 +487,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     createNotifications(realm, userId)
                 }
 
-                unreadCount = getUnreadNotificationsSize(backgroundRealm, userId)
+                unreadCount = dashboardViewModel.getUnreadNotificationsSize(backgroundRealm, userId)
 
                 backgroundRealm.close()
                 backgroundRealm = null
@@ -500,12 +518,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun createNotifications(realm: Realm, userId: String?) {
-        updateResourceNotification(realm, userId)
+        dashboardViewModel.updateResourceNotification(realm, userId)
 
-        val pendingSurveys = getPendingSurveys(realm, userId)
-        val surveyTitles = getSurveyTitlesFromSubmissions(realm, pendingSurveys)
+        val pendingSurveys = dashboardViewModel.getPendingSurveys(realm, userId)
+        val surveyTitles = dashboardViewModel.getSurveyTitlesFromSubmissions(realm, pendingSurveys)
         surveyTitles.forEach { title ->
-            createNotificationIfNotExists(realm, "survey", "$title", title, userId)
+            dashboardViewModel.createNotificationIfNotExists(realm, "survey", "$title", title, userId)
         }
 
         val tasks = realm.where(RealmTeamTask::class.java)
@@ -514,33 +532,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .equalTo("assignee", userId)
             .findAll()
         tasks.forEach { task ->
-            createNotificationIfNotExists(realm, "task", "${task.title} ${formatDate(task.deadline)}", task.id, userId)
+            dashboardViewModel.createNotificationIfNotExists(realm, "task", "${task.title} ${formatDate(task.deadline)}", task.id, userId)
         }
 
         val storageRatio = totalAvailableMemoryRatio
-        createNotificationIfNotExists(realm, "storage", "$storageRatio", "storage", userId)
-    }
-
-    private fun updateResourceNotification(realm: Realm, userId: String?) {
-        val resourceCount = BaseResourceFragment.getLibraryList(realm, userId).size
-        if (resourceCount > 0) {
-            val existingNotification = realm.where(RealmNotification::class.java)
-                .equalTo("userId", userId)
-                .equalTo("type", "resource")
-                .findFirst()
-
-            if (existingNotification != null) {
-                existingNotification.message = "$resourceCount"
-                existingNotification.relatedId = "$resourceCount"
-            } else {
-                createNotificationIfNotExists(realm, "resource", "$resourceCount", "$resourceCount", userId)
-            }
-        } else {
-            realm.where(RealmNotification::class.java)
-                .equalTo("userId", userId)
-                .equalTo("type", "resource")
-                .findFirst()?.deleteFromRealm()
-        }
+        dashboardViewModel.createNotificationIfNotExists(realm, "storage", "$storageRatio", "storage", userId)
     }
 
     private fun openNotificationsList(userId: String) {
@@ -557,52 +553,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         updateNotificationBadge(unreadCount) {
             openNotificationsList(user?.id ?: "")
         }
-    }
-
-    private fun createNotificationIfNotExists(realm: Realm, type: String, message: String, relatedId: String?, userId: String?) {
-        val existingNotification = realm.where(RealmNotification::class.java)
-            .equalTo("userId", userId)
-            .equalTo("type", type)
-            .equalTo("relatedId", relatedId)
-            .findFirst()
-
-        if (existingNotification == null) {
-            realm.createObject(RealmNotification::class.java, "${UUID.randomUUID()}").apply {
-                this.userId = userId ?: ""
-                this.type = type
-                this.message = message
-                this.relatedId = relatedId
-                this.createdAt = Date()
-            }
-        }
-    }
-
-    private fun getPendingSurveys(realm: Realm, userId: String?): List<RealmSubmission> {
-        return realm.where(RealmSubmission::class.java)
-            .equalTo("userId", userId)
-            .equalTo("type", "survey")
-            .equalTo("status", "pending", Case.INSENSITIVE)
-            .findAll()
-    }
-
-    private fun getSurveyTitlesFromSubmissions(realm: Realm, submissions: List<RealmSubmission>): List<String> {
-        val titles = mutableListOf<String>()
-        submissions.forEach { submission ->
-            val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
-            val exam = realm.where(RealmStepExam::class.java)
-                .equalTo("id", examId)
-                .findFirst()
-            exam?.name?.let { titles.add(it) }
-        }
-        return titles
-    }
-
-    private fun getUnreadNotificationsSize(realm: Realm, userId: String?): Int {
-        return realm.where(RealmNotification::class.java)
-            .equalTo("userId", userId)
-            .equalTo("isRead", false)
-            .count()
-            .toInt()
     }
 
     private fun updateNotificationBadge(count: Int, onClickListener: View.OnClickListener) {
@@ -801,7 +751,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     openMyFragment(ResourcesFragment())
                 }
             }
-            R.string.team -> openMyFragment(TeamFragment())
+            R.string.team -> openMyFragment(TeamFragment().apply {
+                arguments = Bundle().apply {
+                    putBoolean("fromDashboard", false)
+                }
+            })
             R.string.txt_myCourses -> {
                 if (user?.id?.startsWith("guest") == true) {
                     guestDialog(this)
@@ -816,15 +770,22 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun openMyFragment(f: Fragment) {
-        val b = Bundle()
-        b.putBoolean("isMyCourseLib", true)
-        f.arguments = b
         val fragmentName = f::class.java.simpleName
-        val tag = "My$fragmentName"
+        var tag = "My$fragmentName"
+        val isDashboard = f.arguments?.getBoolean("fromDashboard", false) == true
+        if(tag != "MyTeamFragment") {
+            val b = Bundle()
+            b.putBoolean("isMyCourseLib", true)
+            f.arguments = b
+        }
+        if (isDashboard) {
+            tag = "MyTeamDashboardFragment"
+        }
         when (tag) {
             "MyCoursesFragment" -> result?.setSelection(2, false)
             "MyResourcesFragment" -> result?.setSelection(1, false)
-            "MyTeamFragment" -> result?.setSelection(-5, false)
+            "MyTeamDashboardFragment" -> result?.setSelection(0, false)
+            "MyTeamFragment" ->  result?.setSelection(5, false)
             else -> {
                 result?.setSelection(0, false)
             }
@@ -877,14 +838,15 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 changeUX(R.string.menu_myplanet, menuImageList[0]).withIdentifier(0),
                 changeUX(R.string.txt_myLibrary, menuImageList[1]).withIdentifier(1),
                 changeUX(R.string.txt_myCourses, menuImageList[2]).withIdentifier(2),
-                changeUX(R.string.menu_library, menuImageList[3]),
-                changeUX(R.string.menu_courses, menuImageList[4]),
-                changeUX(R.string.team, menuImageList[5]),
-                changeUX(R.string.enterprises, menuImageList[6]),
-                changeUX(R.string.menu_community, menuImageList[7]),
-                changeUX(R.string.menu_surveys, menuImageList[8])
+                changeUX(R.string.menu_library, menuImageList[3]).withIdentifier(3),
+                changeUX(R.string.menu_courses, menuImageList[4]).withIdentifier(4),
+                changeUX(R.string.team, menuImageList[5]).withIdentifier(5),
+                changeUX(R.string.enterprises, menuImageList[6]).withIdentifier(6),
+                changeUX(R.string.menu_community, menuImageList[7]).withIdentifier(7),
+                changeUX(R.string.menu_surveys, menuImageList[8]).withIdentifier(8)
             )
         }
+
     private val drawerItemsFooter: Array<IDrawerItem<*, *>>
         get() {
             val menuImageListFooter = ArrayList<Drawable>()

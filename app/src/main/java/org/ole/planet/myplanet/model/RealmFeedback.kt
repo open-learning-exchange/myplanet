@@ -114,10 +114,8 @@ open class RealmFeedback : RealmObject() {
 
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
-            var feedback = mRealm.where(RealmFeedback::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
+            var feedback = mRealm.where(RealmFeedback::class.java)
+                .equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
             if (feedback == null) {
                 feedback = mRealm.createObject(RealmFeedback::class.java, JsonUtils.getString("_id", act))
             }
@@ -136,7 +134,6 @@ open class RealmFeedback : RealmObject() {
             feedback?.item = JsonUtils.getString("item", act)
             feedback?.state = JsonUtils.getString("state", act)
             feedback?._rev = JsonUtils.getString("_rev", act)
-            mRealm.commitTransaction()
 
             val csvRow = arrayOf(
                 JsonUtils.getString("_id", act),

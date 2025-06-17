@@ -22,7 +22,9 @@ class AdapterMeetup(private val list: List<RealmMeetup>) : RecyclerView.Adapter<
         itemMeetupBinding.tvDescription.text = context.getString(R.string.message_placeholder, meetup.description)
         itemMeetupBinding.tvDateFrom.text = formatDate(meetup.startDate)
         itemMeetupBinding.tvDateTo.text = formatDate(meetup.endDate)
+        itemMeetupBinding.tvTime.text = "${meetup.startTime} - ${meetup.endTime}"
         itemMeetupBinding.tvLocation.text = context.getString(R.string.message_placeholder, meetup.meetupLocation)
+        itemMeetupBinding.tvLink.text = context.getString(R.string.message_placeholder, meetup.meetupLink)
         itemMeetupBinding.tvRecurring.text = context.getString(R.string.message_placeholder, meetup.recurring)
         itemMeetupBinding.tvCreator.text = context.getString(R.string.message_placeholder, meetup.creator)
     }

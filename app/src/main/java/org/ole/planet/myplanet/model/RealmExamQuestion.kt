@@ -45,22 +45,40 @@ open class RealmExamQuestion : RealmObject() {
     companion object {
         @JvmStatic
         fun insertExamQuestions(questions: JsonArray, examId: String?, mRealm: Realm) {
+            if (questions.size() == 0) return
             for (i in 0 until questions.size()) {
                 val question = questions[i].asJsonObject
-                val questionId = Base64.encodeToString(question.toString().toByteArray(), Base64.NO_WRAP)
-                var myQuestion = mRealm.where(RealmExamQuestion::class.java).equalTo("id", questionId).findFirst()
+                val questionId = if (question.has("id")) {
+                    JsonUtils.getString("id", question)
+                } else {
+                    "$examId-${i}"
+                }
+
+                var myQuestion = mRealm.where(RealmExamQuestion::class.java)
+                    .equalTo("id", questionId)
+                    .findFirst()
+
                 if (myQuestion == null) {
                     myQuestion = mRealm.createObject(RealmExamQuestion::class.java, questionId)
                 }
-                myQuestion?.examId = examId
-                myQuestion?.body = JsonUtils.getString("body", question)
-                myQuestion?.type = JsonUtils.getString("type", question)
-                myQuestion?.header = JsonUtils.getString("title", question)
-                myQuestion?.marks = JsonUtils.getString("marks", question)
-                myQuestion?.choices = Gson().toJson(JsonUtils.getJsonArray("choices", question))
-                val isMultipleChoice = question.has("correctChoice") && JsonUtils.getString("type", question).startsWith("select")
-                if (isMultipleChoice) {
-                    insertCorrectChoice(question["choices"].asJsonArray, question, myQuestion)
+
+                myQuestion.apply {
+                    this.examId = examId
+                    body = JsonUtils.getString("body", question)
+                    type = JsonUtils.getString("type", question)
+                    header = JsonUtils.getString("title", question)
+                    marks = JsonUtils.getString("marks", question)
+
+                    choices = if (question.has("choices")) {
+                        Gson().toJson(JsonUtils.getJsonArray("choices", question))
+                    } else {
+                        "[]"
+                    }
+
+                    val isMultipleChoice = type?.startsWith("select") == true && question.has("choices")
+                    if (isMultipleChoice) {
+                        insertCorrectChoice(question["choices"].asJsonArray, question, this)
+                    }
                 }
             }
         }

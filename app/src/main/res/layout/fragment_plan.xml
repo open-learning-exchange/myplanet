@@ -6,6 +6,11 @@
     android:background="@color/secondary_bg"
     tools:context=".ui.team.PlanFragment">
 
+    <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true">
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -32,4 +37,5 @@
             android:textColor="@color/daynight_textColor"
             android:textSize="@dimen/text_size_mid" />
     </LinearLayout>
+    </ScrollView>
 </FrameLayout>

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.sync
 
+import android.app.Activity
 import android.content.*
 import android.graphics.drawable.AnimationDrawable
 import android.os.*
@@ -12,14 +13,15 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.*
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import io.realm.Realm
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.*
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.*
 import org.ole.planet.myplanet.datamanager.*
 import org.ole.planet.myplanet.model.*
@@ -27,8 +29,8 @@ import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.userprofile.*
-import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.*
+import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.text.Normalizer
@@ -52,6 +54,15 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         lblLastSyncDate = activityLoginBinding.lblLastSyncDate
         btnSignIn = activityLoginBinding.btnSignin
         syncIcon = activityLoginBinding.syncIcon
+        lblVersion = activityLoginBinding.lblVersion
+        tvAvailableSpace = activityLoginBinding.tvAvailableSpace
+        btnGuestLogin = activityLoginBinding.btnGuestLogin
+        becomeMember = activityLoginBinding.becomeMember
+        btnFeedback = activityLoginBinding.btnFeedback
+        openCommunity = activityLoginBinding.openCommunity
+        btnLang = activityLoginBinding.btnLang
+        inputName = activityLoginBinding.inputName
+        inputPassword = activityLoginBinding.inputPassword
         service = Service(this)
 
         activityLoginBinding.tvAvailableSpace.text = buildString {
@@ -84,7 +95,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         checkUsagesPermission()
         forceSyncTrigger()
 
-        if (getUrl().isNotEmpty()) {
+        val url = getUrl()
+        if (url.isNotEmpty() && url != "/db") {
             activityLoginBinding.openCommunity.visibility = View.VISIBLE
             activityLoginBinding.openCommunity.setOnClickListener {
                 HomeCommunityDialogFragment().show(supportFragmentManager, "")
@@ -99,12 +111,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
         guest = intent.getBooleanExtra("guest", false)
         val username = intent.getStringExtra("username")
-        val password = intent.getStringExtra("password")
-        val autoLogin = intent.getBooleanExtra("autoLogin", false)
-
-        if (autoLogin && username != null && password != null) {
-            submitForm(username, password)
-        }
 
         if (guest) {
             resetGuestAsMember(username)
@@ -129,10 +135,10 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
     private fun declareElements() {
         if (!defaultPref.contains("beta_addImageToMessage")) {
-            defaultPref.edit { putBoolean("beta_addImageToMessage", true) }
+            defaultPref.edit().putBoolean("beta_addImageToMessage", true).apply()
         }
         activityLoginBinding.customDeviceName.text = getCustomDeviceName()
-        activityLoginBinding.btnSignin.setOnClickListener {
+        btnSignIn.setOnClickListener {
             if (TextUtils.isEmpty(activityLoginBinding.inputName.text.toString())) {
                 activityLoginBinding.inputName.error = getString(R.string.err_msg_name)
             } else if (TextUtils.isEmpty(activityLoginBinding.inputPassword.text.toString())) {
@@ -158,11 +164,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 }
             }
         }
-        if (!settings.contains("serverProtocol")) {
-            settings.edit {
-                putString("serverProtocol", "http://")
-            }
-        }
+        if (!settings.contains("serverProtocol")) settings.edit().putString("serverProtocol", "http://").apply()
         activityLoginBinding.becomeMember.setOnClickListener {
             activityLoginBinding.inputName.setText(R.string.empty_text)
             becomeAMember()
@@ -215,7 +217,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             activityLoginBinding.inputPassword.addTextChangedListener(MyTextWatcher(activityLoginBinding.inputPassword))
             activityLoginBinding.inputPassword.setOnEditorActionListener { _: TextView?, actionId: Int, event: KeyEvent? ->
                 if (actionId == EditorInfo.IME_ACTION_DONE || event != null && event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_ENTER) {
-                    activityLoginBinding.btnSignin.performClick()
+                    btnSignIn.performClick()
                     return@setOnEditorActionListener true
                 }
                 false
@@ -312,18 +314,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         activityLoginBinding.btnLang.text = getLanguageString(currentLanguage)
     }
 
-    private fun getLanguageString(languageCode: String): String {
-        return when (languageCode) {
-            "en" -> getString(R.string.english)
-            "es" -> getString(R.string.spanish)
-            "so" -> getString(R.string.somali)
-            "ne" -> getString(R.string.nepali)
-            "ar" -> getString(R.string.arabic)
-            "fr" -> getString(R.string.french)
-            else -> getString(R.string.english)
-        }
-    }
-
     private fun showLanguageSelectionDialog() {
         val currentLanguage = LocaleHelper.getLanguage(this)
         val options = arrayOf(
@@ -355,7 +345,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             .setNegativeButton(R.string.cancel, null)
             .show()
     }
-
 
     private fun updateConfiguration(languageCode: String) {
         val locale = Locale(languageCode)
@@ -400,6 +389,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             prefData.setSavedUsers(updatedUserList)
         }
 
+        updateTeamDropdown()
+
         if (mAdapter == null) {
             mAdapter = TeamListAdapter(prefData.getSavedUsers().toMutableList(), this, this)
             activityLoginBinding.recyclerView.layoutManager = LinearLayoutManager(this)
@@ -408,8 +399,13 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             mAdapter?.updateList(prefData.getSavedUsers().toMutableList())
         }
 
-        activityLoginBinding.recyclerView.isNestedScrollingEnabled = false
-        activityLoginBinding.recyclerView.setHasFixedSize(true)
+        activityLoginBinding.recyclerView.isNestedScrollingEnabled = true
+        activityLoginBinding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+        activityLoginBinding.recyclerView.isVerticalScrollBarEnabled = true
+
+        activityLoginBinding.recyclerView.post {
+            mAdapter?.notifyDataSetChanged()
+        }
     }
 
     override fun onItemClick(user: User) {
@@ -427,10 +423,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 if (model == null) {
                     toast(this, getString(R.string.unable_to_login))
                 } else {
-                    lifecycleScope.launch {
-                        saveUserInfoPref(settings, "", model)
-                        onLogin()
-                    }
+                    saveUserInfoPref(settings, "", model)
+                    onLogin()
                 }
             } else {
                 submitForm(user.name, user.password)
@@ -442,29 +436,42 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         if (forceSyncTrigger()) {
             return
         }
-        settings.edit {
-            putString("loginUserName", name)
-            putString("loginUserPassword", password)
-            val isLoggedIn = authenticateUser(settings, name, password, false)
-            if (isLoggedIn) {
-                lifecycleScope.launch {
-                    Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
-                    onLogin()
-                    saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
+        val editor = settings.edit()
+        editor.putString("loginUserName", name)
+        editor.putString("loginUserPassword", password)
+        val isLoggedIn = authenticateUser(settings, name, password, false)
+        if (isLoggedIn) {
+            Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
+            onLogin()
+            saveUsers(activityLoginBinding.inputName.text.toString(), activityLoginBinding.inputPassword.text.toString(), "member")
+        } else {
+            ManagerSync.instance?.login(name, password, object : SyncListener {
+                override fun onSyncStarted() {
+                    customProgressDialog?.setText(getString(R.string.please_wait))
+                    customProgressDialog?.show()
                 }
-            } else {
-                val log = authenticateUser(settings, name, password, true)
-                if (log) {
-                    lifecycleScope.launch {
-                        Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
+                override fun onSyncComplete() {
+                    customProgressDialog?.dismiss()
+                    val log = authenticateUser(settings, name, password, true)
+                    if (log) {
+                        Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
                         onLogin()
-                        saveUsers("${activityLoginBinding.inputName.text}", "${activityLoginBinding.inputPassword.text}", "member")
+                        saveUsers(activityLoginBinding.inputName.text.toString(), activityLoginBinding.inputPassword.text.toString(), "member")
+                    } else {
+                        alertDialogOkay(getString(R.string.err_msg_login))
                     }
-                } else {
-                    alertDialogOkay(getString(R.string.err_msg_login))
+                    syncIconDrawable.stop()
+                    syncIconDrawable.selectDrawable(0)
                 }
-            }
+                override fun onSyncFailed(msg: String?) {
+                    toast(MainApplication.context, msg)
+                    customProgressDialog?.dismiss()
+                    syncIconDrawable.stop()
+                    syncIconDrawable.selectDrawable(0)
+                }
+            })
         }
+        editor.apply()
     }
 
     private fun showGuestLoginDialog() {
@@ -577,11 +584,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                         if (model == null) {
                             toast(this, getString(R.string.unable_to_login))
                         } else {
-                            lifecycleScope.launch {
-                                saveUsers(username, "", "guest")
-                                saveUserInfoPref(settings, "", model)
-                                onLogin()
-                            }
+                            saveUsers(username, "", "guest")
+                            saveUserInfoPref(settings, "", model)
+                            onLogin()
                         }
                     }
                 }
@@ -606,10 +611,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             if (model == null) {
                 toast(this, getString(R.string.unable_to_login))
             } else {
-                lifecycleScope.launch {
-                    saveUserInfoPref(settings, "", model)
-                    onLogin()
-                }
+                saveUserInfoPref(settings, "", model)
+                onLogin()
             }
         }
         val dialog = builder.create()

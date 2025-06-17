@@ -121,6 +121,7 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun createAchievementList() {
+        fragmentAchievementBinding.llAchievement.removeAllViews()
         for (s in achievement?.achievements!!) {
             rowAchievementBinding = RowAchievementBinding.inflate(LayoutInflater.from(MainApplication.context))
             val ob = Gson().fromJson(s, JsonElement::class.java)

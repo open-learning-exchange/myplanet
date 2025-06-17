@@ -19,14 +19,15 @@
             android:layout_height="wrap_content"
             android:textAllCaps="false"
             android:text="@string/new_voice"
-            android:background="@color/mainColor"
+            android:backgroundTint="@color/mainColor"
             android:textColor="@android:color/white" />
         <LinearLayout
             android:id="@+id/ll_add_news"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:visibility="gone">
+            android:visibility="gone"
+            android:layout_marginTop="10dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -44,7 +45,6 @@
                         android:id="@+id/et_message"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:minHeight="@dimen/profile_card_bell"
                         android:textColor="@color/daynight_textColor"
                         android:backgroundTint="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>

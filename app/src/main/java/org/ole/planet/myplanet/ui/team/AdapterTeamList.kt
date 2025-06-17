@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.team
 
 import android.content.Context
 import android.content.DialogInterface
-import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.Typeface
 import android.os.Bundle
@@ -11,7 +10,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
@@ -26,13 +24,15 @@ import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 import androidx.core.graphics.toColorInt
+import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 
 class AdapterTeamList(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm, private val fragmentManager: FragmentManager) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private lateinit var itemTeamListBinding: ItemTeamListBinding
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
-    private var filteredList: List<RealmMyTeam> = list.filter { it.status!!.isNotEmpty() }
+    private var filteredList: List<RealmMyTeam> = emptyList()
     private lateinit var prefData: SharedPrefManager
+
     interface OnClickTeamItem {
         fun onEditTeam(team: RealmMyTeam?)
     }
@@ -45,6 +45,10 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         itemTeamListBinding = ItemTeamListBinding.inflate(LayoutInflater.from(context), parent, false)
         prefData = SharedPrefManager(context)
         return ViewHolderTeam(itemTeamListBinding)
+    }
+
+    init {
+        updateList()
     }
 
     override fun onBindViewHolder(holder: ViewHolderTeam, position: Int) {
@@ -65,18 +69,19 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                 if (context is OnHomeItemClickListener) {
                     val fragmentManager = (context as AppCompatActivity).supportFragmentManager
                     val existingFragment = fragmentManager.findFragmentByTag("TeamDetailFragment")
-                    val b = Bundle()
-                    b.putString("id", team._id)
-                    b.putBoolean("isMyTeam", isMyTeam)
+
+                    val f = TeamDetailFragment.newInstance(
+                        teamId = "${team._id}",
+                        teamName = "${team.name}",
+                        teamType = "${team.type}",
+                        isMyTeam = isMyTeam
+                    )
                     if (existingFragment is TeamDetailFragment) {
                         existingFragment.arguments?.clear()
-                        existingFragment.arguments = b
+                        existingFragment.arguments = f.arguments
                     }
-                    val f = TeamDetailFragment()
-                    f.arguments = b
                     (context as OnHomeItemClickListener).openCallFragment(f)
                     prefData.setTeamName(team.name)
-                    prefData.setSelectedTeamId(team._id)
                 }
             }
 
@@ -87,14 +92,16 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
             }
 
             joinLeave.setOnClickListener {
-                handleJoinLeaveClick(isMyTeam, team, user, position)
+                handleJoinLeaveClick(isMyTeam, team, user)
             }
         }
     }
 
     private fun ItemTeamListBinding.showActionButton(isMyTeam: Boolean, team: RealmMyTeam, user: RealmUserModel?) {
         if (isMyTeam) {
-            name.setTypeface(name.typeface, Typeface.BOLD)
+            name.setTypeface(null, Typeface.BOLD)
+        } else {
+            name.setTypeface(null, Typeface.NORMAL)
         }
         when {
             user?.isGuest() == true -> joinLeave.visibility = View.GONE
@@ -141,9 +148,9 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         }
     }
 
-    private fun handleJoinLeaveClick(isMyTeam: Boolean, team: RealmMyTeam, user: RealmUserModel?, position: Int) {
+    private fun handleJoinLeaveClick(isMyTeam: Boolean, team: RealmMyTeam, user: RealmUserModel?) {
         if (isMyTeam) {
-            if (RealmMyTeam.isTeamLeader(team.teamId, user?.id, mRealm)) {
+            if (RealmMyTeam.isTeamLeader(team._id, user?.id, mRealm)) {
                 teamListener?.onEditTeam(team)
             } else {
                 AlertDialog.Builder(context, R.style.CustomAlertDialog).setMessage(R.string.confirm_exit)
@@ -153,13 +160,26 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                     }.setNegativeButton(R.string.no, null).show()
             }
         } else {
-            RealmMyTeam.requestToJoin(team._id, user, mRealm)
+            RealmMyTeam.requestToJoin(team._id, user, mRealm, team.teamType)
             updateList()
         }
+        syncTeamActivities(context)
     }
 
     private fun updateList() {
-        filteredList = list.filter { it.status!!.isNotEmpty() }
+        val user: RealmUserModel? = UserProfileDbHandler(context).userModel
+        val userId = user?.id
+
+        val validTeams = list.filter { it.status?.isNotEmpty() == true }
+        filteredList = validTeams.sortedWith(compareByDescending<RealmMyTeam> { team ->
+            when {
+                userId != null && RealmMyTeam.isTeamLeader(team._id, userId, mRealm) -> 3
+                team.isMyTeam(userId, mRealm) -> 2
+                else -> 1
+            }
+        }.thenByDescending { team ->
+            RealmTeamLog.getVisitByTeam(mRealm, team._id)
+        })
         notifyDataSetChanged()
     }
 

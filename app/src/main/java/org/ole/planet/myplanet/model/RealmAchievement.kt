@@ -96,21 +96,17 @@ open class RealmAchievement : RealmObject() {
 
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
             var achievement = mRealm.where(RealmAchievement::class.java)
                 .equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
-            if (achievement == null) achievement = mRealm.createObject(
-                RealmAchievement::class.java, JsonUtils.getString("_id", act)
-            )
+            if (achievement == null) {
+                achievement = mRealm.createObject(RealmAchievement::class.java, JsonUtils.getString("_id", act))
+            }
             achievement?._rev = JsonUtils.getString("_rev", act)
             achievement?.purpose = JsonUtils.getString("purpose", act)
             achievement?.goals = JsonUtils.getString("goals", act)
             achievement?.achievementsHeader = JsonUtils.getString("achievementsHeader", act)
             achievement?.setReferences(JsonUtils.getJsonArray("references", act))
             achievement?.setAchievements(JsonUtils.getJsonArray("achievements", act))
-            mRealm.commitTransaction()
 
             val csvRow = arrayOf(
                 JsonUtils.getString("_id", act),

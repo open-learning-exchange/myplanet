@@ -27,7 +27,7 @@
     <string name="err_msg_name">Enter your username</string>
     <string name="err_msg_password">Enter the password</string>
     <string name="err_msg_login">Username and/or password do not match</string>
-    <string name="hint_serverURl">planet ip</string>
+    <string name="hint_serverURL">planet ip</string>
     <string name="hint_serverPin">server pin</string>
     <string name="radio_protocol">Protocol:</string>
     <string name="radio_http">http</string>
@@ -65,8 +65,8 @@
     <string name="your_ans">Your Answer</string>
     <string name="delete_my_course">Delete myCourse</string>
     <string name="invite_member">Invite Member</string>
-    <string name="is_urgent">Is your feedback Urgent?</string>
-    <string name="feedback_type">Feedback Type:</string>
+    <string name="is_urgent">Is your feedback Urgent? *</string>
+    <string name="feedback_type">Feedback Type: *</string>
     <string name="suggestion">Suggestion</string>
     <string name="no">No</string>
     <string name="yes">Yes</string>
@@ -91,7 +91,7 @@
     <string name="published_by">Published By:</string>
     <string name="author">Author:</string>
     <string name="language_with_colon">Language:</string>
-    <string name="subject">Subject(s):</string>
+    <string name="subject">Subject(s)*:</string>
     <string name="license">License:</string>
     <string name="type">Type:</string>
     <string name="resource_colon">Resource:</string>
@@ -125,7 +125,7 @@
     <string name="menu_achievement">Achievements</string>
     <string name="edit_achievement">Edit Achievements</string>
     <string name="add_resources">Add Resources</string>
-    <string name="description">Description</string>
+    <string name="description">Description *</string>
     <string name="title_asterisk">Title *</string>
     <string name="name_asterisk">Name *</string>
     <string name="relationship">Relationship</string>
@@ -138,7 +138,7 @@
     <string name="show_filter">Show Filter</string>
     <string name="subjects">Subjects</string>
     <string name="mediums">Mediums</string>
-    <string name="levels">Levels</string>
+    <string name="levels">Levels*</string>
     <string name="languages">Languages</string>
     <string name="txt_myLife">myLife</string>
     <string name="achievements">myAchievements</string>
@@ -529,7 +529,7 @@
     <string name="recording_audio">Recording audio…</string>
     <string name="show_replies">"Show replies "</string>
     <string name="selected">"Selected: "</string>
-    <string name="last_sync">Last sync with server: %s></string>
+    <string name="last_sync">Last sync with server: %s</string>
     <string name="last_syncs">LastSync</string>
     <string name="login_user">loginUserName</string>
     <string name="login_password">loginUserPassword</string>
@@ -592,7 +592,7 @@
     <string name="level_colon">Level: %s</string>
     <string name="method">Method:</string>
     <string name="number_of_exams">Number of exams:</string>
-    <string name="description_colon">Description:</string>
+    <string name="description_colon">Description:&#160;</string>
     <string name="download_resources">download Resources</string>
     <string name="take_test">take test [%d]</string>
     <string name="search">search</string>
@@ -737,7 +737,7 @@
     <string name="enter_resource_detail">Enter resource detail</string>
     <string name="resource_saved_to_my_personal">Resource saved to myPersonal</string>
     <string name="invalid_resource_url">Invalid resource url</string>
-    <string name="my_library">" my library"</string>
+    <string name="my_library">"mylibrary"</string>
     <string name="link_not_available">Link not available</string>
     <string name="success_you_have_added_these_resources_to_your_mylibrary">Success! You have added these resources to your myLibrary:\n\n</string>
     <string name="more_resource_s">" more resource(s)…\n"</string>
@@ -1066,12 +1066,12 @@
     <string name="compulsory_phone_number">phone number is required</string>
     <string name="compulsory_date_of_birth">date of birth is required</string>
     <string name="gender_not_picked">gender not picked</string>
-    <string name="title_colon">title:</string>
-    <string name="date_from_colon">date from:</string>
-    <string name="date_to_colon">date to:</string>
-    <string name="location_colon">location:</string>
-    <string name="recurring_colon">recurring:</string>
-    <string name="created_by_colon">created by:</string>
+    <string name="title_colon">title:&#160;</string>
+    <string name="date_from_colon">date from:&#160;</string>
+    <string name="date_to_colon">date to:&#160;</string>
+    <string name="location_colon">location:&#160;</string>
+    <string name="recurring_colon">recurring:&#160;</string>
+    <string name="created_by_colon">created by:&#160;</string>
     <string name="failed_to_get_configuration_id">failed to get configuration id. kindly contact admin</string>
     <string name="you_want_to_connect_to_a_different_server">Are you sure you want to change the configuration? This action will clear the app data.</string>
     <string name="are_you_sure_you_want_to_clear_data">are you sure you want to clear all data?</string>
@@ -1265,5 +1265,51 @@
     <string name="no_resources_to_download">No resources to download</string>
     <string name="response">Response</string>
     <string name="full_conversation_response">Full conversation response</string>
+    <string name="add_new_event">+ new event</string>
+    <string name="none">None</string>
+    <string name="remind_later">Remind Later</string>
+    <string name="remind_me_later">Remind Me Later</string>
+    <string name="remind_me_in">Remind me in:</string>
+    <string name="minutes">Minutes</string>
+    <string name="days">Days</string>
+    <string name="set_reminder">Set Reminder</string>
+    <string name="reminder_set_for">Reminder set for %1$s from now</string>
+    <string name="reminder_surveys_to_complete">Reminder: You have %1$d %2$s to complete</string>
+
+    <plurals name="minutes">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
+
+    <plurals name="hours">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+
+    <plurals name="days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+
+    <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">Your health data will appear here as you continue tracking it</string>
+    <string name="no_health_records_available">No health records available</string>
+    <string name="permission_required">Permission Required</string>
+    <string name="microphone_permission_required">Microphone permission is required to record audio. Please enable it in the app settings.</string>
+    <string name="confirm_share_community">Are you sure you want to share this content with the community?</string>
+    <string name="camera_permission_required">Camera permission is required. Please enable it in the app settings.</string>
+    <string name="clearing_data">Clearing data…</string>
+    <string name="time_colon">Time:&#160;</string>
+    <string name="a_few_seconds_ago">a few seconds ago</string>
+    <string name="no_teams_found">No teams found</string>
+    <string name="no_teams_found_for_search">No teams found for "%1$s"</string>
+    <string name="no_enterprises_found_for_search">No enterprises found for "%1$s"</string>
+    <string name="no_enterprises_found">No enterprises found</string>
+    <string name="starting_downloads">Starting downloads…</string>
+    <string name="downloaded_files">Downloaded %1$s/%2$s files</string>
+    <string name="download_failed">Download failed</string>
+    <string name="downloads_completed">Downloads Completed</string>
+    <string name="download_progress">%1$d of %2$d files downloaded</string>
+    <string name="download_progress_with_errors">%1$d of %2$d files downloaded (with some errors)</string>
+    <string name="download_in_background">Starting download in background…</string>
 
 </resources>

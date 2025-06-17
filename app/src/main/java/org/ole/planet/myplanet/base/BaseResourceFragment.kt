@@ -60,7 +60,7 @@ abstract class BaseResourceFragment : Fragment() {
     var editor: SharedPreferences.Editor? = null
     var lv: CheckboxListView? = null
     var convertView: View? = null
-    private lateinit var prgDialog: DialogUtils.CustomProgressDialog
+    internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
     private var resourceNotFoundDialog: AlertDialog? = null
 
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
@@ -204,17 +204,29 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun startDownload(urls: ArrayList<String>) {
-        if (isAdded && isVisible) {
+        if (isAdded) {
             Service(requireActivity()).isPlanetAvailable(object : PlanetAvailableListener {
                 override fun isAvailable() {
-                    if (urls.isNotEmpty() && isAdded && isVisible) {
-                        prgDialog.show()
-                        Utilities.openDownloadService(activity, urls, false)
+                    if (!isAdded || activity == null || requireActivity().isFinishing || requireActivity().isDestroyed) {
+                        return
+                    }
+
+                    if (urls.isNotEmpty()) {
+                        try {
+                            activity?.runOnUiThread {
+                                if (isAdded && !requireActivity().isFinishing && !requireActivity().isDestroyed) {
+                                    prgDialog.show()
+                                }
+                            }
+                            Utilities.openDownloadService(activity, urls, false)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
                     }
                 }
 
                 override fun notAvailable() {
-                    if (isAdded && isVisible) {
+                    if (isAdded && activity != null && !requireActivity().isFinishing) {
                         Utilities.toast(requireActivity(), getString(R.string.device_not_connected_to_planet))
                     }
                 }

@@ -54,7 +54,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     }
 
     interface ChatHistoryItemClickListener {
-        fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?)
+        fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?, aiProvider: String?)
     }
 
     fun setChatHistoryItemClickListener(listener: ChatHistoryItemClickListener) {
@@ -180,7 +180,8 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
             chatHistoryItemClickListener?.onChatHistoryItemClicked(
                 filteredChatHistory[position].conversations,
                 "${filteredChatHistory[position]._id}",
-                filteredChatHistory[position]._rev
+                filteredChatHistory[position]._rev,
+                filteredChatHistory[position].aiProvider
             )
         }
 

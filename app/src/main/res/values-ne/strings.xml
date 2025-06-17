@@ -13,7 +13,7 @@
     <string name="course_in_progress">कोर्स %1$s मा प्रवेश गर्नुहोस् यसलाई पूरा गर्नुहोस् (%2$d को %3$d गरियो)</string>
     <string name="course_not_started">%1$s सुरु भएको छैन</string>
     <string name="app_name">My Planet</string>
-    <string name="planet">ग्रह</string>
+    <string name="planet">Planet</string>
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">सेटिङ्स</string>
     <string name="hint_name">प्रयोगकर्तानाम</string>
@@ -27,7 +27,7 @@
     <string name="err_msg_name">तपाईंको प्रयोगकर्तानाम लेख्नुहोस्</string>
     <string name="err_msg_password">पासवर्ड लेख्नुहोस्</string>
     <string name="err_msg_login">प्रयोगकर्तानाम र/वा पासवर्ड मेल खान्छैन</string>
-    <string name="hint_serverURl">planet आईपि</string>
+    <string name="hint_serverURL">planet आईपि</string>
     <string name="hint_serverPin">सर्भर पिन</string>
     <string name="radio_protocol">प्रोटोकल:</string>
     <string name="radio_http">http</string>
@@ -65,8 +65,8 @@
     <string name="your_ans">तपाईंको उत्तर</string>
     <string name="delete_my_course">मेरो पाठ्यक्रम मेटाउनुहोस्</string>
     <string name="invite_member">सदस्यलाई आमन्त्रित गर्नुहोस्</string>
-    <string name="is_urgent">तपाईंको प्रतिक्रिया अत्यावश्यक छ?</string>
-    <string name="feedback_type">प्रतिक्रिया प्रकार:</string>
+    <string name="is_urgent">तपाईंको प्रतिक्रिया अत्यावश्यक छ? *</string>
+    <string name="feedback_type">प्रतिक्रिया प्रकार: *</string>
     <string name="suggestion">सुझाव</string>
     <string name="no">होइन</string>
     <string name="yes">हो</string>
@@ -91,7 +91,7 @@
     <string name="published_by">प्रकाशित गर्ने:</string>
     <string name="author">लेखक:</string>
     <string name="language_with_colon">भाषा:</string>
-    <string name="subject">विषय/विषयहरू:</string>
+    <string name="subject">विषय/विषयहरू*:</string>
     <string name="license">लाइसेन्स:</string>
     <string name="type">प्रकार:</string>
     <string name="resource_colon">स्रोत:</string>
@@ -125,7 +125,7 @@
     <string name="menu_achievement">साधारणता</string>
     <string name="edit_achievement">उपलब्धिहरू सम्पादन गर्नुहोस्</string>
     <string name="add_resources">स्रोतहरू थप्नुहोस्</string>
-    <string name="description">वर्णन</string>
+    <string name="description">वर्णन *</string>
     <string name="title_asterisk">शीर्षक *</string>
     <string name="name_asterisk">नाम *</string>
     <string name="relationship">सम्बन्ध</string>
@@ -138,7 +138,7 @@
     <string name="show_filter">फिल्टर देखाउनुहोस्</string>
     <string name="subjects">विषयहरू</string>
     <string name="mediums">माध्यमहरू</string>
-    <string name="levels">स्तरहरू</string>
+    <string name="levels">स्तरहरू*</string>
     <string name="languages">भाषाहरू</string>
     <string name="txt_myLife">मेरो जीवन</string>
     <string name="achievements">मेरो साधारणता</string>
@@ -592,7 +592,7 @@
     <string name="level_colon">स्तर: %s</string>
     <string name="method">तरिका:</string>
     <string name="number_of_exams">परीक्षाहरूको संख्या:</string>
-    <string name="description_colon">वर्णन:</string>
+    <string name="description_colon">वर्णन:&#160;</string>
     <string name="download_resources">संसाधनहरू डाउनलोड गर्नुहोस्</string>
     <string name="take_test">परीक्षा दिनुहोस् [%d]</string>
     <string name="search">खोज्नुहोस्</string>
@@ -737,7 +737,7 @@
     <string name="enter_resource_detail">स्रोत विवरण राख्नुहोस्</string>
     <string name="resource_saved_to_my_personal">स्रोत myPersonal मा सुरक्षित गरियो।</string>
     <string name="invalid_resource_url">अवैध स्रोत url</string>
-    <string name="my_library">" मेरो पुस्तकालय"</string>
+    <string name="my_library">"mylibrary"</string>
     <string name="link_not_available">लिंक उपलब्ध छैन</string>
     <string name="success_you_have_added_these_resources_to_your_mylibrary">सफलता! तपाईंले यी स्रोतहरूलाई आफ्नो मेरो पुस्तकालयमा थपेका छौ:\n\n</string>
     <string name="more_resource_s">" थप स्रोत(हरू)…\n"</string>
@@ -1066,12 +1066,12 @@
     <string name="compulsory_phone_number">फोन नम्बर आवश्यक छ</string>
     <string name="compulsory_date_of_birth">जन्म मिति आवश्यक छ</string>
     <string name="gender_not_picked">लिङ्ग छानिएको छैन</string>
-    <string name="title_colon">शीर्षक:</string>
-    <string name="date_from_colon">मिति बाट:</string>
-    <string name="date_to_colon">मिति सम्म:</string>
-    <string name="location_colon">स्थान:</string>
-    <string name="recurring_colon">आवर्तमान:</string>
-    <string name="created_by_colon">बनाएको:</string>
+    <string name="title_colon">शीर्षक:&#160;</string>
+    <string name="date_from_colon">मिति बाट:&#160;</string>
+    <string name="date_to_colon">मिति सम्म:&#160;</string>
+    <string name="location_colon">स्थान:&#160;</string>
+    <string name="recurring_colon">आवर्तमान:&#160;</string>
+    <string name="created_by_colon">बनाएको:&#160;</string>
     <string name="failed_to_get_configuration_id">बनावट आईडी प्राप्त गर्न असफल भयो। कृपया व्यवस्थापकसँग सम्पर्क गर्नुहोस्।</string>
     <string name="you_want_to_connect_to_a_different_server">तपाईं अर्को सर्भरमा जडान गर्न चाहनुहुन्छ। अगाडि बढ्नका लागि एपको डेटा मेटाउनुहोस्</string>
     <string name="are_you_sure_you_want_to_clear_data">के तपाईं सबै डाटा हटाउन निश्चित हुनुहुन्छ?</string>
@@ -1265,5 +1265,51 @@
     <string name="no_resources_to_download">डाउनलोड गर्न कुनै स्रोत छैन</string>
     <string name="response">उत्तर</string>
     <string name="full_conversation_response">पूर्ण वार्तालाप उत्तर</string>
+    <string name="add_new_event">+ नयाँ कार्यक्रम</string>
+    <string name="none">कुनै पनि होइन</string>
+    <string name="remind_later">Xasuusi hadhow</string>
+    <string name="remind_me_later">Xasuusi hadhow</string>
+    <string name="remind_me_in">Ixasuusi gudaha:</string>
+    <string name="minutes">Daqiiqado</string>
+    <string name="days">Maalmaha</string>
+    <string name="set_reminder">Deji xasuusin</string>
+    <string name="reminder_set_for">Xasuusin ayaa loo dejiyay %1$s laga bilaabo hadda</string>
+    <string name="reminder_surveys_to_complete">Xasuusin: Waxaad haysataa %1$d %2$s oo la buuxinayo</string>
+
+    <plurals name="minutes">
+        <item quantity="one">%d daqiiqad</item>
+        <item quantity="other">%d daqiiqado</item>
+    </plurals>
+
+    <plurals name="hours">
+        <item quantity="one">%d saac</item>
+        <item quantity="other">%d saacadood</item>
+    </plurals>
+
+    <plurals name="days">
+        <item quantity="one">%d maalin</item>
+        <item quantity="other">%d maalmood</item>
+    </plurals>
+
+    <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">तपाईंले ट्र्याकिङ जारी राख्दा तपाईंको स्वास्थ्य डेटा यहाँ देखिनेछ</string>
+    <string name="no_health_records_available">कुनै स्वास्थ्य रेकर्ड उपलब्ध छैन</string>
+    <string name="permission_required">अनुमति आवश्यक छ</string>
+    <string name="microphone_permission_required">अडियो रेकर्ड गर्न माइक्रोफोन अनुमति आवश्यक छ। कृपया एप सेटिङहरूमा गई यसलाई सक्षम पार्नुहोस्।</string>
+    <string name="confirm_share_community">के तपाईं यो सामग्री समुदायसँग साझा गर्न चाहनुहुन्छ?</string>
+    <string name="camera_permission_required">क्यामेरा अनुमति आवश्यक छ। कृपया एप सेटिङहरूमा गई यसलाई सक्षम गर्नुहोस्।</string>
+    <string name="clearing_data">डाटा मेटाउँदै…</string>
+    <string name="time_colon">समय:&#160;</string>
+    <string name="a_few_seconds_ago">केही सेकेन्ड अगाडि</string>
+    <string name="no_teams_found">कुनै टिम फेला परेन</string>
+    <string name="no_teams_found_for_search">"%1$s" का लागि कुनै टिम फेला परेन</string>
+    <string name="no_enterprises_found_for_search">"%1$s" को लागि कुनै उद्यमहरू फेला परेनन्</string>
+    <string name="no_enterprises_found">कुनै उद्यमहरू फेला परेनन्</string>
+    <string name="starting_downloads">डाउनलोडहरू सुरु गर्दै…</string>
+    <string name="downloaded_files">%1$s/%2$s फाइलहरू डाउनलोड भएका छन्</string>
+    <string name="download_failed">डाउनलोड असफल भयो</string>
+    <string name="downloads_completed">डाउनलोडहरू पूरा भयो</string>
+    <string name="download_progress">%2$d मध्ये %1$d फाइलहरू डाउनलोड भएका छन्</string>
+    <string name="download_progress_with_errors">%2$d मध्ये %1$d फाइलहरू डाउनलोड भएका छन् (केही त्रुटिहरूसहित)</string>
+    <string name="download_in_background">पृष्ठभूमिमा डाउनलोड सुरु गर्दै…</string>
 
 </resources>

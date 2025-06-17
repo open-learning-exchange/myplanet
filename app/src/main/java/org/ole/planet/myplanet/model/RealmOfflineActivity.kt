@@ -68,12 +68,7 @@ open class RealmOfflineActivity : RealmObject() {
 
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
-            var activities = mRealm.where(RealmOfflineActivity::class.java)
-                .equalTo("_id", JsonUtils.getString("_id", act))
-                .findFirst()
+            var activities = mRealm.where(RealmOfflineActivity::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
             if (activities == null) {
                 activities = mRealm.createObject(RealmOfflineActivity::class.java, JsonUtils.getString("_id", act))
             }
@@ -89,7 +84,6 @@ open class RealmOfflineActivity : RealmObject() {
                 activities.logoutTime = JsonUtils.getLong("logoutTime", act)
                 activities.androidId = JsonUtils.getString("androidId", act)
             }
-            mRealm.commitTransaction()
 
             val csvRow = arrayOf(
                 JsonUtils.getString("_id", act),

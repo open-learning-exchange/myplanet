@@ -42,6 +42,7 @@ import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 import java.util.UUID
+import android.util.Log
 
 class MyTeamsDetailFragment : BaseNewsFragment() {
     private lateinit var fragmentMyTeamsDetailBinding: FragmentMyTeamsDetailBinding
@@ -178,7 +179,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
 
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
         val adapterNews = activity?.let { realmNewsList?.let { it1 ->
-            AdapterNews(it, it1.toMutableList(), user, null)
+            AdapterNews(it, it1.toMutableList(), user, null, team?.name.toString())
         } }
         adapterNews?.setmRealm(mRealm)
         adapterNews?.setListener(this)

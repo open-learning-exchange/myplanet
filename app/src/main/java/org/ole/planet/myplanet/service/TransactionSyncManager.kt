@@ -149,10 +149,8 @@ object TransactionSyncManager {
             chatHistoryList.add(jsonDoc)
         }
 
-        mRealm.executeTransactionAsync { bgRealm ->
-            chatHistoryList.forEach { jsonDoc ->
-               insert(bgRealm, jsonDoc)
-            }
+        chatHistoryList.forEach { jsonDoc ->
+            insert(mRealm, jsonDoc)
         }
     }
 
@@ -167,10 +165,9 @@ object TransactionSyncManager {
                 documentList.add(jsonDoc)
             }
         }
-        mRealm.executeTransactionAsync { bgRealm ->
-            documentList.forEach { jsonDoc ->
-                continueInsert(bgRealm, table, jsonDoc)
-            }
+
+        documentList.forEach { jsonDoc ->
+            continueInsert(mRealm, table, jsonDoc)
         }
     }
 

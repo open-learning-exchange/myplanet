@@ -32,9 +32,6 @@ open class RealmChatHistory : RealmObject() {
 
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-            }
             val chatHistoryId = JsonUtils.getString("_id", act)
             val existingChatHistory = mRealm.where(RealmChatHistory::class.java).equalTo("_id", chatHistoryId).findFirst()
             existingChatHistory?.deleteFromRealm()
@@ -48,7 +45,6 @@ open class RealmChatHistory : RealmObject() {
             chatHistory.aiProvider = JsonUtils.getString("aiProvider", act)
             chatHistory.conversations = parseConversations(mRealm, JsonUtils.getJsonArray("conversations", act))
             chatHistory.lastUsed = Date().time
-            mRealm.commitTransaction()
 
             val csvRow = arrayOf(
                 JsonUtils.getString("_id", act),
