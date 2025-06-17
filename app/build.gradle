@@ -10,13 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 26
         targetSdkVersion 34
-<<<<<<< 5984-login-username-field-is-sensitive-to-trailing-spaces
         versionCode 2585
         versionName "0.25.85"
-=======
-        versionCode 2584
-        versionName "0.25.84"
->>>>>>> master
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
