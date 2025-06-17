@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import io.realm.Realm
 import io.realm.Sort
+import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
 import org.ole.planet.myplanet.utilities.Utilities
 import java.text.SimpleDateFormat
@@ -31,7 +32,8 @@ class AdapterJoinedMember(
     private val context: Context,
     private val list: MutableList<RealmUserModel>,
     private val mRealm: Realm,
-    private val teamId: String
+    private val teamId: String,
+    private val Listener: MemberChangeListener
 ) : RecyclerView.Adapter<AdapterJoinedMember.ViewHolderUser>() {
 
     private val currentUser: RealmUserModel = UserProfileDbHandler(context).userModel!!
@@ -135,18 +137,24 @@ class AdapterJoinedMember(
                 }
                 builder.setAdapter(adapter) { _, i ->
                     if (position >= 0 && position < list.size) {
+                        var userRemoved = false
                         when (i) {
                             0 -> {
                                 if (currentUser.id != list[position].id) {
                                     reject(list[position], position)
+                                    userRemoved = true
                                 } else {
                                     val nextOfKin = getNextOfKin()
                                     if (nextOfKin != null) {
                                         makeLeader(nextOfKin)
                                         reject(list[position], position)
+                                        userRemoved = true
                                     } else {
                                         Toast.makeText(context, R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
                                     }
+                                }
+                                if (userRemoved) {
+                                    Listener.onMemberChanged()
                                 }
                             }
                             1 -> {
