@@ -372,9 +372,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
-
         try {
             val user = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
+            Log.d("ManagerSync", "checkName: $user")
             user?.let {
                 if (it._id?.isEmpty() == true) {
                     Log.d("ManagerSync", "1name: ${it.name}, password: ${it.password}")
