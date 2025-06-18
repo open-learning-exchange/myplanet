@@ -11,11 +11,11 @@ import android.widget.TableRow
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.*
 import com.google.gson.*
 import com.google.gson.reflect.TypeToken
 import io.realm.Realm
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -185,15 +185,9 @@ class ChatDetailFragment : Fragment() {
                     for (i in 0 until fragmentChatDetailBinding.aiTableRow.childCount) {
                         val view = fragmentChatDetailBinding.aiTableRow.getChildAt(i)
                         if (view is Button && view.text.toString().equals(selectedAiProvider, ignoreCase = true)) {
-                            val modelsString = settings.getString("ai_models", null)
-                            val modelsMap: Map<String, String> = if (modelsString != null) {
-                                Gson().fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type)
-                            } else {
-                                emptyMap()
-                            }
-                            val modelName = modelsMap[selectedAiProvider?.lowercase()] ?: "default-model"
-                            selectAI(view, "$selectedAiProvider", modelName)
-                            break
+                        val modelName = getModelsMap()[selectedAiProvider?.lowercase()] ?: "default-model"
+                        selectAI(view, "$selectedAiProvider", modelName)
+                        break
                         }
                     }
                 }
@@ -217,7 +211,7 @@ class ChatDetailFragment : Fragment() {
         val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
-        CoroutineScope(Dispatchers.IO).launch {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             val primaryAvailable = isServerReachable(mapping.primaryUrl)
             val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
 
@@ -274,12 +268,7 @@ class ChatDetailFragment : Fragment() {
         aiTableRow.removeAllViews()
 
         val currentContext = requireContext()
-        val modelsString = settings.getString("ai_models", null)
-        val modelsMap: Map<String, String> = if (modelsString != null) {
-            Gson().fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type)
-        } else {
-            emptyMap()
-        }
+        val modelsMap = getModelsMap()
 
         val providersMap = aiProvidersResponse.filter { it.value }
 
@@ -394,7 +383,7 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun handleServerReachability(mapping: ServerUrlMapper.UrlMapping) {
-        CoroutineScope(Dispatchers.IO).launch {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             val primaryAvailable = isServerReachable(mapping.primaryUrl)
             val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
 
@@ -409,6 +398,15 @@ class ChatDetailFragment : Fragment() {
                     }
                 }
             }
+        }
+    }
+
+    private fun getModelsMap(): Map<String, String> {
+        val modelsString = settings.getString("ai_models", null)
+        return if (modelsString != null) {
+            Gson().fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type)
+        } else {
+            emptyMap()
         }
     }
 
@@ -429,7 +427,7 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun sendChatRequest(content: RequestBody, query: String, id: String?, newChat: Boolean) {
-        CoroutineScope(Dispatchers.Main).launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
             apiInterface?.chatGpt(Utilities.hostUrl, content)?.enqueue(object : Callback<ChatModel> {
                 override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
