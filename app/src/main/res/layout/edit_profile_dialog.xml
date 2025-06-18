@@ -51,11 +51,11 @@
                 android:autofillHints=""
                 android:drawablePadding="12dp"
                 android:hint="@string/first_name"
-                android:inputType="text"
                 android:paddingStart="10dp"
                 android:paddingEnd="8dp"
                 android:textColor="@color/daynight_textColor"
-                android:backgroundTint="@color/daynight_textColor" />
+                android:backgroundTint="@color/daynight_textColor"
+                android:inputType="textCapWords|textPersonName"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -82,11 +82,11 @@
                 android:autofillHints=""
                 android:drawablePadding="12dp"
                 android:hint="@string/middle_name"
-                android:inputType="text"
                 android:paddingStart="10dp"
                 android:paddingEnd="8dp"
                 android:textColor="@color/daynight_textColor"
-                android:backgroundTint="@color/daynight_textColor" />
+                android:backgroundTint="@color/daynight_textColor"
+                android:inputType="textCapWords|textPersonName"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -113,11 +113,11 @@
                 android:autofillHints=""
                 android:drawablePadding="12dp"
                 android:hint="@string/last_name"
-                android:inputType="text"
                 android:paddingStart="10dp"
                 android:paddingEnd="8dp"
                 android:textColor="@color/daynight_textColor"
-                android:backgroundTint="@color/daynight_textColor" />
+                android:backgroundTint="@color/daynight_textColor"
+                android:inputType="textCapWords|textPersonName"/>
         </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
 
