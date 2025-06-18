@@ -70,8 +70,11 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         fragmentTeamDetailBinding.subtitle.text = getEffectiveTeamType()
 
         if (!isMyTeam) {
+            println("not my team")
             fragmentTeamDetailBinding.btnAddDoc.isEnabled = false
             fragmentTeamDetailBinding.btnAddDoc.visibility = View.GONE
+            fragmentTeamDetailBinding.btnLeave.isEnabled = true
+            fragmentTeamDetailBinding.btnLeave.visibility = View.VISIBLE
             if (user?.id?.startsWith("guest") == true){
                 fragmentTeamDetailBinding.btnLeave.isEnabled = false
                 fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
@@ -84,6 +87,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                     fragmentTeamDetailBinding.btnLeave.text = getString(R.string.requested)
                     fragmentTeamDetailBinding.btnLeave.isEnabled = false
                 } else {
+                    println("not requested")
                     fragmentTeamDetailBinding.btnLeave.text = getString(R.string.join)
                     fragmentTeamDetailBinding.btnLeave.setOnClickListener {
                         RealmMyTeam.requestToJoin(currentTeam._id!!, user, mRealm, team?.teamType)
@@ -121,7 +125,8 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                 }
             }
         }
-        if(getJoinedMemberCount(team!!._id.toString(), mRealm) <= 1){
+        if(getJoinedMemberCount(team!!._id.toString(), mRealm) <= 1 && isMyTeam){
+            print("hi")
             fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
         }
         return fragmentTeamDetailBinding.root
