@@ -808,32 +808,36 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun openMyFragment(f: Fragment) {
-        val (tag, index) = getMyFragmentInfo(f)
-        result?.setSelection(index, false)
-        openCallFragment(f, tag)
+        val info = f.prepareMyFragment()
+        result?.setSelection(info.index, false)
+        openCallFragment(f, info.tag)
     }
 
-    private fun getMyFragmentInfo(f: Fragment): Pair<String, Int> {
-        val isDashboard = f.arguments?.getBoolean("fromDashboard", false) == true
+    private data class MyFragmentInfo(val tag: String, val index: Int)
 
-        if (f !is TeamFragment) {
-            f.arguments = (f.arguments ?: Bundle()).apply {
+    private fun Fragment.prepareMyFragment(): MyFragmentInfo {
+        val isDashboard = arguments?.getBoolean("fromDashboard", false) == true
+
+        if (this !is TeamFragment) {
+            arguments = (arguments ?: Bundle()).apply {
                 putBoolean("isMyCourseLib", true)
             }
         }
 
-        val tag = when {
-            isDashboard && f is TeamFragment -> "MyTeamDashboardFragment"
-            else -> "My" + f::class.java.simpleName
+        val tag = if (isDashboard && this is TeamFragment) {
+            "MyTeamDashboardFragment"
+        } else {
+            "My" + this::class.java.simpleName
         }
 
-        val index = when (f) {
+        val index = when (this) {
             is CoursesFragment -> 2
             is ResourcesFragment -> 1
             is TeamFragment -> if (isDashboard) 0 else 5
             else -> 0
         }
-        return tag to index
+
+        return MyFragmentInfo(tag, index)
     }
 
     override fun onDestroy() {
