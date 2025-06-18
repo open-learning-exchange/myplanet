@@ -8,7 +8,12 @@ import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.graphics.Color
 import android.os.Build
+import android.text.SpannableString
+import android.text.SpannableStringBuilder
+import android.text.Spanned
 import android.text.TextUtils
+import android.text.method.LinkMovementMethod
+import android.text.style.ClickableSpan
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -122,6 +127,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             val news = getNews(holder, position)
 
             if (news?.isValid == true) {
+                println(news)
                 val viewHolder = holder as ViewHolderNews
                 val sharedTeamName = extractSharedTeamName(news)
 
@@ -203,6 +209,9 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/"
         )
         setMarkdownText(holder.rowNewsBinding.tvMessage, markdownContentWithLocalPaths)
+        holder.rowNewsBinding.tvMessage.makeExpandable(
+            collapsedMaxLines = 6
+        )
         holder.rowNewsBinding.tvDate.text =
             if (sharedTeamName.isEmpty() || teamName.isNotEmpty()) {
                 formatDate(news.time)
@@ -210,6 +219,76 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 "${formatDate(news.time)} | Shared from $sharedTeamName"
             }
         holder.rowNewsBinding.tvEdited.visibility = if (news.isEdited) View.VISIBLE else View.GONE
+    }
+
+    fun TextView.makeExpandable(
+        collapsedMaxLines: Int = 6,
+        expandLabel: String = "Read more",
+        collapseLabel: String = "Read less"
+    ) {
+        // Grab the full spannable with images, links, etc.
+        val fullText = text
+        var isExpanded = false
+
+        fun refresh() {
+            // If collapsed…
+            if (!isExpanded) {
+                maxLines = collapsedMaxLines
+                ellipsize = TextUtils.TruncateAt.END
+
+                // Wait until we know how many lines it actually took
+                post {
+                    if (lineCount > collapsedMaxLines) {
+                        // Find character index at end of the last visible line
+                        val lastChar = layout.getLineEnd(collapsedMaxLines - 3)
+
+                        // Slice out the original spans *up to* that index
+                        val visiblePortion = if (fullText is Spanned) {
+                            // SpannableStringBuilder will preserve all spans when appending
+                            SpannableStringBuilder(fullText.subSequence(0, lastChar))
+                        } else {
+                            SpannableStringBuilder(fullText.subSequence(0, lastChar))
+                        }
+
+                        // Append the “… Read more” clickable bit
+                        visiblePortion.append("… ").also { sb ->
+                            val start = sb.length
+                            sb.append(expandLabel)
+                            sb.setSpan(object : ClickableSpan() {
+                                override fun onClick(widget: View) {
+                                    isExpanded = true
+                                    refresh()
+                                }
+                            }, start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        }
+
+                        text = visiblePortion
+                        movementMethod = LinkMovementMethod.getInstance()
+                    }
+                }
+            } else {
+                // Expanded: show the full original + “ Read less”
+                val expandedPortion = SpannableStringBuilder(fullText)
+                expandedPortion.append(" ").also { sb ->
+                    val start = sb.length
+                    sb.append(collapseLabel)
+                    sb.setSpan(object : ClickableSpan() {
+                        override fun onClick(widget: View) {
+                            isExpanded = false
+                            refresh()
+                        }
+                    }, start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+
+                maxLines = Integer.MAX_VALUE
+                ellipsize = null
+                text = expandedPortion
+                movementMethod = LinkMovementMethod.getInstance()
+            }
+        }
+
+        // Kick off the first layout+truncate
+        refresh()
     }
 
     private fun configureEditDeleteButtons(holder: ViewHolderNews, news: RealmNews) {
