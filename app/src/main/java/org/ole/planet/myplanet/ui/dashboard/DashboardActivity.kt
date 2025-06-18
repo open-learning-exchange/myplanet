@@ -808,27 +808,31 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun openMyFragment(f: Fragment) {
-        val fragmentName = f::class.java.simpleName
-        var tag = "My$fragmentName"
+        val tag = buildMyFragmentTag(f)
+        result?.setSelection(drawerIndexForTag(tag), false)
+        openCallFragment(f, tag)
+    }
+
+    private fun buildMyFragmentTag(f: Fragment): String {
         val isDashboard = f.arguments?.getBoolean("fromDashboard", false) == true
-        if(tag != "MyTeamFragment") {
-            val b = Bundle()
-            b.putBoolean("isMyCourseLib", true)
-            f.arguments = b
-        }
-        if (isDashboard) {
-            tag = "MyTeamDashboardFragment"
-        }
-        when (tag) {
-            "MyCoursesFragment" -> result?.setSelection(2, false)
-            "MyResourcesFragment" -> result?.setSelection(1, false)
-            "MyTeamDashboardFragment" -> result?.setSelection(0, false)
-            "MyTeamFragment" ->  result?.setSelection(5, false)
-            else -> {
-                result?.setSelection(0, false)
+        if (f !is TeamFragment) {
+            f.arguments = (f.arguments ?: Bundle()).apply {
+                putBoolean("isMyCourseLib", true)
             }
         }
-        openCallFragment(f, tag)
+        return if (isDashboard) {
+            "MyTeamDashboardFragment"
+        } else {
+            "My" + f::class.java.simpleName
+        }
+    }
+
+    private fun drawerIndexForTag(tag: String): Int = when (tag) {
+        "MyCoursesFragment" -> 2
+        "MyResourcesFragment" -> 1
+        "MyTeamDashboardFragment" -> 0
+        "MyTeamFragment" -> 5
+        else -> 0
     }
 
     override fun onDestroy() {
