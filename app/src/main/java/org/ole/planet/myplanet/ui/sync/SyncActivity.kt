@@ -474,11 +474,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     override fun onSyncComplete() {
         val activityContext = this@SyncActivity
-
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 var attempt = 0
-
                 while (true) {
                     val realm = Realm.getDefaultInstance()
                     var dataInserted = false
