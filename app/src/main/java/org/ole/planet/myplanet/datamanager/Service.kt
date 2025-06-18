@@ -371,12 +371,16 @@ class Service(private val context: Context) {
         })
     }
 
-    fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity, callerActivity: String) {
+    fun getMinApk(
+        listener: ConfigurationIdListener?,
+        url: String,
+        pin: String,
+        activity: SyncActivity,
+        callerActivity: String
+    ) {
         val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(url)
         val urlsToTry = mutableListOf(url).apply { mapping.alternativeUrl?.let { add(it) } }
-
-        var urlStartTime = 0L
 
         MainApplication.applicationScope.launch {
             val customProgressDialog = withContext(Dispatchers.Main) {
@@ -388,90 +392,14 @@ class Service(private val context: Context) {
 
             try {
                 val deferreds = urlsToTry.map { currentUrl ->
-                    async {
-                        try {
-                            urlStartTime = System.currentTimeMillis()
-
-                            val versionsResponse = retrofitInterface?.getConfiguration("$currentUrl/versions")?.execute()
-
-                            if (versionsResponse?.isSuccessful == true) {
-                                val jsonObject = versionsResponse.body()
-                                val minApkVersion = jsonObject?.get("minapk")?.asString
-                                val currentVersion = context.getString(R.string.app_version)
-
-                                if (minApkVersion != null && isVersionAllowed(currentVersion, minApkVersion)) {
-                                    val uri = currentUrl.toUri()
-                                    val couchdbURL = if (currentUrl.contains("@")) {
-                                        getUserInfo(uri)
-                                        currentUrl
-                                    } else {
-                                        val urlUser = "satellite"
-                                        "${uri.scheme}://$urlUser:$pin@${uri.host}:${if (uri.port == -1) if (uri.scheme == "http") 80 else 443 else uri.port}"
-                                    }
-
-                                    withContext(Dispatchers.Main) {
-                                        customProgressDialog.setText(context.getString(R.string.checking_server))
-                                    }
-
-                                    val configResponse = retrofitInterface.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true").execute()
-
-                                    if (configResponse.isSuccessful) {
-                                        val rows = configResponse.body()?.getAsJsonArray("rows")
-                                        if (rows != null && rows.size() > 0) {
-                                            val firstRow = rows[0].asJsonObject
-                                            val id = firstRow.getAsJsonPrimitive("id").asString
-                                            val doc = firstRow.getAsJsonObject("doc")
-                                            val code = doc.getAsJsonPrimitive("code").asString
-                                            val parentCode = doc.getAsJsonPrimitive("parentCode").asString
-
-                                            withContext(Dispatchers.IO) {
-                                                preferences.edit {
-                                                    putString("parentCode", parentCode)
-                                                }
-                                            }
-
-                                            if (doc.has("preferredLang")) {
-                                                val preferredLang = doc.getAsJsonPrimitive("preferredLang").asString
-                                                val languageCode = getLanguageCodeFromName(preferredLang)
-
-                                                if (languageCode != null) {
-                                                    withContext(Dispatchers.IO) {
-                                                        LocaleHelper.setLocale(context, languageCode)
-                                                        preferences.edit {
-                                                            putString("pendingLanguageChange", languageCode)
-                                                        }
-                                                    }
-                                                }
-                                            }
-
-                                            if (doc.has("models")) {
-                                                val modelsMap = doc.getAsJsonObject("models").entrySet()
-                                                    .associate { it.key to it.value.asString }
-
-                                                withContext(Dispatchers.IO) {
-                                                    preferences.edit {
-                                                        putString("ai_models", Gson().toJson(modelsMap))
-                                                    }
-                                                }
-                                            }
-
-                                            return@async UrlCheckResult.Success(id, code, currentUrl)
-                                        }
-                                    }
-                                }
-                            }
-
-                            return@async UrlCheckResult.Failure(currentUrl)
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                            return@async UrlCheckResult.Failure(currentUrl)
-                        }
-                    }
+                    async { checkConfigurationUrl(currentUrl, pin, customProgressDialog) }
                 }
 
                 val result = try {
                     val allResults = deferreds.awaitAll()
-                    allResults.firstOrNull { it is UrlCheckResult.Success } ?: allResults.firstOrNull() ?: UrlCheckResult.Failure(url)
+                    allResults.firstOrNull { it is UrlCheckResult.Success }
+                        ?: allResults.firstOrNull()
+                        ?: UrlCheckResult.Failure(url)
                 } catch (e: Exception) {
                     e.printStackTrace()
                     UrlCheckResult.Failure(url)
@@ -480,14 +408,23 @@ class Service(private val context: Context) {
                 when (result) {
                     is UrlCheckResult.Success -> {
                         val isAlternativeUrl = result.url != url
-                        listener?.onConfigurationIdReceived(result.id, result.code, result.url, url, isAlternativeUrl, callerActivity)
+                        listener?.onConfigurationIdReceived(
+                            result.id,
+                            result.code,
+                            result.url,
+                            url,
+                            isAlternativeUrl,
+                            callerActivity
+                        )
                         activity.setSyncFailed(false)
                     }
                     is UrlCheckResult.Failure -> {
                         activity.setSyncFailed(true)
                         val errorMessage = when (extractProtocol(url)) {
-                            context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
-                            context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
+                            context.getString(R.string.http_protocol) ->
+                                context.getString(R.string.device_couldn_t_reach_local_server)
+                            context.getString(R.string.https_protocol) ->
+                                context.getString(R.string.device_couldn_t_reach_nation_server)
                             else -> context.getString(R.string.device_couldn_t_reach_local_server)
                         }
                         showAlertDialog(errorMessage, false)
@@ -497,11 +434,96 @@ class Service(private val context: Context) {
                 e.printStackTrace()
                 activity.setSyncFailed(true)
                 withContext(Dispatchers.Main) {
-                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
+                    showAlertDialog(
+                        context.getString(R.string.device_couldn_t_reach_local_server),
+                        false
+                    )
                 }
             } finally {
                 customProgressDialog.dismiss()
             }
+        }
+    }
+
+    private suspend fun checkConfigurationUrl(
+        currentUrl: String,
+        pin: String,
+        customProgressDialog: CustomProgressDialog
+    ): UrlCheckResult {
+        return try {
+            val versionsResponse =
+                retrofitInterface?.getConfiguration("$currentUrl/versions")?.execute()
+
+            if (versionsResponse?.isSuccessful == true) {
+                val jsonObject = versionsResponse.body()
+                val minApkVersion = jsonObject?.get("minapk")?.asString
+                val currentVersion = context.getString(R.string.app_version)
+
+                if (minApkVersion != null && isVersionAllowed(currentVersion, minApkVersion)) {
+                    val uri = currentUrl.toUri()
+                    val couchdbURL = if (currentUrl.contains("@")) {
+                        getUserInfo(uri)
+                        currentUrl
+                    } else {
+                        val urlUser = "satellite"
+                        "${uri.scheme}://$urlUser:$pin@${uri.host}:${if (uri.port == -1) if (uri.scheme == "http") 80 else 443 else uri.port}"
+                    }
+
+                    withContext(Dispatchers.Main) {
+                        customProgressDialog.setText(context.getString(R.string.checking_server))
+                    }
+
+                    val configResponse = retrofitInterface.getConfiguration(
+                        "${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true"
+                    ).execute()
+
+                    if (configResponse.isSuccessful) {
+                        val rows = configResponse.body()?.getAsJsonArray("rows")
+                        if (rows != null && rows.size() > 0) {
+                            val firstRow = rows[0].asJsonObject
+                            val id = firstRow.getAsJsonPrimitive("id").asString
+                            val doc = firstRow.getAsJsonObject("doc")
+                            val code = doc.getAsJsonPrimitive("code").asString
+                            val parentCode = doc.getAsJsonPrimitive("parentCode").asString
+
+                            withContext(Dispatchers.IO) {
+                                preferences.edit { putString("parentCode", parentCode) }
+                            }
+
+                            if (doc.has("preferredLang")) {
+                                val preferredLang = doc.getAsJsonPrimitive("preferredLang").asString
+                                val languageCode = getLanguageCodeFromName(preferredLang)
+                                if (languageCode != null) {
+                                    withContext(Dispatchers.IO) {
+                                        LocaleHelper.setLocale(context, languageCode)
+                                        preferences.edit {
+                                            putString("pendingLanguageChange", languageCode)
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (doc.has("models")) {
+                                val modelsMap = doc.getAsJsonObject("models").entrySet()
+                                    .associate { it.key to it.value.asString }
+
+                                withContext(Dispatchers.IO) {
+                                    preferences.edit {
+                                        putString("ai_models", Gson().toJson(modelsMap))
+                                    }
+                                }
+                            }
+
+                            return UrlCheckResult.Success(id, code, currentUrl)
+                        }
+                    }
+                }
+            }
+
+            UrlCheckResult.Failure(currentUrl)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            UrlCheckResult.Failure(currentUrl)
         }
     }
 
