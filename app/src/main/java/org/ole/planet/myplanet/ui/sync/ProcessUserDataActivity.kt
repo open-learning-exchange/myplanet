@@ -32,6 +32,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity
+import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
@@ -181,19 +182,40 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         return true
     }
 
-    fun startUpload(source: String, userName: String? = null) {
+    fun startUpload(source: String, userName: String? = null, securityCallback: SecurityDataCallback? = null) {
+        val uploadStartTime = System.currentTimeMillis()
+        Log.d("UploadTiming", "Starting upload process at: $uploadStartTime for source: $source")
+
         if (source == "becomeMember") {
+            val userDataUploadStartTime = System.currentTimeMillis()
+            Log.d("UploadTiming", "Starting user data upload at: $userDataUploadStartTime")
+
             UploadToShelfService.instance?.uploadUserData(object : SuccessListener {
                 override fun onSuccess(message: String?) {
+                    val userDataUploadEndTime = System.currentTimeMillis()
+                    Log.d("UploadTiming", "User data upload completed at: $userDataUploadEndTime, took: ${userDataUploadEndTime - userDataUploadStartTime}ms")
                     Log.d("Upload", "User data upload completed: $message")
+
+                    val healthUploadStartTime = System.currentTimeMillis()
+                    Log.d("UploadTiming", "Starting health data upload at: $healthUploadStartTime")
 
                     UploadToShelfService.instance?.uploadHealth(object : SuccessListener {
                         override fun onSuccess(healthMessage: String?) {
+                            val healthUploadEndTime = System.currentTimeMillis()
+                            Log.d("UploadTiming", "Health data upload completed at: $healthUploadEndTime, took: ${healthUploadEndTime - healthUploadStartTime}ms")
                             Log.d("Upload", "Health data upload completed: $healthMessage")
 
                             // Fetch security data for the specific user
                             userName?.let { name ->
-                                fetchAndLogUserSecurityData(name)
+                                val securityFetchStartTime = System.currentTimeMillis()
+                                Log.d("UploadTiming", "Starting security data fetch at: $securityFetchStartTime")
+
+                                fetchAndLogUserSecurityData(name, securityCallback, securityFetchStartTime)
+                            } ?: run {
+                                // If no username, complete the process
+                                val totalUploadEndTime = System.currentTimeMillis()
+                                Log.d("UploadTiming", "Upload process completed (no username) at: $totalUploadEndTime, total took: ${totalUploadEndTime - uploadStartTime}ms")
+                                securityCallback?.onSecurityDataUpdated()
                             }
                         }
                     })
@@ -324,16 +346,28 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         editor.putString("couchdbURL", couchdbURL)
     }
 
-    fun fetchAndLogUserSecurityData(name: String) {
+    fun fetchAndLogUserSecurityData(name: String, securityCallback: SecurityDataCallback? = null, startTime: Long = System.currentTimeMillis()) {
         CoroutineScope(Dispatchers.IO).launch {
+            val fetchStartTime = System.currentTimeMillis()
+            Log.d("SecurityDataTiming", "Starting fetchAndLogUserSecurityData at: $fetchStartTime")
             Log.d("UserSecurityData", "Fetching user security data for: $name")
+
             try {
+                val apiCallStartTime = System.currentTimeMillis()
+                Log.d("SecurityDataTiming", "Starting API call at: $apiCallStartTime")
+
                 val apiInterface = client?.create(ApiInterface::class.java)
                 val userDocUrl = "${getUrl()}/tablet_users/org.couchdb.user:$name"
                 val response = apiInterface?.getJsonObject(Utilities.header, userDocUrl)?.execute()
+
+                val apiCallEndTime = System.currentTimeMillis()
+                Log.d("SecurityDataTiming", "API call completed at: $apiCallEndTime, took: ${apiCallEndTime - apiCallStartTime}ms")
                 Log.d("okuro", "Fetching user security data for: $name from URL: $userDocUrl")
 
                 if (response?.isSuccessful == true && response.body() != null) {
+                    val dataExtractionStartTime = System.currentTimeMillis()
+                    Log.d("SecurityDataTiming", "Starting data extraction at: $dataExtractionStartTime")
+
                     val userDoc = response.body()
                     Log.d("okuro", "$userDoc")
 
@@ -345,25 +379,37 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
                     val userId = userDoc?.get("_id")?.asString
                     val rev = userDoc?.get("_rev")?.asString
 
+                    val dataExtractionEndTime = System.currentTimeMillis()
+                    Log.d("SecurityDataTiming", "Data extraction completed at: $dataExtractionEndTime, took: ${dataExtractionEndTime - dataExtractionStartTime}ms")
                     Log.d("UserSecurityData", "Extracted data - Derived Key: $derivedKey, Salt: $salt, Password Scheme: $passwordScheme")
 
                     // Switch to Main thread for Realm operations
                     withContext(Dispatchers.Main) {
-                        updateRealmUserSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations)
+                        updateRealmUserSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations, securityCallback, startTime)
                     }
 
                 } else {
                     withContext(Dispatchers.Main) {
+                        val failureTime = System.currentTimeMillis()
+                        Log.d("SecurityDataTiming", "Failed to fetch user data at: $failureTime, total process took: ${failureTime - startTime}ms")
                         Log.e("UserSecurityData", "Failed to fetch user data for: $name")
                         Log.e("UserSecurityData", "Response code: ${response?.code()}")
                         Log.e("UserSecurityData", "Response message: ${response?.message()}")
+
+                        // Even on failure, call the callback to prevent hanging
+                        securityCallback?.onSecurityDataUpdated()
                     }
                 }
 
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
+                    val errorTime = System.currentTimeMillis()
+                    Log.d("SecurityDataTiming", "Error occurred at: $errorTime, total process took: ${errorTime - startTime}ms")
                     Log.e("UserSecurityData", "Error fetching user security data: $e")
                     e.printStackTrace()
+
+                    // Even on error, call the callback to prevent hanging
+                    securityCallback?.onSecurityDataUpdated()
                 }
             }
         }
@@ -376,12 +422,20 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         derivedKey: String?,
         salt: String?,
         passwordScheme: String?,
-        iterations: String?
+        iterations: String?,
+        securityCallback: SecurityDataCallback? = null,
+        processStartTime: Long = System.currentTimeMillis()
     ) {
+        val realmUpdateStartTime = System.currentTimeMillis()
+        Log.d("SecurityDataTiming", "Starting Realm update at: $realmUpdateStartTime")
+
         try {
             val realm = DatabaseService(this).realmInstance
 
             realm.executeTransactionAsync({ transactionRealm ->
+                val transactionStartTime = System.currentTimeMillis()
+                Log.d("SecurityDataTiming", "Starting Realm transaction at: $transactionStartTime")
+
                 // Find the user by name first
                 val user = transactionRealm.where(RealmUserModel::class.java)
                     .equalTo("name", name)
@@ -408,16 +462,35 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
                 } else {
                     Log.w("UserUpdate", "User not found in Realm with name: $name")
                 }
+
+                val transactionEndTime = System.currentTimeMillis()
+                Log.d("SecurityDataTiming", "Realm transaction completed at: $transactionEndTime, took: ${transactionEndTime - transactionStartTime}ms")
             }, {
+                val successTime = System.currentTimeMillis()
+                Log.d("SecurityDataTiming", "Realm update successful at: $successTime, took: ${successTime - realmUpdateStartTime}ms")
+                Log.d("SecurityDataTiming", "Total security data process took: ${successTime - processStartTime}ms")
                 Log.d("UserUpdate", "Successfully updated user security data in Realm")
+
+                // THIS IS THE KEY LOG - call the callback here to signal completion
+                securityCallback?.onSecurityDataUpdated()
             }) { error ->
+                val errorTime = System.currentTimeMillis()
+                Log.d("SecurityDataTiming", "Realm update failed at: $errorTime, took: ${errorTime - realmUpdateStartTime}ms")
                 Log.e("UserUpdate", "Failed to update user security data: ${error.message}")
                 error.printStackTrace()
+
+                // Even on error, call the callback to prevent hanging
+                securityCallback?.onSecurityDataUpdated()
             }
 
         } catch (e: Exception) {
+            val exceptionTime = System.currentTimeMillis()
+            Log.d("SecurityDataTiming", "Exception occurred at: $exceptionTime, took: ${exceptionTime - realmUpdateStartTime}ms")
             Log.e("UserUpdate", "Error updating realm user security data: ${e.message}")
             e.printStackTrace()
+
+            // Even on exception, call the callback to prevent hanging
+            securityCallback?.onSecurityDataUpdated()
         }
     }
 
