@@ -115,6 +115,21 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         checkUser()
+        initViews()
+        updateAppTitle()
+        if (handleGuestAccess()) return
+        setupNavigation()
+        handleInitialFragment()
+        setupToolbarActions()
+        initTabs()
+        hideWifi()
+        setupRealmListeners()
+        checkAndCreateNewNotifications()
+        addBackPressCallback()
+        evaluateChallengeDialog()
+    }
+
+    private fun initViews() {
         activityDashboardBinding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(activityDashboardBinding.root)
         setupUI(activityDashboardBinding.activityDashboardParentLayout, this@DashboardActivity)
@@ -128,9 +143,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
         service = Service(this)
         tl = findViewById(R.id.tab_layout)
-        activityDashboardBinding.root.viewTreeObserver.addOnGlobalLayoutListener {
-            topBarVisible()
+        activityDashboardBinding.root.viewTreeObserver.addOnGlobalLayoutListener { topBarVisible() }
+        activityDashboardBinding.appBarBell.ivSetting.setOnClickListener {
+            startActivity(Intent(this, SettingActivity::class.java))
         }
+    }
+
+    private fun updateAppTitle() {
         try {
             val userProfileModel = profileDbHandler.userModel
             if (userProfileModel != null) {
@@ -150,13 +169,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         } catch (err: Exception) {
             throw RuntimeException(err)
         }
-        activityDashboardBinding.appBarBell.ivSetting.setOnClickListener {
-            startActivity(Intent(this, SettingActivity::class.java))
-        }
-        if ((user != null) && user?.rolesList?.isEmpty() == true && !user?.userAdmin!!) {
+    }
+
+    private fun handleGuestAccess(): Boolean {
+        if (user != null && user?.rolesList?.isEmpty() == true && !user?.userAdmin!!) {
             navigationView.visibility = View.GONE
             openCallFragment(InactiveDashboardFragment(), "Dashboard")
-            return
+            return true
         }
         navigationView.setOnItemSelectedListener(this)
         navigationView.visibility = if (UserProfileDbHandler(this).userModel?.isShowTopbar == true) {
@@ -164,6 +183,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         } else {
             View.GONE
         }
+        return false
+    }
+
+    private fun setupNavigation() {
         headerResult = accountHeader
         createDrawer()
         supportFragmentManager.addOnBackStackChangedListener {
@@ -181,8 +204,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 is TeamFragment -> {
                     val isDashboard = frag.arguments?.getBoolean("fromDashboard", false) == true
                     val isEnterprise = frag.arguments?.getString("type") == "enterprise"
-                    if(isDashboard) 0L
-                    else if (isEnterprise) 6L else 5L
+                    if (isDashboard) 0L else if (isEnterprise) 6L else 5L
                 }
                 is CommunityTabFragment -> 7L
                 is SurveyFragment -> 8L
@@ -190,27 +212,31 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
             idToSelect?.let { result?.setSelection(it, false) }
         }
-        if (!(user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) && resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+        if (!(user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) &&
+            resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
+        ) {
             result?.openDrawer()
         }
         result?.stickyFooter?.setPadding(0, 0, 0, 0)
         result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
         dl = result?.drawerLayout
         topbarSetting()
+    }
+
+    private fun handleInitialFragment() {
         if (intent != null && intent.hasExtra("fragmentToOpen")) {
             val fragmentToOpen = intent.getStringExtra("fragmentToOpen")
-            if (("feedbackList" == fragmentToOpen)) {
+            if ("feedbackList" == fragmentToOpen) {
                 openMyFragment(FeedbackListFragment())
             }
         } else {
             openCallFragment(BellDashboardFragment())
             activityDashboardBinding.appBarBell.bellToolbar.visibility = View.VISIBLE
         }
+    }
 
-        activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
-            logSyncInSharedPrefs()
-        }
-
+    private fun setupToolbarActions() {
+        activityDashboardBinding.appBarBell.ivSync.setOnClickListener { logSyncInSharedPrefs() }
         activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
         activityDashboardBinding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
@@ -240,23 +266,23 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 R.id.action_disclaimer -> openCallFragment(DisclaimerFragment(), DisclaimerFragment::class.java.simpleName)
                 R.id.action_about -> openCallFragment(AboutFragment(), AboutFragment::class.java.simpleName)
                 R.id.action_logout -> logout()
-                R.id.change_language -> {
-                    SettingActivity.SettingFragment.languageChanger(this)
-                }
+                R.id.change_language -> SettingActivity.SettingFragment.languageChanger(this)
                 else -> {}
             }
             true
         }
+    }
+
+    private fun initTabs() {
         menuh = tl?.getTabAt(0)
         menul = tl?.getTabAt(1)
         menuc = tl?.getTabAt(2)
         menut = tl?.getTabAt(3)
         menue = tl?.getTabAt(4)
         menuco = tl?.getTabAt(5)
-        hideWifi()
-        setupRealmListeners()
-        checkAndCreateNewNotifications()
+    }
 
+    private fun addBackPressCallback() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (result != null && result?.isDrawerOpen == true) {
@@ -280,7 +306,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
         })
+    }
 
+    private fun evaluateChallengeDialog() {
         val startTime = 1730419200000
         val endTime = 1734307200000
 
@@ -382,7 +410,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         }
                         challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, hasUnfinishedSurvey)
                     } else {
-                        challengeDialog(uniqueDates.size, getString(R.string.course_not_started, courseName), allUniqueDates.size, hasUnfinishedSurvey)
+                        challengeDialog(
+                            uniqueDates.size,
+                            getString(R.string.course_not_started, courseName),
+                            allUniqueDates.size,
+                            hasUnfinishedSurvey
+                        )
                     }
                 }
             }
