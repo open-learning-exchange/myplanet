@@ -13,7 +13,6 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.MemberChangeListener
-import org.ole.planet.myplanet.callback.TeamPageListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -70,7 +69,6 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         fragmentTeamDetailBinding.subtitle.text = getEffectiveTeamType()
 
         if (!isMyTeam) {
-            println("not my team")
             fragmentTeamDetailBinding.btnAddDoc.isEnabled = false
             fragmentTeamDetailBinding.btnAddDoc.visibility = View.GONE
             fragmentTeamDetailBinding.btnLeave.isEnabled = true
@@ -87,7 +85,6 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                     fragmentTeamDetailBinding.btnLeave.text = getString(R.string.requested)
                     fragmentTeamDetailBinding.btnLeave.isEnabled = false
                 } else {
-                    println("not requested")
                     fragmentTeamDetailBinding.btnLeave.text = getString(R.string.join)
                     fragmentTeamDetailBinding.btnLeave.setOnClickListener {
                         RealmMyTeam.requestToJoin(currentTeam._id!!, user, mRealm, team?.teamType)
@@ -126,14 +123,12 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
             }
         }
         if(getJoinedMemberCount(team!!._id.toString(), mRealm) <= 1 && isMyTeam){
-            print("hi")
             fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
         }
         return fragmentTeamDetailBinding.root
     }
 
     override fun onMemberChanged() {
-        println(getJoinedMemberCount(team!!._id.toString(), mRealm))
         if(getJoinedMemberCount(team!!._id.toString(), mRealm) <= 1){
             fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
         } else{
