@@ -60,49 +60,28 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
 
     private fun handleClickMyLife(title: String, v: View) {
         v.setOnClickListener {
-            if (homeItemClickListener != null) {
-                if (title == "mySubmissions") {
-                    if (model?.id?.startsWith("guest") == false) {
-                        homeItemClickListener?.openCallFragment(MySubmissionFragment())
-                    } else {
-                        guestDialog(requireContext())
-                    }
-                } else if (title == "Our News") {
-                    homeItemClickListener?.openCallFragment(NewsFragment())
-                } else if (title == "References") {
-                    homeItemClickListener?.openCallFragment(ReferenceFragment())
-                } else if (title == "Calendar") {
-                    homeItemClickListener?.openCallFragment(CalendarFragment())
-                } else if (title == "mySurveys") {
-                    if (model?.id?.startsWith("guest") == false) {
-                        homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
-                    } else {
-                        guestDialog(requireContext())
-                    }
-                } else if (title == "myAchievements") {
-                    if (model?.id?.startsWith("guest") == false) {
-                        homeItemClickListener?.openCallFragment(AchievementFragment())
-                    } else {
-                        guestDialog(requireContext())
-                    }
-                } else if (title == "myPersonals") {
-                    if (model?.id?.startsWith("guest") == false) {
-                        homeItemClickListener?.openCallFragment(MyPersonalsFragment())
-                    } else {
-                        guestDialog(requireContext())
-                    }
-                } else if (title == "Help Wanted") {
-                    homeItemClickListener?.openCallFragment(HelpWantedFragment())
-                } else if (title == "myHealth") {
-                    if (model?.id?.startsWith("guest") == false) {
-                        homeItemClickListener?.openCallFragment(MyHealthFragment())
-                    } else {
-                        guestDialog(requireContext())
-                    }
-                } else {
-                    Utilities.toast(activity, getString(R.string.feature_not_available))
+            homeItemClickListener?.let { listener ->
+                when (title) {
+                    "mySubmissions" -> openIfLoggedIn { listener.openCallFragment(MySubmissionFragment()) }
+                    "Our News" -> listener.openCallFragment(NewsFragment())
+                    "References" -> listener.openCallFragment(ReferenceFragment())
+                    "Calendar" -> listener.openCallFragment(CalendarFragment())
+                    "mySurveys" -> openIfLoggedIn { listener.openCallFragment(MySubmissionFragment.newInstance("survey")) }
+                    "myAchievements" -> openIfLoggedIn { listener.openCallFragment(AchievementFragment()) }
+                    "myPersonals" -> openIfLoggedIn { listener.openCallFragment(MyPersonalsFragment()) }
+                    "Help Wanted" -> listener.openCallFragment(HelpWantedFragment())
+                    "myHealth" -> openIfLoggedIn { listener.openCallFragment(MyHealthFragment()) }
+                    else -> Utilities.toast(activity, getString(R.string.feature_not_available))
                 }
             }
+        }
+    }
+
+    private inline fun openIfLoggedIn(action: () -> Unit) {
+        if (model?.id?.startsWith("guest") == false) {
+            action()
+        } else {
+            guestDialog(requireContext())
         }
     }
 
