@@ -58,6 +58,8 @@ class ChatDetailFragment : Fragment() {
     private val gson = Gson()
     private val serverUrlMapper = ServerUrlMapper()
     private val jsonMediaType = "application/json".toMediaTypeOrNull()
+    private val serverUrl: String
+        get() = settings.getString("serverURL", "") ?: ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -202,21 +204,10 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun checkAiProviders() {
-        val updateUrl = "${settings.getString("serverURL", "")}"
-        val mapping = serverUrlMapper.processUrl(updateUrl)
+        val mapping = serverUrlMapper.processUrl(serverUrl)
 
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            val primaryAvailable = isServerReachable(mapping.primaryUrl)
-            val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
-
-            if (!primaryAvailable && alternativeAvailable) {
-                mapping.alternativeUrl.let { alternativeUrl ->
-                    val uri = updateUrl.toUri()
-                    val editor = settings.edit()
-
-                    serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
-                }
-            }
+            updateServerIfNecessary(mapping)
 
             withContext(Dispatchers.Main) {
                 customProgressDialog.setText(getString(R.string.fetching_ai_providers))
@@ -347,8 +338,10 @@ class ChatDetailFragment : Fragment() {
     private fun launchRequest(content: RequestBody, query: String, id: String?) {
         disableUI()
         val mapping = processServerUrl()
-        handleServerReachability(mapping)
-        sendChatRequest(content, query, id, id == null)
+        viewLifecycleOwner.lifecycleScope.launch {
+            withContext(Dispatchers.IO) { updateServerIfNecessary(mapping) }
+            sendChatRequest(content, query, id, id == null)
+        }
     }
 
     private fun disableUI() {
@@ -363,26 +356,17 @@ class ChatDetailFragment : Fragment() {
         fragmentChatDetailBinding.imageGchatLoading.visibility = View.INVISIBLE
     }
 
-    private fun processServerUrl(): ServerUrlMapper.UrlMapping {
-        val updateUrl = settings.getString("serverURL", "") ?: ""
-        return serverUrlMapper.processUrl(updateUrl)
-    }
+    private fun processServerUrl(): ServerUrlMapper.UrlMapping =
+        serverUrlMapper.processUrl(serverUrl)
 
-    private fun handleServerReachability(mapping: ServerUrlMapper.UrlMapping) {
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            val primaryAvailable = isServerReachable(mapping.primaryUrl)
-            val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
+    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
+        val primaryAvailable = isServerReachable(mapping.primaryUrl)
+        val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
 
-            if (!primaryAvailable && alternativeAvailable) {
-                mapping.alternativeUrl.let { alternativeUrl ->
-                    val uri = settings.getString("serverURL", "")?.toUri()
-                    val editor = settings.edit()
-                    if (uri != null) {
-                        if (alternativeUrl != null) {
-                            serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
-                        }
-                    }
-                }
+        if (!primaryAvailable && alternativeAvailable) {
+            mapping.alternativeUrl?.let { alternativeUrl ->
+                val editor = settings.edit()
+                serverUrlMapper.updateUrlPreferences(editor, serverUrl.toUri(), alternativeUrl, mapping.primaryUrl, settings)
             }
         }
     }
