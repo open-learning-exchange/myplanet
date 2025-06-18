@@ -11,6 +11,7 @@ import android.graphics.PorterDuff
 import android.net.Uri
 import android.os.Build
 import android.text.TextUtils
+import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
@@ -24,10 +25,17 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.google.android.material.textfield.TextInputLayout
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity
 import org.ole.planet.myplanet.callback.SuccessListener
+import org.ole.planet.myplanet.datamanager.ApiClient.client
+import org.ole.planet.myplanet.datamanager.ApiInterface
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
@@ -37,6 +45,8 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.FileUtils.installApk
+import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.roundToInt
@@ -171,11 +181,24 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         return true
     }
 
-    fun startUpload(source: String) {
+    fun startUpload(source: String, userName: String? = null) {
         if (source == "becomeMember") {
-            UploadToShelfService.instance?.uploadUserData {
-                UploadToShelfService.instance?.uploadHealth()
-            }
+            UploadToShelfService.instance?.uploadUserData(object : SuccessListener {
+                override fun onSuccess(message: String?) {
+                    Log.d("Upload", "User data upload completed: $message")
+
+                    UploadToShelfService.instance?.uploadHealth(object : SuccessListener {
+                        override fun onSuccess(healthMessage: String?) {
+                            Log.d("Upload", "Health data upload completed: $healthMessage")
+
+                            // Fetch security data for the specific user
+                            userName?.let { name ->
+                                fetchAndLogUserSecurityData(name)
+                            }
+                        }
+                    })
+                }
+            })
             return
         } else if (source == "login") {
             UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
@@ -299,5 +322,111 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         editor.putInt("url_Port", if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port)
         editor.putString("serverURL", url)
         editor.putString("couchdbURL", couchdbURL)
+    }
+
+    fun fetchAndLogUserSecurityData(name: String) {
+        CoroutineScope(Dispatchers.IO).launch {
+            Log.d("UserSecurityData", "Fetching user security data for: $name")
+            try {
+                val apiInterface = client?.create(ApiInterface::class.java)
+                val userDocUrl = "${getUrl()}/tablet_users/org.couchdb.user:$name"
+                val response = apiInterface?.getJsonObject(Utilities.header, userDocUrl)?.execute()
+                Log.d("okuro", "Fetching user security data for: $name from URL: $userDocUrl")
+
+                if (response?.isSuccessful == true && response.body() != null) {
+                    val userDoc = response.body()
+                    Log.d("okuro", "$userDoc")
+
+                    // Extract security data from the JSON response
+                    val derivedKey = userDoc?.get("derived_key")?.asString
+                    val salt = userDoc?.get("salt")?.asString
+                    val passwordScheme = userDoc?.get("password_scheme")?.asString
+                    val iterations = userDoc?.get("iterations")?.asString
+                    val userId = userDoc?.get("_id")?.asString
+                    val rev = userDoc?.get("_rev")?.asString
+
+                    Log.d("UserSecurityData", "Extracted data - Derived Key: $derivedKey, Salt: $salt, Password Scheme: $passwordScheme")
+
+                    // Switch to Main thread for Realm operations
+                    withContext(Dispatchers.Main) {
+                        updateRealmUserSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations)
+                    }
+
+                } else {
+                    withContext(Dispatchers.Main) {
+                        Log.e("UserSecurityData", "Failed to fetch user data for: $name")
+                        Log.e("UserSecurityData", "Response code: ${response?.code()}")
+                        Log.e("UserSecurityData", "Response message: ${response?.message()}")
+                    }
+                }
+
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Log.e("UserSecurityData", "Error fetching user security data: $e")
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
+    private fun updateRealmUserSecurityData(
+        name: String,
+        userId: String?,
+        rev: String?,
+        derivedKey: String?,
+        salt: String?,
+        passwordScheme: String?,
+        iterations: String?
+    ) {
+        try {
+            val realm = DatabaseService(this).realmInstance
+
+            realm.executeTransactionAsync({ transactionRealm ->
+                // Find the user by name first
+                val user = transactionRealm.where(RealmUserModel::class.java)
+                    .equalTo("name", name)
+                    .findFirst()
+
+                if (user != null) {
+                    Log.d("UserUpdate", "Found user in Realm: ${user.name}, current _id: ${user._id}")
+
+                    // Update the security fields
+                    user._id = userId
+                    user._rev = rev
+                    user.derived_key = derivedKey
+                    user.salt = salt
+                    user.password_scheme = passwordScheme
+                    user.iterations = iterations
+                    user.isUpdated = false // Mark as not needing update since we just synced
+
+                    Log.d("UserUpdate", "Updated user security data for: $name")
+                    Log.d("UserUpdate", "New _id: $userId")
+                    Log.d("UserUpdate", "New derived_key: $derivedKey")
+                    Log.d("UserUpdate", "New salt: $salt")
+                    Log.d("UserUpdate", "New password_scheme: $passwordScheme")
+
+                } else {
+                    Log.w("UserUpdate", "User not found in Realm with name: $name")
+                }
+            }, {
+                Log.d("UserUpdate", "Successfully updated user security data in Realm")
+            }) { error ->
+                Log.e("UserUpdate", "Failed to update user security data: ${error.message}")
+                error.printStackTrace()
+            }
+
+        } catch (e: Exception) {
+            Log.e("UserUpdate", "Error updating realm user security data: ${e.message}")
+            e.printStackTrace()
+        }
+    }
+
+    fun logLargeString(tag: String, content: String) {
+        if (content.length > 3000) {
+            Log.d(tag, content.substring(0, 3000))
+            logLargeString(tag, content.substring(3000))
+        } else {
+            Log.d(tag, content)
+        }
     }
 }

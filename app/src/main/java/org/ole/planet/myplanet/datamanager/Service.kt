@@ -6,6 +6,7 @@ import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.net.Uri
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -316,7 +317,10 @@ class Service(private val context: Context) {
                             if (canReachServer) {
                                 if (context is ProcessUserDataActivity) {
                                     context.runOnUiThread {
-                                        context.startUpload("becomeMember")
+//                                        context.startUpload("becomeMember")
+                                        val userName = "${obj["name"].asString}"
+                                        Log.d("Service", "Starting upload for user: $userName")
+                                        context.startUpload("becomeMember", userName)
                                     }
                                 }
 //                                TransactionSyncManager.syncDb(realm, "tablet_users")

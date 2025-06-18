@@ -210,6 +210,33 @@ class UploadToShelfService(context: Context) {
         }
     }
 
+    fun uploadHealth(listener: SuccessListener?) {
+        val apiInterface = client?.create(ApiInterface::class.java)
+        mRealm = dbService.realmInstance
+
+        mRealm.executeTransactionAsync({ realm: Realm ->
+            val myHealths: List<RealmMyHealthPojo> = realm.where(RealmMyHealthPojo::class.java).equalTo("isUpdated", true).notEqualTo("userId", "").findAll()
+            myHealths.forEachIndexed { index, pojo ->
+                try {
+                    val res = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/health", serialize(pojo))?.execute()
+
+                    if (res?.body() != null && res.body()?.has("id") == true) {
+                        pojo._rev = res.body()!!["rev"].asString
+                        pojo.isUpdated = false
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }, {
+            // Success callback
+            listener?.onSuccess("Health data uploaded successfully")
+        }) { error ->
+            // Error callback
+            listener?.onSuccess("Error uploading health data: ${error.localizedMessage}")
+        }
+    }
+
     private fun uploadToShelf(listener: SuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm = dbService.realmInstance

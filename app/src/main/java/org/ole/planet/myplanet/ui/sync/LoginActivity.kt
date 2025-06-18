@@ -6,6 +6,7 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.*
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.text.*
+import android.util.Base64
 import android.util.Log
 import android.view.*
 import android.view.inputmethod.EditorInfo
@@ -18,13 +19,16 @@ import androidx.recyclerview.widget.*
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import io.realm.Realm
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.*
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.*
 import org.ole.planet.myplanet.datamanager.*
+import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
@@ -145,6 +149,11 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             } else if (TextUtils.isEmpty(activityLoginBinding.inputPassword.text.toString())) {
                 activityLoginBinding.inputPassword.error = getString(R.string.err_msg_password)
             } else {
+                val users = mRealm.where(RealmUserModel::class.java).equalTo("name", "${activityLoginBinding.inputName.text}").findAll()
+                users.forEach {
+                    logLargeString("okuro", it.serialize().toString())
+                }
+
                 if (mRealm.isClosed) {
                     mRealm = Realm.getDefaultInstance()
                 }
@@ -186,6 +195,77 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             }
         }
     }
+
+//    fun fetchAndLogUserSecurityData(name: String) {
+//        try {
+//            val apiInterface = client?.create(ApiInterface::class.java)
+//
+//            val userName = settings.getString("loginUserName", "")
+//            val password = settings.getString("loginUserPassword", "")
+//            val header = "Basic ${Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)}"
+//
+//            // Use tablet_users database instead of _users
+//            val userDocUrl = "${getUrl()}/tablet_users/org.couchdb.user:$name}"
+//            val response = apiInterface?.getJsonObject(header, userDocUrl)?.execute()
+//
+//            if (response?.isSuccessful == true && response.body() != null) {
+//                val userDoc = response.body()
+////                val derivedKey = getString("derived_key", userDoc)
+////                val salt = getString("salt", userDoc)
+////                val passwordScheme = getString("password_scheme", userDoc)
+////                val iterations = getString("iterations", userDoc)
+////                val userId = getString("_id", userDoc)
+////                val rev = getString("_rev", userDoc)
+//                Log.d("okuro", "$userDoc")
+//
+//                // Log the security data
+////                Log.d("UserSecurityData", "=== User Security Data for: $userName ===")
+////                Log.d("UserSecurityData", "Document ID: $userId")
+////                Log.d("UserSecurityData", "Revision: $rev")
+////                Log.d("UserSecurityData", "Derived Key: $derivedKey")
+////                Log.d("UserSecurityData", "Salt: $salt")
+////                Log.d("UserSecurityData", "Password Scheme: $passwordScheme")
+////                Log.d("UserSecurityData", "Iterations: $iterations")
+////                Log.d("UserSecurityData", "=====================================")
+//            } else {
+//                Log.e("UserSecurityData", "Failed to fetch user data for: $userName")
+//                Log.e("UserSecurityData", "Response code: ${response?.code()}")
+//                Log.e("UserSecurityData", "Response message: ${response?.message()}")
+//            }
+//
+//        } catch (e: Exception) {
+//            Log.e("UserSecurityData", "Error fetching user security data: ${e.message}")
+//            e.printStackTrace()
+//        }
+//    }
+
+//    fun fetchAndLogUserSecurityData(name: String) {
+//        CoroutineScope(Dispatchers.IO).launch {
+//            try {
+//                val apiInterface = client?.create(ApiInterface::class.java)
+//
+//                val userDocUrl = "${getUrl()}/tablet_users/org.couchdb.user:$name"
+//                val response = apiInterface?.getJsonObject(Utilities.header, userDocUrl)?.execute()
+//
+//                withContext(Dispatchers.Main) {
+//                    if (response?.isSuccessful == true && response.body() != null) {
+//                        val userDoc = response.body()
+//                        Log.d("okuro", "$userDoc")
+//                    } else {
+//                        Log.e("UserSecurityData", "Failed to fetch user data for: $name")
+//                        Log.e("UserSecurityData", "Response code: ${response?.code()}")
+//                        Log.e("UserSecurityData", "Response message: ${response?.message()}")
+//                    }
+//                }
+//
+//            } catch (e: Exception) {
+//                withContext(Dispatchers.Main) {
+//                    Log.e("UserSecurityData", "Error fetching user security data: ${e.message}")
+//                    e.printStackTrace()
+//                }
+//            }
+//        }
+//    }
 
     private fun declareMoreElements() {
         try {
