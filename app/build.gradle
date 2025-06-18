@@ -243,6 +243,8 @@ dependencies {
     implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.1.21"))
 
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
+    implementation("androidx.activity:activity:1.8.0")
+
 }
 realm {
     syncEnabled = true

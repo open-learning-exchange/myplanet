@@ -6,11 +6,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.view.WindowCompat
 import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
@@ -193,6 +195,21 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             homeIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
             context.startActivity(homeIntent)
         }
+
+        fun enableEdgeToEdgeForActivity(activity: Activity) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        WindowCompat.setDecorFitsSystemWindows(activity.window, false)
+                    } else {
+                        WindowCompat.setDecorFitsSystemWindows(activity.window, false)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    createLog("edge_to_edge_error", "Failed to enable edge-to-edge: ${e.message}")
+                }
+            }
+        }
     }
 
     private var activityReferences = 0
@@ -319,7 +336,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
     }
 
-    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
+    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {
+        enableEdgeToEdgeForActivity(activity)
+    }
 
     override fun onActivityStarted(activity: Activity) {
         if (++activityReferences == 1 && !isActivityChangingConfigurations) {
