@@ -197,17 +197,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
 
         fun enableEdgeToEdgeForActivity(activity: Activity) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                try {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        WindowCompat.setDecorFitsSystemWindows(activity.window, false)
-                    } else {
-                        WindowCompat.setDecorFitsSystemWindows(activity.window, false)
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    createLog("edge_to_edge_error", "Failed to enable edge-to-edge: ${e.message}")
-                }
+            try {
+                WindowCompat.setDecorFitsSystemWindows(activity.window, false)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                createLog("edge_to_edge_error", "Failed to enable edge-to-edge: ${e.message}")
             }
         }
     }
