@@ -55,6 +55,9 @@ class ChatDetailFragment : Fragment() {
     private var newsId: String? = null
     lateinit var settings: SharedPreferences
     lateinit var customProgressDialog: DialogUtils.CustomProgressDialog
+    private val gson = Gson()
+    private val serverUrlMapper = ServerUrlMapper()
+    private val jsonMediaType = "application/json".toMediaTypeOrNull()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -98,22 +101,14 @@ class ChatDetailFragment : Fragment() {
                 mAdapter.addQuery(message)
                 if (_id != "") {
                     val newRev = getLatestRev(_id) ?: _rev
-                    val continueChatData = ContinueChatModel(data = Data("${user?.name}", message, aiProvider, _id, newRev), save = true)
-                    val jsonContent = Gson().toJson(continueChatData)
-                    val requestBody = RequestBody.create("application/json".toMediaTypeOrNull(), jsonContent)
-                    continueChatRequest(requestBody, _id, message)
-                }
-                else if (currentID != "") {
-                    val continueChatData = ContinueChatModel(data = Data("${user?.name}", message, aiProvider, currentID, _rev), save = true)
-                    val jsonContent = Gson().toJson(continueChatData)
-                    val requestBody = RequestBody.create("application/json".toMediaTypeOrNull(), jsonContent)
-                    continueChatRequest(requestBody, currentID, message)
-                }
-                else {
-                    val chatData = ChatRequestModel(data = ContentData("${user?.name}", message, aiProvider), save = true)
-                    val jsonContent = Gson().toJson(chatData)
-                    val requestBody = RequestBody.create("application/json".toMediaTypeOrNull(), jsonContent)
-                    makePostRequest(requestBody, message)
+                    val requestBody = createContinueChatRequest(message, aiProvider, _id, newRev)
+                    launchRequest(requestBody, message, _id)
+                } else if (currentID != "") {
+                    val requestBody = createContinueChatRequest(message, aiProvider, currentID, _rev)
+                    launchRequest(requestBody, message, currentID)
+                } else {
+                    val requestBody = createChatRequest(message, aiProvider)
+                    launchRequest(requestBody, message, null)
                 }
                 fragmentChatDetailBinding.editGchatMessage.text.clear()
                 fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
@@ -143,7 +138,7 @@ class ChatDetailFragment : Fragment() {
         if (newsId != null) {
             _id = "$newsId"
             _rev = newsRev ?: ""
-            val conversations = Gson().fromJson(newsConversations, Array<Conversation>::class.java).toList()
+            val conversations = gson.fromJson(newsConversations, Array<Conversation>::class.java).toList()
             for (conversation in conversations) {
                 val query = conversation.query
                 val response = conversation.response
@@ -208,7 +203,6 @@ class ChatDetailFragment : Fragment() {
 
     private fun checkAiProviders() {
         val updateUrl = "${settings.getString("serverURL", "")}"
-        val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
@@ -234,7 +228,7 @@ class ChatDetailFragment : Fragment() {
                             response.body()?.let { responseBody ->
                                 try {
                                     val responseString = responseBody.string()
-                                    val aiProvidersResponse: Map<String, Boolean> = Gson().fromJson(
+                                    val aiProvidersResponse: Map<String, Boolean> = gson.fromJson(
                                         responseString,
                                         object : TypeToken<Map<String, Boolean>>() {}.type
                                     )
@@ -350,18 +344,11 @@ class ChatDetailFragment : Fragment() {
         fragmentChatDetailBinding.buttonGchatSend.isEnabled = false
     }
 
-    private fun makePostRequest(content: RequestBody, query: String) {
+    private fun launchRequest(content: RequestBody, query: String, id: String?) {
         disableUI()
         val mapping = processServerUrl()
         handleServerReachability(mapping)
-        sendChatRequest(content, query, null, true)
-    }
-
-    private fun continueChatRequest(content: RequestBody, id: String, query: String) {
-        disableUI()
-        val mapping = processServerUrl()
-        handleServerReachability(mapping)
-        sendChatRequest(content, query, id, false)
+        sendChatRequest(content, query, id, id == null)
     }
 
     private fun disableUI() {
@@ -378,7 +365,6 @@ class ChatDetailFragment : Fragment() {
 
     private fun processServerUrl(): ServerUrlMapper.UrlMapping {
         val updateUrl = settings.getString("serverURL", "") ?: ""
-        val serverUrlMapper = ServerUrlMapper()
         return serverUrlMapper.processUrl(updateUrl)
     }
 
@@ -393,7 +379,7 @@ class ChatDetailFragment : Fragment() {
                     val editor = settings.edit()
                     if (uri != null) {
                         if (alternativeUrl != null) {
-                            ServerUrlMapper().updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
+                            serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
                         }
                     }
                 }
@@ -404,10 +390,25 @@ class ChatDetailFragment : Fragment() {
     private fun getModelsMap(): Map<String, String> {
         val modelsString = settings.getString("ai_models", null)
         return if (modelsString != null) {
-            Gson().fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type)
+            gson.fromJson(modelsString, object : TypeToken<Map<String, String>>() {}.type)
         } else {
             emptyMap()
         }
+    }
+
+    private fun jsonRequestBody(json: String): RequestBody =
+        RequestBody.create(jsonMediaType, json)
+
+    private fun createContinueChatRequest(message: String, aiProvider: AiProvider, id: String, rev: String): RequestBody {
+        val continueChatData = ContinueChatModel(data = Data("${user?.name}", message, aiProvider, id, rev), save = true)
+        val jsonContent = gson.toJson(continueChatData)
+        return jsonRequestBody(jsonContent)
+    }
+
+    private fun createChatRequest(message: String, aiProvider: AiProvider): RequestBody {
+        val chatData = ChatRequestModel(data = ContentData("${user?.name}", message, aiProvider), save = true)
+        val jsonContent = gson.toJson(chatData)
+        return jsonRequestBody(jsonContent)
     }
 
     private fun getLatestRev(id: String): String? {
