@@ -808,31 +808,32 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun openMyFragment(f: Fragment) {
-        val tag = buildMyFragmentTag(f)
-        result?.setSelection(drawerIndexForTag(tag), false)
+        val (tag, index) = getMyFragmentInfo(f)
+        result?.setSelection(index, false)
         openCallFragment(f, tag)
     }
 
-    private fun buildMyFragmentTag(f: Fragment): String {
+    private fun getMyFragmentInfo(f: Fragment): Pair<String, Int> {
         val isDashboard = f.arguments?.getBoolean("fromDashboard", false) == true
+
         if (f !is TeamFragment) {
             f.arguments = (f.arguments ?: Bundle()).apply {
                 putBoolean("isMyCourseLib", true)
             }
         }
-        return if (isDashboard) {
-            "MyTeamDashboardFragment"
-        } else {
-            "My" + f::class.java.simpleName
-        }
-    }
 
-    private fun drawerIndexForTag(tag: String): Int = when (tag) {
-        "MyCoursesFragment" -> 2
-        "MyResourcesFragment" -> 1
-        "MyTeamDashboardFragment" -> 0
-        "MyTeamFragment" -> 5
-        else -> 0
+        val tag = when {
+            isDashboard && f is TeamFragment -> "MyTeamDashboardFragment"
+            else -> "My" + f::class.java.simpleName
+        }
+
+        val index = when (f) {
+            is CoursesFragment -> 2
+            is ResourcesFragment -> 1
+            is TeamFragment -> if (isDashboard) 0 else 5
+            else -> 0
+        }
+        return tag to index
     }
 
     override fun onDestroy() {
