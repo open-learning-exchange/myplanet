@@ -1,0 +1,24 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:width="6dp"
+        android:height="6dp"
+        android:gravity="bottom|start"
+        android:bottom="2dp"
+        android:left="14dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/primary"/>
+        </shape>
+    </item>
+
+    <item
+        android:width="6dp"
+        android:height="6dp"
+        android:gravity="bottom|start"
+        android:bottom="2dp"
+        android:left="20dp">
+        <shape android:shape="oval">
+            <solid android:color="@color/disable_color"/>
+        </shape>
+    </item>
+</layer-list>
