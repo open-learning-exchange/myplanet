@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.ANRWatchdog
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
+import org.ole.planet.myplanet.utilities.EdgeToEdgeHelper
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.initialize
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
@@ -197,12 +198,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
 
         fun enableEdgeToEdgeForActivity(activity: Activity) {
-            try {
-                WindowCompat.setDecorFitsSystemWindows(activity.window, false)
-            } catch (e: Exception) {
-                e.printStackTrace()
-                createLog("edge_to_edge_error", "Failed to enable edge-to-edge: ${e.message}")
-            }
+            EdgeToEdgeHelper.enableEdgeToEdge(activity)
         }
     }
 

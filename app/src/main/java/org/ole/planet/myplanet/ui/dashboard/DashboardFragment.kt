@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.ui.news.NewsFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
+import org.ole.planet.myplanet.utilities.EdgeToEdgeHelper
 import org.ole.planet.myplanet.utilities.TimeUtils.currentDate
 
 class DashboardFragment : BaseDashboardFragment() {
@@ -52,6 +53,10 @@ class DashboardFragment : BaseDashboardFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        EdgeToEdgeHelper.applyWindowInsetsToFragment(
+            rootView = view,
+            consumeInsets = false
+        )
         val noOfSurvey = getNoOfSurveySubmissionByUser(settings?.getString("userId", "--"), dRealm)
         fragmentHomeBinding.cardProfile.imgSurveyWarn.visibility = if (noOfSurvey == 0) View.VISIBLE else View.GONE
         fragmentHomeBinding.addResource.setOnClickListener {

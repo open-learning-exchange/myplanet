@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.EdgeToEdgeHelper
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 
@@ -214,6 +215,10 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        EdgeToEdgeHelper.applyWindowInsetsToFragment(
+            rootView = view,
+            consumeInsets = false
+        )
         fragmentTeamBinding.rvTeamList.layoutManager = LinearLayoutManager(activity)
         setTeamList()
         fragmentTeamBinding.etSearch.addTextChangedListener(object : TextWatcher {

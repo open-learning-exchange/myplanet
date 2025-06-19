@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Calendar
 import java.util.UUID
 import androidx.core.view.isVisible
+import org.ole.planet.myplanet.utilities.EdgeToEdgeHelper
 
 class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSelected,
     ChipDeletedListener, TagClickListener, OnFilterListener {
@@ -79,6 +80,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        EdgeToEdgeHelper.applyWindowInsetsToFragment(
+            rootView = view,
+            consumeInsets = false
+        )
         isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
         userModel = UserProfileDbHandler(requireContext()).userModel
         searchTags = ArrayList()

@@ -18,8 +18,12 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.MenuItemCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
@@ -87,6 +91,7 @@ import java.util.Date
 import kotlin.math.ceil
 import kotlinx.coroutines.*
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.utilities.enableEdgeToEdgeDisplay
 
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
@@ -117,6 +122,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         checkUser()
         activityDashboardBinding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(activityDashboardBinding.root)
+        enableEdgeToEdgeDisplay()
         setupUI(activityDashboardBinding.activityDashboardParentLayout, this@DashboardActivity)
         setSupportActionBar(activityDashboardBinding.myToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
@@ -166,6 +172,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         headerResult = accountHeader
         createDrawer()
+        applyInsetsToMaterialDrawer()
         supportFragmentManager.addOnBackStackChangedListener {
             val frag = supportFragmentManager.findFragmentById(R.id.fragment_container)
             val idToSelect = when (frag) {
@@ -804,6 +811,59 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             R.string.enterprises -> openEnterpriseFragment()
             R.string.menu_logout -> logout()
             else -> openCallFragment(BellDashboardFragment())
+        }
+    }
+
+    private fun applyInsetsToMaterialDrawer() {
+        // Get the drawer layout
+        val drawerLayout = result!!.drawerLayout
+
+        // Apply insets to the top app bar instead of the main content
+        val bellToolbar = activityDashboardBinding.appBarBell.bellToolbar
+        ViewCompat.setOnApplyWindowInsetsListener(bellToolbar) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.updatePadding(top = systemBars.top)
+
+            // Increase the toolbar height to accommodate the status bar
+            val params = view.layoutParams
+            params.height = resources.getDimensionPixelSize(R.dimen._58dp) + systemBars.top
+            view.layoutParams = params
+
+            insets
+        }
+
+        // Apply insets to the drawer slider layout
+        ViewCompat.setOnApplyWindowInsetsListener(drawerLayout) { _, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+
+            // Find the drawer slider layout
+            val drawerSlider = drawerLayout.findViewById<View>(
+                com.mikepenz.materialdrawer.R.id.material_drawer_slider_layout
+            )
+
+            drawerSlider?.let { slider ->
+                // Apply padding to the slider layout
+                slider.updatePadding(
+                    top = systemBars.top,
+                    bottom = systemBars.bottom // This fixes the logout button visibility
+                )
+
+                // Also apply to the RecyclerView inside
+                val recyclerView = slider.findViewById<RecyclerView>(
+                    com.mikepenz.materialdrawer.R.id.material_drawer_recycler_view
+                )
+
+                recyclerView?.apply {
+                    clipToPadding = false
+                    // Remove any existing padding and apply new
+                    updatePadding(
+                        top = 0, // Top padding handled by parent
+                        bottom = systemBars.bottom
+                    )
+                }
+            }
+
+            insets
         }
     }
 
