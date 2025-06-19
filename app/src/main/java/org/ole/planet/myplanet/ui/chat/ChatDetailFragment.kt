@@ -92,7 +92,7 @@ class ChatDetailFragment : Fragment() {
             fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
             if (TextUtils.isEmpty("${fragmentChatDetailBinding.editGchatMessage.text}".trim())) {
                 fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
-                fragmentChatDetailBinding.textGchatIndicator.text = getString(R.string.kindly_enter_message)
+                fragmentChatDetailBinding.textGchatIndicator.text = context?.getString(R.string.kindly_enter_message)
             } else {
                 val message = "${fragmentChatDetailBinding.editGchatMessage.text}".replace("\n", " ")
                 mAdapter.addQuery(message)
@@ -231,7 +231,7 @@ class ChatDetailFragment : Fragment() {
             }
 
             withContext(Dispatchers.Main) {
-                customProgressDialog.setText(getString(R.string.fetching_ai_providers))
+                customProgressDialog.setText("${context?.getString(R.string.fetching_ai_providers)}")
                 customProgressDialog.show()
                 val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
                 apiInterface?.checkAiProviders("${Utilities.hostUrl}checkProviders/")?.enqueue(object : Callback<ResponseBody> {
@@ -357,7 +357,7 @@ class ChatDetailFragment : Fragment() {
 
     private fun onFailError() {
         fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
-        fragmentChatDetailBinding.textGchatIndicator.text = requireContext().getString(R.string.virtual_assistant_currently_not_available)
+        fragmentChatDetailBinding.textGchatIndicator.text = context?.getString(R.string.virtual_assistant_currently_not_available)
         fragmentChatDetailBinding.editGchatMessage.isEnabled = false
         fragmentChatDetailBinding.buttonGchatSend.isEnabled = false
     }
@@ -462,7 +462,7 @@ class ChatDetailFragment : Fragment() {
                 showError(responseBody.message)
             }
         } else {
-            showError(response.message() ?: getString(R.string.request_failed_please_retry))
+            showError(response.message() ?: context?.getString(R.string.request_failed_please_retry))
             id?.let { continueConversationRealm(it, query, "") }
         }
         enableUI()
