@@ -23,5 +23,5 @@
         android:padding="3dp"
         android:text="0"
         android:textColor="@android:color/white"
-        android:textSize="10sp" />
+        android:textSize="10dp" />
 </FrameLayout>
