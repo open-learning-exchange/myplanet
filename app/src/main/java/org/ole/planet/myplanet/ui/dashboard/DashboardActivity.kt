@@ -23,6 +23,7 @@ import androidx.fragment.app.Fragment
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
+import com.google.gson.JsonObject
 import com.mikepenz.materialdrawer.AccountHeader
 import com.mikepenz.materialdrawer.AccountHeaderBuilder
 import com.mikepenz.materialdrawer.Drawer
@@ -41,8 +42,6 @@ import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
-import org.ole.planet.myplanet.base.BaseResourceFragment
-import org.ole.planet.myplanet.ui.dashboard.DashboardViewModel
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
@@ -86,6 +85,8 @@ import java.time.LocalDate
 import java.util.Date
 import kotlin.math.ceil
 import kotlinx.coroutines.*
+import org.ole.planet.myplanet.model.RealmMyTeam
+import java.util.Locale
 
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
@@ -114,6 +115,21 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         checkUser()
+        initViews()
+        updateAppTitle()
+        if (handleGuestAccess()) return
+        setupNavigation()
+        handleInitialFragment()
+        setupToolbarActions()
+        initTabs()
+        hideWifi()
+        setupRealmListeners()
+        checkAndCreateNewNotifications()
+        addBackPressCallback()
+        evaluateChallengeDialog()
+    }
+
+    private fun initViews() {
         activityDashboardBinding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(activityDashboardBinding.root)
         setupUI(activityDashboardBinding.activityDashboardParentLayout, this@DashboardActivity)
@@ -127,9 +143,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
         service = Service(this)
         tl = findViewById(R.id.tab_layout)
-        activityDashboardBinding.root.viewTreeObserver.addOnGlobalLayoutListener {
-            topBarVisible()
+        activityDashboardBinding.root.viewTreeObserver.addOnGlobalLayoutListener { topBarVisible() }
+        activityDashboardBinding.appBarBell.ivSetting.setOnClickListener {
+            startActivity(Intent(this, SettingActivity::class.java))
         }
+    }
+
+    private fun updateAppTitle() {
         try {
             val userProfileModel = profileDbHandler.userModel
             if (userProfileModel != null) {
@@ -149,13 +169,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         } catch (err: Exception) {
             throw RuntimeException(err)
         }
-        activityDashboardBinding.appBarBell.ivSetting.setOnClickListener {
-            startActivity(Intent(this, SettingActivity::class.java))
-        }
-        if ((user != null) && user?.rolesList?.isEmpty() == true && !user?.userAdmin!!) {
+    }
+
+    private fun handleGuestAccess(): Boolean {
+        if (user != null && user?.rolesList?.isEmpty() == true && !user?.userAdmin!!) {
             navigationView.visibility = View.GONE
             openCallFragment(InactiveDashboardFragment(), "Dashboard")
-            return
+            return true
         }
         navigationView.setOnItemSelectedListener(this)
         navigationView.visibility = if (UserProfileDbHandler(this).userModel?.isShowTopbar == true) {
@@ -163,6 +183,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         } else {
             View.GONE
         }
+        return false
+    }
+
+    private fun setupNavigation() {
         headerResult = accountHeader
         createDrawer()
         supportFragmentManager.addOnBackStackChangedListener {
@@ -180,8 +204,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 is TeamFragment -> {
                     val isDashboard = frag.arguments?.getBoolean("fromDashboard", false) == true
                     val isEnterprise = frag.arguments?.getString("type") == "enterprise"
-                    if(isDashboard) 0L
-                    else if (isEnterprise) 6L else 5L
+                    if (isDashboard) 0L else if (isEnterprise) 6L else 5L
                 }
                 is CommunityTabFragment -> 7L
                 is SurveyFragment -> 8L
@@ -189,27 +212,31 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
             idToSelect?.let { result?.setSelection(it, false) }
         }
-        if (!(user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) && resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+        if (!(user?.id?.startsWith("guest") == true && profileDbHandler.offlineVisits >= 3) &&
+            resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
+        ) {
             result?.openDrawer()
         }
         result?.stickyFooter?.setPadding(0, 0, 0, 0)
         result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
         dl = result?.drawerLayout
         topbarSetting()
+    }
+
+    private fun handleInitialFragment() {
         if (intent != null && intent.hasExtra("fragmentToOpen")) {
             val fragmentToOpen = intent.getStringExtra("fragmentToOpen")
-            if (("feedbackList" == fragmentToOpen)) {
+            if ("feedbackList" == fragmentToOpen) {
                 openMyFragment(FeedbackListFragment())
             }
         } else {
             openCallFragment(BellDashboardFragment())
             activityDashboardBinding.appBarBell.bellToolbar.visibility = View.VISIBLE
         }
+    }
 
-        activityDashboardBinding.appBarBell.ivSync.setOnClickListener {
-            logSyncInSharedPrefs()
-        }
-
+    private fun setupToolbarActions() {
+        activityDashboardBinding.appBarBell.ivSync.setOnClickListener { logSyncInSharedPrefs() }
         activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
         activityDashboardBinding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
             when (item.itemId) {
@@ -239,23 +266,23 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 R.id.action_disclaimer -> openCallFragment(DisclaimerFragment(), DisclaimerFragment::class.java.simpleName)
                 R.id.action_about -> openCallFragment(AboutFragment(), AboutFragment::class.java.simpleName)
                 R.id.action_logout -> logout()
-                R.id.change_language -> {
-                    SettingActivity.SettingFragment.languageChanger(this)
-                }
+                R.id.change_language -> SettingActivity.SettingFragment.languageChanger(this)
                 else -> {}
             }
             true
         }
+    }
+
+    private fun initTabs() {
         menuh = tl?.getTabAt(0)
         menul = tl?.getTabAt(1)
         menuc = tl?.getTabAt(2)
         menut = tl?.getTabAt(3)
         menue = tl?.getTabAt(4)
         menuco = tl?.getTabAt(5)
-        hideWifi()
-        setupRealmListeners()
-        checkAndCreateNewNotifications()
+    }
 
+    private fun addBackPressCallback() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (result != null && result?.isDrawerOpen == true) {
@@ -279,78 +306,23 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
         })
+    }
 
+    private fun evaluateChallengeDialog() {
         val startTime = 1730419200000
         val endTime = 1734307200000
 
-        val commVoiceResults = mRealm.where(RealmNews::class.java)
-            .equalTo("userId", user?.id)
-            .greaterThanOrEqualTo("time", startTime)
-            .lessThanOrEqualTo("time", endTime)
-            .findAll()
-
-        val commVoice = commVoiceResults.filter { realmNews ->
-            realmNews.viewIn?.let { viewInStr ->
-                try {
-                    val viewInArray = JSONArray(viewInStr)
-                    for (i in 0 until viewInArray.length()) {
-                        val viewInObj = viewInArray.getJSONObject(i)
-                        if (viewInObj.optString("section") == "community") {
-                            return@filter true
-                        }
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-            false
-        }
-
-        val allCommVoiceResults = mRealm.where(RealmNews::class.java)
-            .greaterThanOrEqualTo("time", startTime)
-            .lessThanOrEqualTo("time", endTime)
-            .findAll()
-
-        val allCommVoice = allCommVoiceResults.filter { realmNews ->
-            realmNews.viewIn?.let { viewInStr ->
-                try {
-                    val viewInArray = JSONArray(viewInStr)
-                    for (i in 0 until viewInArray.length()) {
-                        val viewInObj = viewInArray.getJSONObject(i)
-                        if (viewInObj.optString("section") == "community") {
-                            return@filter true
-                        }
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-            false
-        }
-
-        fun getDateFromTimestamp(timestamp: Long): String {
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd")
-            return dateFormat.format(Date(timestamp))
-        }
-
-        val uniqueDates = commVoice
-            .map { getDateFromTimestamp(it.time) }
-            .distinct()
-
-        val allUniqueDates = allCommVoice
-            .map { getDateFromTimestamp(it.time) }
-            .distinct()
-
-        val courseData = MyProgressFragment.fetchCourseData(mRealm, user?.id)
+        val uniqueDates = fetchVoiceDates(startTime, endTime, user?.id)
+        val allUniqueDates = fetchVoiceDates(startTime, endTime, null)
 
         val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
+        val courseData = MyProgressFragment.fetchCourseData(mRealm, user?.id)
         val progress = MyProgressFragment.getCourseProgress(courseData, courseId)
-
-        val hasUnfinishedSurvey = mRealm.where(RealmStepExam::class.java)
+        val courseName = mRealm.where(RealmMyCourse::class.java)
             .equalTo("courseId", courseId)
-            .equalTo("type", "survey")
-            .findAll()
-            .any { survey -> !TakeCourseFragment.existsSubmission(mRealm, survey.id, "survey") }
+            .findFirst()?.courseTitle
+
+        val hasUnfinishedSurvey = hasPendingSurvey(courseId)
 
         val validUrls = listOf(
             "https://${BuildConfig.PLANET_GUATEMALA_URL}",
@@ -362,30 +334,72 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         )
 
         val today = LocalDate.now()
-        if (user?.id?.startsWith("guest") == false) {
-            val endDate = LocalDate.of(2025, 1, 16)
-            if (today.isAfter(LocalDate.of(2024, 11, 30)) && today.isBefore(endDate)) {
-                if (settings.getString("serverURL", "") in validUrls) {
-                    val course = mRealm.where(RealmMyCourse::class.java)
-                        .equalTo("courseId", courseId)
-                        .findFirst()
-                    val courseName = course?.courseTitle
+        if (user?.id?.startsWith("guest") == false && shouldPromptChallenge(today, validUrls)) {
+            val courseStatus = getCourseStatus(progress, courseName)
+            challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, hasUnfinishedSurvey)
+        }
+    }
 
-                    if (progress != null) {
-                        val max = progress.get("max").asInt
-                        val current = progress.get("current").asInt
-                        val courseStatus = if (current == max) {
-                            getString(R.string.course_completed, courseName)
-                        } else {
-                            getString(R.string.course_in_progress, courseName, current, max)
-                        }
-                        challengeDialog(uniqueDates.size, courseStatus, allUniqueDates.size, hasUnfinishedSurvey)
-                    } else {
-                        challengeDialog(uniqueDates.size, getString(R.string.course_not_started, courseName), allUniqueDates.size, hasUnfinishedSurvey)
+    private fun fetchVoiceDates(start: Long, end: Long, userId: String?): List<String> {
+        val query = mRealm.where(RealmNews::class.java)
+            .greaterThanOrEqualTo("time", start)
+            .lessThanOrEqualTo("time", end)
+        if (userId != null) query.equalTo("userId", userId)
+        val results = query.findAll()
+        return results.filter { isCommunitySection(it) }
+            .map { getDateFromTimestamp(it.time) }
+            .distinct()
+    }
+
+    private fun isCommunitySection(news: RealmNews): Boolean {
+        news.viewIn?.let { viewInStr ->
+            try {
+                val viewInArray = JSONArray(viewInStr)
+                for (i in 0 until viewInArray.length()) {
+                    val viewInObj = viewInArray.getJSONObject(i)
+                    if (viewInObj.optString("section") == "community") {
+                        return true
                     }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
+        return false
+    }
+
+    private fun getDateFromTimestamp(timestamp: Long): String {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        return dateFormat.format(Date(timestamp))
+    }
+
+    private fun hasPendingSurvey(courseId: String): Boolean {
+        return mRealm.where(RealmStepExam::class.java)
+            .equalTo("courseId", courseId)
+            .equalTo("type", "survey")
+            .findAll()
+            .any { survey -> !TakeCourseFragment.existsSubmission(mRealm, survey.id, "survey") }
+    }
+
+    private fun getCourseStatus(progress: JsonObject?, courseName: String?): String {
+        return if (progress != null) {
+            val max = progress.get("max").asInt
+            val current = progress.get("current").asInt
+            if (current == max) {
+                getString(R.string.course_completed, courseName)
+            } else {
+                getString(R.string.course_in_progress, courseName, current, max)
+            }
+        } else {
+            getString(R.string.course_not_started, courseName)
+        }
+    }
+
+    private fun shouldPromptChallenge(today: LocalDate, validUrls: List<String>): Boolean {
+        val endDate = LocalDate.of(2025, 1, 16)
+        return today.isAfter(LocalDate.of(2024, 11, 30)) &&
+            today.isBefore(endDate) &&
+            settings.getString("serverURL", "") in validUrls
     }
 
     fun challengeDialog (voiceCount: Int, courseStatus: String, allVoiceCount: Int, hasUnfinishedSurvey: Boolean) {
@@ -537,8 +551,45 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val storageRatio = totalAvailableMemoryRatio
         dashboardViewModel.createNotificationIfNotExists(realm, "storage", "$storageRatio", "storage", userId)
+        createJoinRequestNotifications(realm, userId)
     }
 
+    private fun createJoinRequestNotifications(realm: Realm, userId: String?) {
+        val teamLeaderMemberships = realm.where(RealmMyTeam::class.java)
+            .equalTo("userId", userId)
+            .equalTo("docType", "membership")
+            .equalTo("isLeader", true)
+            .findAll()
+
+        teamLeaderMemberships.forEach { leadership ->
+            val pendingJoinRequests = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", leadership.teamId)
+                .equalTo("docType", "request")
+                .findAll()
+
+            pendingJoinRequests.forEach { joinRequest ->
+                val team = realm.where(RealmMyTeam::class.java)
+                    .equalTo("_id", leadership.teamId)
+                    .findFirst()
+
+                val requester = realm.where(RealmUserModel::class.java)
+                    .equalTo("id", joinRequest.userId)
+                    .findFirst()
+
+                val requesterName = requester?.name ?: "Unknown User"
+                val teamName = team?.name ?: "Unknown Team"
+                val message = "$requesterName has requested to join $teamName"
+
+                dashboardViewModel.createNotificationIfNotExists(
+                    realm,
+                    "join_request",
+                    message,
+                    joinRequest._id,
+                    userId
+                )
+            }
+        }
+    }
     private fun openNotificationsList(userId: String) {
         val fragment = NotificationsFragment().apply {
             arguments = Bundle().apply {

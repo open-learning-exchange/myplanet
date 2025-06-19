@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import java.util.Arrays
 import java.util.Date
 import java.util.Locale
+import androidx.core.view.isVisible
 import java.util.UUID
 
 class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {
@@ -318,6 +319,11 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         rdBtn.isChecked = choice == oldAnswer
         rdBtn.setOnCheckedChangeListener(this)
         fragmentTakeExamBinding.groupChoices.addView(rdBtn)
+
+        if (choice.equals("Other", ignoreCase = true) && choice == oldAnswer) {
+            fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
+            fragmentTakeExamBinding.etAnswer.setText(oldAnswer)
+        }
     }
 
     private fun addCompoundButton(choice: JsonObject?, isRadio: Boolean, oldAnswer: String) {
@@ -385,7 +391,8 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun showTextInput(type: String?) {
-        if (type.equals("input", ignoreCase = true) || type.equals("textarea", ignoreCase = true)) {
+        if (type.equals("input", ignoreCase = true) || type.equals("textarea", ignoreCase = true) ||
+            (fragmentTakeExamBinding.etAnswer.isVisible)) {
             ans = fragmentTakeExamBinding.etAnswer.text.toString()
         }
     }
@@ -511,8 +518,18 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         mRealm.close()
     }
 
-    override fun onCheckedChanged(compoundButton: CompoundButton, b: Boolean) {
-        if (b) {
+    override fun onCheckedChanged(compoundButton: CompoundButton, isChecked: Boolean) {
+        if (isChecked) {
+            val selectedText = "${compoundButton.text}"
+
+            if (selectedText.equals("Other", ignoreCase = true)) {
+                fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
+                fragmentTakeExamBinding.etAnswer.requestFocus()
+            } else {
+                fragmentTakeExamBinding.etAnswer.visibility = View.GONE
+                fragmentTakeExamBinding.etAnswer.text.clear()
+            }
+
             addAnswer(compoundButton)
         } else if (compoundButton.tag != null && compoundButton !is RadioButton) {
             listAns?.remove("${compoundButton.text}")
