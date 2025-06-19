@@ -56,6 +56,8 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         if (context is OnHomeItemClickListener) {
             homeItemClickListener = context
         }
+        selectedItems.clear()
+        areAllSelected = false
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
     }
 
@@ -77,6 +79,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     }
 
     fun setCourseList(courseList: List<RealmMyCourse?>) {
+        selectedItems.clear()
         this.courseList = courseList
         notifyDataSetChanged()
     }
@@ -195,9 +198,11 @@ class AdapterCourses(private val context: Context, private var courseList: List<
                 if (!userModel?.isGuest()!!) {
                     holder.rowCourseBinding.checkbox.isChecked = selectedItems.contains(course)
                     holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
-                        holder.rowCourseBinding.checkbox.contentDescription = context.getString(R.string.select_res_course, course.courseTitle)
-                        Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, courseList)
-                        listener?.onSelectedListChange(selectedItems)
+                        synchronized(this) {
+                            holder.rowCourseBinding.checkbox.contentDescription = context.getString(R.string.select_res_course, course.courseTitle)
+                            Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, courseList)
+                            listener?.onSelectedListChange(selectedItems)
+                        }
                     }
                 } else {
                     holder.rowCourseBinding.checkbox.visibility = View.GONE
@@ -223,12 +228,17 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     }
 
     fun areAllSelected(): Boolean {
-        areAllSelected = selectedItems.size == courseList.size
+        val notMyCourse = courseList.count { course ->
+            course != null && !course.isMyCourse
+        }
+        println("selectedItems.size: ${selectedItems.size}, notMyCourse: $notMyCourse")
+        areAllSelected = selectedItems.size == notMyCourse
         return areAllSelected
     }
 
     fun selectAllItems(selectAll: Boolean) {
         selectedItems.clear()
+        println("selectAllItems: $selectAll")
         if (selectAll) {
             selectedItems.addAll(courseList.filter { course ->
                 course != null && !course.isMyCourse
