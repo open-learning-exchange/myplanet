@@ -371,13 +371,7 @@ class Service(private val context: Context) {
         })
     }
 
-    fun getMinApk(
-        listener: ConfigurationIdListener?,
-        url: String,
-        pin: String,
-        activity: SyncActivity,
-        callerActivity: String
-    ) {
+    fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity, callerActivity: String) {
         val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(url)
         val urlsToTry = mutableListOf(url).apply { mapping.alternativeUrl?.let { add(it) } }
@@ -408,23 +402,14 @@ class Service(private val context: Context) {
                 when (result) {
                     is UrlCheckResult.Success -> {
                         val isAlternativeUrl = result.url != url
-                        listener?.onConfigurationIdReceived(
-                            result.id,
-                            result.code,
-                            result.url,
-                            url,
-                            isAlternativeUrl,
-                            callerActivity
-                        )
+                        listener?.onConfigurationIdReceived(result.id, result.code, result.url, url, isAlternativeUrl, callerActivity)
                         activity.setSyncFailed(false)
                     }
                     is UrlCheckResult.Failure -> {
                         activity.setSyncFailed(true)
                         val errorMessage = when (extractProtocol(url)) {
-                            context.getString(R.string.http_protocol) ->
-                                context.getString(R.string.device_couldn_t_reach_local_server)
-                            context.getString(R.string.https_protocol) ->
-                                context.getString(R.string.device_couldn_t_reach_nation_server)
+                            context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
+                            context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
                             else -> context.getString(R.string.device_couldn_t_reach_local_server)
                         }
                         showAlertDialog(errorMessage, false)
@@ -434,10 +419,7 @@ class Service(private val context: Context) {
                 e.printStackTrace()
                 activity.setSyncFailed(true)
                 withContext(Dispatchers.Main) {
-                    showAlertDialog(
-                        context.getString(R.string.device_couldn_t_reach_local_server),
-                        false
-                    )
+                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
                 }
             } finally {
                 customProgressDialog.dismiss()
@@ -445,14 +427,9 @@ class Service(private val context: Context) {
         }
     }
 
-    private suspend fun checkConfigurationUrl(
-        currentUrl: String,
-        pin: String,
-        customProgressDialog: CustomProgressDialog
-    ): UrlCheckResult {
+    private suspend fun checkConfigurationUrl(currentUrl: String, pin: String, customProgressDialog: CustomProgressDialog): UrlCheckResult {
         return try {
-            val versionsResponse =
-                retrofitInterface?.getConfiguration("$currentUrl/versions")?.execute()
+            val versionsResponse = retrofitInterface?.getConfiguration("$currentUrl/versions")?.execute()
 
             if (versionsResponse?.isSuccessful == true) {
                 val jsonObject = versionsResponse.body()
@@ -473,9 +450,7 @@ class Service(private val context: Context) {
                         customProgressDialog.setText(context.getString(R.string.checking_server))
                     }
 
-                    val configResponse = retrofitInterface.getConfiguration(
-                        "${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true"
-                    ).execute()
+                    val configResponse = retrofitInterface.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true").execute()
 
                     if (configResponse.isSuccessful) {
                         val rows = configResponse.body()?.getAsJsonArray("rows")
