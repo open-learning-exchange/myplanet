@@ -23,6 +23,7 @@ import androidx.fragment.app.Fragment
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
+import com.google.gson.JsonObject
 import com.mikepenz.materialdrawer.AccountHeader
 import com.mikepenz.materialdrawer.AccountHeaderBuilder
 import com.mikepenz.materialdrawer.Drawer
@@ -41,8 +42,6 @@ import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
-import org.ole.planet.myplanet.base.BaseResourceFragment
-import org.ole.planet.myplanet.ui.dashboard.DashboardViewModel
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
@@ -87,6 +86,7 @@ import java.util.Date
 import kotlin.math.ceil
 import kotlinx.coroutines.*
 import org.ole.planet.myplanet.model.RealmMyTeam
+import java.util.Locale
 
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
