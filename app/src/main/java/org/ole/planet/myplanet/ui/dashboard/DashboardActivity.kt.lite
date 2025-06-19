@@ -87,6 +87,7 @@ import java.util.Date
 import kotlin.math.ceil
 import kotlinx.coroutines.*
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.utilities.enableEdgeToEdgeDisplay
 
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
@@ -117,6 +118,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         checkUser()
         activityDashboardBinding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(activityDashboardBinding.root)
+        enableEdgeToEdgeDisplay()
         setupUI(activityDashboardBinding.activityDashboardParentLayout, this@DashboardActivity)
         setSupportActionBar(activityDashboardBinding.myToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
@@ -166,6 +168,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         headerResult = accountHeader
         createDrawer()
+        applyInsetsToMaterialDrawer()
         supportFragmentManager.addOnBackStackChangedListener {
             val frag = supportFragmentManager.findFragmentById(R.id.fragment_container)
             val idToSelect = when (frag) {
@@ -806,7 +809,50 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             else -> openCallFragment(BellDashboardFragment())
         }
     }
+    private fun applyInsetsToMaterialDrawer() {
+        val drawerLayout = result!!.drawerLayout
 
+        val bellToolbar = activityDashboardBinding.appBarBell.bellToolbar
+        ViewCompat.setOnApplyWindowInsetsListener(bellToolbar) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.updatePadding(top = systemBars.top)
+
+            val params = view.layoutParams
+            params.height = resources.getDimensionPixelSize(R.dimen._58dp) + systemBars.top
+            view.layoutParams = params
+
+            insets
+        }
+
+        ViewCompat.setOnApplyWindowInsetsListener(drawerLayout) { _, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+
+            val drawerSlider = drawerLayout.findViewById<View>(
+                com.mikepenz.materialdrawer.R.id.material_drawer_slider_layout
+            )
+
+            drawerSlider?.let { slider ->
+                slider.updatePadding(
+                    top = systemBars.top,
+                    bottom = systemBars.bottom
+                )
+
+                val recyclerView = slider.findViewById<RecyclerView>(
+                    com.mikepenz.materialdrawer.R.id.material_drawer_recycler_view
+                )
+
+                recyclerView?.apply {
+                    clipToPadding = false
+                    updatePadding(
+                        top = 0,
+                        bottom = systemBars.bottom
+                    )
+                }
+            }
+
+            insets
+        }
+    }
     override fun openMyFragment(f: Fragment) {
         val fragmentName = f::class.java.simpleName
         var tag = "My$fragmentName"

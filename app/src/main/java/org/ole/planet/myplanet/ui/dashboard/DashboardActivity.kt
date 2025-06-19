@@ -815,16 +815,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun applyInsetsToMaterialDrawer() {
-        // Get the drawer layout
         val drawerLayout = result!!.drawerLayout
 
-        // Apply insets to the top app bar instead of the main content
         val bellToolbar = activityDashboardBinding.appBarBell.bellToolbar
         ViewCompat.setOnApplyWindowInsetsListener(bellToolbar) { view, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.updatePadding(top = systemBars.top)
 
-            // Increase the toolbar height to accommodate the status bar
             val params = view.layoutParams
             params.height = resources.getDimensionPixelSize(R.dimen._58dp) + systemBars.top
             view.layoutParams = params
@@ -832,32 +829,27 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             insets
         }
 
-        // Apply insets to the drawer slider layout
         ViewCompat.setOnApplyWindowInsetsListener(drawerLayout) { _, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
 
-            // Find the drawer slider layout
             val drawerSlider = drawerLayout.findViewById<View>(
                 com.mikepenz.materialdrawer.R.id.material_drawer_slider_layout
             )
 
             drawerSlider?.let { slider ->
-                // Apply padding to the slider layout
                 slider.updatePadding(
                     top = systemBars.top,
-                    bottom = systemBars.bottom // This fixes the logout button visibility
+                    bottom = systemBars.bottom
                 )
 
-                // Also apply to the RecyclerView inside
                 val recyclerView = slider.findViewById<RecyclerView>(
                     com.mikepenz.materialdrawer.R.id.material_drawer_recycler_view
                 )
 
                 recyclerView?.apply {
                     clipToPadding = false
-                    // Remove any existing padding and apply new
                     updatePadding(
-                        top = 0, // Top padding handled by parent
+                        top = 0,
                         bottom = systemBars.bottom
                     )
                 }
