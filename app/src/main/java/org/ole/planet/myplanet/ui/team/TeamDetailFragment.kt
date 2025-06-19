@@ -12,9 +12,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMemberCount
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.isTeamLeader
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 import org.ole.planet.myplanet.model.RealmNews
@@ -24,7 +26,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 import java.util.UUID
 
-class TeamDetailFragment : BaseTeamFragment() {
+class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
     private var directTeamName: String? = null
     private var directTeamType: String? = null
@@ -53,7 +55,7 @@ class TeamDetailFragment : BaseTeamFragment() {
             }
         }
 
-        fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, isMyTeam)
+        fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, isMyTeam, this)
         TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
             tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
         }.attach()
@@ -69,6 +71,8 @@ class TeamDetailFragment : BaseTeamFragment() {
         if (!isMyTeam) {
             fragmentTeamDetailBinding.btnAddDoc.isEnabled = false
             fragmentTeamDetailBinding.btnAddDoc.visibility = View.GONE
+            fragmentTeamDetailBinding.btnLeave.isEnabled = true
+            fragmentTeamDetailBinding.btnLeave.visibility = View.VISIBLE
             if (user?.id?.startsWith("guest") == true){
                 fragmentTeamDetailBinding.btnLeave.isEnabled = false
                 fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
@@ -102,7 +106,7 @@ class TeamDetailFragment : BaseTeamFragment() {
                     .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                         team?.leave(user, mRealm)
                         Utilities.toast(activity, getString(R.string.left_team))
-                        fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, false)
+                        fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, false, this)
                         TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
                             tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
                         }.attach()
@@ -118,10 +122,18 @@ class TeamDetailFragment : BaseTeamFragment() {
                 }
             }
         }
-        if (isTeamLeader(teamId, user?.id, mRealm)) {
+        if(getJoinedMemberCount(team!!._id.toString(), mRealm) <= 1 && isMyTeam){
             fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
         }
         return fragmentTeamDetailBinding.root
+    }
+
+    override fun onMemberChanged() {
+        if(getJoinedMemberCount(team!!._id.toString(), mRealm) <= 1){
+            fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
+        } else{
+            fragmentTeamDetailBinding.btnLeave.visibility = View.VISIBLE
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
