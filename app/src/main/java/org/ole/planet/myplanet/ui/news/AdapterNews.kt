@@ -7,8 +7,8 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.graphics.Color
+import android.graphics.Rect
 import android.os.Build
-import android.text.SpannableString
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.TextUtils
@@ -209,7 +209,9 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/"
         )
         setMarkdownText(holder.rowNewsBinding.tvMessage, markdownContentWithLocalPaths)
+        val fulltext = holder.rowNewsBinding.tvMessage.text
         holder.rowNewsBinding.tvMessage.makeExpandable(
+            fullText = fulltext,
             collapsedMaxLines = 6
         )
         holder.rowNewsBinding.tvDate.text =
@@ -222,35 +224,25 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     }
 
     fun TextView.makeExpandable(
+        fullText: CharSequence,
         collapsedMaxLines: Int = 6,
         expandLabel: String = "Read more",
         collapseLabel: String = "Read less"
     ) {
-        // Grab the full spannable with images, links, etc.
-        val fullText = text
         var isExpanded = false
 
         fun refresh() {
-            // If collapsed…
+            text = fullText
             if (!isExpanded) {
                 maxLines = collapsedMaxLines
                 ellipsize = TextUtils.TruncateAt.END
 
-                // Wait until we know how many lines it actually took
                 post {
                     if (lineCount > collapsedMaxLines) {
-                        // Find character index at end of the last visible line
-                        val lastChar = layout.getLineEnd(collapsedMaxLines - 3)
+                        val lastChar = layout.getLineEnd(collapsedMaxLines - 2)
 
-                        // Slice out the original spans *up to* that index
-                        val visiblePortion = if (fullText is Spanned) {
-                            // SpannableStringBuilder will preserve all spans when appending
-                            SpannableStringBuilder(fullText.subSequence(0, lastChar))
-                        } else {
-                            SpannableStringBuilder(fullText.subSequence(0, lastChar))
-                        }
+                        val visiblePortion = SpannableStringBuilder(fullText.subSequence(0, lastChar))
 
-                        // Append the “… Read more” clickable bit
                         visiblePortion.append("… ").also { sb ->
                             val start = sb.length
                             sb.append(expandLabel)
@@ -266,28 +258,26 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                         movementMethod = LinkMovementMethod.getInstance()
                     }
                 }
-            } else {
-                // Expanded: show the full original + “ Read less”
-                val expandedPortion = SpannableStringBuilder(fullText)
-                expandedPortion.append(" ").also { sb ->
-                    val start = sb.length
-                    sb.append(collapseLabel)
-                    sb.setSpan(object : ClickableSpan() {
-                        override fun onClick(widget: View) {
-                            isExpanded = false
-                            refresh()
-                        }
-                    }, start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                }
-
-                maxLines = Integer.MAX_VALUE
-                ellipsize = null
-                text = expandedPortion
+            }  else {
+                val expanded = SpannableStringBuilder(fullText).apply {
+                        append(" ")
+                        val start = length
+                        append(collapseLabel)
+                        setSpan(object : ClickableSpan() {
+                            override fun onClick(widget: View) {
+                                isExpanded = false
+                                refresh()
+                            }
+                        }, start, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
+                text = expanded
                 movementMethod = LinkMovementMethod.getInstance()
+                maxLines = Int.MAX_VALUE
+                ellipsize = null
+
             }
         }
 
-        // Kick off the first layout+truncate
         refresh()
     }
 
