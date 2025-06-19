@@ -51,6 +51,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         super.onCreate(savedInstanceState)
         activityLoginBinding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(activityLoginBinding.root)
+        findViewById<View>(R.id.constraintLayout).applyLoginScreenInsets()
+
         lblLastSyncDate = activityLoginBinding.lblLastSyncDate
         btnSignIn = activityLoginBinding.btnSignin
         syncIcon = activityLoginBinding.syncIcon
