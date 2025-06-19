@@ -226,8 +226,8 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     fun TextView.makeExpandable(
         fullText: CharSequence,
         collapsedMaxLines: Int = 6,
-        expandLabel: String = "Read more",
-        collapseLabel: String = "Read less"
+        expandLabel: String = context.getString(R.string.show_more),
+        collapseLabel: String = context.getString(R.string.show_less)
     ) {
         var isExpanded = false
 
