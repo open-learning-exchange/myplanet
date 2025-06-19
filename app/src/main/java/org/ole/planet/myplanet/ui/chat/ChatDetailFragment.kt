@@ -239,7 +239,7 @@ class ChatDetailFragment : Fragment() {
                         if (response.isSuccessful) {
                             response.body()?.let { responseBody ->
                                 try {
-                                   val responseString = responseBody.string()
+                                    val responseString = responseBody.string()
                                     val aiProvidersResponse: Map<String, Boolean> = Gson().fromJson(
                                         responseString,
                                         object : TypeToken<Map<String, Boolean>>() {}.type
