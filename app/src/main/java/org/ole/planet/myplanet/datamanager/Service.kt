@@ -437,60 +437,14 @@ class Service(private val context: Context) {
                 val currentVersion = context.getString(R.string.app_version)
 
                 if (minApkVersion != null && isVersionAllowed(currentVersion, minApkVersion)) {
-                    val uri = currentUrl.toUri()
-                    val couchdbURL = if (currentUrl.contains("@")) {
-                        getUserInfo(uri)
-                        currentUrl
-                    } else {
-                        val urlUser = "satellite"
-                        "${uri.scheme}://$urlUser:$pin@${uri.host}:${if (uri.port == -1) if (uri.scheme == "http") 80 else 443 else uri.port}"
-                    }
+                    val couchdbURL = buildCouchdbUrl(currentUrl, pin)
 
                     withContext(Dispatchers.Main) {
                         customProgressDialog.setText(context.getString(R.string.checking_server))
                     }
 
-                    val configResponse = retrofitInterface.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true").execute()
-
-                    if (configResponse.isSuccessful) {
-                        val rows = configResponse.body()?.getAsJsonArray("rows")
-                        if (rows != null && rows.size() > 0) {
-                            val firstRow = rows[0].asJsonObject
-                            val id = firstRow.getAsJsonPrimitive("id").asString
-                            val doc = firstRow.getAsJsonObject("doc")
-                            val code = doc.getAsJsonPrimitive("code").asString
-                            val parentCode = doc.getAsJsonPrimitive("parentCode").asString
-
-                            withContext(Dispatchers.IO) {
-                                preferences.edit { putString("parentCode", parentCode) }
-                            }
-
-                            if (doc.has("preferredLang")) {
-                                val preferredLang = doc.getAsJsonPrimitive("preferredLang").asString
-                                val languageCode = getLanguageCodeFromName(preferredLang)
-                                if (languageCode != null) {
-                                    withContext(Dispatchers.IO) {
-                                        LocaleHelper.setLocale(context, languageCode)
-                                        preferences.edit {
-                                            putString("pendingLanguageChange", languageCode)
-                                        }
-                                    }
-                                }
-                            }
-
-                            if (doc.has("models")) {
-                                val modelsMap = doc.getAsJsonObject("models").entrySet()
-                                    .associate { it.key to it.value.asString }
-
-                                withContext(Dispatchers.IO) {
-                                    preferences.edit {
-                                        putString("ai_models", Gson().toJson(modelsMap))
-                                    }
-                                }
-                            }
-
-                            return UrlCheckResult.Success(id, code, currentUrl)
-                        }
+                    fetchConfiguration(couchdbURL)?.let { (id, code) ->
+                        return UrlCheckResult.Success(id, code, currentUrl)
                     }
                 }
             }
@@ -499,6 +453,64 @@ class Service(private val context: Context) {
         } catch (e: Exception) {
             e.printStackTrace()
             UrlCheckResult.Failure(currentUrl)
+        }
+    }
+
+    private suspend fun fetchConfiguration(couchdbURL: String): Pair<String, String>? {
+        val configResponse = retrofitInterface
+            ?.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true")
+            ?.execute()
+
+        if (configResponse?.isSuccessful == true) {
+            val rows = configResponse.body()?.getAsJsonArray("rows")
+            if (rows != null && rows.size() > 0) {
+                val firstRow = rows[0].asJsonObject
+                val id = firstRow.getAsJsonPrimitive("id").asString
+                val doc = firstRow.getAsJsonObject("doc")
+                val code = doc.getAsJsonPrimitive("code").asString
+                processConfigurationDoc(doc)
+                return Pair(id, code)
+            }
+        }
+        return null
+    }
+
+    private suspend fun processConfigurationDoc(doc: JsonObject) {
+        val parentCode = doc.getAsJsonPrimitive("parentCode").asString
+
+        withContext(Dispatchers.IO) {
+            preferences.edit { putString("parentCode", parentCode) }
+        }
+
+        if (doc.has("preferredLang")) {
+            val preferredLang = doc.getAsJsonPrimitive("preferredLang").asString
+            val languageCode = getLanguageCodeFromName(preferredLang)
+            if (languageCode != null) {
+                withContext(Dispatchers.IO) {
+                    LocaleHelper.setLocale(context, languageCode)
+                    preferences.edit { putString("pendingLanguageChange", languageCode) }
+                }
+            }
+        }
+
+        if (doc.has("models")) {
+            val modelsMap = doc.getAsJsonObject("models").entrySet()
+                .associate { it.key to it.value.asString }
+
+            withContext(Dispatchers.IO) {
+                preferences.edit { putString("ai_models", Gson().toJson(modelsMap)) }
+            }
+        }
+    }
+
+    private fun buildCouchdbUrl(currentUrl: String, pin: String): String {
+        val uri = currentUrl.toUri()
+        return if (currentUrl.contains("@")) {
+            getUserInfo(uri)
+            currentUrl
+        } else {
+            val urlUser = "satellite"
+            "${uri.scheme}://$urlUser:$pin@${uri.host}:${if (uri.port == -1) if (uri.scheme == "http") 80 else 443 else uri.port}"
         }
     }
 
