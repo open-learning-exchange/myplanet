@@ -301,6 +301,62 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         }
     }
 
+//    private fun selectQuestion(question: RealmExamQuestion?, oldAnswer: String) {
+//        val choices = getStringAsJsonArray(question?.choices)
+//        for (i in 0 until choices.size()) {
+//            if (choices[i].isJsonObject) {
+//                addCompoundButton(choices[i].asJsonObject, true, oldAnswer)
+//            } else {
+//                addRadioButton(getString(choices, i), oldAnswer)
+//            }
+//        }
+//    }
+//
+//    private fun addRadioButton(choice: String, oldAnswer: String) {
+//        val inflater = LayoutInflater.from(activity)
+//        val rdBtn = inflater.inflate(R.layout.item_radio_btn, fragmentTakeExamBinding.groupChoices, false) as RadioButton
+//        rdBtn.text = choice
+//        rdBtn.isChecked = choice == oldAnswer
+//        rdBtn.setOnCheckedChangeListener(this)
+//        fragmentTakeExamBinding.groupChoices.addView(rdBtn)
+//
+//        if (choice.equals("Other", ignoreCase = true) && choice == oldAnswer) {
+//            fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
+//            fragmentTakeExamBinding.etAnswer.setText(oldAnswer)
+//        }
+//    }
+//
+//    private fun addCompoundButton(choice: JsonObject?, isRadio: Boolean, oldAnswer: String) {
+//        val rdBtn = LayoutInflater.from(activity).inflate(
+//            if (isRadio) {
+//                R.layout.item_radio_btn
+//            } else {
+//                R.layout.item_checkbox
+//            }, null
+//        ) as CompoundButton
+//
+//        val choiceText = getString("text", choice)
+//        val choiceId = getString("id", choice)
+//
+//        rdBtn.text = choiceText
+//        rdBtn.tag = choiceId
+//
+//        if (isRadio) {
+//            rdBtn.isChecked = choiceId == oldAnswer
+//        } else {
+//            rdBtn.isChecked = listAns?.get(choiceText) == choiceId
+//        }
+//
+//        rdBtn.setOnCheckedChangeListener(this)
+//        if (isRadio) {
+//            fragmentTakeExamBinding.groupChoices.addView(rdBtn)
+//        } else {
+//            rdBtn.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+//            rdBtn.buttonTintList = ContextCompat.getColorStateList(requireContext(), R.color.daynight_textColor)
+//            fragmentTakeExamBinding.llCheckbox.addView(rdBtn)
+//        }
+//    }
+
     private fun selectQuestion(question: RealmExamQuestion?, oldAnswer: String) {
         val choices = getStringAsJsonArray(question?.choices)
         for (i in 0 until choices.size()) {
@@ -308,6 +364,17 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 addCompoundButton(choices[i].asJsonObject, true, oldAnswer)
             } else {
                 addRadioButton(getString(choices, i), oldAnswer)
+            }
+        }
+
+        // Add "Other" option if hasOtherOption is true
+        if (question?.hasOtherOption == true) {
+            if (choices.size() > 0 && choices[0].isJsonObject) {
+                // If choices are JsonObjects, create an "Other" JsonObject
+                addCompoundButtonOther(true, oldAnswer)
+            } else {
+                // If choices are simple strings, add "Other" as string
+                addRadioButton("Other", oldAnswer)
             }
         }
     }
@@ -354,6 +421,46 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             rdBtn.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
             rdBtn.buttonTintList = ContextCompat.getColorStateList(requireContext(), R.color.daynight_textColor)
             fragmentTakeExamBinding.llCheckbox.addView(rdBtn)
+        }
+
+        // Show text input if "Other" is selected
+        if (choiceText.equals("Other", ignoreCase = true) && rdBtn.isChecked) {
+            fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
+            fragmentTakeExamBinding.etAnswer.setText(oldAnswer)
+        }
+    }
+
+    private fun addCompoundButtonOther(isRadio: Boolean, oldAnswer: String) {
+        val rdBtn = LayoutInflater.from(activity).inflate(
+            if (isRadio) {
+                R.layout.item_radio_btn
+            } else {
+                R.layout.item_checkbox
+            }, null
+        ) as CompoundButton
+
+        rdBtn.text = "Other"
+        rdBtn.tag = "other" // or use a consistent ID for "Other"
+
+        if (isRadio) {
+            rdBtn.isChecked = "other" == oldAnswer || "Other" == oldAnswer
+        } else {
+            rdBtn.isChecked = listAns?.get("Other") == "other"
+        }
+
+        rdBtn.setOnCheckedChangeListener(this)
+        if (isRadio) {
+            fragmentTakeExamBinding.groupChoices.addView(rdBtn)
+        } else {
+            rdBtn.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+            rdBtn.buttonTintList = ContextCompat.getColorStateList(requireContext(), R.color.daynight_textColor)
+            fragmentTakeExamBinding.llCheckbox.addView(rdBtn)
+        }
+
+        // Show text input if "Other" is selected
+        if (rdBtn.isChecked) {
+            fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
+            fragmentTakeExamBinding.etAnswer.setText(oldAnswer)
         }
     }
 
