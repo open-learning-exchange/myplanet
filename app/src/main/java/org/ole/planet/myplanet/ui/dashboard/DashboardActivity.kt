@@ -47,7 +47,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
@@ -75,8 +74,6 @@ import org.ole.planet.myplanet.utilities.Utilities.toast
 import kotlin.math.ceil
 import kotlinx.coroutines.*
 import org.ole.planet.myplanet.model.RealmMyTeam
-import java.util.Locale
-import org.ole.planet.myplanet.ui.dashboard.ChallengeHelper
 
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
