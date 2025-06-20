@@ -259,7 +259,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                                 fragmentTakeExamBinding.etAnswer.setText(text)
                                 fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
                             }
-
                             id
                         } catch (e: Exception) {
                             e.printStackTrace()

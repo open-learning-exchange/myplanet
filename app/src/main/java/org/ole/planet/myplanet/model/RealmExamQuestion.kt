@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -76,9 +75,6 @@ open class RealmExamQuestion : RealmObject() {
                     }
 
                     hasOtherOption = JsonUtils.getBoolean("hasOtherOption", question)
-                    if (hasOtherOption){
-                        Log.d("RealmExamQuestion", "Inserting question: $question")
-                    }
                     val isMultipleChoice = type?.startsWith("select") == true && question.has("choices")
                     if (isMultipleChoice) {
                         insertCorrectChoice(question["choices"].asJsonArray, question, this)
