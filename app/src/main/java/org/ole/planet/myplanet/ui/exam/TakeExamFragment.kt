@@ -252,7 +252,15 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                     ans = savedAnswer.valueChoices?.firstOrNull()?.let {
                         try {
                             val jsonObject = Gson().fromJson(it, JsonObject::class.java)
-                            jsonObject.get("id").asString
+                            val id = jsonObject.get("id").asString
+                            val text = jsonObject.get("text").asString
+
+                            if (id == "other") {
+                                fragmentTakeExamBinding.etAnswer.setText(text)
+                                fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
+                            }
+
+                            id
                         } catch (e: Exception) {
                             e.printStackTrace()
                             savedAnswer.value ?: ""
@@ -260,15 +268,30 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                     } ?: savedAnswer.value ?: ""
                 }
                 currentQuestion?.type.equals("selectMultiple", ignoreCase = true) -> {
+                    var hasOtherOption = false
+                    var otherText = ""
+
                     savedAnswer.valueChoices?.forEach { choiceJson ->
                         try {
                             val jsonObject = Gson().fromJson(choiceJson, JsonObject::class.java)
                             val id = jsonObject.get("id").asString
                             val text = jsonObject.get("text").asString
-                            listAns?.put(text, id)
+
+                            if (id == "other") {
+                                hasOtherOption = true
+                                otherText = text
+                                listAns?.put("Other", id)
+                            } else {
+                                listAns?.put(text, id)
+                            }
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
+                    }
+
+                    if (hasOtherOption) {
+                        fragmentTakeExamBinding.etAnswer.setText(otherText)
+                        fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
                     }
                 }
                 currentQuestion?.type.equals("input", ignoreCase = true) ||
@@ -296,84 +319,38 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
     private fun showCheckBoxes(question: RealmExamQuestion?, oldAnswer: String) {
         val choices = getStringAsJsonArray(question?.choices)
+
         for (i in 0 until choices.size()) {
             addCompoundButton(choices[i].asJsonObject, false, oldAnswer)
         }
-    }
 
-//    private fun selectQuestion(question: RealmExamQuestion?, oldAnswer: String) {
-//        val choices = getStringAsJsonArray(question?.choices)
-//        for (i in 0 until choices.size()) {
-//            if (choices[i].isJsonObject) {
-//                addCompoundButton(choices[i].asJsonObject, true, oldAnswer)
-//            } else {
-//                addRadioButton(getString(choices, i), oldAnswer)
-//            }
-//        }
-//    }
-//
-//    private fun addRadioButton(choice: String, oldAnswer: String) {
-//        val inflater = LayoutInflater.from(activity)
-//        val rdBtn = inflater.inflate(R.layout.item_radio_btn, fragmentTakeExamBinding.groupChoices, false) as RadioButton
-//        rdBtn.text = choice
-//        rdBtn.isChecked = choice == oldAnswer
-//        rdBtn.setOnCheckedChangeListener(this)
-//        fragmentTakeExamBinding.groupChoices.addView(rdBtn)
-//
-//        if (choice.equals("Other", ignoreCase = true) && choice == oldAnswer) {
-//            fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
-//            fragmentTakeExamBinding.etAnswer.setText(oldAnswer)
-//        }
-//    }
-//
-//    private fun addCompoundButton(choice: JsonObject?, isRadio: Boolean, oldAnswer: String) {
-//        val rdBtn = LayoutInflater.from(activity).inflate(
-//            if (isRadio) {
-//                R.layout.item_radio_btn
-//            } else {
-//                R.layout.item_checkbox
-//            }, null
-//        ) as CompoundButton
-//
-//        val choiceText = getString("text", choice)
-//        val choiceId = getString("id", choice)
-//
-//        rdBtn.text = choiceText
-//        rdBtn.tag = choiceId
-//
-//        if (isRadio) {
-//            rdBtn.isChecked = choiceId == oldAnswer
-//        } else {
-//            rdBtn.isChecked = listAns?.get(choiceText) == choiceId
-//        }
-//
-//        rdBtn.setOnCheckedChangeListener(this)
-//        if (isRadio) {
-//            fragmentTakeExamBinding.groupChoices.addView(rdBtn)
-//        } else {
-//            rdBtn.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-//            rdBtn.buttonTintList = ContextCompat.getColorStateList(requireContext(), R.color.daynight_textColor)
-//            fragmentTakeExamBinding.llCheckbox.addView(rdBtn)
-//        }
-//    }
+        if (question?.hasOtherOption == true) {
+            val gson = Gson()
+            val otherChoice = gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
+
+            addCompoundButton(otherChoice, false, oldAnswer)
+        }
+    }
 
     private fun selectQuestion(question: RealmExamQuestion?, oldAnswer: String) {
         val choices = getStringAsJsonArray(question?.choices)
+        val isRadio = question?.type != "multiple"
+
         for (i in 0 until choices.size()) {
             if (choices[i].isJsonObject) {
-                addCompoundButton(choices[i].asJsonObject, true, oldAnswer)
+                addCompoundButton(choices[i].asJsonObject, isRadio, oldAnswer)
             } else {
                 addRadioButton(getString(choices, i), oldAnswer)
             }
         }
 
-        // Add "Other" option if hasOtherOption is true
         if (question?.hasOtherOption == true) {
             if (choices.size() > 0 && choices[0].isJsonObject) {
-                // If choices are JsonObjects, create an "Other" JsonObject
-                addCompoundButtonOther(true, oldAnswer)
+                val gson = Gson()
+                val otherChoice = gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
+
+                addCompoundButton(otherChoice, isRadio, oldAnswer)
             } else {
-                // If choices are simple strings, add "Other" as string
                 addRadioButton("Other", oldAnswer)
             }
         }
@@ -423,42 +400,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             fragmentTakeExamBinding.llCheckbox.addView(rdBtn)
         }
 
-        // Show text input if "Other" is selected
         if (choiceText.equals("Other", ignoreCase = true) && rdBtn.isChecked) {
-            fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
-            fragmentTakeExamBinding.etAnswer.setText(oldAnswer)
-        }
-    }
-
-    private fun addCompoundButtonOther(isRadio: Boolean, oldAnswer: String) {
-        val rdBtn = LayoutInflater.from(activity).inflate(
-            if (isRadio) {
-                R.layout.item_radio_btn
-            } else {
-                R.layout.item_checkbox
-            }, null
-        ) as CompoundButton
-
-        rdBtn.text = "Other"
-        rdBtn.tag = "other" // or use a consistent ID for "Other"
-
-        if (isRadio) {
-            rdBtn.isChecked = "other" == oldAnswer || "Other" == oldAnswer
-        } else {
-            rdBtn.isChecked = listAns?.get("Other") == "other"
-        }
-
-        rdBtn.setOnCheckedChangeListener(this)
-        if (isRadio) {
-            fragmentTakeExamBinding.groupChoices.addView(rdBtn)
-        } else {
-            rdBtn.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-            rdBtn.buttonTintList = ContextCompat.getColorStateList(requireContext(), R.color.daynight_textColor)
-            fragmentTakeExamBinding.llCheckbox.addView(rdBtn)
-        }
-
-        // Show text input if "Other" is selected
-        if (rdBtn.isChecked) {
             fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
             fragmentTakeExamBinding.etAnswer.setText(oldAnswer)
         }
@@ -512,13 +454,22 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
             val existingAnswer = sub?.answers?.find { it.questionId == currentQuestion.id }
             val answer = existingAnswer ?: realm.createObject(RealmAnswer::class.java, UUID.randomUUID().toString())
+
             when {
                 currentQuestion.type.equals("select", ignoreCase = true) -> {
-                    val choiceText = getChoiceTextById(currentQuestion, ans)
-                    answer.value = choiceText
-                    answer.valueChoices = RealmList<String>().apply {
-                        if (ans.isNotEmpty()) {
-                            add("""{"id":"$ans","text":"$choiceText"}""")
+                    if (ans == "other" && fragmentTakeExamBinding.etAnswer.isVisible && fragmentTakeExamBinding.etAnswer.text.isNotEmpty()) {
+                        val otherText = fragmentTakeExamBinding.etAnswer.text.toString()
+                        answer.value = otherText
+                        answer.valueChoices = RealmList<String>().apply {
+                            add("""{"id":"other","text":"$otherText"}""")
+                        }
+                    } else {
+                        val choiceText = getChoiceTextById(currentQuestion, ans)
+                        answer.value = choiceText
+                        answer.valueChoices = RealmList<String>().apply {
+                            if (ans.isNotEmpty()) {
+                                add("""{"id":"$ans","text":"$choiceText"}""")
+                            }
                         }
                     }
                 }
@@ -526,7 +477,12 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                     answer.value = ""
                     answer.valueChoices = RealmList<String>().apply {
                         listAns?.forEach { (text, id) ->
-                            add("""{"id":"$id","text":"$text"}""")
+                            if (id == "other" && fragmentTakeExamBinding.etAnswer.isVisible && fragmentTakeExamBinding.etAnswer.text.isNotEmpty()) {
+                                val otherText = fragmentTakeExamBinding.etAnswer.text.toString()
+                                add("""{"id":"other","text":"$otherText"}""")
+                            } else {
+                                add("""{"id":"$id","text":"$text"}""")
+                            }
                         }
                     }
                 }
@@ -633,14 +589,35 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
                 fragmentTakeExamBinding.etAnswer.requestFocus()
             } else {
-                fragmentTakeExamBinding.etAnswer.visibility = View.GONE
-                fragmentTakeExamBinding.etAnswer.text.clear()
+                if (!isOtherOptionSelected()) {
+                    fragmentTakeExamBinding.etAnswer.visibility = View.GONE
+                    fragmentTakeExamBinding.etAnswer.text.clear()
+                }
             }
 
             addAnswer(compoundButton)
         } else if (compoundButton.tag != null && compoundButton !is RadioButton) {
+            val selectedText = "${compoundButton.text}"
+
+            if (selectedText.equals("Other", ignoreCase = true)) {
+                fragmentTakeExamBinding.etAnswer.visibility = View.GONE
+                fragmentTakeExamBinding.etAnswer.text.clear()
+            }
+
             listAns?.remove("${compoundButton.text}")
         }
         updateNavButtons()
+    }
+
+    private fun isOtherOptionSelected(): Boolean {
+        for (i in 0 until fragmentTakeExamBinding.llCheckbox.childCount) {
+            val child = fragmentTakeExamBinding.llCheckbox.getChildAt(i)
+            if (child is CompoundButton &&
+                child.text.toString().equals("Other", ignoreCase = true) &&
+                child.isChecked) {
+                return true
+            }
+        }
+        return false
     }
 }
