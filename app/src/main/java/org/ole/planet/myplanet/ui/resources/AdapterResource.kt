@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.resources
 
 import android.content.Context
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -87,7 +88,10 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
                 }
             holder.rowLibraryBinding.tvDate.text = libraryList[position]?.createdDate?.let { formatDate(it, "MMM dd, yyyy") }
             displayTagCloud(holder.rowLibraryBinding.flexboxDrawable, position)
-            holder.itemView.setOnClickListener { openLibrary(libraryList[position]) }
+            holder.itemView.setOnClickListener {
+                Log.d("okuro", "AdapterResource onBindViewHolder: ${libraryList[position]?.id}")
+                openLibrary(libraryList[position])
+            }
             userModel = UserProfileDbHandler(context).userModel
             if (libraryList[position]?.isResourceOffline() == true) {
                 holder.rowLibraryBinding.ivDownloaded.visibility = View.INVISIBLE
@@ -109,8 +113,7 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
 
             if (userModel?.isGuest() == false) {
                 holder.rowLibraryBinding.checkbox.setOnClickListener { view: View ->
-                    holder.rowLibraryBinding.checkbox.contentDescription =
-                        context.getString(R.string.select_res_course, libraryList[position]?.title)
+                    holder.rowLibraryBinding.checkbox.contentDescription = context.getString(R.string.select_res_course, libraryList[position]?.title)
                     Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, libraryList)
                     if (listener != null) listener?.onSelectedListChange(selectedItems)
                 }
@@ -129,9 +132,16 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
         if (selectAll) {
             selectedItems.clear()
             selectedItems.addAll(libraryList)
+            ResourcesFragment.wasAllSelected = true
         } else {
             selectedItems.clear()
+            ResourcesFragment.wasAllSelected = false
         }
+        ResourcesFragment.lastSelectionState.clear()
+        for (item in selectedItems) {
+            item?.id?.let { ResourcesFragment.lastSelectionState.add(it) }
+        }
+
         notifyDataSetChanged()
         if (listener != null) {
             listener?.onSelectedListChange(selectedItems)
@@ -139,6 +149,7 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
     }
 
     private fun openLibrary(library: RealmMyLibrary?) {
+        ResourcesFragment.enableSelectionRestoration()
         homeItemClickListener?.openLibraryDetailFragment(library)
     }
 
@@ -193,6 +204,22 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
 
     override fun getItemCount(): Int {
         return libraryList.size
+    }
+
+    fun restoreSelectionState(itemIds: List<String>) {
+        selectedItems.clear()
+        for (id in itemIds) {
+            for (currentItem in libraryList) {
+                if (currentItem?.id == id) {
+                    selectedItems.add(currentItem)
+                    break
+                }
+            }
+        }
+        notifyDataSetChanged()
+        if (listener != null) {
+            listener?.onSelectedListChange(selectedItems)
+        }
     }
 
     internal inner class ViewHolderLibrary(val rowLibraryBinding: RowLibraryBinding) :
