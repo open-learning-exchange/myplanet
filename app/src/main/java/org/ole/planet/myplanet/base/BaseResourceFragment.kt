@@ -345,7 +345,7 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun showTagText(list: List<RealmTag>, tvSelected: TextView?) {
-        val selected = list.joinToString(separator = ",", prefix = getString(R.string.selected)) { it.name }
+        val selected = list.joinToString(separator = ",", prefix = getString(R.string.selected)) { it.name.orEmpty() }
         tvSelected?.text = selected
     }
 
