@@ -127,7 +127,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             val news = getNews(holder, position)
 
             if (news?.isValid == true) {
-                println(news)
                 val viewHolder = holder as ViewHolderNews
                 val sharedTeamName = extractSharedTeamName(news)
 
