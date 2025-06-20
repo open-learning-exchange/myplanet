@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.ArrayAdapter
 import com.google.gson.JsonArray
@@ -14,6 +15,7 @@ import io.realm.Realm
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
+import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.Service
@@ -32,6 +34,8 @@ class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
     var guest: Boolean = false
+    private var userCreationStartTime: Long = 0L
+
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(
@@ -226,25 +230,44 @@ class BecomeMemberActivity : BaseActivity() {
             val roles = JsonArray()
             roles.add("learner")
             obj.add("roles", roles)
+
+            // Show progress bar and start timing
+            userCreationStartTime = System.currentTimeMillis()
+            Log.d("UserCreationTiming", "Starting user creation process at: $userCreationStartTime")
             activityBecomeMemberBinding.pbar.visibility = View.VISIBLE
+
             Service(this).becomeMember(mRealm, obj, object : Service.CreateUserCallback {
                 override fun onSuccess(message: String) {
+                    val userCreationEndTime = System.currentTimeMillis()
+                    Log.d("UserCreationTiming", "User creation completed at: $userCreationEndTime, took: ${userCreationEndTime - userCreationStartTime}ms")
+
                     runOnUiThread {
-                        activityBecomeMemberBinding.pbar.visibility = View.GONE
                         Utilities.toast(this@BecomeMemberActivity, message)
+                        // DO NOT hide progress bar or navigate here - wait for security data update
                     }
-                    finish()
+                    // DO NOT call finish() or navigate to LoginActivity here
+                }
+            }, object : SecurityDataCallback {
+                override fun onSecurityDataUpdated() {
+                    val totalProcessEndTime = System.currentTimeMillis()
+                    Log.d("UserCreationTiming", "Security data update completed at: $totalProcessEndTime, total process took: ${totalProcessEndTime - userCreationStartTime}ms")
+
+                    runOnUiThread {
+                        // Hide progress bar only after security data is updated
+                        activityBecomeMemberBinding.pbar.visibility = View.GONE
+
+                        // Navigate to LoginActivity only after everything is complete
+                        val intent = Intent(this@BecomeMemberActivity, LoginActivity::class.java)
+                        if (guest) {
+                            intent.putExtra("username", username)
+                            intent.putExtra("guest", guest)
+                        }
+                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        startActivity(intent)
+                        finish()
+                    }
                 }
             })
-
-            val intent = Intent(this, LoginActivity::class.java)
-            if (guest){
-                intent.putExtra("username", username)
-                intent.putExtra("guest", guest)
-            }
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            startActivity(intent)
-            finish()
         }
     }
 

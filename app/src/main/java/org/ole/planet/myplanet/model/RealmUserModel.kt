@@ -334,7 +334,6 @@ open class RealmUserModel : RealmObject() {
             writeCsv("${context.getExternalFilesDir(null)}/ole/userData.csv", userDataList)
         }
 
-
         fun updateUserDetails(realm: Realm, userId: String?, firstName: String?, lastName: String?,
         middleName: String?, email: String?, phoneNumber: String?, level: String?, language: String?,
         gender: String?, dob: String?, onSuccess: () -> Unit) {

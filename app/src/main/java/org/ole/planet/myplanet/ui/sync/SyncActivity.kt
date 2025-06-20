@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.*
+import android.util.Log
 import android.view.*
 import android.webkit.URLUtil
 import android.widget.*
@@ -353,6 +354,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun authenticateUser(settings: SharedPreferences?, username: String?, password: String?, isManagerMode: Boolean): Boolean {
+        Log.d("ManagerSync", "checkName: ${checkName(username, password, isManagerMode)}")
         return try {
             if (settings != null) {
                 this.settings = settings
@@ -372,14 +374,18 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
         try {
             val user = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
+            Log.d("ManagerSync", "checkName: $user")
             user?.let {
                 if (it._id?.isEmpty() == true) {
+                    Log.d("ManagerSync", "1name: ${it.name}, password: ${it.password}")
                     if (username == it.name && password == it.password) {
                         saveUserInfoPref(settings, password, it)
                         return true
                     }
                 } else {
+                    Log.d("ManagerSync", "2name: ${it.name}, password: ${it.password}")
                     if (androidDecrypter(username, password, it.derived_key, it.salt)) {
+                        Log.d("ManagerSync", "ManagerMode: ${isManagerMode && !it.isManager()}")
                         if (isManagerMode && !it.isManager()) return false
                         saveUserInfoPref(settings, password, it)
                         return true
@@ -893,7 +899,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 ServerAddressesModel(getString(R.string.sync_somalia), BuildConfig.PLANET_SOMALIA_URL),
                 ServerAddressesModel(getString(R.string.sync_vi), BuildConfig.PLANET_VI_URL),
                 ServerAddressesModel(getString(R.string.sync_xela), BuildConfig.PLANET_XELA_URL),
-                ServerAddressesModel(getString(R.string.sync_uriur), BuildConfig.PLANET_URIUR_URL),
+                ServerAddressesModel(getString(R.string.sync_uriur), BuildConfig.PLANET_URIUR_CLONE_URL),
                 ServerAddressesModel(getString(R.string.sync_ruiru), BuildConfig.PLANET_RUIRU_URL),
                 ServerAddressesModel(getString(R.string.sync_embakasi), BuildConfig.PLANET_EMBAKASI_URL),
                 ServerAddressesModel(getString(R.string.sync_cambridge), BuildConfig.PLANET_CAMBRIDGE_URL),
@@ -995,7 +1001,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             BuildConfig.PLANET_SOMALIA_URL to BuildConfig.PLANET_SOMALIA_PIN,
             BuildConfig.PLANET_VI_URL to BuildConfig.PLANET_VI_PIN,
             BuildConfig.PLANET_XELA_URL to BuildConfig.PLANET_XELA_PIN,
-            BuildConfig.PLANET_URIUR_URL to BuildConfig.PLANET_URIUR_PIN,
+            BuildConfig.PLANET_URIUR_CLONE_URL to BuildConfig.PLANET_URIUR_PIN,
             BuildConfig.PLANET_RUIRU_URL to BuildConfig.PLANET_RUIRU_PIN,
             BuildConfig.PLANET_EMBAKASI_URL to BuildConfig.PLANET_EMBAKASI_PIN,
             BuildConfig.PLANET_CAMBRIDGE_URL to BuildConfig.PLANET_CAMBRIDGE_PIN,
