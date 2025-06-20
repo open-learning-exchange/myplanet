@@ -127,15 +127,30 @@ class UserProfileFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentUserProfileBinding = FragmentUserProfileBinding.inflate(inflater, container, false)
+        initializeDependencies()
+        fragmentUserProfileBinding.btProfilePic.setOnClickListener { searchForPhoto() }
+        model = handler.userModel
+
+        setupProfile()
+        loadProfileImage()
+
+        fragmentUserProfileBinding.btEditProfile.setOnClickListener { openEditProfileDialog() }
+        configureGuestView()
+        setupStatsRecycler()
+
+        return fragmentUserProfileBinding.root
+    }
+
+    private fun initializeDependencies() {
         settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         handler = UserProfileDbHandler(requireContext())
         realmService = DatabaseService(requireContext())
         mRealm = realmService.realmInstance
         fragmentUserProfileBinding.rvStat.layoutManager = LinearLayoutManager(activity)
         fragmentUserProfileBinding.rvStat.isNestedScrollingEnabled = false
+    }
 
-        fragmentUserProfileBinding.btProfilePic.setOnClickListener { searchForPhoto() }
-        model = handler.userModel
+    private fun setupProfile() {
         fragmentUserProfileBinding.txtName.text = if (!model?.firstName.isNullOrEmpty() && !model?.lastName.isNullOrEmpty()) {
             "${model?.firstName} ${model?.lastName}"
         } else {
@@ -147,7 +162,9 @@ class UserProfileFragment : Fragment() {
         fragmentUserProfileBinding.txtGender.text = getString(R.string.gender_colon, Utilities.checkNA("${model?.gender}"))
         fragmentUserProfileBinding.txtLanguage.text = getString(R.string.two_strings, getString(R.string.language_colon), Utilities.checkNA("${model?.language}"))
         fragmentUserProfileBinding.txtLevel.text = getString(R.string.level_colon, Utilities.checkNA("${model?.level}"))
+    }
 
+    private fun loadProfileImage() {
         model?.userImage.let {
             Glide.with(requireContext())
                 .load(it)
@@ -165,145 +182,152 @@ class UserProfileFragment : Fragment() {
                 })
                 .into(fragmentUserProfileBinding.image)
         }
+    }
 
-        fragmentUserProfileBinding.btEditProfile.setOnClickListener {
-            val dialog = Dialog(requireContext())
-            dialog.setCancelable(false)
-            val editProfileDialogBinding = EditProfileDialogBinding.inflate(LayoutInflater.from(requireContext()))
-            dialog.setContentView(editProfileDialogBinding.getRoot())
-            dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            editProfileDialogBinding.firstName.setText(model?.firstName)
-            editProfileDialogBinding.middleName.setText(model?.middleName)
-            editProfileDialogBinding.lastName.setText(model?.lastName)
-            editProfileDialogBinding.email.setText(model?.email)
-            editProfileDialogBinding.phoneNumber.setText(model?.phoneNumber)
-            val dob1 =
-                if (TextUtils.isEmpty(model?.dob)) {
-                    "N/A"
-                } else {
-                    TimeUtils.getFormatedDate(model?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-                }
-            editProfileDialogBinding.dateOfBirth.text = dob1
-            val languages = resources.getStringArray(language)
-            val languageList: MutableList<String?> = ArrayList(listOf(*languages))
-            languageList.add(0, "Language")
-            val adapter = ArrayAdapter(requireContext(), R.layout.spinner_item, languageList)
-            adapter.setDropDownViewResource(R.layout.spinner_item)
-            editProfileDialogBinding.language.adapter = adapter
-            if (model?.language != null) {
-                val language = resources.getStringArray(language)
-                val languageLists = listOf(*language)
-                val languagePosition = languageLists.indexOf(model?.language)
-                if (languagePosition >= 0) {
-                    editProfileDialogBinding.language.setSelection(languagePosition + 1)
-                }
+    private fun openEditProfileDialog() {
+        val dialog = Dialog(requireContext())
+        dialog.setCancelable(false)
+        val editProfileDialogBinding = EditProfileDialogBinding.inflate(LayoutInflater.from(requireContext()))
+        dialog.setContentView(editProfileDialogBinding.getRoot())
+        dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        editProfileDialogBinding.firstName.setText(model?.firstName)
+        editProfileDialogBinding.middleName.setText(model?.middleName)
+        editProfileDialogBinding.lastName.setText(model?.lastName)
+        editProfileDialogBinding.email.setText(model?.email)
+        editProfileDialogBinding.phoneNumber.setText(model?.phoneNumber)
+        val dob1 =
+            if (TextUtils.isEmpty(model?.dob)) {
+                "N/A"
             } else {
-                editProfileDialogBinding.language.setSelection(0)
+                TimeUtils.getFormatedDate(model?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
             }
-            editProfileDialogBinding.language.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(parent: AdapterView<*>, view: View, position: Int, id: Long) {
-                    selectedLanguage = parent.getItemAtPosition(position).toString()
-                }
+        editProfileDialogBinding.dateOfBirth.text = dob1
+        val languages = resources.getStringArray(language)
+        val languageList: MutableList<String?> = ArrayList(listOf(*languages))
+        languageList.add(0, "Language")
+        val adapter = ArrayAdapter(requireContext(), R.layout.spinner_item, languageList)
+        adapter.setDropDownViewResource(R.layout.spinner_item)
+        editProfileDialogBinding.language.adapter = adapter
+        if (model?.language != null) {
+            val language = resources.getStringArray(language)
+            val languageLists = listOf(*language)
+            val languagePosition = languageLists.indexOf(model?.language)
+            if (languagePosition >= 0) {
+                editProfileDialogBinding.language.setSelection(languagePosition + 1)
+            }
+        } else {
+            editProfileDialogBinding.language.setSelection(0)
+        }
+        editProfileDialogBinding.language.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View, position: Int, id: Long) {
+                selectedLanguage = parent.getItemAtPosition(position).toString()
+            }
 
-                override fun onNothingSelected(parent: AdapterView<*>?) {
-                }
+            override fun onNothingSelected(parent: AdapterView<*>?) {
             }
-            val levels = resources.getStringArray(subject_level).toMutableList()
-            levels.remove("All")
-            levels.add(0, "Select Level")
-            var selectedLevel = Utilities.checkNA("${model?.level}")
-            val levelAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, levels)
-            levelAdapter.setDropDownViewResource(R.layout.spinner_item)
-            editProfileDialogBinding.level.adapter = levelAdapter
+        }
+        val levels = resources.getStringArray(subject_level).toMutableList()
+        levels.remove("All")
+        levels.add(0, "Select Level")
+        var selectedLevel = Utilities.checkNA("${model?.level}")
+        val levelAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, levels)
+        levelAdapter.setDropDownViewResource(R.layout.spinner_item)
+        editProfileDialogBinding.level.adapter = levelAdapter
 
-            val levelPosition = levels.indexOf(selectedLevel)
-            if (levelPosition > 0) {
-                editProfileDialogBinding.level.setSelection(levelPosition)
-            } else {
-                editProfileDialogBinding.level.setSelection(0)
-            }
-
-            editProfileDialogBinding.level.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                    if (position == 0) {
-                        selectedLevel = ""
-                    } else {
-                        selectedLevel = levels[position]
-                    }
-                }
-
-                override fun onNothingSelected(parent: AdapterView<*>?) {
-                }
-            }
-            
-            if ("male".equals(model?.gender, ignoreCase = true)) {
-                editProfileDialogBinding.rbMale.isChecked = true
-            } else if ("female".equals(model?.gender, ignoreCase = true)) {
-                editProfileDialogBinding.rbFemale.isChecked = true
-            }
-            editProfileDialogBinding.dateOfBirth.setOnClickListener {
-                val now: Calendar = Calendar.getInstance()
-                val dpd = DatePickerDialog(requireContext(), { _, year, monthOfYear, dayOfMonth ->
-                    val dob2 = format(Locale.US, "%04d-%02d-%02d", year, monthOfYear + 1, dayOfMonth)
-                    date = format(Locale.US, "%04d-%02d-%02dT00:00:00.000Z", year, monthOfYear + 1, dayOfMonth)
-                    editProfileDialogBinding.dateOfBirth.text = dob2 },
-                    now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)
-                )
-                dpd.datePicker.maxDate = now.timeInMillis
-                dpd.show()
-            }
-            editProfileDialogBinding.btnSave.setOnClickListener {
-                if (TextUtils.isEmpty("${editProfileDialogBinding.firstName.text}".trim())) {
-                    editProfileDialogBinding.firstName.error = resources.getString(R.string.compulsory_first_name)
-                } else if (TextUtils.isEmpty("${editProfileDialogBinding.lastName.text}".trim())) {
-                    editProfileDialogBinding.lastName.error = getString(R.string.compulsory_last_name)
-                } else if (TextUtils.isEmpty("${editProfileDialogBinding.email.text}".trim())) {
-                    editProfileDialogBinding.email.error = getString(R.string.compulsory_email)
-                } else if (TextUtils.isEmpty("${editProfileDialogBinding.phoneNumber.text}".trim())) {
-                    editProfileDialogBinding.phoneNumber.error = getString(R.string.compulsory_phone_number)
-                } else if (resources.getString(R.string.birth_date) == "${editProfileDialogBinding.dateOfBirth.text}") {
-                    editProfileDialogBinding.dateOfBirth.error = getString(R.string.compulsory_date_of_birth)
-                } else if (editProfileDialogBinding.rdGender.checkedRadioButtonId == -1) {
-                    Snackbar.make(editProfileDialogBinding.root, getString(R.string.gender_not_picked), Snackbar.LENGTH_SHORT).show()
-                } else {
-                    if (editProfileDialogBinding.rbMale.isChecked) {
-                        selectedGender = "male"
-                    } else if (editProfileDialogBinding.rbFemale.isChecked) {
-                        selectedGender = "female"
-                    }
-                    val realm = Realm.getDefaultInstance()
-                    val userId = settings.getString("userId", "")
-                    RealmUserModel.updateUserDetails(
-                        realm, userId, "${editProfileDialogBinding.firstName.text}",
-                        "${editProfileDialogBinding.lastName.text}",
-                        "${editProfileDialogBinding.middleName.text}",
-                        "${editProfileDialogBinding.email.text}",
-                        "${editProfileDialogBinding.phoneNumber.text}",
-                        selectedLevel, selectedLanguage, selectedGender, date
-                    ){
-                        updateUIWithUserData(model)
-                    }
-                    realm.close()
-                    dialog.dismiss()
-                }
-            }
-            editProfileDialogBinding.btnCancel.setOnClickListener { dialog.dismiss() }
-            dialog.show()
+        val levelPosition = levels.indexOf(selectedLevel)
+        if (levelPosition > 0) {
+            editProfileDialogBinding.level.setSelection(levelPosition)
+        } else {
+            editProfileDialogBinding.level.setSelection(0)
         }
 
+        editProfileDialogBinding.level.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+                if (position == 0) {
+                    selectedLevel = ""
+                } else {
+                    selectedLevel = levels[position]
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+            }
+        }
+
+        if ("male".equals(model?.gender, ignoreCase = true)) {
+            editProfileDialogBinding.rbMale.isChecked = true
+        } else if ("female".equals(model?.gender, ignoreCase = true)) {
+            editProfileDialogBinding.rbFemale.isChecked = true
+        }
+        editProfileDialogBinding.dateOfBirth.setOnClickListener {
+            val now: Calendar = Calendar.getInstance()
+            val dpd = DatePickerDialog(requireContext(), { _, year, monthOfYear, dayOfMonth ->
+                val dob2 = format(Locale.US, "%04d-%02d-%02d", year, monthOfYear + 1, dayOfMonth)
+                date = format(Locale.US, "%04d-%02d-%02dT00:00:00.000Z", year, monthOfYear + 1, dayOfMonth)
+                editProfileDialogBinding.dateOfBirth.text = dob2 },
+                now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)
+            )
+            dpd.datePicker.maxDate = now.timeInMillis
+            dpd.show()
+        }
+        editProfileDialogBinding.btnSave.setOnClickListener {
+            if (TextUtils.isEmpty("${editProfileDialogBinding.firstName.text}".trim())) {
+                editProfileDialogBinding.firstName.error = resources.getString(R.string.compulsory_first_name)
+            } else if (TextUtils.isEmpty("${editProfileDialogBinding.lastName.text}".trim())) {
+                editProfileDialogBinding.lastName.error = getString(R.string.compulsory_last_name)
+            } else if (TextUtils.isEmpty("${editProfileDialogBinding.email.text}".trim())) {
+                editProfileDialogBinding.email.error = getString(R.string.compulsory_email)
+            } else if (TextUtils.isEmpty("${editProfileDialogBinding.phoneNumber.text}".trim())) {
+                editProfileDialogBinding.phoneNumber.error = getString(R.string.compulsory_phone_number)
+            } else if (resources.getString(R.string.birth_date) == "${editProfileDialogBinding.dateOfBirth.text}") {
+                editProfileDialogBinding.dateOfBirth.error = getString(R.string.compulsory_date_of_birth)
+            } else if (editProfileDialogBinding.rdGender.checkedRadioButtonId == -1) {
+                Snackbar.make(editProfileDialogBinding.root, getString(R.string.gender_not_picked), Snackbar.LENGTH_SHORT).show()
+            } else {
+                if (editProfileDialogBinding.rbMale.isChecked) {
+                    selectedGender = "male"
+                } else if (editProfileDialogBinding.rbFemale.isChecked) {
+                    selectedGender = "female"
+                }
+                val realm = Realm.getDefaultInstance()
+                val userId = settings.getString("userId", "")
+                RealmUserModel.updateUserDetails(
+                    realm, userId, "${editProfileDialogBinding.firstName.text}",
+                    "${editProfileDialogBinding.lastName.text}",
+                    "${editProfileDialogBinding.middleName.text}",
+                    "${editProfileDialogBinding.email.text}",
+                    "${editProfileDialogBinding.phoneNumber.text}",
+                    selectedLevel, selectedLanguage, selectedGender, date
+                ){
+                    updateUIWithUserData(model)
+                }
+                realm.close()
+                dialog.dismiss()
+            }
+        }
+        editProfileDialogBinding.btnCancel.setOnClickListener { dialog.dismiss() }
+        dialog.show()
+    }
+
+    private fun configureGuestView() {
         if (model?.id?.startsWith("guest") == true) {
             fragmentUserProfileBinding.btEditProfile.visibility = View.GONE
             fragmentUserProfileBinding.btProfilePic.visibility = View.GONE
         }
+    }
 
-        val map = linkedMapOf(
+    private fun createStatsMap(): LinkedHashMap<String, String?> {
+        return linkedMapOf(
             getString(R.string.community_name) to Utilities.checkNA(model?.planetCode!!),
             getString(R.string.last_login) to handler.lastVisit?.let { Utilities.getRelativeTime(it) },
             getString(R.string.total_visits_overall) to handler.offlineVisits.toString(),
             getString(R.string.most_opened_resource) to Utilities.checkNA(handler.maxOpenedResource),
             getString(R.string.number_of_resources_opened) to Utilities.checkNA(handler.numberOfResourceOpen)
         )
+    }
 
+    private fun setupStatsRecycler() {
+        val map = createStatsMap()
         val keys = LinkedList(map.keys)
         fragmentUserProfileBinding.rvStat.adapter = object : RecyclerView.Adapter<ViewHolderRowStat>() {
             override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderRowStat {
@@ -329,7 +353,6 @@ class UserProfileFragment : Fragment() {
                 return keys.size
             }
         }
-        return fragmentUserProfileBinding.root
     }
 
     private fun searchForPhoto() {
