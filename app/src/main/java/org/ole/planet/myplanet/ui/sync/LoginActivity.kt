@@ -144,9 +144,10 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 if (mRealm.isClosed) {
                     mRealm = Realm.getDefaultInstance()
                 }
-                val user = mRealm.where(RealmUserModel::class.java).equalTo("name", activityLoginBinding.inputName.text.toString()).findFirst()
+                val enterUserName = activityLoginBinding.inputName.text.toString().trimEnd()
+                val user = mRealm.where(RealmUserModel::class.java).equalTo("name", enterUserName).findFirst()
                 if (user == null || !user.isArchived) {
-                    submitForm(activityLoginBinding.inputName.text.toString(), activityLoginBinding.inputPassword.text.toString())
+                    submitForm(enterUserName, activityLoginBinding.inputPassword.text.toString())
                 } else {
                     val builder = AlertDialog.Builder(this)
                     builder.setMessage("member ${activityLoginBinding.inputName.text} is archived")

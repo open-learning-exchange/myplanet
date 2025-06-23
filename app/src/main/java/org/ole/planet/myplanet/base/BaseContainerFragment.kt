@@ -156,52 +156,66 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     fun openResource(items: RealmMyLibrary) {
         dismissProgressDialog()
         if (items.mediaType == "HTML") {
-            if (items.resourceOffline) {
-                val intent = Intent(activity, WebViewActivity::class.java)
-                intent.putExtra("RESOURCE_ID", items.id)
-                intent.putExtra("LOCAL_ADDRESS", items.resourceLocalAddress)
-                intent.putExtra("title", items.title)
-                startActivity(intent)
-            } else {
-                val resource = mRealm.where(RealmMyLibrary::class.java).equalTo("_id", items.resourceId).findFirst()
-                val downloadUrls = ArrayList<String>()
-                resource?.attachments?.forEach { attachment ->
-                    attachment.name?.let { name ->
-                        val url = Utilities.getUrl("${items.resourceId}", name)
-                        downloadUrls.add(url)
+            openHtmlResource(items)
+        } else {
+            openNonHtmlResource(items)
+        }
+    }
 
-                        val baseDir = File(context?.getExternalFilesDir(null), "ole/${items.resourceId}")
-                        val lastSlashIndex = name.lastIndexOf('/')
-                        if (lastSlashIndex > 0) {
-                            val dirPath = name.substring(0, lastSlashIndex)
-                            File(baseDir, dirPath).mkdirs()
-                        }
-                    }
-                }
+    private fun openHtmlResource(items: RealmMyLibrary) {
+        if (items.resourceOffline) {
+            val intent = Intent(activity, WebViewActivity::class.java)
+            intent.putExtra("RESOURCE_ID", items.id)
+            intent.putExtra("LOCAL_ADDRESS", items.resourceLocalAddress)
+            intent.putExtra("title", items.title)
+            startActivity(intent)
+            return
+        }
 
-                if (downloadUrls.isNotEmpty()) {
-                    startDownloadWithAutoOpen(downloadUrls, items)
+        val resource = mRealm.where(RealmMyLibrary::class.java)
+            .equalTo("_id", items.resourceId)
+            .findFirst()
+        val downloadUrls = resource?.attachments
+            ?.mapNotNull { attachment ->
+                attachment.name?.let { name ->
+                    createAttachmentDir(items.resourceId, name)
+                    Utilities.getUrl("${items.resourceId}", name)
                 }
             }
-        } else {
-            val matchingItems = mRealm.where(RealmMyLibrary::class.java)
-                .equalTo("resourceLocalAddress", items.resourceLocalAddress)
-                .findAll()
-            val anyOffline = matchingItems.any { it.isResourceOffline() }
-            if (anyOffline) {
-                val offlineItem = matchingItems.first { it.isResourceOffline() }
-                openFileType(offlineItem, "offline")
-            } else {
-                if (items.isResourceOffline()) {
-                    openFileType(items, "offline")
-                } else if (FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4") {
-                    openFileType(items, "online")
-                } else {
-                    val arrayList = ArrayList<String>()
-                    arrayList.add(Utilities.getUrl(items))
-                    startDownloadWithAutoOpen(arrayList, items)
-                    profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
-                }
+            ?.toCollection(ArrayList()) ?: arrayListOf()
+
+        if (downloadUrls.isNotEmpty()) {
+            startDownloadWithAutoOpen(downloadUrls, items)
+        }
+    }
+
+    private fun createAttachmentDir(resourceId: String?, name: String) {
+        val baseDir = File(context?.getExternalFilesDir(null), "ole/$resourceId")
+        val lastSlashIndex = name.lastIndexOf('/')
+        if (lastSlashIndex > 0) {
+            val dirPath = name.substring(0, lastSlashIndex)
+            File(baseDir, dirPath).mkdirs()
+        }
+    }
+
+    private fun openNonHtmlResource(items: RealmMyLibrary) {
+        val matchingItems = mRealm.where(RealmMyLibrary::class.java)
+            .equalTo("resourceLocalAddress", items.resourceLocalAddress)
+            .findAll()
+
+        val offlineItem = matchingItems.firstOrNull { it.isResourceOffline() }
+        if (offlineItem != null) {
+            openFileType(offlineItem, "offline")
+            return
+        }
+
+        when {
+            items.isResourceOffline() -> openFileType(items, "offline")
+            FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4" -> openFileType(items, "online")
+            else -> {
+                val arrayList = arrayListOf(Utilities.getUrl(items))
+                startDownloadWithAutoOpen(arrayList, items)
+                profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
             }
         }
     }
