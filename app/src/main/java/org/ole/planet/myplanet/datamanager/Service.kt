@@ -323,71 +323,158 @@ class Service(private val context: Context) {
         Log.d("BecomeMemberTiming", "Starting saveUserToDb at: $saveUserStartTime")
 
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+        val asyncTransactionStartTime = System.currentTimeMillis()
+        Log.d("BecomeMemberTiming", "About to start executeTransactionAsync at: $asyncTransactionStartTime")
+
         realm.executeTransactionAsync({ realm1: Realm? ->
             val realmTransactionStartTime = System.currentTimeMillis()
             Log.d("BecomeMemberTiming", "Starting realm transaction at: $realmTransactionStartTime")
 
             try {
+                // Log API call start
+                val apiCallStartTime = System.currentTimeMillis()
+                Log.d("BecomeMemberTiming", "Starting API call to fetch user data at: $apiCallStartTime")
+
                 val res = retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/$id")?.execute()
+
+                val apiCallEndTime = System.currentTimeMillis()
+                Log.d("BecomeMemberTiming", "API call completed at: $apiCallEndTime, took: ${apiCallEndTime - apiCallStartTime}ms")
+
                 if (res?.body() != null) {
+                    Log.d("BecomeMemberTiming", "API response received, starting data processing")
+
+                    // Log populateUsersTable start
+                    val populateStartTime = System.currentTimeMillis()
+                    Log.d("BecomeMemberTiming", "Starting populateUsersTable at: $populateStartTime")
+
                     val model = populateUsersTable(res.body(), realm1, settings)
+
+                    val populateEndTime = System.currentTimeMillis()
+                    Log.d("BecomeMemberTiming", "populateUsersTable completed at: $populateEndTime, took: ${populateEndTime - populateStartTime}ms")
+
                     if (model != null) {
+                        // Log saveKeyIv start
+                        val saveKeyIvStartTime = System.currentTimeMillis()
+                        Log.d("BecomeMemberTiming", "Starting saveKeyIv at: $saveKeyIvStartTime")
+
                         UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
+
+                        val saveKeyIvEndTime = System.currentTimeMillis()
+                        Log.d("BecomeMemberTiming", "saveKeyIv completed at: $saveKeyIvEndTime, took: ${saveKeyIvEndTime - saveKeyIvStartTime}ms")
+                    } else {
+                        Log.d("BecomeMemberTiming", "populateUsersTable returned null model")
                     }
+                } else {
+                    Log.d("BecomeMemberTiming", "API response body is null")
                 }
 
                 val realmTransactionEndTime = System.currentTimeMillis()
                 Log.d("BecomeMemberTiming", "Realm transaction completed at: $realmTransactionEndTime, took: ${realmTransactionEndTime - realmTransactionStartTime}ms")
+
             } catch (e: IOException) {
+                val ioExceptionTime = System.currentTimeMillis()
+                Log.e("BecomeMemberTiming", "IOException in realm transaction at: $ioExceptionTime, took: ${ioExceptionTime - realmTransactionStartTime}ms")
+                e.printStackTrace()
+            } catch (e: Exception) {
+                val exceptionTime = System.currentTimeMillis()
+                Log.e("BecomeMemberTiming", "Unexpected exception in realm transaction at: $exceptionTime, took: ${exceptionTime - realmTransactionStartTime}ms")
                 e.printStackTrace()
             }
         }, {
+            // SUCCESS CALLBACK
+            val successCallbackStartTime = System.currentTimeMillis()
             val userSavedTime = System.currentTimeMillis()
-            Log.d("BecomeMemberTiming", "User saved to DB at: $userSavedTime, saveUserToDb took: ${userSavedTime - saveUserStartTime}ms")
+            Log.d("BecomeMemberTiming", "SUCCESS: User saved to DB at: $userSavedTime, saveUserToDb took: ${userSavedTime - saveUserStartTime}ms")
+            Log.d("BecomeMemberTiming", "SUCCESS: Success callback started at: $successCallbackStartTime")
 
             callback.onSuccess(context.getString(R.string.user_created_successfully))
 
+            val callbackCompleteTime = System.currentTimeMillis()
+            Log.d("BecomeMemberTiming", "SUCCESS: Callback onSuccess completed at: $callbackCompleteTime, took: ${callbackCompleteTime - successCallbackStartTime}ms")
+
+            val flowStartTime = System.currentTimeMillis()
+            Log.d("BecomeMemberTiming", "SUCCESS: Starting network flow processing at: $flowStartTime")
+
             isNetworkConnectedFlow.onEach { isConnected ->
+                val flowIterationStartTime = System.currentTimeMillis()
+                Log.d("BecomeMemberTiming", "SUCCESS: Network flow iteration started at: $flowIterationStartTime, isConnected: $isConnected")
+
                 if (isConnected) {
                     val serverUrl = settings.getString("serverURL", "")
+                    Log.d("BecomeMemberTiming", "SUCCESS: Retrieved serverURL: ${if (serverUrl.isNullOrEmpty()) "EMPTY" else "NOT_EMPTY"}")
+
                     if (!serverUrl.isNullOrEmpty()) {
                         serviceScope.launch {
                             val uploadStartTime = System.currentTimeMillis()
-                            Log.d("BecomeMemberTiming", "Starting upload process at: $uploadStartTime")
+                            Log.d("BecomeMemberTiming", "SUCCESS: Starting upload process at: $uploadStartTime")
 
+                            val serverCheckStartTime = System.currentTimeMillis()
                             val canReachServer = withContext(Dispatchers.IO) {
                                 isServerReachable(serverUrl)
                             }
+                            val serverCheckEndTime = System.currentTimeMillis()
+                            Log.d("BecomeMemberTiming", "SUCCESS: Server reachability check completed at: $serverCheckEndTime, took: ${serverCheckEndTime - serverCheckStartTime}ms, canReach: $canReachServer")
+
                             if (canReachServer) {
                                 if (context is ProcessUserDataActivity) {
+                                    val uiThreadStartTime = System.currentTimeMillis()
+                                    Log.d("BecomeMemberTiming", "SUCCESS: About to run on UI thread at: $uiThreadStartTime")
+
                                     context.runOnUiThread {
+                                        val uiThreadExecutionTime = System.currentTimeMillis()
+                                        Log.d("BecomeMemberTiming", "SUCCESS: UI thread execution started at: $uiThreadExecutionTime")
+
                                         val userName = "${obj["name"].asString}"
                                         Log.d("Service", "Starting upload for user: $userName")
+                                        Log.d("BecomeMemberTiming", "SUCCESS: About to call startUpload at: ${System.currentTimeMillis()}")
 
                                         // Pass the security callback to the upload process
                                         context.startUpload("becomeMember", userName, securityCallback)
+
+                                        val uiThreadCompleteTime = System.currentTimeMillis()
+                                        Log.d("BecomeMemberTiming", "SUCCESS: UI thread execution completed at: $uiThreadCompleteTime, took: ${uiThreadCompleteTime - uiThreadExecutionTime}ms")
                                     }
+                                } else {
+                                    Log.d("BecomeMemberTiming", "SUCCESS: Context is not ProcessUserDataActivity")
                                 }
                             } else {
-                                // If server not reachable, call security callback immediately
+                                Log.d("BecomeMemberTiming", "SUCCESS: Server not reachable, calling security callback immediately")
                                 securityCallback?.onSecurityDataUpdated()
                             }
                         }
                     } else {
-                        // If no server URL, call security callback immediately
+                        Log.d("BecomeMemberTiming", "SUCCESS: No server URL, calling security callback immediately")
                         securityCallback?.onSecurityDataUpdated()
                     }
                 } else {
-                    // If not connected, call security callback immediately
+                    Log.d("BecomeMemberTiming", "SUCCESS: Not connected, calling security callback immediately")
                     securityCallback?.onSecurityDataUpdated()
                 }
+
+                val flowIterationEndTime = System.currentTimeMillis()
+                Log.d("BecomeMemberTiming", "SUCCESS: Network flow iteration completed at: $flowIterationEndTime, took: ${flowIterationEndTime - flowIterationStartTime}ms")
             }.launchIn(serviceScope)
+
+            val flowCompleteTime = System.currentTimeMillis()
+            Log.d("BecomeMemberTiming", "SUCCESS: Network flow setup completed at: $flowCompleteTime, took: ${flowCompleteTime - flowStartTime}ms")
+
         }) { error: Throwable ->
+            // ERROR CALLBACK
+            val errorCallbackTime = System.currentTimeMillis()
+            Log.e("BecomeMemberTiming", "ERROR: Error callback triggered at: $errorCallbackTime, saveUserToDb total time: ${errorCallbackTime - saveUserStartTime}ms")
+            Log.e("BecomeMemberTiming", "ERROR: Exception details: ${error.message}")
             error.printStackTrace()
-            Log.d("BecomeMemberTiming", "Error saving user, process completed in: ${System.currentTimeMillis() - saveUserStartTime}ms")
+
             callback.onSuccess(context.getString(R.string.unable_to_save_user_please_sync))
             securityCallback?.onSecurityDataUpdated() // Call even on error to prevent hanging
+
+            val errorCallbackCompleteTime = System.currentTimeMillis()
+            Log.e("BecomeMemberTiming", "ERROR: Error callback completed at: $errorCallbackCompleteTime, took: ${errorCallbackCompleteTime - errorCallbackTime}ms")
         }
+
+        val functionEndTime = System.currentTimeMillis()
+        Log.d("BecomeMemberTiming", "saveUserToDb function setup completed at: $functionEndTime, setup took: ${functionEndTime - saveUserStartTime}ms")
     }
 
     fun syncPlanetServers(callback: SuccessListener) {
