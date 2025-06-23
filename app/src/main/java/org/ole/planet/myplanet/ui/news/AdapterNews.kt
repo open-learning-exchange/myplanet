@@ -629,7 +629,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         }
     }
 
-
     private fun postReply(s: String?, news: RealmNews?) {
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
         val map = HashMap<String?, String>()
