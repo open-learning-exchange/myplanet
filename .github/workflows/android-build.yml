@@ -5,9 +5,9 @@ on:
     branches:
       - '*'
       - '!master'
+      - codex/**
   pull_request:
     branches:
-      - codex/**
       - dependabot/**
 
 jobs:
