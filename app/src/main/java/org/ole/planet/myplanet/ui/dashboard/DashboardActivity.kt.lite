@@ -228,37 +228,41 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         activityDashboardBinding.appBarBell.ivSync.setOnClickListener { logSyncInSharedPrefs() }
         activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
         activityDashboardBinding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
-            when (item.itemId) {
-                R.id.action_chat -> {
-                    if (user?.id?.startsWith("guest") == false) {
-                        openCallFragment(
-                            ChatHistoryListFragment(),
-                            ChatHistoryListFragment::class.java.simpleName
-                        )
-                    } else {
-                        guestDialog(this)
-                    }
-                }
-                R.id.menu_goOnline -> wifiStatusSwitch()
-                R.id.action_sync -> logSyncInSharedPrefs()
-                R.id.action_feedback -> {
-                    if (user?.id?.startsWith("guest") == false) {
-                        openCallFragment(
-                            FeedbackListFragment(),
-                            FeedbackListFragment::class.java.simpleName
-                        )
-                    } else {
-                        guestDialog(this)
-                    }
-                }
-                R.id.action_settings -> startActivity(Intent(this@DashboardActivity, SettingActivity::class.java))
-                R.id.action_disclaimer -> openCallFragment(DisclaimerFragment(), DisclaimerFragment::class.java.simpleName)
-                R.id.action_about -> openCallFragment(AboutFragment(), AboutFragment::class.java.simpleName)
-                R.id.action_logout -> logout()
-                R.id.change_language -> SettingActivity.SettingFragment.languageChanger(this)
-                else -> {}
-            }
+            handleToolbarMenuItem(item.itemId)
             true
+        }
+    }
+
+    private fun handleToolbarMenuItem(itemId: Int) {
+        when (itemId) {
+            R.id.action_chat -> {
+                if (user?.id?.startsWith("guest") == false) {
+                    openCallFragment(
+                        ChatHistoryListFragment(),
+                        ChatHistoryListFragment::class.java.simpleName
+                    )
+                } else {
+                    guestDialog(this)
+                }
+            }
+            R.id.menu_goOnline -> wifiStatusSwitch()
+            R.id.action_sync -> logSyncInSharedPrefs()
+            R.id.action_feedback -> {
+                if (user?.id?.startsWith("guest") == false) {
+                    openCallFragment(
+                        FeedbackListFragment(),
+                        FeedbackListFragment::class.java.simpleName
+                    )
+                } else {
+                    guestDialog(this)
+                }
+            }
+            R.id.action_settings -> startActivity(Intent(this@DashboardActivity, SettingActivity::class.java))
+            R.id.action_disclaimer -> openCallFragment(DisclaimerFragment(), DisclaimerFragment::class.java.simpleName)
+            R.id.action_about -> openCallFragment(AboutFragment(), AboutFragment::class.java.simpleName)
+            R.id.action_logout -> logout()
+            R.id.change_language -> SettingActivity.SettingFragment.languageChanger(this)
+            else -> {}
         }
     }
 
@@ -383,24 +387,40 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun createNotifications(realm: Realm, userId: String?) {
         dashboardViewModel.updateResourceNotification(realm, userId)
 
+        createSurveyNotifications(realm, userId)
+        createTaskNotifications(realm, userId)
+        createStorageNotification(realm, userId)
+        createJoinRequestNotifications(realm, userId)
+    }
+
+    private fun createSurveyNotifications(realm: Realm, userId: String?) {
         val pendingSurveys = dashboardViewModel.getPendingSurveys(realm, userId)
         val surveyTitles = dashboardViewModel.getSurveyTitlesFromSubmissions(realm, pendingSurveys)
         surveyTitles.forEach { title ->
             dashboardViewModel.createNotificationIfNotExists(realm, "survey", "$title", title, userId)
         }
+    }
 
+    private fun createTaskNotifications(realm: Realm, userId: String?) {
         val tasks = realm.where(RealmTeamTask::class.java)
             .notEqualTo("status", "archived")
             .equalTo("completed", false)
             .equalTo("assignee", userId)
             .findAll()
         tasks.forEach { task ->
-            dashboardViewModel.createNotificationIfNotExists(realm, "task", "${task.title} ${formatDate(task.deadline)}", task.id, userId)
+            dashboardViewModel.createNotificationIfNotExists(
+                realm,
+                "task",
+                "${task.title} ${formatDate(task.deadline)}",
+                task.id,
+                userId
+            )
         }
+    }
 
+    private fun createStorageNotification(realm: Realm, userId: String?) {
         val storageRatio = totalAvailableMemoryRatio
         dashboardViewModel.createNotificationIfNotExists(realm, "storage", "$storageRatio", "storage", userId)
-        createJoinRequestNotifications(realm, userId)
     }
 
     private fun createJoinRequestNotifications(realm: Realm, userId: String?) {
@@ -637,6 +657,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun menuAction(selectedMenuId: Int) {
+        handleDrawerSelection(selectedMenuId)
+    }
+
+    private fun handleDrawerSelection(selectedMenuId: Int) {
         when (selectedMenuId) {
             R.string.menu_myplanet -> openCallFragment(BellDashboardFragment())
             R.string.menu_library -> openCallFragment(ResourcesFragment())
