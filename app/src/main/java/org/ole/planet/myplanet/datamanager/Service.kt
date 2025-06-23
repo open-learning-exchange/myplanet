@@ -275,10 +275,8 @@ class Service(private val context: Context) {
                     model.iv = iv
                 }
                 realm.commitTransaction()
-
                 Utilities.toast(MainApplication.context, context.getString(R.string.not_connect_to_planet_created_user_offline))
                 callback.onSuccess(context.getString(R.string.not_connect_to_planet_created_user_offline))
-
                 securityCallback?.onSecurityDataUpdated()
             }
         })
@@ -294,14 +292,11 @@ class Service(private val context: Context) {
 
     private fun saveUserToDb(realm: Realm, id: String, obj: JsonObject, callback: CreateUserCallback, securityCallback: SecurityDataCallback? = null) {
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-
         realm.executeTransactionAsync({ realm1: Realm? ->
             try {
                 val res = retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/$id")?.execute()
-
                 if (res?.body() != null) {
                     val model = populateUsersTable(res.body(), realm1, settings)
-
                     if (model != null) {
                         UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
                     }
@@ -316,13 +311,11 @@ class Service(private val context: Context) {
             isNetworkConnectedFlow.onEach { isConnected ->
                 if (isConnected) {
                     val serverUrl = settings.getString("serverURL", "")
-
                     if (!serverUrl.isNullOrEmpty()) {
                         serviceScope.launch {
                             val canReachServer = withContext(Dispatchers.IO) {
                                 isServerReachable(serverUrl)
                             }
-
                             if (canReachServer) {
                                 if (context is ProcessUserDataActivity) {
                                     context.runOnUiThread {

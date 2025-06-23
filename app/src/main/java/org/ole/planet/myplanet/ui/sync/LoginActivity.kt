@@ -1,34 +1,25 @@
 package org.ole.planet.myplanet.ui.sync
 
-import android.app.Activity
 import android.content.*
 import android.graphics.drawable.AnimationDrawable
 import android.os.*
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.text.*
-import android.util.Base64
-import android.util.Log
 import android.view.*
 import android.view.inputmethod.EditorInfo
 import android.widget.*
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.core.content.edit
 import androidx.recyclerview.widget.*
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import io.realm.Realm
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.*
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.*
 import org.ole.planet.myplanet.datamanager.*
-import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
@@ -41,6 +32,7 @@ import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.text.Normalizer
 import java.util.Locale
 import java.util.regex.Pattern
+import androidx.core.content.edit
 
 class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private lateinit var activityLoginBinding: ActivityLoginBinding
@@ -140,7 +132,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
     private fun declareElements() {
         if (!defaultPref.contains("beta_addImageToMessage")) {
-            defaultPref.edit().putBoolean("beta_addImageToMessage", true).apply()
+            defaultPref.edit { putBoolean("beta_addImageToMessage", true) }
         }
         activityLoginBinding.customDeviceName.text = getCustomDeviceName()
         btnSignIn.setOnClickListener {
@@ -149,11 +141,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             } else if (TextUtils.isEmpty(activityLoginBinding.inputPassword.text.toString())) {
                 activityLoginBinding.inputPassword.error = getString(R.string.err_msg_password)
             } else {
-                val users = mRealm.where(RealmUserModel::class.java).equalTo("name", "${activityLoginBinding.inputName.text}").findAll()
-                users.forEach {
-                    logLargeString("okuro", it.serialize().toString())
-                }
-
                 if (mRealm.isClosed) {
                     mRealm = Realm.getDefaultInstance()
                 }
@@ -174,7 +161,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 }
             }
         }
-        if (!settings.contains("serverProtocol")) settings.edit().putString("serverProtocol", "http://").apply()
+        if (!settings.contains("serverProtocol")) settings.edit {
+            putString("serverProtocol", "http://")
+        }
         activityLoginBinding.becomeMember.setOnClickListener {
             activityLoginBinding.inputName.setText(R.string.empty_text)
             becomeAMember()
@@ -195,77 +184,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             }
         }
     }
-
-//    fun fetchAndLogUserSecurityData(name: String) {
-//        try {
-//            val apiInterface = client?.create(ApiInterface::class.java)
-//
-//            val userName = settings.getString("loginUserName", "")
-//            val password = settings.getString("loginUserPassword", "")
-//            val header = "Basic ${Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)}"
-//
-//            // Use tablet_users database instead of _users
-//            val userDocUrl = "${getUrl()}/tablet_users/org.couchdb.user:$name}"
-//            val response = apiInterface?.getJsonObject(header, userDocUrl)?.execute()
-//
-//            if (response?.isSuccessful == true && response.body() != null) {
-//                val userDoc = response.body()
-////                val derivedKey = getString("derived_key", userDoc)
-////                val salt = getString("salt", userDoc)
-////                val passwordScheme = getString("password_scheme", userDoc)
-////                val iterations = getString("iterations", userDoc)
-////                val userId = getString("_id", userDoc)
-////                val rev = getString("_rev", userDoc)
-//                Log.d("okuro", "$userDoc")
-//
-//                // Log the security data
-////                Log.d("UserSecurityData", "=== User Security Data for: $userName ===")
-////                Log.d("UserSecurityData", "Document ID: $userId")
-////                Log.d("UserSecurityData", "Revision: $rev")
-////                Log.d("UserSecurityData", "Derived Key: $derivedKey")
-////                Log.d("UserSecurityData", "Salt: $salt")
-////                Log.d("UserSecurityData", "Password Scheme: $passwordScheme")
-////                Log.d("UserSecurityData", "Iterations: $iterations")
-////                Log.d("UserSecurityData", "=====================================")
-//            } else {
-//                Log.e("UserSecurityData", "Failed to fetch user data for: $userName")
-//                Log.e("UserSecurityData", "Response code: ${response?.code()}")
-//                Log.e("UserSecurityData", "Response message: ${response?.message()}")
-//            }
-//
-//        } catch (e: Exception) {
-//            Log.e("UserSecurityData", "Error fetching user security data: ${e.message}")
-//            e.printStackTrace()
-//        }
-//    }
-
-//    fun fetchAndLogUserSecurityData(name: String) {
-//        CoroutineScope(Dispatchers.IO).launch {
-//            try {
-//                val apiInterface = client?.create(ApiInterface::class.java)
-//
-//                val userDocUrl = "${getUrl()}/tablet_users/org.couchdb.user:$name"
-//                val response = apiInterface?.getJsonObject(Utilities.header, userDocUrl)?.execute()
-//
-//                withContext(Dispatchers.Main) {
-//                    if (response?.isSuccessful == true && response.body() != null) {
-//                        val userDoc = response.body()
-//                        Log.d("okuro", "$userDoc")
-//                    } else {
-//                        Log.e("UserSecurityData", "Failed to fetch user data for: $name")
-//                        Log.e("UserSecurityData", "Response code: ${response?.code()}")
-//                        Log.e("UserSecurityData", "Response message: ${response?.message()}")
-//                    }
-//                }
-//
-//            } catch (e: Exception) {
-//                withContext(Dispatchers.Main) {
-//                    Log.e("UserSecurityData", "Error fetching user security data: ${e.message}")
-//                    e.printStackTrace()
-//                }
-//            }
-//        }
-//    }
 
     private fun declareMoreElements() {
         try {
@@ -517,43 +435,57 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         if (forceSyncTrigger()) {
             return
         }
-        val editor = settings.edit()
-        editor.putString("loginUserName", name)
-        editor.putString("loginUserPassword", password)
-        val isLoggedIn = authenticateUser(settings, name, password, false)
-        Log.d("ManagerSync", "Login user: $name, password: $password, isLoggedIn: $isLoggedIn")
-        if (isLoggedIn) {
-            Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
-            onLogin()
-            saveUsers(activityLoginBinding.inputName.text.toString(), activityLoginBinding.inputPassword.text.toString(), "member")
-        } else {
-            ManagerSync.instance?.login(name, password, object : SyncListener {
-                override fun onSyncStarted() {
-                    customProgressDialog?.setText(getString(R.string.please_wait))
-                    customProgressDialog?.show()
-                }
-                override fun onSyncComplete() {
-                    customProgressDialog?.dismiss()
-                    val log = authenticateUser(settings, name, password, true)
-                    if (log) {
-                        Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
-                        onLogin()
-                        saveUsers(activityLoginBinding.inputName.text.toString(), activityLoginBinding.inputPassword.text.toString(), "member")
-                    } else {
-                        alertDialogOkay(getString(R.string.err_msg_login))
+        settings.edit {
+            putString("loginUserName", name)
+            putString("loginUserPassword", password)
+            val isLoggedIn = authenticateUser(settings, name, password, false)
+            if (isLoggedIn) {
+                Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT)
+                    .show()
+                onLogin()
+                saveUsers(
+                    activityLoginBinding.inputName.text.toString(),
+                    activityLoginBinding.inputPassword.text.toString(),
+                    "member"
+                )
+            } else {
+                ManagerSync.instance?.login(name, password, object : SyncListener {
+                    override fun onSyncStarted() {
+                        customProgressDialog.setText(getString(R.string.please_wait))
+                        customProgressDialog.show()
                     }
-                    syncIconDrawable.stop()
-                    syncIconDrawable.selectDrawable(0)
-                }
-                override fun onSyncFailed(msg: String?) {
-                    toast(MainApplication.context, msg)
-                    customProgressDialog?.dismiss()
-                    syncIconDrawable.stop()
-                    syncIconDrawable.selectDrawable(0)
-                }
-            })
+
+                    override fun onSyncComplete() {
+                        customProgressDialog.dismiss()
+                        val log = authenticateUser(settings, name, password, true)
+                        if (log) {
+                            Toast.makeText(
+                                applicationContext,
+                                getString(R.string.thank_you),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            onLogin()
+                            saveUsers(
+                                activityLoginBinding.inputName.text.toString(),
+                                activityLoginBinding.inputPassword.text.toString(),
+                                "member"
+                            )
+                        } else {
+                            alertDialogOkay(getString(R.string.err_msg_login))
+                        }
+                        syncIconDrawable.stop()
+                        syncIconDrawable.selectDrawable(0)
+                    }
+
+                    override fun onSyncFailed(msg: String?) {
+                        toast(context, msg)
+                        customProgressDialog.dismiss()
+                        syncIconDrawable.stop()
+                        syncIconDrawable.selectDrawable(0)
+                    }
+                })
+            }
         }
-        editor.apply()
     }
 
     private fun showGuestLoginDialog() {

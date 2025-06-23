@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.datamanager
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Base64
-import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -81,7 +80,6 @@ class ManagerSync private constructor(context: Context) {
     }
 
     private fun checkManagerAndInsert(jsonDoc: JsonObject?, realm: Realm, listener: SyncListener) {
-        Log.d("ManagerSync", "Checking if user is a manager $jsonDoc")
         if (isManager(jsonDoc)) {
             populateUsersTable(jsonDoc, realm, settings)
             listener.onSyncComplete()

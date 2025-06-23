@@ -47,7 +47,6 @@ class UploadToShelfService(context: Context) {
                 try {
                     val password = sharedPreferences.getString("loginUserPassword", "")
                     val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
-
                     val userExists = checkIfUserExists(apiInterface, header, model)
 
                     if (!userExists) {
@@ -198,18 +197,15 @@ class UploadToShelfService(context: Context) {
         val ob = JsonObject()
         var keyString = generateKey()
         var iv: String? = generateIv()
-
         if (!TextUtils.isEmpty(model.iv)) {
             iv = model.iv
         }
         if (!TextUtils.isEmpty(model.key)) {
             keyString = model.key
         }
-
         ob.addProperty("key", keyString)
         ob.addProperty("iv", iv)
         ob.addProperty("createdOn", Date().time)
-
         var success = false
         var attemptCount = 0
         val maxAttempts = 3
@@ -417,7 +413,6 @@ class UploadToShelfService(context: Context) {
             val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
             val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
             val apiInterface = client?.create(ApiInterface::class.java)
-
             try {
                 val response: Response<JsonObject?>? = apiInterface?.getJsonObject(header, "${Utilities.getUrl()}/${table}/_security")?.execute()
                 if (response?.body() != null) {
@@ -431,7 +426,6 @@ class UploadToShelfService(context: Context) {
                     rolesArray.add("health")
                     members?.add("roles", rolesArray)
                     jsonObject?.add("members", members)
-
                     apiInterface.putDoc(header, "application/json", "${Utilities.getUrl()}/${table}/_security", jsonObject).execute()
                 }
             } catch (e: IOException) {

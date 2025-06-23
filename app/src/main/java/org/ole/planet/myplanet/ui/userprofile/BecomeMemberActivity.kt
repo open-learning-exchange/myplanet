@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
-import android.util.Log
 import android.view.View
 import android.widget.ArrayAdapter
 import com.google.gson.JsonArray
@@ -229,32 +228,19 @@ class BecomeMemberActivity : BaseActivity() {
             roles.add("learner")
             obj.add("roles", roles)
 
-            // Show progress bar and start timing
             userCreationStartTime = System.currentTimeMillis()
-            Log.d("UserCreationTiming", "Starting user creation process at: $userCreationStartTime")
             activityBecomeMemberBinding.pbar.visibility = View.VISIBLE
 
             Service(this).becomeMember(mRealm, obj, object : Service.CreateUserCallback {
                 override fun onSuccess(message: String) {
-                    val userCreationEndTime = System.currentTimeMillis()
-                    Log.d("UserCreationTiming", "User creation completed at: $userCreationEndTime, took: ${userCreationEndTime - userCreationStartTime}ms")
-
                     runOnUiThread {
                         Utilities.toast(this@BecomeMemberActivity, message)
-                        // DO NOT hide progress bar or navigate here - wait for security data update
                     }
-                    // DO NOT call finish() or navigate to LoginActivity here
                 }
             }, object : SecurityDataCallback {
                 override fun onSecurityDataUpdated() {
-                    val totalProcessEndTime = System.currentTimeMillis()
-                    Log.d("UserCreationTiming", "Security data update completed at: $totalProcessEndTime, total process took: ${totalProcessEndTime - userCreationStartTime}ms")
-
                     runOnUiThread {
-                        // Hide progress bar only after security data is updated
                         activityBecomeMemberBinding.pbar.visibility = View.GONE
-
-                        // Navigate to LoginActivity only after everything is complete
                         val intent = Intent(this@BecomeMemberActivity, LoginActivity::class.java)
                         if (guest) {
                             intent.putExtra("username", username)
