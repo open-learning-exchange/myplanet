@@ -637,6 +637,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun menuAction(selectedMenuId: Int) {
+        ResourcesFragment.clearSelectionState()
         when (selectedMenuId) {
             R.string.menu_myplanet -> openCallFragment(BellDashboardFragment())
             R.string.menu_library -> openCallFragment(ResourcesFragment())
@@ -767,6 +768,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         item.isChecked = true
+        ResourcesFragment.clearSelectionState()
         when (item.itemId) {
             R.id.menu_library -> {
                 openCallFragment(ResourcesFragment())
