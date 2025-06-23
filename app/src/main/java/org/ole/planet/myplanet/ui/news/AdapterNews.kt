@@ -585,12 +585,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         return EditDialogComponents(v, et, tlInput, llImage)
     }
 
-    private fun handlePositiveButton(
-        dialog: AlertDialog,
-        isEdit: Boolean,
-        components: EditDialogComponents,
-        news: RealmNews?
-    ) {
+    private fun handlePositiveButton(dialog: AlertDialog, isEdit: Boolean, components: EditDialogComponents, news: RealmNews?) {
         val s = components.editText.text.toString().trim()
         if (s.isEmpty()) {
             components.inputLayout.error = context.getString(R.string.please_enter_message)
