@@ -858,6 +858,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             insets
         }
     }
+
     override fun openMyFragment(f: Fragment) {
         val fragmentName = f::class.java.simpleName
         var tag = "My$fragmentName"
