@@ -5,6 +5,10 @@ on:
     branches:
       - '*'
       - '!master'
+  pull_request:
+    branches:
+      - codex/**
+      - dependabot/**
 
 jobs:
   build:
