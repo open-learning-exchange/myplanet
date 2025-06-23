@@ -48,7 +48,6 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.FileUtils.installApk
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
-import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.roundToInt
 
@@ -190,16 +189,16 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             val userDataUploadStartTime = System.currentTimeMillis()
             Log.d("UploadTiming", "Starting user data upload at: $userDataUploadStartTime")
 
-            UploadToShelfService.instance?.uploadUserData(object : SuccessListener {
+            UploadToShelfService.instance?.uploadSingleUserData(userName ,object : SuccessListener {
                 override fun onSuccess(message: String?) {
                     val userDataUploadEndTime = System.currentTimeMillis()
                     Log.d("UploadTiming", "User data upload completed at: $userDataUploadEndTime, took: ${userDataUploadEndTime - userDataUploadStartTime}ms")
-                    Log.d("Upload", "User data upload completed: $message")
+                    Log.d("Upload", "User data upload completed: $message, username: org.couchdb.user:${userName}")
 
                     val healthUploadStartTime = System.currentTimeMillis()
                     Log.d("UploadTiming", "Starting health data upload at: $healthUploadStartTime")
 
-                    UploadToShelfService.instance?.uploadHealth(object : SuccessListener {
+                    UploadToShelfService.instance?.uploadSingleUserHealth("org.couchdb.user:${userName}", object : SuccessListener {
                         override fun onSuccess(healthMessage: String?) {
                             val healthUploadEndTime = System.currentTimeMillis()
                             Log.d("UploadTiming", "Health data upload completed at: $healthUploadEndTime, took: ${healthUploadEndTime - healthUploadStartTime}ms")

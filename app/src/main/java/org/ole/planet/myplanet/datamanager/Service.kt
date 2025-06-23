@@ -250,12 +250,12 @@ class Service(private val context: Context) {
 
                             retrofitInterface.putDoc(null, "application/json", "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
                                 override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                                    if (response.body() != null && response.body()!!.has("id")) {
+                                    if (response.body() != null && response.body()?.has("id") == true) {
                                         val userCreatedTime = System.currentTimeMillis()
                                         Log.d("BecomeMemberTiming", "User created on server at: $userCreatedTime, took: ${userCreatedTime - userCreationServerStartTime}ms")
 
                                         uploadToShelf(obj)
-                                        saveUserToDb(realm, response.body()!!.get("id").asString, obj, callback, securityCallback)
+                                        saveUserToDb(realm, "${response.body()?.get("id")?.asString}", obj, callback, securityCallback)
                                     } else {
                                         Log.d("BecomeMemberTiming", "Failed to create user, process completed in: ${System.currentTimeMillis() - becomeMemberStartTime}ms")
                                         callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
@@ -328,7 +328,7 @@ class Service(private val context: Context) {
             Log.d("BecomeMemberTiming", "Starting realm transaction at: $realmTransactionStartTime")
 
             try {
-                val res = retrofitInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/" + id)?.execute()
+                val res = retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/$id")?.execute()
                 if (res?.body() != null) {
                     val model = populateUsersTable(res.body(), realm1, settings)
                     if (model != null) {

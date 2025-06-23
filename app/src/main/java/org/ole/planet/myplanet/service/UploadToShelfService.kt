@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Base64
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -46,7 +47,9 @@ class UploadToShelfService(context: Context) {
             userModels.forEachIndexed { index, model ->
                 try {
                     val password = sharedPreferences.getString("loginUserPassword", "")
+                    Log.d("UploadToShelfService", "Uploading user: ${model.name} with password: $password")
                     val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
+
                     val userExists = checkIfUserExists(apiInterface, header, model)
 
                     if (!userExists) {
@@ -60,6 +63,41 @@ class UploadToShelfService(context: Context) {
             }
         }, {
             uploadToShelf(listener)
+        }) { error ->
+            listener.onSuccess("Error during user data sync: ${error.localizedMessage}")
+        }
+    }
+
+    fun uploadSingleUserData(userName: String?, listener: SuccessListener) {
+        val apiInterface = client?.create(ApiInterface::class.java)
+        mRealm = dbService.realmInstance
+
+        mRealm.executeTransactionAsync({ realm: Realm ->
+            val userModel = realm.where(RealmUserModel::class.java)
+                .equalTo("name", userName)
+                .findFirst()
+
+            if (userModel != null) {
+                try {
+                    val password = sharedPreferences.getString("loginUserPassword", "")
+                    Log.d("UploadToShelfService", "Uploading user: ${userModel.name} with password: $password")
+                    val header = "Basic ${Base64.encodeToString(("${userModel.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
+
+                    val userExists = checkIfUserExists(apiInterface, header, userModel)
+
+                    if (!userExists) {
+                        uploadNewUser(apiInterface, realm, userModel)
+                    } else if (userModel.isUpdated) {
+                        updateExistingUser(apiInterface, header, userModel)
+                    }
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                }
+            } else {
+                Log.d("UploadToShelfService", "User with name $userName not found.")
+            }
+        }, {
+            uploadSingleUserToShelf(userName, listener)
         }) { error ->
             listener.onSuccess("Error during user data sync: ${error.localizedMessage}")
         }
@@ -237,6 +275,45 @@ class UploadToShelfService(context: Context) {
         }
     }
 
+    fun uploadSingleUserHealth(userId: String?, listener: SuccessListener?) {
+        val apiInterface = client?.create(ApiInterface::class.java)
+        mRealm = dbService.realmInstance
+
+        mRealm.executeTransactionAsync({ realm: Realm ->
+            if (userId.isNullOrEmpty()) {
+                Log.d("UploadHealthService", "User ID is null or empty")
+                return@executeTransactionAsync
+            }
+
+            val myHealths: List<RealmMyHealthPojo> = realm.where(RealmMyHealthPojo::class.java)
+                .equalTo("isUpdated", true)
+                .equalTo("userId", userId)
+                .findAll()
+
+            myHealths.forEach { pojo ->
+                try {
+                    val res = apiInterface?.postDoc(
+                        Utilities.header,
+                        "application/json",
+                        "${Utilities.getUrl()}/health",
+                        serialize(pojo)
+                    )?.execute()
+
+                    if (res?.body() != null && res.body()?.has("id") == true) {
+                        pojo._rev = res.body()!!["rev"].asString
+                        pojo.isUpdated = false
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }, {
+            listener?.onSuccess("Health data for user $userId uploaded successfully")
+        }) { error ->
+            listener?.onSuccess("Error uploading health data for user $userId: ${error.localizedMessage}")
+        }
+    }
+
     private fun uploadToShelf(listener: SuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm = dbService.realmInstance
@@ -263,6 +340,42 @@ class UploadToShelfService(context: Context) {
             { listener.onSuccess("Sync with server completed successfully") })
         { error ->
             listener.onSuccess("Unable to update documents: ${error.localizedMessage}")
+        }
+    }
+
+    private fun uploadSingleUserToShelf(userName: String?, listener: SuccessListener) {
+        val apiInterface = client?.create(ApiInterface::class.java)
+        mRealm = dbService.realmInstance
+
+        mRealm.executeTransactionAsync({ realm: Realm ->
+            val model = realm.where(RealmUserModel::class.java)
+                .equalTo("name", userName)
+                .isNotEmpty("_id")
+                .findFirst()
+
+            if (model != null) {
+                try {
+                    if (model.id?.startsWith("guest") == true) return@executeTransactionAsync
+
+                    val shelfUrl = "${Utilities.getUrl()}/shelf/${model._id}"
+                    val jsonDoc = apiInterface?.getJsonObject(Utilities.header, shelfUrl)?.execute()?.body()
+                    val shelfObject = getShelfData(realm, model.id, jsonDoc)
+
+                    val revDoc = apiInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/${model.id}")?.execute()?.body()
+                    shelfObject.addProperty("_rev", getString("_rev", revDoc))
+
+                    val targetUrl = "${Utilities.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}"
+                    apiInterface?.putDoc(Utilities.header, "application/json", targetUrl, shelfObject)?.execute()?.body()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            } else {
+                Log.d("UploadToShelfService", "User $userName not found or has no _id.")
+            }
+        }, {
+            listener.onSuccess("Single user shelf sync completed successfully")
+        }) { error ->
+            listener.onSuccess("Unable to update document: ${error.localizedMessage}")
         }
     }
 

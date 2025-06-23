@@ -224,9 +224,7 @@ class BecomeMemberActivity : BaseActivity() {
             obj.addProperty("betaEnabled", false)
             obj.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             obj.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
-            obj.addProperty(
-                "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
-            )
+            obj.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
             val roles = JsonArray()
             roles.add("learner")
             obj.add("roles", roles)
