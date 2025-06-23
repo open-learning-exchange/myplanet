@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
 import android.util.Base64
-import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -47,7 +46,6 @@ class UploadToShelfService(context: Context) {
             userModels.forEachIndexed { index, model ->
                 try {
                     val password = sharedPreferences.getString("loginUserPassword", "")
-                    Log.d("UploadToShelfService", "Uploading user: ${model.name} with password: $password")
                     val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
 
                     val userExists = checkIfUserExists(apiInterface, header, model)
@@ -80,7 +78,6 @@ class UploadToShelfService(context: Context) {
             if (userModel != null) {
                 try {
                     val password = sharedPreferences.getString("loginUserPassword", "")
-                    Log.d("UploadToShelfService", "Uploading user: ${userModel.name} with password: $password")
                     val header = "Basic ${Base64.encodeToString(("${userModel.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
 
                     val userExists = checkIfUserExists(apiInterface, header, userModel)
@@ -93,8 +90,6 @@ class UploadToShelfService(context: Context) {
                 } catch (e: IOException) {
                     e.printStackTrace()
                 }
-            } else {
-                Log.d("UploadToShelfService", "User with name $userName not found.")
             }
         }, {
             uploadSingleUserToShelf(userName, listener)
@@ -198,9 +193,6 @@ class UploadToShelfService(context: Context) {
 
     @Throws(IOException::class)
     fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject): Boolean {
-        val saveKeyIvStartTime = System.currentTimeMillis()
-        Log.d("BecomeMemberTiming", "saveKeyIv: Starting saveKeyIv at: $saveKeyIvStartTime")
-
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
         val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
         val ob = JsonObject()
@@ -221,53 +213,33 @@ class UploadToShelfService(context: Context) {
         var success = false
         var attemptCount = 0
         val maxAttempts = 3
-        val retryDelayMs = 2000L // 2 second delay between retries
-
-        Log.d("BecomeMemberTiming", "saveKeyIv: Starting API calls to: ${Utilities.getUrl()}/$table")
+        val retryDelayMs = 2000L
 
         while (!success && attemptCount < maxAttempts) {
             attemptCount++
-            val attemptStartTime = System.currentTimeMillis()
-            Log.d("BecomeMemberTiming", "saveKeyIv: Attempt $attemptCount/$maxAttempts started at: $attemptStartTime")
-
             try {
                 val response: Response<JsonObject>? = apiInterface?.postDoc(header, "application/json", "${Utilities.getUrl()}/$table", ob)?.execute()
 
-                val attemptEndTime = System.currentTimeMillis()
-                Log.d("BecomeMemberTiming", "saveKeyIv: Attempt $attemptCount API call completed at: $attemptEndTime, took: ${attemptEndTime - attemptStartTime}ms")
-
                 if (response != null) {
-                    Log.d("BecomeMemberTiming", "saveKeyIv: Response code: ${response.code()}, isSuccessful: ${response.isSuccessful}, hasBody: ${response.body() != null}")
 
                     if (response.isSuccessful && response.body() != null) {
                         model.key = keyString
                         model.iv = iv
                         success = true
-                        Log.d("BecomeMemberTiming", "saveKeyIv: SUCCESS on attempt $attemptCount")
                     } else {
-                        Log.w("BecomeMemberTiming", "saveKeyIv: Failed on attempt $attemptCount - Response code: ${response.code()}, Error: ${response.errorBody()?.string()}")
-
                         if (attemptCount < maxAttempts) {
-                            Log.d("BecomeMemberTiming", "saveKeyIv: Waiting ${retryDelayMs}ms before retry...")
                             Thread.sleep(retryDelayMs)
                         }
                     }
                 } else {
-                    Log.w("BecomeMemberTiming", "saveKeyIv: Failed on attempt $attemptCount - Response is null")
-
                     if (attemptCount < maxAttempts) {
-                        Log.d("BecomeMemberTiming", "saveKeyIv: Waiting ${retryDelayMs}ms before retry...")
                         Thread.sleep(retryDelayMs)
                     }
                 }
             } catch (e: Exception) {
-                val exceptionTime = System.currentTimeMillis()
-                Log.e("BecomeMemberTiming", "saveKeyIv: Exception on attempt $attemptCount at: $exceptionTime, took: ${exceptionTime - attemptStartTime}ms", e)
-
                 if (attemptCount >= maxAttempts) {
                     throw IOException("Failed to save key/IV after $maxAttempts attempts", e)
                 } else {
-                    Log.d("BecomeMemberTiming", "saveKeyIv: Waiting ${retryDelayMs}ms before retry after exception...")
                     Thread.sleep(retryDelayMs)
                 }
             }
@@ -275,18 +247,10 @@ class UploadToShelfService(context: Context) {
 
         if (!success) {
             val errorMessage = "Failed to save key/IV after $maxAttempts attempts"
-            Log.e("BecomeMemberTiming", "saveKeyIv: $errorMessage")
             throw IOException(errorMessage)
         }
 
-        val keyIvCompleteTime = System.currentTimeMillis()
-        Log.d("BecomeMemberTiming", "saveKeyIv: Key/IV saved successfully, starting changeUserSecurity at: $keyIvCompleteTime")
-
         changeUserSecurity(model, obj)
-
-        val saveKeyIvEndTime = System.currentTimeMillis()
-        Log.d("BecomeMemberTiming", "saveKeyIv: Completed at: $saveKeyIvEndTime, total took: ${saveKeyIvEndTime - saveKeyIvStartTime}ms")
-
         return true
     }
 
@@ -311,40 +275,12 @@ class UploadToShelfService(context: Context) {
         }
     }
 
-    fun uploadHealth(listener: SuccessListener?) {
-        val apiInterface = client?.create(ApiInterface::class.java)
-        mRealm = dbService.realmInstance
-
-        mRealm.executeTransactionAsync({ realm: Realm ->
-            val myHealths: List<RealmMyHealthPojo> = realm.where(RealmMyHealthPojo::class.java).equalTo("isUpdated", true).notEqualTo("userId", "").findAll()
-            myHealths.forEachIndexed { index, pojo ->
-                try {
-                    val res = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/health", serialize(pojo))?.execute()
-
-                    if (res?.body() != null && res.body()?.has("id") == true) {
-                        pojo._rev = res.body()!!["rev"].asString
-                        pojo.isUpdated = false
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }, {
-            // Success callback
-            listener?.onSuccess("Health data uploaded successfully")
-        }) { error ->
-            // Error callback
-            listener?.onSuccess("Error uploading health data: ${error.localizedMessage}")
-        }
-    }
-
     fun uploadSingleUserHealth(userId: String?, listener: SuccessListener?) {
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm = dbService.realmInstance
 
         mRealm.executeTransactionAsync({ realm: Realm ->
             if (userId.isNullOrEmpty()) {
-                Log.d("UploadHealthService", "User ID is null or empty")
                 return@executeTransactionAsync
             }
 
@@ -432,8 +368,6 @@ class UploadToShelfService(context: Context) {
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
-            } else {
-                Log.d("UploadToShelfService", "User $userName not found or has no _id.")
             }
         }, {
             listener.onSuccess("Single user shelf sync completed successfully")
@@ -480,25 +414,13 @@ class UploadToShelfService(context: Context) {
             private set
 
         private fun changeUserSecurity(model: RealmUserModel, obj: JsonObject) {
-            val securityStartTime = System.currentTimeMillis()
-            Log.d("BecomeMemberTiming", "changeUserSecurity: Starting at: $securityStartTime")
-
             val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
             val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
             val apiInterface = client?.create(ApiInterface::class.java)
 
             try {
-                val getSecurityStartTime = System.currentTimeMillis()
-                Log.d("BecomeMemberTiming", "changeUserSecurity: Getting security doc at: $getSecurityStartTime")
-
                 val response: Response<JsonObject?>? = apiInterface?.getJsonObject(header, "${Utilities.getUrl()}/${table}/_security")?.execute()
-
-                val getSecurityEndTime = System.currentTimeMillis()
-                Log.d("BecomeMemberTiming", "changeUserSecurity: Get security response at: $getSecurityEndTime, took: ${getSecurityEndTime - getSecurityStartTime}ms")
-
                 if (response?.body() != null) {
-                    Log.d("BecomeMemberTiming", "changeUserSecurity: Processing security document")
-
                     val jsonObject = response.body()
                     val members = jsonObject?.getAsJsonObject("members")
                     val rolesArray: JsonArray = if (members?.has("roles") == true) {
@@ -510,23 +432,11 @@ class UploadToShelfService(context: Context) {
                     members?.add("roles", rolesArray)
                     jsonObject?.add("members", members)
 
-                    val putSecurityStartTime = System.currentTimeMillis()
-                    Log.d("BecomeMemberTiming", "changeUserSecurity: Updating security doc at: $putSecurityStartTime")
-
                     apiInterface.putDoc(header, "application/json", "${Utilities.getUrl()}/${table}/_security", jsonObject).execute()
-
-                    val putSecurityEndTime = System.currentTimeMillis()
-                    Log.d("BecomeMemberTiming", "changeUserSecurity: Security update completed at: $putSecurityEndTime, took: ${putSecurityEndTime - putSecurityStartTime}ms")
-                } else {
-                    Log.w("BecomeMemberTiming", "changeUserSecurity: No security document found or empty response")
                 }
             } catch (e: IOException) {
-                Log.e("BecomeMemberTiming", "changeUserSecurity: IOException occurred", e)
                 e.printStackTrace()
             }
-
-            val securityEndTime = System.currentTimeMillis()
-            Log.d("BecomeMemberTiming", "changeUserSecurity: Completed at: $securityEndTime, total took: ${securityEndTime - securityStartTime}ms")
         }
     }
 }
