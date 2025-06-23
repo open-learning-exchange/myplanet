@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
@@ -33,7 +34,6 @@ class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
     var guest: Boolean = false
-    private var userCreationStartTime: Long = 0L
 
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
@@ -227,9 +227,9 @@ class BecomeMemberActivity : BaseActivity() {
             val roles = JsonArray()
             roles.add("learner")
             obj.add("roles", roles)
-
-            userCreationStartTime = System.currentTimeMillis()
-            activityBecomeMemberBinding.pbar.visibility = View.VISIBLE
+            val customProgressDialog = CustomProgressDialog(this)
+            customProgressDialog.setText(getString(R.string.creating_member_account))
+            customProgressDialog.show()
 
             Service(this).becomeMember(mRealm, obj, object : Service.CreateUserCallback {
                 override fun onSuccess(message: String) {
@@ -240,7 +240,7 @@ class BecomeMemberActivity : BaseActivity() {
             }, object : SecurityDataCallback {
                 override fun onSecurityDataUpdated() {
                     runOnUiThread {
-                        activityBecomeMemberBinding.pbar.visibility = View.GONE
+                        customProgressDialog.dismiss()
                         val intent = Intent(this@BecomeMemberActivity, LoginActivity::class.java)
                         if (guest) {
                             intent.putExtra("username", username)
