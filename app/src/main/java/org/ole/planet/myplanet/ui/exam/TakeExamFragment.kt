@@ -17,6 +17,7 @@ import com.google.gson.JsonObject
 import io.realm.RealmList
 import io.realm.RealmQuery
 import io.realm.Sort
+import io.realm.Realm
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeExamBinding
@@ -36,6 +37,7 @@ import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import java.util.Arrays
 import java.util.Date
 import java.util.Locale
+import androidx.core.view.isVisible
 import java.util.UUID
 
 class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {
@@ -154,19 +156,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private fun createSubmission() {
         mRealm.executeTransaction { realm ->
             sub = createSubmission(null, realm)
-            if (!TextUtils.isEmpty(exam?.id)) {
-                sub?.parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
-                    "${exam?.id}@${exam?.courseId}"
-                } else {
-                    exam?.id
-                }
-            } else if (!TextUtils.isEmpty(id)) {
-                sub?.parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
-                    "$id@${exam?.courseId}"
-                } else {
-                    id
-                }
-            }
+            setParentId()
             sub?.userId = user?.id
             sub?.status = "pending"
             sub?.type = type
@@ -178,26 +168,46 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
             currentIndex = 0
             if (isTeam == true && teamId != null) {
-                sub?.team = teamId
-                val membershipDoc = realm.createObject(RealmMembershipDoc::class.java)
-                membershipDoc.teamId = teamId
-                sub?.membershipDoc = membershipDoc
-
-                val userModel = UserProfileDbHandler(requireActivity()).userModel
-
-                try {
-                    val userJson = JSONObject()
-                    userJson.put("age", userModel?.dob ?: "")
-                    userJson.put("gender", userModel?.gender ?: "")
-                    val membershipJson = JSONObject()
-                    membershipJson.put("teamId", teamId)
-                    userJson.put("membershipDoc", membershipJson)
-
-                    sub?.user = userJson.toString()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                addTeamInformation(realm)
             }
+        }
+    }
+
+    private fun setParentId() {
+        sub?.parentId = when {
+            !TextUtils.isEmpty(exam?.id) -> if (!TextUtils.isEmpty(exam?.courseId)) {
+                "${exam?.id}@${exam?.courseId}"
+            } else {
+                exam?.id
+            }
+            !TextUtils.isEmpty(id) -> if (!TextUtils.isEmpty(exam?.courseId)) {
+                "$id@${exam?.courseId}"
+            } else {
+                id
+            }
+            else -> sub?.parentId
+        }
+    }
+
+    private fun addTeamInformation(realm: Realm) {
+        sub?.team = teamId
+        val membershipDoc = realm.createObject(RealmMembershipDoc::class.java)
+        membershipDoc.teamId = teamId
+        sub?.membershipDoc = membershipDoc
+
+        val userModel = UserProfileDbHandler(requireActivity()).userModel
+
+        try {
+            val userJson = JSONObject()
+            userJson.put("age", userModel?.dob ?: "")
+            userJson.put("gender", userModel?.gender ?: "")
+            val membershipJson = JSONObject()
+            membershipJson.put("teamId", teamId)
+            userJson.put("membershipDoc", membershipJson)
+
+            sub?.user = userJson.toString()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -247,36 +257,64 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
         if (savedAnswer != null) {
             when {
-                currentQuestion?.type.equals("select", ignoreCase = true) -> {
-                    ans = savedAnswer.valueChoices?.firstOrNull()?.let {
-                        try {
-                            val jsonObject = Gson().fromJson(it, JsonObject::class.java)
-                            jsonObject.get("id").asString
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                            savedAnswer.value ?: ""
-                        }
-                    } ?: savedAnswer.value ?: ""
-                }
-                currentQuestion?.type.equals("selectMultiple", ignoreCase = true) -> {
-                    savedAnswer.valueChoices?.forEach { choiceJson ->
-                        try {
-                            val jsonObject = Gson().fromJson(choiceJson, JsonObject::class.java)
-                            val id = jsonObject.get("id").asString
-                            val text = jsonObject.get("text").asString
-                            listAns?.put(text, id)
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    }
-                }
+                currentQuestion?.type.equals("select", ignoreCase = true) -> loadSelectSavedAnswer(savedAnswer)
+                currentQuestion?.type.equals("selectMultiple", ignoreCase = true) -> loadSelectMultipleSavedAnswer(savedAnswer)
                 currentQuestion?.type.equals("input", ignoreCase = true) ||
-                        currentQuestion?.type.equals("textarea", ignoreCase = true) -> {
-                    ans = savedAnswer.value ?: ""
-                    fragmentTakeExamBinding.etAnswer.setText(ans)
-                }
+                        currentQuestion?.type.equals("textarea", ignoreCase = true) -> loadTextSavedAnswer(savedAnswer)
             }
         }
+    }
+
+    private fun loadSelectSavedAnswer(savedAnswer: RealmAnswer) {
+        ans = savedAnswer.valueChoices?.firstOrNull()?.let {
+            try {
+                val jsonObject = Gson().fromJson(it, JsonObject::class.java)
+                val id = jsonObject.get("id").asString
+                val text = jsonObject.get("text").asString
+
+                if (id == "other") {
+                    fragmentTakeExamBinding.etAnswer.setText(text)
+                    fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
+                }
+                id
+            } catch (e: Exception) {
+                e.printStackTrace()
+                savedAnswer.value ?: ""
+            }
+        } ?: savedAnswer.value ?: ""
+    }
+
+    private fun loadSelectMultipleSavedAnswer(savedAnswer: RealmAnswer) {
+        var hasOtherOption = false
+        var otherText = ""
+
+        savedAnswer.valueChoices?.forEach { choiceJson ->
+            try {
+                val jsonObject = Gson().fromJson(choiceJson, JsonObject::class.java)
+                val id = jsonObject.get("id").asString
+                val text = jsonObject.get("text").asString
+
+                if (id == "other") {
+                    hasOtherOption = true
+                    otherText = text
+                    listAns?.put("Other", id)
+                } else {
+                    listAns?.put(text, id)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+
+        if (hasOtherOption) {
+            fragmentTakeExamBinding.etAnswer.setText(otherText)
+            fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
+        }
+    }
+
+    private fun loadTextSavedAnswer(savedAnswer: RealmAnswer) {
+        ans = savedAnswer.value ?: ""
+        fragmentTakeExamBinding.etAnswer.setText(ans)
     }
 
     private fun clearAnswer() {
@@ -295,18 +333,39 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
     private fun showCheckBoxes(question: RealmExamQuestion?, oldAnswer: String) {
         val choices = getStringAsJsonArray(question?.choices)
+
         for (i in 0 until choices.size()) {
             addCompoundButton(choices[i].asJsonObject, false, oldAnswer)
+        }
+
+        if (question?.hasOtherOption == true) {
+            val gson = Gson()
+            val otherChoice = gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
+
+            addCompoundButton(otherChoice, false, oldAnswer)
         }
     }
 
     private fun selectQuestion(question: RealmExamQuestion?, oldAnswer: String) {
         val choices = getStringAsJsonArray(question?.choices)
+        val isRadio = question?.type != "multiple"
+
         for (i in 0 until choices.size()) {
             if (choices[i].isJsonObject) {
-                addCompoundButton(choices[i].asJsonObject, true, oldAnswer)
+                addCompoundButton(choices[i].asJsonObject, isRadio, oldAnswer)
             } else {
                 addRadioButton(getString(choices, i), oldAnswer)
+            }
+        }
+
+        if (question?.hasOtherOption == true) {
+            if (choices.size() > 0 && choices[0].isJsonObject) {
+                val gson = Gson()
+                val otherChoice = gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
+
+                addCompoundButton(otherChoice, isRadio, oldAnswer)
+            } else {
+                addRadioButton("Other", oldAnswer)
             }
         }
     }
@@ -318,6 +377,11 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         rdBtn.isChecked = choice == oldAnswer
         rdBtn.setOnCheckedChangeListener(this)
         fragmentTakeExamBinding.groupChoices.addView(rdBtn)
+
+        if (choice.equals("Other", ignoreCase = true) && choice == oldAnswer) {
+            fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
+            fragmentTakeExamBinding.etAnswer.setText(oldAnswer)
+        }
     }
 
     private fun addCompoundButton(choice: JsonObject?, isRadio: Boolean, oldAnswer: String) {
@@ -348,6 +412,11 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             rdBtn.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
             rdBtn.buttonTintList = ContextCompat.getColorStateList(requireContext(), R.color.daynight_textColor)
             fragmentTakeExamBinding.llCheckbox.addView(rdBtn)
+        }
+
+        if (choiceText.equals("Other", ignoreCase = true) && rdBtn.isChecked) {
+            fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
+            fragmentTakeExamBinding.etAnswer.setText(oldAnswer)
         }
     }
 
@@ -385,7 +454,8 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun showTextInput(type: String?) {
-        if (type.equals("input", ignoreCase = true) || type.equals("textarea", ignoreCase = true)) {
+        if (type.equals("input", ignoreCase = true) || type.equals("textarea", ignoreCase = true) ||
+            (fragmentTakeExamBinding.etAnswer.isVisible)) {
             ans = fragmentTakeExamBinding.etAnswer.text.toString()
         }
     }
@@ -398,29 +468,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
             val existingAnswer = sub?.answers?.find { it.questionId == currentQuestion.id }
             val answer = existingAnswer ?: realm.createObject(RealmAnswer::class.java, UUID.randomUUID().toString())
-            when {
-                currentQuestion.type.equals("select", ignoreCase = true) -> {
-                    val choiceText = getChoiceTextById(currentQuestion, ans)
-                    answer.value = choiceText
-                    answer.valueChoices = RealmList<String>().apply {
-                        if (ans.isNotEmpty()) {
-                            add("""{"id":"$ans","text":"$choiceText"}""")
-                        }
-                    }
-                }
-                currentQuestion.type.equals("selectMultiple", ignoreCase = true) -> {
-                    answer.value = ""
-                    answer.valueChoices = RealmList<String>().apply {
-                        listAns?.forEach { (text, id) ->
-                            add("""{"id":"$id","text":"$text"}""")
-                        }
-                    }
-                }
-                else -> {
-                    answer.value = ans
-                    answer.valueChoices = null
-                }
-            }
+            populateAnswer(answer, currentQuestion)
 
             answer.questionId = currentQuestion.id
             answer.submissionId = sub?.id
@@ -445,6 +493,69 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         return if (this.type == "exam") isAnswerCorrect else flag
     }
 
+    private fun populateAnswer(answer: RealmAnswer, currentQuestion: RealmExamQuestion) {
+        when {
+            currentQuestion.type.equals("select", ignoreCase = true) -> {
+                if (ans == "other" && fragmentTakeExamBinding.etAnswer.isVisible && fragmentTakeExamBinding.etAnswer.text.isNotEmpty()) {
+                    val otherText = fragmentTakeExamBinding.etAnswer.text.toString()
+                    answer.value = otherText
+                    answer.valueChoices = RealmList<String>().apply {
+                        add("""{"id":"other","text":"$otherText"}""")
+                    }
+                } else {
+                    val choiceText = getChoiceTextById(currentQuestion, ans)
+                    answer.value = choiceText
+                    answer.valueChoices = RealmList<String>().apply {
+                        if (ans.isNotEmpty()) {
+                            add("""{"id":"$ans","text":"$choiceText"}""")
+                        }
+                    }
+                }
+            }
+            currentQuestion.type.equals("selectMultiple", ignoreCase = true) -> {
+                answer.value = ""
+                answer.valueChoices = RealmList<String>().apply {
+                    listAns?.forEach { (text, id) ->
+                        if (id == "other" && fragmentTakeExamBinding.etAnswer.isVisible && fragmentTakeExamBinding.etAnswer.text.isNotEmpty()) {
+                            val otherText = fragmentTakeExamBinding.etAnswer.text.toString()
+                            add("""{"id":"other","text":"$otherText"}""")
+                        } else {
+                            add("""{"id":"$id","text":"$text"}""")
+                        }
+                    }
+                }
+            }
+            else -> {
+                answer.value = ans
+                answer.valueChoices = null
+            }
+        }
+    }
+
+    private fun populateSelectAnswer(answer: RealmAnswer, question: RealmExamQuestion) {
+        val choiceText = getChoiceTextById(question, ans)
+        answer.value = choiceText
+        answer.valueChoices = RealmList<String>().apply {
+            if (ans.isNotEmpty()) {
+                add("""{"id":"$ans","text":"$choiceText"}""")
+            }
+        }
+    }
+
+    private fun populateMultipleSelectAnswer(answer: RealmAnswer) {
+        answer.value = ""
+        answer.valueChoices = RealmList<String>().apply {
+            listAns?.forEach { (text, id) ->
+                add("""{"id":"$id","text":"$text"}""")
+            }
+        }
+    }
+
+    private fun populateTextAnswer(answer: RealmAnswer) {
+        answer.value = ans
+        answer.valueChoices = null
+    }
+
     private fun getChoiceTextById(question: RealmExamQuestion, id: String): String {
         val choices = getStringAsJsonArray(question.choices)
         for (i in 0 until choices.size()) {
@@ -459,45 +570,38 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun checkCorrectAns(answer: RealmAnswer?, que: RealmExamQuestion?): Boolean {
-        var flag = false
         val questionType = que?.type
         val correctChoices = que?.getCorrectChoice()
 
-        when {
-            questionType.equals("select", ignoreCase = true) -> {
-                val isCorrect = correctChoices?.contains(ans.lowercase(Locale.getDefault())) == true
-                answer?.isPassed = isCorrect
-                flag = isCorrect
-            }
-            questionType.equals("selectMultiple", ignoreCase = true) -> {
-                val selectedAns = listAns?.values?.toTypedArray<String>()
-                val correctChoicesArray = correctChoices?.toTypedArray<String>()
-                val isCorrect = isEqual(selectedAns, correctChoicesArray)
-                answer?.isPassed = isCorrect
-                flag = isCorrect
-            }
-            else -> {
-                val isCorrect = correctChoices?.any {
-                    ans.lowercase(Locale.getDefault()).contains(it.lowercase(Locale.getDefault()))
-                } == true
-                answer?.isPassed = isCorrect
-                flag = isCorrect
-            }
+        val isCorrect = when {
+            questionType.equals("select", ignoreCase = true) -> checkSelectAnswer(correctChoices)
+            questionType.equals("selectMultiple", ignoreCase = true) -> checkMultipleSelectAnswer(correctChoices)
+            else -> checkTextAnswer(correctChoices)
         }
 
+        answer?.isPassed = isCorrect
         answer?.grade = 1
-        var mistake = answer?.mistakes
-
-        if (!flag) {
-            if (mistake != null) {
-                mistake += 1
-            }
+        if (!isCorrect) {
+            answer?.mistakes = (answer?.mistakes ?: 0) + 1
         }
 
-        if (answer != null) {
-            answer.mistakes = mistake ?: 0
-        }
-        return flag
+        return isCorrect
+    }
+
+    private fun checkSelectAnswer(correctChoices: List<String>?): Boolean {
+        return correctChoices?.contains(ans.lowercase(Locale.getDefault())) == true
+    }
+
+    private fun checkMultipleSelectAnswer(correctChoices: List<String>?): Boolean {
+        val selectedAns = listAns?.values?.toTypedArray<String>()
+        val correctChoicesArray = correctChoices?.toTypedArray<String>()
+        return isEqual(selectedAns, correctChoicesArray)
+    }
+
+    private fun checkTextAnswer(correctChoices: List<String>?): Boolean {
+        return correctChoices?.any {
+            ans.lowercase(Locale.getDefault()).contains(it.lowercase(Locale.getDefault()))
+        } == true
     }
 
     private fun isEqual(ar1: Array<String>?, ar2: Array<String>?): Boolean {
@@ -511,12 +615,43 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         mRealm.close()
     }
 
-    override fun onCheckedChanged(compoundButton: CompoundButton, b: Boolean) {
-        if (b) {
+    override fun onCheckedChanged(compoundButton: CompoundButton, isChecked: Boolean) {
+        if (isChecked) {
+            val selectedText = "${compoundButton.text}"
+
+            if (selectedText.equals("Other", ignoreCase = true)) {
+                fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
+                fragmentTakeExamBinding.etAnswer.requestFocus()
+            } else {
+                if (!isOtherOptionSelected()) {
+                    fragmentTakeExamBinding.etAnswer.visibility = View.GONE
+                    fragmentTakeExamBinding.etAnswer.text.clear()
+                }
+            }
+
             addAnswer(compoundButton)
         } else if (compoundButton.tag != null && compoundButton !is RadioButton) {
+            val selectedText = "${compoundButton.text}"
+
+            if (selectedText.equals("Other", ignoreCase = true)) {
+                fragmentTakeExamBinding.etAnswer.visibility = View.GONE
+                fragmentTakeExamBinding.etAnswer.text.clear()
+            }
+
             listAns?.remove("${compoundButton.text}")
         }
         updateNavButtons()
+    }
+
+    private fun isOtherOptionSelected(): Boolean {
+        for (i in 0 until fragmentTakeExamBinding.llCheckbox.childCount) {
+            val child = fragmentTakeExamBinding.llCheckbox.getChildAt(i)
+            if (child is CompoundButton &&
+                child.text.toString().equals("Other", ignoreCase = true) &&
+                child.isChecked) {
+                return true
+            }
+        }
+        return false
     }
 }
