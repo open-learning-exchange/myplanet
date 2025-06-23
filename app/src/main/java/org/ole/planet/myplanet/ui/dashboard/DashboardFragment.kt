@@ -5,6 +5,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
 import io.realm.Realm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBinding
@@ -57,6 +60,16 @@ class DashboardFragment : BaseDashboardFragment() {
             rootView = view,
             consumeInsets = false
         )
+//
+//        // Simple direct approach - increase bottom margin significantly
+//        val fab = view.findViewById<com.github.clans.fab.FloatingActionButton>(R.id.fab_my_activity)
+//        val layoutParams = fab.layoutParams as ViewGroup.MarginLayoutParams
+//
+//        // Add extra margin - adjust this value as needed
+//        val extraBottomMargin = (80 * resources.displayMetrics.density).toInt() // 80dp in pixels
+//        layoutParams.bottomMargin = extraBottomMargin
+//        fab.layoutParams = layoutParams
+
         val noOfSurvey = getNoOfSurveySubmissionByUser(settings?.getString("userId", "--"), dRealm)
         fragmentHomeBinding.cardProfile.imgSurveyWarn.visibility = if (noOfSurvey == 0) View.VISIBLE else View.GONE
         fragmentHomeBinding.addResource.setOnClickListener {

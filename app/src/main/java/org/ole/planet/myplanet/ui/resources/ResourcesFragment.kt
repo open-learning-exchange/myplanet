@@ -84,6 +84,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             rootView = view,
             consumeInsets = false
         )
+
         isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
         userModel = UserProfileDbHandler(requireContext()).userModel
         searchTags = ArrayList()
