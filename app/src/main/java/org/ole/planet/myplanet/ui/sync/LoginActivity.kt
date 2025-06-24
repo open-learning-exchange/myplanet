@@ -12,12 +12,14 @@ import android.text.TextUtils
 import android.text.TextWatcher
 import android.view.ContextThemeWrapper
 import android.view.KeyEvent
+import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.ImageButton
+import android.widget.Toast
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
@@ -499,7 +501,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
 
-    private fun showGuestDialog(username: String) {
+    internal fun showGuestDialog(username: String) {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("$username is already a guest")
         builder.setMessage("Continue only if this is you")
@@ -519,7 +521,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         dialog.show()
     }
 
-    private fun showUserAlreadyMemberDialog(username: String) {
+    internal fun showUserAlreadyMemberDialog(username: String) {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("$username is already a member")
         builder.setMessage("Continue to login if this is you")
