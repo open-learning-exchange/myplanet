@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.utilities
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import androidx.core.net.toUri
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,7 +37,7 @@ class SyncTimeLogger private constructor() {
         endTime = System.currentTimeMillis()
         isLogging = false
         val summary = generateSummary()
-        saveSummaryToRealm(summary)
+//        saveSummaryToRealm(summary)
     }
 
     private fun saveSummaryToRealm(summary: String) {
@@ -133,6 +134,7 @@ class SyncTimeLogger private constructor() {
             }
 
         summaryBuilder.append("=========================")
+        Log.d("SyncTimeLogger", summaryBuilder.toString())
         return summaryBuilder.toString()
     }
 
