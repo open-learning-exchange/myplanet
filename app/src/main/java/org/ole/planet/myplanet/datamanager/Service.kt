@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -142,6 +143,52 @@ class Service(private val context: Context) {
         }
     }
 
+    private suspend fun performConfigurationChecks(
+        urls: List<String>,
+        pin: String,
+        dialog: CustomProgressDialog,
+        defaultUrl: String
+    ): UrlCheckResult = coroutineScope {
+        val deferreds = urls.map { currentUrl ->
+            async { checkConfigurationUrl(currentUrl, pin, dialog) }
+        }
+
+        try {
+            val allResults = deferreds.awaitAll()
+            allResults.firstOrNull { it is UrlCheckResult.Success }
+                ?: allResults.firstOrNull()
+                ?: UrlCheckResult.Failure(defaultUrl)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            UrlCheckResult.Failure(defaultUrl)
+        }
+    }
+
+    private fun handleConfigurationResult(
+        result: UrlCheckResult,
+        listener: ConfigurationIdListener?,
+        activity: SyncActivity,
+        callerActivity: String,
+        defaultUrl: String
+    ) {
+        when (result) {
+            is UrlCheckResult.Success -> {
+                val isAlternativeUrl = result.url != defaultUrl
+                listener?.onConfigurationIdReceived(result.id, result.code, result.url, defaultUrl, isAlternativeUrl, callerActivity)
+                activity.setSyncFailed(false)
+            }
+            is UrlCheckResult.Failure -> {
+                activity.setSyncFailed(true)
+                val errorMessage = when (extractProtocol(defaultUrl)) {
+                    context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
+                    context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
+                    else -> context.getString(R.string.device_couldn_t_reach_local_server)
+                }
+                showAlertDialog(errorMessage, false)
+            }
+        }
+    }
+
     private suspend fun requestApkVersion(settings: SharedPreferences): String? {
         return withContext(Dispatchers.IO) {
             runCatching {
@@ -244,53 +291,67 @@ class Service(private val context: Context) {
     fun becomeMember(realm: Realm, obj: JsonObject, callback: CreateUserCallback) {
         isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
-                retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}")?.enqueue(object : Callback<JsonObject> {
-                    override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                        if (response.body() != null && response.body()?.has("_id") == true) {
-                            callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                        } else {
-                            retrofitInterface.putDoc(null, "application/json", "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
-                                override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                                    if (response.body() != null && response.body()!!.has("id")) {
-                                        uploadToShelf(obj)
-                                        saveUserToDb(realm, response.body()!!.get("id").asString, obj, callback)
-                                    } else {
-                                        callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                                    }
-                                }
-
-                                override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                                    callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                                }
-                            })
-                        }
-                    }
-
-                    override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                        callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                    }
-                })
+                checkRemoteUser(realm, obj, callback)
             }
 
             override fun notAvailable() {
-                val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                if (isUserExists(realm, obj["name"].asString)) {
-                    callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                    return
-                }
-                realm.beginTransaction()
-                val model = populateUsersTable(obj, realm, settings)
-                val keyString = generateKey()
-                val iv = generateIv()
-                if (model != null) {
-                    model.key = keyString
-                    model.iv = iv
-                }
-                realm.commitTransaction()
-                Utilities.toast(MainApplication.context, context.getString(R.string.not_connect_to_planet_created_user_offline))
-                callback.onSuccess(context.getString(R.string.not_connect_to_planet_created_user_offline))
+                createUserOffline(realm, obj, callback)
             }
         })
+    }
+
+    private fun checkRemoteUser(realm: Realm, obj: JsonObject, callback: CreateUserCallback) {
+        val userUrl = "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}"
+        retrofitInterface?.getJsonObject(Utilities.header, userUrl)?.enqueue(object : Callback<JsonObject> {
+            override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                if (response.body() != null && response.body()?.has("_id") == true) {
+                    callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
+                } else {
+                    createRemoteUser(realm, obj, callback)
+                }
+            }
+
+            override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+                callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
+            }
+        })
+    }
+
+    private fun createRemoteUser(realm: Realm, obj: JsonObject, callback: CreateUserCallback) {
+        val url = "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}"
+        retrofitInterface?.putDoc(null, "application/json", url, obj)?.enqueue(object : Callback<JsonObject> {
+            override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                if (response.body() != null && response.body()!!.has("id")) {
+                    uploadToShelf(obj)
+                    saveUserToDb(realm, response.body()!!.get("id").asString, obj, callback)
+                } else {
+                    callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
+                }
+            }
+
+            override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+                callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
+            }
+        })
+    }
+
+    private fun createUserOffline(realm: Realm, obj: JsonObject, callback: CreateUserCallback) {
+        val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        if (isUserExists(realm, obj["name"].asString)) {
+            callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
+            return
+        }
+        realm.beginTransaction()
+        val model = populateUsersTable(obj, realm, settings)
+        val keyString = generateKey()
+        val iv = generateIv()
+        if (model != null) {
+            model.key = keyString
+            model.iv = iv
+        }
+        realm.commitTransaction()
+        Utilities.toast(MainApplication.context, context.getString(R.string.not_connect_to_planet_created_user_offline))
+        callback.onSuccess(context.getString(R.string.not_connect_to_planet_created_user_offline))
     }
 
     private fun uploadToShelf(obj: JsonObject) {
@@ -304,83 +365,87 @@ class Service(private val context: Context) {
     private fun saveUserToDb(realm: Realm, id: String, obj: JsonObject, callback: CreateUserCallback) {
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         realm.executeTransactionAsync({ realm1: Realm? ->
-            try {
-                val res = retrofitInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/" + id)?.execute()
-                if (res?.body() != null) {
-                    val model = populateUsersTable(res.body(), realm1, settings)
-                    if (model != null) {
-                        UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
-                    }
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
+            fetchAndPopulateUser(realm1, id, obj, settings)
         }, {
             callback.onSuccess(context.getString(R.string.user_created_successfully))
-            isNetworkConnectedFlow.onEach { isConnected ->
-                if (isConnected) {
-                    val serverUrl = settings.getString("serverURL", "")
-                    if (!serverUrl.isNullOrEmpty()) {
-                        serviceScope.launch {
-                            val canReachServer = withContext(Dispatchers.IO) {
-                                isServerReachable(serverUrl)
-                            }
-                            if (canReachServer) {
-                                if (context is ProcessUserDataActivity) {
-                                    context.runOnUiThread {
-                                        context.startUpload("becomeMember")
-                                    }
-                                }
-                                TransactionSyncManager.syncDb(realm, "tablet_users")
-                            }
-                        }
-                    }
-                }
-            }.launchIn(serviceScope)
+            startServerSyncIfNeeded(realm, settings)
         }) { error: Throwable ->
             error.printStackTrace()
             callback.onSuccess(context.getString(R.string.unable_to_save_user_please_sync))
         }
     }
 
-    fun syncPlanetServers(callback: SuccessListener) {
-        retrofitInterface?.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true")?.enqueue(object : Callback<JsonObject?> {
-            override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                if (response.body() != null) {
-                    val arr = JsonUtils.getJsonArray("rows", response.body())
+    private fun fetchAndPopulateUser(realm1: Realm?, id: String, obj: JsonObject, settings: SharedPreferences) {
+        try {
+            val res = retrofitInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/_users/" + id)?.execute()
+            if (res?.body() != null) {
+                val model = populateUsersTable(res.body(), realm1, settings)
+                if (model != null) {
+                    UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
+                }
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+    }
 
-                    Executors.newSingleThreadExecutor().execute {
-                        val backgroundRealm = Realm.getDefaultInstance()
-                        try {
-                            backgroundRealm.executeTransaction { realm1 ->
-                                realm1.delete(RealmCommunity::class.java)
-                                for (j in arr) {
-                                    var jsonDoc = j.asJsonObject
-                                    jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-                                    val id = JsonUtils.getString("_id", jsonDoc)
-                                    val community = realm1.createObject(RealmCommunity::class.java, id)
-                                    if (JsonUtils.getString("name", jsonDoc) == "learning") {
-                                        community.weight = 0
-                                    }
-                                    community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
-                                    community.name = JsonUtils.getString("name", jsonDoc)
-                                    community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
-                                    community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
-                                }
+    private fun startServerSyncIfNeeded(realm: Realm, settings: SharedPreferences) {
+        isNetworkConnectedFlow.onEach { isConnected ->
+            if (isConnected) {
+                val serverUrl = settings.getString("serverURL", "")
+                if (!serverUrl.isNullOrEmpty()) {
+                    serviceScope.launch {
+                        val canReachServer = withContext(Dispatchers.IO) { isServerReachable(serverUrl) }
+                        if (canReachServer) {
+                            if (context is ProcessUserDataActivity) {
+                                context.runOnUiThread { context.startUpload("becomeMember") }
                             }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        } finally {
-                            backgroundRealm.close()
+                            TransactionSyncManager.syncDb(realm, "tablet_users")
                         }
                     }
                 }
+            }
+        }.launchIn(serviceScope)
+    }
+
+    fun syncPlanetServers(callback: SuccessListener) {
+        retrofitInterface?.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true")?.enqueue(object : Callback<JsonObject?> {
+            override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
+                response.body()?.let { processServerRows(JsonUtils.getJsonArray("rows", it)) }
             }
 
             override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
                 callback.onSuccess(context.getString(R.string.server_sync_has_failed))
             }
         })
+    }
+
+    private fun processServerRows(arr: com.google.gson.JsonArray) {
+        Executors.newSingleThreadExecutor().execute {
+            val backgroundRealm = Realm.getDefaultInstance()
+            try {
+                backgroundRealm.executeTransaction { realm1 ->
+                    realm1.delete(RealmCommunity::class.java)
+                    for (j in arr) {
+                        var jsonDoc = j.asJsonObject
+                        jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+                        val id = JsonUtils.getString("_id", jsonDoc)
+                        val community = realm1.createObject(RealmCommunity::class.java, id)
+                        if (JsonUtils.getString("name", jsonDoc) == "learning") {
+                            community.weight = 0
+                        }
+                        community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
+                        community.name = JsonUtils.getString("name", jsonDoc)
+                        community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
+                        community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                backgroundRealm.close()
+            }
+        }
     }
 
     fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity, callerActivity: String) {
@@ -397,36 +462,8 @@ class Service(private val context: Context) {
             }
 
             try {
-                val deferreds = urlsToTry.map { currentUrl ->
-                    async { checkConfigurationUrl(currentUrl, pin, customProgressDialog) }
-                }
-
-                val result = try {
-                    val allResults = deferreds.awaitAll()
-                    allResults.firstOrNull { it is UrlCheckResult.Success }
-                        ?: allResults.firstOrNull()
-                        ?: UrlCheckResult.Failure(url)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    UrlCheckResult.Failure(url)
-                }
-
-                when (result) {
-                    is UrlCheckResult.Success -> {
-                        val isAlternativeUrl = result.url != url
-                        listener?.onConfigurationIdReceived(result.id, result.code, result.url, url, isAlternativeUrl, callerActivity)
-                        activity.setSyncFailed(false)
-                    }
-                    is UrlCheckResult.Failure -> {
-                        activity.setSyncFailed(true)
-                        val errorMessage = when (extractProtocol(url)) {
-                            context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
-                            context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
-                            else -> context.getString(R.string.device_couldn_t_reach_local_server)
-                        }
-                        showAlertDialog(errorMessage, false)
-                    }
-                }
+                val result = performConfigurationChecks(urlsToTry, pin, customProgressDialog, url)
+                handleConfigurationResult(result, listener, activity, callerActivity, url)
             } catch (e: Exception) {
                 e.printStackTrace()
                 activity.setSyncFailed(true)
