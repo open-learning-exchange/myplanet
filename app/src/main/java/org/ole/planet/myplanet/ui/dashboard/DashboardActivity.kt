@@ -237,10 +237,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         when (itemId) {
             R.id.action_chat -> {
                 if (user?.id?.startsWith("guest") == false) {
-                    openCallFragment(
-                        ChatHistoryListFragment(),
-                        ChatHistoryListFragment::class.java.simpleName
-                    )
+                    openCallFragment(ChatHistoryListFragment(), ChatHistoryListFragment::class.java.simpleName)
                 } else {
                     guestDialog(this)
                 }
@@ -300,7 +297,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         })
     }
-
 
     private fun setupRealmListeners() {
         if (mRealm.isInTransaction) {

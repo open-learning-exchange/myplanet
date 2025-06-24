@@ -41,6 +41,33 @@ open class RealmResourceActivity : RealmObject() {
 
         @JvmStatic
         fun onSynced(mRealm: Realm, settings: SharedPreferences) {
+//            val userId = settings.getString("userId", "") ?: return
+//            if (userId.isEmpty() || userId.startsWith("guest")) {
+//                return
+//            }
+//
+//            // Use executeTransaction for automatic transaction management and better performance
+//            mRealm.executeTransaction { realm ->
+//                // Use findFirstAsync for better performance, but since we're in a transaction, use findFirst
+//                val users = realm.where(RealmUserModel::class.java)
+//                    .equalTo("id", userId)
+//                    .findFirst() ?: return@executeTransaction
+//
+//                // Create the activity record
+//                val activityId = UUID.randomUUID().toString()
+//                val activities = realm.createObject(RealmResourceActivity::class.java, activityId)
+//
+//                // Set properties efficiently
+//                activities.apply {
+//                    user = users.name
+//                    _rev = null
+//                    _id = null
+//                    parentCode = users.parentCode
+//                    createdOn = users.planetCode
+//                    type = "sync"
+//                    time = System.currentTimeMillis() // More efficient than Date().time
+//                }
+//            }
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
