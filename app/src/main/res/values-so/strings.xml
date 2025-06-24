@@ -1311,5 +1311,6 @@
     <string name="download_progress">%1$d faylal oo ka mid ah %2$d ayaa la soo dejiyay</string>
     <string name="download_progress_with_errors">%1$d faylal oo ka mid ah %2$d ayaa la soo dejiyay (iyada oo jira qalado)</string>
     <string name="download_in_background">Bilaabida soo dejinta gadaal…</string>
+    <string name="creating_member_account">Abuuraya akoonka xubnaha…</string>
 
 </resources>
