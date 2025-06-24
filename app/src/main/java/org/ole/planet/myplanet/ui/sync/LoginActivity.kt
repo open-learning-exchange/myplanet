@@ -500,7 +500,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
     }
 
-
     internal fun showGuestDialog(username: String) {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("$username is already a guest")
@@ -608,12 +607,10 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
     }
 
-
     override fun onDestroy() {
         super.onDestroy()
         if (!mRealm.isClosed) {
             mRealm.close()
         }
     }
-
 }
