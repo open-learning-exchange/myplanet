@@ -63,6 +63,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.ui.courses.CourseStepFragment.Companion.prependBaseUrlToImages
 import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.makeExpandable
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import kotlin.toString
 
@@ -222,63 +223,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         holder.rowNewsBinding.tvEdited.visibility = if (news.isEdited) View.VISIBLE else View.GONE
     }
 
-    fun TextView.makeExpandable(
-        fullText: CharSequence,
-        collapsedMaxLines: Int = 6,
-        expandLabel: String = context.getString(R.string.show_more),
-        collapseLabel: String = context.getString(R.string.show_less)
-    ) {
-        var isExpanded = false
-
-        fun refresh() {
-            text = fullText
-            if (!isExpanded) {
-                maxLines = collapsedMaxLines
-                ellipsize = TextUtils.TruncateAt.END
-
-                post {
-                    if (lineCount > collapsedMaxLines) {
-                        val lastChar = layout.getLineEnd(collapsedMaxLines - 2)
-
-                        val visiblePortion = SpannableStringBuilder(fullText.subSequence(0, lastChar))
-
-                        visiblePortion.append("… ").also { sb ->
-                            val start = sb.length
-                            sb.append(expandLabel)
-                            sb.setSpan(object : ClickableSpan() {
-                                override fun onClick(widget: View) {
-                                    isExpanded = true
-                                    refresh()
-                                }
-                            }, start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                        }
-
-                        text = visiblePortion
-                        movementMethod = LinkMovementMethod.getInstance()
-                    }
-                }
-            }  else {
-                val expanded = SpannableStringBuilder(fullText).apply {
-                        append(" ")
-                        val start = length
-                        append(collapseLabel)
-                        setSpan(object : ClickableSpan() {
-                            override fun onClick(widget: View) {
-                                isExpanded = false
-                                refresh()
-                            }
-                        }, start, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                    }
-                text = expanded
-                movementMethod = LinkMovementMethod.getInstance()
-                maxLines = Int.MAX_VALUE
-                ellipsize = null
-
-            }
-        }
-
-        refresh()
-    }
 
     private fun configureEditDeleteButtons(holder: ViewHolderNews, news: RealmNews) {
         if (news.sharedBy == currentUser?._id && !fromLogin && !nonTeamMember && teamName.isEmpty()) {
@@ -531,73 +475,96 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         dialog.show()
     }
 
+    private fun isGuestUser() = user?.id?.startsWith("guest") == true
+
+    private fun shouldShowReplyButton() = listener != null && !fromLogin && !isGuestUser()
+
+    private fun getReplies(finalNews: RealmNews?): List<RealmNews> = mRealm.where(RealmNews::class.java)
+        .sort("time", Sort.DESCENDING)
+        .equalTo("replyTo", finalNews?.id, Case.INSENSITIVE)
+        .findAll()
+
+    private fun updateReplyCount(viewHolder: ViewHolderNews, replies: List<RealmNews>, position: Int) {
+        with(viewHolder.rowNewsBinding) {
+            btnShowReply.text = String.format("(%d)", replies.size)
+            btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
+            val visible = replies.isNotEmpty() && !(position == 0 && parentNews != null) && shouldShowReplyButton()
+            btnShowReply.visibility = if (visible) View.VISIBLE else View.GONE
+        }
+    }
+
     private fun showReplyButton(holder: RecyclerView.ViewHolder, finalNews: RealmNews?, position: Int) {
         val viewHolder = holder as ViewHolderNews
-        val isGuest = user?.id?.startsWith("guest") == true
-        if (listener == null || fromLogin || isGuest) {
-            viewHolder.rowNewsBinding.btnReply.visibility = View.GONE
-        } else {
+        if (shouldShowReplyButton()) {
             viewHolder.rowNewsBinding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
             viewHolder.rowNewsBinding.btnReply.setOnClickListener { showEditAlert(finalNews?.id, false) }
-        }
-        val replies: List<RealmNews> = mRealm.where(RealmNews::class.java)
-            .sort("time", Sort.DESCENDING)
-            .equalTo("replyTo", finalNews?.id, Case.INSENSITIVE)
-            .findAll()
-        viewHolder.rowNewsBinding.btnShowReply.text = String.format("(%d)", replies.size)
-        viewHolder.rowNewsBinding.btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
-        viewHolder.rowNewsBinding.btnShowReply.visibility = if (replies.isNotEmpty()) {
-            View.VISIBLE
         } else {
-            View.GONE
+            viewHolder.rowNewsBinding.btnReply.visibility = View.GONE
         }
-        if (position == 0 && parentNews != null) {
-            viewHolder.rowNewsBinding.btnShowReply.visibility = View.GONE
-        }
-        if (listener == null || fromLogin) {
-            viewHolder.rowNewsBinding.btnShowReply.visibility = View.GONE
-        }
+
+        val replies = getReplies(finalNews)
+        updateReplyCount(viewHolder, replies, position)
+
         viewHolder.rowNewsBinding.btnShowReply.setOnClickListener {
             sharedPreferences?.setRepliedNewsId(finalNews?.id)
             listener?.showReply(finalNews, fromLogin, nonTeamMember)
         }
     }
 
-    private fun showEditAlert(id: String?, isEdit: Boolean) {
+    private data class EditDialogComponents(
+        val view: View,
+        val editText: EditText,
+        val inputLayout: com.google.android.material.textfield.TextInputLayout,
+        val imageLayout: LinearLayout
+    )
+
+    private fun createEditDialogComponents(): EditDialogComponents {
         val v = LayoutInflater.from(context).inflate(R.layout.alert_input, null)
         val tlInput = v.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.tl_input)
         val et = v.findViewById<EditText>(R.id.et_input)
-        v.findViewById<View>(R.id.ll_image).visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, context)) View.VISIBLE else View.GONE
+        v.findViewById<View>(R.id.ll_image).visibility =
+            if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, context)) View.VISIBLE else View.GONE
         val llImage = v.findViewById<LinearLayout>(R.id.ll_alert_image)
         v.findViewById<View>(R.id.add_news_image).setOnClickListener { listener?.addImage(llImage) }
-        val message = v.findViewById<TextView>(R.id.cust_msg)
+        return EditDialogComponents(v, et, tlInput, llImage)
+    }
+
+    private fun handlePositiveButton(dialog: AlertDialog, isEdit: Boolean, components: EditDialogComponents, news: RealmNews?) {
+        val s = components.editText.text.toString().trim()
+        if (s.isEmpty()) {
+            components.inputLayout.error = context.getString(R.string.please_enter_message)
+            return
+        }
+        if (isEdit) {
+            editPost(s, news)
+        } else {
+            postReply(s, news)
+        }
+        dialog.dismiss()
+    }
+
+    private fun showEditAlert(id: String?, isEdit: Boolean) {
+        val components = createEditDialogComponents()
+        val message = components.view.findViewById<TextView>(R.id.cust_msg)
         message.text = context.getString(if (isEdit) R.string.edit_post else R.string.reply)
-        val icon = v.findViewById<ImageView>(R.id.alert_icon)
+        val icon = components.view.findViewById<ImageView>(R.id.alert_icon)
         icon.setImageResource(R.drawable.ic_edit)
 
         val news = mRealm.where(RealmNews::class.java).equalTo("id", id).findFirst()
-        if (isEdit) et.setText(context.getString(R.string.message_placeholder, news?.message))
+        if (isEdit) {
+            components.editText.setText(context.getString(R.string.message_placeholder, news?.message))
+        }
         val dialog = AlertDialog.Builder(context, R.style.ReplyAlertDialog)
-            .setView(v)
+            .setView(components.view)
             .setPositiveButton(R.string.button_submit, null)
-            .setNegativeButton(R.string.cancel) { dialog, _ ->
+            .setNegativeButton(R.string.cancel) { d, _ ->
                 listener?.clearImages()
-                dialog.dismiss()
+                d.dismiss()
             }
             .create()
         dialog.show()
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener{
-            val s = et.text.toString().trim()
-            if (s.isEmpty()) {
-                tlInput.error = context.getString(R.string.please_enter_message)
-                return@setOnClickListener
-            }
-            if (isEdit) {
-                editPost(s, news)
-            } else {
-                postReply(s, news)
-            }
-            dialog.dismiss()
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            handlePositiveButton(dialog, isEdit, components, news)
         }
     }
 

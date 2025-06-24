@@ -21,58 +21,22 @@ object FileUtils {
     @JvmStatic
     @Throws(IOException::class)
     fun fullyReadFileToBytes(f: File): ByteArray {
-        val size = f.length().toInt()
-        val bytes = ByteArray(size)
-        val tmpBuff = ByteArray(size)
-        val fis = FileInputStream(f)
-        try {
-            var read = fis.read(bytes, 0, size)
-            if (read < size) {
-                var remain = size - read
-                while (remain > 0) {
-                    read = fis.read(tmpBuff, 0, remain)
-                    System.arraycopy(tmpBuff, 0, bytes, size - remain, read)
-                    remain -= read
-                }
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-            throw e
-        } finally {
-            fis.close()
-        }
-        return bytes
+        return f.inputStream().use { it.readBytes() }
     }
 
     private fun createFilePath(folder: String, filename: String): File {
         val baseDirectory = File(context.getExternalFilesDir(null), folder)
-
-        if (filename.contains("/")) {
-            val subDirPath = filename.substring(0, filename.lastIndexOf('/'))
-            val fullDir = File(baseDirectory, subDirPath)
-
-            try {
-                if (!fullDir.exists() && !fullDir.mkdirs()) {
-                    throw IOException("Failed to create directory: ${fullDir.absolutePath}")
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
-                throw RuntimeException("Failed to create directory: ${fullDir.absolutePath}", e)
+        val file = File(baseDirectory, filename)
+        val dir = file.parentFile
+        try {
+            if (!dir.exists() && !dir.mkdirs()) {
+                throw IOException("Failed to create directory: ${dir.absolutePath}")
             }
-
-            val actualFilename = filename.substring(filename.lastIndexOf('/') + 1)
-            return File(fullDir, actualFilename)
-        } else {
-            try {
-                if (!baseDirectory.exists() && !baseDirectory.mkdirs()) {
-                    throw IOException("Failed to create directory: ${baseDirectory.absolutePath}")
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
-                throw RuntimeException("Failed to create directory: ${baseDirectory.absolutePath}", e)
-            }
-            return File(baseDirectory, filename)
+        } catch (e: IOException) {
+            e.printStackTrace()
+            throw RuntimeException("Failed to create directory: ${dir.absolutePath}", e)
         }
+        return file
     }
 
     @JvmStatic
@@ -157,17 +121,9 @@ object FileUtils {
 
     @Throws(IOException::class)
     private fun addApkToInstallSession(apkFile: File, session: PackageInstaller.Session) {
-        val out: OutputStream = session.openWrite("my_app_session", 0, -1)
-        val fis = FileInputStream(apkFile)
-        fis.use { input ->
-            out.use { output ->
-                val buffer = ByteArray(4096)
-                var length: Int
-                while (input.read(buffer).also { length = it } != -1) {
-                    output.write(buffer, 0, length)
-                }
-                session.fsync(out)
-            }
+        session.openWrite("my_app_session", 0, -1).use { out ->
+            apkFile.inputStream().use { it.copyTo(out) }
+            session.fsync(out)
         }
     }
 
@@ -176,14 +132,12 @@ object FileUtils {
         val tiles = arrayOf("dhulikhel.mbtiles", "somalia.mbtiles")
         val assetManager = context.assets
         try {
-            for (s in tiles) {
-                var out: OutputStream
-                val `in`: InputStream = assetManager.open(s)
-                val outFile = File(Environment.getExternalStorageDirectory().toString() + "/osmdroid", s)
-                out = FileOutputStream(outFile)
-                copyFile(`in`, out)
-                out.close()
-                `in`.close()
+            tiles.forEach { name ->
+                val input = assetManager.open(name)
+                val outFile = File(Environment.getExternalStorageDirectory().toString() + "/osmdroid", name)
+                FileOutputStream(outFile).use { output ->
+                    input.use { copyFile(it, output) }
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -192,47 +146,29 @@ object FileUtils {
 
     @Throws(IOException::class)
     private fun copyFile(`in`: InputStream, out: OutputStream) {
-        val buffer = ByteArray(1024)
-        var read: Int
-        while (`in`.read(buffer).also { read = it } != -1) {
-            out.write(buffer, 0, read)
-        }
+        `in`.copyTo(out)
     }
 
     @JvmStatic
     fun getRealPathFromURI(context: Context, contentUri: Uri?): String? {
-        var cursor: Cursor? = null
-        return try {
-            val proj = arrayOf(MediaStore.Images.Media.DATA)
-            cursor = contentUri?.let { context.contentResolver.query(it, proj, null, null, null) }
-            val columnIndex = cursor?.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
-            cursor?.moveToFirst()
-            cursor?.getString(columnIndex ?: 0)
-        } finally {
-            cursor?.close()
+        if (contentUri == null) return null
+        val proj = arrayOf(MediaStore.Images.Media.DATA)
+        return context.contentResolver.query(contentUri, proj, null, null, null)?.use { cursor ->
+            val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+            if (cursor.moveToFirst()) cursor.getString(columnIndex) else null
         }
     }
 
     @JvmStatic
     @Throws(Exception::class)
     fun convertStreamToString(`is`: InputStream?): String {
-        val reader = BufferedReader(InputStreamReader(`is`))
-        val sb = StringBuilder()
-        var line: String?
-        while (reader.readLine().also { line = it } != null) {
-            sb.append(line).append("\n")
-        }
-        reader.close()
-        return sb.toString()
+        return `is`?.bufferedReader()?.use { it.readText() } ?: ""
     }
 
     @JvmStatic
     @Throws(Exception::class)
     fun getStringFromFile(fl: File?): String {
-        val fin = FileInputStream(fl)
-        val ret = convertStreamToString(fin)
-        fin.close()
-        return ret
+        return fl?.inputStream()?.use { convertStreamToString(it) } ?: ""
     }
 
     @JvmStatic
@@ -246,40 +182,36 @@ object FileUtils {
     @JvmStatic
     fun getImagePath(context: Context, uri: Uri?): String? {
         if (uri == null) return null
-        val projection = arrayOf(MediaStore.Images.Media._ID, MediaStore.Images.Media.DATA)
-        var cursor: Cursor? = null
-        try {
-            cursor = context.contentResolver.query(uri, projection, null, null, null)
-            if (cursor != null && cursor.moveToFirst()) {
-                val documentIdIndex = cursor.getColumnIndex(MediaStore.Images.Media._ID)
-                if (documentIdIndex >= 0) {
-                    val documentId = cursor.getString(documentIdIndex)
-                    cursor.close()
-                    val selection = "${MediaStore.Images.Media._ID} = ?"
-                    val selectionArgs = arrayOf(documentId)
-                    cursor = context.contentResolver.query(
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                        projection,
-                        selection,
-                        selectionArgs,
-                        null
-                    )
-                    if (cursor != null && cursor.moveToFirst()) {
-                        val dataIndex = cursor.getColumnIndex(MediaStore.Images.Media.DATA)
-                        if (dataIndex >= 0) {
-                            val path = cursor.getString(dataIndex)
-                            cursor.close()
-                            return path
-                        }
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        } finally {
-            cursor?.close()
+        val projection = arrayOf(MediaStore.Images.Media._ID)
+        return runCatching {
+            val id = queryDocumentId(context, uri, projection) ?: return null
+            queryPathById(context, id, arrayOf(MediaStore.Images.Media.DATA))
+        }.getOrElse {
+            it.printStackTrace()
+            null
         }
-        return null
+    }
+
+    private fun queryDocumentId(context: Context, uri: Uri, projection: Array<String>): String? {
+        return context.contentResolver.query(uri, projection, null, null, null)?.use { cursor ->
+            val index = cursor.getColumnIndex(MediaStore.Images.Media._ID)
+            if (index >= 0 && cursor.moveToFirst()) cursor.getString(index) else null
+        }
+    }
+
+    private fun queryPathById(context: Context, id: String, projection: Array<String>): String? {
+        val selection = "${MediaStore.Images.Media._ID} = ?"
+        val selectionArgs = arrayOf(id)
+        return context.contentResolver.query(
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            projection,
+            selection,
+            selectionArgs,
+            null
+        )?.use { cursor ->
+            val index = cursor.getColumnIndex(MediaStore.Images.Media.DATA)
+            if (index >= 0 && cursor.moveToFirst()) cursor.getString(index) else null
+        }
     }
 
     @JvmStatic
@@ -312,28 +244,14 @@ object FileUtils {
      */
     @JvmStatic
     fun formatSize(size: Long): String {
-        var formattedSize = size
-        var suffix: String? = null
-        if (formattedSize >= 1024) {
-            suffix = "KB"
-            formattedSize /= 1024
+        var result = size.toDouble()
+        val units = arrayOf("", "KB", "MB", "GB")
+        var index = 0
+        while (result >= 1024 && index < units.lastIndex) {
+            result /= 1024
+            index++
         }
-        if (formattedSize >= 1024) {
-            suffix = "MB"
-            formattedSize /= 1024
-        }
-        if (formattedSize >= 1024) {
-            suffix = "GB"
-            formattedSize /= 1024
-        }
-        val resultBuffer = StringBuilder(formattedSize.toString())
-        var commaOffset = resultBuffer.length - 3
-        while (commaOffset > 0) {
-            resultBuffer.insert(commaOffset, ',')
-            commaOffset -= 3
-        }
-        if (suffix != null) resultBuffer.append(suffix)
-        return resultBuffer.toString()
+        return String.format("%,.0f%s", result, units[index])
     }
 
     @JvmStatic
@@ -382,10 +300,8 @@ object FileUtils {
         return regex.find(filePath)?.groupValues?.get(1)
     }
 
-    fun nameWithoutExtension(fileName: String?): String?{
-        extractFileName(fileName)
+    fun nameWithoutExtension(fileName: String?): String? {
         val nameWithExtension = extractFileName(fileName)
-        val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
-        return nameWithoutExtension
+        return nameWithExtension?.substringBeforeLast('.')
     }
 }

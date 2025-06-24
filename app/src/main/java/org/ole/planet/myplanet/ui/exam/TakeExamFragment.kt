@@ -468,83 +468,70 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun updateAnsDb(): Boolean {
-        var flag = false
         var isAnswerCorrect = true
         mRealm.executeTransaction { realm ->
             val currentQuestion = questions?.get(currentIndex) ?: return@executeTransaction
 
-            val existingAnswer = sub?.answers?.find { it.questionId == currentQuestion.id }
-            val answer = existingAnswer ?: realm.createObject(RealmAnswer::class.java, UUID.randomUUID().toString())
+            val answer = createOrRetrieveAnswer(realm, currentQuestion)
             populateAnswer(answer, currentQuestion)
 
-            answer.questionId = currentQuestion.id
-            answer.submissionId = sub?.id
-
-            if (existingAnswer == null) {
-                sub?.answers?.add(answer)
-            }
-
-            if (this@TakeExamFragment.type == "exam" && answer != null && currentQuestion != null) {
+            if (this@TakeExamFragment.type == "exam") {
                 isAnswerCorrect = checkCorrectAns(answer, currentQuestion)
             }
-            sub?.lastUpdateTime = Date().time
-            sub?.status = if (currentIndex == (questions?.size ?: 0) - 1) {
-                if (type == "survey") "complete" else "requires grading"
-            } else {
-                "pending"
-            }
 
-            flag = true
+            updateSubmissionStatus()
         }
 
-        return if (this.type == "exam") isAnswerCorrect else flag
+        return if (this.type == "exam") isAnswerCorrect else true
+    }
+
+    private fun createOrRetrieveAnswer(realm: Realm, currentQuestion: RealmExamQuestion): RealmAnswer {
+        val existingAnswer = sub?.answers?.find { it.questionId == currentQuestion.id }
+        val answer = existingAnswer ?: realm.createObject(RealmAnswer::class.java, UUID.randomUUID().toString())
+
+        if (existingAnswer == null) {
+            sub?.answers?.add(answer)
+        }
+
+        answer.questionId = currentQuestion.id
+        answer.submissionId = sub?.id
+        return answer
+    }
+
+    private fun updateSubmissionStatus() {
+        sub?.lastUpdateTime = Date().time
+        sub?.status = if (currentIndex == (questions?.size ?: 0) - 1) {
+            if (type == "survey") "complete" else "requires grading"
+        } else {
+            "pending"
+        }
     }
 
     private fun populateAnswer(answer: RealmAnswer, currentQuestion: RealmExamQuestion) {
         when {
-            currentQuestion.type.equals("select", ignoreCase = true) -> {
-                if (ans == "other" && fragmentTakeExamBinding.etAnswer.isVisible && fragmentTakeExamBinding.etAnswer.text.isNotEmpty()) {
-                    val otherText = fragmentTakeExamBinding.etAnswer.text.toString()
-                    answer.value = otherText
-                    answer.valueChoices = RealmList<String>().apply {
-                        add("""{"id":"other","text":"$otherText"}""")
-                    }
-                } else {
-                    val choiceText = getChoiceTextById(currentQuestion, ans)
-                    answer.value = choiceText
-                    answer.valueChoices = RealmList<String>().apply {
-                        if (ans.isNotEmpty()) {
-                            add("""{"id":"$ans","text":"$choiceText"}""")
-                        }
-                    }
-                }
-            }
-            currentQuestion.type.equals("selectMultiple", ignoreCase = true) -> {
-                answer.value = ""
-                answer.valueChoices = RealmList<String>().apply {
-                    listAns?.forEach { (text, id) ->
-                        if (id == "other" && fragmentTakeExamBinding.etAnswer.isVisible && fragmentTakeExamBinding.etAnswer.text.isNotEmpty()) {
-                            val otherText = fragmentTakeExamBinding.etAnswer.text.toString()
-                            add("""{"id":"other","text":"$otherText"}""")
-                        } else {
-                            add("""{"id":"$id","text":"$text"}""")
-                        }
-                    }
-                }
-            }
-            else -> {
-                answer.value = ans
-                answer.valueChoices = null
-            }
+            currentQuestion.type.equals("select", ignoreCase = true) ->
+                populateSelectAnswer(answer, currentQuestion)
+            currentQuestion.type.equals("selectMultiple", ignoreCase = true) ->
+                populateMultipleSelectAnswer(answer)
+            else ->
+                populateTextAnswer(answer)
         }
     }
 
     private fun populateSelectAnswer(answer: RealmAnswer, question: RealmExamQuestion) {
-        val choiceText = getChoiceTextById(question, ans)
-        answer.value = choiceText
-        answer.valueChoices = RealmList<String>().apply {
-            if (ans.isNotEmpty()) {
-                add("""{"id":"$ans","text":"$choiceText"}""")
+        if (ans == "other" && fragmentTakeExamBinding.etAnswer.isVisible && fragmentTakeExamBinding.etAnswer.text.isNotEmpty()) {
+            val otherText = fragmentTakeExamBinding.etAnswer.text.toString()
+            answer.value = otherText
+            answer.valueChoices = RealmList<String>().apply {
+                add("""{"id":"other","text":"$otherText"}""")
+            }
+        } else {
+            val choiceText = getChoiceTextById(question, ans)
+            answer.value = choiceText
+            answer.valueChoices = RealmList<String>().apply {
+                if (ans.isNotEmpty()) {
+                    add("""{"id":"$ans","text":"$choiceText"}""")
+                }
             }
         }
     }
@@ -553,7 +540,12 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         answer.value = ""
         answer.valueChoices = RealmList<String>().apply {
             listAns?.forEach { (text, id) ->
-                add("""{"id":"$id","text":"$text"}""")
+                if (id == "other" && fragmentTakeExamBinding.etAnswer.isVisible && fragmentTakeExamBinding.etAnswer.text.isNotEmpty()) {
+                    val otherText = fragmentTakeExamBinding.etAnswer.text.toString()
+                    add("""{"id":"other","text":"$otherText"}""")
+                } else {
+                    add("""{"id":"$id","text":"$text"}""")
+                }
             }
         }
     }
@@ -624,20 +616,29 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
     override fun onCheckedChanged(compoundButton: CompoundButton, isChecked: Boolean) {
         if (isChecked) {
-            val selectedText = "${compoundButton.text}"
+            handleChecked(compoundButton)
+        } else {
+            handleUnchecked(compoundButton)
+        }
+        updateNavButtons()
+    }
 
-            if (selectedText.equals("Other", ignoreCase = true)) {
-                fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
-                fragmentTakeExamBinding.etAnswer.requestFocus()
-            } else {
-                if (!isOtherOptionSelected()) {
-                    fragmentTakeExamBinding.etAnswer.visibility = View.GONE
-                    fragmentTakeExamBinding.etAnswer.text.clear()
-                }
-            }
+    private fun handleChecked(compoundButton: CompoundButton) {
+        val selectedText = "${compoundButton.text}"
 
-            addAnswer(compoundButton)
-        } else if (compoundButton.tag != null && compoundButton !is RadioButton) {
+        if (selectedText.equals("Other", ignoreCase = true)) {
+            fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
+            fragmentTakeExamBinding.etAnswer.requestFocus()
+        } else if (!isOtherOptionSelected()) {
+            fragmentTakeExamBinding.etAnswer.visibility = View.GONE
+            fragmentTakeExamBinding.etAnswer.text.clear()
+        }
+
+        addAnswer(compoundButton)
+    }
+
+    private fun handleUnchecked(compoundButton: CompoundButton) {
+        if (compoundButton.tag != null && compoundButton !is RadioButton) {
             val selectedText = "${compoundButton.text}"
 
             if (selectedText.equals("Other", ignoreCase = true)) {
@@ -647,7 +648,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
             listAns?.remove("${compoundButton.text}")
         }
-        updateNavButtons()
     }
 
     private fun isOtherOptionSelected(): Boolean {
