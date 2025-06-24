@@ -184,131 +184,164 @@ class UserProfileFragment : Fragment() {
         }
     }
 
+
     private fun openEditProfileDialog() {
-        val dialog = Dialog(requireContext())
-        dialog.setCancelable(false)
-        val editProfileDialogBinding = EditProfileDialogBinding.inflate(LayoutInflater.from(requireContext()))
-        dialog.setContentView(editProfileDialogBinding.getRoot())
+        val dialog = Dialog(requireContext()).apply { setCancelable(false) }
+        val binding = EditProfileDialogBinding.inflate(LayoutInflater.from(requireContext()))
+        dialog.setContentView(binding.root)
         dialog.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        editProfileDialogBinding.firstName.setText(model?.firstName)
-        editProfileDialogBinding.middleName.setText(model?.middleName)
-        editProfileDialogBinding.lastName.setText(model?.lastName)
-        editProfileDialogBinding.email.setText(model?.email)
-        editProfileDialogBinding.phoneNumber.setText(model?.phoneNumber)
-        val dob1 =
-            if (TextUtils.isEmpty(model?.dob)) {
-                "N/A"
-            } else {
-                TimeUtils.getFormatedDate(model?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-            }
-        editProfileDialogBinding.dateOfBirth.text = dob1
+
+        populateUserFields(binding)
+        setupLanguageSpinner(binding)
+        setupLevelSpinner(binding)
+        setupGender(binding)
+        setupDatePicker(binding)
+        setupSaveButton(dialog, binding)
+
+        binding.btnCancel.setOnClickListener { dialog.dismiss() }
+        dialog.show()
+    }
+
+    private fun populateUserFields(binding: EditProfileDialogBinding) {
+        binding.firstName.setText(model?.firstName)
+        binding.middleName.setText(model?.middleName)
+        binding.lastName.setText(model?.lastName)
+        binding.email.setText(model?.email)
+        binding.phoneNumber.setText(model?.phoneNumber)
+        val dobText = if (TextUtils.isEmpty(model?.dob)) {
+            "N/A"
+        } else {
+            TimeUtils.getFormatedDate(model?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        }
+        binding.dateOfBirth.text = dobText
+    }
+
+    private fun setupLanguageSpinner(binding: EditProfileDialogBinding) {
         val languages = resources.getStringArray(language)
         val languageList: MutableList<String?> = ArrayList(listOf(*languages))
         languageList.add(0, "Language")
         val adapter = ArrayAdapter(requireContext(), R.layout.spinner_item, languageList)
         adapter.setDropDownViewResource(R.layout.spinner_item)
-        editProfileDialogBinding.language.adapter = adapter
-        if (model?.language != null) {
-            val language = resources.getStringArray(language)
-            val languageLists = listOf(*language)
-            val languagePosition = languageLists.indexOf(model?.language)
-            if (languagePosition >= 0) {
-                editProfileDialogBinding.language.setSelection(languagePosition + 1)
-            }
-        } else {
-            editProfileDialogBinding.language.setSelection(0)
-        }
-        editProfileDialogBinding.language.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View, position: Int, id: Long) {
+        binding.language.adapter = adapter
+        model?.language?.let { lang ->
+            val position = languageList.indexOf(lang)
+            if (position >= 0) binding.language.setSelection(position + 1) else binding.language.setSelection(0)
+        } ?: binding.language.setSelection(0)
+        binding.language.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                 selectedLanguage = parent.getItemAtPosition(position).toString()
             }
 
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
-        val levels = resources.getStringArray(subject_level).toMutableList()
-        levels.remove("All")
+    }
+
+    private fun setupLevelSpinner(binding: EditProfileDialogBinding) {
+        val levels = resources.getStringArray(subject_level).toMutableList().apply { remove("All") }
         levels.add(0, "Select Level")
-        var selectedLevel = Utilities.checkNA("${model?.level}")
+        selectedLevel = Utilities.checkNA("${model?.level}")
         val levelAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, levels)
         levelAdapter.setDropDownViewResource(R.layout.spinner_item)
-        editProfileDialogBinding.level.adapter = levelAdapter
+        binding.level.adapter = levelAdapter
 
         val levelPosition = levels.indexOf(selectedLevel)
-        if (levelPosition > 0) {
-            editProfileDialogBinding.level.setSelection(levelPosition)
-        } else {
-            editProfileDialogBinding.level.setSelection(0)
-        }
+        if (levelPosition > 0) binding.level.setSelection(levelPosition) else binding.level.setSelection(0)
 
-        editProfileDialogBinding.level.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+        binding.level.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                if (position == 0) {
-                    selectedLevel = ""
-                } else {
-                    selectedLevel = levels[position]
-                }
+                selectedLevel = if (position == 0) "" else levels[position]
             }
 
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
+    }
 
-        if ("male".equals(model?.gender, ignoreCase = true)) {
-            editProfileDialogBinding.rbMale.isChecked = true
-        } else if ("female".equals(model?.gender, ignoreCase = true)) {
-            editProfileDialogBinding.rbFemale.isChecked = true
+    private fun setupGender(binding: EditProfileDialogBinding) {
+        when (model?.gender?.lowercase(Locale.US)) {
+            "male" -> binding.rbMale.isChecked = true
+            "female" -> binding.rbFemale.isChecked = true
         }
-        editProfileDialogBinding.dateOfBirth.setOnClickListener {
-            val now: Calendar = Calendar.getInstance()
-            val dpd = DatePickerDialog(requireContext(), { _, year, monthOfYear, dayOfMonth ->
-                val dob2 = format(Locale.US, "%04d-%02d-%02d", year, monthOfYear + 1, dayOfMonth)
-                date = format(Locale.US, "%04d-%02d-%02dT00:00:00.000Z", year, monthOfYear + 1, dayOfMonth)
-                editProfileDialogBinding.dateOfBirth.text = dob2 },
-                now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH)
+    }
+
+    private fun setupDatePicker(binding: EditProfileDialogBinding) {
+        binding.dateOfBirth.setOnClickListener {
+            val now = Calendar.getInstance()
+            val dpd = DatePickerDialog(
+                requireContext(),
+                { _, year, monthOfYear, dayOfMonth ->
+                    val dob2 = format(Locale.US, "%04d-%02d-%02d", year, monthOfYear + 1, dayOfMonth)
+                    date = format(Locale.US, "%04d-%02d-%02dT00:00:00.000Z", year, monthOfYear + 1, dayOfMonth)
+                    binding.dateOfBirth.text = dob2
+                },
+                now.get(Calendar.YEAR),
+                now.get(Calendar.MONTH),
+                now.get(Calendar.DAY_OF_MONTH)
             )
             dpd.datePicker.maxDate = now.timeInMillis
             dpd.show()
         }
-        editProfileDialogBinding.btnSave.setOnClickListener {
-            if (TextUtils.isEmpty("${editProfileDialogBinding.firstName.text}".trim())) {
-                editProfileDialogBinding.firstName.error = resources.getString(R.string.compulsory_first_name)
-            } else if (TextUtils.isEmpty("${editProfileDialogBinding.lastName.text}".trim())) {
-                editProfileDialogBinding.lastName.error = getString(R.string.compulsory_last_name)
-            } else if (TextUtils.isEmpty("${editProfileDialogBinding.email.text}".trim())) {
-                editProfileDialogBinding.email.error = getString(R.string.compulsory_email)
-            } else if (TextUtils.isEmpty("${editProfileDialogBinding.phoneNumber.text}".trim())) {
-                editProfileDialogBinding.phoneNumber.error = getString(R.string.compulsory_phone_number)
-            } else if (resources.getString(R.string.birth_date) == "${editProfileDialogBinding.dateOfBirth.text}") {
-                editProfileDialogBinding.dateOfBirth.error = getString(R.string.compulsory_date_of_birth)
-            } else if (editProfileDialogBinding.rdGender.checkedRadioButtonId == -1) {
-                Snackbar.make(editProfileDialogBinding.root, getString(R.string.gender_not_picked), Snackbar.LENGTH_SHORT).show()
-            } else {
-                if (editProfileDialogBinding.rbMale.isChecked) {
-                    selectedGender = "male"
-                } else if (editProfileDialogBinding.rbFemale.isChecked) {
-                    selectedGender = "female"
-                }
-                val realm = Realm.getDefaultInstance()
-                val userId = settings.getString("userId", "")
-                RealmUserModel.updateUserDetails(
-                    realm, userId, "${editProfileDialogBinding.firstName.text}",
-                    "${editProfileDialogBinding.lastName.text}",
-                    "${editProfileDialogBinding.middleName.text}",
-                    "${editProfileDialogBinding.email.text}",
-                    "${editProfileDialogBinding.phoneNumber.text}",
-                    selectedLevel, selectedLanguage, selectedGender, date
-                ){
-                    updateUIWithUserData(model)
-                }
-                realm.close()
-                dialog.dismiss()
-            }
-        }
-        editProfileDialogBinding.btnCancel.setOnClickListener { dialog.dismiss() }
-        dialog.show()
     }
 
+    private fun setupSaveButton(dialog: Dialog, binding: EditProfileDialogBinding) {
+        binding.btnSave.setOnClickListener {
+            if (!validateInputs(binding)) return@setOnClickListener
+
+            selectedGender = when {
+                binding.rbMale.isChecked -> "male"
+                binding.rbFemale.isChecked -> "female"
+                else -> selectedGender
+            }
+            val realm = Realm.getDefaultInstance()
+            val userId = settings.getString("userId", "")
+            RealmUserModel.updateUserDetails(
+                realm,
+                userId,
+                binding.firstName.text.toString(),
+                binding.lastName.text.toString(),
+                binding.middleName.text.toString(),
+                binding.email.text.toString(),
+                binding.phoneNumber.text.toString(),
+                selectedLevel,
+                selectedLanguage,
+                selectedGender,
+                date
+            ) {
+                updateUIWithUserData(model)
+            }
+            realm.close()
+            dialog.dismiss()
+        }
+    }
+
+    private fun validateInputs(binding: EditProfileDialogBinding): Boolean {
+        return when {
+            TextUtils.isEmpty(binding.firstName.text.toString().trim()) -> {
+                binding.firstName.error = getString(R.string.compulsory_first_name)
+                false
+            }
+            TextUtils.isEmpty(binding.lastName.text.toString().trim()) -> {
+                binding.lastName.error = getString(R.string.compulsory_last_name)
+                false
+            }
+            TextUtils.isEmpty(binding.email.text.toString().trim()) -> {
+                binding.email.error = getString(R.string.compulsory_email)
+                false
+            }
+            TextUtils.isEmpty(binding.phoneNumber.text.toString().trim()) -> {
+                binding.phoneNumber.error = getString(R.string.compulsory_phone_number)
+                false
+            }
+            getString(R.string.birth_date) == binding.dateOfBirth.text.toString() -> {
+                binding.dateOfBirth.error = getString(R.string.compulsory_date_of_birth)
+                false
+            }
+            binding.rdGender.checkedRadioButtonId == -1 -> {
+                Snackbar.make(binding.root, getString(R.string.gender_not_picked), Snackbar.LENGTH_SHORT).show()
+                false
+            }
+            else -> true
+        }
+    }
     private fun configureGuestView() {
         if (model?.id?.startsWith("guest") == true) {
             fragmentUserProfileBinding.btEditProfile.visibility = View.GONE
