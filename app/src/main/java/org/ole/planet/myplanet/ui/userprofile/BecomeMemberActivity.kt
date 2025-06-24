@@ -14,12 +14,14 @@ import io.realm.Realm
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
+import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
@@ -32,6 +34,7 @@ class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
     var guest: Boolean = false
+
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(
@@ -220,31 +223,35 @@ class BecomeMemberActivity : BaseActivity() {
             obj.addProperty("betaEnabled", false)
             obj.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             obj.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
-            obj.addProperty(
-                "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
-            )
+            obj.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
             val roles = JsonArray()
             roles.add("learner")
             obj.add("roles", roles)
-            activityBecomeMemberBinding.pbar.visibility = View.VISIBLE
+            val customProgressDialog = CustomProgressDialog(this)
+            customProgressDialog.setText(getString(R.string.creating_member_account))
+            customProgressDialog.show()
+
             Service(this).becomeMember(mRealm, obj, object : Service.CreateUserCallback {
                 override fun onSuccess(message: String) {
                     runOnUiThread {
-                        activityBecomeMemberBinding.pbar.visibility = View.GONE
                         Utilities.toast(this@BecomeMemberActivity, message)
                     }
-                    finish()
+                }
+            }, object : SecurityDataCallback {
+                override fun onSecurityDataUpdated() {
+                    runOnUiThread {
+                        customProgressDialog.dismiss()
+                        val intent = Intent(this@BecomeMemberActivity, LoginActivity::class.java)
+                        if (guest) {
+                            intent.putExtra("username", username)
+                            intent.putExtra("guest", guest)
+                        }
+                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        startActivity(intent)
+                        finish()
+                    }
                 }
             })
-
-            val intent = Intent(this, LoginActivity::class.java)
-            if (guest){
-                intent.putExtra("username", username)
-                intent.putExtra("guest", guest)
-            }
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            startActivity(intent)
-            finish()
         }
     }
 

@@ -1311,5 +1311,6 @@
     <string name="download_progress">%1$d of %2$d files downloaded</string>
     <string name="download_progress_with_errors">%1$d of %2$d files downloaded (with some errors)</string>
     <string name="download_in_background">Starting download in background…</string>
+    <string name="creating_member_account">Creating member account…</string>
 
 </resources>
