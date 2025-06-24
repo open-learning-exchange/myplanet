@@ -137,7 +137,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
     private fun isQuestionAnswered(): Boolean {
         val currentQuestion = questions?.get(currentIndex)
-        val otherOptionSelected = ans == "other"
+        val singleOtherOptionSelected = ans == "other"
+        val multipleOtherOptionSelected = listAns?.containsKey("Other")
+        val otherOptionSelected = singleOtherOptionSelected || multipleOtherOptionSelected == true
         val otherNotAnswered = fragmentTakeExamBinding.etAnswer.text.toString().isEmpty()
         if(currentQuestion?.hasOtherOption == true && otherOptionSelected && otherNotAnswered){
             return false
