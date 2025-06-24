@@ -78,7 +78,7 @@ object ServerConfigUtils {
             Triple(userinfo[0], userinfo[1], url)
         } else {
             val user = "satellite"
-            val dbUrl = "${'$'}{uri.scheme}://${'$'}user:${'$'}password@${'$'}{uri.host}:${'$'}{if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
+            val dbUrl = "${uri.scheme}://$user:$password@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
             Triple(user, password, dbUrl)
         }
 
