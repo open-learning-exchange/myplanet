@@ -24,10 +24,18 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.google.android.material.textfield.TextInputLayout
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity
+import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.callback.SuccessListener
+import org.ole.planet.myplanet.datamanager.ApiClient.client
+import org.ole.planet.myplanet.datamanager.ApiInterface
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
@@ -37,7 +45,8 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.FileUtils.installApk
-import java.util.Collections
+import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.roundToInt
 
@@ -171,11 +180,21 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         return true
     }
 
-    fun startUpload(source: String) {
+    fun startUpload(source: String, userName: String? = null, securityCallback: SecurityDataCallback? = null) {
         if (source == "becomeMember") {
-            UploadToShelfService.instance?.uploadUserData {
-                UploadToShelfService.instance?.uploadHealth()
-            }
+            UploadToShelfService.instance?.uploadSingleUserData(userName ,object : SuccessListener {
+                override fun onSuccess(message: String?) {
+                    UploadToShelfService.instance?.uploadSingleUserHealth("org.couchdb.user:${userName}", object : SuccessListener {
+                        override fun onSuccess(healthMessage: String?) {
+                            userName?.let { name ->
+                                fetchAndLogUserSecurityData(name, securityCallback)
+                            } ?: run {
+                                securityCallback?.onSecurityDataUpdated()
+                            }
+                        }
+                    })
+                }
+            })
             return
         } else if (source == "login") {
             UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
@@ -299,5 +318,68 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         editor.putInt("url_Port", if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port)
         editor.putString("serverURL", url)
         editor.putString("couchdbURL", couchdbURL)
+    }
+
+    fun fetchAndLogUserSecurityData(name: String, securityCallback: SecurityDataCallback? = null) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val apiInterface = client?.create(ApiInterface::class.java)
+                val userDocUrl = "${getUrl()}/tablet_users/org.couchdb.user:$name"
+                val response = apiInterface?.getJsonObject(Utilities.header, userDocUrl)?.execute()
+
+                if (response?.isSuccessful == true && response.body() != null) {
+                    val userDoc = response.body()
+                    val derivedKey = userDoc?.get("derived_key")?.asString
+                    val salt = userDoc?.get("salt")?.asString
+                    val passwordScheme = userDoc?.get("password_scheme")?.asString
+                    val iterations = userDoc?.get("iterations")?.asString
+                    val userId = userDoc?.get("_id")?.asString
+                    val rev = userDoc?.get("_rev")?.asString
+                    withContext(Dispatchers.Main) {
+                        updateRealmUserSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations, securityCallback)
+                    }
+
+                } else {
+                    withContext(Dispatchers.Main) {
+                        securityCallback?.onSecurityDataUpdated()
+                    }
+                }
+
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    e.printStackTrace()
+                    securityCallback?.onSecurityDataUpdated()
+                }
+            }
+        }
+    }
+
+    private fun updateRealmUserSecurityData(name: String, userId: String?, rev: String?, derivedKey: String?, salt: String?, passwordScheme: String?, iterations: String?, securityCallback: SecurityDataCallback? = null) {
+        try {
+            val realm = DatabaseService(this).realmInstance
+            realm.executeTransactionAsync({ transactionRealm ->
+                val user = transactionRealm.where(RealmUserModel::class.java)
+                    .equalTo("name", name)
+                    .findFirst()
+
+                if (user != null) {
+                    user._id = userId
+                    user._rev = rev
+                    user.derived_key = derivedKey
+                    user.salt = salt
+                    user.password_scheme = passwordScheme
+                    user.iterations = iterations
+                    user.isUpdated = false
+                }
+            }, {
+                securityCallback?.onSecurityDataUpdated()
+            }) { error ->
+                error.printStackTrace()
+                securityCallback?.onSecurityDataUpdated()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            securityCallback?.onSecurityDataUpdated()
+        }
     }
 }

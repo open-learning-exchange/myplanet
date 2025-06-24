@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.sync
 
-import android.app.Activity
 import android.content.*
 import android.graphics.drawable.AnimationDrawable
 import android.os.*
@@ -12,13 +11,10 @@ import android.widget.*
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.core.content.edit
 import androidx.recyclerview.widget.*
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import io.realm.Realm
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.*
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.callback.SyncListener
@@ -36,6 +32,7 @@ import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.text.Normalizer
 import java.util.Locale
 import java.util.regex.Pattern
+import androidx.core.content.edit
 
 class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private lateinit var activityLoginBinding: ActivityLoginBinding
@@ -135,7 +132,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
     private fun declareElements() {
         if (!defaultPref.contains("beta_addImageToMessage")) {
-            defaultPref.edit().putBoolean("beta_addImageToMessage", true).apply()
+            defaultPref.edit { putBoolean("beta_addImageToMessage", true) }
         }
         activityLoginBinding.customDeviceName.text = getCustomDeviceName()
         btnSignIn.setOnClickListener {
@@ -165,7 +162,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 }
             }
         }
-        if (!settings.contains("serverProtocol")) settings.edit().putString("serverProtocol", "http://").apply()
+        if (!settings.contains("serverProtocol")) settings.edit {
+            putString("serverProtocol", "http://")
+        }
         activityLoginBinding.becomeMember.setOnClickListener {
             activityLoginBinding.inputName.setText(R.string.empty_text)
             becomeAMember()
@@ -437,42 +436,57 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         if (forceSyncTrigger()) {
             return
         }
-        val editor = settings.edit()
-        editor.putString("loginUserName", name)
-        editor.putString("loginUserPassword", password)
-        val isLoggedIn = authenticateUser(settings, name, password, false)
-        if (isLoggedIn) {
-            Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
-            onLogin()
-            saveUsers(activityLoginBinding.inputName.text.toString(), activityLoginBinding.inputPassword.text.toString(), "member")
-        } else {
-            ManagerSync.instance?.login(name, password, object : SyncListener {
-                override fun onSyncStarted() {
-                    customProgressDialog?.setText(getString(R.string.please_wait))
-                    customProgressDialog?.show()
-                }
-                override fun onSyncComplete() {
-                    customProgressDialog?.dismiss()
-                    val log = authenticateUser(settings, name, password, true)
-                    if (log) {
-                        Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
-                        onLogin()
-                        saveUsers(activityLoginBinding.inputName.text.toString(), activityLoginBinding.inputPassword.text.toString(), "member")
-                    } else {
-                        alertDialogOkay(getString(R.string.err_msg_login))
+        settings.edit {
+            putString("loginUserName", name)
+            putString("loginUserPassword", password)
+            val isLoggedIn = authenticateUser(settings, name, password, false)
+            if (isLoggedIn) {
+                Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT)
+                    .show()
+                onLogin()
+                saveUsers(
+                    activityLoginBinding.inputName.text.toString(),
+                    activityLoginBinding.inputPassword.text.toString(),
+                    "member"
+                )
+            } else {
+                ManagerSync.instance?.login(name, password, object : SyncListener {
+                    override fun onSyncStarted() {
+                        customProgressDialog.setText(getString(R.string.please_wait))
+                        customProgressDialog.show()
                     }
-                    syncIconDrawable.stop()
-                    syncIconDrawable.selectDrawable(0)
-                }
-                override fun onSyncFailed(msg: String?) {
-                    toast(MainApplication.context, msg)
-                    customProgressDialog?.dismiss()
-                    syncIconDrawable.stop()
-                    syncIconDrawable.selectDrawable(0)
-                }
-            })
+
+                    override fun onSyncComplete() {
+                        customProgressDialog.dismiss()
+                        val log = authenticateUser(settings, name, password, true)
+                        if (log) {
+                            Toast.makeText(
+                                applicationContext,
+                                getString(R.string.thank_you),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            onLogin()
+                            saveUsers(
+                                activityLoginBinding.inputName.text.toString(),
+                                activityLoginBinding.inputPassword.text.toString(),
+                                "member"
+                            )
+                        } else {
+                            alertDialogOkay(getString(R.string.err_msg_login))
+                        }
+                        syncIconDrawable.stop()
+                        syncIconDrawable.selectDrawable(0)
+                    }
+
+                    override fun onSyncFailed(msg: String?) {
+                        toast(context, msg)
+                        customProgressDialog.dismiss()
+                        syncIconDrawable.stop()
+                        syncIconDrawable.selectDrawable(0)
+                    }
+                })
+            }
         }
-        editor.apply()
     }
 
     private fun showGuestLoginDialog() {
