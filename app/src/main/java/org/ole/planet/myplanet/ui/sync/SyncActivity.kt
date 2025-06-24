@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.sync
 
 import android.Manifest
-import android.app.Activity
 import android.content.*
 import android.graphics.drawable.AnimationDrawable
 import android.net.Uri
@@ -21,7 +20,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.*
 import io.realm.*
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*

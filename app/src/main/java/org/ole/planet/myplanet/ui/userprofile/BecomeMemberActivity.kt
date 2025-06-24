@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
-import android.view.View
 import android.widget.ArrayAdapter
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -14,12 +13,14 @@ import io.realm.Realm
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
+import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
@@ -32,6 +33,57 @@ class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
     var guest: Boolean = false
+
+    companion object {
+        private const val DIACRITIC_REGEX = ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"
+        private val DIACRITIC_PATTERN: Pattern = Pattern.compile(DIACRITIC_REGEX)
+    }
+
+    private data class MemberInfo(
+        val username: String,
+        var password: String,
+        val rePassword: String,
+        val fName: String,
+        val lName: String,
+        val mName: String,
+        val email: String,
+        val language: String,
+        val level: String,
+        val phoneNumber: String,
+        val birthDate: String,
+        val gender: String?
+    )
+
+    private fun hasInvalidCharacters(input: String) =
+        input.any { it != '_' && it != '.' && it != '-' && !it.isDigit() && !it.isLetter() }
+
+    private fun hasSpecialCharacters(input: String) = DIACRITIC_PATTERN.matcher(input).matches()
+
+    private fun hasDiacriticCharacters(input: String): Boolean {
+        val normalized = Normalizer.normalize(input, Normalizer.Form.NFD)
+        return !normalized.codePoints().allMatch {
+            Character.isLetterOrDigit(it) || it == '.'.code || it == '-'.code || it == '_'.code
+        }
+    }
+
+    private fun usernameValidationError(username: String, realm: Realm? = null): String? {
+        val firstChar = username.firstOrNull()
+        return when {
+            username.isEmpty() -> getString(R.string.please_enter_a_username)
+            username.contains(" ") -> getString(R.string.invalid_username)
+            firstChar != null && !firstChar.isDigit() && !firstChar.isLetter() -> getString(R.string.must_start_with_letter_or_number)
+            hasInvalidCharacters(username) || hasSpecialCharacters(username) || hasDiacriticCharacters(username) -> getString(R.string.only_letters_numbers_and_are_allowed)
+            realm != null && RealmUserModel.isUserExists(realm, username) -> getString(R.string.username_taken)
+            else -> null
+        }
+    }
+
+    private fun selectedGender(): String? = when {
+        activityBecomeMemberBinding.male.isChecked -> "male"
+        activityBecomeMemberBinding.female.isChecked -> "female"
+        else -> null
+    }
+
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(
@@ -43,6 +95,101 @@ class BecomeMemberActivity : BaseActivity() {
         dpd.setTitle(getString(R.string.select_date_of_birth))
         dpd.datePicker.maxDate = now.timeInMillis
         dpd.show()
+    }
+
+    private fun collectMemberInfo() = MemberInfo(
+        activityBecomeMemberBinding.etUsername.text.toString(),
+        activityBecomeMemberBinding.etPassword.text.toString(),
+        activityBecomeMemberBinding.etRePassword.text.toString(),
+        activityBecomeMemberBinding.etFname.text.toString(),
+        activityBecomeMemberBinding.etLname.text.toString(),
+        activityBecomeMemberBinding.etMname.text.toString(),
+        activityBecomeMemberBinding.etEmail.text.toString(),
+        activityBecomeMemberBinding.spnLang.selectedItem.toString(),
+        activityBecomeMemberBinding.spnLevel.selectedItem.toString(),
+        activityBecomeMemberBinding.etPhone.text.toString(),
+        dob,
+        selectedGender()
+    )
+
+    private fun validateMemberInfo(info: MemberInfo, realm: Realm): Boolean {
+        usernameValidationError(info.username, realm)?.let {
+            activityBecomeMemberBinding.etUsername.error = it
+            return false
+        }
+
+        return when {
+            info.password.isEmpty() -> {
+                activityBecomeMemberBinding.etPassword.error = getString(R.string.please_enter_a_password)
+                false
+            }
+            info.password != info.rePassword -> {
+                activityBecomeMemberBinding.etRePassword.error = getString(R.string.password_doesn_t_match)
+                false
+            }
+            info.email.isNotEmpty() && !Utilities.isValidEmail(info.email) -> {
+                activityBecomeMemberBinding.etEmail.error = getString(R.string.invalid_email)
+                false
+            }
+            info.gender == null -> {
+                Utilities.toast(this, getString(R.string.please_select_gender))
+                false
+            }
+            else -> true
+        }
+    }
+
+    private fun buildMemberJson(info: MemberInfo) = JsonObject().apply {
+        addProperty("name", info.username)
+        addProperty("firstName", info.fName)
+        addProperty("lastName", info.lName)
+        addProperty("middleName", info.mName)
+        addProperty("password", info.password)
+        addProperty("isUserAdmin", false)
+        addProperty("joinDate", Calendar.getInstance().timeInMillis)
+        addProperty("email", info.email)
+        addProperty("planetCode", settings.getString("planetCode", ""))
+        addProperty("parentCode", settings.getString("parentCode", ""))
+        addProperty("language", info.language)
+        addProperty("level", info.level)
+        addProperty("phoneNumber", info.phoneNumber)
+        addProperty("birthDate", info.birthDate)
+        addProperty("gender", info.gender)
+        addProperty("type", "user")
+        addProperty("betaEnabled", false)
+        addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+        addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
+        addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
+        val roles = JsonArray().apply { add("learner") }
+        add("roles", roles)
+    }
+
+    private fun addMember(info: MemberInfo, realm: Realm) {
+        val obj = buildMemberJson(info)
+        val customProgressDialog = CustomProgressDialog(this).apply {
+            setText(getString(R.string.creating_member_account))
+            show()
+        }
+
+        Service(this).becomeMember(realm, obj, object : Service.CreateUserCallback {
+            override fun onSuccess(message: String) {
+                runOnUiThread { Utilities.toast(this@BecomeMemberActivity, message) }
+            }
+        }, object : SecurityDataCallback {
+            override fun onSecurityDataUpdated() {
+                runOnUiThread {
+                    customProgressDialog.dismiss()
+                    val intent = Intent(this@BecomeMemberActivity, LoginActivity::class.java)
+                    if (guest) {
+                        intent.putExtra("username", info.username)
+                        intent.putExtra("guest", guest)
+                    }
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    startActivity(intent)
+                    finish()
+                }
+            }
+        })
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -66,201 +213,46 @@ class BecomeMemberActivity : BaseActivity() {
         guest = intent.getBooleanExtra("guest", false)
 
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        textChangedListener(mRealm)
+        setupTextWatchers(mRealm)
 
         if (guest) {
             activityBecomeMemberBinding.etUsername.setText(username)
             activityBecomeMemberBinding.etUsername.isFocusable = false
         }
 
-        activityBecomeMemberBinding.etUsername.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                val input = s.toString()
-
-                val firstChar = if (input.isNotEmpty()) input[0] else '\u0000'
-                var hasInvalidCharacters = false
-                val hasSpecialCharacters: Boolean
-                var hasDiacriticCharacters = false
-
-                val normalizedText = Normalizer.normalize(s, Normalizer.Form.NFD)
-
-                for (element in input) {
-                    if (element != '_' && element != '.' && element != '-'
-                        && !Character.isDigit(element) && !Character.isLetter(element)) {
-                        hasInvalidCharacters = true
-                        break
-                    }
-                }
-
-                val regex = ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"
-                val pattern = Pattern.compile(regex)
-                val matcher = pattern.matcher(input)
-
-                hasSpecialCharacters = matcher.matches()
-                hasDiacriticCharacters = !normalizedText.codePoints().allMatch { codePoint: Int ->
-                    Character.isLetterOrDigit(codePoint) || codePoint == '.'.code || codePoint == '-'.code || codePoint == '_'.code
-                }
-
-                if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
-                    activityBecomeMemberBinding.etUsername.error = getString(R.string.must_start_with_letter_or_number)
-                } else if (hasInvalidCharacters || hasDiacriticCharacters || hasSpecialCharacters) {
-                        activityBecomeMemberBinding.etUsername.error = getString(R.string.only_letters_numbers_and_are_allowed)
-                } else {
-                    val lowercaseText = input.lowercase()
-                    if (input != lowercaseText) {
-                        activityBecomeMemberBinding.etUsername.setText(lowercaseText)
-                        activityBecomeMemberBinding.etUsername.setSelection(lowercaseText.length)
-                    }
-                    activityBecomeMemberBinding.etUsername.error = null
-                }
-            }
-
-            override fun afterTextChanged(s: Editable?) {}
-        })
 
         activityBecomeMemberBinding.btnCancel.setOnClickListener {
             finish()
         }
 
         activityBecomeMemberBinding.btnSubmit.setOnClickListener {
-            val userName: String = activityBecomeMemberBinding.etUsername.text.toString()
-            var password: String? = activityBecomeMemberBinding.etPassword.text.toString()
-            val rePassword: String = activityBecomeMemberBinding.etRePassword.text.toString()
-            val fName: String = activityBecomeMemberBinding.etFname.text.toString()
-            val lName: String = activityBecomeMemberBinding.etLname.text.toString()
-            val mName: String = activityBecomeMemberBinding.etMname.text.toString()
-            val email: String = activityBecomeMemberBinding.etEmail.text.toString()
-            val language: String = activityBecomeMemberBinding.spnLang.selectedItem.toString()
-            val phoneNumber: String = activityBecomeMemberBinding.etPhone.text.toString()
-            val birthDate: String = dob
-            val level: String = activityBecomeMemberBinding.spnLevel.selectedItem.toString()
-            var gender: String? = null
-          
-            val firstChar = if (userName.isNotEmpty()) {
-                userName[0]
-            } else {
-                null
-            }
-            val hasInvalidCharacters = userName.any { char ->
-                char != '_' && char != '.' && char != '-' && !Character.isDigit(char) && !Character.isLetter(char)
-            }
-
-            val normalizedText = Normalizer.normalize(username, Normalizer.Form.NFD)
-
-            val regex = ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"
-            val pattern = Pattern.compile(regex)
-            val matcher = pattern.matcher(userName)
-
-            val hasSpecialCharacters = matcher.matches()
-            val hasDiacriticCharacters = !normalizedText.codePoints().allMatch { codePoint: Int ->
-                Character.isLetterOrDigit(codePoint) || codePoint == '.'.code || codePoint == '-'.code || codePoint == '_'.code
-            }
-
-            if (TextUtils.isEmpty(userName)) {
-                activityBecomeMemberBinding.etUsername.error = getString(R.string.please_enter_a_username)
-            } else if (userName.contains(" ")) {
-                activityBecomeMemberBinding.etUsername.error = getString(R.string.invalid_username)
-            } else if (firstChar != null && !Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
-                activityBecomeMemberBinding.etUsername.error = getString(R.string.must_start_with_letter_or_number)
-            } else if (hasInvalidCharacters || hasSpecialCharacters || hasDiacriticCharacters) {
-               activityBecomeMemberBinding.etUsername.error = getString(R.string.only_letters_numbers_and_are_allowed)
-            } else if (TextUtils.isEmpty(password)) {
-                activityBecomeMemberBinding.etPassword.error = getString(R.string.please_enter_a_password)
-            } else if (password != rePassword) {
-                activityBecomeMemberBinding.etRePassword.error = getString(R.string.password_doesn_t_match)
-            } else if (!TextUtils.isEmpty(email) && !Utilities.isValidEmail(email)) {
-                activityBecomeMemberBinding.etEmail.error = getString(R.string.invalid_email)
-            } else if (activityBecomeMemberBinding.rbGender.checkedRadioButtonId == -1) {
-                Utilities.toast(this, getString(R.string.please_select_gender))
-            } else {
-                if (activityBecomeMemberBinding.male.isChecked) {
-                    gender = "male"
-                } else if (activityBecomeMemberBinding.female.isChecked) {
-                    gender = "female"
-                }
-
-                if (TextUtils.isEmpty(password) && !TextUtils.isEmpty(phoneNumber)) {
-                    activityBecomeMemberBinding.etRePassword.setText(phoneNumber)
-                    password = phoneNumber
-                }
-
-                checkMandatoryFieldsAndAddMember(
-                    userName, password, rePassword, fName, lName, mName, email, language, level,
-                    phoneNumber, birthDate, gender, mRealm
-                )
+            val info = collectMemberInfo()
+            if (validateMemberInfo(info, mRealm)) {
+                addMember(info, mRealm)
             }
         }
     }
 
-    private fun checkMandatoryFieldsAndAddMember(
-        username: String, password: String, rePassword: String?, fName: String?, lName: String?,
-        mName: String?, email: String?, language: String?, level: String?, phoneNumber: String?,
-        birthDate: String?, gender: String?, mRealm: Realm
-    ) {
-        if (username.isNotEmpty() && password.isNotEmpty() && rePassword == password) {
-            val obj = JsonObject()
-            obj.addProperty("name", username)
-            obj.addProperty("firstName", fName)
-            obj.addProperty("lastName", lName)
-            obj.addProperty("middleName", mName)
-            obj.addProperty("password", password)
-            obj.addProperty("isUserAdmin", false)
-            obj.addProperty("joinDate", Calendar.getInstance().timeInMillis)
-            obj.addProperty("email", email)
-            obj.addProperty("planetCode", settings.getString("planetCode", ""))
-            obj.addProperty("parentCode", settings.getString("parentCode", ""))
-            obj.addProperty("language", language)
-            obj.addProperty("level", level)
-            obj.addProperty("phoneNumber", phoneNumber)
-            obj.addProperty("birthDate", birthDate)
-            obj.addProperty("gender", gender)
-            obj.addProperty("type", "user")
-            obj.addProperty("betaEnabled", false)
-            obj.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-            obj.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
-            obj.addProperty(
-                "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
-            )
-            val roles = JsonArray()
-            roles.add("learner")
-            obj.add("roles", roles)
-            activityBecomeMemberBinding.pbar.visibility = View.VISIBLE
-            Service(this).becomeMember(mRealm, obj, object : Service.CreateUserCallback {
-                override fun onSuccess(message: String) {
-                    runOnUiThread {
-                        activityBecomeMemberBinding.pbar.visibility = View.GONE
-                        Utilities.toast(this@BecomeMemberActivity, message)
-                    }
-                    finish()
-                }
-            })
 
-            val intent = Intent(this, LoginActivity::class.java)
-            if (guest){
-                intent.putExtra("username", username)
-                intent.putExtra("guest", guest)
-            }
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            startActivity(intent)
-            finish()
-        }
-    }
-
-    private fun textChangedListener(mRealm: Realm) {
+    private fun setupTextWatchers(mRealm: Realm) {
         activityBecomeMemberBinding.etUsername.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(s: Editable) {
-                if (RealmUserModel.isUserExists(mRealm, activityBecomeMemberBinding.etUsername.text.toString())) {
-                    activityBecomeMemberBinding.etUsername.error = getString(R.string.username_taken)
-                    return
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+
+            override fun afterTextChanged(s: Editable?) {
+                val input = s?.toString() ?: ""
+                val error = usernameValidationError(input, mRealm)
+                if (error != null) {
+                    activityBecomeMemberBinding.etUsername.error = error
+                } else {
+                    val lowercase = input.lowercase()
+                    if (input != lowercase) {
+                        activityBecomeMemberBinding.etUsername.setText(lowercase)
+                        activityBecomeMemberBinding.etUsername.setSelection(lowercase.length)
+                    }
+                    activityBecomeMemberBinding.etUsername.error = null
                 }
-            }
-
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
-            }
-
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
             }
         })
 
@@ -271,11 +263,9 @@ class BecomeMemberActivity : BaseActivity() {
                 }
             }
 
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {
-            }
+            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
 
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-            }
+            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
         })
     }
 }

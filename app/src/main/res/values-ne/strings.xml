@@ -1311,5 +1311,6 @@
     <string name="download_progress">%2$d मध्ये %1$d फाइलहरू डाउनलोड भएका छन्</string>
     <string name="download_progress_with_errors">%2$d मध्ये %1$d फाइलहरू डाउनलोड भएका छन् (केही त्रुटिहरूसहित)</string>
     <string name="download_in_background">पृष्ठभूमिमा डाउनलोड सुरु गर्दै…</string>
+    <string name="creating_member_account">सदस्य खाता सिर्जना गर्दै…</string>
 
 </resources>
