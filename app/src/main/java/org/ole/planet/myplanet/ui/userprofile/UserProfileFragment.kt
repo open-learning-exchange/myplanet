@@ -184,7 +184,6 @@ class UserProfileFragment : Fragment() {
         }
     }
 
-
     private fun openEditProfileDialog() {
         val dialog = Dialog(requireContext()).apply { setCancelable(false) }
         val binding = EditProfileDialogBinding.inflate(LayoutInflater.from(requireContext()))
