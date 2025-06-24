@@ -165,7 +165,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-
     private fun clearDataDialog(message: String, config: Boolean, onCancel: () -> Unit = {}) {
         AlertDialog.Builder(this, R.style.AlertDialogTheme)
             .setMessage(message)
@@ -931,7 +930,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             service.getMinApk(this, url, pin, this, "SyncActivity")
         }
     }
-
 
     private fun onChangeServerUrl() {
         val selected = spnCloud.selectedItem
