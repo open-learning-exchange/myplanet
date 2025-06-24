@@ -432,7 +432,8 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             if (questions != null && currentIndex in 0 until (questions?.size ?: 0)) {
                 val type = questions?.get(currentIndex)?.type
                 showTextInput(type)
-                if (showErrorMessage(getString(R.string.please_select_write_your_answer_to_continue))) {
+                if (!isQuestionAnswered()) {
+                    showErrorMessage(getString(R.string.please_select_write_your_answer_to_continue))
                     return
                 }
 

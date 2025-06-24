@@ -177,18 +177,14 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         }
     }
 
-    fun showErrorMessage(s: String?): Boolean {
-        if (ans.isEmpty() && listAns?.isEmpty() != false) {
-            if (s != null) {
-                val toast = Toast.makeText(activity, s, Toast.LENGTH_SHORT)
-                toast.show()
-                Handler(Looper.getMainLooper()).postDelayed({
-                    toast.cancel()
-                }, 1000)
-            }
-            return true
+    fun showErrorMessage(s: String?) {
+        if (s != null) {
+            val toast = Toast.makeText(activity, s, Toast.LENGTH_SHORT)
+            toast.show()
+            Handler(Looper.getMainLooper()).postDelayed({
+                toast.cancel()
+            }, 1000)
         }
-        return false
     }
 
     fun addAnswer(compoundButton: CompoundButton) {
