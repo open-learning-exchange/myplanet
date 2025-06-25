@@ -1,10 +1,7 @@
 package org.ole.planet.myplanet.datamanager
 
-import android.app.AlertDialog
 import android.content.Context
-import android.content.DialogInterface
 import android.content.SharedPreferences
-import android.net.Uri
 import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -31,30 +28,25 @@ import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
-import org.ole.planet.myplanet.utilities.Constants.KEY_UPGRADE_MAX
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
-import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Sha256Utils
 import org.ole.planet.myplanet.utilities.Utilities
-import org.ole.planet.myplanet.utilities.VersionUtils
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.io.IOException
 import java.util.concurrent.Executors
-import kotlin.math.min
 import androidx.core.net.toUri
 import androidx.core.content.edit
 import kotlinx.coroutines.awaitAll
 import org.ole.planet.myplanet.callback.SecurityDataCallback
-import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.datamanager.VersionManager
+import org.ole.planet.myplanet.datamanager.ConfigurationManager
 import java.util.concurrent.ConcurrentHashMap
 
 class Service(private val context: Context) {
@@ -62,6 +54,8 @@ class Service(private val context: Context) {
     private val retrofitInterface: ApiInterface? = ApiClient.client?.create(ApiInterface::class.java)
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
+    private val versionManager = VersionManager(context, preferences, retrofitInterface)
+    private val configurationManager = ConfigurationManager(context, retrofitInterface, preferences)
 
     fun healthAccess(listener: SuccessListener) {
         retrofitInterface?.healthAccess(Utilities.getHealthAccessUrl(preferences))?.enqueue(object : Callback<ResponseBody> {
@@ -109,86 +103,7 @@ class Service(private val context: Context) {
     }
 
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences) {
-        if (!settings.getBoolean("isAlternativeUrl", false) && settings.getString("couchdbURL", "").isNullOrEmpty()) {
-            if (context is SyncActivity) {
-                context.settingDialog()
-            }
-            return
-        }
-
-        callback.onCheckingVersion()
-
-        serviceScope.launch {
-            try {
-                val planetInfo = withContext(Dispatchers.IO) {
-                    retrofitInterface?.checkVersion(Utilities.getUpdateUrl(settings))?.execute()?.body()
-                }
-
-                preferences.edit {
-                    putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context))
-                }
-
-                if (planetInfo != null) {
-                    preferences.edit { putString("versionDetail", Gson().toJson(planetInfo)) }
-                    val versionString = requestApkVersion(settings)
-                    withContext(Dispatchers.Main) { handleVersionInfo(planetInfo, versionString, callback) }
-                } else {
-                    withContext(Dispatchers.Main) { callback.onError(context.getString(R.string.version_not_found), true) }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) { callback.onError(context.getString(R.string.connection_failed), true) }
-            }
-        }
-    }
-
-    private suspend fun requestApkVersion(settings: SharedPreferences): String? {
-        return withContext(Dispatchers.IO) {
-            runCatching {
-                val response = retrofitInterface?.getApkVersion(Utilities.getApkVersionUrl(settings))?.execute()
-                Gson().fromJson(response?.body()?.string(), String::class.java)
-            }.getOrNull()
-        }
-    }
-
-
-    private fun handleVersionInfo(info: MyPlanet?, versionString: String?, callback: CheckVersionCallback) {
-        val apkVersion = versionString?.let { parseVersionCode(it) }
-        if (apkVersion == null) {
-            callback.onError(context.getString(R.string.planet_is_up_to_date), false)
-            return
-        }
-
-        try {
-            val currentVersion = VersionUtils.getVersionCode(context)
-
-            info?.let { p ->
-                when {
-                    showBetaFeature(KEY_UPGRADE_MAX, context) && p.latestapkcode > currentVersion ->
-                        callback.onUpdateAvailable(p, false)
-
-                    apkVersion > currentVersion ->
-                        callback.onUpdateAvailable(p, currentVersion >= p.minapkcode)
-
-                    currentVersion < p.minapkcode && apkVersion < p.minapkcode ->
-                        callback.onUpdateAvailable(p, true)
-
-                    else ->
-                        callback.onError(context.getString(R.string.planet_is_up_to_date), false)
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            callback.onError(context.getString(R.string.new_apk_version_required_but_not_found_on_server), false)
-        }
-    }
-
-    private fun parseVersionCode(versionString: String): Int {
-        return versionString
-            .replace("v", "")
-            .replace(".", "")
-            .removePrefix("0")
-            .toInt()
+        versionManager.checkVersion(callback, settings)
     }
 
     fun isPlanetAvailable(callback: PlanetAvailableListener?) {
@@ -394,214 +309,7 @@ class Service(private val context: Context) {
     }
 
     fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity, callerActivity: String) {
-        val serverUrlMapper = ServerUrlMapper()
-        val mapping = serverUrlMapper.processUrl(url)
-        val urlsToTry = mutableListOf(url).apply { mapping.alternativeUrl?.let { add(it) } }
-
-        MainApplication.applicationScope.launch {
-            val customProgressDialog = withContext(Dispatchers.Main) {
-                CustomProgressDialog(context).apply {
-                    setText(context.getString(R.string.check_apk_version))
-                    show()
-                }
-            }
-
-            try {
-                val deferreds = urlsToTry.map { currentUrl ->
-                    async { checkConfigurationUrl(currentUrl, pin, customProgressDialog) }
-                }
-
-                val result = try {
-                    val allResults = deferreds.awaitAll()
-                    allResults.firstOrNull { it is UrlCheckResult.Success }
-                        ?: allResults.firstOrNull()
-                        ?: UrlCheckResult.Failure(url)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    UrlCheckResult.Failure(url)
-                }
-
-                when (result) {
-                    is UrlCheckResult.Success -> {
-                        val isAlternativeUrl = result.url != url
-                        listener?.onConfigurationIdReceived(result.id, result.code, result.url, url, isAlternativeUrl, callerActivity)
-                        activity.setSyncFailed(false)
-                    }
-                    is UrlCheckResult.Failure -> {
-                        activity.setSyncFailed(true)
-                        val errorMessage = when (extractProtocol(url)) {
-                            context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
-                            context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
-                            else -> context.getString(R.string.device_couldn_t_reach_local_server)
-                        }
-                        showAlertDialog(errorMessage, false)
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                activity.setSyncFailed(true)
-                withContext(Dispatchers.Main) {
-                    showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
-                }
-            } finally {
-                customProgressDialog.dismiss()
-            }
-        }
-    }
-
-    private suspend fun checkConfigurationUrl(currentUrl: String, pin: String, customProgressDialog: CustomProgressDialog): UrlCheckResult {
-        return try {
-            val versionsResponse = retrofitInterface?.getConfiguration("$currentUrl/versions")?.execute()
-
-            if (versionsResponse?.isSuccessful == true) {
-                val jsonObject = versionsResponse.body()
-                val minApkVersion = jsonObject?.get("minapk")?.asString
-                val currentVersion = context.getString(R.string.app_version)
-
-                if (minApkVersion != null && isVersionAllowed(currentVersion, minApkVersion)) {
-                    val couchdbURL = buildCouchdbUrl(currentUrl, pin)
-
-                    withContext(Dispatchers.Main) {
-                        customProgressDialog.setText(context.getString(R.string.checking_server))
-                    }
-
-                    fetchConfiguration(couchdbURL)?.let { (id, code) ->
-                        return UrlCheckResult.Success(id, code, currentUrl)
-                    }
-                }
-            }
-
-            UrlCheckResult.Failure(currentUrl)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            UrlCheckResult.Failure(currentUrl)
-        }
-    }
-
-    private suspend fun fetchConfiguration(couchdbURL: String): Pair<String, String>? {
-        val configResponse = retrofitInterface
-            ?.getConfiguration("${getUrl(couchdbURL)}/configurations/_all_docs?include_docs=true")
-            ?.execute()
-
-        if (configResponse?.isSuccessful == true) {
-            val rows = configResponse.body()?.getAsJsonArray("rows")
-            if (rows != null && rows.size() > 0) {
-                val firstRow = rows[0].asJsonObject
-                val id = firstRow.getAsJsonPrimitive("id").asString
-                val doc = firstRow.getAsJsonObject("doc")
-                val code = doc.getAsJsonPrimitive("code").asString
-                processConfigurationDoc(doc)
-                return Pair(id, code)
-            }
-        }
-        return null
-    }
-
-    private suspend fun processConfigurationDoc(doc: JsonObject) {
-        val parentCode = doc.getAsJsonPrimitive("parentCode").asString
-
-        withContext(Dispatchers.IO) {
-            preferences.edit { putString("parentCode", parentCode) }
-        }
-
-        if (doc.has("preferredLang")) {
-            val preferredLang = doc.getAsJsonPrimitive("preferredLang").asString
-            val languageCode = getLanguageCodeFromName(preferredLang)
-            if (languageCode != null) {
-                withContext(Dispatchers.IO) {
-                    LocaleHelper.setLocale(context, languageCode)
-                    preferences.edit { putString("pendingLanguageChange", languageCode) }
-                }
-            }
-        }
-
-        if (doc.has("models")) {
-            val modelsMap = doc.getAsJsonObject("models").entrySet()
-                .associate { it.key to it.value.asString }
-
-            withContext(Dispatchers.IO) {
-                preferences.edit { putString("ai_models", Gson().toJson(modelsMap)) }
-            }
-        }
-    }
-
-    private fun buildCouchdbUrl(currentUrl: String, pin: String): String {
-        val uri = currentUrl.toUri()
-        return if (currentUrl.contains("@")) {
-            getUserInfo(uri)
-            currentUrl
-        } else {
-            val urlUser = "satellite"
-            "${uri.scheme}://$urlUser:$pin@${uri.host}:${if (uri.port == -1) if (uri.scheme == "http") 80 else 443 else uri.port}"
-        }
-    }
-
-    sealed class UrlCheckResult {
-        data class Success(val id: String, val code: String, val url: String) : UrlCheckResult()
-        data class Failure(val url: String) : UrlCheckResult()
-    }
-
-    private fun isVersionAllowed(currentVersion: String, minApkVersion: String): Boolean {
-        return compareVersions(currentVersion, minApkVersion) >= 0
-    }
-
-    private fun compareVersions(version1: String, version2: String): Int {
-        val parts1 = version1.removeSuffix("-lite").removePrefix("v").split(".").map { it.toInt() }
-        val parts2 = version2.removePrefix("v").split(".").map { it.toInt() }
-
-        for (i in 0 until min(parts1.size, parts2.size)) {
-            if (parts1[i] != parts2[i]) {
-                return parts1[i].compareTo(parts2[i])
-            }
-        }
-        return parts1.size.compareTo(parts2.size)
-    }
-
-    private fun getLanguageCodeFromName(languageName: String): String? {
-        return when (languageName.lowercase()) {
-            "english" -> "en"
-            "spanish", "español" -> "es"
-            "somali" -> "so"
-            "nepali" -> "ne"
-            "arabic", "العربية" -> "ar"
-            "french", "français" -> "fr"
-            else -> null
-        }
-    }
-
-    fun showAlertDialog(message: String?, playStoreRedirect: Boolean) {
-        MainApplication.applicationScope.launch(Dispatchers.Main) {
-            val builder = AlertDialog.Builder(context, R.style.CustomAlertDialog)
-            builder.setMessage(message)
-            builder.setCancelable(true)
-            builder.setNegativeButton(R.string.okay) { dialog: DialogInterface, _: Int ->
-                if (playStoreRedirect) {
-                    Utilities.openPlayStore()
-                }
-                dialog.cancel()
-            }
-            val alert = builder.create()
-            alert.show()
-        }
-    }
-
-    private fun getUrl(couchdbURL: String): String {
-        var url = couchdbURL
-
-        if (!url.endsWith("/db")) {
-            url += "/db"
-        }
-        return url
-    }
-
-    private fun getUserInfo(uri: Uri): Array<String> {
-        val ar = arrayOf("", "")
-        val info = uri.userInfo?.split(":".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
-        if ((info?.size ?: 0) > 1) {
-            ar[0] = "${info?.get(0)}"
-            ar[1] = "${info?.get(1)}"
-        }
-        return ar
+        configurationManager.getMinApk(listener, url, pin, activity, callerActivity)
     }
 
     interface CheckVersionCallback {
