@@ -7,6 +7,7 @@ import android.os.CountDownTimer
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -19,11 +20,13 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import io.realm.Case
 import io.realm.Realm
 import io.realm.Sort
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
@@ -32,9 +35,11 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
+import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Calendar
@@ -51,11 +56,83 @@ class MyHealthFragment : Fragment() {
     lateinit var userModelList: List<RealmUserModel>
     lateinit var adapter: UserListArrayAdapter
     var dialog: AlertDialog? = null
+    private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        // Start selective sync for health data
+        startHealthSync()
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentVitalSignBinding = FragmentVitalSignBinding.inflate(inflater, container, false)
         mRealm = DatabaseService(requireContext()).realmInstance
         return fragmentVitalSignBinding.root
+    }
+
+    private fun startHealthSync() {
+        SyncManager.instance?.start(object : SyncListener {
+            override fun onSyncStarted() {
+                activity?.runOnUiThread {
+                    if (isAdded && !requireActivity().isFinishing) {
+                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                        customProgressDialog?.setText("Syncing health data...")
+                        customProgressDialog?.show()
+                    }
+                }
+            }
+
+            override fun onSyncComplete() {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
+
+                        // Refresh health data after sync
+                        refreshHealthData()
+
+                        // Optional: Show success message
+                        Toast.makeText(requireContext(), "Health data synced successfully", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+
+            override fun onSyncFailed(message: String?) {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
+
+                        // Show error message
+                        Snackbar.make(
+                            fragmentVitalSignBinding.root,
+                            "Sync failed: ${message ?: "Unknown error"}",
+                            Snackbar.LENGTH_LONG
+                        ).setAction("Retry") {
+                            startHealthSync()
+                        }.show()
+                    }
+                }
+            }
+        }, "full", listOf("health"))
+    }
+
+    private fun refreshHealthData() {
+        if (!isAdded || requireActivity().isFinishing) return
+
+        try {
+            // Re-initialize profile handler and user data
+            profileDbHandler = UserProfileDbHandler(requireContext())
+            userId = if (TextUtils.isEmpty(profileDbHandler?.userModel?._id))
+                profileDbHandler?.userModel?.id else profileDbHandler?.userModel?._id
+
+            // Refresh health records with updated data
+            getHealthRecords(userId)
+
+        } catch (e: Exception) {
+            Log.e("MyHealthFragment", "Error refreshing health data: ${e.message}", e)
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -78,10 +155,20 @@ class MyHealthFragment : Fragment() {
         } else {
             disableDobField()
         }
+
         fragmentVitalSignBinding.rvRecords.addItemDecoration(DividerItemDecoration(activity, DividerItemDecoration.VERTICAL))
+
+        setupInitialData()
+        setupButtons()
+    }
+
+    private fun setupInitialData() {
         profileDbHandler = UserProfileDbHandler(alertMyPersonalBinding.root.context)
         userId = if (TextUtils.isEmpty(profileDbHandler?.userModel?._id)) profileDbHandler?.userModel?.id else profileDbHandler?.userModel?._id
         getHealthRecords(userId)
+    }
+
+    private fun setupButtons() {
         val isHealthProvider = userModel?.rolesList?.contains("health") ?: false
         fragmentVitalSignBinding.btnnewPatient.visibility =
             if (isHealthProvider) View.VISIBLE else View.GONE
@@ -288,5 +375,13 @@ class MyHealthFragment : Fragment() {
         fragmentVitalSignBinding.txtDob.isClickable = false
         fragmentVitalSignBinding.txtDob.isFocusable = false
         fragmentVitalSignBinding.txtDob.setOnClickListener(null)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        // Clean up progress dialog
+        customProgressDialog?.dismiss()
+        customProgressDialog = null
     }
 }
