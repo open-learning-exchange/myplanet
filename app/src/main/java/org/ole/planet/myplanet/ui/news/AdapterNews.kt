@@ -14,7 +14,6 @@ import android.text.Spanned
 import android.text.TextUtils
 import android.text.method.LinkMovementMethod
 import android.text.style.ClickableSpan
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -319,7 +318,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     }
     private fun showMemberDetails(userModel: RealmUserModel?, it: View){
         if (userModel == null) {
-            Log.e("AdapterNews", "showMemberDetails() called with null userModel")
             return
         }
         val activity = it.context as AppCompatActivity
