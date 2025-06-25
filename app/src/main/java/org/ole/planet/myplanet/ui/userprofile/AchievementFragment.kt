@@ -2,9 +2,11 @@ package org.ole.planet.myplanet.ui.userprofile
 
 import android.content.Context
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -27,6 +29,10 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.Utilities
 import androidx.core.view.isGone
+import com.google.android.material.snackbar.Snackbar
+import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.service.SyncManager
+import org.ole.planet.myplanet.utilities.DialogUtils
 
 class AchievementFragment : BaseContainerFragment() {
     private lateinit var fragmentAchievementBinding: FragmentAchievementBinding
@@ -36,6 +42,15 @@ class AchievementFragment : BaseContainerFragment() {
     var user: RealmUserModel? = null
     var listener: OnHomeItemClickListener? = null
     private var achievement: RealmAchievement? = null
+    private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        // Start selective sync for achievements
+        startAchievementSync()
+    }
+
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is OnHomeItemClickListener) listener = context
@@ -51,76 +66,115 @@ class AchievementFragment : BaseContainerFragment() {
         return fragmentAchievementBinding.root
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        achievement = aRealm.where(RealmAchievement::class.java).equalTo("_id", user?.id + "@" + user?.planetCode).findFirst()
-        fragmentAchievementBinding.tvFirstName.text = user?.firstName
-        fragmentAchievementBinding.tvName.text = String.format("%s %s %s", user?.firstName, user?.middleName, user?.lastName)
+    private fun startAchievementSync() {
+        SyncManager.instance?.start(object : SyncListener {
+            override fun onSyncStarted() {
+                activity?.runOnUiThread {
+                    if (isAdded && !requireActivity().isFinishing) {
+                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                        customProgressDialog?.setText("Syncing achievements...")
+                        customProgressDialog?.show()
+                    }
+                }
+            }
+
+            override fun onSyncComplete() {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
+
+                        // Refresh achievement data after sync
+                        refreshAchievementData()
+
+                        // Optional: Show success message
+                        Toast.makeText(requireContext(), "Achievements synced successfully", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+
+            override fun onSyncFailed(message: String?) {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
+
+                        // Show error message
+                        Snackbar.make(
+                            fragmentAchievementBinding.root,
+                            "Sync failed: ${message ?: "Unknown error"}",
+                            Snackbar.LENGTH_LONG
+                        ).setAction("Retry") {
+                            startAchievementSync()
+                        }.show()
+                    }
+                }
+            }
+        }, "full", listOf("achievements"))
+    }
+
+    private fun refreshAchievementData() {
+        if (!isAdded || requireActivity().isFinishing) return
+
+        try {
+            // Re-query achievement data after sync
+            achievement = aRealm.where(RealmAchievement::class.java)
+                .equalTo("_id", user?.id + "@" + user?.planetCode)
+                .findFirst()
+
+            // Update UI with fresh data
+            updateAchievementUI()
+
+        } catch (e: Exception) {
+            Log.e("AchievementFragment", "Error refreshing achievement data: ${e.message}", e)
+        }
+    }
+
+    private fun updateAchievementUI() {
         if (achievement != null) {
             fragmentAchievementBinding.tvGoals.text = achievement?.goals
             fragmentAchievementBinding.tvPurpose.text = achievement?.purpose
             fragmentAchievementBinding.tvAchievementHeader.text = achievement?.achievementsHeader
-            fragmentAchievementBinding.llAchievement.removeAllViews()
-            for (s in achievement?.achievements!!) {
-                rowAchievementBinding = RowAchievementBinding.inflate(LayoutInflater.from(MainApplication.context))
-                val ob = Gson().fromJson(s, JsonElement::class.java)
-                if (ob is JsonObject) {
-                    rowAchievementBinding.tvDescription.text = getString("description", ob.getAsJsonObject())
-                    rowAchievementBinding.tvDate.text = getString("date", ob.getAsJsonObject())
-                    rowAchievementBinding.tvTitle.text = getString("title", ob.getAsJsonObject())
-                    val libraries = getList(ob.getAsJsonArray("resources"))
-                    if (getString("description", ob.getAsJsonObject()).isNotEmpty() && libraries.size > 0) {
-                        rowAchievementBinding.llRow.setOnClickListener {
-                            rowAchievementBinding.llDesc.visibility = if (rowAchievementBinding.llDesc.isGone) View.VISIBLE else View.GONE
-                            rowAchievementBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0,
-                                if (rowAchievementBinding.llDesc.isGone) R.drawable.ic_down else R.drawable.ic_up, 0
-                            )
-                        }
-                        for (lib in libraries) {
-                            layoutButtonPrimaryBinding = LayoutButtonPrimaryBinding.inflate(LayoutInflater.from(MainApplication.context))
-                            layoutButtonPrimaryBinding.root.text = lib.title
-                            layoutButtonPrimaryBinding.root.setCompoundDrawablesWithIntrinsicBounds(0, 0,
-                                if (lib.isResourceOffline())
-                                    R.drawable.ic_eye
-                                else
-                                    R.drawable.ic_download, 0)
-                            layoutButtonPrimaryBinding.root.setOnClickListener {
-                                if (lib.isResourceOffline()) {
-                                    openResource(lib)
-                                } else {
-                                    val a = ArrayList<String>()
-                                    a.add(Utilities.getUrl(lib))
-                                    startDownload(a)
-                                }
-                            }
-                            rowAchievementBinding.flexboxResources.addView(
-                                layoutButtonPrimaryBinding.root
-                            )
-                        }
-                    } else {
-                        rowAchievementBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
-                        createAchievementList()
-                        fragmentAchievementBinding.rvOtherInfo.layoutManager = LinearLayoutManager(MainApplication.context)
-                        fragmentAchievementBinding.rvOtherInfo.adapter = AdapterOtherInfo(MainApplication.context, achievement?.references ?: RealmList())
-                    }
-                    aRealm.addChangeListener {
-                        fragmentAchievementBinding.llAchievement.removeAllViews()
-                        createAchievementList()
-                    }
-                } else {
-                    rowAchievementBinding.root.visibility = View.GONE
-                }
-                if (rowAchievementBinding.root.parent != null) {
-                    (rowAchievementBinding.root.parent as ViewGroup).removeView(rowAchievementBinding.root)
-                }
-                fragmentAchievementBinding.llAchievement.addView(rowAchievementBinding.root)
-            }
+
+            // Recreate achievement list with fresh data
+            createAchievementList()
+
+            // Update other info RecyclerView
             fragmentAchievementBinding.rvOtherInfo.layoutManager = LinearLayoutManager(MainApplication.context)
             fragmentAchievementBinding.rvOtherInfo.adapter = AdapterOtherInfo(MainApplication.context, achievement?.references ?: RealmList())
         }
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        // Set user name first
+        fragmentAchievementBinding.tvFirstName.text = user?.firstName
+        fragmentAchievementBinding.tvName.text = String.format("%s %s %s", user?.firstName, user?.middleName, user?.lastName)
+
+        // Load initial achievement data
+        loadInitialAchievementData()
+    }
+
+    private fun loadInitialAchievementData() {
+        achievement = aRealm.where(RealmAchievement::class.java).equalTo("_id", user?.id + "@" + user?.planetCode).findFirst()
+
+        if (achievement != null) {
+            updateAchievementUI()
+
+            // Add realm change listener for real-time updates
+            aRealm.addChangeListener {
+                if (isAdded) {
+                    fragmentAchievementBinding.llAchievement.removeAllViews()
+                    createAchievementList()
+                }
+            }
+        }
+    }
+
     private fun createAchievementList() {
+        if (achievement?.achievements == null) return
+
         fragmentAchievementBinding.llAchievement.removeAllViews()
         for (s in achievement?.achievements!!) {
             rowAchievementBinding = RowAchievementBinding.inflate(LayoutInflater.from(MainApplication.context))
@@ -130,39 +184,49 @@ class AchievementFragment : BaseContainerFragment() {
                 rowAchievementBinding.tvDate.text = getString("date", ob.getAsJsonObject())
                 rowAchievementBinding.tvTitle.text = getString("title", ob.getAsJsonObject())
                 val libraries = getList(ob.getAsJsonArray("resources"))
-                rowAchievementBinding.llRow.setOnClickListener {
-                    rowAchievementBinding.llDesc.visibility = if (rowAchievementBinding.llDesc.isGone) View.VISIBLE else View.GONE
-                    rowAchievementBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0,
-                        if (rowAchievementBinding.llDesc.isGone)
-                            R.drawable.ic_down
-                        else
-                            R.drawable.ic_up, 0)
-                }
-                for (lib in libraries) {
-                    layoutButtonPrimaryBinding = LayoutButtonPrimaryBinding.inflate(LayoutInflater.from(MainApplication.context))
-                    layoutButtonPrimaryBinding.root.text = lib.title
-                    layoutButtonPrimaryBinding.root.setCompoundDrawablesWithIntrinsicBounds(
-                        0,
-                        0,
-                        if (lib.isResourceOffline()) R.drawable.ic_eye else R.drawable.ic_download,
-                        0
-                    )
-                    layoutButtonPrimaryBinding.root.setOnClickListener {
-                        if (lib.isResourceOffline()) {
-                            openResource(lib)
-                        } else {
-                            val a = ArrayList<String>()
-                            a.add(Utilities.getUrl(lib))
-                            startDownload(a)
+
+                if (getString("description", ob.getAsJsonObject()).isNotEmpty() && libraries.size > 0) {
+                    rowAchievementBinding.llRow.setOnClickListener {
+                        rowAchievementBinding.llDesc.visibility = if (rowAchievementBinding.llDesc.isGone) View.VISIBLE else View.GONE
+                        rowAchievementBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0,
+                            if (rowAchievementBinding.llDesc.isGone) R.drawable.ic_down else R.drawable.ic_up, 0
+                        )
+                    }
+
+                    // Clear existing views first
+                    rowAchievementBinding.flexboxResources.removeAllViews()
+
+                    for (lib in libraries) {
+                        layoutButtonPrimaryBinding = LayoutButtonPrimaryBinding.inflate(LayoutInflater.from(MainApplication.context))
+                        layoutButtonPrimaryBinding.root.text = lib.title
+                        layoutButtonPrimaryBinding.root.setCompoundDrawablesWithIntrinsicBounds(0, 0,
+                            if (lib.isResourceOffline())
+                                R.drawable.ic_eye
+                            else
+                                R.drawable.ic_download, 0)
+                        layoutButtonPrimaryBinding.root.setOnClickListener {
+                            if (lib.isResourceOffline()) {
+                                openResource(lib)
+                            } else {
+                                val a = ArrayList<String>()
+                                a.add(Utilities.getUrl(lib))
+                                startDownload(a)
+                            }
                         }
+                        rowAchievementBinding.flexboxResources.addView(
+                            layoutButtonPrimaryBinding.root
+                        )
                     }
-                    if (layoutButtonPrimaryBinding.root.parent != null) {
-                        (layoutButtonPrimaryBinding.root.parent as ViewGroup).removeView(layoutButtonPrimaryBinding.root)
-                    }
-                    rowAchievementBinding.flexboxResources.addView(layoutButtonPrimaryBinding.root)
+                } else {
+                    rowAchievementBinding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
                 }
             } else {
                 rowAchievementBinding.root.visibility = View.GONE
+            }
+
+            // Remove from parent if already attached
+            if (rowAchievementBinding.root.parent != null) {
+                (rowAchievementBinding.root.parent as ViewGroup).removeView(rowAchievementBinding.root)
             }
             fragmentAchievementBinding.llAchievement.addView(rowAchievementBinding.root)
         }
@@ -176,5 +240,13 @@ class AchievementFragment : BaseContainerFragment() {
             if (li != null) libraries.add(li)
         }
         return libraries
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        // Clean up progress dialog
+        customProgressDialog?.dismiss()
+        customProgressDialog = null
     }
 }
