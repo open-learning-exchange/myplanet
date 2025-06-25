@@ -14,6 +14,7 @@ import android.text.Spanned
 import android.text.TextUtils
 import android.text.method.LinkMovementMethod
 import android.text.style.ClickableSpan
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.view.View
@@ -317,20 +318,20 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         }
     }
     private fun showMemberDetails(userModel: RealmUserModel?, it: View){
-        val activity = it.context as AppCompatActivity
-        val userName = if ("${userModel?.firstName} ${userModel?.lastName}".trim().isBlank()) {
-            userModel?.name
-        } else {
-            "${userModel?.firstName} ${userModel?.lastName}".trim()
+        if (userModel == null) {
+            Log.e("AdapterNews", "showMemberDetails() called with null userModel")
+            return
         }
+        val activity = it.context as AppCompatActivity
+        val userName = "${userModel.firstName} ${userModel.lastName}".trim().ifBlank { userModel.name }
         val fragment = MemberDetailFragment.newInstance(
             userName.toString(),
-            userModel?.email.toString(),
-            userModel?.dob.toString().substringBefore("T"),
-            userModel?.language.toString(),
-            userModel?.phoneNumber.toString(),
+            userModel.email.toString(),
+            userModel.dob.toString().substringBefore("T"),
+            userModel.language.toString(),
+            userModel.phoneNumber.toString(),
             profileDbHandler.getOfflineVisits(userModel).toString(),
-            profileDbHandler.getLastVisit(userModel!!),
+            profileDbHandler.getLastVisit(userModel),
             "${userModel.firstName} ${userModel.lastName}",
             userModel.level.toString(),
             userModel.userImage
