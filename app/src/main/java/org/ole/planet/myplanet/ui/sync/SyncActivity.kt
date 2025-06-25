@@ -62,6 +62,7 @@ import java.util.*
 import java.util.concurrent.TimeUnit
 import androidx.core.net.toUri
 import androidx.core.content.edit
+import org.ole.planet.myplanet.utilities.ServerConfigUtils
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import kotlin.isInitialized
 
@@ -132,7 +133,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         when (callerActivity) {
             "LoginActivity", "DashboardActivity"-> {
                 if (isAlternativeUrl) {
-                    processAlternativeUrl(url, settings, editor, defaultUrl)
+                    ServerConfigUtils.saveAlternativeUrl(url, settings.getString("serverPin", "") ?: "", settings, editor)
                 }
                 isSync = false
                 forceSync = true
@@ -162,37 +163,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 }
             }
         }
-    }
-
-    fun processAlternativeUrl(url: String, settings: SharedPreferences, editor: SharedPreferences.Editor, defaultUrl: String): String {
-        val password = "${settings.getString("serverPin", "")}"
-        val uri = url.toUri()
-        val couchdbURL: String
-        val urlUser: String
-        val urlPwd: String
-
-        if (url.contains("@")) {
-            val userinfo = getUserInfo(uri)
-            urlUser = userinfo[0]
-            urlPwd = userinfo[1]
-            couchdbURL = url
-        } else {
-            urlUser = "satellite"
-            urlPwd = password
-            couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
-        }
-
-        editor.putString("serverPin", password)
-        editor.putString("url_user", urlUser)
-        editor.putString("url_pwd", urlPwd)
-        editor.putString("url_Scheme", uri.scheme)
-        editor.putString("url_Host", uri.host)
-        editor.putString("alternativeUrl", url)
-        editor.putString("processedAlternativeUrl", couchdbURL)
-        editor.putBoolean("isAlternativeUrl", true)
-        editor.apply()
-
-        return couchdbURL
     }
 
     private fun clearDataDialog(message: String, config: Boolean, onCancel: () -> Unit = {}) {
@@ -395,57 +365,49 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         SyncManager.instance?.start(this@SyncActivity, type)
     }
 
-    private fun saveConfigAndContinue(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String): String {
+    private fun saveConfigAndContinue(
+        dialog: MaterialDialog,
+        url: String,
+        isAlternativeUrl: Boolean,
+        defaultUrl: String
+    ): String {
         dialog.dismiss()
         saveSyncInfoToPreference()
-
         return if (isAlternativeUrl) {
-            val password = if (settings.getString("serverPin", "") != "") {
-                settings.getString("serverPin", "")!!
-            } else {
-                (dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text.toString()
-            }
-
-            val uri = Uri.parse(url)
-            val couchdbURL: String
-            val urlUser: String
-            val urlPwd: String
-
-            if (url.contains("@")) {
-                val userinfo = getUserInfo(uri)
-                urlUser = userinfo[0]
-                urlPwd = userinfo[1]
-                couchdbURL = url
-            } else {
-                urlUser = "satellite"
-                urlPwd = password
-                couchdbURL = "${uri.scheme}://$urlUser:$urlPwd@${uri.host}:${if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port}"
-            }
-
-            editor.putString("serverPin", password)
-            editor.putString("url_user", urlUser)
-            editor.putString("url_pwd", urlPwd)
-            editor.putString("url_Scheme", uri.scheme)
-            editor.putString("url_Host", uri.host)
-            editor.putString("alternativeUrl", url)
-            editor.putString("processedAlternativeUrl", couchdbURL)
-            editor.putBoolean("isAlternativeUrl", true)
-            editor.apply()
-
-            if (isUrlValid(url)) setUrlParts(defaultUrl, urlPwd) else ""
-
-            couchdbURL
+            handleAlternativeUrlSave(dialog, url, defaultUrl)
         } else {
-            val protocol = settings.getString("serverProtocol", "")
-            var url = (dialog.customView?.findViewById<View>(R.id.input_server_url) as EditText).text.toString()
-            val pin = (dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text.toString()
-
-            editor.putString("customDeviceName", (dialog.customView?.findViewById<View>(R.id.deviceName) as EditText).text.toString()).apply()
-
-            url = protocol + url
-
-            if (isUrlValid(url)) setUrlParts(url, pin) else ""
+            handleRegularUrlSave(dialog)
         }
+    }
+
+    private fun handleAlternativeUrlSave(
+        dialog: MaterialDialog,
+        url: String,
+        defaultUrl: String
+    ): String {
+        val password = if (settings.getString("serverPin", "") != "") {
+            settings.getString("serverPin", "")!!
+        } else {
+            (dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text.toString()
+        }
+
+        val couchdbURL = ServerConfigUtils.saveAlternativeUrl(url, password, settings, editor)
+        if (isUrlValid(url)) setUrlParts(defaultUrl, password) else ""
+        return couchdbURL
+    }
+
+    private fun handleRegularUrlSave(dialog: MaterialDialog): String {
+        val protocol = settings.getString("serverProtocol", "")
+        var url = (dialog.customView?.findViewById<View>(R.id.input_server_url) as EditText).text.toString()
+        val pin = (dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text.toString()
+
+        editor.putString(
+            "customDeviceName",
+            (dialog.customView?.findViewById<View>(R.id.deviceName) as EditText).text.toString()
+        ).apply()
+
+        url = protocol + url
+        return if (isUrlValid(url)) setUrlParts(url, pin) else ""
     }
 
     override fun onSyncStarted() {
@@ -495,7 +457,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
                 withContext(Dispatchers.Main) {
                     forceSyncTrigger()
-                    val syncedUrl = settings.getString("serverURL", null)?.let { removeProtocol(it) }
+                    val syncedUrl = settings.getString("serverURL", null)?.let { ServerConfigUtils.removeProtocol(it) }
                     if (syncedUrl != null && serverListAddresses.any { it.url.replace(Regex("^https?://"), "") == syncedUrl }) {
                         editor.putString("pinnedServerUrl", syncedUrl).apply()
                     }
@@ -798,7 +760,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         showAdditionalServers = false
 
         if (::serverListAddresses.isInitialized && settings.getString("serverURL", "")?.isNotEmpty() == true) {
-            val filteredList = getFilteredServerList()
+            val filteredList = ServerConfigUtils.getFilteredList(
+                showAdditionalServers,
+                serverListAddresses,
+                settings.getString("pinnedServerUrl", null)
+            )
             serverAddressAdapter?.updateList(filteredList)
 
             val pinnedUrl = settings.getString("serverURL", "")
@@ -816,7 +782,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         neutralAction.setOnClickListener {
             if (!prefData.getManualConfig()) {
                 showAdditionalServers = !showAdditionalServers
-                val filteredList = getFilteredServerList()
+                val filteredList = ServerConfigUtils.getFilteredList(
+                    showAdditionalServers,
+                    serverListAddresses,
+                    settings.getString("pinnedServerUrl", null)
+                )
                 serverAddressAdapter?.updateList(filteredList)
 
                 val pinnedUrl = settings.getString("serverURL", "")
@@ -877,35 +847,28 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 binding.radioHttps.isChecked = true
                 editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
             }
-            serverUrl.setText(settings.getString("serverURL", "")?.let { removeProtocol(it) })
+            serverUrl.setText(settings.getString("serverURL", "")?.let { ServerConfigUtils.removeProtocol(it) })
             serverPassword.setText(settings.getString("serverPin", ""))
             serverUrl.isEnabled = true
             serverPassword.isEnabled = true
         } else {
             serverAddresses.layoutManager = LinearLayoutManager(this)
-            serverListAddresses = listOf(
-                ServerAddressesModel(getString(R.string.sync_planet_learning), BuildConfig.PLANET_LEARNING_URL),
-                ServerAddressesModel(getString(R.string.sync_guatemala), BuildConfig.PLANET_GUATEMALA_URL),
-                ServerAddressesModel(getString(R.string.sync_san_pablo), BuildConfig.PLANET_SANPABLO_URL),
-                ServerAddressesModel(getString(R.string.sync_planet_earth), BuildConfig.PLANET_EARTH_URL),
-                ServerAddressesModel(getString(R.string.sync_somalia), BuildConfig.PLANET_SOMALIA_URL),
-                ServerAddressesModel(getString(R.string.sync_vi), BuildConfig.PLANET_VI_URL),
-                ServerAddressesModel(getString(R.string.sync_xela), BuildConfig.PLANET_XELA_URL),
-                ServerAddressesModel(getString(R.string.sync_uriur), BuildConfig.PLANET_URIUR_URL),
-                ServerAddressesModel(getString(R.string.sync_ruiru), BuildConfig.PLANET_RUIRU_URL),
-                ServerAddressesModel(getString(R.string.sync_embakasi), BuildConfig.PLANET_EMBAKASI_URL),
-                ServerAddressesModel(getString(R.string.sync_cambridge), BuildConfig.PLANET_CAMBRIDGE_URL),
-                //ServerAddressesModel(getString(R.string.sync_egdirbmac), BuildConfig.PLANET_EGDIRBMAC_URL),
-            )
+            serverListAddresses = ServerConfigUtils.getServerAddresses(this)
 
             val storedUrl = settings.getString("serverURL", null)
             val storedPin = settings.getString("serverPin", null)
             val urlWithoutProtocol = storedUrl?.replace(Regex("^https?://"), "")
 
-            serverAddressAdapter = ServerAddressAdapter(getFilteredServerList(), { serverListAddress ->
+            serverAddressAdapter = ServerAddressAdapter(
+                ServerConfigUtils.getFilteredList(
+                    showAdditionalServers,
+                    serverListAddresses,
+                    settings.getString("pinnedServerUrl", null)
+                ),
+                { serverListAddress ->
                 val actualUrl = serverListAddress.url.replace(Regex("^https?://"), "")
                 binding.inputServerUrl.setText(actualUrl)
-                binding.inputServerPassword.setText(getPinForUrl(actualUrl))
+                binding.inputServerPassword.setText(ServerConfigUtils.getPinForUrl(actualUrl))
                 val protocol = if (actualUrl == BuildConfig.PLANET_XELA_URL || actualUrl == BuildConfig.PLANET_SANPABLO_URL ||  actualUrl == BuildConfig.PLANET_URIUR_URL) "http://" else "https://"
                 editor.putString("serverProtocol", protocol).apply()
                 if (serverCheck) {
@@ -955,22 +918,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    private fun getFilteredServerList(): List<ServerAddressesModel> {
-        val pinnedUrl = settings.getString("pinnedServerUrl", null)
-        val pinnedServer = serverListAddresses.find { it.url == pinnedUrl }
-
-        return if (showAdditionalServers) {
-            serverListAddresses
-        } else {
-            val topThree = serverListAddresses.take(3).toMutableList()
-            if (pinnedServer != null && !topThree.contains(pinnedServer)) {
-                listOf(pinnedServer) + topThree
-            } else {
-                topThree
-            }
-        }
-    }
-
     private fun performSync(dialog: MaterialDialog) {
         serverConfigAction = "sync"
         val protocol = "${settings.getString("serverProtocol", "")}"
@@ -982,24 +929,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             currentDialog = dialog
             service.getMinApk(this, url, pin, this, "SyncActivity")
         }
-    }
-
-    private fun getPinForUrl(url: String): String {
-        val pinMap = mapOf(
-            BuildConfig.PLANET_LEARNING_URL to BuildConfig.PLANET_LEARNING_PIN,
-            BuildConfig.PLANET_GUATEMALA_URL to BuildConfig.PLANET_GUATEMALA_PIN,
-            BuildConfig.PLANET_SANPABLO_URL to BuildConfig.PLANET_SANPABLO_PIN,
-            BuildConfig.PLANET_EARTH_URL to BuildConfig.PLANET_EARTH_PIN,
-            BuildConfig.PLANET_SOMALIA_URL to BuildConfig.PLANET_SOMALIA_PIN,
-            BuildConfig.PLANET_VI_URL to BuildConfig.PLANET_VI_PIN,
-            BuildConfig.PLANET_XELA_URL to BuildConfig.PLANET_XELA_PIN,
-            BuildConfig.PLANET_URIUR_URL to BuildConfig.PLANET_URIUR_PIN,
-            BuildConfig.PLANET_RUIRU_URL to BuildConfig.PLANET_RUIRU_PIN,
-            BuildConfig.PLANET_EMBAKASI_URL to BuildConfig.PLANET_EMBAKASI_PIN,
-            BuildConfig.PLANET_CAMBRIDGE_URL to BuildConfig.PLANET_CAMBRIDGE_PIN,
-//            BuildConfig.PLANET_EGDIRBMAC_URL to BuildConfig.PLANET_EGDIRBMAC_PIN,
-        )
-        return pinMap[url] ?: ""
     }
 
     private fun onChangeServerUrl() {
@@ -1017,7 +946,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         if (checked) {
             onChangeServerUrl()
         } else {
-            serverUrl.setText(settings.getString("serverURL", "")?.let { removeProtocol(it) })
+            serverUrl.setText(settings.getString("serverURL", "")?.let { ServerConfigUtils.removeProtocol(it) })
             serverPassword.setText(settings.getString("serverPin", ""))
             protocolCheckIn.check(
                 if (TextUtils.equals(settings.getString("serverProtocol", ""), "http://")) {
@@ -1043,12 +972,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    private fun removeProtocol(url: String): String {
-        var modifiedUrl = url
-        modifiedUrl = modifiedUrl.replaceFirst(getString(R.string.https_protocol).toRegex(), "")
-        modifiedUrl = modifiedUrl.replaceFirst(getString(R.string.http_protocol).toRegex(), "")
-        return modifiedUrl
-    }
 
     fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
         processedUrl = saveConfigAndContinue(dialog, url, isAlternativeUrl, defaultUrl)
