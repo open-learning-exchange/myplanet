@@ -38,6 +38,7 @@ import java.util.Arrays
 import java.util.Date
 import java.util.Locale
 import androidx.core.view.isVisible
+import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.util.UUID
 
 class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {
@@ -433,7 +434,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 val type = questions?.get(currentIndex)?.type
                 showTextInput(type)
                 if (!isQuestionAnswered()) {
-                    showErrorMessage(getString(R.string.please_select_write_your_answer_to_continue))
+                    toast(activity,getString(R.string.please_select_write_your_answer_to_continue))
                     return
                 }
 

@@ -37,6 +37,7 @@ import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.NetworkUtils.getUniqueIdentifier
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.util.Date
 import java.util.UUID
 
@@ -174,16 +175,6 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             activity.supportFragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, surveyListFragment)
                 .commit()
-        }
-    }
-
-    fun showErrorMessage(s: String?) {
-        if (s != null) {
-            val toast = Toast.makeText(activity, s, Toast.LENGTH_SHORT)
-            toast.show()
-            Handler(Looper.getMainLooper()).postDelayed({
-                toast.cancel()
-            }, 1000)
         }
     }
 
