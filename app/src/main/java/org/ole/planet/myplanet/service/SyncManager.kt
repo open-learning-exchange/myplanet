@@ -257,9 +257,7 @@ class SyncManager private constructor(private val context: Context) {
                             TransactionSyncManager.syncDb(mRealm, "health")
                             logger.endProcess("health_sync")
                         })
-                }
 
-                if (syncTables?.contains("certifications") == true) {
                     syncJobs.add(
                         async {
                             logger.startProcess("certifications_sync")
@@ -267,6 +265,7 @@ class SyncManager private constructor(private val context: Context) {
                             logger.endProcess("certifications_sync")
                         })
                 }
+
                 syncJobs.awaitAll()
             }
 
