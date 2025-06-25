@@ -34,8 +34,6 @@ class ChatHistoryListFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sharedViewModel = ViewModelProvider(requireActivity())[ChatViewModel::class.java]
-
-        // Start selective sync for chat history
         startChatHistorySync()
     }
 
@@ -138,11 +136,8 @@ class ChatHistoryListFragment : Fragment() {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
-
-                        // Refresh the chat history list after sync
                         refreshChatHistoryList()
 
-                        // Optional: Show success message
                         Toast.makeText(requireContext(), "Chat history synced successfully", Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -154,14 +149,9 @@ class ChatHistoryListFragment : Fragment() {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
 
-                        // Show error message
-                        Snackbar.make(
-                            fragmentChatHistoryListBinding.root,
-                            "Sync failed: ${message ?: "Unknown error"}",
-                            Snackbar.LENGTH_LONG
-                        ).setAction("Retry") {
-                            startChatHistorySync()
-                        }.show()
+                        Snackbar.make(fragmentChatHistoryListBinding.root, "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG)
+                            .setAction("Retry") { startChatHistorySync() }
+                                .show()
                     }
                 }
             }
@@ -202,7 +192,6 @@ class ChatHistoryListFragment : Fragment() {
 
     override fun onDestroy() {
         super.onDestroy()
-        // Clean up progress dialog
         customProgressDialog?.dismiss()
         customProgressDialog = null
     }
