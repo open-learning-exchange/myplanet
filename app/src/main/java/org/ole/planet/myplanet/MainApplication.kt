@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet
 
+import android.Manifest
 import android.app.Activity
 import android.app.Application
 import android.content.Context
@@ -7,10 +8,14 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.os.Bundle
+import android.os.Looper
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
+import android.util.Log
+import androidx.annotation.RequiresPermission
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.postDelayed
 import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
@@ -30,6 +35,7 @@ import org.ole.planet.myplanet.callback.TeamPageListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.service.AutoSyncWorker
+import org.ole.planet.myplanet.service.NotificationService
 import org.ole.planet.myplanet.service.StayOnlineWorker
 import org.ole.planet.myplanet.service.TaskNotificationWorker
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -50,6 +56,7 @@ import java.net.URL
 import java.util.Date
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import java.util.logging.Handler
 
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     companion object {
@@ -200,12 +207,28 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     private var isFirstLaunch = true
     private lateinit var anrWatchdog: ANRWatchdog
 
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     override fun onCreate() {
         super.onCreate()
         context = this
         initialize(applicationScope)
         startListenNetworkState()
+        // Create notification channel first
+        val channelCreated = NotificationService.createNotificationChannel(this)
+        Log.d("App", "Notification channel created: $channelCreated")
 
+        // Check notification setup
+        Log.d("App", NotificationService.checkNotificationSetup(this))
+
+        // Wait a bit, then try the regular test
+        android.os.Handler(Looper.getMainLooper()).postDelayed({
+            val testResult = NotificationService.showTestNotification(this)
+            Log.d("App", "Regular test notification result: $testResult")
+        }, 3000)
+
+        applicationScope.launch {
+            NotificationService.showPendingNotifications(this@MainApplication)
+        }
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         service = DatabaseService(context)
         mRealm = service.realmInstance

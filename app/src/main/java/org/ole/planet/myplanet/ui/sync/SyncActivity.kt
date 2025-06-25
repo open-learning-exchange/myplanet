@@ -513,6 +513,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         createLog("synced successfully", "")
                     }
 
+                    lifecycleScope.launch {
+                        NotificationService.showPendingNotifications(activityContext)
+                    }
+
                     lifecycleScope.launch(Dispatchers.IO) {
                         val pendingLanguage = settings.getString("pendingLanguageChange", null)
                         if (pendingLanguage != null) {
@@ -666,6 +670,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         handler.onDestroy()
         editor.putBoolean(Constants.KEY_LOGIN, true).commit()
         openDashboard()
+
+        // Show notifications after login
+        lifecycleScope.launch {
+            NotificationService.showPendingNotifications(this@SyncActivity)
+        }
 
         isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
