@@ -10,8 +10,13 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdkVersion 26
         targetSdkVersion 34
+<<<<<<< dogi-patch-1
         versionCode 2626
         versionName "0.26.26"
+=======
+        versionCode 2625
+        versionName "0.26.25"
+>>>>>>> master
         ndkVersion '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
