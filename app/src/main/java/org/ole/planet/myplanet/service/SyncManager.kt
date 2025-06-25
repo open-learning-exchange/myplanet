@@ -148,12 +148,19 @@ class SyncManager private constructor(private val context: Context) {
                         })
                 }
 
-                if (syncTables?.contains("library_sync") == true) {
+                if (syncTables?.contains("resources") == true) {
                     syncJobs.add(
                         async {
                             logger.startProcess("library_sync")
                             myLibraryTransactionSync()
                             logger.endProcess("library_sync")
+                        })
+
+                    syncJobs.add(
+                        async {
+                            logger.startProcess("resource_sync")
+                            resourceTransactionSync()
+                            logger.endProcess("resource_sync")
                         })
                 }
 
