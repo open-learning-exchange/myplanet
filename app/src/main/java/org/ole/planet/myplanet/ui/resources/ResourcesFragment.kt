@@ -49,6 +49,7 @@ import com.google.android.material.snackbar.Snackbar
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSelected,
     ChipDeletedListener, TagClickListener, OnFilterListener {
@@ -70,9 +71,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+    lateinit var prefManager: SharedPrefManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        prefManager = SharedPrefManager(requireContext())
 
         // Start selective sync for resources and library
         startResourcesSync()
@@ -83,50 +86,50 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun startResourcesSync() {
-        SyncManager.instance?.start(object : SyncListener {
-            override fun onSyncStarted() {
-                activity?.runOnUiThread {
-                    if (isAdded && !requireActivity().isFinishing) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText("Syncing resources and library...")
-                        customProgressDialog?.show()
+        if (!prefManager.isResourcesSynced()) {
+            SyncManager.instance?.start(object : SyncListener {
+                override fun onSyncStarted() {
+                    activity?.runOnUiThread {
+                        if (isAdded && !requireActivity().isFinishing) {
+                            customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                            customProgressDialog?.setText("Syncing resources...")
+                            customProgressDialog?.show()
+                        }
                     }
                 }
-            }
 
-            override fun onSyncComplete() {
-                activity?.runOnUiThread {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
+                override fun onSyncComplete() {
+                    activity?.runOnUiThread {
+                        if (isAdded) {
+                            customProgressDialog?.dismiss()
+                            customProgressDialog = null
 
-                        // Refresh resources data after sync
-                        refreshResourcesData()
+                            // Refresh resources data after sync
+                            refreshResourcesData()
 
-                        // Optional: Show success message
-                        Toast.makeText(requireContext(), "Resources synced successfully", Toast.LENGTH_SHORT).show()
+                            // Optional: Show success message
+                            Toast.makeText(requireContext(), "Resources synced successfully", Toast.LENGTH_SHORT).show()
+                            prefManager.setResourcesSynced(true)
+                        }
                     }
                 }
-            }
 
-            override fun onSyncFailed(message: String?) {
-                activity?.runOnUiThread {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
+                override fun onSyncFailed(message: String?) {
+                    activity?.runOnUiThread {
+                        if (isAdded) {
+                            customProgressDialog?.dismiss()
+                            customProgressDialog = null
 
-                        // Show error message
-                        Snackbar.make(
-                            requireView(),
-                            "Sync failed: ${message ?: "Unknown error"}",
-                            Snackbar.LENGTH_LONG
-                        ).setAction("Retry") {
-                            startResourcesSync()
-                        }.show()
+                            // Show error message
+                            Snackbar.make(requireView(), "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG
+                            ).setAction("Retry") {
+                                startResourcesSync()
+                            }.show()
+                        }
                     }
                 }
-            }
-        }, "full", listOf("resources"))
+            }, "full", listOf("resources"))
+        }
     }
 
     private fun refreshResourcesData() {

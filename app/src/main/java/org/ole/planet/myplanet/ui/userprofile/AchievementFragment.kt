@@ -33,6 +33,7 @@ import com.google.android.material.snackbar.Snackbar
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 class AchievementFragment : BaseContainerFragment() {
     private lateinit var fragmentAchievementBinding: FragmentAchievementBinding
@@ -43,9 +44,11 @@ class AchievementFragment : BaseContainerFragment() {
     var listener: OnHomeItemClickListener? = null
     private var achievement: RealmAchievement? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+    lateinit var prefManager: SharedPrefManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        prefManager = SharedPrefManager(requireContext())
 
         // Start selective sync for achievements
         startAchievementSync()
@@ -67,50 +70,49 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun startAchievementSync() {
-        SyncManager.instance?.start(object : SyncListener {
-            override fun onSyncStarted() {
-                activity?.runOnUiThread {
-                    if (isAdded && !requireActivity().isFinishing) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText("Syncing achievements...")
-                        customProgressDialog?.show()
+        if (!prefManager.isAchievementsSynced()) {
+            SyncManager.instance?.start(object : SyncListener {
+                override fun onSyncStarted() {
+                    activity?.runOnUiThread {
+                        if (isAdded && !requireActivity().isFinishing) {
+                            customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                            customProgressDialog?.setText("Syncing achievements...")
+                            customProgressDialog?.show()
+                        }
                     }
                 }
-            }
 
-            override fun onSyncComplete() {
-                activity?.runOnUiThread {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
+                override fun onSyncComplete() {
+                    activity?.runOnUiThread {
+                        if (isAdded) {
+                            customProgressDialog?.dismiss()
+                            customProgressDialog = null
 
-                        // Refresh achievement data after sync
-                        refreshAchievementData()
+                            // Refresh achievement data after sync
+                            refreshAchievementData()
 
-                        // Optional: Show success message
-                        Toast.makeText(requireContext(), "Achievements synced successfully", Toast.LENGTH_SHORT).show()
+                            // Optional: Show success message
+                            Toast.makeText(requireContext(), "Achievements synced successfully", Toast.LENGTH_SHORT).show()
+                            prefManager.setAchievementsSynced(true)
+                        }
                     }
                 }
-            }
 
-            override fun onSyncFailed(message: String?) {
-                activity?.runOnUiThread {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
+                override fun onSyncFailed(message: String?) {
+                    activity?.runOnUiThread {
+                        if (isAdded) {
+                            customProgressDialog?.dismiss()
+                            customProgressDialog = null
 
-                        // Show error message
-                        Snackbar.make(
-                            fragmentAchievementBinding.root,
-                            "Sync failed: ${message ?: "Unknown error"}",
-                            Snackbar.LENGTH_LONG
-                        ).setAction("Retry") {
-                            startAchievementSync()
-                        }.show()
+                            // Show error message
+                            Snackbar.make(fragmentAchievementBinding.root, "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG).setAction("Retry") {
+                                startAchievementSync()
+                            }.show()
+                        }
                     }
                 }
-            }
-        }, "full", listOf("achievements"))
+            }, "full", listOf("achievements"))
+        }
     }
 
     private fun refreshAchievementData() {

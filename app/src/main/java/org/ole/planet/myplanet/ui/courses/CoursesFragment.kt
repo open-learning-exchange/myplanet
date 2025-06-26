@@ -44,6 +44,7 @@ import androidx.core.view.isVisible
 import com.google.android.material.snackbar.Snackbar
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.service.SyncManager
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener {
 
@@ -86,50 +87,51 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun startCoursesSync() {
-        SyncManager.instance?.start(object : SyncListener {
-            override fun onSyncStarted() {
-                activity?.runOnUiThread {
-                    if (isAdded && !requireActivity().isFinishing) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText("Syncing courses data...")
-                        customProgressDialog?.show()
+        val prefManager = SharedPrefManager(requireContext())
+        if (!prefManager.isCoursesSynced()) {
+            SyncManager.instance?.start(object : SyncListener {
+                override fun onSyncStarted() {
+                    activity?.runOnUiThread {
+                        if (isAdded && !requireActivity().isFinishing) {
+                            customProgressDialog =
+                                DialogUtils.CustomProgressDialog(requireContext())
+                            customProgressDialog?.setText("Syncing courses data...")
+                            customProgressDialog?.show()
+                        }
                     }
                 }
-            }
 
-            override fun onSyncComplete() {
-                activity?.runOnUiThread {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
+                override fun onSyncComplete() {
+                    activity?.runOnUiThread {
+                        if (isAdded) {
+                            customProgressDialog?.dismiss()
+                            customProgressDialog = null
 
-                        // Refresh courses data after sync
-                        refreshCoursesData()
+                            // Refresh courses data after sync
+                            refreshCoursesData()
 
-                        // Optional: Show success message
-                        Toast.makeText(requireContext(), "Courses data synced successfully", Toast.LENGTH_SHORT).show()
+                            // Optional: Show success message
+                            Toast.makeText(requireContext(), "Courses data synced successfully", Toast.LENGTH_SHORT).show()
+                            prefManager.setCoursesSynced(true)
+                        }
                     }
                 }
-            }
 
-            override fun onSyncFailed(message: String?) {
-                activity?.runOnUiThread {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
+                override fun onSyncFailed(message: String?) {
+                    activity?.runOnUiThread {
+                        if (isAdded) {
+                            customProgressDialog?.dismiss()
+                            customProgressDialog = null
 
-                        // Show error message
-                        Snackbar.make(
-                            requireView(),
-                            "Sync failed: ${message ?: "Unknown error"}",
-                            Snackbar.LENGTH_LONG
-                        ).setAction("Retry") {
-                            startCoursesSync()
-                        }.show()
+                            // Show error message
+                            Snackbar.make(requireView(), "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG).setAction("Retry") {
+                                startCoursesSync()
+                            }.show()
+                        }
                     }
                 }
-            }
-        }, "full", listOf("courses"))
+            }, "full", listOf("courses"))
+        }
     }
 
     private fun refreshCoursesData() {

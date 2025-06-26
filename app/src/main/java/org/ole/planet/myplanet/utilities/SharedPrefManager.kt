@@ -20,6 +20,14 @@ class SharedPrefManager(context: Context) {
     var firstLaunch = "firstLaunch"
     private var teamName = "teamName"
 
+    private var chatHistorySynced = "chat_history_synced"
+    private var teamsSynced = "teams_synced"
+    private var feedbackSynced = "feedback_synced"
+    private var achievementsSynced = "achievements_synced"
+    private var healthSynced = "health_synced"
+    private var coursesSynced = "courses_synced"
+    private var resourcesSynced = "resources_synced"
+
     fun getSavedUsers(): List<User> {
         val usersJson = pref.getString(savedUsers, null)
         return if (usersJson != null) {
@@ -103,6 +111,126 @@ class SharedPrefManager(context: Context) {
 
     fun setTeamName(teamName: String?) {
         editor.putString(this.teamName, teamName)
+        editor.apply()
+    }
+
+    fun isChatHistorySynced(): Boolean {
+        return pref.getBoolean(chatHistorySynced, false)
+    }
+
+    fun setChatHistorySynced(synced: Boolean) {
+        editor.putBoolean(chatHistorySynced, synced)
+        if (synced) {
+            editor.putLong("${chatHistorySynced}_time", System.currentTimeMillis())
+        }
+        editor.apply()
+    }
+
+    // Teams Sync
+    fun isTeamsSynced(): Boolean {
+        return pref.getBoolean(teamsSynced, false)
+    }
+
+    fun setTeamsSynced(synced: Boolean) {
+        editor.putBoolean(teamsSynced, synced)
+        if (synced) {
+            editor.putLong("${teamsSynced}_time", System.currentTimeMillis())
+        }
+        editor.apply()
+    }
+
+    // Feedback Sync
+    fun isFeedbackSynced(): Boolean {
+        return pref.getBoolean(feedbackSynced, false)
+    }
+
+    fun setFeedbackSynced(synced: Boolean) {
+        editor.putBoolean(feedbackSynced, synced)
+        if (synced) {
+            editor.putLong("${feedbackSynced}_time", System.currentTimeMillis())
+        }
+        editor.apply()
+    }
+
+    // Achievements Sync
+    fun isAchievementsSynced(): Boolean {
+        return pref.getBoolean(achievementsSynced, false)
+    }
+
+    fun setAchievementsSynced(synced: Boolean) {
+        editor.putBoolean(achievementsSynced, synced)
+        if (synced) {
+            editor.putLong("${achievementsSynced}_time", System.currentTimeMillis())
+        }
+        editor.apply()
+    }
+
+    // Health Sync
+    fun isHealthSynced(): Boolean {
+        return pref.getBoolean(healthSynced, false)
+    }
+
+    fun setHealthSynced(synced: Boolean) {
+        editor.putBoolean(healthSynced, synced)
+        if (synced) {
+            editor.putLong("${healthSynced}_time", System.currentTimeMillis())
+        }
+        editor.apply()
+    }
+
+    // Courses Sync
+    fun isCoursesSynced(): Boolean {
+        return pref.getBoolean(coursesSynced, false)
+    }
+
+    fun setCoursesSynced(synced: Boolean) {
+        editor.putBoolean(coursesSynced, synced)
+        if (synced) {
+            editor.putLong("${coursesSynced}_time", System.currentTimeMillis())
+        }
+        editor.apply()
+    }
+
+    // Resources Sync
+    fun isResourcesSynced(): Boolean {
+        return pref.getBoolean(resourcesSynced, false)
+    }
+
+    fun setResourcesSynced(synced: Boolean) {
+        editor.putBoolean(resourcesSynced, synced)
+        if (synced) {
+            editor.putLong("${resourcesSynced}_time", System.currentTimeMillis())
+        }
+        editor.apply()
+    }
+
+    // Utility methods
+    fun getSyncTime(syncType: String): Long {
+        return pref.getLong("${syncType}_time", 0)
+    }
+
+    fun resetSyncStatus(syncType: String) {
+        editor.remove(syncType)
+        editor.remove("${syncType}_time")
+        editor.apply()
+    }
+
+    fun resetAllSyncStatuses() {
+        editor.remove(chatHistorySynced)
+        editor.remove(teamsSynced)
+        editor.remove(feedbackSynced)
+        editor.remove(achievementsSynced)
+        editor.remove(healthSynced)
+        editor.remove(coursesSynced)
+        editor.remove(resourcesSynced)
+        // Remove timestamps too
+        editor.remove("${chatHistorySynced}_time")
+        editor.remove("${teamsSynced}_time")
+        editor.remove("${feedbackSynced}_time")
+        editor.remove("${achievementsSynced}_time")
+        editor.remove("${healthSynced}_time")
+        editor.remove("${coursesSynced}_time")
+        editor.remove("${resourcesSynced}_time")
         editor.apply()
     }
 }

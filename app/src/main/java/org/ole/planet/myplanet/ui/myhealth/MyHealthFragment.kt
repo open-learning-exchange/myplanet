@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Calendar
@@ -57,9 +58,11 @@ class MyHealthFragment : Fragment() {
     lateinit var adapter: UserListArrayAdapter
     var dialog: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+    lateinit var prefManager: SharedPrefManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        prefManager = SharedPrefManager(requireContext())
 
         // Start selective sync for health data
         startHealthSync()
@@ -72,50 +75,47 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun startHealthSync() {
-        SyncManager.instance?.start(object : SyncListener {
-            override fun onSyncStarted() {
-                activity?.runOnUiThread {
-                    if (isAdded && !requireActivity().isFinishing) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText("Syncing health data...")
-                        customProgressDialog?.show()
+        if (!prefManager.isHealthSynced()) {
+            SyncManager.instance?.start(object : SyncListener {
+                override fun onSyncStarted() {
+                    activity?.runOnUiThread {
+                        if (isAdded && !requireActivity().isFinishing) {
+                            customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                            customProgressDialog?.setText("Syncing health data...")
+                            customProgressDialog?.show()
+                        }
                     }
                 }
-            }
 
-            override fun onSyncComplete() {
-                activity?.runOnUiThread {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
+                override fun onSyncComplete() {
+                    activity?.runOnUiThread {
+                        if (isAdded) {
+                            customProgressDialog?.dismiss()
+                            customProgressDialog = null
 
-                        // Refresh health data after sync
-                        refreshHealthData()
+                            // Refresh health data after sync
+                            refreshHealthData()
 
-                        // Optional: Show success message
-                        Toast.makeText(requireContext(), "Health data synced successfully", Toast.LENGTH_SHORT).show()
+                            // Optional: Show success message
+                            Toast.makeText(requireContext(), "Health data synced successfully", Toast.LENGTH_SHORT).show()
+                            prefManager.setHealthSynced(true)
+                        }
                     }
                 }
-            }
 
-            override fun onSyncFailed(message: String?) {
-                activity?.runOnUiThread {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
+                override fun onSyncFailed(message: String?) {
+                    activity?.runOnUiThread {
+                        if (isAdded) {
+                            customProgressDialog?.dismiss()
+                            customProgressDialog = null
 
-                        // Show error message
-                        Snackbar.make(
-                            fragmentVitalSignBinding.root,
-                            "Sync failed: ${message ?: "Unknown error"}",
-                            Snackbar.LENGTH_LONG
-                        ).setAction("Retry") {
-                            startHealthSync()
-                        }.show()
+                            // Show error message
+                            Snackbar.make(fragmentVitalSignBinding.root, "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG).setAction("Retry") { startHealthSync() }.show()
+                        }
                     }
                 }
-            }
-        }, "full", listOf("health"))
+            }, "full", listOf("health"))
+        }
     }
 
     private fun refreshHealthData() {

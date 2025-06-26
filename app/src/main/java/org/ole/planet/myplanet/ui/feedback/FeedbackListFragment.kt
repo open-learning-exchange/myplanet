@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     private lateinit var fragmentFeedbackListBinding: FragmentFeedbackListBinding
@@ -28,9 +29,11 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     var userModel: RealmUserModel? = null
     private var feedbackList: RealmResults<RealmFeedback>? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+    lateinit var prefManager: SharedPrefManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        prefManager = SharedPrefManager(requireContext())
 
         // Start selective sync for feedback
         startFeedbackSync()
@@ -55,50 +58,46 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     private fun startFeedbackSync() {
-        SyncManager.instance?.start(object : SyncListener {
-            override fun onSyncStarted() {
-                activity?.runOnUiThread {
-                    if (isAdded && !requireActivity().isFinishing) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText("Syncing feedback...")
-                        customProgressDialog?.show()
+        if (!prefManager.isFeedbackSynced()) {
+            SyncManager.instance?.start(object : SyncListener {
+                override fun onSyncStarted() {
+                    activity?.runOnUiThread {
+                        if (isAdded && !requireActivity().isFinishing) {
+                            customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                            customProgressDialog?.setText("Syncing feedback...")
+                            customProgressDialog?.show()
+                        }
                     }
                 }
-            }
 
-            override fun onSyncComplete() {
-                activity?.runOnUiThread {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
+                override fun onSyncComplete() {
+                    activity?.runOnUiThread {
+                        if (isAdded) {
+                            customProgressDialog?.dismiss()
+                            customProgressDialog = null
 
-                        // Refresh feedback data after sync
-                        refreshFeedbackData()
+                            refreshFeedbackData()
 
-                        // Optional: Show success message
-                        Toast.makeText(requireContext(), "Feedback synced successfully", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(requireContext(), "Feedback synced successfully", Toast.LENGTH_SHORT).show()
+                            prefManager.setFeedbackSynced(true)
+                        }
                     }
                 }
-            }
 
-            override fun onSyncFailed(message: String?) {
-                activity?.runOnUiThread {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
+                override fun onSyncFailed(message: String?) {
+                    activity?.runOnUiThread {
+                        if (isAdded) {
+                            customProgressDialog?.dismiss()
+                            customProgressDialog = null
 
-                        // Show error message
-                        Snackbar.make(
-                            fragmentFeedbackListBinding.root,
-                            "Sync failed: ${message ?: "Unknown error"}",
-                            Snackbar.LENGTH_LONG
-                        ).setAction("Retry") {
-                            startFeedbackSync()
-                        }.show()
+                            // Show error message
+                            Snackbar.make(fragmentFeedbackListBinding.root, "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG)
+                                .setAction("Retry") { startFeedbackSync() }.show()
+                        }
                     }
                 }
-            }
-        }, "full", listOf("feedback"))
+            }, "full", listOf("feedback"))
+        }
     }
 
     private fun setupFeedbackListener() {
