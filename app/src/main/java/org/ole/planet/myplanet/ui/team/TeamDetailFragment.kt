@@ -19,7 +19,6 @@ import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMemberCount
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.isTeamLeader
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
