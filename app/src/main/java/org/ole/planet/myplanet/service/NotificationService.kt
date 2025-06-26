@@ -14,6 +14,7 @@ import androidx.core.app.NotificationManagerCompat
 import io.realm.Realm
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -27,11 +28,12 @@ object NotificationService {
     private const val MAX_NOTIFICATIONS = 10
     private const val PREFS_NAME = "NotificationPrefs"
     private const val SHOWN_NOTIFICATIONS_KEY = "shown_notifications"
+    private const val NOTIFICATION_DELAY_MS = 100L // Delay between notifications
 
     private val notificationIdCounter = AtomicInteger(2000)
-
     private val shownNotificationIds = mutableSetOf<String>()
     private val notificationIdMap = mutableMapOf<String, Int>()
+
     fun createNotificationChannel(context: Context): Boolean {
         Log.d("NotificationService", "createNotificationChannel() called")
 
@@ -50,6 +52,8 @@ object NotificationService {
                 enableVibration(true)
                 setShowBadge(true)
                 lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
+                // Prevent notifications from being grouped automatically by system
+                setGroup(null)
             }
 
             try {
@@ -72,81 +76,110 @@ object NotificationService {
             return true
         }
     }
-    suspend fun showPendingNotifications(context: Context, forceShow: Boolean = false) = withContext(Dispatchers.IO) {
+
+    suspend fun showPendingNotifications(context: Context, forceShow: Boolean = false) {
         Log.d("NotificationService", "showPendingNotifications() called, forceShow: $forceShow")
 
-        // Check notification permission first
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) {
-                Log.w("NotificationService", "Notifications are disabled for this app")
-                return@withContext
-            }
-        }
-
-        val realm = Realm.getDefaultInstance()
         try {
-            if (!forceShow) {
-                loadShownNotifications(context)
-            }
-            val notifications = realm.where(RealmNotification::class.java)
-                .equalTo("isRead", false)
-                .findAll()
-                .toList()
-                .sortedByDescending { it.createdAt } // Show newest first
-                .take(MAX_NOTIFICATIONS)
-
-            Log.d("NotificationService", "Found ${notifications.size} unread notifications")
-
-            val newNotifications = if (forceShow) {
-                notifications
-            } else {
-                notifications.filterNot { shownNotificationIds.contains(it.id) }
-            }
-
-            Log.d("NotificationService", "New notifications to show: ${newNotifications.size}")
-
-            if (newNotifications.isNotEmpty()) {
-                if (!createNotificationChannel(context)) {
-                    Log.e("NotificationService", "Failed to create notification channel")
-                    return@withContext
+            // Check notification permission first
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) {
+                    Log.w("NotificationService", "Notifications are disabled for this app")
+                    return
                 }
+            }
 
-                var successCount = 0
-                newNotifications.forEach { notification ->
-                    try {
-                        val systemNotificationId = showNotification(context, notification)
-                        if (systemNotificationId != -1) {
-                            shownNotificationIds.add(notification.id)
-                            notificationIdMap[notification.id] = systemNotificationId
-                            successCount++
-                            Log.d("NotificationService", "Successfully showed notification: ${notification.title}")
+            // Initialize Realm safely
+            initializeRealm(context)
+
+            withContext(Dispatchers.IO) {
+                var realm: Realm? = null
+                try {
+                    realm = Realm.getDefaultInstance()
+
+                    if (!forceShow) {
+                        loadShownNotifications(context)
+                    }
+
+                    val notifications = realm.where(RealmNotification::class.java)
+                        .equalTo("isRead", false)
+                        .findAll()
+                        .toList()
+                        .sortedByDescending { it.createdAt }
+                        .take(MAX_NOTIFICATIONS)
+
+                    Log.d("NotificationService", "Found ${notifications.size} unread notifications")
+
+                    val newNotifications = if (forceShow) {
+                        notifications
+                    } else {
+                        notifications.filterNot { shownNotificationIds.contains(it.id) }
+                    }
+
+                    Log.d("NotificationService", "New notifications to show: ${newNotifications.size}")
+
+                    if (newNotifications.isNotEmpty()) {
+                        if (!createNotificationChannel(context)) {
+                            Log.e("NotificationService", "Failed to create notification channel")
+                            return@withContext
                         }
-                    } catch (e: Exception) {
-                        Log.e("NotificationService", "Error showing notification: ${notification.title}", e)
+
+                        showNotificationsSequentially(context, newNotifications)
+                    } else {
+                        Log.d("NotificationService", "No new notifications to show")
                     }
+                } catch (e: Exception) {
+                    Log.e("NotificationService", "Error in showPendingNotifications", e)
+                } finally {
+                    realm?.close()
                 }
-
-                saveShownNotifications(context)
-
-                if (successCount > 1) {
-                    try {
-                        showSummaryNotification(context, successCount)
-                    } catch (e: Exception) {
-                        Log.e("NotificationService", "Error showing summary notification", e)
-                    }
-                }
-
-                Log.d("NotificationService", "Successfully showed $successCount out of ${newNotifications.size} notifications")
-            } else {
-                Log.d("NotificationService", "No new notifications to show")
             }
         } catch (e: Exception) {
-            Log.e("NotificationService", "Error in showPendingNotifications", e)
-        } finally {
-            realm.close()
+            Log.e("NotificationService", "Critical error in showPendingNotifications", e)
         }
     }
-    private fun showNotification(context: Context, notification: RealmNotification): Int {
+
+    private suspend fun showNotificationsSequentially(context: Context, notifications: List<RealmNotification>) {
+        var successCount = 0
+
+        for ((index, notification) in notifications.withIndex()) {
+            try {
+                val systemNotificationId = showNotification(context, notification, index)
+                if (systemNotificationId != -1) {
+                    shownNotificationIds.add(notification.id)
+                    notificationIdMap[notification.id] = systemNotificationId
+                    successCount++
+                    Log.d("NotificationService", "Successfully showed notification: ${notification.title ?: "Untitled"}")
+                }
+
+                // Add delay between notifications to prevent system overwhelm
+                if (index < notifications.size - 1) {
+                    delay(NOTIFICATION_DELAY_MS)
+                }
+            } catch (e: Exception) {
+                Log.e("NotificationService", "Error showing notification: ${notification.title}", e)
+            }
+        }
+
+        // Save after all notifications are processed
+        if (successCount > 0) {
+            saveShownNotifications(context)
+
+            // Only show summary if there are many notifications (5 or more)
+            if (successCount >= 5) {
+                try {
+                    delay(500) // Ensure individual notifications are shown first
+                    showSummaryNotification(context, successCount)
+                } catch (e: Exception) {
+                    Log.e("NotificationService", "Error showing summary notification", e)
+                }
+            }
+        }
+
+        Log.d("NotificationService", "Successfully showed $successCount out of ${notifications.size} notifications")
+    }
+
+    private fun showNotification(context: Context, notification: RealmNotification, index: Int = 0): Int {
         val systemNotificationId = notificationIdCounter.getAndIncrement()
 
         try {
@@ -167,7 +200,7 @@ object NotificationService {
                 }
             )
 
-            // Create notification with proper styling
+            // Create notification with individual styling (no grouping for now)
             val builder = NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ole_logo)
                 .setContentTitle(notification.title ?: "Planet Notification")
@@ -175,9 +208,12 @@ object NotificationService {
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
-                .setGroup(GROUP_KEY)
                 .setWhen(notification.createdAt.time)
                 .setShowWhen(true)
+                .setOngoing(false)
+                .setTimeoutAfter(0) // Don't auto-dismiss
+                .setDefaults(NotificationCompat.DEFAULT_SOUND or NotificationCompat.DEFAULT_LIGHTS)
+                .setVibrate(longArrayOf(0, 250, 250, 250)) // Custom vibration pattern
 
             // Add expanded text if message is long
             if (!notification.message.isNullOrEmpty() && notification.message!!.length > 50) {
@@ -191,16 +227,24 @@ object NotificationService {
             // Add notification type specific styling
             when (notification.type) {
                 "sync" -> {
-                    builder.setColor(context.getColor(android.R.color.holo_blue_dark))
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        builder.setColor(context.getColor(android.R.color.holo_blue_dark))
+                    }
                 }
                 "update" -> {
-                    builder.setColor(context.getColor(android.R.color.holo_orange_dark))
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        builder.setColor(context.getColor(android.R.color.holo_orange_dark))
+                    }
                 }
                 "message" -> {
-                    builder.setColor(context.getColor(android.R.color.holo_green_dark))
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        builder.setColor(context.getColor(android.R.color.holo_green_dark))
+                    }
                 }
                 else -> {
-                    builder.setColor(context.getColor(android.R.color.holo_blue_light))
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        builder.setColor(context.getColor(android.R.color.holo_blue_light))
+                    }
                 }
             }
 
@@ -210,6 +254,15 @@ object NotificationService {
             if (!notificationManager.areNotificationsEnabled()) {
                 Log.w("NotificationService", "Notifications disabled, cannot show notification")
                 return -1
+            }
+
+            // Check for permission on newer Android versions
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+                    android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    Log.w("NotificationService", "Missing POST_NOTIFICATIONS permission")
+                    return -1
+                }
             }
 
             notificationManager.notify(systemNotificationId, builder.build())
@@ -225,8 +278,9 @@ object NotificationService {
             return -1
         }
     }
+
     private fun showSummaryNotification(context: Context, count: Int) {
-        val summaryId = 1999 // Use fixed ID for summary notification
+        val summaryId = 1999
 
         try {
             val intent = Intent(context, DashboardActivity::class.java).apply {
@@ -254,9 +308,20 @@ object NotificationService {
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setOngoing(false)
                 .build()
 
             val notificationManager = NotificationManagerCompat.from(context)
+
+            // Check for permission before showing notification
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+                    android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    Log.w("NotificationService", "Missing POST_NOTIFICATIONS permission")
+                    return
+                }
+            }
+
             notificationManager.notify(summaryId, summaryNotification)
             Log.d("NotificationService", "Summary notification posted for $count notifications")
 
@@ -264,23 +329,53 @@ object NotificationService {
             Log.e("NotificationService", "Error showing summary notification", e)
         }
     }
+
+    private fun initializeRealm(context: Context) {
+        try {
+            if (Realm.getGlobalInstanceCount(Realm.getDefaultConfiguration()).toLong() == 0L) {
+                Realm.init(context)
+            }
+        } catch (e: Exception) {
+            try {
+                Realm.init(context)
+            } catch (initException: Exception) {
+                Log.e("NotificationService", "Failed to initialize Realm", initException)
+                throw initException
+            }
+        }
+    }
+
     suspend fun onUserSync(context: Context) {
         Log.d("NotificationService", "onUserSync() called")
-        showPendingNotifications(context, forceShow = false)
+        try {
+            showPendingNotifications(context, forceShow = false)
+        } catch (e: Exception) {
+            Log.e("NotificationService", "Error in onUserSync", e)
+        }
     }
+
     suspend fun onUserLogin(context: Context) {
         Log.d("NotificationService", "onUserLogin() called")
-        // Clear previous tracking and show all notifications
-        clearShownNotifications(context)
-        showPendingNotifications(context, forceShow = true)
+        try {
+            // Clear previous tracking and show all notifications
+            clearShownNotifications(context)
+            // Add a small delay to ensure UI is ready
+            delay(1000)
+            showPendingNotifications(context, forceShow = true)
+        } catch (e: Exception) {
+            Log.e("NotificationService", "Error in onUserLogin", e)
+        }
     }
+
     fun markNotificationAsRead(context: Context, notificationDbId: String) {
         // Cancel the system notification
         cancelNotification(context, notificationDbId)
 
         // Mark as read in database
-        val realm = Realm.getDefaultInstance()
+        var realm: Realm? = null
         try {
+            initializeRealm(context)
+            realm = Realm.getDefaultInstance()
             realm.executeTransaction {
                 val notification = realm.where(RealmNotification::class.java)
                     .equalTo("id", notificationDbId)
@@ -290,9 +385,10 @@ object NotificationService {
         } catch (e: Exception) {
             Log.e("NotificationService", "Error marking notification as read", e)
         } finally {
-            realm.close()
+            realm?.close()
         }
     }
+
     private fun saveShownNotifications(context: Context) {
         try {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -304,6 +400,7 @@ object NotificationService {
             Log.e("NotificationService", "Error saving shown notifications", e)
         }
     }
+
     private fun loadShownNotifications(context: Context) {
         try {
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -315,6 +412,7 @@ object NotificationService {
             Log.e("NotificationService", "Error loading shown notifications", e)
         }
     }
+
     private fun clearShownNotifications(context: Context) {
         shownNotificationIds.clear()
         notificationIdMap.clear()
@@ -326,11 +424,13 @@ object NotificationService {
             Log.e("NotificationService", "Error clearing shown notifications", e)
         }
     }
+
     fun resetNotificationTracking(context: Context) {
         clearShownNotifications(context)
-        notificationIdCounter.set(2000) // Reset counter
+        notificationIdCounter.set(2000)
         Log.d("NotificationService", "Notification tracking reset")
     }
+
     fun clearAllNotifications(context: Context) {
         try {
             val notificationManager = NotificationManagerCompat.from(context)
@@ -341,6 +441,7 @@ object NotificationService {
             Log.e("NotificationService", "Error clearing notifications", e)
         }
     }
+
     fun cancelNotification(context: Context, notificationDbId: String) {
         notificationIdMap[notificationDbId]?.let { systemId ->
             try {
@@ -348,13 +449,14 @@ object NotificationService {
                 notificationManager.cancel(systemId)
                 notificationIdMap.remove(notificationDbId)
                 shownNotificationIds.remove(notificationDbId)
-                saveShownNotifications(context) // Update saved state
+                saveShownNotifications(context)
                 Log.d("NotificationService", "Cancelled notification: $systemId")
             } catch (e: Exception) {
                 Log.e("NotificationService", "Error cancelling notification", e)
             }
         }
     }
+
     fun checkNotificationSetup(context: Context): String {
         val notificationManager = NotificationManagerCompat.from(context)
         val areEnabled = notificationManager.areNotificationsEnabled()
