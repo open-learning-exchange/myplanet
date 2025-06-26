@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
 import android.widget.RadioButton
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.widget.NestedScrollView
 import com.google.android.material.snackbar.Snackbar
@@ -434,7 +435,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 val type = questions?.get(currentIndex)?.type
                 showTextInput(type)
                 if (!isQuestionAnswered()) {
-                    toast(activity,getString(R.string.please_select_write_your_answer_to_continue))
+                    toast(activity,getString(R.string.please_select_write_your_answer_to_continue), Toast.LENGTH_SHORT)
                     return
                 }
 
