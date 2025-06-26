@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.databinding.RowNotificationsBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.service.NotificationService
 import java.util.regex.Pattern
 
 class AdapterNotification(
@@ -29,6 +30,14 @@ class AdapterNotification(
     override fun onBindViewHolder(holder: ViewHolderNotifications, position: Int) {
         val notification = notificationList[position]
         holder.bind(notification, position)
+        holder.itemView.setOnClickListener {
+            // Mark as read when user clicks
+            NotificationService.markNotificationAsRead(holder.itemView.context, notification.id)
+
+            // Update UI
+            notification.isRead = true
+            notifyItemChanged(position)
+        }
     }
 
     override fun getItemCount(): Int = notificationList.size

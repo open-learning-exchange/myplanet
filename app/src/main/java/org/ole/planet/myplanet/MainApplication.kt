@@ -213,18 +213,10 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         context = this
         initialize(applicationScope)
         startListenNetworkState()
-        // Create notification channel first
         val channelCreated = NotificationService.createNotificationChannel(this)
         Log.d("App", "Notification channel created: $channelCreated")
 
-        // Check notification setup
         Log.d("App", NotificationService.checkNotificationSetup(this))
-
-        // Wait a bit, then try the regular test
-        android.os.Handler(Looper.getMainLooper()).postDelayed({
-            val testResult = NotificationService.showTestNotification(this)
-            Log.d("App", "Regular test notification result: $testResult")
-        }, 3000)
 
         applicationScope.launch {
             NotificationService.showPendingNotifications(this@MainApplication)

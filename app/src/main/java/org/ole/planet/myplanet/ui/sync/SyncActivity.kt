@@ -671,9 +671,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         editor.putBoolean(Constants.KEY_LOGIN, true).commit()
         openDashboard()
 
-        // Show notifications after login
         lifecycleScope.launch {
-            NotificationService.showPendingNotifications(this@SyncActivity)
+            NotificationService.onUserLogin(this@SyncActivity)
         }
 
         isNetworkConnectedFlow.onEach { isConnected ->
