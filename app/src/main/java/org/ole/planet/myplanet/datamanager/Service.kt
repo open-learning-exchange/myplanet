@@ -109,86 +109,74 @@ class Service(private val context: Context) {
     }
 
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences) {
-        if (!settings.getBoolean("isAlternativeUrl", false) && settings.getString("couchdbURL", "").isNullOrEmpty()) {
-            if (context is SyncActivity) {
-                context.settingDialog()
+        if (!settings.getBoolean("isAlternativeUrl", false)){
+            if (settings.getString("couchdbURL", "")?.isEmpty() == true) {
+                if (context is SyncActivity){
+                    context.settingDialog()
+                }
+                return
             }
-            return
         }
 
-        callback.onCheckingVersion()
-
-        serviceScope.launch {
-            try {
-                val planetInfo = withContext(Dispatchers.IO) {
-                    retrofitInterface?.checkVersion(Utilities.getUpdateUrl(settings))?.execute()?.body()
-                }
-
+        retrofitInterface?.checkVersion(Utilities.getUpdateUrl(settings))?.enqueue(object : Callback<MyPlanet?> {
+            override fun onResponse(call: Call<MyPlanet?>, response: Response<MyPlanet?>) {
                 preferences.edit {
                     putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context))
                 }
-
-                if (planetInfo != null) {
-                    preferences.edit { putString("versionDetail", Gson().toJson(planetInfo)) }
-                    val versionString = requestApkVersion(settings)
-                    withContext(Dispatchers.Main) { handleVersionInfo(planetInfo, versionString, callback) }
+                if (response.body() != null) {
+                    val p = response.body()
+                    preferences.edit {
+                        putString("versionDetail", Gson().toJson(response.body()))
+                    }
+                    retrofitInterface.getApkVersion(Utilities.getApkVersionUrl(settings)).enqueue(object : Callback<ResponseBody> {
+                        override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                            val responses: String?
+                            try {
+                                responses = Gson().fromJson(response.body()?.string(), String::class.java)
+                                if (responses == null || responses.isEmpty()) {
+                                    callback.onError(context.getString(R.string.planet_is_up_to_date), false)
+                                    return
+                                }
+                                var vsn = responses.replace("v".toRegex(), "")
+                                vsn = vsn.replace("\\.".toRegex(), "")
+                                val apkVersion = (if (vsn.startsWith("0")) vsn.replace("0", "") else vsn).toInt()
+                                val currentVersion = VersionUtils.getVersionCode(context)
+                                if (p != null) {
+                                    if (showBetaFeature(KEY_UPGRADE_MAX, context) && p.latestapkcode > currentVersion) {
+                                        callback.onUpdateAvailable(p, false)
+                                        return
+                                    }
+                                }
+                                if (apkVersion > currentVersion) {
+                                    if (p != null) {
+                                        callback.onUpdateAvailable(p, currentVersion >= p.minapkcode)
+                                    }
+                                    return
+                                }
+                                if (p != null) {
+                                    if (currentVersion < p.minapkcode && apkVersion < p.minapkcode) {
+                                        callback.onUpdateAvailable(p, true)
+                                    } else {
+                                        callback.onError(context.getString(R.string.planet_is_up_to_date), false)
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                callback.onError(context.getString(R.string.new_apk_version_required_but_not_found_on_server), false)
+                            }
+                        }
+                        override fun onFailure(call: Call<ResponseBody>, t: Throwable) {}
+                    })
                 } else {
-                    withContext(Dispatchers.Main) { callback.onError(context.getString(R.string.version_not_found), true) }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) { callback.onError(context.getString(R.string.connection_failed), true) }
-            }
-        }
-    }
-
-    private suspend fun requestApkVersion(settings: SharedPreferences): String? {
-        return withContext(Dispatchers.IO) {
-            runCatching {
-                val response = retrofitInterface?.getApkVersion(Utilities.getApkVersionUrl(settings))?.execute()
-                Gson().fromJson(response?.body()?.string(), String::class.java)
-            }.getOrNull()
-        }
-    }
-
-
-    private fun handleVersionInfo(info: MyPlanet?, versionString: String?, callback: CheckVersionCallback) {
-        val apkVersion = versionString?.let { parseVersionCode(it) }
-        if (apkVersion == null) {
-            callback.onError(context.getString(R.string.planet_is_up_to_date), false)
-            return
-        }
-
-        try {
-            val currentVersion = VersionUtils.getVersionCode(context)
-
-            info?.let { p ->
-                when {
-                    showBetaFeature(KEY_UPGRADE_MAX, context) && p.latestapkcode > currentVersion ->
-                        callback.onUpdateAvailable(p, false)
-
-                    apkVersion > currentVersion ->
-                        callback.onUpdateAvailable(p, currentVersion >= p.minapkcode)
-
-                    currentVersion < p.minapkcode && apkVersion < p.minapkcode ->
-                        callback.onUpdateAvailable(p, true)
-
-                    else ->
-                        callback.onError(context.getString(R.string.planet_is_up_to_date), false)
+                    callback.onError(context.getString(R.string.version_not_found), true)
                 }
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            callback.onError(context.getString(R.string.new_apk_version_required_but_not_found_on_server), false)
-        }
-    }
 
-    private fun parseVersionCode(versionString: String): Int {
-        return versionString
-            .replace("v", "")
-            .replace(".", "")
-            .removePrefix("0")
-            .toInt()
+            override fun onFailure(call: Call<MyPlanet?>, t: Throwable) {
+                t.printStackTrace()
+                callback.onError(context.getString(R.string.connection_failed), true)
+            }
+        })
     }
 
     fun isPlanetAvailable(callback: PlanetAvailableListener?) {
