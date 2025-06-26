@@ -36,8 +36,6 @@ import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import android.content.Context
-import android.util.Log
-import android.widget.Toast
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
@@ -76,8 +74,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefManager = SharedPrefManager(requireContext())
-
-        // Start selective sync for resources and library
         startResourcesSync()
     }
 
@@ -103,12 +99,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                         if (isAdded) {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
-
-                            // Refresh resources data after sync
                             refreshResourcesData()
-
-                            // Optional: Show success message
-                            Toast.makeText(requireContext(), "Resources synced successfully", Toast.LENGTH_SHORT).show()
                             prefManager.setResourcesSynced(true)
                         }
                     }
@@ -120,7 +111,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
 
-                            // Show error message
                             Snackbar.make(requireView(), "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG
                             ).setAction("Retry") {
                                 startResourcesSync()
@@ -136,20 +126,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         if (!isAdded || requireActivity().isFinishing) return
 
         try {
-            // Refresh ratings and library data
             map = getRatings(mRealm, "resource", model?.id)
             val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-
-            // Update adapter with fresh data
             adapterLibrary.setLibraryList(libraryList)
             adapterLibrary.setRatingMap(map!!)
             adapterLibrary.notifyDataSetChanged()
-
-            // Update UI elements
             checkList()
             showNoData(tvMessage, adapterLibrary.itemCount, "resources")
 
-            // Apply current filters if any
             if (searchTags.isNotEmpty() || etSearch.text?.isNotEmpty() == true) {
                 adapterLibrary.setLibraryList(
                     applyFilter(
@@ -162,7 +146,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             }
 
         } catch (e: Exception) {
-            Log.e("ResourcesFragment", "Error refreshing resources data: ${e.message}", e)
+            e.printStackTrace()
         }
     }
 
@@ -504,8 +488,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun onDestroy() {
         super.onDestroy()
-
-        // Clean up progress dialog
         customProgressDialog?.dismiss()
         customProgressDialog = null
     }

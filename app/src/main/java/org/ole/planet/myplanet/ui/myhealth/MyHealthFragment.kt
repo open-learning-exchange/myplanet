@@ -7,7 +7,6 @@ import android.os.CountDownTimer
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -29,7 +28,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
-import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyHealth
@@ -63,8 +61,6 @@ class MyHealthFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefManager = SharedPrefManager(requireContext())
-
-        // Start selective sync for health data
         startHealthSync()
     }
 
@@ -92,12 +88,7 @@ class MyHealthFragment : Fragment() {
                         if (isAdded) {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
-
-                            // Refresh health data after sync
                             refreshHealthData()
-
-                            // Optional: Show success message
-                            Toast.makeText(requireContext(), "Health data synced successfully", Toast.LENGTH_SHORT).show()
                             prefManager.setHealthSynced(true)
                         }
                     }
@@ -108,8 +99,6 @@ class MyHealthFragment : Fragment() {
                         if (isAdded) {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
-
-                            // Show error message
                             Snackbar.make(fragmentVitalSignBinding.root, "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG).setAction("Retry") { startHealthSync() }.show()
                         }
                     }
@@ -122,16 +111,15 @@ class MyHealthFragment : Fragment() {
         if (!isAdded || requireActivity().isFinishing) return
 
         try {
-            // Re-initialize profile handler and user data
             profileDbHandler = UserProfileDbHandler(requireContext())
-            userId = if (TextUtils.isEmpty(profileDbHandler?.userModel?._id))
-                profileDbHandler?.userModel?.id else profileDbHandler?.userModel?._id
-
-            // Refresh health records with updated data
+            userId = if (TextUtils.isEmpty(profileDbHandler?.userModel?._id)) {
+                profileDbHandler?.userModel?.id
+            } else {
+                profileDbHandler?.userModel?._id
+            }
             getHealthRecords(userId)
-
         } catch (e: Exception) {
-            Log.e("MyHealthFragment", "Error refreshing health data: ${e.message}", e)
+            e.printStackTrace()
         }
     }
 
@@ -379,8 +367,6 @@ class MyHealthFragment : Fragment() {
 
     override fun onDestroy() {
         super.onDestroy()
-
-        // Clean up progress dialog
         customProgressDialog?.dismiss()
         customProgressDialog = null
     }

@@ -117,8 +117,6 @@ class SyncManager private constructor(private val context: Context) {
             initializeSync()
             runBlocking {
                 val syncJobs = mutableListOf<Deferred<Unit>>()
-
-//                val syncJobs = listOf(
                 if (syncTables?.contains("tablet_users") != false) {
                     syncJobs.add(
                         async {
@@ -279,10 +277,6 @@ class SyncManager private constructor(private val context: Context) {
             logger.startProcess("admin_sync")
             ManagerSync.instance?.syncAdmin()
             logger.endProcess("admin_sync")
-
-//            logger.startProcess("resource_sync")
-//            resourceTransactionSync()
-//            logger.endProcess("resource_sync")
 
             logger.startProcess("on_synced")
             onSynced(mRealm, settings)

@@ -1,11 +1,9 @@
 package org.ole.planet.myplanet.ui.feedback
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
@@ -35,7 +33,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         super.onCreate(savedInstanceState)
         prefManager = SharedPrefManager(requireContext())
 
-        // Start selective sync for feedback
         startFeedbackSync()
     }
 
@@ -75,10 +72,8 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
                         if (isAdded) {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
-
                             refreshFeedbackData()
 
-                            Toast.makeText(requireContext(), "Feedback synced successfully", Toast.LENGTH_SHORT).show()
                             prefManager.setFeedbackSynced(true)
                         }
                     }
@@ -90,7 +85,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
 
-                            // Show error message
                             Snackbar.make(fragmentFeedbackListBinding.root, "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG)
                                 .setAction("Retry") { startFeedbackSync() }.show()
                         }
@@ -113,7 +107,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         if (!isAdded || requireActivity().isFinishing) return
 
         try {
-            // Re-query feedback data after sync
             var list: List<RealmFeedback>? = mRealm.where(RealmFeedback::class.java)
                 .equalTo("owner", userModel?.name).findAll()
 
@@ -121,7 +114,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
                 list = mRealm.where(RealmFeedback::class.java).findAll()
             }
 
-            // Update the adapter with fresh data
             val adapterFeedback = AdapterFeedback(requireActivity(), list)
             fragmentFeedbackListBinding.rvFeedback.adapter = adapterFeedback
 
@@ -129,11 +121,10 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
             showNoData(fragmentFeedbackListBinding.tvMessage, itemCount, "feedback")
             updateTextViewsVisibility(itemCount)
 
-            // Update the listener with fresh data
             setupFeedbackListener()
 
         } catch (e: Exception) {
-            Log.e("FeedbackListFragment", "Error refreshing feedback data: ${e.message}", e)
+            e.printStackTrace()
         }
     }
 
@@ -141,7 +132,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         super.onViewCreated(view, savedInstanceState)
         fragmentFeedbackListBinding.rvFeedback.layoutManager = LinearLayoutManager(activity)
 
-        // Initial load of feedback data
         loadInitialFeedbackData()
     }
 
@@ -160,12 +150,9 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onDestroy() {
         super.onDestroy()
-
-        // Clean up progress dialog
         customProgressDialog?.dismiss()
         customProgressDialog = null
 
-        // Clean up realm
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }

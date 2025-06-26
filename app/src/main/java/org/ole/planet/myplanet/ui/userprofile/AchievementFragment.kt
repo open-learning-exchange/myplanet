@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.userprofile
 
 import android.content.Context
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -49,8 +48,6 @@ class AchievementFragment : BaseContainerFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefManager = SharedPrefManager(requireContext())
-
-        // Start selective sync for achievements
         startAchievementSync()
     }
 
@@ -87,12 +84,7 @@ class AchievementFragment : BaseContainerFragment() {
                         if (isAdded) {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
-
-                            // Refresh achievement data after sync
                             refreshAchievementData()
-
-                            // Optional: Show success message
-                            Toast.makeText(requireContext(), "Achievements synced successfully", Toast.LENGTH_SHORT).show()
                             prefManager.setAchievementsSynced(true)
                         }
                     }
@@ -103,11 +95,9 @@ class AchievementFragment : BaseContainerFragment() {
                         if (isAdded) {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
-
-                            // Show error message
-                            Snackbar.make(fragmentAchievementBinding.root, "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG).setAction("Retry") {
-                                startAchievementSync()
-                            }.show()
+                            Snackbar.make(fragmentAchievementBinding.root, "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG)
+                                .setAction("Retry") { startAchievementSync() }
+                                    .show()
                         }
                     }
                 }
@@ -119,16 +109,14 @@ class AchievementFragment : BaseContainerFragment() {
         if (!isAdded || requireActivity().isFinishing) return
 
         try {
-            // Re-query achievement data after sync
             achievement = aRealm.where(RealmAchievement::class.java)
                 .equalTo("_id", user?.id + "@" + user?.planetCode)
                 .findFirst()
 
-            // Update UI with fresh data
             updateAchievementUI()
 
         } catch (e: Exception) {
-            Log.e("AchievementFragment", "Error refreshing achievement data: ${e.message}", e)
+            e.printStackTrace()
         }
     }
 
@@ -138,10 +126,8 @@ class AchievementFragment : BaseContainerFragment() {
             fragmentAchievementBinding.tvPurpose.text = achievement?.purpose
             fragmentAchievementBinding.tvAchievementHeader.text = achievement?.achievementsHeader
 
-            // Recreate achievement list with fresh data
             createAchievementList()
 
-            // Update other info RecyclerView
             fragmentAchievementBinding.rvOtherInfo.layoutManager = LinearLayoutManager(MainApplication.context)
             fragmentAchievementBinding.rvOtherInfo.adapter = AdapterOtherInfo(MainApplication.context, achievement?.references ?: RealmList())
         }
@@ -149,12 +135,8 @@ class AchievementFragment : BaseContainerFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        // Set user name first
         fragmentAchievementBinding.tvFirstName.text = user?.firstName
         fragmentAchievementBinding.tvName.text = String.format("%s %s %s", user?.firstName, user?.middleName, user?.lastName)
-
-        // Load initial achievement data
         loadInitialAchievementData()
     }
 
@@ -164,7 +146,6 @@ class AchievementFragment : BaseContainerFragment() {
         if (achievement != null) {
             updateAchievementUI()
 
-            // Add realm change listener for real-time updates
             aRealm.addChangeListener {
                 if (isAdded) {
                     fragmentAchievementBinding.llAchievement.removeAllViews()
@@ -195,7 +176,6 @@ class AchievementFragment : BaseContainerFragment() {
                         )
                     }
 
-                    // Clear existing views first
                     rowAchievementBinding.flexboxResources.removeAllViews()
 
                     for (lib in libraries) {
@@ -226,7 +206,6 @@ class AchievementFragment : BaseContainerFragment() {
                 rowAchievementBinding.root.visibility = View.GONE
             }
 
-            // Remove from parent if already attached
             if (rowAchievementBinding.root.parent != null) {
                 (rowAchievementBinding.root.parent as ViewGroup).removeView(rowAchievementBinding.root)
             }
@@ -246,8 +225,6 @@ class AchievementFragment : BaseContainerFragment() {
 
     override fun onDestroy() {
         super.onDestroy()
-
-        // Clean up progress dialog
         customProgressDialog?.dismiss()
         customProgressDialog = null
     }

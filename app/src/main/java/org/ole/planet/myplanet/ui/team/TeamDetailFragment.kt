@@ -2,11 +2,9 @@ package org.ole.planet.myplanet.ui.team
 
 import android.content.DialogInterface
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
@@ -29,6 +27,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
 import java.util.UUID
@@ -39,11 +38,11 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     private var directTeamType: String? = null
     private var directTeamId: String? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+    lateinit var prefManager: SharedPrefManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Start selective sync for teams and team activities
+        prefManager = SharedPrefManager(requireContext())
         startTeamSync()
     }
 
@@ -76,50 +75,43 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     private fun startTeamSync() {
-        SyncManager.instance?.start(object : SyncListener {
-            override fun onSyncStarted() {
-                activity?.runOnUiThread {
-                    if (isAdded && !requireActivity().isFinishing) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText("Syncing team data...")
-                        customProgressDialog?.show()
+        if (prefManager.isTeamsSynced()) {
+            SyncManager.instance?.start(object : SyncListener {
+                override fun onSyncStarted() {
+                    activity?.runOnUiThread {
+                        if (isAdded && !requireActivity().isFinishing) {
+                            customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                            customProgressDialog?.setText("Syncing team data...")
+                            customProgressDialog?.show()
+                        }
                     }
                 }
-            }
 
-            override fun onSyncComplete() {
-                activity?.runOnUiThread {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-
-                        // Refresh team data after sync
-                        refreshTeamData()
-
-                        // Optional: Show success message
-                        Toast.makeText(requireContext(), "Team data synced successfully", Toast.LENGTH_SHORT).show()
+                override fun onSyncComplete() {
+                    activity?.runOnUiThread {
+                        if (isAdded) {
+                            customProgressDialog?.dismiss()
+                            customProgressDialog = null
+                            refreshTeamData()
+                            prefManager.setTeamsSynced(true)
+                        }
                     }
                 }
-            }
 
-            override fun onSyncFailed(message: String?) {
-                activity?.runOnUiThread {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
+                override fun onSyncFailed(message: String?) {
+                    activity?.runOnUiThread {
+                        if (isAdded) {
+                            customProgressDialog?.dismiss()
+                            customProgressDialog = null
 
-                        // Show error message
-                        Snackbar.make(
-                            fragmentTeamDetailBinding.root,
-                            "Sync failed: ${message ?: "Unknown error"}",
-                            Snackbar.LENGTH_LONG
-                        ).setAction("Retry") {
-                            startTeamSync()
-                        }.show()
+                            Snackbar.make(fragmentTeamDetailBinding.root, "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG)
+                                .setAction("Retry") { startTeamSync() }
+                                .show()
+                        }
                     }
                 }
-            }
-        }, "full", listOf("teams", "team_activities"))
+            }, "full", listOf("teams", "team_activities"))
+        }
     }
 
     private fun setupTeamDetails(isMyTeam: Boolean, user: RealmUserModel?) {
@@ -211,7 +203,6 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         if (!isAdded || requireActivity().isFinishing) return
 
         try {
-            // Re-query the team data from Realm after sync
             val teamId = requireArguments().getString("id") ?: directTeamId ?: ""
             val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
 
@@ -220,17 +211,14 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                 if (updatedTeam != null) {
                     team = updatedTeam
 
-                    // Update the ViewPager adapter with fresh data
                     fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, isMyTeam, this)
                     TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
                         tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
                     }.attach()
 
-                    // Update UI elements
                     fragmentTeamDetailBinding.title.text = getEffectiveTeamName()
                     fragmentTeamDetailBinding.subtitle.text = getEffectiveTeamType()
 
-                    // Update member count visibility
                     if(getJoinedMemberCount(team!!._id.toString(), mRealm) <= 1 && isMyTeam){
                         fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
                     } else {
@@ -239,12 +227,12 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                 }
             }
         } catch (e: Exception) {
-            Log.e("TeamDetailFragment", "Error refreshing team data: ${e.message}", e)
+            e.printStackTrace()
         }
     }
 
     override fun onMemberChanged() {
-        if(getJoinedMemberCount(team!!._id.toString(), mRealm) <= 1){
+        if(getJoinedMemberCount("${team?._id}", mRealm) <= 1){
             fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
         } else{
             fragmentTeamDetailBinding.btnLeave.visibility = View.VISIBLE
@@ -294,7 +282,6 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        // Clean up progress dialog
         customProgressDialog?.dismiss()
         customProgressDialog = null
     }

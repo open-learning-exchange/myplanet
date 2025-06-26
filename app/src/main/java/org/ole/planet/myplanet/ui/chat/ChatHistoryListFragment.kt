@@ -4,9 +4,7 @@ import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.os.Bundle
 import android.text.*
-import android.util.Log
 import android.view.*
-import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -126,46 +124,35 @@ class ChatHistoryListFragment : Fragment() {
 
     private fun startChatHistorySync() {
         if (!prefManager.isChatHistorySynced()) {
-            // ✅ All your callbacks are still here and still work exactly the same
             SyncManager.instance?.start(object : SyncListener {
                 override fun onSyncStarted() {
-                    // ✅ STILL CALLED - Shows progress dialog
                     activity?.runOnUiThread {
                         if (isAdded && !requireActivity().isFinishing) {
                             customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                            customProgressDialog?.setText("Loading chat history...")  // Changed text
+                            customProgressDialog?.setText("Syncing chat history...")
                             customProgressDialog?.show()
                         }
                     }
                 }
 
                 override fun onSyncComplete() {
-                    // ✅ STILL CALLED - Hides dialog, refreshes data, marks as synced
                     activity?.runOnUiThread {
                         if (isAdded) {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
-
-                            // 🆕 NEW: Mark as synced (this is the key addition)
                             prefManager.setChatHistorySynced(true)
 
                             refreshChatHistoryList()
-                            Toast.makeText(requireContext(), "Chat history loaded successfully", Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
 
                 override fun onSyncFailed(message: String?) {
-                    // ✅ STILL CALLED - Hides dialog, shows error, DOESN'T mark as synced
                     activity?.runOnUiThread {
                         if (isAdded) {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
-
-                            // 🚫 DON'T mark as synced on failure
-                            // sharedPrefManager.setChatHistorySynced(true) // ❌ Don't do this!
-
-                            refreshChatHistoryList()  // Show existing data if any
+                            refreshChatHistoryList()
 
                             Snackbar.make(fragmentChatHistoryListBinding.root, "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG)
                                 .setAction("Retry") { startChatHistorySync() }.show()
@@ -173,61 +160,6 @@ class ChatHistoryListFragment : Fragment() {
                     }
                 } }, "full", listOf("chat_history"))
             }
-    }
-
-//    private fun startChatHistorySync() {
-//        if (isChatHistoryEmpty()) {
-//            SyncManager.instance?.start(object : SyncListener {
-//                override fun onSyncStarted() {
-//                    activity?.runOnUiThread {
-//                        if (isAdded && !requireActivity().isFinishing) {
-//                            customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-//                            customProgressDialog?.setText("Syncing chat history...")
-//                            customProgressDialog?.show()
-//                        }
-//                    }
-//                }
-//
-//                override fun onSyncComplete() {
-//                    activity?.runOnUiThread {
-//                        if (isAdded) {
-//                            customProgressDialog?.dismiss()
-//                            customProgressDialog = null
-//                            refreshChatHistoryList()
-//
-//                            Toast.makeText(requireContext(), "Chat history synced successfully", Toast.LENGTH_SHORT).show()
-//                        }
-//                    }
-//                }
-//
-//                override fun onSyncFailed(message: String?) {
-//                    activity?.runOnUiThread {
-//                        if (isAdded) {
-//                            customProgressDialog?.dismiss()
-//                            customProgressDialog = null
-//
-//                            Snackbar.make(fragmentChatHistoryListBinding.root, "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG)
-//                                .setAction("Retry") { startChatHistorySync() }
-//                                    .show()
-//                        }
-//                    }
-//                }
-//            }, "full", listOf("chat_history"))
-//        }
-//    }
-
-    private fun isChatHistoryEmpty(): Boolean {
-        return try {
-            val user = UserProfileDbHandler(requireContext()).userModel
-            val mRealm = DatabaseService(requireActivity()).realmInstance
-            val count = mRealm.where(RealmChatHistory::class.java)
-                .equalTo("user", user?.name).count()
-            mRealm.close()
-            count == 0L
-        } catch (e: Exception) {
-            Log.e("ChatHistoryListFragment", "Error checking chat history: ${e.message}")
-            false
-        }
     }
 
     fun refreshChatHistoryList() {

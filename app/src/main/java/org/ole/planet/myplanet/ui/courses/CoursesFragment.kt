@@ -37,8 +37,6 @@ import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import java.util.Calendar
 import java.util.UUID
 import android.content.Context
-import android.util.Log
-import android.widget.Toast
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import androidx.core.view.isVisible
 import com.google.android.material.snackbar.Snackbar
@@ -77,8 +75,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Start selective sync for courses and related tables
         startCoursesSync()
     }
 
@@ -93,8 +89,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 override fun onSyncStarted() {
                     activity?.runOnUiThread {
                         if (isAdded && !requireActivity().isFinishing) {
-                            customProgressDialog =
-                                DialogUtils.CustomProgressDialog(requireContext())
+                            customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
                             customProgressDialog?.setText("Syncing courses data...")
                             customProgressDialog?.show()
                         }
@@ -107,11 +102,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
 
-                            // Refresh courses data after sync
                             refreshCoursesData()
-
-                            // Optional: Show success message
-                            Toast.makeText(requireContext(), "Courses data synced successfully", Toast.LENGTH_SHORT).show()
                             prefManager.setCoursesSynced(true)
                         }
                     }
@@ -123,7 +114,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
 
-                            // Show error message
                             Snackbar.make(requireView(), "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG).setAction("Retry") {
                                 startCoursesSync()
                             }.show()
@@ -138,19 +128,16 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (!isAdded || requireActivity().isFinishing) return
 
         try {
-            // Refresh the adapter with updated data
             val map = getRatings(mRealm, "course", model?.id)
             val progressMap = getCourseProgress(mRealm, model?.id)
             val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>()
             val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
 
-            // Update adapter with fresh data
             adapterCourses.updateCourseList(sortedCourseList)
             adapterCourses.setProgressMap(progressMap)
             adapterCourses.setRatingMap(map)
             adapterCourses.notifyDataSetChanged()
 
-            // Update resources if in library mode
             if (isMyCourseLib) {
                 val courseIds = courseList.mapNotNull { it?.id }
                 resources = mRealm.where(RealmMyLibrary::class.java)
@@ -160,12 +147,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     .findAll()
             }
 
-            // Update UI elements
             checkList()
             showNoData(tvMessage, adapterCourses.itemCount, "courses")
 
         } catch (e: Exception) {
-            Log.e("CoursesFragment", "Error refreshing courses data: ${e.message}", e)
+            e.printStackTrace()
         }
     }
 
@@ -574,8 +560,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun onDestroy() {
         super.onDestroy()
-
-        // Clean up progress dialog
         customProgressDialog?.dismiss()
         customProgressDialog = null
     }

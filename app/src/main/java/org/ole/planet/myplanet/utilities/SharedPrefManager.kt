@@ -46,6 +46,7 @@ class SharedPrefManager(context: Context) {
                 }
                 userList
             } catch (e: JSONException) {
+                e.printStackTrace()
                 emptyList()
             }
         } else {
@@ -126,7 +127,6 @@ class SharedPrefManager(context: Context) {
         editor.apply()
     }
 
-    // Teams Sync
     fun isTeamsSynced(): Boolean {
         return pref.getBoolean(teamsSynced, false)
     }
@@ -139,7 +139,6 @@ class SharedPrefManager(context: Context) {
         editor.apply()
     }
 
-    // Feedback Sync
     fun isFeedbackSynced(): Boolean {
         return pref.getBoolean(feedbackSynced, false)
     }
@@ -152,7 +151,6 @@ class SharedPrefManager(context: Context) {
         editor.apply()
     }
 
-    // Achievements Sync
     fun isAchievementsSynced(): Boolean {
         return pref.getBoolean(achievementsSynced, false)
     }
@@ -165,7 +163,6 @@ class SharedPrefManager(context: Context) {
         editor.apply()
     }
 
-    // Health Sync
     fun isHealthSynced(): Boolean {
         return pref.getBoolean(healthSynced, false)
     }
@@ -178,7 +175,6 @@ class SharedPrefManager(context: Context) {
         editor.apply()
     }
 
-    // Courses Sync
     fun isCoursesSynced(): Boolean {
         return pref.getBoolean(coursesSynced, false)
     }
@@ -191,7 +187,6 @@ class SharedPrefManager(context: Context) {
         editor.apply()
     }
 
-    // Resources Sync
     fun isResourcesSynced(): Boolean {
         return pref.getBoolean(resourcesSynced, false)
     }
@@ -201,36 +196,6 @@ class SharedPrefManager(context: Context) {
         if (synced) {
             editor.putLong("${resourcesSynced}_time", System.currentTimeMillis())
         }
-        editor.apply()
-    }
-
-    // Utility methods
-    fun getSyncTime(syncType: String): Long {
-        return pref.getLong("${syncType}_time", 0)
-    }
-
-    fun resetSyncStatus(syncType: String) {
-        editor.remove(syncType)
-        editor.remove("${syncType}_time")
-        editor.apply()
-    }
-
-    fun resetAllSyncStatuses() {
-        editor.remove(chatHistorySynced)
-        editor.remove(teamsSynced)
-        editor.remove(feedbackSynced)
-        editor.remove(achievementsSynced)
-        editor.remove(healthSynced)
-        editor.remove(coursesSynced)
-        editor.remove(resourcesSynced)
-        // Remove timestamps too
-        editor.remove("${chatHistorySynced}_time")
-        editor.remove("${teamsSynced}_time")
-        editor.remove("${feedbackSynced}_time")
-        editor.remove("${achievementsSynced}_time")
-        editor.remove("${healthSynced}_time")
-        editor.remove("${coursesSynced}_time")
-        editor.remove("${resourcesSynced}_time")
         editor.apply()
     }
 }
