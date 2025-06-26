@@ -63,6 +63,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.ui.courses.CourseStepFragment.Companion.prependBaseUrlToImages
 import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.makeExpandable
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import kotlin.toString
 
@@ -222,63 +223,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         holder.rowNewsBinding.tvEdited.visibility = if (news.isEdited) View.VISIBLE else View.GONE
     }
 
-    fun TextView.makeExpandable(
-        fullText: CharSequence,
-        collapsedMaxLines: Int = 6,
-        expandLabel: String = context.getString(R.string.show_more),
-        collapseLabel: String = context.getString(R.string.show_less)
-    ) {
-        var isExpanded = false
-
-        fun refresh() {
-            text = fullText
-            if (!isExpanded) {
-                maxLines = collapsedMaxLines
-                ellipsize = TextUtils.TruncateAt.END
-
-                post {
-                    if (lineCount > collapsedMaxLines) {
-                        val lastChar = layout.getLineEnd(collapsedMaxLines - 2)
-
-                        val visiblePortion = SpannableStringBuilder(fullText.subSequence(0, lastChar))
-
-                        visiblePortion.append("… ").also { sb ->
-                            val start = sb.length
-                            sb.append(expandLabel)
-                            sb.setSpan(object : ClickableSpan() {
-                                override fun onClick(widget: View) {
-                                    isExpanded = true
-                                    refresh()
-                                }
-                            }, start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                        }
-
-                        text = visiblePortion
-                        movementMethod = LinkMovementMethod.getInstance()
-                    }
-                }
-            }  else {
-                val expanded = SpannableStringBuilder(fullText).apply {
-                        append(" ")
-                        val start = length
-                        append(collapseLabel)
-                        setSpan(object : ClickableSpan() {
-                            override fun onClick(widget: View) {
-                                isExpanded = false
-                                refresh()
-                            }
-                        }, start, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                    }
-                text = expanded
-                movementMethod = LinkMovementMethod.getInstance()
-                maxLines = Int.MAX_VALUE
-                ellipsize = null
-
-            }
-        }
-
-        refresh()
-    }
 
     private fun configureEditDeleteButtons(holder: ViewHolderNews, news: RealmNews) {
         if (news.sharedBy == currentUser?._id && !fromLogin && !nonTeamMember && teamName.isEmpty()) {
@@ -373,20 +317,19 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         }
     }
     private fun showMemberDetails(userModel: RealmUserModel?, it: View){
-        val activity = it.context as AppCompatActivity
-        val userName = if ("${userModel?.firstName} ${userModel?.lastName}".trim().isBlank()) {
-            userModel?.name
-        } else {
-            "${userModel?.firstName} ${userModel?.lastName}".trim()
+        if (userModel == null) {
+            return
         }
+        val activity = it.context as AppCompatActivity
+        val userName = "${userModel.firstName} ${userModel.lastName}".trim().ifBlank { userModel.name }
         val fragment = MemberDetailFragment.newInstance(
             userName.toString(),
-            userModel?.email.toString(),
-            userModel?.dob.toString().substringBefore("T"),
-            userModel?.language.toString(),
-            userModel?.phoneNumber.toString(),
+            userModel.email.toString(),
+            userModel.dob.toString().substringBefore("T"),
+            userModel.language.toString(),
+            userModel.phoneNumber.toString(),
             profileDbHandler.getOfflineVisits(userModel).toString(),
-            profileDbHandler.getLastVisit(userModel!!),
+            profileDbHandler.getLastVisit(userModel),
             "${userModel.firstName} ${userModel.lastName}",
             userModel.level.toString(),
             userModel.userImage
