@@ -37,7 +37,6 @@ import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.NetworkUtils.getUniqueIdentifier
 import org.ole.planet.myplanet.utilities.Utilities
-import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.util.Date
 import java.util.UUID
 
