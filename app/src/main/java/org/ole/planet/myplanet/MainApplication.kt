@@ -131,33 +131,37 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             val urlsToTry = mutableListOf(urlString)
             mapping.alternativeUrl?.let { urlsToTry.add(it) }
 
-            return try {
-                if (urlString.isBlank()) return false
+            for (url in urlsToTry) {
+                try {
+                    if (url.isBlank()) continue
 
-                val formattedUrl = if (!urlString.startsWith("http://") && !urlString.startsWith("https://")) {
-                    "http://$urlString"
-                } else {
-                    urlString
+                    val formattedUrl = if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                        "http://$url"
+                    } else {
+                        url
+                    }
+
+                    val url = URL(formattedUrl)
+                    val connection = withContext(Dispatchers.IO) {
+                        url.openConnection()
+                    } as HttpURLConnection
+                    connection.requestMethod = "GET"
+                    connection.connectTimeout = 5000
+                    connection.readTimeout = 5000
+                    withContext(Dispatchers.IO) {
+                        connection.connect()
+                    }
+                    val responseCode = connection.responseCode
+                    connection.disconnect()
+
+                    if (responseCode in 200..299) {
+                        return true
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-
-                val url = URL(formattedUrl)
-                val connection = withContext(Dispatchers.IO) {
-                    url.openConnection()
-                } as HttpURLConnection
-                connection.requestMethod = "GET"
-                connection.connectTimeout = 5000
-                connection.readTimeout = 5000
-                withContext(Dispatchers.IO) {
-                    connection.connect()
-                }
-                val responseCode = connection.responseCode
-                connection.disconnect()
-                responseCode in 200..299
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-                false
             }
+            return false
         }
 
         fun handleUncaughtException(e: Throwable) {
