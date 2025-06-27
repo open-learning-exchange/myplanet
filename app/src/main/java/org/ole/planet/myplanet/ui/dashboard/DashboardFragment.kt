@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -60,15 +61,19 @@ class DashboardFragment : BaseDashboardFragment() {
             rootView = view,
             consumeInsets = false
         )
-//
-//        // Simple direct approach - increase bottom margin significantly
-//        val fab = view.findViewById<com.github.clans.fab.FloatingActionButton>(R.id.fab_my_activity)
-//        val layoutParams = fab.layoutParams as ViewGroup.MarginLayoutParams
-//
-//        // Add extra margin - adjust this value as needed
-//        val extraBottomMargin = (80 * resources.displayMetrics.density).toInt() // 80dp in pixels
-//        layoutParams.bottomMargin = extraBottomMargin
-//        fab.layoutParams = layoutParams
+        ViewCompat.setOnApplyWindowInsetsListener(view) { _, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val fab = view.findViewById<com.github.clans.fab.FloatingActionButton>(R.id.fab_my_activity)
+            val layoutParams = fab.layoutParams as ViewGroup.MarginLayoutParams
+            layoutParams.bottomMargin = systemBars.bottom + resources.getDimensionPixelSize(R.dimen._20dp)
+            layoutParams.marginEnd = systemBars.right + resources.getDimensionPixelSize(R.dimen.padding_large)
+            fab.layoutParams = layoutParams
+            view.findViewById<LinearLayout>(R.id.ll_prompt)?.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                bottomMargin = systemBars.bottom
+            }
+
+            WindowInsetsCompat.CONSUMED
+        }
 
         val noOfSurvey = getNoOfSurveySubmissionByUser(settings?.getString("userId", "--"), dRealm)
         fragmentHomeBinding.cardProfile.imgSurveyWarn.visibility = if (noOfSurvey == 0) View.VISIBLE else View.GONE
