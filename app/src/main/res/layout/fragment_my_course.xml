@@ -166,9 +166,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
+        android:layout_marginBottom="16dp"
         android:animateLayoutChanges="true"
         android:visibility="gone"
-        app:cardCornerRadius="8dp">
+        android:elevation="8dp">
 
         <LinearLayout
             android:id="@+id/ll_filter"
