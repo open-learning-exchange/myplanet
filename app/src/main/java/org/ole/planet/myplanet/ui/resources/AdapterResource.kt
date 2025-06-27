@@ -28,7 +28,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Locale
 
-class AdapterResource(private val context: Context, private var libraryList: List<RealmMyLibrary?>, private val ratingMap: HashMap<String?, JsonObject>, private val realm: Realm) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class AdapterResource(private val context: Context, private var libraryList: List<RealmMyLibrary?>, private var ratingMap: HashMap<String?, JsonObject>, private val realm: Realm) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
     private var listener: OnLibraryItemSelected? = null
     private val config: ChipCloudConfig = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
@@ -193,6 +193,12 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
 
     override fun getItemCount(): Int {
         return libraryList.size
+    }
+
+    fun setRatingMap(newRatingMap: HashMap<String?, JsonObject>) {
+        this.ratingMap.clear()
+        this.ratingMap.putAll(newRatingMap)
+        notifyDataSetChanged()
     }
 
     internal inner class ViewHolderLibrary(val rowLibraryBinding: RowLibraryBinding) :

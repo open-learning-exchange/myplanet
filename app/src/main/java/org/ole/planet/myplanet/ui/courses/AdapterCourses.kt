@@ -332,6 +332,18 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         return courseList.size
     }
 
+    fun updateCourseList(newCourseList: List<RealmMyCourse?>) {
+        this.courseList = newCourseList
+        selectedItems.clear()
+        notifyDataSetChanged()
+    }
+
+    fun setRatingMap(newRatingMap: HashMap<String?, JsonObject>) {
+        this.map.clear()
+        this.map.putAll(newRatingMap)
+        notifyDataSetChanged()
+    }
+
     internal inner class ViewHoldercourse(val rowCourseBinding: RowCourseBinding) :
         RecyclerView.ViewHolder(rowCourseBinding.root) {
         private var adapterPosition = 0
