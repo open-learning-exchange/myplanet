@@ -303,7 +303,7 @@ class UserProfileFragment : Fragment() {
                 selectedLevel,
                 selectedLanguage,
                 selectedGender,
-                date
+                date?: model?.dob
             ) {
                 updateUIWithUserData(model)
             }
