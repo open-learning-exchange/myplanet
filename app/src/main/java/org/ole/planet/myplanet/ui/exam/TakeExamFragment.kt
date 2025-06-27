@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
 import android.widget.RadioButton
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.widget.NestedScrollView
 import com.google.android.material.snackbar.Snackbar
@@ -38,6 +39,7 @@ import java.util.Arrays
 import java.util.Date
 import java.util.Locale
 import androidx.core.view.isVisible
+import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.util.UUID
 
 class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {
@@ -432,7 +434,8 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             if (questions != null && currentIndex in 0 until (questions?.size ?: 0)) {
                 val type = questions?.get(currentIndex)?.type
                 showTextInput(type)
-                if (showErrorMessage(getString(R.string.please_select_write_your_answer_to_continue))) {
+                if (!isQuestionAnswered()) {
+                    toast(activity,getString(R.string.please_select_write_your_answer_to_continue), Toast.LENGTH_SHORT)
                     return
                 }
 
