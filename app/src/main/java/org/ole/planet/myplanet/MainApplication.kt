@@ -6,11 +6,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.view.WindowCompat
 import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
@@ -36,6 +38,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.ANRWatchdog
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
+import org.ole.planet.myplanet.utilities.EdgeToEdgeHelper
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.initialize
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
@@ -193,6 +196,10 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             homeIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
             context.startActivity(homeIntent)
         }
+
+        fun enableEdgeToEdgeForActivity(activity: Activity) {
+            EdgeToEdgeHelper.enableEdgeToEdge(activity)
+        }
     }
 
     private var activityReferences = 0
@@ -319,7 +326,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
     }
 
-    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
+    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {
+        enableEdgeToEdgeForActivity(activity)
+    }
 
     override fun onActivityStarted(activity: Activity) {
         if (++activityReferences == 1 && !isActivityChangingConfigurations) {

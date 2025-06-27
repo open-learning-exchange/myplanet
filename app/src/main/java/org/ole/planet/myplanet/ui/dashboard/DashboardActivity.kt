@@ -18,8 +18,12 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.MenuItemCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
@@ -74,6 +78,7 @@ import org.ole.planet.myplanet.utilities.Utilities.toast
 import kotlin.math.ceil
 import kotlinx.coroutines.*
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.utilities.enableEdgeToEdgeDisplay
 
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
@@ -121,6 +126,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun initViews() {
         activityDashboardBinding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(activityDashboardBinding.root)
+        enableEdgeToEdgeDisplay()
         setupUI(activityDashboardBinding.activityDashboardParentLayout, this@DashboardActivity)
         setSupportActionBar(activityDashboardBinding.myToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
@@ -178,6 +184,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun setupNavigation() {
         headerResult = accountHeader
         createDrawer()
+        applyInsetsToMaterialDrawer()
         supportFragmentManager.addOnBackStackChangedListener {
             val frag = supportFragmentManager.findFragmentById(R.id.fragment_container)
             val idToSelect = when (frag) {
@@ -690,6 +697,51 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             R.string.enterprises -> openEnterpriseFragment()
             R.string.menu_logout -> logout()
             else -> openCallFragment(BellDashboardFragment())
+        }
+    }
+
+    private fun applyInsetsToMaterialDrawer() {
+        val drawerLayout = result!!.drawerLayout
+
+        val bellToolbar = activityDashboardBinding.appBarBell.bellToolbar
+        ViewCompat.setOnApplyWindowInsetsListener(bellToolbar) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.updatePadding(top = systemBars.top)
+
+            val params = view.layoutParams
+            params.height = resources.getDimensionPixelSize(R.dimen._58dp) + systemBars.top
+            view.layoutParams = params
+
+            insets
+        }
+
+        ViewCompat.setOnApplyWindowInsetsListener(drawerLayout) { _, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+
+            val drawerSlider = drawerLayout.findViewById<View>(
+                com.mikepenz.materialdrawer.R.id.material_drawer_slider_layout
+            )
+
+            drawerSlider?.let { slider ->
+                slider.updatePadding(
+                    top = systemBars.top,
+                    bottom = systemBars.bottom
+                )
+
+                val recyclerView = slider.findViewById<RecyclerView>(
+                    com.mikepenz.materialdrawer.R.id.material_drawer_recycler_view
+                )
+
+                recyclerView?.apply {
+                    clipToPadding = false
+                    updatePadding(
+                        top = 0,
+                        bottom = systemBars.bottom
+                    )
+                }
+            }
+
+            insets
         }
     }
 
