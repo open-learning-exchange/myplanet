@@ -11,6 +11,7 @@ import android.widget.CompoundButton
 import android.widget.RadioButton
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.core.widget.NestedScrollView
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
@@ -29,17 +30,17 @@ import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.exam.ExamAnswerUtils
+import org.ole.planet.myplanet.ui.exam.ExamSubmissionUtils
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.JsonParserUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.hideSoftKeyboard
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
-import java.util.Arrays
+import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.util.Date
 import java.util.Locale
-import androidx.core.view.isVisible
-import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.util.UUID
 
 class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {
@@ -471,146 +472,26 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun updateAnsDb(): Boolean {
-        var isAnswerCorrect = true
-        mRealm.executeTransaction { realm ->
-            val currentQuestion = questions?.get(currentIndex) ?: return@executeTransaction
-
-            val answer = createOrRetrieveAnswer(realm, currentQuestion)
-            populateAnswer(answer, currentQuestion)
-
-            if (this@TakeExamFragment.type == "exam") {
-                isAnswerCorrect = checkCorrectAns(answer, currentQuestion)
-            }
-
-            updateSubmissionStatus()
-        }
-
-        return if (this.type == "exam") isAnswerCorrect else true
-    }
-
-    private fun createOrRetrieveAnswer(realm: Realm, currentQuestion: RealmExamQuestion): RealmAnswer {
-        val existingAnswer = sub?.answers?.find { it.questionId == currentQuestion.id }
-        val answer = existingAnswer ?: realm.createObject(RealmAnswer::class.java, UUID.randomUUID().toString())
-
-        if (existingAnswer == null) {
-            sub?.answers?.add(answer)
-        }
-
-        answer.questionId = currentQuestion.id
-        answer.submissionId = sub?.id
-        return answer
-    }
-
-    private fun updateSubmissionStatus() {
-        sub?.lastUpdateTime = Date().time
-        sub?.status = if (currentIndex == (questions?.size ?: 0) - 1) {
-            if (type == "survey") "complete" else "requires grading"
+        val currentQuestion = questions?.get(currentIndex) ?: return true
+        val otherText = if (fragmentTakeExamBinding.etAnswer.isVisible) {
+            fragmentTakeExamBinding.etAnswer.text.toString()
         } else {
-            "pending"
+            null
         }
+        return ExamSubmissionUtils.saveAnswer(
+            mRealm,
+            sub,
+            currentQuestion,
+            ans,
+            listAns,
+            otherText,
+            fragmentTakeExamBinding.etAnswer.isVisible,
+            type ?: "exam",
+            currentIndex,
+            questions?.size ?: 0
+        )
     }
 
-    private fun populateAnswer(answer: RealmAnswer, currentQuestion: RealmExamQuestion) {
-        when {
-            currentQuestion.type.equals("select", ignoreCase = true) ->
-                populateSelectAnswer(answer, currentQuestion)
-            currentQuestion.type.equals("selectMultiple", ignoreCase = true) ->
-                populateMultipleSelectAnswer(answer)
-            else ->
-                populateTextAnswer(answer)
-        }
-    }
-
-    private fun populateSelectAnswer(answer: RealmAnswer, question: RealmExamQuestion) {
-        if (ans == "other" && fragmentTakeExamBinding.etAnswer.isVisible && fragmentTakeExamBinding.etAnswer.text.isNotEmpty()) {
-            val otherText = fragmentTakeExamBinding.etAnswer.text.toString()
-            answer.value = otherText
-            answer.valueChoices = RealmList<String>().apply {
-                add("""{"id":"other","text":"$otherText"}""")
-            }
-        } else {
-            val choiceText = getChoiceTextById(question, ans)
-            answer.value = choiceText
-            answer.valueChoices = RealmList<String>().apply {
-                if (ans.isNotEmpty()) {
-                    add("""{"id":"$ans","text":"$choiceText"}""")
-                }
-            }
-        }
-    }
-
-    private fun populateMultipleSelectAnswer(answer: RealmAnswer) {
-        answer.value = ""
-        answer.valueChoices = RealmList<String>().apply {
-            listAns?.forEach { (text, id) ->
-                if (id == "other" && fragmentTakeExamBinding.etAnswer.isVisible && fragmentTakeExamBinding.etAnswer.text.isNotEmpty()) {
-                    val otherText = fragmentTakeExamBinding.etAnswer.text.toString()
-                    add("""{"id":"other","text":"$otherText"}""")
-                } else {
-                    add("""{"id":"$id","text":"$text"}""")
-                }
-            }
-        }
-    }
-
-    private fun populateTextAnswer(answer: RealmAnswer) {
-        answer.value = ans
-        answer.valueChoices = null
-    }
-
-    private fun getChoiceTextById(question: RealmExamQuestion, id: String): String {
-        val choices = getStringAsJsonArray(question.choices)
-        for (i in 0 until choices.size()) {
-            if (choices[i].isJsonObject) {
-                val obj = choices[i].asJsonObject
-                if (obj.get("id").asString == id) {
-                    return obj.get("text").asString
-                }
-            }
-        }
-        return id
-    }
-
-    private fun checkCorrectAns(answer: RealmAnswer?, que: RealmExamQuestion?): Boolean {
-        val questionType = que?.type
-        val correctChoices = que?.getCorrectChoice()
-
-        val isCorrect = when {
-            questionType.equals("select", ignoreCase = true) -> checkSelectAnswer(correctChoices)
-            questionType.equals("selectMultiple", ignoreCase = true) -> checkMultipleSelectAnswer(correctChoices)
-            else -> checkTextAnswer(correctChoices)
-        }
-
-        answer?.isPassed = isCorrect
-        answer?.grade = 1
-        if (!isCorrect) {
-            answer?.mistakes = (answer?.mistakes ?: 0) + 1
-        }
-
-        return isCorrect
-    }
-
-    private fun checkSelectAnswer(correctChoices: List<String>?): Boolean {
-        return correctChoices?.contains(ans.lowercase(Locale.getDefault())) == true
-    }
-
-    private fun checkMultipleSelectAnswer(correctChoices: List<String>?): Boolean {
-        val selectedAns = listAns?.values?.toTypedArray<String>()
-        val correctChoicesArray = correctChoices?.toTypedArray<String>()
-        return isEqual(selectedAns, correctChoicesArray)
-    }
-
-    private fun checkTextAnswer(correctChoices: List<String>?): Boolean {
-        return correctChoices?.any {
-            ans.lowercase(Locale.getDefault()).contains(it.lowercase(Locale.getDefault()))
-        } == true
-    }
-
-    private fun isEqual(ar1: Array<String>?, ar2: Array<String>?): Boolean {
-        ar1?.let { Arrays.sort(it) }
-        ar2?.let { Arrays.sort(it) }
-        return ar1.contentEquals(ar2)
-    }
 
     override fun onDestroy() {
         super.onDestroy()
