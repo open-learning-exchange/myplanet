@@ -9,7 +9,9 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
 import android.widget.RadioButton
+import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.core.view.isVisible
 import androidx.core.widget.NestedScrollView
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
@@ -28,17 +30,18 @@ import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.exam.ExamAnswerUtils
+import org.ole.planet.myplanet.ui.exam.ExamSubmissionUtils
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.JsonParserUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.hideSoftKeyboard
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.util.Date
 import java.util.Locale
-import androidx.core.view.isVisible
-import org.ole.planet.myplanet.ui.exam.ExamAnswerUtils
-import org.ole.planet.myplanet.ui.exam.ExamSubmissionUtils
+import java.util.UUID
 
 class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {
     private lateinit var fragmentTakeExamBinding: FragmentTakeExamBinding
@@ -432,7 +435,8 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             if (questions != null && currentIndex in 0 until (questions?.size ?: 0)) {
                 val type = questions?.get(currentIndex)?.type
                 showTextInput(type)
-                if (showErrorMessage(getString(R.string.please_select_write_your_answer_to_continue))) {
+                if (!isQuestionAnswered()) {
+                    toast(activity,getString(R.string.please_select_write_your_answer_to_continue), Toast.LENGTH_SHORT)
                     return
                 }
 
