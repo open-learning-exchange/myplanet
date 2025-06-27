@@ -224,7 +224,7 @@ class UserProfileFragment : Fragment() {
         binding.language.adapter = adapter
         model?.language?.let { lang ->
             val position = languageList.indexOf(lang)
-            binding.language.setSelection(if (position >= 0) position else 0)
+            if (position >= 0) binding.language.setSelection(position + 1) else binding.language.setSelection(0)
         } ?: binding.language.setSelection(0)
         binding.language.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
@@ -303,7 +303,7 @@ class UserProfileFragment : Fragment() {
                 selectedLevel,
                 selectedLanguage.takeUnless { it == getString(R.string.language) },
                 selectedGender,
-                date?: model?.dob
+                date
             ) {
                 updateUIWithUserData(model)
             }
