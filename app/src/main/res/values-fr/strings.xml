@@ -75,6 +75,7 @@
     <string name="your_feedback">Votre retour d\'information *</string>
     <string name="button_update">Mettre à jour</string>
     <string name="level">Niveau</string>
+    <string name="select_level">Sélectionner le niveau</string>
     <string name="male">Homme</string>
     <string name="female">Femme</string>
     <string name="gender">Sexe</string>

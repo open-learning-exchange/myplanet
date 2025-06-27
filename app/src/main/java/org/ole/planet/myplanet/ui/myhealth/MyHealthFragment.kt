@@ -220,13 +220,13 @@ class MyHealthFragment : Fragment() {
                 return
             }
             val myHealths = mm.profile
-            fragmentVitalSignBinding.txtOtherNeed.text = Utilities.checkNA("${myHealths?.notes}")
-            fragmentVitalSignBinding.txtSpecialNeeds.text = Utilities.checkNA("${myHealths?.specialNeeds}")
-            fragmentVitalSignBinding.txtBirthPlace.text = Utilities.checkNA("${userModel?.birthPlace}")
+            fragmentVitalSignBinding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes)
+            fragmentVitalSignBinding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds)
+            fragmentVitalSignBinding.txtBirthPlace.text = Utilities.checkNA(userModel?.birthPlace)
             fragmentVitalSignBinding.txtEmergencyContact.text = getString(R.string.emergency_contact_details,
-                Utilities.checkNA("${myHealths?.emergencyContactName}"),
-                Utilities.checkNA("${myHealths?.emergencyContactType}"),
-                Utilities.checkNA("${myHealths?.emergencyContact}")).trimIndent()
+                Utilities.checkNA(myHealths?.emergencyContactName),
+                Utilities.checkNA(myHealths?.emergencyContactType),
+                Utilities.checkNA(myHealths?.emergencyContact)).trimIndent()
 
             val list = getExaminations(mm)
 
