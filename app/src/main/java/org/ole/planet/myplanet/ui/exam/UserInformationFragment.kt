@@ -36,6 +36,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.service.UploadManager
+import org.ole.planet.myplanet.ui.team.TeamPage
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 
@@ -259,7 +260,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                 teamName = teamObject?.name ?: "",
                 teamType = teamObject?.type ?: "",
                 isMyTeam = true,
-                navigateToPage = 5
+                navigateToPage = TeamPage.SURVEY
             )
 
             activity.supportFragmentManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE)

@@ -60,9 +60,11 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
             tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
         }.attach()
 
-        val pageIndex = arguments?.getInt("navigateToPage", -1) ?: -1
-        if (pageIndex >= 0 && pageIndex < (fragmentTeamDetailBinding.viewPager2.adapter?.itemCount ?: 0)) {
-            fragmentTeamDetailBinding.viewPager2.currentItem = pageIndex
+        val pageOrdinal = arguments?.getInt("navigateToPage", -1) ?: -1
+        if (pageOrdinal >= 0 &&
+            pageOrdinal < (fragmentTeamDetailBinding.viewPager2.adapter?.itemCount ?: 0)
+        ) {
+            fragmentTeamDetailBinding.viewPager2.currentItem = pageOrdinal
         }
 
         fragmentTeamDetailBinding.title.text = getEffectiveTeamName()
@@ -177,16 +179,20 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     companion object {
-        fun newInstance(teamId: String, teamName: String, teamType: String, isMyTeam: Boolean, navigateToPage: Int = -1): TeamDetailFragment {
+        fun newInstance(
+            teamId: String,
+            teamName: String,
+            teamType: String,
+            isMyTeam: Boolean,
+            navigateToPage: TeamPage? = null
+        ): TeamDetailFragment {
             val fragment = TeamDetailFragment()
             val args = Bundle().apply {
                 putString("teamId", teamId)
                 putString("teamName", teamName)
                 putString("teamType", teamType)
                 putBoolean("isMyTeam", isMyTeam)
-                if (navigateToPage >= 0) {
-                    putInt("navigateToPage", navigateToPage)
-                }
+                navigateToPage?.let { putInt("navigateToPage", it.ordinal) }
             }
             fragment.arguments = args
             return fragment
