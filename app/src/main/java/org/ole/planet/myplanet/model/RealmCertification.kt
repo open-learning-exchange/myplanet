@@ -53,7 +53,6 @@ open class RealmCertification : RealmObject() {
         }
 
         @JvmStatic
-        @JvmStatic
         fun certificationWriteCsv() {
             CsvUtils.writeCsv(
                 "${context.getExternalFilesDir(null)}/ole/certification.csv",
