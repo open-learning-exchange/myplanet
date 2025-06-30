@@ -379,7 +379,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun addRadioButton(choice: String, oldAnswer: String) {
-        println(oldAnswer)
         val inflater = LayoutInflater.from(activity)
         val rdBtn = inflater.inflate(R.layout.item_radio_btn, fragmentTakeExamBinding.groupChoices, false) as RadioButton
         rdBtn.text = choice
@@ -413,8 +412,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         rdBtn.tag = choiceId
 
         if (isRadio) {
-            println(oldAnswer)
-            println(choiceId)
             rdBtn.isChecked = choiceId == oldAnswer
         } else {
             rdBtn.isChecked = listAns?.get(choiceText) == choiceId
@@ -432,7 +429,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
         if (choiceText.equals("Other", ignoreCase = true) && rdBtn.isChecked) {
             fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
-            fragmentTakeExamBinding.etAnswer.setText(oldAnswer)
         }
     }
 
@@ -528,7 +524,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun populateSelectAnswer(answer: RealmAnswer, question: RealmExamQuestion) {
-        if (ans == "other" && fragmentTakeExamBinding.etAnswer.isVisible && fragmentTakeExamBinding.etAnswer.text.isNotEmpty()) {
+        if ( fragmentTakeExamBinding.etAnswer.isVisible && fragmentTakeExamBinding.etAnswer.text.isNotEmpty()) {
             val otherText = fragmentTakeExamBinding.etAnswer.text.toString()
             answer.value = otherText
             answer.valueChoices = RealmList<String>().apply {
