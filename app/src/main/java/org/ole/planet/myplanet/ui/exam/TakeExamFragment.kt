@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.exam
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
@@ -378,6 +379,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun addRadioButton(choice: String, oldAnswer: String) {
+        println(oldAnswer)
         val inflater = LayoutInflater.from(activity)
         val rdBtn = inflater.inflate(R.layout.item_radio_btn, fragmentTakeExamBinding.groupChoices, false) as RadioButton
         rdBtn.text = choice
@@ -392,14 +394,18 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun addCompoundButton(choice: JsonObject?, isRadio: Boolean, oldAnswer: String) {
-        val rdBtn = LayoutInflater.from(activity).inflate(
-            if (isRadio) {
-                R.layout.item_radio_btn
-            } else {
-                R.layout.item_checkbox
-            }, null
-        ) as CompoundButton
-
+        val rdBtn = if (isRadio) {
+            LayoutInflater.from(activity)
+                .inflate(
+                    R.layout.item_radio_btn,
+                    fragmentTakeExamBinding.groupChoices, false
+                ) as RadioButton
+        } else {
+            LayoutInflater.from(activity)
+                .inflate(
+                    R.layout.item_checkbox, null
+                ) as CompoundButton
+        }
         val choiceText = getString("text", choice)
         val choiceId = getString("id", choice)
 
@@ -407,6 +413,8 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         rdBtn.tag = choiceId
 
         if (isRadio) {
+            println(oldAnswer)
+            println(choiceId)
             rdBtn.isChecked = choiceId == oldAnswer
         } else {
             rdBtn.isChecked = listAns?.get(choiceText) == choiceId
@@ -414,6 +422,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
         rdBtn.setOnCheckedChangeListener(this)
         if (isRadio) {
+            rdBtn.id = View.generateViewId()
             fragmentTakeExamBinding.groupChoices.addView(rdBtn)
         } else {
             rdBtn.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
