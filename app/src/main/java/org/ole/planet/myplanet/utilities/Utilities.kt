@@ -147,10 +147,10 @@ object Utilities {
     }
 
     @JvmStatic
-    fun toast(context: Context?, s: String?) {
+    fun toast(context: Context?, s: String?, duration: Int = Toast.LENGTH_LONG) {
         context ?: return
         Handler(Looper.getMainLooper()).post {
-            Toast.makeText(context, s, Toast.LENGTH_LONG).show()
+            Toast.makeText(context, s, duration).show()
         }
     }
 
