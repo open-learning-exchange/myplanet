@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.service.UserUploadService
 import java.util.Date
 import androidx.core.content.edit
 
@@ -63,9 +64,9 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
     override fun onError(msg: String, blockSync: Boolean) {
         if (!blockSync) {
             SyncManager.instance?.start(this, "upload")
-            UploadToShelfService.instance?.uploadUserData {
+            UserUploadService.instance?.uploadUserData {
                 Service(MainApplication.context).healthAccess {
-                    UploadToShelfService.instance?.uploadHealth()
+                    UserUploadService.instance?.uploadHealth()
                 }
             }
             if (!MainApplication.isSyncRunning) {
