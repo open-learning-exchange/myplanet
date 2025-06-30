@@ -55,6 +55,20 @@ class SyncManager private constructor(private val context: Context) {
     private val semaphore = Semaphore(5)
     private var betaSync = false
 
+    private val fullSyncTables = listOf(
+        "tablet_users", "courses", "exams", "ratings", "courses_progress",
+        "achievements", "tags", "submissions", "news", "feedback",
+        "teams", "tasks", "login_activities", "meetups", "health",
+        "certifications", "team_activities", "chat_history"
+    )
+
+    private val fastSyncTables = listOf(
+        "courses", "exams", "ratings", "achievements", "tags",
+        "news", "feedback", "teams", "meetups", "health",
+        "certifications", "courses_progress", "submissions", "tasks",
+        "login_activities", "team_activities", "chat_history"
+    )
+
     fun start(listener: SyncListener?, type: String) {
         this.listener = listener
         if (!isSyncing) {
@@ -116,87 +130,21 @@ class SyncManager private constructor(private val context: Context) {
 
             initializeSync()
             runBlocking {
-                val syncJobs = listOf(
-                    async {
-                        logger.startProcess("tablet_users_sync")
-                        TransactionSyncManager.syncDb(mRealm, "tablet_users")
-                        logger.endProcess("tablet_users_sync")
-                    },
-                    async {
-                        logger.startProcess("library_sync")
-                        myLibraryTransactionSync()
-                        logger.endProcess("library_sync")
-                    },
-                    async { logger.startProcess("courses_sync")
-                        TransactionSyncManager.syncDb(mRealm, "courses")
-                        logger.endProcess("courses_sync")
-                    },
-                    async { logger.startProcess("exams_sync")
-                        TransactionSyncManager.syncDb(mRealm, "exams")
-                        logger.endProcess("exams_sync")
-                    },
-                    async { logger.startProcess("ratings_sync")
-                        TransactionSyncManager.syncDb(mRealm, "ratings")
-                        logger.endProcess("ratings_sync")
-                    },
-                    async { logger.startProcess("courses_progress_sync")
-                        TransactionSyncManager.syncDb(mRealm, "courses_progress")
-                        logger.endProcess("courses_progress_sync")
-                    },
-                    async { logger.startProcess("achievements_sync")
-                        TransactionSyncManager.syncDb(mRealm, "achievements")
-                        logger.endProcess("achievements_sync")
-                    },
-                    async { logger.startProcess("tags_sync")
-                        TransactionSyncManager.syncDb(mRealm, "tags")
-                        logger.endProcess("tags_sync")
-                    },
-                    async { logger.startProcess("submissions_sync")
-                        TransactionSyncManager.syncDb(mRealm, "submissions")
-                        logger.endProcess("submissions_sync")
-                    },
-                    async { logger.startProcess("news_sync")
-                        TransactionSyncManager.syncDb(mRealm, "news")
-                        logger.endProcess("news_sync")
-                    },
-                    async { logger.startProcess("feedback_sync")
-                        TransactionSyncManager.syncDb(mRealm, "feedback")
-                        logger.endProcess("feedback_sync")
-                    },
-                    async { logger.startProcess("teams_sync")
-                        TransactionSyncManager.syncDb(mRealm, "teams")
-                        logger.endProcess("teams_sync")
-                    },
-                    async { logger.startProcess("tasks_sync")
-                        TransactionSyncManager.syncDb(mRealm, "tasks")
-                        logger.endProcess("tasks_sync")
-                    },
-                    async { logger.startProcess("login_activities_sync")
-                        TransactionSyncManager.syncDb(mRealm, "login_activities")
-                        logger.endProcess("login_activities_sync")
-                    },
-                    async { logger.startProcess("meetups_sync")
-                        TransactionSyncManager.syncDb(mRealm, "meetups")
-                        logger.endProcess("meetups_sync")
-                    },
-                    async { logger.startProcess("health_sync")
-                        TransactionSyncManager.syncDb(mRealm, "health")
-                        logger.endProcess("health_sync")
-                    },
-                    async { logger.startProcess("certifications_sync")
-                        TransactionSyncManager.syncDb(mRealm, "certifications")
-                        logger.endProcess("certifications_sync")
-                    },
-                    async { logger.startProcess("team_activities_sync")
-                        TransactionSyncManager.syncDb(mRealm, "team_activities")
-                        logger.endProcess("team_activities_sync")
-                    },
-                    async { logger.startProcess("chat_history_sync")
-                        TransactionSyncManager.syncDb(mRealm, "chat_history")
-                        logger.endProcess("chat_history_sync")
-                    }
-                )
-                syncJobs.awaitAll()
+                val jobs = mutableListOf<Deferred<Unit>>()
+
+                jobs += tableSyncJob(mRealm, "tablet_users", logger)
+
+                jobs += async {
+                    logger.startProcess("library_sync")
+                    myLibraryTransactionSync()
+                    logger.endProcess("library_sync")
+                }
+
+                fullSyncTables.filter { it != "tablet_users" }.forEach { table ->
+                    jobs += tableSyncJob(mRealm, table, logger)
+                }
+
+                jobs.awaitAll()
             }
 
             logger.startProcess("admin_sync")
@@ -248,59 +196,9 @@ class SyncManager private constructor(private val context: Context) {
                 majorSyncs.awaitAll()
 
                 // Phase 3: Remaining syncs in parallel
-                val remainingSyncs = listOf(
-                    async { syncWithSemaphore("courses") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "courses") }
-                    }},
-                    async { syncWithSemaphore("exams") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "exams") }
-                    }},
-                    async { syncWithSemaphore("ratings") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "ratings") }
-                    }},
-                    async { syncWithSemaphore("achievements") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "achievements") }
-                    }},
-                    async { syncWithSemaphore("tags") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "tags") }
-                    }},
-                    async { syncWithSemaphore("news") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "news") }
-                    }},
-                    async { syncWithSemaphore("feedback") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "feedback") }
-                    }},
-                    async { syncWithSemaphore("teams") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "teams") }
-                    }},
-                    async { syncWithSemaphore("meetups") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "meetups") }
-                    }},
-                    async { syncWithSemaphore("health") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "health") }
-                    }},
-                    async { syncWithSemaphore("certifications") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "certifications") }
-                    }},
-                    async { syncWithSemaphore("courses_progress") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "courses_progress") }
-                    }},
-                    async { syncWithSemaphore("submissions") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "submissions") }
-                    }},
-                    async { syncWithSemaphore("tasks") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "tasks") }
-                    }},
-                    async { syncWithSemaphore("login_activities") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "login_activities") }
-                    }},
-                    async { syncWithSemaphore("team_activities") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "team_activities") }
-                    }},
-                    async { syncWithSemaphore("chat_history") {
-                        safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "chat_history") }
-                    }}
-                )
+                val remainingSyncs = fastSyncTables.map { table ->
+                    fastTableSyncJob(table)
+                }
                 remainingSyncs.awaitAll()
             }
 
@@ -361,6 +259,22 @@ class SyncManager private constructor(private val context: Context) {
             } finally {
                 logger.endProcess("${name}_sync")
             }
+        }
+    }
+
+    private fun CoroutineScope.tableSyncJob(
+        realm: Realm,
+        table: String,
+        logger: SyncTimeLogger
+    ) = async {
+        logger.startProcess("${table}_sync")
+        TransactionSyncManager.syncDb(realm, table)
+        logger.endProcess("${table}_sync")
+    }
+
+    private fun CoroutineScope.fastTableSyncJob(table: String) = async {
+        syncWithSemaphore(table) {
+            safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, table) }
         }
     }
 
