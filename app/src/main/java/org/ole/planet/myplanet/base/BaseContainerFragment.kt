@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.ui.courses.AdapterCourses
 import org.ole.planet.myplanet.ui.viewer.*
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
 import androidx.core.net.toUri
@@ -54,11 +55,13 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         profileDbHandler = UserProfileDbHandler(requireActivity())
-        installApkLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                if (currentLibrary != null) {
-                    installApk(currentLibrary!!)
-                    currentLibrary = null
+        if (!BuildConfig.LITE) {
+            installApkLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                if (result.resultCode == Activity.RESULT_OK) {
+                    currentLibrary?.let {
+                        installApk(it)
+                        currentLibrary = null
+                    }
                 }
             }
         }
@@ -250,13 +253,18 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 openIntent(items, CSVViewerActivity::class.java)
             }
             "apk" -> {
-                installApk(items)
+                if (!BuildConfig.LITE) {
+                    installApk(items)
+                } else {
+                    Toast.makeText(activity, getString(R.string.this_file_type_is_currently_unsupported), Toast.LENGTH_LONG).show()
+                }
             }
             else -> Toast.makeText(activity, getString(R.string.this_file_type_is_currently_unsupported), Toast.LENGTH_LONG).show()
         }
     }
 
     private fun installApk(items: RealmMyLibrary) {
+        if (BuildConfig.LITE) return
         currentLibrary = items
         val directory = File(MainApplication.context.getExternalFilesDir(null).toString() + "/ole" + "/" + items.id)
         if (!directory.exists()) {
@@ -290,6 +298,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     private fun requestInstallPermission() {
+        if (BuildConfig.LITE) return
         val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
         intent.data = ("package:" + MainApplication.context.packageName).toUri()
         installApkLauncher.launch(intent)

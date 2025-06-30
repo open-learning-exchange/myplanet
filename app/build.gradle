@@ -30,6 +30,19 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    flavorDimensions "mode"
+    productFlavors {
+        create("default") {
+            dimension "mode"
+            buildConfigField 'boolean', 'LITE', 'false'
+        }
+        create("lite") {
+            dimension "mode"
+            versionNameSuffix "-lite"
+            buildConfigField 'boolean', 'LITE', 'true'
+        }
+    }
     packagingOptions {
         resources {
             excludes += [
