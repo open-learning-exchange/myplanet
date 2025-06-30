@@ -5,13 +5,14 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
+import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.databinding.RowMemberRequestBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 import org.ole.planet.myplanet.model.RealmUserModel
 
-class AdapterMemberRequest(private val context: Context, private val list: MutableList<RealmUserModel>, private val mRealm: Realm) : RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser>() {
+class AdapterMemberRequest(private val context: Context, private val list: MutableList<RealmUserModel>, private val mRealm: Realm, private val listener: MemberChangeListener) : RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser>() {
     private lateinit var rowMemberRequestBinding: RowMemberRequestBinding
     private var teamId: String? = null
     private lateinit var team: RealmMyTeam
@@ -60,6 +61,7 @@ class AdapterMemberRequest(private val context: Context, private val list: Mutab
         if (adapterPosition != RecyclerView.NO_POSITION && adapterPosition < list.size) {
             acceptReject(list[adapterPosition], isAccepted, adapterPosition)
         }
+        listener.onMemberChanged()
     }
 
     private fun acceptReject(userModel: RealmUserModel, isAccept: Boolean, position: Int) {

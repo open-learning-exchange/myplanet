@@ -127,89 +127,119 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (holder is ViewHoldercourse) {
-            holder.bind(position)
-            val course = courseList[position]
-            if (course != null) {
-                if (course.isMyCourse) {
-                    holder.rowCourseBinding.isMyCourse.visibility = View.VISIBLE
-                    holder.rowCourseBinding.checkbox.visibility = View.GONE
-                } else {
-                    holder.rowCourseBinding.isMyCourse.visibility = View.GONE
-                    holder.rowCourseBinding.checkbox.visibility = View.VISIBLE
-                }
+        if (holder !is ViewHoldercourse) return
 
-                holder.rowCourseBinding.title.text = course.courseTitle
-                holder.rowCourseBinding.description.apply {
-                    text = course.description
-                    val markdownContentWithLocalPaths = prependBaseUrlToImages(
-                        course.description, "file://${MainApplication.context.getExternalFilesDir(null)}/ole/"
-                    )
-                    setMarkdownText(this, markdownContentWithLocalPaths)
+        holder.bind(position)
+        val course = courseList[position] ?: return
 
-                    setOnClickListener {
-                        homeItemClickListener?.openCallFragment(TakeCourseFragment().apply {
-                            arguments = Bundle().apply {
-                                putString("id", course.courseId)
-                                putInt("position", position)
-                            }
-                        })
-                    }
-                }
+        updateVisibilityForMyCourse(holder, course)
+        holder.rowCourseBinding.title.text = course.courseTitle
+        configureDescription(holder, course, position)
+        configureDateViews(holder, course)
+        setTextViewContent(
+            holder.rowCourseBinding.gradLevel,
+            course.gradeLevel,
+            holder.rowCourseBinding.gradLevel,
+            context.getString(R.string.grade_level_colon)
+        )
+        setTextViewContent(
+            holder.rowCourseBinding.subjectLevel,
+            course.subjectLevel,
+            holder.rowCourseBinding.subjectLevel,
+            context.getString(R.string.subject_level_colon)
+        )
+        holder.rowCourseBinding.courseProgress.max = course.getNumberOfSteps()
+        displayTagCloud(holder.rowCourseBinding.flexboxDrawable, position)
 
-                if (course.gradeLevel.isNullOrEmpty() && course.subjectLevel.isNullOrEmpty()) {
-                    holder.rowCourseBinding.holder.visibility = View.VISIBLE
-                    holder.rowCourseBinding.tvDate2.visibility = View.VISIBLE
-                    holder.rowCourseBinding.tvDate.visibility = View.GONE
-                    try {
-                        holder.rowCourseBinding.tvDate2.text = formatDate(course.createdDate, "MMM dd, yyyy")
-                    } catch (e: Exception) {
-                        throw RuntimeException(e)
-                    }
-                } else {
-                    holder.rowCourseBinding.tvDate.visibility = View.VISIBLE
-                    holder.rowCourseBinding.tvDate2.visibility = View.GONE
-                    holder.rowCourseBinding.holder.visibility = View.GONE
-                    try {
-                        holder.rowCourseBinding.tvDate.text = formatDate(course.createdDate, "MMM dd, yyyy")
-                    } catch (e: Exception) {
-                        throw RuntimeException(e)
-                    }
-                }
-                setTextViewContent(holder.rowCourseBinding.gradLevel, course.gradeLevel, holder.rowCourseBinding.gradLevel, context.getString(R.string.grade_level_colon))
-                setTextViewContent(holder.rowCourseBinding.subjectLevel, course.subjectLevel, holder.rowCourseBinding.subjectLevel, context.getString(R.string.subject_level_colon))
-                holder.rowCourseBinding.courseProgress.max = course.getNumberOfSteps()
-                displayTagCloud(holder.rowCourseBinding.flexboxDrawable, position)
-                userModel = UserProfileDbHandler(context).userModel
-                if (!userModel?.isGuest()!!) {
-                    holder.rowCourseBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
-                        if (event.action == MotionEvent.ACTION_UP) homeItemClickListener?.showRatingDialog(
-                            "course",
-                            course.courseId,
-                            course.courseTitle,
-                            ratingChangeListener
-                        )
-                        true
-                    }
-                }
-                if (!userModel?.isGuest()!!) {
-                    holder.rowCourseBinding.checkbox.isChecked = selectedItems.contains(course)
-                    holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
-                        holder.rowCourseBinding.checkbox.contentDescription = context.getString(R.string.select_res_course, course.courseTitle)
-                        Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, courseList)
-                        listener?.onSelectedListChange(selectedItems)
-                    }
-                } else {
-                    holder.rowCourseBinding.checkbox.visibility = View.GONE
-                }
-                showProgressAndRating(position, holder)
+        userModel = UserProfileDbHandler(context).userModel
+        val isGuest = userModel?.isGuest() ?: true
+        if (!isGuest) setupRatingBar(holder, course)
+        setupCheckbox(holder, course, position, isGuest)
 
-                holder.rowCourseBinding.root.setOnClickListener {
-                    if (position != RecyclerView.NO_POSITION) {
-                        openCourse(courseList[position], 0)
-                    }
-                }
+        showProgressAndRating(position, holder)
+
+        holder.rowCourseBinding.root.setOnClickListener {
+            if (position != RecyclerView.NO_POSITION) {
+                openCourse(courseList[position], 0)
             }
+        }
+    }
+
+    private fun updateVisibilityForMyCourse(holder: ViewHoldercourse, course: RealmMyCourse) {
+        if (course.isMyCourse) {
+            holder.rowCourseBinding.isMyCourse.visibility = View.VISIBLE
+            holder.rowCourseBinding.checkbox.visibility = View.GONE
+        } else {
+            holder.rowCourseBinding.isMyCourse.visibility = View.GONE
+            holder.rowCourseBinding.checkbox.visibility = View.VISIBLE
+        }
+    }
+
+    private fun configureDescription(holder: ViewHoldercourse, course: RealmMyCourse, position: Int) {
+        holder.rowCourseBinding.description.apply {
+            text = course.description
+            val markdownContentWithLocalPaths = prependBaseUrlToImages(
+                course.description,
+                "file://${MainApplication.context.getExternalFilesDir(null)}/ole/"
+            )
+            setMarkdownText(this, markdownContentWithLocalPaths)
+
+            setOnClickListener {
+                homeItemClickListener?.openCallFragment(TakeCourseFragment().apply {
+                    arguments = Bundle().apply {
+                        putString("id", course.courseId)
+                        putInt("position", position)
+                    }
+                })
+            }
+        }
+    }
+
+    private fun configureDateViews(holder: ViewHoldercourse, course: RealmMyCourse) {
+        if (course.gradeLevel.isNullOrEmpty() && course.subjectLevel.isNullOrEmpty()) {
+            holder.rowCourseBinding.holder.visibility = View.VISIBLE
+            holder.rowCourseBinding.tvDate2.visibility = View.VISIBLE
+            holder.rowCourseBinding.tvDate.visibility = View.GONE
+            try {
+                holder.rowCourseBinding.tvDate2.text = formatDate(course.createdDate, "MMM dd, yyyy")
+            } catch (e: Exception) {
+                throw RuntimeException(e)
+            }
+        } else {
+            holder.rowCourseBinding.tvDate.visibility = View.VISIBLE
+            holder.rowCourseBinding.tvDate2.visibility = View.GONE
+            holder.rowCourseBinding.holder.visibility = View.GONE
+            try {
+                holder.rowCourseBinding.tvDate.text = formatDate(course.createdDate, "MMM dd, yyyy")
+            } catch (e: Exception) {
+                throw RuntimeException(e)
+            }
+        }
+    }
+
+    private fun setupRatingBar(holder: ViewHoldercourse, course: RealmMyCourse) {
+        holder.rowCourseBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
+            if (event.action == MotionEvent.ACTION_UP) homeItemClickListener?.showRatingDialog(
+                "course",
+                course.courseId,
+                course.courseTitle,
+                ratingChangeListener
+            )
+            true
+        }
+    }
+
+    private fun setupCheckbox(holder: ViewHoldercourse, course: RealmMyCourse, position: Int, isGuest: Boolean) {
+        if (!isGuest) {
+            holder.rowCourseBinding.checkbox.isChecked = selectedItems.contains(course)
+            holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
+                holder.rowCourseBinding.checkbox.contentDescription =
+                    context.getString(R.string.select_res_course, course.courseTitle)
+                Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, courseList)
+                listener?.onSelectedListChange(selectedItems)
+            }
+        } else {
+            holder.rowCourseBinding.checkbox.visibility = View.GONE
         }
     }
 

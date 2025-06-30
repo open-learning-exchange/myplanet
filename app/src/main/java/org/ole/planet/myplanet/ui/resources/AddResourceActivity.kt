@@ -198,7 +198,12 @@ class AddResourceActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             android.R.id.home -> {
-                showExitConfirmationDialog()
+                val currentFragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
+                if (currentFragment is ResourceDetailFragment) {
+                    finish()
+                }else {
+                    showExitConfirmationDialog()
+                }
                 true
             }
             else -> super.onOptionsItemSelected(item)

@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.view.*
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
-import org.json.*
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMembersBinding
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -26,35 +25,9 @@ class LeadersFragment : Fragment() {
         if (leaders.isNullOrEmpty()) {
             fragmentMembersBinding.tvNodata.text = getString(R.string.no_data_available)
         } else {
-            val leadersList = parseLeadersJson(leaders)
+            val leadersList = RealmUserModel.parseLeadersJson(leaders)
             fragmentMembersBinding.rvMember.layoutManager = GridLayoutManager(activity, 2)
             fragmentMembersBinding.rvMember.adapter = AdapterLeader(requireActivity(), leadersList)
         }
-    }
-
-    private fun parseLeadersJson(jsonString: String): List<RealmUserModel> {
-        val leadersList = mutableListOf<RealmUserModel>()
-        try {
-            val jsonObject = JSONObject(jsonString)
-            val docsArray = jsonObject.getJSONArray("docs")
-            for (i in 0 until docsArray.length()) {
-                val docObject = docsArray.getJSONObject(i)
-                val user = RealmUserModel()
-                user.name = docObject.getString("name")
-                if (!docObject.isNull("firstName")) {
-                    user.firstName = docObject.getString("firstName")
-                }
-                if (!docObject.isNull("lastName")) {
-                    user.lastName = docObject.getString("lastName")
-                }
-                if (!docObject.isNull("email")) {
-                    user.email = docObject.getString("email")
-                }
-                leadersList.add(user)
-            }
-        } catch (e: JSONException) {
-            e.printStackTrace()
-        }
-        return leadersList
     }
 }

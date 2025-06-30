@@ -44,7 +44,7 @@ class AdapterNotification(
         fun bind(notification: RealmNotification, position: Int) {
             val context = rowNotificationsBinding.root.context
             val currentNotification = formatNotificationMessage(notification, context)
-            rowNotificationsBinding.title.text =  Html.fromHtml(currentNotification, Html.FROM_HTML_MODE_LEGACY)
+            rowNotificationsBinding.title.text = Html.fromHtml(currentNotification, Html.FROM_HTML_MODE_LEGACY)
             if (notification.isRead) {
                 rowNotificationsBinding.btnMarkAsRead.visibility = View.GONE
                 rowNotificationsBinding.root.alpha = 0.5f
@@ -62,37 +62,50 @@ class AdapterNotification(
         }
 
         private fun formatNotificationMessage(notification: RealmNotification, context: Context): String {
-            return when (notification.type.lowercase()) {
+            return when (notification.type?.lowercase()) {
                 "survey" -> context.getString(R.string.pending_survey_notification) + " ${notification.message}"
                 "task" -> {
                     val datePattern = Pattern.compile("\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s\\d{1,2},\\s\\w+\\s\\d{4}\\b")
-                    val matcher = datePattern.matcher(notification.message)
+                    val matcher = datePattern.matcher(notification.message ?: "")
 
                     if (matcher.find()) {
-                        val taskTitle = notification.message.substring(0, matcher.start()).trim()
-                        val dateValue = notification.message.substring(matcher.start()).trim()
+                        val taskTitle = notification.message?.substring(0, matcher.start())?.trim() ?: ""
+                        val dateValue = notification.message?.substring(matcher.start())?.trim() ?: ""
                         return formatTaskNotification(taskTitle, dateValue)
                     } else {
                         "INVALID"
                     }
                 }
                 "resource" -> {
-                    val resourceCount = notification.message.toIntOrNull()
+                    val resourceCount = notification.message?.toIntOrNull()
                     resourceCount?.let {
                         context.getString(R.string.resource_notification, it)
                     } ?: "INVALID"
                 }
                 "storage" -> {
-                    val storageValue = notification.message.toIntOrNull()
+                    val storageValue = notification.message?.toIntOrNull()
                     storageValue?.let {
                         when {
-                            it <= 10 -> context.getString(R.string.storage_running_low) +" ${it}%"
-                            it <= 40 -> context.getString(R.string.storage_running_low)+ " ${it}%"
-                            else -> context.getString(R.string.storage_available)+ " ${it}%"
+                            it <= 10 -> context.getString(R.string.storage_running_low) + " ${it}%"
+                            it <= 40 -> context.getString(R.string.storage_running_low) + " ${it}%"
+                            else -> context.getString(R.string.storage_available) + " ${it}%"
                         }
                     } ?: "INVALID"
                 }
-                else -> "INVALID"
+                "join_request" -> {
+                    val teamId = notification.relatedId
+                    val team = mRealm.where(RealmMyTeam::class.java)
+                        .equalTo("_id", teamId)
+                        .findFirst()
+                    val teamName = team?.name ?: "Unknown Team"
+                    val message = notification.message ?: ""
+                    if (message.isNotEmpty()) {
+                        "<b>Join Request:</b> $message"
+                    } else {
+                        "<b>Join Request:</b> New request to join $teamName"
+                    }
+                }
+                else -> notification.message ?: "INVALID"
             }
         }
 

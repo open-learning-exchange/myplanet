@@ -45,6 +45,7 @@ import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
+import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createActionAsync
 
 abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBackStackChangedListener {
     lateinit var navigationView: BottomNavigationView
@@ -172,7 +173,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         val dialog = builder.build()
         currentDialog = dialog
         service.getMinApk(this, url, serverPin, this, "DashboardActivity")
-        createAction(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
+        createActionAsync(mRealm, "${profileDbHandler.userModel?.id}", null, "sync")
     }
 
     @SuppressLint("RestrictedApi")

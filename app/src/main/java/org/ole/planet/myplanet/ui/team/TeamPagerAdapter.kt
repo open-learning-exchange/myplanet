@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.team
 
 import android.os.Bundle
-import android.text.TextUtils
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
@@ -18,8 +17,9 @@ import org.ole.planet.myplanet.ui.team.teamMember.JoinedMemberFragment
 import org.ole.planet.myplanet.ui.team.teamMember.MembersFragment
 import org.ole.planet.myplanet.ui.team.teamResource.TeamResourceFragment
 import org.ole.planet.myplanet.ui.team.teamTask.TeamTaskFragment
+import org.ole.planet.myplanet.callback.MemberChangeListener
 
-class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boolean) : FragmentStateAdapter(fm) {
+class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boolean, private val memberChangeListener: MemberChangeListener ) : FragmentStateAdapter(fm) {
     private val teamId = team?._id
     private val isEnterprise = team?.type == "enterprise"
 
@@ -47,7 +47,7 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
             when (id) {
                 R.string.chat -> DiscussionListFragment()
                 R.string.plan, R.string.mission -> PlanFragment()
-                R.string.members, R.string.team -> JoinedMemberFragment()
+                R.string.members, R.string.team -> JoinedMemberFragment().apply { setMemberChangeListener(memberChangeListener) }
                 R.string.tasks -> TeamTaskFragment()
                 R.string.calendar -> TeamCalendarFragment()
                 R.string.survey -> SurveyFragment().apply {
@@ -63,7 +63,7 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
                     MainApplication.listener = this
                 }
                 R.string.join_requests,
-                R.string.applicants         -> MembersFragment()
+                R.string.applicants -> MembersFragment().apply { setMemberChangeListener(memberChangeListener) }
                 else -> throw IllegalArgumentException("Unknown page id $id")
             }.apply {
                 if (arguments == null) {
