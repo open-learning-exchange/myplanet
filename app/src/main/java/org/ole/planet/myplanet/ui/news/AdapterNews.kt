@@ -132,7 +132,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 val sharedTeamName = extractSharedTeamName(news)
 
                 resetViews(viewHolder)
-
+                updateReplyCount(viewHolder, getReplies(news), position)
                 val userModel = configureUser(viewHolder, news)
                 showShareButton(viewHolder, news)
 
@@ -744,6 +744,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     context.finish()
                 }
             }
+
             notifyDataSetChanged()
 
             recyclerView?.post {
