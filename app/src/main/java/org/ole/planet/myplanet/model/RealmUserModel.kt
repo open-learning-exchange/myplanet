@@ -6,7 +6,6 @@ import android.util.Base64
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
@@ -17,9 +16,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
+import org.ole.planet.myplanet.utilities.CsvUtils
 import java.io.InputStream
 import java.util.Locale
 import java.util.UUID
@@ -315,23 +312,27 @@ open class RealmUserModel : RealmObject() {
             return realm.where(RealmUserModel::class.java).equalTo("name", name).count() > 0
         }
 
-        fun writeCsv(filePath: String, data: List<Array<String>>) {
-            try {
-                val file = File(filePath)
-                file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("userAdmin", "_id", "name", "firstName", "lastName", "email", "phoneNumber", "planetCode", "parentCode", "password_scheme", "iterations", "derived_key", "salt", "level"))
-                for (row in data) {
-                    writer.writeNext(row)
-                }
-                writer.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
         fun userWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/userData.csv", userDataList)
+            CsvUtils.writeCsv(
+                "${context.getExternalFilesDir(null)}/ole/userData.csv",
+                arrayOf(
+                    "userAdmin",
+                    "_id",
+                    "name",
+                    "firstName",
+                    "lastName",
+                    "email",
+                    "phoneNumber",
+                    "planetCode",
+                    "parentCode",
+                    "password_scheme",
+                    "iterations",
+                    "derived_key",
+                    "salt",
+                    "level"
+                ),
+                userDataList
+            )
         }
 
         fun updateUserDetails(realm: Realm, userId: String?, firstName: String?, lastName: String?,

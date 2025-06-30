@@ -3,16 +3,13 @@ package org.ole.planet.myplanet.model
 import android.content.Context
 import android.text.TextUtils
 import com.google.gson.JsonObject
-import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
+import org.ole.planet.myplanet.utilities.CsvUtils
 import java.util.Calendar
 
 open class RealmTeamLog : RealmObject() {
@@ -105,23 +102,22 @@ open class RealmTeamLog : RealmObject() {
             teamLogDataList.add(csvRow)
         }
 
-        fun writeCsv(filePath: String, data: List<Array<String>>) {
-            try {
-                val file = File(filePath)
-                file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("_id", "_rev", "user", "type", "createdOn", "parentCode", "time", "teamId", "teamType"))
-                for (row in data) {
-                    writer.writeNext(row)
-                }
-                writer.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
         fun teamLogWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/teamLog.csv", teamLogDataList)
+            CsvUtils.writeCsv(
+                "${context.getExternalFilesDir(null)}/ole/teamLog.csv",
+                arrayOf(
+                    "_id",
+                    "_rev",
+                    "user",
+                    "type",
+                    "createdOn",
+                    "parentCode",
+                    "time",
+                    "teamId",
+                    "teamType"
+                ),
+                teamLogDataList
+            )
         }
 
     }

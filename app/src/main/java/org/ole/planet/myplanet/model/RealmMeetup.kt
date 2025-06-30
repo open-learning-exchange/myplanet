@@ -2,15 +2,12 @@ package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
 import com.google.gson.*
-import com.opencsv.CSVWriter
 import io.realm.*
 import io.realm.annotations.PrimaryKey
 import org.json.JSONArray
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.*
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
+import org.ole.planet.myplanet.utilities.CsvUtils
 
 open class RealmMeetup : RealmObject() {
     @PrimaryKey
@@ -92,19 +89,30 @@ open class RealmMeetup : RealmObject() {
         }
 
         @JvmStatic
-        fun writeCsv(filePath: String, data: List<Array<String>>) {
-            try {
-                val file = File(filePath)
-                file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("meetupId", "userId", "meetupId_rev", "title", "description", "startDate", "endDate", "recurring", "startTime", "endTime", "category", "meetupLocation", "meetupLink", "createdBy", "day", "link", "teamId"))
-                for (row in data) {
-                    writer.writeNext(row)
-                }
-                writer.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
+        fun meetupWriteCsv() {
+            CsvUtils.writeCsv(
+                "${context.getExternalFilesDir(null)}/ole/meetups.csv",
+                arrayOf(
+                    "meetupId",
+                    "userId",
+                    "meetupId_rev",
+                    "title",
+                    "description",
+                    "startDate",
+                    "endDate",
+                    "recurring",
+                    "startTime",
+                    "endTime",
+                    "category",
+                    "meetupLocation",
+                    "meetupLink",
+                    "createdBy",
+                    "day",
+                    "link",
+                    "teamId"
+                ),
+                meetupDataList
+            )
         }
 
 
@@ -161,11 +169,6 @@ open class RealmMeetup : RealmObject() {
 
         private fun checkNull(s: String?): String {
             return if (TextUtils.isEmpty(s)) "" else s!!
-        }
-
-        @JvmStatic
-        fun meetupWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/meetups.csv", meetupDataList)
         }
 
         @JvmStatic

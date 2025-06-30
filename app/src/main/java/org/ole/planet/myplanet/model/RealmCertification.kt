@@ -3,15 +3,12 @@ package org.ole.planet.myplanet.model
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.JsonUtils
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
+import org.ole.planet.myplanet.utilities.CsvUtils
 
 open class RealmCertification : RealmObject() {
     @PrimaryKey
@@ -56,24 +53,17 @@ open class RealmCertification : RealmObject() {
         }
 
         @JvmStatic
-        fun writeCsv(filePath: String, data: List<Array<String>>) {
-            try {
-                val file = File(filePath)
-                file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("certificationId", "name", "courseIds"))
-                for (row in data) {
-                    writer.writeNext(row)
-                }
-                writer.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
         @JvmStatic
         fun certificationWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/certification.csv", certificationDataList)
+            CsvUtils.writeCsv(
+                "${context.getExternalFilesDir(null)}/ole/certification.csv",
+                arrayOf(
+                    "certificationId",
+                    "name",
+                    "courseIds"
+                ),
+                certificationDataList
+            )
         }
     }
 }
