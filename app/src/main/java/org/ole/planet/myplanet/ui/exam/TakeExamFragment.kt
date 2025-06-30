@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.exam
 
-import android.annotation.SuppressLint
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
