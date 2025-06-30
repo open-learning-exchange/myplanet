@@ -95,7 +95,9 @@ open class RealmMyLibrary : RealmObject() {
             addProperty("mediaType", mediaType)
             addProperty("description", description)
             val ob = JsonObject()
-            ob.add(resourceLocalAddress, JsonObject())
+            resourceLocalAddress?.let { addr ->
+                ob.add(addr, JsonObject())
+            }
             add("_attachments", ob)
         }
     }
