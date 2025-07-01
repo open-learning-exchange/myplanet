@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.sync
 import android.Manifest
 import android.content.*
 import android.graphics.drawable.AnimationDrawable
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.*
@@ -60,7 +59,6 @@ import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
 import java.io.File
 import java.util.*
 import java.util.concurrent.TimeUnit
-import androidx.core.net.toUri
 import androidx.core.content.edit
 import org.ole.planet.myplanet.utilities.ServerConfigUtils
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
