@@ -75,6 +75,7 @@
     <string name="your_feedback">تعليقك *</string>
     <string name="button_update">تحديث</string>
     <string name="level">مستوى</string>
+    <string name="select_level">اختر المستوى</string>
     <string name="male">ذكر</string>
     <string name="female">أنثى</string>
     <string name="gender">الجنس</string>

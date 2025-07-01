@@ -75,6 +75,7 @@
     <string name="your_feedback">Tu retroalimentación *</string>
     <string name="button_update">Actualizar</string>
     <string name="level">Nivel</string>
+    <string name="select_level">Seleccionar nivel</string>
     <string name="male">Masculino</string>
     <string name="female">Femenino</string>
     <string name="gender">Género</string>
@@ -1241,8 +1242,8 @@
     <string name="welcome_back">Bienvenido de nuevo %1$s</string>
     <string name="welcome">Bienvenido %1$s</string>
     <string name="edit_plan">Editar plan</string>
-    <string name="show_additional_fields">mostrar campos adicionales</string>
-    <string name="hide_additional_fields">ocultar campos adicionales</string>
+    <string name="show_additional_fields">Mostrar campos adicionales</string>
+    <string name="hide_additional_fields">Ocultar campos adicionales</string>
     <string name="age">edad</string>
     <string name="preparing_download">Preparando la descarga…</string>
     <string name="downloading_files">Descargando archivos</string>
