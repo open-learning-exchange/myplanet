@@ -7,6 +7,8 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -119,10 +121,19 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
         guest = intent.getBooleanExtra("guest", false)
         val username = intent.getStringExtra("username")
+        val password = intent.getStringExtra("password")
+        val autoLogin = intent.getBooleanExtra("auto_login", false)
 
         if (guest) {
             resetGuestAsMember(username)
         }
+
+        if (autoLogin && username != null && password != null) {
+            Handler(Looper.getMainLooper()).postDelayed({
+                submitForm(username, password)
+            }, 500)
+        }
+
         getTeamMembers()
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -455,11 +466,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT)
                     .show()
                 onLogin()
-                saveUsers(
-                    activityLoginBinding.inputName.text.toString(),
-                    activityLoginBinding.inputPassword.text.toString(),
-                    "member"
-                )
+                saveUsers(name, password, "member")
             } else {
                 ManagerSync.instance?.login(name, password, object : SyncListener {
                     override fun onSyncStarted() {
@@ -471,17 +478,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                         customProgressDialog.dismiss()
                         val log = authenticateUser(settings, name, password, true)
                         if (log) {
-                            Toast.makeText(
-                                applicationContext,
-                                getString(R.string.thank_you),
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
                             onLogin()
-                            saveUsers(
-                                activityLoginBinding.inputName.text.toString(),
-                                activityLoginBinding.inputPassword.text.toString(),
-                                "member"
-                            )
+                            saveUsers(name, password, "member")
                         } else {
                             alertDialogOkay(getString(R.string.err_msg_login))
                         }
