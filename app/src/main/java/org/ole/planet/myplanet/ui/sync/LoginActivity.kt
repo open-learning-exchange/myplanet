@@ -1,17 +1,30 @@
 package org.ole.planet.myplanet.ui.sync
 
-import android.content.*
+import android.content.Context
+import android.content.DialogInterface
+import android.content.Intent
 import android.graphics.drawable.AnimationDrawable
-import android.os.*
+import android.os.Build
 import android.os.Build.VERSION_CODES.TIRAMISU
-import android.text.*
-import android.view.*
+import android.os.Bundle
+import android.text.Editable
+import android.text.TextUtils
+import android.text.TextWatcher
+import android.view.ContextThemeWrapper
+import android.view.KeyEvent
+import android.view.LayoutInflater
+import android.view.MotionEvent
+import android.view.View
 import android.view.inputmethod.EditorInfo
-import android.widget.*
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.ImageButton
+import android.widget.Toast
+import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.*
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import io.realm.Realm
@@ -29,9 +42,7 @@ import org.ole.planet.myplanet.utilities.*
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
-import java.text.Normalizer
 import java.util.Locale
-import java.util.regex.Pattern
 import androidx.core.content.edit
 
 class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
@@ -489,132 +500,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
     }
 
-    private fun showGuestLoginDialog() {
-        try {
-            mRealm = Realm.getDefaultInstance()
-            mRealm.refresh()
-            val alertGuestLoginBinding = AlertGuestLoginBinding.inflate(LayoutInflater.from(this))
-            val v: View = alertGuestLoginBinding.root
-            alertGuestLoginBinding.etUserName.addTextChangedListener(object : TextWatcher {
-                override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-
-                override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                    val input = s.toString()
-                    val firstChar = if (input.isNotEmpty()) {
-                        input[0]
-                    } else {
-                        '\u0000'
-                    }
-                    var hasInvalidCharacters = false
-                    val hasSpecialCharacters: Boolean
-                    var hasDiacriticCharacters = false
-                    val normalizedText = Normalizer.normalize(s, Normalizer.Form.NFD)
-                    for (element in input) {
-                        if (element != '_' && element != '.' && element != '-' && !Character.isDigit(element) && !Character.isLetter(element)) {
-                            hasInvalidCharacters = true
-                            break
-                        }
-                    }
-                    val regex = ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"
-                    val pattern = Pattern.compile(regex)
-                    val matcher = pattern.matcher(input)
-                    hasSpecialCharacters = matcher.matches()
-                    hasDiacriticCharacters = !normalizedText.codePoints().allMatch { codePoint: Int -> Character.isLetterOrDigit(codePoint) || codePoint == '.'.code || codePoint == '-'.code || codePoint == '_'.code }
-                    if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
-                        alertGuestLoginBinding.etUserName.error = getString(R.string.must_start_with_letter_or_number)
-                    } else if (hasInvalidCharacters || hasDiacriticCharacters || hasSpecialCharacters) {
-                        alertGuestLoginBinding.etUserName.error = getString(R.string.only_letters_numbers_and_are_allowed)
-                    } else {
-                        val lowercaseText = input.lowercase()
-                        if (input != lowercaseText) {
-                            alertGuestLoginBinding.etUserName.setText(lowercaseText)
-                            alertGuestLoginBinding.etUserName.setSelection(lowercaseText.length)
-                        }
-                        alertGuestLoginBinding.etUserName.error = null
-                    }
-                }
-
-                override fun afterTextChanged(s: Editable) {}
-            })
-            val builder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
-            builder.setTitle(R.string.btn_guest_login)
-                .setView(v)
-                .setPositiveButton(R.string.login, null)
-                .setNegativeButton(R.string.cancel, null)
-            val dialog = builder.create()
-            dialog.show()
-            val login = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            val cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-            login.setOnClickListener {
-                if (mRealm.isClosed) {
-                    mRealm = Realm.getDefaultInstance()
-                }
-                val username = alertGuestLoginBinding.etUserName.text.toString().trim { it <= ' ' }
-                val firstChar = if (username.isEmpty()) null else username[0]
-                var hasInvalidCharacters = false
-                var hasDiacriticCharacters = false
-                var hasSpecialCharacters = false
-                var isValid = true
-                val normalizedText = Normalizer.normalize(username, Normalizer.Form.NFD)
-                val regex = ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"
-                val pattern = Pattern.compile(regex)
-                val matcher = pattern.matcher(username)
-                if (TextUtils.isEmpty(username)) {
-                    alertGuestLoginBinding.etUserName.error = getString(R.string.username_cannot_be_empty)
-                    isValid = false
-                }
-                if (firstChar != null && !Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
-                    alertGuestLoginBinding.etUserName.error = getString(R.string.must_start_with_letter_or_number)
-                    isValid = false
-                } else {
-                    for (c in username.toCharArray()) {
-                        if (c != '_' && c != '.' && c != '-' && !Character.isDigit(c) && !Character.isLetter(c)) {
-                            hasInvalidCharacters = true
-                            break
-                        }
-                        hasSpecialCharacters = matcher.matches()
-                        hasDiacriticCharacters = !normalizedText.codePoints().allMatch {
-                            codePoint -> Character.isLetterOrDigit(codePoint) || codePoint == '.'.code || codePoint == '-'.code || codePoint == '_'.code
-                        }
-                    }
-                    if (hasInvalidCharacters || hasDiacriticCharacters || hasSpecialCharacters) {
-                        alertGuestLoginBinding.etUserName.error = getString(R.string.only_letters_numbers_and_are_allowed)
-                        isValid = false
-                    }
-                }
-                if (isValid) {
-                    val existingUser = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
-                    dialog.dismiss()
-                    if (existingUser != null) {
-                        if (existingUser._id?.contains("guest") == true) {
-                            showGuestDialog(username)
-                        } else if (existingUser._id?.contains("org.couchdb.user:") == true) {
-                            showUserAlreadyMemberDialog(username)
-                        }
-                    } else {
-                        val model = RealmUserModel.createGuestUser(username, mRealm, settings)
-                        ?.let { it1 ->
-                            mRealm.copyFromRealm(it1)
-                        }
-                        if (model == null) {
-                            toast(this, getString(R.string.unable_to_login))
-                        } else {
-                            saveUsers(username, "", "guest")
-                            saveUserInfoPref(settings, "", model)
-                            onLogin()
-                        }
-                    }
-                }
-            }
-            cancel.setOnClickListener { dialog.dismiss() }
-        } finally {
-            if (!mRealm.isClosed) {
-                mRealm.close()
-            }
-        }
-    }
-
-    private fun showGuestDialog(username: String) {
+    internal fun showGuestDialog(username: String) {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("$username is already a guest")
         builder.setMessage("Continue only if this is you")
@@ -634,7 +520,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         dialog.show()
     }
 
-    private fun showUserAlreadyMemberDialog(username: String) {
+    internal fun showUserAlreadyMemberDialog(username: String) {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("$username is already a member")
         builder.setMessage("Continue to login if this is you")
