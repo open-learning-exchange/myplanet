@@ -19,8 +19,9 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="3dp"
-            android:src="@drawable/musical_note"/>
+            android:layout_marginBottom="12dp"
+            android:src="@drawable/musical_note"
+            android:contentDescription="Album Art" />
 
         <TextView
             android:id="@+id/trackTitle"
@@ -28,10 +29,12 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
             android:gravity="center"
-            android:text="beautiful-random-minor-arp-119378"
+            android:text="Track Title"
             android:textColor="@color/daynight_textColor"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:maxLines="2"
+            android:ellipsize="end" />
 
         <TextView
             android:id="@+id/artistName"
@@ -41,8 +44,10 @@
             android:gravity="center"
             android:text="Unknown Artist"
             android:textColor="@color/daynight_textColor"
-            android:textSize="14sp"
-            android:alpha="0.7" />
+            android:textSize="16sp"
+            android:alpha="0.7"
+            android:maxLines="1"
+            android:ellipsize="end" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -58,7 +63,8 @@
                 android:paddingStart="8dp"
                 android:paddingEnd="8dp"
                 android:progressTint="@color/colorPrimary"
-                android:thumbTint="@color/colorPrimary" />
+                android:thumbTint="@color/colorPrimary"
+                android:secondaryProgressTint="@color/colorPrimary" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -69,7 +75,7 @@
                     android:id="@+id/currentTime"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="00:14"
+                    android:text="00:00"
                     android:textColor="@color/daynight_textColor"
                     android:textSize="12sp"
                     android:alpha="0.7" />
@@ -83,7 +89,7 @@
                     android:id="@+id/totalTime"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="00:31"
+                    android:text="00:00"
                     android:textColor="@color/daynight_textColor"
                     android:textSize="12sp"
                     android:alpha="0.7" />
@@ -102,32 +108,42 @@
                 android:id="@+id/rewindButton"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:layout_marginEnd="24dp"
+                android:layout_marginEnd="32dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/fast_forward"
+                android:src="@drawable/backward_10"
+                android:contentDescription="Rewind 10 seconds"
                 app:tint="@color/daynight_textColor" />
 
             <ImageButton
                 android:id="@+id/playPauseButton"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
                 android:layout_marginStart="8dp"
                 android:layout_marginEnd="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_play_arrow"
+                android:contentDescription="Play/Pause"
+                android:elevation="4dp"
                 app:tint="@color/colorPrimary" />
 
             <ImageButton
                 android:id="@+id/fastForwardButton"
                 android:layout_width="48dp"
                 android:layout_height="48dp"
-                android:layout_marginStart="24dp"
+                android:layout_marginStart="32dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/back"
+                android:src="@drawable/foward_10"
+                android:contentDescription="Fast forward 10 seconds"
                 app:tint="@color/daynight_textColor" />
 
-            <Space
-                android:layout_width="@dimen/_10dp"
-                android:layout_height="@dimen/_10dp"/>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:gravity="center"
+            android:orientation="horizontal">
 
             <ImageButton
                 android:id="@+id/volumeButton"
@@ -135,11 +151,11 @@
                 android:layout_height="40dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_volume_up"
+                android:contentDescription="Volume Control"
                 android:alpha="0.7"
                 app:tint="@color/daynight_textColor" />
 
         </LinearLayout>
-
 
     </LinearLayout>
 

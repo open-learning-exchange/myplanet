@@ -1,32 +1,33 @@
 package org.ole.planet.myplanet.ui.viewer
 
-import android.media.AudioManager
-import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.MenuItem
-import android.view.View
 import android.widget.SeekBar
 import androidx.appcompat.app.AppCompatActivity
+import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.common.PlaybackParameters
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAudioPlayerBinding
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.io.File
-import java.io.IOException
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 
 class AudioPlayerActivity : AppCompatActivity() {
     private lateinit var activityAudioPlayerBinding: ActivityAudioPlayerBinding
-    private var mediaPlayer: MediaPlayer? = null
+    private var exoPlayer: ExoPlayer? = null
     private var isFullPath = false
     private var filePath: String? = null
     private lateinit var extractedFileName: String
     private val handler = Handler(Looper.getMainLooper())
-    private var isPlaying = false
-    private var playbackSpeed = 1.0f
+
+    private var isUserSeeking = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,7 +42,7 @@ class AudioPlayerActivity : AppCompatActivity() {
         extractedFileName = FileUtils.nameWithoutExtension(filePath).toString()
 
         setupUI()
-        initializeAudio()
+        initializeExoPlayer()
         setupClickListeners()
     }
 
@@ -57,7 +58,7 @@ class AudioPlayerActivity : AppCompatActivity() {
         activityAudioPlayerBinding.playPauseButton.setImageResource(R.drawable.ic_play_arrow)
     }
 
-    private fun initializeAudio() {
+    private fun initializeExoPlayer() {
         val fullPath: String? = if (isFullPath) {
             filePath
         } else {
@@ -74,25 +75,44 @@ class AudioPlayerActivity : AppCompatActivity() {
         }
 
         try {
-            mediaPlayer = MediaPlayer().apply {
-                setAudioStreamType(AudioManager.STREAM_MUSIC)
-                setDataSource(fullPath)
-                prepareAsync()
-                setOnPreparedListener { player ->
-                    val duration = player.duration
-                    activityAudioPlayerBinding.seekBar.max = duration
-                    activityAudioPlayerBinding.totalTime.text = formatTime(duration)
-                    updateSeekBar()
-                }
-                setOnCompletionListener {
-                    onAudioCompleted()
-                }
-                setOnErrorListener { _, what, extra ->
-                    Utilities.toast(this@AudioPlayerActivity, getString(R.string.unable_to_play_audio))
-                    true
-                }
+            exoPlayer = ExoPlayer.Builder(this).build().apply {
+                val mediaItem = MediaItem.fromUri(fullPath!!)
+                setMediaItem(mediaItem)
+
+                addListener(object : Player.Listener {
+                    override fun onPlaybackStateChanged(playbackState: Int) {
+                        when (playbackState) {
+                            Player.STATE_READY -> {
+                                val duration = duration
+                                if (duration > 0) {
+                                    activityAudioPlayerBinding.seekBar.max = duration.toInt()
+                                    activityAudioPlayerBinding.totalTime.text = formatTime(duration.toInt())
+                                }
+                                updateSeekBar()
+                            }
+                            Player.STATE_ENDED -> {
+                                onAudioCompleted()
+                            }
+                        }
+                    }
+
+                    override fun onIsPlayingChanged(isPlaying: Boolean) {
+                        if (isPlaying) {
+                            activityAudioPlayerBinding.playPauseButton.setImageResource(R.drawable.ic_pause)
+                            updateSeekBar()
+                        } else {
+                            activityAudioPlayerBinding.playPauseButton.setImageResource(R.drawable.ic_play_arrow)
+                        }
+                    }
+
+                    override fun onPlayerError(error: PlaybackException) {
+                        Utilities.toast(this@AudioPlayerActivity, getString(R.string.unable_to_play_audio))
+                    }
+                })
+
+                prepare()
             }
-        } catch (e: IOException) {
+        } catch (e: Exception) {
             Utilities.toast(this, getString(R.string.unable_to_play_audio))
         }
     }
@@ -103,78 +123,77 @@ class AudioPlayerActivity : AppCompatActivity() {
         }
 
         activityAudioPlayerBinding.rewindButton.setOnClickListener {
-            mediaPlayer?.let { player ->
+            exoPlayer?.let { player ->
                 val currentPosition = player.currentPosition
                 val newPosition = maxOf(0, currentPosition - 10000)
                 player.seekTo(newPosition)
-                activityAudioPlayerBinding.seekBar.progress = newPosition
             }
         }
 
         activityAudioPlayerBinding.fastForwardButton.setOnClickListener {
-            mediaPlayer?.let { player ->
+            exoPlayer?.let { player ->
                 val currentPosition = player.currentPosition
                 val duration = player.duration
-                val newPosition = minOf(duration, currentPosition + 10000)
+                val newPosition = if (duration > 0) minOf(duration, currentPosition + 10000) else currentPosition + 10000
                 player.seekTo(newPosition)
-                activityAudioPlayerBinding.seekBar.progress = newPosition
             }
         }
 
 
+
         activityAudioPlayerBinding.volumeButton.setOnClickListener {
-            val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
-            audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_SAME, AudioManager.FLAG_SHOW_UI)
+            val audioManager = getSystemService(AUDIO_SERVICE) as android.media.AudioManager
+            audioManager.adjustStreamVolume(
+                android.media.AudioManager.STREAM_MUSIC,
+                android.media.AudioManager.ADJUST_SAME,
+                android.media.AudioManager.FLAG_SHOW_UI
+            )
         }
 
         activityAudioPlayerBinding.seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (fromUser) {
-                    mediaPlayer?.seekTo(progress)
+                if (fromUser && !isUserSeeking) {
                     activityAudioPlayerBinding.currentTime.text = formatTime(progress)
                 }
             }
 
-            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {
+                isUserSeeking = true
+            }
+
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {
+                seekBar?.let { bar ->
+                    exoPlayer?.seekTo(bar.progress.toLong())
+                }
+                isUserSeeking = false
+            }
         })
     }
 
     private fun togglePlayPause() {
-        mediaPlayer?.let { player ->
-            if (isPlaying) {
+        exoPlayer?.let { player ->
+            if (player.playbackState == Player.STATE_ENDED) {
+                // If audio has ended, restart from beginning
+                player.seekTo(0)
+                player.play()
+            } else if (player.isPlaying) {
                 player.pause()
-                activityAudioPlayerBinding.playPauseButton.setImageResource(R.drawable.ic_play_arrow)
-                isPlaying = false
             } else {
-                player.start()
-                activityAudioPlayerBinding.playPauseButton.setImageResource(R.drawable.ic_pause)
-                isPlaying = true
-                updateSeekBar()
+                player.play()
             }
         }
     }
 
-    private fun cyclePlaybackSpeed() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-            playbackSpeed = when (playbackSpeed) {
-                1.0f -> 1.25f
-                1.25f -> 1.5f
-                1.5f -> 2.0f
-                else -> 1.0f
-            }
-            mediaPlayer?.playbackParams = mediaPlayer?.playbackParams?.setSpeed(playbackSpeed)!!
-            Utilities.toast(this, "Speed: ${playbackSpeed}x")
-        }
-    }
+
 
     private fun updateSeekBar() {
-        mediaPlayer?.let { player ->
-            if (isPlaying) {
-                val currentPosition = player.currentPosition
+        exoPlayer?.let { player ->
+            if (player.isPlaying && !isUserSeeking) {
+                val currentPosition = player.currentPosition.toInt()
                 activityAudioPlayerBinding.seekBar.progress = currentPosition
                 activityAudioPlayerBinding.currentTime.text = formatTime(currentPosition)
-
+            }
+            if (player.isPlaying) {
                 handler.postDelayed({ updateSeekBar() }, 1000)
             }
         }
@@ -187,7 +206,6 @@ class AudioPlayerActivity : AppCompatActivity() {
     }
 
     private fun onAudioCompleted() {
-        isPlaying = false
         activityAudioPlayerBinding.playPauseButton.setImageResource(R.drawable.ic_play_arrow)
         activityAudioPlayerBinding.seekBar.progress = 0
         activityAudioPlayerBinding.currentTime.text = "00:00"
@@ -202,17 +220,18 @@ class AudioPlayerActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        if (isPlaying) {
-            mediaPlayer?.pause()
-            activityAudioPlayerBinding.playPauseButton.setImageResource(R.drawable.ic_play_arrow)
-            isPlaying = false
-        }
+        exoPlayer?.pause()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        exoPlayer?.pause()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         handler.removeCallbacksAndMessages(null)
-        mediaPlayer?.release()
-        mediaPlayer = null
+        exoPlayer?.release()
+        exoPlayer = null
     }
 }
