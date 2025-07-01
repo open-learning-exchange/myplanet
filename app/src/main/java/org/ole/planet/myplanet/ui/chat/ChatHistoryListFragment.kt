@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.ui.chat
 
+import android.content.Context.MODE_PRIVATE
+import android.content.SharedPreferences
 import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.os.Bundle
@@ -9,9 +11,14 @@ import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import com.google.android.material.snackbar.Snackbar
 import io.realm.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.SyncListener
@@ -20,7 +27,9 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 class ChatHistoryListFragment : Fragment() {
@@ -31,11 +40,16 @@ class ChatHistoryListFragment : Fragment() {
     private var isQuestion: Boolean = false
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
+    lateinit var settings: SharedPreferences
+    private val serverUrlMapper = ServerUrlMapper()
+    private val serverUrl: String
+        get() = settings.getString("serverURL", "") ?: ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sharedViewModel = ViewModelProvider(requireActivity())[ChatViewModel::class.java]
         prefManager = SharedPrefManager(requireContext())
+        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         startChatHistorySync()
     }
 
@@ -124,42 +138,63 @@ class ChatHistoryListFragment : Fragment() {
 
     private fun startChatHistorySync() {
         if (!prefManager.isChatHistorySynced()) {
-            SyncManager.instance?.start(object : SyncListener {
-                override fun onSyncStarted() {
-                    activity?.runOnUiThread {
-                        if (isAdded && !requireActivity().isFinishing) {
-                            customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                            customProgressDialog?.setText("Syncing chat history...")
-                            customProgressDialog?.show()
-                        }
-                    }
-                }
+            checkServerAndStartSync()
+        }
+    }
 
-                override fun onSyncComplete() {
-                    activity?.runOnUiThread {
-                        if (isAdded) {
-                            customProgressDialog?.dismiss()
-                            customProgressDialog = null
-                            prefManager.setChatHistorySynced(true)
+    private fun checkServerAndStartSync() {
+        val mapping = serverUrlMapper.processUrl(serverUrl)
 
-                            refreshChatHistoryList()
-                        }
-                    }
-                }
-
-                override fun onSyncFailed(message: String?) {
-                    activity?.runOnUiThread {
-                        if (isAdded) {
-                            customProgressDialog?.dismiss()
-                            customProgressDialog = null
-                            refreshChatHistoryList()
-
-                            Snackbar.make(fragmentChatHistoryListBinding.root, "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG)
-                                .setAction("Retry") { startChatHistorySync() }.show()
-                        }
-                    }
-                } }, "full", listOf("chat_history"))
+        lifecycleScope.launch(Dispatchers.IO) {
+            updateServerIfNecessary(mapping)
+            withContext(Dispatchers.Main) {
+                startSyncManager()
             }
+        }
+    }
+
+    private fun startSyncManager() {
+        SyncManager.instance?.start(object : SyncListener {
+            override fun onSyncStarted() {
+                activity?.runOnUiThread {
+                    if (isAdded && !requireActivity().isFinishing) {
+                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                        customProgressDialog?.setText("Syncing chat history...")
+                        customProgressDialog?.show()
+                    }
+                }
+            }
+
+            override fun onSyncComplete() {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
+                        prefManager.setChatHistorySynced(true)
+
+                        refreshChatHistoryList()
+                    }
+                }
+            }
+
+            override fun onSyncFailed(message: String?) {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
+                        refreshChatHistoryList()
+
+                        Snackbar.make(fragmentChatHistoryListBinding.root, "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG)
+                            .setAction("Retry") { startChatHistorySync() }.show()
+                    }
+                }
+            } }, "full", listOf("chat_history"))
+    }
+
+    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
+        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
+            isServerReachable(url)
+        }
     }
 
     fun refreshChatHistoryList() {

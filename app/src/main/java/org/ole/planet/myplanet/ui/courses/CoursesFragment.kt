@@ -37,11 +37,20 @@ import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import java.util.Calendar
 import java.util.UUID
 import android.content.Context
+import android.content.Context.MODE_PRIVATE
+import android.content.SharedPreferences
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.service.SyncManager
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener {
@@ -72,9 +81,15 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private lateinit var confirmation: AlertDialog
     private var isCheckboxChangedByCode = false
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+    lateinit var prefManager: SharedPrefManager
+//    lateinit var settings: SharedPreferences
+    private val serverUrlMapper = ServerUrlMapper()
+    private val serverUrl: String
+        get() = settings.getString("serverURL", "") ?: ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        prefManager = SharedPrefManager(requireContext())
         startCoursesSync()
     }
 
@@ -83,44 +98,65 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun startCoursesSync() {
-        val prefManager = SharedPrefManager(requireContext())
         if (!prefManager.isCoursesSynced()) {
-            SyncManager.instance?.start(object : SyncListener {
-                override fun onSyncStarted() {
-                    activity?.runOnUiThread {
-                        if (isAdded && !requireActivity().isFinishing) {
-                            customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                            customProgressDialog?.setText("Syncing courses data...")
-                            customProgressDialog?.show()
-                        }
+            checkServerAndStartSync()
+        }
+    }
+
+    private fun checkServerAndStartSync() {
+        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val mapping = serverUrlMapper.processUrl(serverUrl)
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            updateServerIfNecessary(mapping)
+            withContext(Dispatchers.Main) {
+                startSyncManager()
+            }
+        }
+    }
+
+    private fun startSyncManager() {
+        SyncManager.instance?.start(object : SyncListener {
+            override fun onSyncStarted() {
+                activity?.runOnUiThread {
+                    if (isAdded && !requireActivity().isFinishing) {
+                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                        customProgressDialog?.setText("Syncing courses data...")
+                        customProgressDialog?.show()
                     }
                 }
+            }
 
-                override fun onSyncComplete() {
-                    activity?.runOnUiThread {
-                        if (isAdded) {
-                            customProgressDialog?.dismiss()
-                            customProgressDialog = null
+            override fun onSyncComplete() {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
 
-                            refreshCoursesData()
-                            prefManager.setCoursesSynced(true)
-                        }
+                        refreshCoursesData()
+                        prefManager.setCoursesSynced(true)
                     }
                 }
+            }
 
-                override fun onSyncFailed(message: String?) {
-                    activity?.runOnUiThread {
-                        if (isAdded) {
-                            customProgressDialog?.dismiss()
-                            customProgressDialog = null
+            override fun onSyncFailed(message: String?) {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
 
-                            Snackbar.make(requireView(), "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG).setAction("Retry") {
-                                startCoursesSync()
-                            }.show()
-                        }
+                        Snackbar.make(requireView(), "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG).setAction("Retry") {
+                            startCoursesSync()
+                        }.show()
                     }
                 }
-            }, "full", listOf("courses"))
+            }
+        }, "full", listOf("courses"))
+    }
+
+    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
+        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
+            isServerReachable(url)
         }
     }
 

@@ -1,17 +1,22 @@
 package org.ole.planet.myplanet.ui.team
 
+import android.content.Context.MODE_PRIVATE
 import android.content.DialogInterface
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.callback.SyncListener
@@ -25,7 +30,9 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Date
@@ -38,10 +45,15 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     private var directTeamId: String? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
+    lateinit var settings: SharedPreferences
+    private val serverUrlMapper = ServerUrlMapper()
+    private val serverUrl: String
+        get() = settings.getString("serverURL", "") ?: ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefManager = SharedPrefManager(requireContext())
+        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         startTeamSync()
     }
 
@@ -75,41 +87,62 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
     private fun startTeamSync() {
         if (prefManager.isTeamsSynced()) {
-            SyncManager.instance?.start(object : SyncListener {
-                override fun onSyncStarted() {
-                    activity?.runOnUiThread {
-                        if (isAdded && !requireActivity().isFinishing) {
-                            customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                            customProgressDialog?.setText("Syncing team data...")
-                            customProgressDialog?.show()
-                        }
+            checkServerAndStartSync()
+        }
+    }
+
+    private fun checkServerAndStartSync() {
+        val mapping = serverUrlMapper.processUrl(serverUrl)
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            updateServerIfNecessary(mapping)
+            withContext(Dispatchers.Main) {
+                startSyncManager()
+            }
+        }
+    }
+
+    private fun startSyncManager() {
+        SyncManager.instance?.start(object : SyncListener {
+            override fun onSyncStarted() {
+                activity?.runOnUiThread {
+                    if (isAdded && !requireActivity().isFinishing) {
+                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                        customProgressDialog?.setText("Syncing team data...")
+                        customProgressDialog?.show()
                     }
                 }
+            }
 
-                override fun onSyncComplete() {
-                    activity?.runOnUiThread {
-                        if (isAdded) {
-                            customProgressDialog?.dismiss()
-                            customProgressDialog = null
-                            refreshTeamData()
-                            prefManager.setTeamsSynced(true)
-                        }
+            override fun onSyncComplete() {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
+                        refreshTeamData()
+                        prefManager.setTeamsSynced(true)
                     }
                 }
+            }
 
-                override fun onSyncFailed(message: String?) {
-                    activity?.runOnUiThread {
-                        if (isAdded) {
-                            customProgressDialog?.dismiss()
-                            customProgressDialog = null
+            override fun onSyncFailed(message: String?) {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
 
-                            Snackbar.make(fragmentTeamDetailBinding.root, "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG)
-                                .setAction("Retry") { startTeamSync() }
-                                .show()
-                        }
+                        Snackbar.make(fragmentTeamDetailBinding.root, "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG)
+                            .setAction("Retry") { startTeamSync() }
+                            .show()
                     }
                 }
-            }, "full", listOf("teams", "team_activities"))
+            }
+        }, "full", listOf("teams", "team_activities"))
+    }
+
+    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
+        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
+            isServerReachable(url)
         }
     }
 
