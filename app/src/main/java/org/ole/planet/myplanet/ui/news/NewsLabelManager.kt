@@ -12,11 +12,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
 
-class NewsLabelManager(
-    private val context: Context,
-    private val realm: Realm,
-    private val currentUser: RealmUserModel?
-) {
+class NewsLabelManager(private val context: Context, private val realm: Realm, private val currentUser: RealmUserModel?) {
     fun setupAddLabelMenu(binding: RowNewsBinding, news: RealmNews?) {
         binding.btnAddLabel.setOnClickListener {
             val usedLabels = news?.labels?.toSet() ?: emptySet()

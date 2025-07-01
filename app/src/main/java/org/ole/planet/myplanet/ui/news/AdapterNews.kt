@@ -5,13 +5,8 @@ import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
 import android.content.SharedPreferences
-import android.graphics.Color
 import android.os.Build
-import android.text.SpannableStringBuilder
-import android.text.Spanned
 import android.text.TextUtils
-import android.text.method.LinkMovementMethod
-import android.text.style.ClickableSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -43,7 +38,6 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
@@ -54,8 +48,7 @@ import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.makeExpandable
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
-import org.ole.planet.myplanet.ui.news.NewsImageLoader
-import org.ole.planet.myplanet.ui.news.NewsLabelManager
+import java.util.Locale
 import kotlin.toString
 
 class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "") : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
@@ -126,7 +119,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             val news = getNews(holder, position)
 
             if (news?.isValid == true) {
-                val viewHolder = holder as ViewHolderNews
+                val viewHolder = holder
                 val sharedTeamName = extractSharedTeamName(news)
 
                 resetViews(viewHolder)
@@ -141,7 +134,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 imageLoader?.loadImage(viewHolder.rowNewsBinding, news)
                 showReplyButton(viewHolder, news, position)
                 labelManager?.setupAddLabelMenu(viewHolder.rowNewsBinding, news)
-                news?.let { labelManager?.showChips(viewHolder.rowNewsBinding, it) }
+                news.let { labelManager?.showChips(viewHolder.rowNewsBinding, it) }
 
                 handleChat(viewHolder, news)
 
@@ -356,7 +349,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun updateReplyCount(viewHolder: ViewHolderNews, replies: List<RealmNews>, position: Int) {
         with(viewHolder.rowNewsBinding) {
-            btnShowReply.text = String.format("(%d)", replies.size)
+            btnShowReply.text = String.format(Locale.getDefault(),"(%d)", replies.size)
             btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
             val visible = replies.isNotEmpty() && !(position == 0 && parentNews != null) && shouldShowReplyButton()
             btnShowReply.visibility = if (visible) View.VISIBLE else View.GONE
