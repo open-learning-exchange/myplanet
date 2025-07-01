@@ -381,26 +381,21 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun showChips(holder: RecyclerView.ViewHolder, news: RealmNews) {
         val viewHolder = holder as ViewHolderNews
-        val isOwner = (news.userId == currentUser?.id)
         viewHolder.rowNewsBinding.fbChips.removeAllViews()
 
         for (label in news.labels ?: emptyList()) {
             val chipConfig = Utilities.getCloudConfig().apply {
-                selectMode(if (isOwner) ChipCloud.SelectMode.close else ChipCloud.SelectMode.none)
+                selectMode(ChipCloud.SelectMode.close)
             }
 
             val chipCloud = ChipCloud(context, viewHolder.rowNewsBinding.fbChips, chipConfig)
             chipCloud.addChip(getLabel(label))
 
-            if (isOwner) {
-                chipCloud.setDeleteListener { _: Int, labelText: String? ->
-
-                    if (!mRealm.isInTransaction) mRealm.beginTransaction()
-
-                    news.labels?.remove(Constants.LABELS[labelText])
-                    mRealm.commitTransaction()
-                    showChips(holder, news)
-                }
+            chipCloud.setDeleteListener { _: Int, labelText: String? ->
+                if (!mRealm.isInTransaction) mRealm.beginTransaction()
+                news.labels?.remove(Constants.LABELS[labelText])
+                mRealm.commitTransaction()
+                showChips(holder, news)
             }
         }
         updateAddLabelVisibility(viewHolder, news)
