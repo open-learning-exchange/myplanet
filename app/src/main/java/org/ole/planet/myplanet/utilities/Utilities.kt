@@ -163,8 +163,8 @@ object Utilities {
             .uncheckedTextColor("#000000".toColorInt())
     }
 
-    fun checkNA(s: String): String {
-        return if (TextUtils.isEmpty(s)) "N/A" else s
+    fun checkNA(s: String?): String {
+        return if (s.isNullOrEmpty()) "N/A" else s
     }
 
     fun getRelativeTime(timestamp: Long): String {

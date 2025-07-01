@@ -75,6 +75,7 @@
     <string name="your_feedback">Your Feedback *</string>
     <string name="button_update">Update</string>
     <string name="level">level</string>
+    <string name="select_level">Select Level</string>
     <string name="male">male</string>
     <string name="female">female</string>
     <string name="gender">Gender</string>
