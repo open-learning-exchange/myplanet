@@ -33,7 +33,6 @@ import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Sha256Utils
@@ -47,7 +46,6 @@ import java.util.concurrent.Executors
 import androidx.core.net.toUri
 import androidx.core.content.edit
 import org.ole.planet.myplanet.callback.SecurityDataCallback
-import org.ole.planet.myplanet.datamanager.ConfigurationManager
 import java.util.concurrent.ConcurrentHashMap
 
 class Service(private val context: Context) {
