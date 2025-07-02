@@ -2,16 +2,13 @@ package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
 import com.google.gson.JsonObject
-import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.JsonUtils
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
+import org.ole.planet.myplanet.utilities.CsvUtils
 
 open class RealmStepExam : RealmObject() {
     @PrimaryKey
@@ -104,23 +101,26 @@ open class RealmStepExam : RealmObject() {
             examDataList.add(csvRow)
         }
 
-        fun writeCsv(filePath: String, data: List<Array<String>>) {
-            try {
-                val file = File(filePath)
-                file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("_id", "_rev", "name", "passingPercentage", "type", "createdBy", "sourcePlanet", "createdDate", "updatedDate", "totalMarks", "noOfQuestions", "isFromNation", "teamId"))
-                for (row in data) {
-                    writer.writeNext(row)
-                }
-                writer.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
         fun stepExamWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/stepExam.csv", examDataList)
+            CsvUtils.writeCsv(
+                "${context.getExternalFilesDir(null)}/ole/stepExam.csv",
+                arrayOf(
+                    "_id",
+                    "_rev",
+                    "name",
+                    "passingPercentage",
+                    "type",
+                    "createdBy",
+                    "sourcePlanet",
+                    "createdDate",
+                    "updatedDate",
+                    "totalMarks",
+                    "noOfQuestions",
+                    "isFromNation",
+                    "teamId"
+                ),
+                examDataList
+            )
         }
 
         private fun checkIdsAndInsert(myCoursesID: String?, stepId: String?, myExam: RealmStepExam?) {

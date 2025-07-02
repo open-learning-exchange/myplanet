@@ -9,8 +9,6 @@ import io.realm.Realm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
@@ -33,7 +31,6 @@ import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Sha256Utils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -310,32 +307,12 @@ class Service(private val context: Context) {
             }
         }, {
             callback.onSuccess(context.getString(R.string.user_created_successfully))
-            isNetworkConnectedFlow.onEach { isConnected ->
-                if (isConnected) {
-                    val serverUrl = settings.getString("serverURL", "")
-                    if (!serverUrl.isNullOrEmpty()) {
-                        serviceScope.launch {
-                            val canReachServer = withContext(Dispatchers.IO) {
-                                isServerReachable(serverUrl)
-                            }
-                            if (canReachServer) {
-                                if (context is ProcessUserDataActivity) {
-                                    context.runOnUiThread {
-                                        val userName = "${obj["name"].asString}"
-                                        context.startUpload("becomeMember", userName, securityCallback)
-                                    }
-                                }
-                            } else {
-                                securityCallback?.onSecurityDataUpdated()
-                            }
-                        }
-                    } else {
-                        securityCallback?.onSecurityDataUpdated()
-                    }
-                } else {
-                    securityCallback?.onSecurityDataUpdated()
+            if (context is ProcessUserDataActivity) {
+                context.runOnUiThread {
+                    val userName = "${obj["name"].asString}"
+                    context.startUpload("becomeMember", userName, securityCallback)
                 }
-            }.launchIn(serviceScope)
+            }
         }) { error: Throwable ->
             error.printStackTrace()
             callback.onSuccess(context.getString(R.string.unable_to_save_user_please_sync))

@@ -395,14 +395,18 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun addCompoundButton(choice: JsonObject?, isRadio: Boolean, oldAnswer: String) {
-        val rdBtn = LayoutInflater.from(activity).inflate(
-            if (isRadio) {
-                R.layout.item_radio_btn
-            } else {
-                R.layout.item_checkbox
-            }, null
-        ) as CompoundButton
-
+        val rdBtn = if (isRadio) {
+            LayoutInflater.from(activity)
+                .inflate(
+                    R.layout.item_radio_btn,
+                    fragmentTakeExamBinding.groupChoices, false
+                ) as RadioButton
+        } else {
+            LayoutInflater.from(activity)
+                .inflate(
+                    R.layout.item_checkbox, null
+                ) as CompoundButton
+        }
         val choiceText = getString("text", choice)
         val choiceId = getString("id", choice)
 
@@ -417,6 +421,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
         rdBtn.setOnCheckedChangeListener(this)
         if (isRadio) {
+            rdBtn.id = View.generateViewId()
             fragmentTakeExamBinding.groupChoices.addView(rdBtn)
         } else {
             rdBtn.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
@@ -426,7 +431,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
         if (choiceText.equals("Other", ignoreCase = true) && rdBtn.isChecked) {
             fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
-            fragmentTakeExamBinding.etAnswer.setText(oldAnswer)
         }
     }
 
@@ -491,7 +495,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             questions?.size ?: 0
         )
     }
-
 
     override fun onDestroy() {
         super.onDestroy()
