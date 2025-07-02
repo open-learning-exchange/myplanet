@@ -128,7 +128,6 @@ jobs:
           name: myPlanet-${{ env.ANDROID_VERSION_NAME }}-${{ env.BRANCHNAME }}
           path: output/*
           retention-days: 9
-          overwrite: true
 
       - name: pre-process files and tag for lite version
         if: github.event_name != 'workflow_dispatch' && matrix.build == 'lite'
