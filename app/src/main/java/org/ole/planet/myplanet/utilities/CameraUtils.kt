@@ -15,11 +15,11 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.view.Surface
 import androidx.core.content.ContextCompat
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import java.io.File
 import java.io.FileOutputStream
 import java.util.*
 import java.util.concurrent.Executors
+import org.ole.planet.myplanet.MainApplication.Companion.context
 
 object CameraUtils {
     private var cameraDevice: CameraDevice? = null

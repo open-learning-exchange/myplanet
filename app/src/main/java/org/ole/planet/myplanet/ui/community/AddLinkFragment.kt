@@ -12,14 +12,14 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import io.realm.Realm
+import java.util.Locale
+import java.util.UUID
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentAddLinkBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.ui.team.AdapterTeam
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.Locale
-import java.util.UUID
 
 class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedListener {
     private lateinit var fragmentAddLinkBinding: FragmentAddLinkBinding

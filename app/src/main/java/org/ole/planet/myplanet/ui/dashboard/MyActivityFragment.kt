@@ -12,14 +12,14 @@ import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
 import com.github.mikephil.charting.formatter.ValueFormatter
 import io.realm.Realm
-import org.ole.planet.myplanet.databinding.FragmentMyActivityBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmOfflineActivity
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import java.text.DateFormatSymbols
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.FragmentMyActivityBinding
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.RealmOfflineActivity
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 class MyActivityFragment : Fragment() {
     private lateinit var fragmentMyActivityBinding : FragmentMyActivityBinding
