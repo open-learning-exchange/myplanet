@@ -1,12 +1,12 @@
 package org.ole.planet.myplanet.utilities
 
 import android.content.SharedPreferences
-import org.json.JSONObject
 import java.io.DataOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Timer
 import java.util.TimerTask
+import org.json.JSONObject
 
 class AuthSessionUpdater(private val callback: AuthCallback, private val settings: SharedPreferences) {
 

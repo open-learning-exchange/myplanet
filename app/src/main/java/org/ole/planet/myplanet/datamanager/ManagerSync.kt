@@ -3,9 +3,11 @@ package org.ole.planet.myplanet.datamanager
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Base64
+import androidx.core.content.edit
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
+import java.util.Locale
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SyncListener
@@ -17,8 +19,6 @@ import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.util.Locale
-import androidx.core.content.edit
 
 class ManagerSync private constructor(context: Context) {
     private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

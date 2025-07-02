@@ -3,12 +3,12 @@ package org.ole.planet.myplanet.ui.dashboard
 import androidx.lifecycle.ViewModel
 import io.realm.Case
 import io.realm.Realm
+import java.util.Date
+import java.util.UUID
 import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import java.util.Date
-import java.util.UUID
 
 class DashboardViewModel : ViewModel() {
     fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
