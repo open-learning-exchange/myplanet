@@ -290,27 +290,15 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         Utilities.setContext(base)
     }
 
-    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+    override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        val currentNightMode = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        val isSystemNight= when (currentNightMode) {
-            Configuration.UI_MODE_NIGHT_YES -> true
-            Configuration.UI_MODE_NIGHT_NO -> false
-            else -> false
-        }
-        val savedThemeMode = getCurrentThemeMode()
-        if (savedThemeMode != ThemeMode.FOLLOW_SYSTEM) {
-            return
-        }
 
-        when (currentNightMode) {
-            android.content.res.Configuration.UI_MODE_NIGHT_NO -> {
-                applyThemeMode(ThemeMode.LIGHT)
-            }
-            android.content.res.Configuration.UI_MODE_NIGHT_YES -> {
-                applyThemeMode(ThemeMode.DARK)
-            }
-        }
+        if (getCurrentThemeMode() != ThemeMode.FOLLOW_SYSTEM) return
+
+        val isNightMode = (newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        val themeToApply = if (isNightMode) ThemeMode.DARK else ThemeMode.LIGHT
+
+        applyThemeMode(themeToApply)
     }
 
     private fun getCurrentThemeMode(): String {
