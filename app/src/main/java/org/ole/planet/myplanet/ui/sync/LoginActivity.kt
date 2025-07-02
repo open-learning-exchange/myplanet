@@ -46,6 +46,9 @@ import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
 import java.util.Locale
 import androidx.core.content.edit
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.service.NotificationService
 
 class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private lateinit var activityLoginBinding: ActivityLoginBinding
@@ -486,6 +489,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                         }
                         syncIconDrawable.stop()
                         syncIconDrawable.selectDrawable(0)
+                        lifecycleScope.launch {
+                            NotificationService.onUserSync(this@LoginActivity)
+                        }
                     }
 
                     override fun onSyncFailed(msg: String?) {
