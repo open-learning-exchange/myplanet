@@ -1314,4 +1314,5 @@
     <string name="download_in_background">Iniciando descarga en segundo plano…</string>
     <string name="creating_member_account">Creando cuenta de miembro…</string>
     <string name ="cancel_adding_examination">¿Está seguro de que desea cancelar la adición del examen? Se perderán los datos.</string>
+
 </resources>
