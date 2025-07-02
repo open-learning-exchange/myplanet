@@ -63,9 +63,9 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
     override fun onError(msg: String, blockSync: Boolean) {
         if (!blockSync) {
             SyncManager.instance?.start(this, "upload")
-            UploadToShelfService.instance?.uploadUserData {
+            UserUploadService.instance?.uploadUserData {
                 Service(MainApplication.context).healthAccess {
-                    UploadToShelfService.instance?.uploadHealth()
+                    UserUploadService.instance?.uploadHealth()
                 }
             }
             if (!MainApplication.isSyncRunning) {

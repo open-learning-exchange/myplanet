@@ -39,7 +39,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
-import org.ole.planet.myplanet.service.UploadToShelfService
+import org.ole.planet.myplanet.service.UserUploadService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
@@ -182,9 +182,9 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
 
     fun startUpload(source: String, userName: String? = null, securityCallback: SecurityDataCallback? = null) {
         if (source == "becomeMember") {
-            UploadToShelfService.instance?.uploadSingleUserData(userName ,object : SuccessListener {
+            UserUploadService.instance?.uploadSingleUserData(userName ,object : SuccessListener {
                 override fun onSuccess(message: String?) {
-                    UploadToShelfService.instance?.uploadSingleUserHealth("org.couchdb.user:${userName}", object : SuccessListener {
+                    UserUploadService.instance?.uploadSingleUserHealth("org.couchdb.user:${userName}", object : SuccessListener {
                         override fun onSuccess(healthMessage: String?) {
                             userName?.let { name ->
                                 fetchAndLogUserSecurityData(name, securityCallback)
@@ -229,8 +229,8 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             }
         }
 
-        UploadToShelfService.instance?.uploadUserData {
-            UploadToShelfService.instance?.uploadHealth()
+        UserUploadService.instance?.uploadUserData {
+            UserUploadService.instance?.uploadHealth()
             checkAllOperationsComplete()
         }
 
