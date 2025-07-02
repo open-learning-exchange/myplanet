@@ -68,7 +68,8 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     }
 
     private fun startExamSync() {
-        if (!prefManager.isExamsSynced()) {
+        val isFastSync = settings.getBoolean("fastSync", false)
+        if (isFastSync && !prefManager.isExamsSynced()) {
             checkServerAndStartSync()
         }
     }

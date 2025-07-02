@@ -137,7 +137,8 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     private fun startChatHistorySync() {
-        if (!prefManager.isChatHistorySynced()) {
+        val isFastSync = settings.getBoolean("fastSync", false)
+        if (isFastSync && !prefManager.isChatHistorySynced()) {
             checkServerAndStartSync()
         }
     }

@@ -78,7 +78,8 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun startAchievementSync() {
-        if (!prefManager.isAchievementsSynced()) {
+        val isFastSync = settings.getBoolean("fastSync", false)
+        if (isFastSync && !prefManager.isAchievementsSynced()) {
             checkServerAndStartSync()
         }
     }

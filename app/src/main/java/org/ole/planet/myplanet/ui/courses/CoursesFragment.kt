@@ -98,7 +98,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun startCoursesSync() {
-        if (!prefManager.isCoursesSynced()) {
+        val isFastSync = settings.getBoolean("fastSync", false)
+        if (isFastSync && !prefManager.isCoursesSynced()) {
             checkServerAndStartSync()
         }
     }

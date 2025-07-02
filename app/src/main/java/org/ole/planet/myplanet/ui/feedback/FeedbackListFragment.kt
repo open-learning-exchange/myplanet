@@ -72,7 +72,8 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     private fun startFeedbackSync() {
-        if (!prefManager.isFeedbackSynced()) {
+        val isFastSync = settings.getBoolean("fastSync", false)
+        if (isFastSync && !prefManager.isFeedbackSynced()) {
             checkServerAndStartSync()
         }
     }

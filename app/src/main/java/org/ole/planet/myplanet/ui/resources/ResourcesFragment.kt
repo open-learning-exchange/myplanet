@@ -94,7 +94,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun startResourcesSync() {
-        if (!prefManager.isResourcesSynced()) {
+        val isFastSync = settings.getBoolean("fastSync", false)
+        if (isFastSync && !prefManager.isResourcesSynced()) {
             checkServerAndStartSync()
         }
     }

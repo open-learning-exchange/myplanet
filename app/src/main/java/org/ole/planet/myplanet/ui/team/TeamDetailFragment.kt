@@ -86,7 +86,8 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     private fun startTeamSync() {
-        if (prefManager.isTeamsSynced()) {
+        val isFastSync = settings.getBoolean("fastSync", false)
+        if (isFastSync && prefManager.isTeamsSynced()) {
             checkServerAndStartSync()
         }
     }

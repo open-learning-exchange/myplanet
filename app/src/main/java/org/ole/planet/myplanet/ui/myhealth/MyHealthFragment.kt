@@ -86,7 +86,8 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun startHealthSync() {
-        if (!prefManager.isHealthSynced()) {
+        val isFastSync = settings.getBoolean("fastSync", false)
+        if (isFastSync && !prefManager.isHealthSynced()) {
             checkServerAndStartSync()
         }
     }
