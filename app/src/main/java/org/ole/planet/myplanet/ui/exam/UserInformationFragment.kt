@@ -246,7 +246,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
             val settings = MainApplication.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
             checkAvailableServer(settings)
-            navigateToTeamSurveys(safeTeamId)
+            //navigateToTeamSurveys(safeTeamId)
         }
     }
 
