@@ -4,7 +4,11 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updateLayoutParams
 import io.realm.Realm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBinding
@@ -17,6 +21,7 @@ import org.ole.planet.myplanet.ui.news.NewsFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
+import org.ole.planet.myplanet.utilities.EdgeToEdgeHelper
 import org.ole.planet.myplanet.utilities.TimeUtils.currentDate
 
 class DashboardFragment : BaseDashboardFragment() {
@@ -52,6 +57,24 @@ class DashboardFragment : BaseDashboardFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        EdgeToEdgeHelper.applyWindowInsetsToFragment(
+            rootView = view,
+            consumeInsets = false
+        )
+        ViewCompat.setOnApplyWindowInsetsListener(view) { _, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val fab = view.findViewById<com.github.clans.fab.FloatingActionButton>(R.id.fab_my_activity)
+            val layoutParams = fab.layoutParams as ViewGroup.MarginLayoutParams
+            layoutParams.bottomMargin = systemBars.bottom + resources.getDimensionPixelSize(R.dimen._20dp)
+            layoutParams.marginEnd = systemBars.right + resources.getDimensionPixelSize(R.dimen.padding_large)
+            fab.layoutParams = layoutParams
+            view.findViewById<LinearLayout>(R.id.ll_prompt)?.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                bottomMargin = systemBars.bottom
+            }
+
+            WindowInsetsCompat.CONSUMED
+        }
+
         val noOfSurvey = getNoOfSurveySubmissionByUser(settings?.getString("userId", "--"), dRealm)
         fragmentHomeBinding.cardProfile.imgSurveyWarn.visibility = if (noOfSurvey == 0) View.VISIBLE else View.GONE
         fragmentHomeBinding.addResource.setOnClickListener {
