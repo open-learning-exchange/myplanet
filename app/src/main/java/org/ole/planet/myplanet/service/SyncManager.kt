@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.wifi.SupplicantState
 import android.net.wifi.WifiManager
+import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
@@ -376,13 +377,18 @@ class SyncManager private constructor(private val context: Context) {
         val logger = SyncTimeLogger.getInstance()
         logger.startProcess("resource_sync")
         var processedItems = 0
+        val functionStartTime = System.currentTimeMillis()
+        Log.d("ResourceSync", "Starting resource sync at ${Date(functionStartTime)}")
 
         try {
+            val apiClientStartTime = System.currentTimeMillis()
             val apiInterface = ApiClient.getEnhancedClient()
             val realmInstance = backgroundRealm ?: mRealm
             val newIds: MutableList<String?> = ArrayList()
+            Log.d("ResourceSync", "API client initialization took ${System.currentTimeMillis() - apiClientStartTime}ms")
 
             var totalRows = 0
+            val totalRowsStartTime = System.currentTimeMillis()
             ApiClient.executeWithRetry {
                 apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?limit=0").execute()
             }?.let { response ->
@@ -392,30 +398,48 @@ class SyncManager private constructor(private val context: Context) {
                     }
                 }
             }
+            Log.d("ResourceSync", "Getting total rows took ${System.currentTimeMillis() - totalRowsStartTime}ms, total rows: $totalRows")
 
             val batchSize = 200
             var skip = 0
+            var batchCount = 0
 
             while (skip < totalRows || (totalRows == 0 && skip == 0)) {
+                val batchStartTime = System.currentTimeMillis()
+                batchCount++
+                Log.d("ResourceSync", "Starting batch $batchCount (skip: $skip)")
+
                 try {
                     var response: JsonObject? = null
+                    val apiCallStartTime = System.currentTimeMillis()
                     ApiClient.executeWithRetry {
                         apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip").execute()
                     }?.let {
                         response = it.body()
                     }
+                    Log.d("ResourceSync", "API call for batch $batchCount took ${System.currentTimeMillis() - apiCallStartTime}ms")
 
                     if (response == null) {
+                        Log.w("ResourceSync", "Null response for batch $batchCount, skipping")
                         skip += batchSize
                         continue
                     }
 
+                    val rowsParseStartTime = System.currentTimeMillis()
                     val rows = getJsonArray("rows", response)
+                    Log.d("ResourceSync", "Parsing rows for batch $batchCount took ${System.currentTimeMillis() - rowsParseStartTime}ms, rows count: ${rows.size()}")
 
                     if (rows.size() == 0) {
+                        Log.d("ResourceSync", "No more rows, breaking loop")
                         break
                     }
 
+                    // OPTIMIZATION: Process all documents in a single transaction
+                    val processingStartTime = System.currentTimeMillis()
+                    val batchDocuments = JsonArray()
+                    val validDocuments = mutableListOf<Pair<JsonObject, String>>()
+
+                    // First pass: collect valid documents
                     for (i in 0 until rows.size()) {
                         val rowObj = rows[i].asJsonObject
                         if (rowObj.has("doc")) {
@@ -423,22 +447,56 @@ class SyncManager private constructor(private val context: Context) {
                             val id = getString("_id", doc)
 
                             if (!id.startsWith("_design")) {
+                                batchDocuments.add(doc)
+                                validDocuments.add(Pair(doc, id))
+                            }
+                        }
+                    }
+
+                    Log.d("ResourceSync", "Collected ${validDocuments.size} valid documents for batch processing")
+
+                    // OPTIMIZATION: Single transaction for entire batch
+                    if (validDocuments.isNotEmpty()) {
+                        val transactionStartTime = System.currentTimeMillis()
+                        try {
+                            realmInstance.beginTransaction()
+
+                            val saveStartTime = System.currentTimeMillis()
+                            val ids = save(batchDocuments, realmInstance)
+                            Log.d("ResourceSync", "Batch save operation took ${System.currentTimeMillis() - saveStartTime}ms for ${batchDocuments.size()} documents")
+
+                            if (ids.isNotEmpty()) {
+                                newIds.addAll(ids)
+                                processedItems += ids.size
+                            }
+
+                            if (realmInstance.isInTransaction) {
+                                realmInstance.commitTransaction()
+                            }
+                            Log.d("ResourceSync", "Batch transaction took ${System.currentTimeMillis() - transactionStartTime}ms for ${validDocuments.size} documents")
+                        } catch (e: Exception) {
+                            Log.e("ResourceSync", "Error in batch processing: ${e.message}", e)
+                            if (realmInstance.isInTransaction) {
+                                realmInstance.cancelTransaction()
+                            }
+
+                            // Fallback: process individually
+                            Log.w("ResourceSync", "Falling back to individual processing for ${validDocuments.size} documents")
+                            for ((doc, id) in validDocuments) {
                                 try {
                                     realmInstance.beginTransaction()
                                     val singleDocArray = JsonArray()
                                     singleDocArray.add(doc)
-
-                                    val ids = save(singleDocArray, realmInstance)
-                                    if (ids.isNotEmpty()) {
-                                        newIds.addAll(ids)
+                                    val singleIds = save(singleDocArray, realmInstance)
+                                    if (singleIds.isNotEmpty()) {
+                                        newIds.addAll(singleIds)
                                         processedItems++
                                     }
-
                                     if (realmInstance.isInTransaction) {
                                         realmInstance.commitTransaction()
                                     }
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
+                                } catch (e2: Exception) {
+                                    Log.e("ResourceSync", "Error processing individual doc $id: ${e2.message}", e2)
                                     if (realmInstance.isInTransaction) {
                                         realmInstance.cancelTransaction()
                                     }
@@ -447,36 +505,53 @@ class SyncManager private constructor(private val context: Context) {
                         }
                     }
 
+                    Log.d("ResourceSync", "Processing ${rows.size()} rows in batch $batchCount took ${System.currentTimeMillis() - processingStartTime}ms")
+
                     skip += rows.size()
 
+                    val prefsStartTime = System.currentTimeMillis()
                     val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                     settings.edit {
                         putLong("ResourceLastSyncTime", System.currentTimeMillis())
                         putInt("ResourceSyncPosition", skip)
                     }
+                    Log.v("ResourceSync", "Updating preferences took ${System.currentTimeMillis() - prefsStartTime}ms")
+
+                    Log.d("ResourceSync", "Batch $batchCount completed in ${System.currentTimeMillis() - batchStartTime}ms, processed items so far: $processedItems")
 
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e("ResourceSync", "Error in batch $batchCount: ${e.message}", e)
                     skip += batchSize
                 }
             }
 
+            val cleanupStartTime = System.currentTimeMillis()
             try {
+                Log.d("ResourceSync", "Starting cleanup with ${newIds.size} new IDs")
                 realmInstance.beginTransaction()
-                removeDeletedResource(newIds, realmInstance)
 
+                val removeStartTime = System.currentTimeMillis()
+                removeDeletedResource(newIds, realmInstance)
+                Log.d("ResourceSync", "removeDeletedResource operation took ${System.currentTimeMillis() - removeStartTime}ms")
+
+                val commitStartTime = System.currentTimeMillis()
                 if (realmInstance.isInTransaction) {
                     realmInstance.commitTransaction()
                 }
+                Log.d("ResourceSync", "Cleanup commit took ${System.currentTimeMillis() - commitStartTime}ms")
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("ResourceSync", "Error during cleanup: ${e.message}", e)
                 if (realmInstance.isInTransaction) {
                     realmInstance.cancelTransaction()
                 }
             }
+            Log.d("ResourceSync", "Total cleanup took ${System.currentTimeMillis() - cleanupStartTime}ms")
+
+            val totalTime = System.currentTimeMillis() - functionStartTime
+            Log.d("ResourceSync", "Resource sync completed in ${totalTime}ms, processed $processedItems items, average ${if (processedItems > 0) totalTime / processedItems else 0}ms per item")
             logger.endProcess("resource_sync", processedItems)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("ResourceSync", "Fatal error in resource sync: ${e.message}", e)
             logger.endProcess("resource_sync", processedItems)
         }
     }
@@ -616,56 +691,113 @@ class SyncManager private constructor(private val context: Context) {
         val logger = SyncTimeLogger.getInstance()
         logger.startProcess("library_sync")
         var processedItems = 0
+        val functionStartTime = System.currentTimeMillis()
+        Log.d("LibrarySync", "Starting library sync at ${Date(functionStartTime)}")
 
         try {
+            val apiClientStartTime = System.currentTimeMillis()
             val apiInterface = ApiClient.getEnhancedClient()
             val realmInstance = backgroundRealm ?: mRealm
+            Log.d("LibrarySync", "API client initialization took ${System.currentTimeMillis() - apiClientStartTime}ms")
 
             var shelfResponse: DocumentResponse? = null
+            val shelfResponseStartTime = System.currentTimeMillis()
             ApiClient.executeWithRetry {
                 apiInterface.getDocuments(Utilities.header, "${Utilities.getUrl()}/shelf/_all_docs?include_docs=true").execute()
             }?.let {
                 shelfResponse = it.body()
             }
+            Log.d("LibrarySync", "Getting shelf response took ${System.currentTimeMillis() - shelfResponseStartTime}ms")
 
             if (shelfResponse?.rows == null || shelfResponse.rows?.isEmpty() == true) {
+                Log.d("LibrarySync", "No shelf rows found, returning early")
                 return
             }
 
-            for (row in shelfResponse.rows) {
+            val rows = shelfResponse.rows!!
+            Log.d("LibrarySync", "Processing ${rows.size} shelves")
+
+            for ((shelfIndex, row) in rows.withIndex()) {
+                val shelfStartTime = System.currentTimeMillis()
                 val shelfId = row.id
+                Log.d("LibrarySync", "Processing shelf ${shelfIndex + 1}/${rows.size}: $shelfId")
+
                 var shelfDoc: JsonObject? = null
+                val shelfDocStartTime = System.currentTimeMillis()
                 ApiClient.executeWithRetry {
                     apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/$shelfId").execute()
                 }?.let {
                     shelfDoc = it.body()
                 }
+                Log.d("LibrarySync", "Getting shelf doc for $shelfId took ${System.currentTimeMillis() - shelfDocStartTime}ms")
 
-                if (shelfDoc == null) continue
+                if (shelfDoc == null) {
+                    Log.w("LibrarySync", "Null shelf doc for $shelfId, continuing")
+                    continue
+                }
 
+                // OPTIMIZATION: Quick check if shelf has any data before processing
+                var shelfHasData = false
+                val preCheckStartTime = System.currentTimeMillis()
                 for (shelfData in Constants.shelfDataList) {
                     val array = getJsonArray(shelfData.key, shelfDoc)
-                    if (array.size() == 0) continue
+                    if (array.size() > 0) {
+                        shelfHasData = true
+                        break
+                    }
+                }
+                Log.v("LibrarySync", "Pre-check for shelf $shelfId took ${System.currentTimeMillis() - preCheckStartTime}ms, has data: $shelfHasData")
+
+                if (!shelfHasData) {
+                    Log.d("LibrarySync", "Shelf $shelfId has no data, skipping")
+                    continue
+                }
+
+                for ((dataIndex, shelfData) in Constants.shelfDataList.withIndex()) {
+                    val shelfDataStartTime = System.currentTimeMillis()
+                    Log.d("LibrarySync", "Processing shelf data ${dataIndex + 1}/${Constants.shelfDataList.size} for shelf $shelfId: ${shelfData.key}")
+
+                    val arrayParseStartTime = System.currentTimeMillis()
+                    val array = getJsonArray(shelfData.key, shelfDoc)
+                    Log.v("LibrarySync", "Parsing array for ${shelfData.key} took ${System.currentTimeMillis() - arrayParseStartTime}ms, size: ${array.size()}")
+
+                    if (array.size() == 0) {
+                        Log.v("LibrarySync", "Empty array for ${shelfData.key}, continuing")
+                        continue
+                    }
 
                     stringArray[0] = shelfId
                     stringArray[1] = shelfData.categoryKey
                     stringArray[2] = shelfData.type
 
+                    val validationStartTime = System.currentTimeMillis()
                     val validIds = mutableListOf<String>()
                     for (i in 0 until array.size()) {
                         if (array[i] !is JsonNull) {
                             validIds.add(array[i].asString)
                         }
                     }
+                    Log.v("LibrarySync", "Validating IDs for ${shelfData.key} took ${System.currentTimeMillis() - validationStartTime}ms, valid count: ${validIds.size}")
 
-                    if (validIds.isEmpty()) continue
+                    if (validIds.isEmpty()) {
+                        Log.v("LibrarySync", "No valid IDs for ${shelfData.key}, continuing")
+                        continue
+                    }
+
                     val batchSize = 50
+                    val totalBatches = (validIds.size + batchSize - 1) / batchSize
+                    Log.d("LibrarySync", "Processing ${validIds.size} items in $totalBatches batches for ${shelfData.key}")
 
                     for (i in 0 until validIds.size step batchSize) {
+                        val batchStartTime = System.currentTimeMillis()
+                        val batchNumber = (i / batchSize) + 1
+                        Log.d("LibrarySync", "Processing batch $batchNumber/$totalBatches for ${shelfData.key}")
+
                         val end = minOf(i + batchSize, validIds.size)
                         val batch = validIds.subList(i, end)
 
                         try {
+                            val requestStartTime = System.currentTimeMillis()
                             val keysObject = JsonObject()
                             keysObject.add("keys", Gson().fromJson(Gson().toJson(batch), JsonArray::class.java))
 
@@ -675,48 +807,102 @@ class SyncManager private constructor(private val context: Context) {
                             }?.let {
                                 response = it.body()
                             }
+                            Log.d("LibrarySync", "API request for batch $batchNumber took ${System.currentTimeMillis() - requestStartTime}ms")
 
-                            if (response == null) continue
+                            if (response == null) {
+                                Log.w("LibrarySync", "Null response for batch $batchNumber, continuing")
+                                continue
+                            }
 
-                            val rows = getJsonArray("rows", response)
+                            val rowsParseStartTime = System.currentTimeMillis()
+                            val batchRows = getJsonArray("rows", response)
+                            Log.d("LibrarySync", "Parsing rows for batch $batchNumber took ${System.currentTimeMillis() - rowsParseStartTime}ms, rows: ${batchRows.size()}")
 
-                            for (j in 0 until rows.size()) {
-                                val rowObj = rows[j].asJsonObject
+                            // OPTIMIZATION: Process all documents in batch in a single transaction
+                            val processingStartTime = System.currentTimeMillis()
+                            val documentsToProcess = mutableListOf<Pair<JsonObject, String>>()
+
+                            for (j in 0 until batchRows.size()) {
+                                val rowObj = batchRows[j].asJsonObject
                                 if (rowObj.has("doc")) {
                                     val doc = getJsonObject("doc", rowObj)
+                                    val docId = getString("_id", doc)
+                                    documentsToProcess.add(Pair(doc, docId))
+                                }
+                            }
 
-                                    try {
-                                        realmInstance.beginTransaction()
+                            if (documentsToProcess.isNotEmpty()) {
+                                val batchTransactionStartTime = System.currentTimeMillis()
+                                try {
+                                    realmInstance.beginTransaction()
+
+                                    for ((doc, docId) in documentsToProcess) {
                                         when (shelfData.type) {
                                             "resources" -> insertMyLibrary(shelfId, doc, realmInstance)
                                             "meetups" -> insert(realmInstance, doc)
                                             "courses" -> insertMyCourses(shelfId, doc, realmInstance)
                                             "teams" -> insertMyTeams(doc, realmInstance)
                                         }
+                                    }
 
-                                        if (realmInstance.isInTransaction) {
-                                            realmInstance.commitTransaction()
-                                            processedItems++
-                                        }
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                        if (realmInstance.isInTransaction) {
-                                            realmInstance.cancelTransaction()
+                                    if (realmInstance.isInTransaction) {
+                                        realmInstance.commitTransaction()
+                                        processedItems += documentsToProcess.size
+                                    }
+                                    Log.d("LibrarySync", "Batch transaction for ${documentsToProcess.size} docs took ${System.currentTimeMillis() - batchTransactionStartTime}ms")
+                                } catch (e: Exception) {
+                                    Log.e("LibrarySync", "Error in batch transaction: ${e.message}", e)
+                                    if (realmInstance.isInTransaction) {
+                                        realmInstance.cancelTransaction()
+                                    }
+
+                                    // Fallback: process individually
+                                    Log.w("LibrarySync", "Falling back to individual processing for ${documentsToProcess.size} documents")
+                                    for ((doc, docId) in documentsToProcess) {
+                                        try {
+                                            realmInstance.beginTransaction()
+                                            when (shelfData.type) {
+                                                "resources" -> insertMyLibrary(shelfId, doc, realmInstance)
+                                                "meetups" -> insert(realmInstance, doc)
+                                                "courses" -> insertMyCourses(shelfId, doc, realmInstance)
+                                                "teams" -> insertMyTeams(doc, realmInstance)
+                                            }
+                                            if (realmInstance.isInTransaction) {
+                                                realmInstance.commitTransaction()
+                                                processedItems++
+                                            }
+                                        } catch (e2: Exception) {
+                                            Log.e("LibrarySync", "Error processing individual doc $docId: ${e2.message}", e2)
+                                            if (realmInstance.isInTransaction) {
+                                                realmInstance.cancelTransaction()
+                                            }
                                         }
                                     }
                                 }
                             }
-                            logger.endProcess("library_sync", processedItems)
+
+                            Log.d("LibrarySync", "Processing ${batchRows.size()} docs in batch $batchNumber took ${System.currentTimeMillis() - processingStartTime}ms")
+                            Log.d("LibrarySync", "Batch $batchNumber completed in ${System.currentTimeMillis() - batchStartTime}ms")
+
                         } catch (e: Exception) {
-                            e.printStackTrace()
-                            logger.endProcess("library_sync", processedItems)
+                            Log.e("LibrarySync", "Error in batch $batchNumber for ${shelfData.key}: ${e.message}", e)
                         }
                     }
+                    Log.d("LibrarySync", "Completed shelf data ${shelfData.key} in ${System.currentTimeMillis() - shelfDataStartTime}ms")
                 }
+                Log.d("LibrarySync", "Completed shelf $shelfId in ${System.currentTimeMillis() - shelfStartTime}ms")
             }
+
+            val prefsStartTime = System.currentTimeMillis()
             saveConcatenatedLinksToPrefs()
+            Log.d("LibrarySync", "Saving concatenated links took ${System.currentTimeMillis() - prefsStartTime}ms")
+
+            val totalTime = System.currentTimeMillis() - functionStartTime
+            Log.d("LibrarySync", "Library sync completed in ${totalTime}ms, processed $processedItems items, average ${if (processedItems > 0) totalTime / processedItems else 0}ms per item")
+            logger.endProcess("library_sync", processedItems)
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("LibrarySync", "Fatal error in library sync: ${e.message}", e)
+            logger.endProcess("library_sync", processedItems)
         }
     }
 
@@ -925,3 +1111,4 @@ class SyncManager private constructor(private val context: Context) {
             }
     }
 }
+
