@@ -11,7 +11,11 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 
 class JoinedMemberFragment : BaseMemberFragment() {
-    private lateinit var memberChangeListener: MemberChangeListener
+    private var memberChangeListener: MemberChangeListener = object : MemberChangeListener {
+        override fun onMemberChanged() {
+            //fallback listener to prevent crash
+        }
+    }
 
     fun setMemberChangeListener(listener: MemberChangeListener) {
         this.memberChangeListener = listener

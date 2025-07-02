@@ -13,8 +13,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
@@ -43,6 +41,7 @@ import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Sha256Utils
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.VersionUtils
 import retrofit2.Call
 import retrofit2.Callback
@@ -308,32 +307,12 @@ class Service(private val context: Context) {
             }
         }, {
             callback.onSuccess(context.getString(R.string.user_created_successfully))
-            isNetworkConnectedFlow.onEach { isConnected ->
-                if (isConnected) {
-                    val serverUrl = settings.getString("serverURL", "")
-                    if (!serverUrl.isNullOrEmpty()) {
-                        serviceScope.launch {
-                            val canReachServer = withContext(Dispatchers.IO) {
-                                isServerReachable(serverUrl)
-                            }
-                            if (canReachServer) {
-                                if (context is ProcessUserDataActivity) {
-                                    context.runOnUiThread {
-                                        val userName = "${obj["name"].asString}"
-                                        context.startUpload("becomeMember", userName, securityCallback)
-                                    }
-                                }
-                            } else {
-                                securityCallback?.onSecurityDataUpdated()
-                            }
-                        }
-                    } else {
-                        securityCallback?.onSecurityDataUpdated()
-                    }
-                } else {
-                    securityCallback?.onSecurityDataUpdated()
+            if (context is ProcessUserDataActivity) {
+                context.runOnUiThread {
+                    val userName = "${obj["name"].asString}"
+                    context.startUpload("becomeMember", userName, securityCallback)
                 }
-            }.launchIn(serviceScope)
+            }
         }) { error: Throwable ->
             error.printStackTrace()
             callback.onSuccess(context.getString(R.string.unable_to_save_user_please_sync))
@@ -574,12 +553,7 @@ class Service(private val context: Context) {
     }
 
     private fun getUrl(couchdbURL: String): String {
-        var url = couchdbURL
-
-        if (!url.endsWith("/db")) {
-            url += "/db"
-        }
-        return url
+        return UrlUtils.dbUrl(couchdbURL)
     }
 
     private fun getUserInfo(uri: Uri): Array<String> {

@@ -127,41 +127,36 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         suspend fun isServerReachable(urlString: String): Boolean {
             val serverUrlMapper = ServerUrlMapper()
             val mapping = serverUrlMapper.processUrl(urlString)
-
             val urlsToTry = mutableListOf(urlString)
             mapping.alternativeUrl?.let { urlsToTry.add(it) }
 
-            for (url in urlsToTry) {
-                try {
-                    if (url.isBlank()) continue
+            return try {
+                if (urlString.isBlank()) return false
 
-                    val formattedUrl = if (!url.startsWith("http://") && !url.startsWith("https://")) {
-                        "http://$url"
-                    } else {
-                        url
-                    }
-
-                    val url = URL(formattedUrl)
-                    val connection = withContext(Dispatchers.IO) {
-                        url.openConnection()
-                    } as HttpURLConnection
-                    connection.requestMethod = "GET"
-                    connection.connectTimeout = 5000
-                    connection.readTimeout = 5000
-                    withContext(Dispatchers.IO) {
-                        connection.connect()
-                    }
-                    val responseCode = connection.responseCode
-                    connection.disconnect()
-
-                    if (responseCode in 200..299) {
-                        return true
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                val formattedUrl = if (!urlString.startsWith("http://") && !urlString.startsWith("https://")) {
+                    "http://$urlString"
+                } else {
+                    urlString
                 }
+
+                val url = URL(formattedUrl)
+                val connection = withContext(Dispatchers.IO) {
+                    url.openConnection()
+                } as HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+                withContext(Dispatchers.IO) {
+                    connection.connect()
+                }
+                val responseCode = connection.responseCode
+                connection.disconnect()
+                responseCode in 200..299
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
             }
-            return false
         }
 
         fun handleUncaughtException(e: Throwable) {
@@ -295,27 +290,15 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         Utilities.setContext(base)
     }
 
-    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+    override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        val currentNightMode = context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        val isSystemNight= when (currentNightMode) {
-            Configuration.UI_MODE_NIGHT_YES -> true
-            Configuration.UI_MODE_NIGHT_NO -> false
-            else -> false
-        }
-        val savedThemeMode = getCurrentThemeMode()
-        if (savedThemeMode != ThemeMode.FOLLOW_SYSTEM) {
-            return
-        }
 
-        when (currentNightMode) {
-            android.content.res.Configuration.UI_MODE_NIGHT_NO -> {
-                applyThemeMode(ThemeMode.LIGHT)
-            }
-            android.content.res.Configuration.UI_MODE_NIGHT_YES -> {
-                applyThemeMode(ThemeMode.DARK)
-            }
-        }
+        if (getCurrentThemeMode() != ThemeMode.FOLLOW_SYSTEM) return
+
+        val isNightMode = (newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+        val themeToApply = if (isNightMode) ThemeMode.DARK else ThemeMode.LIGHT
+
+        applyThemeMode(themeToApply)
     }
 
     private fun getCurrentThemeMode(): String {
