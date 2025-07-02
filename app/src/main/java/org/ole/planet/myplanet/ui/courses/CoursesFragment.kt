@@ -121,7 +121,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText("Syncing courses data...")
+                        customProgressDialog?.setText(getString(R.string.syncing_courses_data))
                         customProgressDialog?.show()
                     }
                 }

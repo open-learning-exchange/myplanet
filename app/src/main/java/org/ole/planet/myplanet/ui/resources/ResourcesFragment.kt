@@ -117,7 +117,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText("Syncing resources...")
+                        customProgressDialog?.setText(getString(R.string.syncing_resources))
                         customProgressDialog?.show()
                     }
                 }

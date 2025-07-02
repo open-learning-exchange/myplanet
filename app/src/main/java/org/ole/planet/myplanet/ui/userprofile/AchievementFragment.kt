@@ -101,7 +101,7 @@ class AchievementFragment : BaseContainerFragment() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText("Syncing achievements...")
+                        customProgressDialog?.setText(getString(R.string.syncing_achievements))
                         customProgressDialog?.show()
                     }
                 }

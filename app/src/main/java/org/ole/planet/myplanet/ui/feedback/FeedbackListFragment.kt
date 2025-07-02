@@ -17,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentFeedbackListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmFeedback
@@ -93,7 +94,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText("Syncing feedback...")
+                        customProgressDialog?.setText(getString(R.string.syncing_feedback))
                         customProgressDialog?.show()
                     }
                 }

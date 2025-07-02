@@ -108,7 +108,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText("Syncing team data...")
+                        customProgressDialog?.setText(requireContext().getString(R.string.syncing_team_data))
                         customProgressDialog?.show()
                     }
                 }
@@ -137,7 +137,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                     }
                 }
             }
-        }, "full", listOf("teams", "team_activities"))
+        }, "full", listOf("tasks", "meetups", "team_activities"))
     }
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {

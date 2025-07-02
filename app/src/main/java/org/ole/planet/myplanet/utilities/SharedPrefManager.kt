@@ -27,6 +27,7 @@ class SharedPrefManager(context: Context) {
     private var healthSynced = "health_synced"
     private var coursesSynced = "courses_synced"
     private var resourcesSynced = "resources_synced"
+    private var examsSynced = "exams_synced"
 
     fun getSavedUsers(): List<User> {
         val usersJson = pref.getString(savedUsers, null)
@@ -195,6 +196,18 @@ class SharedPrefManager(context: Context) {
         editor.putBoolean(resourcesSynced, synced)
         if (synced) {
             editor.putLong("${resourcesSynced}_time", System.currentTimeMillis())
+        }
+        editor.apply()
+    }
+
+    fun isExamsSynced(): Boolean {
+        return pref.getBoolean(examsSynced, false)
+    }
+
+    fun setExamsSynced(synced: Boolean) {
+        editor.putBoolean(examsSynced, synced)
+        if (synced) {
+            editor.putLong("${examsSynced}_time", System.currentTimeMillis())
         }
         editor.apply()
     }

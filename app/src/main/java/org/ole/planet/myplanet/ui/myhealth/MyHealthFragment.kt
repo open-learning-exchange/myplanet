@@ -108,7 +108,7 @@ class MyHealthFragment : Fragment() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText("Syncing health data...")
+                        customProgressDialog?.setText(getString(R.string.syncing_health_data))
                         customProgressDialog?.show()
                     }
                 }
@@ -142,7 +142,6 @@ class MyHealthFragment : Fragment() {
             isServerReachable(url)
         }
     }
-
 
     private fun refreshHealthData() {
         if (!isAdded || requireActivity().isFinishing) return

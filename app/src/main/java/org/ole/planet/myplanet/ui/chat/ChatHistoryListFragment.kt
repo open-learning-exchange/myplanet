@@ -159,7 +159,7 @@ class ChatHistoryListFragment : Fragment() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText("Syncing chat history...")
+                        customProgressDialog?.setText(getString(R.string.syncing_chat_history))
                         customProgressDialog?.show()
                     }
                 }
