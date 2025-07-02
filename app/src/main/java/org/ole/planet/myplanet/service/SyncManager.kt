@@ -584,8 +584,11 @@ class SyncManager private constructor(private val context: Context) {
 
             val batchSize = 200
             var skip = 0
+            var batchCount = 0
 
             while (skip < totalRows || (totalRows == 0 && skip == 0)) {
+                batchCount++
+
                 try {
                     var response: JsonObject? = null
                     ApiClient.executeWithRetry {
@@ -605,29 +608,66 @@ class SyncManager private constructor(private val context: Context) {
                         break
                     }
 
+                    val batchDocuments = JsonArray()
+                    val validDocuments = mutableListOf<Pair<JsonObject, String>>()
+
                     for (i in 0 until rows.size()) {
                         val rowObj = rows[i].asJsonObject
                         if (rowObj.has("doc")) {
                             val doc = getJsonObject("doc", rowObj)
                             val id = getString("_id", doc)
 
-                            if (!id.startsWith("_design")) {
+                            if (!id.startsWith("_design") && id.isNotBlank()) {
+                                batchDocuments.add(doc)
+                                validDocuments.add(Pair(doc, id))
+                            }
+                        }
+                    }
+
+                    if (validDocuments.isNotEmpty()) {
+                        try {
+                            realmInstance.beginTransaction()
+                            val idsWeAreProcessing = validDocuments.map { it.second }
+                            val ids = save(batchDocuments, realmInstance)
+
+                            if (ids.isNotEmpty()) {
+                                val validIds = ids.filter { it.isNotBlank() }
+                                if (validIds.isNotEmpty()) {
+                                    newIds.addAll(validIds)
+                                    processedItems += validIds.size
+                                } else {
+                                    newIds.addAll(idsWeAreProcessing)
+                                    processedItems += idsWeAreProcessing.size
+                                }
+                            } else {
+                                newIds.addAll(idsWeAreProcessing)
+                                processedItems += idsWeAreProcessing.size
+                            }
+
+                            if (realmInstance.isInTransaction) {
+                                realmInstance.commitTransaction()
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            if (realmInstance.isInTransaction) {
+                                realmInstance.cancelTransaction()
+                            }
+
+                            for ((doc, _) in validDocuments) {
                                 try {
                                     realmInstance.beginTransaction()
                                     val singleDocArray = JsonArray()
                                     singleDocArray.add(doc)
-
-                                    val ids = save(singleDocArray, realmInstance)
-                                    if (ids.isNotEmpty()) {
-                                        newIds.addAll(ids)
+                                    val singleIds = save(singleDocArray, realmInstance)
+                                    if (singleIds.isNotEmpty()) {
+                                        newIds.addAll(singleIds)
                                         processedItems++
                                     }
-
                                     if (realmInstance.isInTransaction) {
                                         realmInstance.commitTransaction()
                                     }
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
+                                } catch (e2: Exception) {
+                                    e2.printStackTrace()
                                     if (realmInstance.isInTransaction) {
                                         realmInstance.cancelTransaction()
                                     }
@@ -637,13 +677,11 @@ class SyncManager private constructor(private val context: Context) {
                     }
 
                     skip += rows.size()
-
                     val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                     settings.edit {
                         putLong("ResourceLastSyncTime", System.currentTimeMillis())
                         putInt("ResourceSyncPosition", skip)
                     }
-
                 } catch (e: Exception) {
                     e.printStackTrace()
                     skip += batchSize
@@ -651,17 +689,12 @@ class SyncManager private constructor(private val context: Context) {
             }
 
             try {
-                realmInstance.beginTransaction()
-                removeDeletedResource(newIds, realmInstance)
-
-                if (realmInstance.isInTransaction) {
-                    realmInstance.commitTransaction()
+                val validNewIds = newIds.filter { !it.isNullOrBlank() }
+                if (validNewIds.isNotEmpty() && validNewIds.size == newIds.size) {
+                    removeDeletedResource(validNewIds, realmInstance)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                if (realmInstance.isInTransaction) {
-                    realmInstance.cancelTransaction()
-                }
             }
             logger.endProcess("resource_sync", processedItems)
         } catch (e: Exception) {
@@ -809,7 +842,6 @@ class SyncManager private constructor(private val context: Context) {
         try {
             val apiInterface = ApiClient.getEnhancedClient()
             val realmInstance = backgroundRealm ?: mRealm
-
             var shelfResponse: DocumentResponse? = null
             ApiClient.executeWithRetry {
                 apiInterface.getDocuments(Utilities.header, "${Utilities.getUrl()}/shelf/_all_docs?include_docs=true").execute()
@@ -821,8 +853,10 @@ class SyncManager private constructor(private val context: Context) {
                 return
             }
 
-            for (row in shelfResponse.rows) {
+            val rows = shelfResponse.rows!!
+            for ((_, row) in rows.withIndex()) {
                 val shelfId = row.id
+
                 var shelfDoc: JsonObject? = null
                 ApiClient.executeWithRetry {
                     apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/$shelfId").execute()
@@ -830,11 +864,29 @@ class SyncManager private constructor(private val context: Context) {
                     shelfDoc = it.body()
                 }
 
-                if (shelfDoc == null) continue
+                if (shelfDoc == null) {
+                    continue
+                }
 
+                var shelfHasData = false
                 for (shelfData in Constants.shelfDataList) {
                     val array = getJsonArray(shelfData.key, shelfDoc)
-                    if (array.size() == 0) continue
+                    if (array.size() > 0) {
+                        shelfHasData = true
+                        break
+                    }
+                }
+
+                if (!shelfHasData) {
+                    continue
+                }
+
+                for ((_, shelfData) in Constants.shelfDataList.withIndex()) {
+                    val array = getJsonArray(shelfData.key, shelfDoc)
+
+                    if (array.size() == 0) {
+                        continue
+                    }
 
                     stringArray[0] = shelfId
                     stringArray[1] = shelfData.categoryKey
@@ -847,7 +899,10 @@ class SyncManager private constructor(private val context: Context) {
                         }
                     }
 
-                    if (validIds.isEmpty()) continue
+                    if (validIds.isEmpty()) {
+                        continue
+                    }
+
                     val batchSize = 50
 
                     for (i in 0 until validIds.size step batchSize) {
@@ -865,47 +920,79 @@ class SyncManager private constructor(private val context: Context) {
                                 response = it.body()
                             }
 
-                            if (response == null) continue
+                            if (response == null) {
+                                continue
+                            }
 
-                            val rows = getJsonArray("rows", response)
+                            val batchRows = getJsonArray("rows", response)
+                            val documentsToProcess = mutableListOf<Pair<JsonObject, String>>()
 
-                            for (j in 0 until rows.size()) {
-                                val rowObj = rows[j].asJsonObject
+                            for (j in 0 until batchRows.size()) {
+                                val rowObj = batchRows[j].asJsonObject
                                 if (rowObj.has("doc")) {
                                     val doc = getJsonObject("doc", rowObj)
+                                    val docId = getString("_id", doc)
+                                    documentsToProcess.add(Pair(doc, docId))
+                                }
+                            }
 
-                                    try {
-                                        realmInstance.beginTransaction()
+                            if (documentsToProcess.isNotEmpty()) {
+                                try {
+                                    realmInstance.beginTransaction()
+
+                                    for ((doc, _) in documentsToProcess) {
                                         when (shelfData.type) {
                                             "resources" -> insertMyLibrary(shelfId, doc, realmInstance)
                                             "meetups" -> insert(realmInstance, doc)
                                             "courses" -> insertMyCourses(shelfId, doc, realmInstance)
                                             "teams" -> insertMyTeams(doc, realmInstance)
                                         }
+                                    }
 
-                                        if (realmInstance.isInTransaction) {
-                                            realmInstance.commitTransaction()
-                                            processedItems++
-                                        }
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                        if (realmInstance.isInTransaction) {
-                                            realmInstance.cancelTransaction()
+                                    if (realmInstance.isInTransaction) {
+                                        realmInstance.commitTransaction()
+                                        processedItems += documentsToProcess.size
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    if (realmInstance.isInTransaction) {
+                                        realmInstance.cancelTransaction()
+                                    }
+
+                                    for ((doc, _) in documentsToProcess) {
+                                        try {
+                                            realmInstance.beginTransaction()
+                                            when (shelfData.type) {
+                                                "resources" -> insertMyLibrary(shelfId, doc, realmInstance)
+                                                "meetups" -> insert(realmInstance, doc)
+                                                "courses" -> insertMyCourses(shelfId, doc, realmInstance)
+                                                "teams" -> insertMyTeams(doc, realmInstance)
+                                            }
+                                            if (realmInstance.isInTransaction) {
+                                                realmInstance.commitTransaction()
+                                                processedItems++
+                                            }
+                                        } catch (e2: Exception) {
+                                            e2.printStackTrace()
+                                            if (realmInstance.isInTransaction) {
+                                                realmInstance.cancelTransaction()
+                                            }
                                         }
                                     }
                                 }
                             }
-                            logger.endProcess("library_sync", processedItems)
                         } catch (e: Exception) {
                             e.printStackTrace()
-                            logger.endProcess("library_sync", processedItems)
                         }
                     }
                 }
             }
+
             saveConcatenatedLinksToPrefs()
+            logger.endProcess("library_sync", processedItems)
         } catch (e: Exception) {
             e.printStackTrace()
+            logger.endProcess("library_sync", processedItems)
         }
     }
 
@@ -1114,3 +1201,4 @@ class SyncManager private constructor(private val context: Context) {
             }
     }
 }
+
