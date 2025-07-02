@@ -86,6 +86,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefManager = SharedPrefManager(requireContext())
+        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         startResourcesSync()
     }
 
@@ -101,7 +102,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun checkServerAndStartSync() {
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
         lifecycleScope.launch(Dispatchers.IO) {
