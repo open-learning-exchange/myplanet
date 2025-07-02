@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import android.content.Context
+import android.content.Context.MODE_PRIVATE
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
@@ -43,6 +44,18 @@ import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Calendar
 import java.util.UUID
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
+import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
+import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.service.SyncManager
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSelected,
     ChipDeletedListener, TagClickListener, OnFilterListener {
@@ -63,9 +76,113 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     var userModel: RealmUserModel ?= null
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
+    private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+    lateinit var prefManager: SharedPrefManager
+
+    private val serverUrlMapper = ServerUrlMapper()
+    private val serverUrl: String
+        get() = settings.getString("serverURL", "") ?: ""
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        prefManager = SharedPrefManager(requireContext())
+        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        startResourcesSync()
+    }
 
     override fun getLayout(): Int {
         return R.layout.fragment_my_library
+    }
+
+    private fun startResourcesSync() {
+        val isFastSync = settings.getBoolean("fastSync", false)
+        if (isFastSync && !prefManager.isResourcesSynced()) {
+            checkServerAndStartSync()
+        }
+    }
+
+    private fun checkServerAndStartSync() {
+        val mapping = serverUrlMapper.processUrl(serverUrl)
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            updateServerIfNecessary(mapping)
+            withContext(Dispatchers.Main) {
+                startSyncManager()
+            }
+        }
+    }
+
+    private fun startSyncManager() {
+        SyncManager.instance?.start(object : SyncListener {
+            override fun onSyncStarted() {
+                activity?.runOnUiThread {
+                    if (isAdded && !requireActivity().isFinishing) {
+                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                        customProgressDialog?.setText(getString(R.string.syncing_resources))
+                        customProgressDialog?.show()
+                    }
+                }
+            }
+
+            override fun onSyncComplete() {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
+                        refreshResourcesData()
+                        prefManager.setResourcesSynced(true)
+                    }
+                }
+            }
+
+            override fun onSyncFailed(message: String?) {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
+
+                        Snackbar.make(requireView(), "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG
+                        ).setAction("Retry") {
+                            startResourcesSync()
+                        }.show()
+                    }
+                }
+            }
+        }, "full", listOf("resources"))
+    }
+
+    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
+        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
+            isServerReachable(url)
+        }
+    }
+
+    private fun refreshResourcesData() {
+        if (!isAdded || requireActivity().isFinishing) return
+
+        try {
+            map = getRatings(mRealm, "resource", model?.id)
+            val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
+            adapterLibrary.setLibraryList(libraryList)
+            adapterLibrary.setRatingMap(map!!)
+            adapterLibrary.notifyDataSetChanged()
+            checkList()
+            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+
+            if (searchTags.isNotEmpty() || etSearch.text?.isNotEmpty() == true) {
+                adapterLibrary.setLibraryList(
+                    applyFilter(
+                        filterLibraryByTag(
+                            etSearch.text.toString().trim(), searchTags
+                        )
+                    )
+                )
+                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+            }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
@@ -83,6 +200,26 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         userModel = UserProfileDbHandler(requireContext()).userModel
         searchTags = ArrayList()
         config = Utilities.getCloudConfig().showClose(R.color.black_overlay)
+
+        initializeViews(view)
+        setupEventListeners()
+        initArrays()
+        hideButton()
+
+        setupGuestUserRestrictions()
+
+        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+        clearTagsButton()
+        setupUI(view.findViewById(R.id.my_library_parent_layout), requireActivity())
+        changeButtonStatus()
+        additionalSetup()
+
+        tvFragmentInfo = view.findViewById(R.id.tv_fragment_info)
+        if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
+        checkList()
+    }
+
+    private fun initializeViews(view: View) {
         tvAddToLib = view.findViewById(R.id.tv_add)
         etSearch = view.findViewById(R.id.et_search)
         etTags = view.findViewById(R.id.et_tags)
@@ -92,19 +229,22 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         selectAll = view.findViewById(R.id.selectAll)
         filter = view.findViewById(R.id.filter)
         addResourceButton = view.findViewById(R.id.addResource)
+
         if (tvSelected.text.isNullOrEmpty()) {
             tvSelected.visibility = View.GONE
         } else {
             tvSelected.visibility = View.VISIBLE
         }
-        initArrays()
-        hideButton()
+    }
 
+    private fun setupGuestUserRestrictions() {
         if(userModel?.isGuest() == true){
             tvAddToLib.visibility = View.GONE
             selectAll.visibility = View.GONE
         }
+    }
 
+    private fun setupEventListeners() {
         tvAddToLib.setOnClickListener {
             if ((selectedItems?.size ?: 0) > 0) {
                 confirmation = createAlertDialog()
@@ -139,23 +279,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 )
                 showNoData(tvMessage, adapterLibrary.itemCount, "resources")
             }
-
             override fun afterTextChanged(s: Editable) {}
         })
 
-        view.findViewById<View>(R.id.btn_collections).setOnClickListener {
+        requireView().findViewById<View>(R.id.btn_collections).setOnClickListener {
             val f = CollectionsFragment.getInstance(searchTags, "resources")
             f.setListener(this@ResourcesFragment)
             f.show(childFragmentManager, "")
         }
-        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
-        clearTagsButton()
-        setupUI(view.findViewById(R.id.my_library_parent_layout), requireActivity())
-        changeButtonStatus()
-        additionalSetup()
-        tvFragmentInfo = view.findViewById(R.id.tv_fragment_info)
-        if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
-        checkList()
 
         selectAll.setOnClickListener {
             hideButton()
@@ -234,7 +365,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         msg += getString(R.string.return_to_the_home_tab_to_access_mylibrary) + getString(R.string.note_you_may_still_need_to_download_the_newly_added_resources)
         builder.setMessage(msg)
         builder.setCancelable(true)
-        .setPositiveButton(R.string.go_to_mylibrary) { dialog: DialogInterface, _: Int ->
+            .setPositiveButton(R.string.go_to_mylibrary) { dialog: DialogInterface, _: Int ->
                 if (userModel?.id?.startsWith("guest") == true) {
                     guestDialog(requireContext())
                 } else {
@@ -245,7 +376,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                     }
                     homeItemClickListener?.openMyFragment(fragment)
                 }
-        }
+            }
         builder.setNegativeButton(getString(R.string.ok)) { dialog: DialogInterface, _: Int ->
             dialog.cancel()
             val newFragment = ResourcesFragment()
@@ -349,7 +480,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         return b
     }
 
-
     override fun getSelectedFilter(): Map<String, Set<String>> {
         val b: MutableMap<String, Set<String>> = HashMap()
         b["languages"] = languages
@@ -391,6 +521,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        customProgressDialog?.dismiss()
+        customProgressDialog = null
+    }
+
     private fun recreateFragment(fragment: Fragment) {
         if (isAdded && activity != null && !requireActivity().isFinishing) {
             val transaction = parentFragmentManager.beginTransaction()
@@ -405,7 +541,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             transaction.commit()
         }
     }
-
 
     private fun additionalSetup() {
         val bottomSheet = requireView().findViewById<View>(R.id.card_filter)

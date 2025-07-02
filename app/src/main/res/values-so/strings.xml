@@ -1313,5 +1313,12 @@
     <string name="download_progress_with_errors">%1$d faylal oo ka mid ah %2$d ayaa la soo dejiyay (iyada oo jira qalado)</string>
     <string name="download_in_background">Bilaabida soo dejinta gadaal…</string>
     <string name="creating_member_account">Abuuraya akoonka xubnaha…</string>
+    <string name="syncing_team_data">Waxaa la daabacayaa xogta kooxda…</string>
+    <string name="syncing_chat_history">Waxaa la daabacayaa taariikhda wada sheekaysiga…</string>
+    <string name="syncing_courses_data">Waxaa la daabacayaa xogta koorsooyinka…</string>
+    <string name="syncing_feedback">Waxaa la daabacayaa jawaab celinta…</string>
+    <string name="syncing_health_data">Waxaa la daabacayaa xogta caafimaadka…</string>
+    <string name="syncing_resources">Waxaa la daabacayaa agabka…</string>
+    <string name="syncing_achievements">Waxaa la daabacayaa guulaha…</string>
 
 </resources>
