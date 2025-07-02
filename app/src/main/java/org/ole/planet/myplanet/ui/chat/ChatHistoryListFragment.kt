@@ -15,7 +15,10 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.chat.ChatViewModel
+import org.ole.planet.myplanet.model.chat.RealmChatHistory
+import org.ole.planet.myplanet.model.chat.Conversation
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 class ChatHistoryListFragment : Fragment() {

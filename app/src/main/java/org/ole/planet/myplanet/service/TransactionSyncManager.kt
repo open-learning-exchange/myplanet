@@ -15,8 +15,8 @@ import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.RealmAchievement.Companion.achievementWriteCsv
 import org.ole.planet.myplanet.model.RealmCertification.Companion.certificationWriteCsv
-import org.ole.planet.myplanet.model.RealmChatHistory.Companion.chatWriteCsv
-import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
+import org.ole.planet.myplanet.model.chat.RealmChatHistory.Companion.chatWriteCsv
+import org.ole.planet.myplanet.model.chat.RealmChatHistory.Companion.insert
 import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.progressWriteCsv
 import org.ole.planet.myplanet.model.RealmFeedback.Companion.feedbackWriteCsv
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.meetupWriteCsv

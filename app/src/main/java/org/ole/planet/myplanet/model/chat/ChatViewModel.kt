@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.model
+package org.ole.planet.myplanet.model.chat
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData

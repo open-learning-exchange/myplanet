@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.model
+package org.ole.planet.myplanet.model.chat
 
 import com.google.gson.Gson
 import com.google.gson.JsonArray

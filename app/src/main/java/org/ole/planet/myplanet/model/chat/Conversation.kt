@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.model
+package org.ole.planet.myplanet.model.chat
 
 import io.realm.RealmObject
 
