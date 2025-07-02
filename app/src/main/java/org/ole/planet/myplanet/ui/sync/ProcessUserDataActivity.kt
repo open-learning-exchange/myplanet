@@ -276,16 +276,16 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         `in`.hideSoftInputFromWindow(view?.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
     }
 
-    fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUserModel) {
+    fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUserModel?) {
         this.settings = settings
         settings.edit {
-            putString("userId", user.id)
-            putString("name", user.name)
+            putString("userId", user?.id)
+            putString("name", user?.name)
             putString("password", password)
-            putString("firstName", user.firstName)
-            putString("lastName", user.lastName)
-            putString("middleName", user.middleName)
-            user.userAdmin?.let { putBoolean("isUserAdmin", it) }
+            putString("firstName", user?.firstName)
+            putString("lastName", user?.lastName)
+            putString("middleName", user?.middleName)
+            user?.userAdmin?.let { putBoolean("isUserAdmin", it) }
             putLong("lastLogin", System.currentTimeMillis())
         }
     }
