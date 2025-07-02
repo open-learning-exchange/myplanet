@@ -92,7 +92,7 @@ object ExamSubmissionUtils {
         otherText: String?,
         otherVisible: Boolean,
     ) {
-        if (ans == "other" && otherVisible && !otherText.isNullOrEmpty()) {
+        if (otherVisible && !otherText.isNullOrEmpty()) {
             answer.value = otherText
             answer.valueChoices = RealmList<String>().apply {
                 add("""{"id":"other","text":"$otherText"}""")
