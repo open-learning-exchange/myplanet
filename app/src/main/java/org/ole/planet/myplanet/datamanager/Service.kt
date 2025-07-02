@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Sha256Utils
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.VersionUtils
 import retrofit2.Call
 import retrofit2.Callback
@@ -574,12 +575,7 @@ class Service(private val context: Context) {
     }
 
     private fun getUrl(couchdbURL: String): String {
-        var url = couchdbURL
-
-        if (!url.endsWith("/db")) {
-            url += "/db"
-        }
-        return url
+        return UrlUtils.dbUrl(couchdbURL)
     }
 
     private fun getUserInfo(uri: Uri): Array<String> {

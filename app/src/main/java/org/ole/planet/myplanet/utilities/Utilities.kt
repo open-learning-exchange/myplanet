@@ -33,6 +33,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import org.ole.planet.myplanet.datamanager.DownloadWorker
+import org.ole.planet.myplanet.utilities.UrlUtils
 
 object Utilities {
     private var contextRef: WeakReference<Context>? = null
@@ -206,18 +207,7 @@ object Utilities {
 
     fun getUrl(): String {
         val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        var url: String? = ""
-
-        url = if (settings.getBoolean("isAlternativeUrl", false)) {
-            settings.getString("processedAlternativeUrl", "")
-        } else {
-            settings.getString("couchdbURL", "")
-        }
-
-        if (!url?.endsWith("/db")!!) {
-            url += "/db"
-        }
-        return url
+        return UrlUtils.dbUrl(settings)
     }
 
     val hostUrl: String
@@ -246,66 +236,28 @@ object Utilities {
         }
 
     fun getUpdateUrl(settings: SharedPreferences): String {
-        var url: String? = ""
-        url = if (settings.getBoolean("isAlternativeUrl", false)) {
-            settings.getString("processedAlternativeUrl", "")
-        } else {
-            settings.getString("couchdbURL", "")
-        }
-
-        if (url != null) {
-            if (url.endsWith("/db")) {
-                url = url.replace("/db", "")
-            }
-        }
-
+        val url = UrlUtils.baseUrl(settings)
         return "$url/versions"
     }
 
     fun getChecksumUrl(settings: SharedPreferences): String {
-        var url = settings.getString("couchdbURL", "")
-        if (url != null) {
-            if (url.endsWith("/db")) {
-                url = url.replace("/db", "")
-            }
-        }
+        val url = UrlUtils.baseUrl(settings)
         return "$url/fs/myPlanet.apk.sha256"
     }
 
     fun getHealthAccessUrl(settings: SharedPreferences): String {
-        var url = settings.getString("couchdbURL", "")
-        if (url != null) {
-            if (url.endsWith("/db")) {
-                url = url.replace("/db", "")
-            }
-        }
+        val url = UrlUtils.baseUrl(settings)
         return String.format("%s/healthaccess?p=%s", url, settings.getString("serverPin", "0000"))
     }
 
     fun getApkVersionUrl(settings: SharedPreferences): String {
-        var url: String? = ""
-        url = if (settings.getBoolean("isAlternativeUrl", false)){
-            settings.getString("processedAlternativeUrl", "")
-        } else {
-            settings.getString("couchdbURL", "")
-        }
-
-        if (url != null) {
-            if (url.endsWith("/db")) {
-                url = url.replace("/db", "")
-            }
-        }
+        val url = UrlUtils.baseUrl(settings)
         return "$url/apkversion"
     }
 
     fun getApkUpdateUrl(path: String?): String {
         val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        var url = preferences.getString("couchdbURL", "")
-        if (url != null) {
-            if (url.endsWith("/db")) {
-                url = url.replace("/db", "")
-            }
-        }
+        val url = UrlUtils.baseUrl(preferences)
         return "$url$path"
     }
 
