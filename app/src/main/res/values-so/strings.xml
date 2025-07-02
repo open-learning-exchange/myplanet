@@ -1313,5 +1313,6 @@
     <string name="download_progress_with_errors">%1$d faylal oo ka mid ah %2$d ayaa la soo dejiyay (iyada oo jira qalado)</string>
     <string name="download_in_background">Bilaabida soo dejinta gadaal…</string>
     <string name="creating_member_account">Abuuraya akoonka xubnaha…</string>
+    <string name ="cancel_adding_examination">Ma hubtaa inaad rabto inaad tirtirto ku-darka imtixaanka? Xogtu way lumin doontaa.</string>
 
 </resources>
