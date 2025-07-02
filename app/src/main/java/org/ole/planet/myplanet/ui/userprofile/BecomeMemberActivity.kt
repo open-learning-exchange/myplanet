@@ -4,7 +4,6 @@ import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
-import android.text.TextUtils
 import android.text.TextWatcher
 import android.widget.ArrayAdapter
 import com.google.gson.JsonArray
@@ -18,6 +17,7 @@ import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
@@ -28,6 +28,7 @@ import java.text.Normalizer
 import java.util.Calendar
 import java.util.Locale
 import java.util.regex.Pattern
+import androidx.core.content.edit
 
 class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
@@ -179,14 +180,7 @@ class BecomeMemberActivity : BaseActivity() {
             override fun onSecurityDataUpdated() {
                 runOnUiThread {
                     customProgressDialog.dismiss()
-                    val intent = Intent(this@BecomeMemberActivity, LoginActivity::class.java)
-                    if (guest) {
-                        intent.putExtra("username", info.username)
-                        intent.putExtra("guest", guest)
-                    }
-                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                    startActivity(intent)
-                    finish()
+                    autoLoginNewMember(info.username, info.password)
                 }
             }
         })
@@ -233,6 +227,18 @@ class BecomeMemberActivity : BaseActivity() {
         }
     }
 
+    private fun autoLoginNewMember(username: String, password: String) {
+        val intent = Intent(this, LoginActivity::class.java)
+        intent.putExtra("username", username)
+        intent.putExtra("password", password)
+        intent.putExtra("auto_login", true)
+        if (guest) {
+            intent.putExtra("guest", guest)
+        }
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+        startActivity(intent)
+        finish()
+    }
 
     private fun setupTextWatchers(mRealm: Realm) {
         activityBecomeMemberBinding.etUsername.addTextChangedListener(object : TextWatcher {

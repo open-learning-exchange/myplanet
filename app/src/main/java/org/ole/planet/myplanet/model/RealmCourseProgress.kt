@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.model
 
 import com.google.gson.JsonObject
-import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
@@ -10,9 +9,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseByUserId
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
 import org.ole.planet.myplanet.utilities.JsonUtils
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
+import org.ole.planet.myplanet.utilities.CsvUtils
 
 open class RealmCourseProgress : RealmObject() {
     @PrimaryKey
@@ -118,23 +115,23 @@ open class RealmCourseProgress : RealmObject() {
             progressDataList.add(csvRow)
         }
 
-        fun writeCsv(filePath: String, data: List<Array<String>>) {
-            try {
-                val file = File(filePath)
-                file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("progressId", "progress_rev", "passed", "stepNum", "userId", "parentCode", "courseId", "createdOn", "createdDate", "updatedDate"))
-                for (row in data) {
-                    writer.writeNext(row)
-                }
-                writer.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
         fun progressWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/chatHistory.csv", progressDataList)
+            CsvUtils.writeCsv(
+                "${context.getExternalFilesDir(null)}/ole/chatHistory.csv",
+                arrayOf(
+                    "progressId",
+                    "progress_rev",
+                    "passed",
+                    "stepNum",
+                    "userId",
+                    "parentCode",
+                    "courseId",
+                    "createdOn",
+                    "createdDate",
+                    "updatedDate"
+                ),
+                progressDataList
+            )
         }
     }
 }

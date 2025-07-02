@@ -7,7 +7,6 @@ import android.util.Base64
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
@@ -21,9 +20,7 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
+import org.ole.planet.myplanet.utilities.CsvUtils
 import androidx.core.content.edit
 
 open class RealmMyCourse : RealmObject() {
@@ -144,23 +141,24 @@ open class RealmMyCourse : RealmObject() {
             courseDataList.add(csvRow)
         }
 
-        fun writeCsv(filePath: String, data: List<Array<String>>) {
-            try {
-                val file = File(filePath)
-                file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("courseId", "course_rev", "languageOfInstruction", "courseTitle", "memberLimit", "description", "method", "gradeLevel", "subjectLevel", "createdDate", "steps"))
-                for (row in data) {
-                    writer.writeNext(row)
-                }
-                writer.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
         fun courseWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/course.csv", courseDataList)
+            CsvUtils.writeCsv(
+                "${context.getExternalFilesDir(null)}/ole/course.csv",
+                arrayOf(
+                    "courseId",
+                    "course_rev",
+                    "languageOfInstruction",
+                    "courseTitle",
+                    "memberLimit",
+                    "description",
+                    "method",
+                    "gradeLevel",
+                    "subjectLevel",
+                    "createdDate",
+                    "steps"
+                ),
+                courseDataList
+            )
         }
 
         @JvmStatic
