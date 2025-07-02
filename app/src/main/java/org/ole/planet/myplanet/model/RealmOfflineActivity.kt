@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.model
 
 import android.content.Context
 import com.google.gson.JsonObject
-import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.Sort
@@ -11,9 +10,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
+import org.ole.planet.myplanet.utilities.CsvUtils
 
 open class RealmOfflineActivity : RealmObject() {
     @PrimaryKey
@@ -99,23 +96,22 @@ open class RealmOfflineActivity : RealmObject() {
             offlineDataList.add(csvRow)
         }
 
-        fun writeCsv(filePath: String, data: List<Array<String>>) {
-            try {
-                val file = File(filePath)
-                file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("id", "_rev", "userName", "type", "createdOn", "parentCode", "loginTime", "logoutTime", "androidId"))
-                for (row in data) {
-                    writer.writeNext(row)
-                }
-                writer.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
         fun offlineWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/offlineActivity.csv", offlineDataList)
+            CsvUtils.writeCsv(
+                "${context.getExternalFilesDir(null)}/ole/offlineActivity.csv",
+                arrayOf(
+                    "id",
+                    "_rev",
+                    "userName",
+                    "type",
+                    "createdOn",
+                    "parentCode",
+                    "loginTime",
+                    "logoutTime",
+                    "androidId"
+                ),
+                offlineDataList
+            )
         }
     }
 }
