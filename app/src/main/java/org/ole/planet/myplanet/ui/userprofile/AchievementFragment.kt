@@ -1,10 +1,13 @@
 package org.ole.planet.myplanet.ui.userprofile
 
 import android.content.Context
+import android.content.Context.MODE_PRIVATE
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -27,6 +30,18 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.Utilities
 import androidx.core.view.isGone
+import androidx.lifecycle.lifecycleScope
+import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
+import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.service.SyncManager
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 class AchievementFragment : BaseContainerFragment() {
     private lateinit var fragmentAchievementBinding: FragmentAchievementBinding
@@ -34,6 +49,19 @@ class AchievementFragment : BaseContainerFragment() {
     var user: RealmUserModel? = null
     var listener: OnHomeItemClickListener? = null
     private var achievement: RealmAchievement? = null
+    private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+    lateinit var prefManager: SharedPrefManager
+    lateinit var settings: SharedPreferences
+    private val serverUrlMapper = ServerUrlMapper()
+    private val serverUrl: String
+        get() = settings.getString("serverURL", "") ?: ""
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        prefManager = SharedPrefManager(requireContext())
+        startAchievementSync()
+    }
+
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is OnHomeItemClickListener) listener = context
@@ -49,23 +77,116 @@ class AchievementFragment : BaseContainerFragment() {
         return fragmentAchievementBinding.root
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        achievement = aRealm.where(RealmAchievement::class.java)
-            .equalTo("_id", user?.id + "@" + user?.planetCode).findFirst()
-        setupUserData()
-        achievement?.let {
-            setupAchievementHeader(it)
+    private fun startAchievementSync() {
+        val isFastSync = settings.getBoolean("fastSync", false)
+        if (isFastSync && !prefManager.isAchievementsSynced()) {
+            checkServerAndStartSync()
+        }
+    }
+
+    private fun checkServerAndStartSync() {
+        settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val mapping = serverUrlMapper.processUrl(serverUrl)
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            updateServerIfNecessary(mapping)
+            withContext(Dispatchers.Main) {
+                startSyncManager()
+            }
+        }
+    }
+
+    private fun startSyncManager() {
+        SyncManager.instance?.start(object : SyncListener {
+            override fun onSyncStarted() {
+                activity?.runOnUiThread {
+                    if (isAdded && !requireActivity().isFinishing) {
+                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                        customProgressDialog?.setText(getString(R.string.syncing_achievements))
+                        customProgressDialog?.show()
+                    }
+                }
+            }
+
+            override fun onSyncComplete() {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
+                        refreshAchievementData()
+                        prefManager.setAchievementsSynced(true)
+                    }
+                }
+            }
+
+            override fun onSyncFailed(message: String?) {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
+                        Snackbar.make(fragmentAchievementBinding.root, "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG)
+                            .setAction("Retry") { startAchievementSync() }
+                            .show()
+                    }
+                }
+            }
+        }, "full", listOf("achievements"))
+    }
+
+    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
+        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
+            isServerReachable(url)
+        }
+    }
+
+    private fun refreshAchievementData() {
+        if (!isAdded || requireActivity().isFinishing) return
+
+        try {
+            achievement = aRealm.where(RealmAchievement::class.java)
+                .equalTo("_id", user?.id + "@" + user?.planetCode)
+                .findFirst()
+
+            updateAchievementUI()
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun updateAchievementUI() {
+        if (achievement != null) {
+            setupAchievementHeader(achievement!!)
             populateAchievements()
             setupReferences()
-            aRealm.addChangeListener { populateAchievements() }
         }
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        setupUserData()
+        loadInitialAchievementData()
     }
 
     private fun setupUserData() {
         fragmentAchievementBinding.tvFirstName.text = user?.firstName
         fragmentAchievementBinding.tvName.text =
             String.format("%s %s %s", user?.firstName, user?.middleName, user?.lastName)
+    }
+
+    private fun loadInitialAchievementData() {
+        achievement = aRealm.where(RealmAchievement::class.java)
+            .equalTo("_id", user?.id + "@" + user?.planetCode)
+            .findFirst()
+
+        achievement?.let {
+            updateAchievementUI()
+            aRealm.addChangeListener {
+                if (isAdded) {
+                    populateAchievements()
+                }
+            }
+        }
     }
 
     private fun setupAchievementHeader(a: RealmAchievement) {
@@ -79,7 +200,13 @@ class AchievementFragment : BaseContainerFragment() {
         achievement?.achievements?.forEach { json ->
             val element = Gson().fromJson(json, JsonElement::class.java)
             val view = if (element is JsonObject) createAchievementView(element) else null
-            view?.let { fragmentAchievementBinding.llAchievement.addView(it) }
+            view?.let {
+                // Ensure the view is properly detached from any previous parent
+                if (it.parent != null) {
+                    (it.parent as ViewGroup).removeView(it)
+                }
+                fragmentAchievementBinding.llAchievement.addView(it)
+            }
         }
     }
 
@@ -90,8 +217,10 @@ class AchievementFragment : BaseContainerFragment() {
         binding.tvDate.text = getString("date", ob)
         binding.tvTitle.text = getString("title", ob)
         val libraries = getLibraries(ob.getAsJsonArray("resources"))
+
         if (desc.isNotEmpty() && libraries.isNotEmpty()) {
             binding.llRow.setOnClickListener { toggleDescription(binding) }
+            binding.flexboxResources.removeAllViews()
             libraries.forEach { binding.flexboxResources.addView(createResourceButton(it)) }
         } else {
             binding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
@@ -142,5 +271,11 @@ class AchievementFragment : BaseContainerFragment() {
             if (li != null) libraries.add(li)
         }
         return libraries
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        customProgressDialog?.dismiss()
+        customProgressDialog = null
     }
 }
