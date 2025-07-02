@@ -73,6 +73,22 @@ class ServerUrlMapper() {
         }
     }
 
+    suspend fun updateServerIfNecessary(
+        mapping: UrlMapping,
+        settings: SharedPreferences,
+        isServerReachable: suspend (String) -> Boolean
+    ) {
+        val primaryAvailable = isServerReachable(mapping.primaryUrl)
+        val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
+
+        if (!primaryAvailable && alternativeAvailable) {
+            mapping.alternativeUrl.let { alternativeUrl ->
+                val editor = settings.edit()
+                updateUrlPreferences(editor, mapping.primaryUrl.toUri(), alternativeUrl, mapping.primaryUrl, settings)
+            }
+        }
+    }
+
     private fun getUserInfo(uri: Uri): Array<String> {
         val defaultInfo = arrayOf("", "")
         val info = uri.userInfo?.split(":")?.dropLastWhile { it.isEmpty() }?.toTypedArray()

@@ -345,14 +345,8 @@ class ChatDetailFragment : Fragment() {
         serverUrlMapper.processUrl(serverUrl)
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        val primaryAvailable = isServerReachable(mapping.primaryUrl)
-        val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
-
-        if (!primaryAvailable && alternativeAvailable) {
-            mapping.alternativeUrl?.let { alternativeUrl ->
-                val editor = settings.edit()
-                serverUrlMapper.updateUrlPreferences(editor, serverUrl.toUri(), alternativeUrl, mapping.primaryUrl, settings)
-            }
+        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
+            isServerReachable(url)
         }
     }
 

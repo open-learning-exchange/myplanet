@@ -1313,6 +1313,13 @@
     <string name="download_progress_with_errors">%2$d मध्ये %1$d फाइलहरू डाउनलोड भएका छन् (केही त्रुटिहरूसहित)</string>
     <string name="download_in_background">पृष्ठभूमिमा डाउनलोड सुरु गर्दै…</string>
     <string name="creating_member_account">सदस्य खाता सिर्जना गर्दै…</string>
-    <string name ="cancel_adding_examination">के तपाईं स्वास्थ्य परीक्षण थप्ने कार्य रद्द गर्न चाहनुहुन्छ? डेटा हराउनेछ।</string>
+    <string name="cancel_adding_examination">के तपाईं स्वास्थ्य परीक्षण थप्ने कार्य रद्द गर्न चाहनुहुन्छ? डेटा हराउनेछ।</string>
+    <string name="syncing_team_data">टिम डेटा समिकरण गर्दै…</string>
+    <string name="syncing_chat_history">च्याट इतिहास समिकरण गर्दै…</string>
+    <string name="syncing_courses_data">पाठ्यक्रम डेटा समिकरण गर्दै…</string>
+    <string name="syncing_feedback">प्रतिक्रिया समिकरण गर्दै…</string>
+    <string name="syncing_health_data">स्वास्थ्य डेटा समिकरण गर्दै…</string>
+    <string name="syncing_resources">स्रोतहरू समिकरण गर्दै…</string>
+    <string name="syncing_achievements">उपलब्धिहरू समिकरण गर्दै…</string>
 
 </resources>

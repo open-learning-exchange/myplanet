@@ -1313,6 +1313,13 @@
     <string name="download_progress_with_errors">%1$d fichiers sur %2$d téléchargés (avec quelques erreurs)</string>
     <string name="download_in_background">Démarrage du téléchargement en arrière-plan…</string>
     <string name="creating_member_account">Création du compte membre…</string>
-    <string name ="cancel_adding_examination">Voulez-vous vraiment annuler l\'ajout de l\'examen? Les données seront perdues.</string>
+    <string name="cancel_adding_examination">Voulez-vous vraiment annuler l\'ajout de l\'examen? Les données seront perdues.</string>
+    <string name="syncing_team_data">Synchronisation des données d\'équipe…</string>
+    <string name="syncing_chat_history">Synchronisation de l\'historique des discussions…</string>
+    <string name="syncing_courses_data">Synchronisation des données des cours…</string>
+    <string name="syncing_feedback">Synchronisation des retours…</string>
+    <string name="syncing_health_data">Synchronisation des données de santé…</string>
+    <string name="syncing_resources">Synchronisation des ressources…</string>
+    <string name="syncing_achievements">Synchronisation des réalisations…</string>
 
 </resources>
