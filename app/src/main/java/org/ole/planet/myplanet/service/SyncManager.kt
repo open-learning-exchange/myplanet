@@ -38,6 +38,7 @@ import kotlinx.coroutines.sync.withPermit
 import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.model.DocumentResponse
+import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utilities.SyncTimeLogger
@@ -464,14 +465,28 @@ class SyncManager private constructor(private val context: Context) {
                             val saveStartTime = System.currentTimeMillis()
                             val ids = save(batchDocuments, realmInstance)
                             Log.d("ResourceSync", "Batch save operation took ${System.currentTimeMillis() - saveStartTime}ms for ${batchDocuments.size()} documents")
+                            Log.d("ResourceSync", "Save operation returned ${ids.size} IDs")
+                            Log.d("ResourceSync", "First few IDs: ${ids.take(3).map { "[$it]" }}")
 
                             if (ids.isNotEmpty()) {
-                                newIds.addAll(ids)
-                                processedItems += ids.size
+                                // Filter out empty IDs
+                                val validIds = ids.filter { !it.isNullOrBlank() }
+                                Log.d("ResourceSync", "Valid IDs after filtering: ${validIds.size}")
+                                if (validIds.isNotEmpty()) {
+                                    newIds.addAll(validIds)
+                                    processedItems += validIds.size
+                                    Log.d("ResourceSync", "Added ${validIds.size} valid IDs to newIds, total newIds now: ${newIds.size}")
+                                } else {
+                                    Log.w("ResourceSync", "All returned IDs were null or blank!")
+                                }
+                            } else {
+                                Log.w("ResourceSync", "Save operation returned empty ID list!")
                             }
 
                             if (realmInstance.isInTransaction) {
+                                val commitStartTime = System.currentTimeMillis()
                                 realmInstance.commitTransaction()
+                                Log.d("ResourceSync", "Transaction commit took ${System.currentTimeMillis() - commitStartTime}ms")
                             }
                             Log.d("ResourceSync", "Batch transaction took ${System.currentTimeMillis() - transactionStartTime}ms for ${validDocuments.size} documents")
                         } catch (e: Exception) {
@@ -530,13 +545,27 @@ class SyncManager private constructor(private val context: Context) {
             Log.d("ResourceSync", "Realm transaction state before cleanup: isInTransaction = ${realmInstance.isInTransaction}")
 
             try {
-                val removeStartTime = System.currentTimeMillis()
-                removeDeletedResource(newIds, realmInstance)
-                Log.d("ResourceSync", "removeDeletedResource operation took ${System.currentTimeMillis() - removeStartTime}ms")
+                // Filter out empty/null IDs before cleanup
+                val validNewIds = newIds.filter { !it.isNullOrBlank() }
+                Log.d("ResourceSync", "Valid new IDs for cleanup: ${validNewIds.size} out of ${newIds.size}")
+
+                if (validNewIds.isNotEmpty() && validNewIds.size == newIds.size) {
+                    // Only run cleanup if all IDs are valid (not empty)
+                    val removeStartTime = System.currentTimeMillis()
+                    removeDeletedResource(validNewIds, realmInstance)
+                    Log.d("ResourceSync", "removeDeletedResource operation took ${System.currentTimeMillis() - removeStartTime}ms")
+                } else {
+                    Log.w("ResourceSync", "Skipping cleanup due to invalid IDs. Valid: ${validNewIds.size}, Total: ${newIds.size}")
+                    Log.w("ResourceSync", "This prevents accidental deletion of existing resources")
+                }
             } catch (e: Exception) {
                 Log.e("ResourceSync", "Error during cleanup: ${e.message}", e)
             }
             Log.d("ResourceSync", "Total cleanup took ${System.currentTimeMillis() - cleanupStartTime}ms")
+
+            // Add final verification
+            val finalCount = realmInstance.where(RealmMyLibrary::class.java).count()
+            Log.d("ResourceSync", "Final verification: ${finalCount} resources in database after sync")
 
             val totalTime = System.currentTimeMillis() - functionStartTime
             Log.d("ResourceSync", "Resource sync completed in ${totalTime}ms, processed $processedItems items, average ${if (processedItems > 0) totalTime / processedItems else 0}ms per item")
