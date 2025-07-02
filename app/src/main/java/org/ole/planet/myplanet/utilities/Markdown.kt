@@ -15,6 +15,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.graphics.drawable.toDrawable
 import com.bumptech.glide.Glide
 import com.github.chrisbanes.photoview.PhotoView
 import io.noties.markwon.AbstractMarkwonPlugin
@@ -36,7 +37,6 @@ import io.noties.markwon.image.network.OkHttpNetworkSchemeHandler
 import io.noties.markwon.movement.MovementMethodPlugin
 import org.commonmark.node.Image
 import org.ole.planet.myplanet.R
-import androidx.core.graphics.drawable.toDrawable
 
 object Markdown {
     private var currentZoomDialog: Dialog? = null

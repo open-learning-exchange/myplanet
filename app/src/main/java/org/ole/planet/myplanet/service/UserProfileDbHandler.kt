@@ -3,6 +3,10 @@ package org.ole.planet.myplanet.service
 import android.content.Context
 import android.content.SharedPreferences
 import io.realm.Realm
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -12,10 +16,6 @@ import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.UUID
 
 class UserProfileDbHandler(context: Context) {
     private val settings: SharedPreferences

@@ -8,13 +8,13 @@ import android.os.Build
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import java.io.Serializable
+import java.util.Calendar
+import java.util.Date
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.VersionUtils
-import java.io.Serializable
-import java.util.Calendar
-import java.util.Date
 
 class MyPlanet : Serializable {
     var planetVersion: String? = null

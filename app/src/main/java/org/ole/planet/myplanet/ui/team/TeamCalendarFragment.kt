@@ -17,6 +17,12 @@ import com.applandeo.materialcalendarview.listeners.OnCalendarDayClickListener
 import com.google.gson.*
 import io.realm.Realm
 import io.realm.RealmResults
+import java.net.MalformedURLException
+import java.net.URL
+import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.util.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -26,12 +32,6 @@ import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.mymeetup.AdapterMeetup
 import org.ole.planet.myplanet.utilities.*
-import java.text.SimpleDateFormat
-import java.time.Instant
-import java.time.ZoneId
-import java.util.*
-import java.net.MalformedURLException
-import java.net.URL
 
 class TeamCalendarFragment : BaseTeamFragment() {
     private lateinit var fragmentEnterpriseCalendarBinding: FragmentEnterpriseCalendarBinding

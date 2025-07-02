@@ -21,31 +21,32 @@ import android.view.inputmethod.EditorInfo
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.ImageButton
-import android.widget.Toast
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import io.realm.Realm
-import org.ole.planet.myplanet.*
+import java.util.Locale
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.databinding.*
-import org.ole.planet.myplanet.datamanager.*
-import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.databinding.ActivityLoginBinding
+import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
+import org.ole.planet.myplanet.datamanager.Service
+import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
-import org.ole.planet.myplanet.ui.userprofile.*
-import org.ole.planet.myplanet.utilities.*
+import org.ole.planet.myplanet.ui.userprofile.TeamListAdapter
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
-import java.util.Locale
-import androidx.core.content.edit
 
 class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private lateinit var activityLoginBinding: ActivityLoginBinding

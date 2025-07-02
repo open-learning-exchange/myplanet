@@ -8,8 +8,8 @@ import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
-import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.CsvUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmMyHealthPojo : RealmObject() {
     @PrimaryKey

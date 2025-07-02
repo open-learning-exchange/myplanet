@@ -12,8 +12,8 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSurveySubmissionByUser
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.ui.news.NewsFragment
+import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
