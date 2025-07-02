@@ -447,9 +447,21 @@ class SyncManager private constructor(private val context: Context) {
                             val doc = getJsonObject("doc", rowObj)
                             val id = getString("_id", doc)
 
-                            if (!id.startsWith("_design")) {
+                            // Debug logging for first few documents
+                            if (i < 3) {
+                                Log.d("ResourceSync", "Document $i: has _id = ${doc.has("_id")}")
+                                if (doc.has("_id")) {
+                                    Log.d("ResourceSync", "Document $i: _id value = '${doc.get("_id")}'")
+                                    Log.d("ResourceSync", "Document $i: _id isJsonNull = ${doc.get("_id") is JsonNull}")
+                                }
+                                Log.d("ResourceSync", "Document $i: getString result = '$id'")
+                            }
+
+                            if (!id.startsWith("_design") && id.isNotBlank()) {
                                 batchDocuments.add(doc)
                                 validDocuments.add(Pair(doc, id))
+                            } else if (i < 3) {
+                                Log.w("ResourceSync", "Document $i: Skipped - id='$id', startsWith _design=${id.startsWith("_design")}")
                             }
                         }
                     }
@@ -463,14 +475,27 @@ class SyncManager private constructor(private val context: Context) {
                             realmInstance.beginTransaction()
 
                             val saveStartTime = System.currentTimeMillis()
+
+                            // Log the IDs we're about to save
+                            val idsWeAreProcessing = validDocuments.map { it.second }
+                            Log.d("ResourceSync", "About to save documents with IDs: ${idsWeAreProcessing.take(3)}")
+
                             val ids = save(batchDocuments, realmInstance)
                             Log.d("ResourceSync", "Batch save operation took ${System.currentTimeMillis() - saveStartTime}ms for ${batchDocuments.size()} documents")
                             Log.d("ResourceSync", "Save operation returned ${ids.size} IDs")
-                            Log.d("ResourceSync", "First few IDs: ${ids.take(3).map { "[$it]" }}")
+                            Log.d("ResourceSync", "First few returned IDs: ${ids.take(3).map { "[$it]" }}")
+
+                            // Compare what we expected vs what we got
+                            if (ids.size == idsWeAreProcessing.size) {
+                                val matches = ids.zip(idsWeAreProcessing.take(3)).map { (returned, expected) ->
+                                    "Expected: '$expected', Got: '$returned'"
+                                }
+                                Log.d("ResourceSync", "ID comparison: ${matches.joinToString("; ")}")
+                            }
 
                             if (ids.isNotEmpty()) {
                                 // Filter out empty IDs
-                                val validIds = ids.filter { !it.isNullOrBlank() }
+                                val validIds = ids.filter { it.isNotBlank() }
                                 Log.d("ResourceSync", "Valid IDs after filtering: ${validIds.size}")
                                 if (validIds.isNotEmpty()) {
                                     newIds.addAll(validIds)
@@ -478,9 +503,17 @@ class SyncManager private constructor(private val context: Context) {
                                     Log.d("ResourceSync", "Added ${validIds.size} valid IDs to newIds, total newIds now: ${newIds.size}")
                                 } else {
                                     Log.w("ResourceSync", "All returned IDs were null or blank!")
+                                    // Fallback: use the IDs we extracted ourselves
+                                    Log.w("ResourceSync", "Using extracted IDs as fallback")
+                                    newIds.addAll(idsWeAreProcessing)
+                                    processedItems += idsWeAreProcessing.size
                                 }
                             } else {
                                 Log.w("ResourceSync", "Save operation returned empty ID list!")
+                                // Fallback: use the IDs we extracted ourselves
+                                Log.w("ResourceSync", "Using extracted IDs as fallback")
+                                newIds.addAll(idsWeAreProcessing)
+                                processedItems += idsWeAreProcessing.size
                             }
 
                             if (realmInstance.isInTransaction) {
@@ -565,7 +598,7 @@ class SyncManager private constructor(private val context: Context) {
 
             // Add final verification
             val finalCount = realmInstance.where(RealmMyLibrary::class.java).count()
-            Log.d("ResourceSync", "Final verification: ${finalCount} resources in database after sync")
+            Log.d("ResourceSync", "Final verification: $finalCount resources in database after sync")
 
             val totalTime = System.currentTimeMillis() - functionStartTime
             Log.d("ResourceSync", "Resource sync completed in ${totalTime}ms, processed $processedItems items, average ${if (processedItems > 0) totalTime / processedItems else 0}ms per item")
@@ -856,7 +889,7 @@ class SyncManager private constructor(private val context: Context) {
                                 try {
                                     realmInstance.beginTransaction()
 
-                                    for ((doc, docId) in documentsToProcess) {
+                                    for ((doc, _) in documentsToProcess) {
                                         when (shelfData.type) {
                                             "resources" -> insertMyLibrary(shelfId, doc, realmInstance)
                                             "meetups" -> insert(realmInstance, doc)
