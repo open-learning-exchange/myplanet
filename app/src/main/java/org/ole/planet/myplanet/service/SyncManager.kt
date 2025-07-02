@@ -526,24 +526,15 @@ class SyncManager private constructor(private val context: Context) {
             }
 
             val cleanupStartTime = System.currentTimeMillis()
-            try {
-                Log.d("ResourceSync", "Starting cleanup with ${newIds.size} new IDs")
-                realmInstance.beginTransaction()
+            Log.d("ResourceSync", "Starting cleanup with ${newIds.size} new IDs")
+            Log.d("ResourceSync", "Realm transaction state before cleanup: isInTransaction = ${realmInstance.isInTransaction}")
 
+            try {
                 val removeStartTime = System.currentTimeMillis()
                 removeDeletedResource(newIds, realmInstance)
                 Log.d("ResourceSync", "removeDeletedResource operation took ${System.currentTimeMillis() - removeStartTime}ms")
-
-                val commitStartTime = System.currentTimeMillis()
-                if (realmInstance.isInTransaction) {
-                    realmInstance.commitTransaction()
-                }
-                Log.d("ResourceSync", "Cleanup commit took ${System.currentTimeMillis() - commitStartTime}ms")
             } catch (e: Exception) {
                 Log.e("ResourceSync", "Error during cleanup: ${e.message}", e)
-                if (realmInstance.isInTransaction) {
-                    realmInstance.cancelTransaction()
-                }
             }
             Log.d("ResourceSync", "Total cleanup took ${System.currentTimeMillis() - cleanupStartTime}ms")
 
