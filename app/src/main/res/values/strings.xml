@@ -1313,6 +1313,7 @@
     <string name="download_progress_with_errors">%1$d of %2$d files downloaded (with some errors)</string>
     <string name="download_in_background">Starting download in background…</string>
     <string name="creating_member_account">Creating member account…</string>
+    <string name="cancel_adding_examination">Are you sure you want to cancel adding examination? The data will be lost.</string>
     <string name="syncing_team_data">Syncing team data…</string>
     <string name="syncing_chat_history">Syncing chat history…</string>
     <string name="syncing_courses_data">Syncing courses data…</string>
