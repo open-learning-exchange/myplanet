@@ -20,14 +20,16 @@ class SharedPrefManager(context: Context) {
     var firstLaunch = "firstLaunch"
     private var teamName = "teamName"
 
-    private var chatHistorySynced = "chat_history_synced"
-    private var teamsSynced = "teams_synced"
-    private var feedbackSynced = "feedback_synced"
-    private var achievementsSynced = "achievements_synced"
-    private var healthSynced = "health_synced"
-    private var coursesSynced = "courses_synced"
-    private var resourcesSynced = "resources_synced"
-    private var examsSynced = "exams_synced"
+    enum class SyncKey(val key: String) {
+        CHAT_HISTORY("chat_history_synced"),
+        TEAMS("teams_synced"),
+        FEEDBACK("feedback_synced"),
+        ACHIEVEMENTS("achievements_synced"),
+        HEALTH("health_synced"),
+        COURSES("courses_synced"),
+        RESOURCES("resources_synced"),
+        EXAMS("exams_synced")
+    }
 
     fun getSavedUsers(): List<User> {
         val usersJson = pref.getString(savedUsers, null)
@@ -116,99 +118,47 @@ class SharedPrefManager(context: Context) {
         editor.apply()
     }
 
-    fun isChatHistorySynced(): Boolean {
-        return pref.getBoolean(chatHistorySynced, false)
+    private fun isSynced(key: SyncKey): Boolean {
+        return pref.getBoolean(key.key, false)
     }
 
-    fun setChatHistorySynced(synced: Boolean) {
-        editor.putBoolean(chatHistorySynced, synced)
+    private fun setSynced(key: SyncKey, synced: Boolean) {
+        editor.putBoolean(key.key, synced)
         if (synced) {
-            editor.putLong("${chatHistorySynced}_time", System.currentTimeMillis())
+            editor.putLong("${key.key}_time", System.currentTimeMillis())
         }
         editor.apply()
     }
 
-    fun isTeamsSynced(): Boolean {
-        return pref.getBoolean(teamsSynced, false)
-    }
+    fun isChatHistorySynced(): Boolean = isSynced(SyncKey.CHAT_HISTORY)
 
-    fun setTeamsSynced(synced: Boolean) {
-        editor.putBoolean(teamsSynced, synced)
-        if (synced) {
-            editor.putLong("${teamsSynced}_time", System.currentTimeMillis())
-        }
-        editor.apply()
-    }
+    fun setChatHistorySynced(synced: Boolean) = setSynced(SyncKey.CHAT_HISTORY, synced)
 
-    fun isFeedbackSynced(): Boolean {
-        return pref.getBoolean(feedbackSynced, false)
-    }
+    fun isTeamsSynced(): Boolean = isSynced(SyncKey.TEAMS)
 
-    fun setFeedbackSynced(synced: Boolean) {
-        editor.putBoolean(feedbackSynced, synced)
-        if (synced) {
-            editor.putLong("${feedbackSynced}_time", System.currentTimeMillis())
-        }
-        editor.apply()
-    }
+    fun setTeamsSynced(synced: Boolean) = setSynced(SyncKey.TEAMS, synced)
 
-    fun isAchievementsSynced(): Boolean {
-        return pref.getBoolean(achievementsSynced, false)
-    }
+    fun isFeedbackSynced(): Boolean = isSynced(SyncKey.FEEDBACK)
 
-    fun setAchievementsSynced(synced: Boolean) {
-        editor.putBoolean(achievementsSynced, synced)
-        if (synced) {
-            editor.putLong("${achievementsSynced}_time", System.currentTimeMillis())
-        }
-        editor.apply()
-    }
+    fun setFeedbackSynced(synced: Boolean) = setSynced(SyncKey.FEEDBACK, synced)
 
-    fun isHealthSynced(): Boolean {
-        return pref.getBoolean(healthSynced, false)
-    }
+    fun isAchievementsSynced(): Boolean = isSynced(SyncKey.ACHIEVEMENTS)
 
-    fun setHealthSynced(synced: Boolean) {
-        editor.putBoolean(healthSynced, synced)
-        if (synced) {
-            editor.putLong("${healthSynced}_time", System.currentTimeMillis())
-        }
-        editor.apply()
-    }
+    fun setAchievementsSynced(synced: Boolean) = setSynced(SyncKey.ACHIEVEMENTS, synced)
 
-    fun isCoursesSynced(): Boolean {
-        return pref.getBoolean(coursesSynced, false)
-    }
+    fun isHealthSynced(): Boolean = isSynced(SyncKey.HEALTH)
 
-    fun setCoursesSynced(synced: Boolean) {
-        editor.putBoolean(coursesSynced, synced)
-        if (synced) {
-            editor.putLong("${coursesSynced}_time", System.currentTimeMillis())
-        }
-        editor.apply()
-    }
+    fun setHealthSynced(synced: Boolean) = setSynced(SyncKey.HEALTH, synced)
 
-    fun isResourcesSynced(): Boolean {
-        return pref.getBoolean(resourcesSynced, false)
-    }
+    fun isCoursesSynced(): Boolean = isSynced(SyncKey.COURSES)
 
-    fun setResourcesSynced(synced: Boolean) {
-        editor.putBoolean(resourcesSynced, synced)
-        if (synced) {
-            editor.putLong("${resourcesSynced}_time", System.currentTimeMillis())
-        }
-        editor.apply()
-    }
+    fun setCoursesSynced(synced: Boolean) = setSynced(SyncKey.COURSES, synced)
 
-    fun isExamsSynced(): Boolean {
-        return pref.getBoolean(examsSynced, false)
-    }
+    fun isResourcesSynced(): Boolean = isSynced(SyncKey.RESOURCES)
 
-    fun setExamsSynced(synced: Boolean) {
-        editor.putBoolean(examsSynced, synced)
-        if (synced) {
-            editor.putLong("${examsSynced}_time", System.currentTimeMillis())
-        }
-        editor.apply()
-    }
+    fun setResourcesSynced(synced: Boolean) = setSynced(SyncKey.RESOURCES, synced)
+
+    fun isExamsSynced(): Boolean = isSynced(SyncKey.EXAMS)
+
+    fun setExamsSynced(synced: Boolean) = setSynced(SyncKey.EXAMS, synced)
 }
