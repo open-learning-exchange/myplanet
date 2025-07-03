@@ -5,4 +5,3 @@ package org.ole.planet.myplanet.service
  * as part of the overall synchronization process.
  */
 data class SyncJob(val name: String, val task: suspend () -> Unit)
-
