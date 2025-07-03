@@ -30,10 +30,9 @@ jobs:
         if: matrix.build == 'lite'
         run: |
           echo "${{ env.LITES }}" | xargs -n 1 | while read file; do
-            lite_file="${file/main/lite}"
-            ls -al "$file" "$lite_file"
-            diff <(sed 's/^\s*\/\///; s/^\s*<!--//; s/-->\s*$//' "$file") \
-                 <(sed 's/^\s*\/\///; s/^\s*<!--//; s/-->\s*$//' "$lite_file")
+            lite="${file/main/lite}"
+            ls -al "$file" "$lite"
+            diff <(sed 's/^\s*\/\///; s/^\s*<!--//; s/-->\s*$//' "$file") <(sed 's/^\s*\/\///; s/^\s*<!--//; s/-->\s*$//' "$lite")
           done
 
       - name: setup JDK 17
@@ -57,9 +56,9 @@ jobs:
           ls -al app/build.gradle
           sed -i 's/\(versionName "[0-9.]\+\)"/\1-lite"/' app/build.gradle
           echo "${{ env.LITES }}" | xargs -n 1 | while read file; do
-            lite_file="${file/main/lite}"
-            ls -al "$lite_file"
-            cp "$lite_file" "$file"
+            lite="${file/main/lite}"
+            ls -al "$lite"
+            cp "$lite" "$file"
           done
 
       - name: build debug as test
