@@ -5,8 +5,9 @@ on:
     branches:
       - '*'
       - '!master'
-      - codex/**
-      - dependabot/**
+      - 'dependabot/**'
+      - 'codex/**'
+      - '*-codex/**'
 
 jobs:
   build:
