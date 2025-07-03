@@ -5,8 +5,9 @@ on:
     branches:
       - '*'
       - '!master'
-      - codex/**
       - dependabot/**
+      - codex/**
+
 jobs:
   build:
     name: myPlanet build test
