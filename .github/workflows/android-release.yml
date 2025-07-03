@@ -63,9 +63,8 @@ jobs:
           ./gradlew assembleRelease bundleRelease
           ls -alR app/build/outputs
           mkdir -p sign
-          variant=${{ matrix.build }}Release
-          cp app/build/outputs/bundle/$variant/app-${{ matrix.build }}-release.aab sign/.
-          cp app/build/outputs/apk/${{ matrix.build }}/release/app-${{ matrix.build }}-release-unsigned.apk sign/.
+          cp app/build/outputs/bundle/release/app-release.aab sign/.
+          cp app/build/outputs/apk/release/app-release-unsigned.apk sign/.
 
       - name: sign release APK and AAB
         uses: dogi/sign-android-release@v5.1
