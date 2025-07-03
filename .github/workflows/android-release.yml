@@ -51,9 +51,9 @@ jobs:
           ls -al app/build.gradle
           sed -i 's/\(versionName "[0-9.]\+\)"/\1-lite"/' app/build.gradle
           echo "${{ env.LITES }}" | xargs -n 1 | while read file; do
-            lite_file="${file/main/lite}"
-            ls -al "$lite_file"
-            cp "$lite_file" "$file"
+            lite="${file/main/lite}"
+            ls -al "$lite"
+            cp "$lite" "$file"
           done
 
       - name: build release APK and AAB
