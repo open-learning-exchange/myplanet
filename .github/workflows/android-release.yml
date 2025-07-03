@@ -51,9 +51,9 @@ jobs:
           ls -al app/build.gradle
           sed -i 's/\(versionName "[0-9.]\+\)"/\1-lite"/' app/build.gradle
           echo "${{ env.LITES }}" | xargs -n 1 | while read file; do
-            lite_file="${file/main/lite}"
-            ls -al "$lite_file"
-            cp "$lite_file" "$file"
+            lite="${file/main/lite}"
+            ls -al "$lite"
+            cp "$lite" "$file"
           done
 
       - name: build release APK and AAB
@@ -63,9 +63,8 @@ jobs:
           ./gradlew assembleRelease bundleRelease --warning-mode all --stacktrace
           ls -alR app/build/outputs
           mkdir -p sign
-          variant=${{ matrix.build }}Release
-          cp app/build/outputs/bundle/$variant/app-${{ matrix.build }}-release.aab sign/.
-          cp app/build/outputs/apk/${{ matrix.build }}/release/app-${{ matrix.build }}-release-unsigned.apk sign/.
+          cp app/build/outputs/bundle/release/app-release.aab sign/.
+          cp app/build/outputs/apk/release/app-release-unsigned.apk sign/.
 
       - name: sign release APK and AAB
         uses: dogi/sign-android-release@v5.1
@@ -79,8 +78,8 @@ jobs:
       - name: copy builds to output and generate sha256
         run: |
           mkdir -p output
-          cp sign/app-${{ matrix.build }}-release-unsigned-signed.apk output/myPlanet.apk
-          cp sign/app-${{ matrix.build }}-release.aab output/myPlanet.aab
+          cp sign/app-release-unsigned-signed.apk output/myPlanet.apk
+          cp sign/app-release.aab output/myPlanet.aab
           sha256sum output/myPlanet.apk > output/myPlanet.apk.sha256
           sha256sum output/myPlanet.aab > output/myPlanet.aab.sha256
           ls -alR output
