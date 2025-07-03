@@ -8,6 +8,8 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
+import java.io.IOException
+import java.util.Date
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
@@ -27,8 +29,6 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Response
-import java.io.IOException
-import java.util.Date
 
 class UploadToShelfService(context: Context) {
     private val dbService: DatabaseService = DatabaseService(context)
@@ -60,6 +60,38 @@ class UploadToShelfService(context: Context) {
             }
         }, {
             uploadToShelf(listener)
+        }) { error ->
+            listener.onSuccess("Error during user data sync: ${error.localizedMessage}")
+        }
+    }
+
+    fun uploadSingleUserData(userName: String?, listener: SuccessListener) {
+        val apiInterface = client?.create(ApiInterface::class.java)
+        mRealm = dbService.realmInstance
+
+        mRealm.executeTransactionAsync({ realm: Realm ->
+            val userModel = realm.where(RealmUserModel::class.java)
+                .equalTo("name", userName)
+                .findFirst()
+
+            if (userModel != null) {
+                try {
+                    val password = sharedPreferences.getString("loginUserPassword", "")
+                    val header = "Basic ${Base64.encodeToString(("${userModel.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
+
+                    val userExists = checkIfUserExists(apiInterface, header, userModel)
+
+                    if (!userExists) {
+                        uploadNewUser(apiInterface, realm, userModel)
+                    } else if (userModel.isUpdated) {
+                        updateExistingUser(apiInterface, header, userModel)
+                    }
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                }
+            }
+        }, {
+            uploadSingleUserToShelf(userName, listener)
         }) { error ->
             listener.onSuccess("Error during user data sync: ${error.localizedMessage}")
         }
@@ -161,7 +193,7 @@ class UploadToShelfService(context: Context) {
     @Throws(IOException::class)
     fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject): Boolean {
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
-        val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${ obj["password"].asString }").toByteArray(), Base64.NO_WRAP)}"
+        val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
         val ob = JsonObject()
         var keyString = generateKey()
         var iv: String? = generateIv()
@@ -175,16 +207,45 @@ class UploadToShelfService(context: Context) {
         ob.addProperty("iv", iv)
         ob.addProperty("createdOn", Date().time)
         var success = false
-        while (!success) {
-            val response: Response<JsonObject>? = apiInterface?.postDoc(header, "application/json", "${Utilities.getUrl()}/$table", ob)?.execute()
-            if (response?.body() != null) {
-                model.key = keyString
-                model.iv = iv
-                success = true
-            } else {
-                success = false
+        var attemptCount = 0
+        val maxAttempts = 3
+        val retryDelayMs = 2000L
+
+        while (!success && attemptCount < maxAttempts) {
+            attemptCount++
+            try {
+                val response: Response<JsonObject>? = apiInterface?.postDoc(header, "application/json", "${Utilities.getUrl()}/$table", ob)?.execute()
+
+                if (response != null) {
+
+                    if (response.isSuccessful && response.body() != null) {
+                        model.key = keyString
+                        model.iv = iv
+                        success = true
+                    } else {
+                        if (attemptCount < maxAttempts) {
+                            Thread.sleep(retryDelayMs)
+                        }
+                    }
+                } else {
+                    if (attemptCount < maxAttempts) {
+                        Thread.sleep(retryDelayMs)
+                    }
+                }
+            } catch (e: Exception) {
+                if (attemptCount >= maxAttempts) {
+                    throw IOException("Failed to save key/IV after $maxAttempts attempts", e)
+                } else {
+                    Thread.sleep(retryDelayMs)
+                }
             }
         }
+
+        if (!success) {
+            val errorMessage = "Failed to save key/IV after $maxAttempts attempts"
+            throw IOException(errorMessage)
+        }
+
         changeUserSecurity(model, obj)
         return true
     }
@@ -207,6 +268,44 @@ class UploadToShelfService(context: Context) {
                     e.printStackTrace()
                 }
             }
+        }
+    }
+
+    fun uploadSingleUserHealth(userId: String?, listener: SuccessListener?) {
+        val apiInterface = client?.create(ApiInterface::class.java)
+        mRealm = dbService.realmInstance
+
+        mRealm.executeTransactionAsync({ realm: Realm ->
+            if (userId.isNullOrEmpty()) {
+                return@executeTransactionAsync
+            }
+
+            val myHealths: List<RealmMyHealthPojo> = realm.where(RealmMyHealthPojo::class.java)
+                .equalTo("isUpdated", true)
+                .equalTo("userId", userId)
+                .findAll()
+
+            myHealths.forEach { pojo ->
+                try {
+                    val res = apiInterface?.postDoc(
+                        Utilities.header,
+                        "application/json",
+                        "${Utilities.getUrl()}/health",
+                        serialize(pojo)
+                    )?.execute()
+
+                    if (res?.body() != null && res.body()?.has("id") == true) {
+                        pojo._rev = res.body()!!["rev"].asString
+                        pojo.isUpdated = false
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }, {
+            listener?.onSuccess("Health data for user $userId uploaded successfully")
+        }) { error ->
+            listener?.onSuccess("Error uploading health data for user $userId: ${error.localizedMessage}")
         }
     }
 
@@ -236,6 +335,40 @@ class UploadToShelfService(context: Context) {
             { listener.onSuccess("Sync with server completed successfully") })
         { error ->
             listener.onSuccess("Unable to update documents: ${error.localizedMessage}")
+        }
+    }
+
+    private fun uploadSingleUserToShelf(userName: String?, listener: SuccessListener) {
+        val apiInterface = client?.create(ApiInterface::class.java)
+        mRealm = dbService.realmInstance
+
+        mRealm.executeTransactionAsync({ realm: Realm ->
+            val model = realm.where(RealmUserModel::class.java)
+                .equalTo("name", userName)
+                .isNotEmpty("_id")
+                .findFirst()
+
+            if (model != null) {
+                try {
+                    if (model.id?.startsWith("guest") == true) return@executeTransactionAsync
+
+                    val shelfUrl = "${Utilities.getUrl()}/shelf/${model._id}"
+                    val jsonDoc = apiInterface?.getJsonObject(Utilities.header, shelfUrl)?.execute()?.body()
+                    val shelfObject = getShelfData(realm, model.id, jsonDoc)
+
+                    val revDoc = apiInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/${model.id}")?.execute()?.body()
+                    shelfObject.addProperty("_rev", getString("_rev", revDoc))
+
+                    val targetUrl = "${Utilities.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}"
+                    apiInterface?.putDoc(Utilities.header, "application/json", targetUrl, shelfObject)?.execute()?.body()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }, {
+            listener.onSuccess("Single user shelf sync completed successfully")
+        }) { error ->
+            listener.onSuccess("Unable to update document: ${error.localizedMessage}")
         }
     }
 
@@ -280,9 +413,8 @@ class UploadToShelfService(context: Context) {
             val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
             val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
             val apiInterface = client?.create(ApiInterface::class.java)
-            val response: Response<JsonObject?>?
             try {
-                response = apiInterface?.getJsonObject(header, "${Utilities.getUrl()}/${table}/_security")?.execute()
+                val response: Response<JsonObject?>? = apiInterface?.getJsonObject(header, "${Utilities.getUrl()}/${table}/_security")?.execute()
                 if (response?.body() != null) {
                     val jsonObject = response.body()
                     val members = jsonObject?.getAsJsonObject("members")

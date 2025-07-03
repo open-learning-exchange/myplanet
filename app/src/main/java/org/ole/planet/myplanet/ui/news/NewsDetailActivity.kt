@@ -7,6 +7,9 @@ import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
+import java.io.File
+import java.util.Date
+import java.util.UUID
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityNewsDetailBinding
@@ -18,9 +21,6 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import java.io.File
-import java.util.Date
-import java.util.UUID
 
 class NewsDetailActivity : BaseActivity() {
     private lateinit var activityNewsDetailBinding: ActivityNewsDetailBinding

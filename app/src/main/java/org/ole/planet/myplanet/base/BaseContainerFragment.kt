@@ -22,7 +22,9 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.appcompat.widget.AppCompatRatingBar
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import com.google.gson.JsonObject
+import java.io.File
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity.Companion.hasInstallPermission
@@ -33,12 +35,16 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_DOWNLOAD
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_OPEN
 import org.ole.planet.myplanet.ui.courses.AdapterCourses
-import org.ole.planet.myplanet.ui.viewer.*
+import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity
+import org.ole.planet.myplanet.ui.viewer.CSVViewerActivity
+import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
+import org.ole.planet.myplanet.ui.viewer.MarkdownViewerActivity
+import org.ole.planet.myplanet.ui.viewer.TextFileViewerActivity
+import org.ole.planet.myplanet.ui.viewer.WebViewActivity
 import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.utilities.ResourceOpener
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
-import java.io.File
-import androidx.core.net.toUri
 
 abstract class BaseContainerFragment : BaseResourceFragment() {
     private var timesRated: TextView? = null
@@ -49,7 +55,8 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private var currentLibrary: RealmMyLibrary? = null
     private lateinit var installApkLauncher: ActivityResultLauncher<Intent>
     lateinit var prefData: SharedPrefManager
-
+    private var pendingAutoOpenLibrary: RealmMyLibrary? = null
+    private var shouldAutoOpenAfterDownload = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         profileDbHandler = UserProfileDbHandler(requireActivity())
@@ -80,6 +87,24 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             startDownload(urls)
         }
     }
+    fun startDownloadWithAutoOpen(urls: ArrayList<String>, libraryToOpen: RealmMyLibrary? = null) {
+        if (libraryToOpen != null) {
+            pendingAutoOpenLibrary = libraryToOpen
+            shouldAutoOpenAfterDownload = true
+        }
+        startDownload(urls)
+    }
+    override fun onDownloadComplete() {
+        super.onDownloadComplete()
+        if (shouldAutoOpenAfterDownload && pendingAutoOpenLibrary != null) {
+            val library = pendingAutoOpenLibrary!!
+            shouldAutoOpenAfterDownload = false
+            pendingAutoOpenLibrary = null
+            if (library.isResourceOffline() || FileUtils.checkFileExist(Utilities.getUrl(library))) {
+                ResourceOpener.openFileType(requireActivity(), library, "offline", profileDbHandler)
+            }
+        }
+    }
     fun initRatingView(type: String?, id: String?, title: String?, listener: OnRatingChangeListener?) {
         timesRated = requireView().findViewById(R.id.times_rated)
         rating = requireView().findViewById(R.id.tv_rating)
@@ -105,72 +130,81 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             homeItemClickListener = context
         }
     }
-    private fun openIntent(items: RealmMyLibrary, typeClass: Class<*>?) {
-        val fileOpenIntent = Intent(activity, typeClass)
-        if (items.resourceLocalAddress?.contains("ole/audio") == true || items.resourceLocalAddress?.contains("ole/video") == true) {
-            fileOpenIntent.putExtra("TOUCHED_FILE", items.resourceLocalAddress)
-            fileOpenIntent.putExtra("RESOURCE_TITLE", items.title)
-        } else {
-            fileOpenIntent.putExtra("TOUCHED_FILE", items.id + "/" + items.resourceLocalAddress)
-            fileOpenIntent.putExtra("RESOURCE_TITLE", items.title)
+
+    private fun dismissProgressDialog() {
+        try {
+            if (prgDialog.isShowing()) {
+                prgDialog.dismiss()
+            }
+        } catch (e: UninitializedPropertyAccessException) {
+            e.printStackTrace()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-        startActivity(fileOpenIntent)
     }
-    private fun openPdf(item: RealmMyLibrary) {
-        val fileOpenIntent = Intent(activity, PDFReaderActivity::class.java)
-        fileOpenIntent.putExtra("TOUCHED_FILE", item.id + "/" + item.resourceLocalAddress)
-        fileOpenIntent.putExtra("resourceId", item.id)
-        startActivity(fileOpenIntent)
-    }
-
     fun openResource(items: RealmMyLibrary) {
+        dismissProgressDialog()
         if (items.mediaType == "HTML") {
-            if (items.resourceOffline) {
-                val intent = Intent(activity, WebViewActivity::class.java)
-                intent.putExtra("RESOURCE_ID", items.id)
-                intent.putExtra("LOCAL_ADDRESS", items.resourceLocalAddress)
-                intent.putExtra("title", items.title)
-                startActivity(intent)
-            } else {
-                val resource = mRealm.where(RealmMyLibrary::class.java).equalTo("_id", items.resourceId).findFirst()
-                val downloadUrls = ArrayList<String>()
-                resource?.attachments?.forEach { attachment ->
-                    attachment.name?.let { name ->
-                        val url = Utilities.getUrl("${items.resourceId}", name)
-                        downloadUrls.add(url)
+            openHtmlResource(items)
+        } else {
+            openNonHtmlResource(items)
+        }
+    }
 
-                        val baseDir = File(context?.getExternalFilesDir(null), "ole/${items.resourceId}")
-                        val lastSlashIndex = name.lastIndexOf('/')
-                        if (lastSlashIndex > 0) {
-                            val dirPath = name.substring(0, lastSlashIndex)
-                            File(baseDir, dirPath).mkdirs()
-                        }
-                    }
-                }
+    private fun openHtmlResource(items: RealmMyLibrary) {
+        if (items.resourceOffline) {
+            val intent = Intent(activity, WebViewActivity::class.java)
+            intent.putExtra("RESOURCE_ID", items.id)
+            intent.putExtra("LOCAL_ADDRESS", items.resourceLocalAddress)
+            intent.putExtra("title", items.title)
+            startActivity(intent)
+            return
+        }
 
-                if (downloadUrls.isNotEmpty()) {
-                    startDownload(downloadUrls)
+        val resource = mRealm.where(RealmMyLibrary::class.java)
+            .equalTo("_id", items.resourceId)
+            .findFirst()
+        val downloadUrls = resource?.attachments
+            ?.mapNotNull { attachment ->
+                attachment.name?.let { name ->
+                    createAttachmentDir(items.resourceId, name)
+                    Utilities.getUrl("${items.resourceId}", name)
                 }
             }
-        } else {
-            val matchingItems = mRealm.where(RealmMyLibrary::class.java)
-                .equalTo("resourceLocalAddress", items.resourceLocalAddress)
-                .findAll()
-            val anyOffline = matchingItems.any { it.isResourceOffline() }
-            if (anyOffline) {
-                val offlineItem = matchingItems.first { it.isResourceOffline() }
-                openFileType(offlineItem, "offline")
-            } else {
-                if (items.isResourceOffline()) {
-                    openFileType(items, "offline")
-                } else if (FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4") {
-                    openFileType(items, "online")
-                } else {
-                    val arrayList = ArrayList<String>()
-                    arrayList.add(Utilities.getUrl(items))
-                    startDownload(arrayList)
-                    profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
-                }
+            ?.toCollection(ArrayList()) ?: arrayListOf()
+
+        if (downloadUrls.isNotEmpty()) {
+            startDownloadWithAutoOpen(downloadUrls, items)
+        }
+    }
+
+    private fun createAttachmentDir(resourceId: String?, name: String) {
+        val baseDir = File(context?.getExternalFilesDir(null), "ole/$resourceId")
+        val lastSlashIndex = name.lastIndexOf('/')
+        if (lastSlashIndex > 0) {
+            val dirPath = name.substring(0, lastSlashIndex)
+            File(baseDir, dirPath).mkdirs()
+        }
+    }
+
+    private fun openNonHtmlResource(items: RealmMyLibrary) {
+        val matchingItems = mRealm.where(RealmMyLibrary::class.java)
+            .equalTo("resourceLocalAddress", items.resourceLocalAddress)
+            .findAll()
+
+        val offlineItem = matchingItems.firstOrNull { it.isResourceOffline() }
+        if (offlineItem != null) {
+            ResourceOpener.openFileType(requireActivity(), offlineItem, "offline", profileDbHandler)
+            return
+        }
+
+        when {
+            items.isResourceOffline() -> ResourceOpener.openFileType(requireActivity(), items, "offline", profileDbHandler)
+            FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4" -> ResourceOpener.openFileType(requireActivity(), items, "online", profileDbHandler)
+            else -> {
+                val arrayList = arrayListOf(Utilities.getUrl(items))
+                startDownloadWithAutoOpen(arrayList, items)
+                profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
             }
         }
     }
@@ -182,11 +216,11 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
         if (mimetype != null) {
             if (mimetype.contains("image")) {
-                openIntent(items, ImageViewerActivity::class.java)
+                ResourceOpener.openIntent(requireActivity(), items, ImageViewerActivity::class.java)
             } else if (mimetype.contains("pdf")) {
-                openPdf(items)
+                ResourceOpener.openPdf(requireActivity(), items)
             } else if (mimetype.contains("audio")) {
-                openIntent(items, AudioPlayerActivity::class.java)
+                ResourceOpener.openIntent(requireActivity(), items, AudioPlayerActivity::class.java)
             } else {
                 checkMoreFileExtensions(extension, items)
             }
@@ -196,13 +230,13 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private fun checkMoreFileExtensions(extension: String?, items: RealmMyLibrary) {
         when (extension) {
             "txt" -> {
-                openIntent(items, TextFileViewerActivity::class.java)
+                ResourceOpener.openIntent(requireActivity(), items, TextFileViewerActivity::class.java)
             }
             "md" -> {
-                openIntent(items, MarkdownViewerActivity::class.java)
+                ResourceOpener.openIntent(requireActivity(), items, MarkdownViewerActivity::class.java)
             }
             "csv" -> {
-                openIntent(items, CSVViewerActivity::class.java)
+                ResourceOpener.openIntent(requireActivity(), items, CSVViewerActivity::class.java)
             }
             "apk" -> {
                 installApk(items)
@@ -251,36 +285,8 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     private fun openFileType(items: RealmMyLibrary, videoType: String) {
-        val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
-        if (mimetype == null) {
-            Utilities.toast(activity, getString(R.string.unable_to_open_resource))
-            return
-        }
-        profileDbHandler = UserProfileDbHandler(requireContext())
-        profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_OPEN)
-        if (mimetype.startsWith("video")) {
-            playVideo(videoType, items)
-        } else {
-            checkFileExtension(items)
-        }
-    }
-    open fun playVideo(videoType: String, items: RealmMyLibrary) {
-        val intent = Intent(activity, VideoPlayerActivity::class.java)
-        val bundle = Bundle()
-        bundle.putString("videoType", videoType)
-        if (videoType == "online") {
-            bundle.putString("videoURL", "" + Utilities.getUrl(items))
-            bundle.putString("Auth", "" + auth)
-        } else if (videoType == "offline") {
-            if (items.resourceRemoteAddress == null && items.resourceLocalAddress != null) {
-                bundle.putString("videoURL", items.resourceLocalAddress)
-            } else {
-                bundle.putString("videoURL", "" + Uri.fromFile(File("" + FileUtils.getSDPathFromUrl(items.resourceRemoteAddress))))
-            }
-            bundle.putString("Auth", "")
-        }
-        intent.putExtras(bundle)
-        startActivity(intent)
+        dismissProgressDialog()
+        ResourceOpener.openFileType(requireActivity(), items, videoType, profileDbHandler)
     }
 
     private fun showResourceList(downloadedResources: List<RealmMyLibrary>?) {
@@ -344,5 +350,15 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     open fun handleBackPressed() {
         val fragmentManager = parentFragmentManager
         fragmentManager.popBackStack()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        dismissProgressDialog()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        dismissProgressDialog()
     }
 }

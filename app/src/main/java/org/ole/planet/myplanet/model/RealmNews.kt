@@ -1,22 +1,25 @@
 package org.ole.planet.myplanet.model
 
+import android.content.Context.MODE_PRIVATE
+import android.content.SharedPreferences
 import android.text.TextUtils
+import androidx.core.content.edit
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonSyntaxException
-import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utilities.JsonUtils
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
 import java.util.Date
 import java.util.UUID
+import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.CsvUtils
+import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
+import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.Utilities
 
 open class RealmNews : RealmObject() {
     @PrimaryKey
@@ -53,6 +56,7 @@ open class RealmNews : RealmObject() {
     var chat: Boolean = false
     var isEdited: Boolean = false
     var editedTime: Long = 0
+    var sharedBy: String? = null
 
     val imagesArray: JsonArray
         get() = if (images == null) JsonArray() else Gson().fromJson(images, JsonArray::class.java)
@@ -108,7 +112,9 @@ open class RealmNews : RealmObject() {
         }
 
     companion object {
+        private val gson = Gson()
         val newsDataList: MutableList<Array<String>> = mutableListOf()
+        private val concatenatedLinks = ArrayList<String>()
 
         @JvmStatic
         fun insert(mRealm: Realm, doc: JsonObject?) {
@@ -136,6 +142,12 @@ open class RealmNews : RealmObject() {
             val images = JsonUtils.getJsonArray("images", doc)
             val message = JsonUtils.getString("message", doc)
             news?.message = message
+            val links = extractLinks(message)
+            val baseUrl = Utilities.getUrl()
+            for (link in links) {
+                val concatenatedLink = "$baseUrl/$link"
+                concatenatedLinks.add(concatenatedLink)
+            }
             news?.images = Gson().toJson(images)
             val labels = JsonUtils.getJsonArray("labels", doc)
             news?.viewIn = Gson().toJson(JsonUtils.getJsonArray("viewIn", doc))
@@ -151,6 +163,9 @@ open class RealmNews : RealmObject() {
             news?.conversations = Gson().toJson(JsonUtils.getJsonArray("conversations", newsObj))
             news?.newsCreatedDate = JsonUtils.getLong("createdDate", newsObj)
             news?.newsUpdatedDate = JsonUtils.getLong("updatedDate", newsObj)
+            news?.sharedBy = JsonUtils.getString("sharedBy", newsObj)
+
+            saveConcatenatedLinksToPrefs()
 
             val csvRow = arrayOf(
                 JsonUtils.getString("_id", doc),
@@ -172,28 +187,40 @@ open class RealmNews : RealmObject() {
                 JsonUtils.getString("labels", doc),
                 JsonUtils.getString("viewIn", doc),
                 JsonUtils.getBoolean("chat", doc).toString(),
-                JsonUtils.getString("news", doc)
+                JsonUtils.getString("news", doc),
+                JsonUtils.getString("sharedBy", doc).toString()
             )
             newsDataList.add(csvRow)
         }
 
-        fun writeCsv(filePath: String, data: List<Array<String>>) {
-            try {
-                val file = File(filePath)
-                file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("_id", "_rev", "viewableBy", "docType", "avatar", "updatedDate", "viewableId", "createdOn", "messageType", "messagePlanetCode", "replyTo", "parentCode", "user", "time", "message", "images", "labels", "viewIn", "chat", "news"))
-                for (row in data) {
-                    writer.writeNext(row)
-                }
-                writer.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
         fun newsWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/news.csv", newsDataList)
+            CsvUtils.writeCsv(
+                "${context.getExternalFilesDir(null)}/ole/news.csv",
+                arrayOf(
+                    "_id",
+                    "_rev",
+                    "viewableBy",
+                    "docType",
+                    "avatar",
+                    "updatedDate",
+                    "viewableId",
+                    "createdOn",
+                    "messageType",
+                    "messagePlanetCode",
+                    "replyTo",
+                    "parentCode",
+                    "user",
+                    "time",
+                    "message",
+                    "images",
+                    "labels",
+                    "viewIn",
+                    "chat",
+                    "news",
+                    "sharedBy"
+                ),
+                newsDataList
+            )
         }
 
         @JvmStatic
@@ -225,6 +252,7 @@ open class RealmNews : RealmObject() {
             newsObject.add("conversations", Gson().fromJson(news.conversations, JsonArray::class.java))
             newsObject.addProperty("createdDate", news.newsCreatedDate)
             newsObject.addProperty("updatedDate", news.newsUpdatedDate)
+            newsObject.addProperty("sharedBy", news.sharedBy)
             `object`.add("news", newsObject)
             return `object`
         }
@@ -256,6 +284,7 @@ open class RealmNews : RealmObject() {
             news.parentCode = user?.parentCode
             news.messagePlanetCode = map["messagePlanetCode"]
             news.messageType = map["messageType"]
+            news.sharedBy = ""
             if(isReply){
                 news.viewIn = map["viewIn"]
             } else {
@@ -329,6 +358,27 @@ open class RealmNews : RealmObject() {
                 viewInArray.add(`object`)
             }
             return Gson().toJson(viewInArray)
+        }
+
+        fun saveConcatenatedLinksToPrefs() {
+            val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            val existingJsonLinks = settings.getString("concatenated_links", null)
+            val existingConcatenatedLinks = if (existingJsonLinks != null) {
+                gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableList()
+            } else {
+                mutableListOf()
+            }
+            val linksToProcess: List<String>
+            synchronized(concatenatedLinks) {
+                linksToProcess = concatenatedLinks.toList()
+            }
+            for (link in linksToProcess) {
+                if (!existingConcatenatedLinks.contains(link)) {
+                    existingConcatenatedLinks.add(link)
+                }
+            }
+            val jsonConcatenatedLinks = gson.toJson(existingConcatenatedLinks)
+            settings.edit { putString("concatenated_links", jsonConcatenatedLinks) }
         }
     }
 }

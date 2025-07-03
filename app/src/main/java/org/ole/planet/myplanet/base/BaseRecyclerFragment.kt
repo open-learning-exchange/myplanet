@@ -18,6 +18,8 @@ import io.realm.RealmList
 import io.realm.RealmModel
 import io.realm.RealmObject
 import io.realm.RealmResults
+import java.text.Normalizer
+import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -38,8 +40,6 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities.toast
-import java.text.Normalizer
-import java.util.Locale
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
     var subjects: MutableSet<String> = mutableSetOf()
@@ -295,33 +295,32 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     companion object {
         lateinit var settings: SharedPreferences
 
+        private val noDataMessages = mapOf(
+            "courses" to R.string.no_courses,
+            "resources" to R.string.no_resources,
+            "finances" to R.string.no_finance_record,
+            "news" to R.string.no_voices_available,
+            "teamCourses" to R.string.no_team_courses,
+            "teamResources" to R.string.no_team_resources,
+            "tasks" to R.string.no_tasks,
+            "members" to R.string.no_join_request_available,
+            "discussions" to R.string.no_news,
+            "survey" to R.string.no_surveys,
+            "survey_submission" to R.string.no_survey_submissions,
+            "exam_submission" to R.string.no_exam_submissions,
+            "team" to R.string.no_teams,
+            "enterprise" to R.string.no_enterprise,
+            "chatHistory" to R.string.no_chats,
+            "feedback" to R.string.no_feedback,
+            "reports" to R.string.no_reports
+        )
+
         fun showNoData(v: View?, count: Int?, source: String) {
             v ?: return
-            v.visibility = if (count == 0) {
-                View.VISIBLE
-            } else {
-                View.GONE
-            }
-            when (source) {
-                "courses" -> (v as TextView).setText(R.string.no_courses)
-                "resources" -> (v as TextView).setText(R.string.no_resources)
-                "finances" -> (v as TextView).setText(R.string.no_finance_record)
-                "news" -> (v as TextView).setText(R.string.no_voices_available)
-                "teamCourses" -> (v as TextView).setText(R.string.no_team_courses)
-                "teamResources" -> (v as TextView).setText(R.string.no_team_resources)
-                "tasks" -> (v as TextView).setText(R.string.no_tasks)
-                "members" -> (v as TextView).setText(R.string.no_join_request_available)
-                "discussions" -> (v as TextView).setText(R.string.no_news)
-                "survey" -> (v as TextView).setText(R.string.no_surveys)
-                "survey_submission" -> (v as TextView).setText(R.string.no_survey_submissions)
-                "exam_submission" -> (v as TextView).setText(R.string.no_exam_submissions)
-                "team" -> (v as TextView).setText(R.string.no_teams)
-                "enterprise" -> (v as TextView).setText(R.string.no_enterprise)
-                "chatHistory" -> (v as TextView).setText(R.string.no_chats)
-                "feedback" -> (v as TextView).setText(R.string.no_feedback)
-                "reports" -> (v as TextView).setText(R.string.no_reports)
-                else -> (v as TextView).setText(R.string.no_data_available_please_check_and_try_again)
-            }
+            v.visibility = if (count == 0) View.VISIBLE else View.GONE
+            val messageRes = noDataMessages[source]
+                ?: R.string.no_data_available_please_check_and_try_again
+            (v as TextView).setText(messageRes)
         }
 
         fun showNoFilter(v: View?, count: Int) {

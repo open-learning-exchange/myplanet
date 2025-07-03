@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.graphics.toColorInt
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
@@ -17,13 +18,13 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ItemTeamListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
-import androidx.core.graphics.toColorInt
 
 class AdapterTeamList(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm, private val fragmentManager: FragmentManager) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private lateinit var itemTeamListBinding: ItemTeamListBinding
@@ -68,15 +69,17 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                 if (context is OnHomeItemClickListener) {
                     val fragmentManager = (context as AppCompatActivity).supportFragmentManager
                     val existingFragment = fragmentManager.findFragmentByTag("TeamDetailFragment")
-                    val b = Bundle()
-                    b.putString("id", team._id)
-                    b.putBoolean("isMyTeam", isMyTeam)
+
+                    val f = TeamDetailFragment.newInstance(
+                        teamId = "${team._id}",
+                        teamName = "${team.name}",
+                        teamType = "${team.type}",
+                        isMyTeam = isMyTeam
+                    )
                     if (existingFragment is TeamDetailFragment) {
                         existingFragment.arguments?.clear()
-                        existingFragment.arguments = b
+                        existingFragment.arguments = f.arguments
                     }
-                    val f = TeamDetailFragment()
-                    f.arguments = b
                     (context as OnHomeItemClickListener).openCallFragment(f)
                     prefData.setTeamName(team.name)
                 }
@@ -157,9 +160,10 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                     }.setNegativeButton(R.string.no, null).show()
             }
         } else {
-            RealmMyTeam.requestToJoin(team._id, user, mRealm)
+            RealmMyTeam.requestToJoin(team._id, user, mRealm, team.teamType)
             updateList()
         }
+        syncTeamActivities(context)
     }
 
     private fun updateList() {

@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.team
 
 import android.content.DialogInterface
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,6 +18,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
 import io.realm.RealmResults
+import java.util.Date
+import java.util.UUID
 import org.json.JSONArray
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseNewsFragment
@@ -34,15 +37,12 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamLog.Companion.getVisitCount
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
-import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.news.AdapterNews
+import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.UserDetailFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.Date
-import java.util.UUID
-import android.util.Log
 
 class MyTeamsDetailFragment : BaseNewsFragment() {
     private lateinit var fragmentMyTeamsDetailBinding: FragmentMyTeamsDetailBinding

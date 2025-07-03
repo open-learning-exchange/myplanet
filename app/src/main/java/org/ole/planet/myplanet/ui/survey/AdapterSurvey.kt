@@ -8,6 +8,8 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import io.realm.Realm
+import java.util.Collections
+import java.util.UUID
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -17,14 +19,13 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSubmissionByTeam
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSubmissionByUser
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getRecentSubmissionDate
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment.Companion.settings
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import java.util.Collections
-import java.util.UUID
 
 class AdapterSurvey(private val context: Context, private val mRealm: Realm, private val userId: String?, private val isTeam: Boolean, val teamId: String?, private val surveyAdoptListener: SurveyAdoptListener) : RecyclerView.Adapter<AdapterSurvey.ViewHolderSurvey>() {
     private var examList: List<RealmStepExam> = emptyList()
@@ -161,7 +162,10 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
                     startSurvey.visibility = View.GONE
                 }
 
-                tvNoSubmissions.text = getNoOfSubmissionByUser(exam.id, exam.courseId, userId, mRealm)
+                tvNoSubmissions.text = when {
+                    isTeam -> getNoOfSubmissionByTeam(teamId, exam.id, mRealm)
+                    else -> getNoOfSubmissionByUser(exam.id, exam.courseId, userId, mRealm)
+                }
                 tvDateCompleted.text = getRecentSubmissionDate(exam.id, exam.courseId, userId, mRealm)
                 tvDate.text = formatDate(RealmStepExam.getSurveyCreationTime(exam.id!!, mRealm)!!, "MMM dd, yyyy")
             }

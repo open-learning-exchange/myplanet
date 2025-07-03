@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
+import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmTag
@@ -60,8 +61,28 @@ abstract class BaseResourceFragment : Fragment() {
     var editor: SharedPreferences.Editor? = null
     var lv: CheckboxListView? = null
     var convertView: View? = null
-    private lateinit var prgDialog: DialogUtils.CustomProgressDialog
+    internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
     private var resourceNotFoundDialog: AlertDialog? = null
+
+    private fun isFragmentActive(): Boolean {
+        return isAdded && activity != null &&
+            !requireActivity().isFinishing && !requireActivity().isDestroyed
+    }
+
+    private fun showProgressDialog() {
+        activity?.runOnUiThread {
+            if (isFragmentActive()) {
+                prgDialog.show()
+            }
+        }
+    }
+
+    private fun showNotConnectedToast() {
+        if (isFragmentActive()) {
+            Utilities.toast(requireActivity(),
+                getString(R.string.device_not_connected_to_planet))
+        }
+    }
 
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -152,24 +173,26 @@ abstract class BaseResourceFragment : Fragment() {
             return
         }
         val exams = getExamMap(mRealm, list)
-        val arrayAdapter: ArrayAdapter<*> = object : ArrayAdapter<Any?>(requireActivity(), android.R.layout.simple_list_item_1, list) {
-            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                var convertedView = convertView
-                if (convertedView == null) {
-                    convertedView = LayoutInflater.from(activity).inflate(android.R.layout.simple_list_item_1, parent, false)
-                }
-                if (exams.containsKey((getItem(position) as RealmSubmission?)?.parentId)) {
-                    (convertedView as TextView?)?.text = exams[list[position].parentId]?.name
-                } else {
-                    (convertedView as TextView?)?.setText(R.string.n_a)
-                }
-                return convertedView!!
-            }
-        }
+        val arrayAdapter = createSurveyAdapter(list, exams)
         AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
             .setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
                 AdapterMySubmission.openSurvey(homeItemClickListener, list[i].id, true, false, "")
             }.setPositiveButton(R.string.dismiss, null).show()
+    }
+
+    private fun createSurveyAdapter(
+        list: List<RealmSubmission>,
+        exams: HashMap<String?, RealmStepExam>
+    ): ArrayAdapter<RealmSubmission> {
+        return object : ArrayAdapter<RealmSubmission>(requireActivity(), android.R.layout.simple_list_item_1, list) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = convertView ?: LayoutInflater.from(activity)
+                    .inflate(android.R.layout.simple_list_item_1, parent, false)
+                val text = exams[list[position].parentId]?.name ?: getString(R.string.n_a)
+                (view as TextView).text = text
+                return view
+            }
+        }
     }
 
     private val resourceNotFoundReceiver = object : BroadcastReceiver() {
@@ -204,34 +227,24 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun startDownload(urls: ArrayList<String>) {
-        if (isAdded) {
-            Service(requireActivity()).isPlanetAvailable(object : PlanetAvailableListener {
-                override fun isAvailable() {
-                    if (!isAdded || activity == null || requireActivity().isFinishing || requireActivity().isDestroyed) {
-                        return
-                    }
-
-                    if (urls.isNotEmpty()) {
-                        try {
-                            activity?.runOnUiThread {
-                                if (isAdded && !requireActivity().isFinishing && !requireActivity().isDestroyed) {
-                                    prgDialog.show()
-                                }
-                            }
-                            Utilities.openDownloadService(activity, urls, false)
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
+        if (!isFragmentActive()) return
+        Service(requireActivity()).isPlanetAvailable(object : PlanetAvailableListener {
+            override fun isAvailable() {
+                if (!isFragmentActive()) return
+                if (urls.isNotEmpty()) {
+                    try {
+                        showProgressDialog()
+                        Utilities.openDownloadService(activity, urls, false)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
                 }
+            }
 
-                override fun notAvailable() {
-                    if (isAdded && activity != null && !requireActivity().isFinishing) {
-                        Utilities.toast(requireActivity(), getString(R.string.device_not_connected_to_planet))
-                    }
-                }
-            })
-        }
+            override fun notAvailable() {
+                showNotConnectedToast()
+            }
+        })
     }
 
     fun setProgress(download: Download) {
@@ -261,10 +274,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun createListView(dbMyLibrary: List<RealmMyLibrary?>, alertDialog: AlertDialog) {
         lv = convertView?.findViewById(R.id.alertDialog_listView)
-        val names = ArrayList<String?>()
-        for (i in dbMyLibrary.indices) {
-            names.add(dbMyLibrary[i]?.title)
-        }
+        val names = dbMyLibrary.map { it?.title }
         val adapter = ArrayAdapter(requireActivity().baseContext, R.layout.rowlayout, R.id.checkBoxRowLayout, names)
         lv?.choiceMode = ListView.CHOICE_MODE_MULTIPLE
         lv?.setCheckChangeListener {
@@ -335,27 +345,25 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun showTagText(list: List<RealmTag>, tvSelected: TextView?) {
-        val selected = StringBuilder(getString(R.string.selected))
-        for (tags in list) {
-            selected.append(tags.name).append(",")
-        }
-        tvSelected?.text = selected.subSequence(0, selected.length - 1)
+        val selected = list.joinToString(separator = ",", prefix = getString(R.string.selected)) { it.name.orEmpty() }
+        tvSelected?.text = selected
     }
 
     fun addToLibrary(libraryItems: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>) {
-        for (i in selectedItems.indices) {
-            if (!libraryItems[selectedItems[i]]?.userId?.contains(profileDbHandler.userModel?.id)!!) {
+        selectedItems.forEach { index ->
+            val item = libraryItems[index]
+            if (item?.userId?.contains(profileDbHandler.userModel?.id) == false) {
                 if (!mRealm.isInTransaction) mRealm.beginTransaction()
-                libraryItems[selectedItems[i]]?.setUserId(profileDbHandler.userModel?.id)
-                RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.userModel?.id, libraryItems[selectedItems[i]]?.resourceId)
+                item.setUserId(profileDbHandler.userModel?.id)
+                RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.userModel?.id, item.resourceId)
             }
         }
         Utilities.toast(activity, getString(R.string.added_to_my_library))
     }
 
     fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
-        for (libraryItem in libraryItems) {
-            if (!libraryItem?.userId?.contains(profileDbHandler.userModel?.id)!!) {
+        libraryItems.forEach { libraryItem ->
+            if (libraryItem?.userId?.contains(profileDbHandler.userModel?.id) == false) {
                 if (!mRealm.isInTransaction) {
                     mRealm.beginTransaction()
                 }

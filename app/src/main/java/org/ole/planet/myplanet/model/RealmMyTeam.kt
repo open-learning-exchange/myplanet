@@ -1,25 +1,35 @@
 package org.ole.planet.myplanet.model
 
+import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
+import java.util.Date
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.datamanager.ApiClient.client
+import org.ole.planet.myplanet.datamanager.ApiInterface
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
-import java.util.Date
 
 open class RealmMyTeam : RealmObject() {
     @PrimaryKey
@@ -162,23 +172,47 @@ open class RealmMyTeam : RealmObject() {
             teamDataList.add(csvRow)
         }
 
-        fun writeCsv(filePath: String, data: List<Array<String>>) {
-            try {
-                val file = File(filePath)
-                file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("userId", "teamId", "teamId_rev", "name", "sourcePlanet", "title", "description", "limit", "status", "teamPlanetCode", "createdDate", "resourceId", "teamType", "route", "type", "services", "rules", "parentCode", "createdBy", "userPlanetCode", "isLeader", "amount", "date", "docType", "public", "beginningBalance", "sales", "otherIncome", "wages", "otherExpenses", "startDate", "endDate", "updatedDate", "courses"))
-                for (row in data) {
-                    writer.writeNext(row)
-                }
-                writer.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
         fun teamWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/team.csv", teamDataList)
+            CsvUtils.writeCsv(
+                "${context.getExternalFilesDir(null)}/ole/team.csv",
+                arrayOf(
+                    "userId",
+                    "teamId",
+                    "teamId_rev",
+                    "name",
+                    "sourcePlanet",
+                    "title",
+                    "description",
+                    "limit",
+                    "status",
+                    "teamPlanetCode",
+                    "createdDate",
+                    "resourceId",
+                    "teamType",
+                    "route",
+                    "type",
+                    "services",
+                    "rules",
+                    "parentCode",
+                    "createdBy",
+                    "userPlanetCode",
+                    "isLeader",
+                    "amount",
+                    "date",
+                    "docType",
+                    "public",
+                    "beginningBalance",
+                    "sales",
+                    "otherIncome",
+                    "wages",
+                    "otherExpenses",
+                    "startDate",
+                    "endDate",
+                    "updatedDate",
+                    "courses"
+                ),
+                teamDataList
+            )
         }
 
         @JvmStatic
@@ -316,17 +350,63 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun requestToJoin(teamId: String?, userModel: RealmUserModel?, mRealm: Realm) {
+        fun requestToJoin(teamId: String?, userModel: RealmUserModel?, mRealm: Realm, teamType: String?) {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             val team = mRealm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
             team.docType = "request"
             team.createdDate = Date().time
-            team.teamType = "sync"
+            team.teamType = teamType
             team.userId = userModel?.id
             team.teamId = teamId
             team.updated = true
             team.teamPlanetCode = userModel?.planetCode
+            team.userPlanetCode = userModel?.planetCode
             mRealm.commitTransaction()
+        }
+
+        @JvmStatic
+        fun syncTeamActivities(context: Context) {
+            val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val updateUrl = "${settings.getString("serverURL", "")}"
+            val serverUrlMapper = ServerUrlMapper()
+            val mapping = serverUrlMapper.processUrl(updateUrl)
+
+            CoroutineScope(Dispatchers.IO).launch {
+                val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
+                val alternativeAvailable =
+                    mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
+
+                if (!primaryAvailable && alternativeAvailable) {
+                    mapping.alternativeUrl.let { alternativeUrl ->
+                        val uri = updateUrl.toUri()
+                        val editor = settings.edit()
+                        serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
+                    }
+                }
+
+                withContext(Dispatchers.Main) {
+                    uploadTeamActivities(context)
+                }
+            }
+        }
+
+        private fun uploadTeamActivities(context: Context) {
+            MainApplication.applicationScope.launch {
+                try {
+                    withContext(Dispatchers.IO) {
+                        UploadManager.instance?.uploadTeams()
+                    }
+                    withContext(Dispatchers.IO) {
+                        val apiInterface = client?.create(ApiInterface::class.java)
+                        val realm = DatabaseService(context).realmInstance
+                        realm.executeTransaction { transactionRealm ->
+                            UploadManager.instance?.uploadTeamActivities(transactionRealm, apiInterface)
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
         }
 
         @JvmStatic
@@ -337,6 +417,11 @@ open class RealmMyTeam : RealmObject() {
         @JvmStatic
         fun getJoinedMember(teamId: String, realm: Realm): MutableList<RealmUserModel> {
             return getUsers(teamId, realm, "membership")
+        }
+
+        @JvmStatic
+        fun getJoinedMemberCount(teamId: String, realm: Realm): Int {
+            return getUsers(teamId, realm, "membership").size
         }
 
         @JvmStatic
@@ -391,23 +476,25 @@ open class RealmMyTeam : RealmObject() {
             JsonUtils.addString(`object`, "_rev", team._rev)
             `object`.addProperty("name", team.name)
             `object`.addProperty("userId", team.userId)
-            if (team.docType != "report") {
+            if (team.docType != "report" && team.docType != "request") {
                 `object`.addProperty("limit", team.limit)
                 `object`.addProperty("amount", team.amount)
                 `object`.addProperty("date", team.date)
                 `object`.addProperty("public", team.isPublic)
                 `object`.addProperty("isLeader", team.isLeader)
             }
-            `object`.addProperty("createdDate", team.createdDate)
-            `object`.addProperty("description", team.description)
-            `object`.addProperty("beginningBalance", team.beginningBalance)
-            `object`.addProperty("sales", team.sales)
-            `object`.addProperty("otherIncome", team.otherIncome)
-            `object`.addProperty("wages", team.wages)
-            `object`.addProperty("otherExpenses", team.otherExpenses)
-            `object`.addProperty("startDate", team.startDate)
-            `object`.addProperty("endDate", team.endDate)
-            `object`.addProperty("updatedDate", team.updatedDate)
+            if (team.docType != "request") {
+                `object`.addProperty("createdDate", team.createdDate)
+                `object`.addProperty("description", team.description)
+                `object`.addProperty("beginningBalance", team.beginningBalance)
+                `object`.addProperty("sales", team.sales)
+                `object`.addProperty("otherIncome", team.otherIncome)
+                `object`.addProperty("wages", team.wages)
+                `object`.addProperty("otherExpenses", team.otherExpenses)
+                `object`.addProperty("startDate", team.startDate)
+                `object`.addProperty("endDate", team.endDate)
+                `object`.addProperty("updatedDate", team.updatedDate)
+            }
             JsonUtils.addString(`object`, "teamId", team.teamId)
             `object`.addProperty("teamType", team.teamType)
             `object`.addProperty("teamPlanetCode", team.teamPlanetCode)
@@ -415,7 +502,6 @@ open class RealmMyTeam : RealmObject() {
             `object`.addProperty("status", team.status)
             `object`.addProperty("userPlanetCode", team.userPlanetCode)
             `object`.addProperty("parentCode", team.parentCode)
-
             `object`.addProperty("type", team.type)
             `object`.addProperty("route", team.route)
             `object`.addProperty("sourcePlanet", team.sourcePlanet)

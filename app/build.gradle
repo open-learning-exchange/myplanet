@@ -37,9 +37,11 @@ android {
                 'META-INF/LICENSE',
                 'META-INF/LICENSE.txt',
                 'META-INF/license.txt',
+                'META-INF/LICENSE.md',
                 'META-INF/NOTICE',
                 'META-INF/NOTICE.txt',
                 'META-INF/notice.txt',
+                'META-INF/LICENSE-notice.md',
                 'META-INF/ASL2.0'
             ]
         }
@@ -165,14 +167,14 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.multidex:multidex:2.0.1'
-    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.appcompat:appcompat:1.7.1'
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
     implementation 'androidx.annotation:annotation:1.9.1'
     implementation 'androidx.exifinterface:exifinterface:1.4.1'
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation "androidx.core:core-ktx:1.16.0"
-    implementation "androidx.work:work-runtime:2.10.1"
+    implementation "androidx.work:work-runtime:2.10.2"
     implementation "androidx.slidingpanelayout:slidingpanelayout:1.2.0"
     implementation 'androidx.preference:preference-ktx:1.2.1'
 
@@ -189,7 +191,7 @@ dependencies {
     implementation 'com.borax12.materialdaterangepicker:library:2.0'
     implementation 'com.nex3z:toggle-button-group:1.2.3'
     implementation 'com.caverock:androidsvg-aar:1.4'
-    implementation('com.opencsv:opencsv:5.11') {
+    implementation('com.opencsv:opencsv:5.11.2') {
         exclude group: 'commons-logging', module: 'commons-logging'
     }
 
@@ -198,7 +200,7 @@ dependencies {
     implementation 'org.osmdroid:osmdroid-android:6.1.20'
     implementation 'org.jetbrains:annotations:26.0.2'
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1"
+    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0"
     implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.29'
 
     implementation 'com.mikepenz:google-material-typeface:3.0.1.1.original@aar'
@@ -238,7 +240,7 @@ dependencies {
     implementation "io.noties.markwon:image:$markwon_version"
     implementation "io.noties.markwon:html:$markwon_version"
     implementation "io.noties.markwon:ext-tables:$markwon_version"
-    implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.1.21"))
+    implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.2.0"))
 
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'
 }

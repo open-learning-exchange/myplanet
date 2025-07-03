@@ -27,7 +27,7 @@
     <string name="err_msg_name">Enter your username</string>
     <string name="err_msg_password">Enter the password</string>
     <string name="err_msg_login">Username and/or password do not match</string>
-    <string name="hint_serverURl">planet ip</string>
+    <string name="hint_serverURL">planet ip</string>
     <string name="hint_serverPin">server pin</string>
     <string name="radio_protocol">Protocol:</string>
     <string name="radio_http">http</string>
@@ -65,8 +65,8 @@
     <string name="your_ans">Your Answer</string>
     <string name="delete_my_course">Delete myCourse</string>
     <string name="invite_member">Invite Member</string>
-    <string name="is_urgent">Is your feedback Urgent?</string>
-    <string name="feedback_type">Feedback Type:</string>
+    <string name="is_urgent">Is your feedback Urgent? *</string>
+    <string name="feedback_type">Feedback Type: *</string>
     <string name="suggestion">Suggestion</string>
     <string name="no">No</string>
     <string name="yes">Yes</string>
@@ -75,6 +75,7 @@
     <string name="your_feedback">Your Feedback *</string>
     <string name="button_update">Update</string>
     <string name="level">level</string>
+    <string name="select_level">Select Level</string>
     <string name="male">male</string>
     <string name="female">female</string>
     <string name="gender">Gender</string>
@@ -529,7 +530,7 @@
     <string name="recording_audio">Recording audio…</string>
     <string name="show_replies">"Show replies "</string>
     <string name="selected">"Selected: "</string>
-    <string name="last_sync">Last sync with server: %s></string>
+    <string name="last_sync">Last sync with server: %s</string>
     <string name="last_syncs">LastSync</string>
     <string name="login_user">loginUserName</string>
     <string name="login_password">loginUserPassword</string>
@@ -737,7 +738,7 @@
     <string name="enter_resource_detail">Enter resource detail</string>
     <string name="resource_saved_to_my_personal">Resource saved to myPersonal</string>
     <string name="invalid_resource_url">Invalid resource url</string>
-    <string name="my_library">" my library"</string>
+    <string name="my_library">"mylibrary"</string>
     <string name="link_not_available">Link not available</string>
     <string name="success_you_have_added_these_resources_to_your_mylibrary">Success! You have added these resources to your myLibrary:\n\n</string>
     <string name="more_resource_s">" more resource(s)…\n"</string>
@@ -1297,5 +1298,28 @@
     <string name="microphone_permission_required">Microphone permission is required to record audio. Please enable it in the app settings.</string>
     <string name="confirm_share_community">Are you sure you want to share this content with the community?</string>
     <string name="camera_permission_required">Camera permission is required. Please enable it in the app settings.</string>
+    <string name="clearing_data">Clearing data…</string>
+    <string name="time_colon">Time:&#160;</string>
+    <string name="a_few_seconds_ago">a few seconds ago</string>
+    <string name="no_teams_found">No teams found</string>
+    <string name="no_teams_found_for_search">No teams found for "%1$s"</string>
+    <string name="no_enterprises_found_for_search">No enterprises found for "%1$s"</string>
+    <string name="no_enterprises_found">No enterprises found</string>
+    <string name="starting_downloads">Starting downloads…</string>
+    <string name="downloaded_files">Downloaded %1$s/%2$s files</string>
+    <string name="download_failed">Download failed</string>
+    <string name="downloads_completed">Downloads Completed</string>
+    <string name="download_progress">%1$d of %2$d files downloaded</string>
+    <string name="download_progress_with_errors">%1$d of %2$d files downloaded (with some errors)</string>
+    <string name="download_in_background">Starting download in background…</string>
+    <string name="creating_member_account">Creating member account…</string>
+    <string name="cancel_adding_examination">Are you sure you want to cancel adding examination? The data will be lost.</string>
+    <string name="syncing_team_data">Syncing team data…</string>
+    <string name="syncing_chat_history">Syncing chat history…</string>
+    <string name="syncing_courses_data">Syncing courses data…</string>
+    <string name="syncing_feedback">Syncing feedback…</string>
+    <string name="syncing_health_data">Syncing health data…</string>
+    <string name="syncing_resources">Syncing resources…</string>
+    <string name="syncing_achievements">Syncing achievements…</string>
 
 </resources>

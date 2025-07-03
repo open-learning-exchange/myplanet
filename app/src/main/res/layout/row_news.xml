@@ -19,7 +19,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
-            <ImageView
+            <de.hdodenhof.circleimageview.CircleImageView
                 android:id="@+id/img_user"
                 android:layout_width="@dimen/_40dp"
                 android:layout_height="@dimen/_40dp"
@@ -150,9 +150,14 @@
                 app:layout_constraintTop_toTopOf="parent" />
             <Button
                 android:id="@+id/btn_show_reply"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/show_reply"
+                android:minWidth="0dp"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:drawableStart="@drawable/show_replies"
+                android:drawablePadding="4dp"
+                android:drawableTint="@color/daynight_textColor"
                 android:textColor="@color/daynight_textColor"
                 android:theme="@style/PrimaryFlatButton"
                 app:layout_constraintEnd_toStartOf="@+id/btn_add_label"

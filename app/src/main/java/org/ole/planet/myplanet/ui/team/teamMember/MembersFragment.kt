@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.base.BaseMemberFragment
+import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getRequestedMember
 import org.ole.planet.myplanet.model.RealmNews
@@ -14,6 +15,11 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 class MembersFragment : BaseMemberFragment() {
 
     private lateinit var currentUser: RealmUserModel
+    private lateinit var memberChangeListener: MemberChangeListener
+
+    fun setMemberChangeListener(listener: MemberChangeListener) {
+        this.memberChangeListener = listener
+    }
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -30,7 +36,7 @@ class MembersFragment : BaseMemberFragment() {
         get() = getRequestedMember(teamId, mRealm)
 
     override val adapter: RecyclerView.Adapter<*>
-        get() = AdapterMemberRequest(requireActivity(), list.toMutableList(), mRealm, isTeamLeader()).apply { setTeamId(teamId) }
+        get() = AdapterMemberRequest(requireActivity(), list.toMutableList(), mRealm, memberChangeListener).apply { setTeamId(teamId) }
 
     override val layoutManager: RecyclerView.LayoutManager
         get() {

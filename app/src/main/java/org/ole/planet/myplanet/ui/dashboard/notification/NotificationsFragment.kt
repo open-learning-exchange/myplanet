@@ -13,12 +13,14 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import io.realm.Realm
 import io.realm.Sort
+import java.util.ArrayList
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.status_options
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentNotificationsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmTeamTask
@@ -26,7 +28,7 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
-import java.util.ArrayList
+import org.ole.planet.myplanet.ui.team.TeamPage
 
 class NotificationsFragment : Fragment() {
     private lateinit var fragmentNotificationsBinding: FragmentNotificationsBinding
@@ -82,7 +84,7 @@ class NotificationsFragment : Fragment() {
         }
 
         val filteredNotifications = notifications.filter { notification ->
-             !notification.message.isNullOrEmpty() && notification.message != "INVALID"
+             notification.message.isNotEmpty() && notification.message != "INVALID"
         }
 
         adapter = AdapterNotification(filteredNotifications,
@@ -125,11 +127,41 @@ class NotificationsFragment : Fragment() {
                 val teamId = linkJson.optString("teams")
                 if (teamId.isNotEmpty()) {
                     if (context is OnHomeItemClickListener) {
+                        val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", teamId)?.findFirst()
+
+                        val f = TeamDetailFragment.newInstance(
+                            teamId = teamId,
+                            teamName = teamObject?.name ?: "",
+                            teamType = teamObject?.type ?: "",
+                            isMyTeam = true,
+                            navigateToPage = TeamPage.TASKS
+                        )
+
+                        (context as OnHomeItemClickListener).openCallFragment(f)
+                    }
+                }
+            }
+            "join_request" -> {
+                val joinRequestId = notification.relatedId
+                if (joinRequestId?.isNotEmpty() == true && context is OnHomeItemClickListener) {
+                    val actualJoinRequestId = if (joinRequestId.startsWith("join_request_")) {
+                        joinRequestId.removePrefix("join_request_")
+                    } else {
+                        joinRequestId
+                    }
+                    val joinRequest = mRealm.where(RealmMyTeam::class.java)
+                        .equalTo("_id", actualJoinRequestId)
+                        .equalTo("docType", "request")
+                        .findFirst()
+
+                    val teamId = joinRequest?.teamId
+
+                    if (teamId?.isNotEmpty() == true) {
                         val f = TeamDetailFragment()
                         val b = Bundle()
                         b.putString("id", teamId)
                         b.putBoolean("isMyTeam", true)
-                        b.putInt("navigateToPage", 3)
+                        b.putInt("navigateToPage", TeamPage.JOIN_REQUESTS.ordinal)
                         f.arguments = b
                         (context as OnHomeItemClickListener).openCallFragment(f)
                     }

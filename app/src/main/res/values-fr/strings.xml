@@ -27,7 +27,7 @@
     <string name="err_msg_name">Entrez votre nom d\'utilisateur</string>
     <string name="err_msg_password">Entrez le mot de passe</string>
     <string name="err_msg_login">Le nom d\'utilisateur et/ou le mot de passe ne correspondent pas</string>
-    <string name="hint_serverURl">planet adresse IP</string>
+    <string name="hint_serverURL">planet adresse IP</string>
     <string name="hint_serverPin">code serveur</string>
     <string name="radio_protocol">Protocole:</string>
     <string name="radio_http">http</string>
@@ -65,8 +65,8 @@
     <string name="your_ans">Votre réponse</string>
     <string name="delete_my_course">Supprimer mon cours</string>
     <string name="invite_member">Inviter un membre</string>
-    <string name="is_urgent">Votre retour d\'information est-il urgent ?</string>
-    <string name="feedback_type">Type de retour d\'information :</string>
+    <string name="is_urgent">Votre retour d\'information est-il urgent ? *</string>
+    <string name="feedback_type">Type de retour d\'information : *</string>
     <string name="suggestion">Suggestion</string>
     <string name="no">Non</string>
     <string name="yes">Oui</string>
@@ -75,6 +75,7 @@
     <string name="your_feedback">Votre retour d\'information *</string>
     <string name="button_update">Mettre à jour</string>
     <string name="level">Niveau</string>
+    <string name="select_level">Sélectionner le niveau</string>
     <string name="male">Homme</string>
     <string name="female">Femme</string>
     <string name="gender">Sexe</string>
@@ -737,7 +738,7 @@
     <string name="enter_resource_detail">Saisissez les détails de la ressource</string>
     <string name="resource_saved_to_my_personal">Ressource enregistrée dans myPersonal</string>
     <string name="invalid_resource_url">URL de ressource invalide</string>
-    <string name="my_library">" ma bibliothèque"</string>
+    <string name="my_library">"mylibrary"</string>
     <string name="link_not_available">Lien non disponible</string>
     <string name="success_you_have_added_these_resources_to_your_mylibrary">Succès ! Vous avez ajouté ces ressources à votre bibliothèque:</string>
     <string name="more_resource_s"> autres ressource(s)…</string>
@@ -1297,5 +1298,28 @@
     <string name="microphone_permission_required">L\'autorisation du microphone est requise pour l\'enregistrement audio. Veuillez l\'activer dans les paramètres de l\'application.</string>
     <string name="confirm_share_community">Êtes-vous sûr de vouloir partager ce contenu avec la communauté ?</string>
     <string name="camera_permission_required">L\'autorisation de l\'appareil photo est requise. Veuillez l\'activer dans les paramètres de l\'application.</string>
+    <string name="clearing_data">Suppression des données…</string>
+    <string name="time_colon">temps:&#160;</string>
+    <string name="a_few_seconds_ago">il y a quelques secondes</string>
+    <string name="no_teams_found">Aucune équipe trouvée</string>
+    <string name="no_teams_found_for_search">Aucune équipe trouvée pour "%1$s"</string>
+    <string name="no_enterprises_found_for_search">Aucune entreprise trouvée pour "%1$s"</string>
+    <string name="no_enterprises_found">Aucune entreprise trouvée</string>
+    <string name="starting_downloads">Démarrage des téléchargements…</string>
+    <string name="downloaded_files">%1$s/%2$s fichiers téléchargés</string>
+    <string name="download_failed">Échec du téléchargement</string>
+    <string name="downloads_completed">Téléchargements terminés</string>
+    <string name="download_progress">%1$d fichiers sur %2$d téléchargés</string>
+    <string name="download_progress_with_errors">%1$d fichiers sur %2$d téléchargés (avec quelques erreurs)</string>
+    <string name="download_in_background">Démarrage du téléchargement en arrière-plan…</string>
+    <string name="creating_member_account">Création du compte membre…</string>
+    <string name="cancel_adding_examination">Voulez-vous vraiment annuler l\'ajout de l\'examen? Les données seront perdues.</string>
+    <string name="syncing_team_data">Synchronisation des données d\'équipe…</string>
+    <string name="syncing_chat_history">Synchronisation de l\'historique des discussions…</string>
+    <string name="syncing_courses_data">Synchronisation des données des cours…</string>
+    <string name="syncing_feedback">Synchronisation des retours…</string>
+    <string name="syncing_health_data">Synchronisation des données de santé…</string>
+    <string name="syncing_resources">Synchronisation des ressources…</string>
+    <string name="syncing_achievements">Synchronisation des réalisations…</string>
 
 </resources>

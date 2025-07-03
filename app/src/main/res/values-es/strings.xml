@@ -27,7 +27,7 @@
     <string name="err_msg_name">Ingresa tu nombre de usuario</string>
     <string name="err_msg_password">Ingresa la contraseña</string>
     <string name="err_msg_login">El nombre de usuario y/o la contraseña no coinciden</string>
-    <string name="hint_serverURl">planet ipag</string>
+    <string name="hint_serverURL">planet ipag</string>
     <string name="hint_serverPin">pin del servidor</string>
     <string name="radio_protocol">Protocolo:</string>
     <string name="radio_http">http</string>
@@ -65,8 +65,8 @@
     <string name="your_ans">Tu respuesta</string>
     <string name="delete_my_course">Eliminar miCurso</string>
     <string name="invite_member">Invitar miembro</string>
-    <string name="is_urgent">¿Tu retroalimentación es urgente?</string>
-    <string name="feedback_type">Tipo de retroalimentación:</string>
+    <string name="is_urgent">¿Tu retroalimentación es urgente? *</string>
+    <string name="feedback_type">Tipo de retroalimentación: *</string>
     <string name="suggestion">Sugerencia</string>
     <string name="no">No</string>
     <string name="yes">Sí</string>
@@ -75,6 +75,7 @@
     <string name="your_feedback">Tu retroalimentación *</string>
     <string name="button_update">Actualizar</string>
     <string name="level">Nivel</string>
+    <string name="select_level">Seleccionar nivel</string>
     <string name="male">Masculino</string>
     <string name="female">Femenino</string>
     <string name="gender">Género</string>
@@ -737,7 +738,7 @@
     <string name="enter_resource_detail">Ingresa los detalles del recurso</string>
     <string name="resource_saved_to_my_personal">Recurso guardado en myPersonal</string>
     <string name="invalid_resource_url">URL de recurso no válida</string>
-    <string name="my_library">" mi biblioteca"</string>
+    <string name="my_library">mylibrary"</string>
     <string name="link_not_available">Enlace no disponible</string>
     <string name="success_you_have_added_these_resources_to_your_mylibrary">¡Éxito! Has agregado estos recursos a tu mi Biblioteca:\n\n</string>
     <string name="more_resource_s">" más recurso(s)…\n"</string>
@@ -1241,8 +1242,8 @@
     <string name="welcome_back">Bienvenido de nuevo %1$s</string>
     <string name="welcome">Bienvenido %1$s</string>
     <string name="edit_plan">Editar plan</string>
-    <string name="show_additional_fields">mostrar campos adicionales</string>
-    <string name="hide_additional_fields">ocultar campos adicionales</string>
+    <string name="show_additional_fields">Mostrar campos adicionales</string>
+    <string name="hide_additional_fields">Ocultar campos adicionales</string>
     <string name="age">edad</string>
     <string name="preparing_download">Preparando la descarga…</string>
     <string name="downloading_files">Descargando archivos</string>
@@ -1297,5 +1298,28 @@
     <string name="microphone_permission_required">Se requiere permiso del micrófono para grabar audio. Actívalo en la configuración de la aplicación.</string>
     <string name="confirm_share_community">¿Estás seguro de que quieres compartir este contenido con la comunidad?</string>
     <string name="camera_permission_required">Se requiere permiso para usar la cámara. Actívalo en la configuración de la aplicación.</string>
+    <string name="clearing_data">Borrando datos…</string>
+    <string name="time_colon">tiempo:&#160;</string>
+    <string name="a_few_seconds_ago">hace unos segundos</string>
+    <string name="no_teams_found">No se encontraron equipos</string>
+    <string name="no_teams_found_for_search">No se encontraron equipos para "%1$s"</string>
+    <string name="no_enterprises_found_for_search">No se encontraron empresas para "%1$s"</string>
+    <string name="no_enterprises_found">No se encontraron empresas</string>
+    <string name="starting_downloads">Iniciando descargas…</string>
+    <string name="downloaded_files">%1$s/%2$s archivos descargados</string>
+    <string name="download_failed">Descarga fallida</string>
+    <string name="downloads_completed">Descargas completadas</string>
+    <string name="download_progress">%1$d de %2$d archivos descargados</string>
+    <string name="download_progress_with_errors">%1$d de %2$d archivos descargados (con algunos errores)</string>
+    <string name="download_in_background">Iniciando descarga en segundo plano…</string>
+    <string name="creating_member_account">Creando cuenta de miembro…</string>
+    <string name="cancel_adding_examination">¿Está seguro de que desea cancelar la adición del examen? Se perderán los datos.</string>
+    <string name="syncing_team_data">Sincronizando datos del equipo…</string>
+    <string name="syncing_chat_history">Sincronizando historial de chat…</string>
+    <string name="syncing_courses_data">Sincronizando datos de los cursos…</string>
+    <string name="syncing_feedback">Sincronizando comentarios…</string>
+    <string name="syncing_health_data">Sincronizando datos de salud…</string>
+    <string name="syncing_resources">Sincronizando recursos…</string>
+    <string name="syncing_achievements">Sincronizando logros…</string>
 
 </resources>

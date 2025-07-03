@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.utilities
 
-import org.ole.planet.myplanet.model.RealmMyLibrary
 import java.util.regex.Pattern
 import kotlin.text.isNotEmpty
+import org.ole.planet.myplanet.model.RealmMyLibrary
 
 object DownloadUtils {
     @JvmStatic

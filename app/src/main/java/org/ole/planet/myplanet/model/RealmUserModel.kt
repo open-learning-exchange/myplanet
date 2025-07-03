@@ -3,28 +3,28 @@ package org.ole.planet.myplanet.model
 import android.content.SharedPreferences
 import android.net.Uri
 import android.util.Base64
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import java.io.File
+import java.io.InputStream
+import java.util.Locale
+import java.util.UUID
 import org.apache.commons.lang3.StringUtils
+import org.json.JSONException
+import org.json.JSONObject
 import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
-import java.io.InputStream
-import java.util.Locale
-import java.util.UUID
-import androidx.core.net.toUri
-import androidx.core.content.edit
 
 open class RealmUserModel : RealmObject() {
     @PrimaryKey
@@ -313,25 +313,28 @@ open class RealmUserModel : RealmObject() {
             return realm.where(RealmUserModel::class.java).equalTo("name", name).count() > 0
         }
 
-        fun writeCsv(filePath: String, data: List<Array<String>>) {
-            try {
-                val file = File(filePath)
-                file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("userAdmin", "_id", "name", "firstName", "lastName", "email", "phoneNumber", "planetCode", "parentCode", "password_scheme", "iterations", "derived_key", "salt", "level"))
-                for (row in data) {
-                    writer.writeNext(row)
-                }
-                writer.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
         fun userWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/userData.csv", userDataList)
+            CsvUtils.writeCsv(
+                "${context.getExternalFilesDir(null)}/ole/userData.csv",
+                arrayOf(
+                    "userAdmin",
+                    "_id",
+                    "name",
+                    "firstName",
+                    "lastName",
+                    "email",
+                    "phoneNumber",
+                    "planetCode",
+                    "parentCode",
+                    "password_scheme",
+                    "iterations",
+                    "derived_key",
+                    "salt",
+                    "level"
+                ),
+                userDataList
+            )
         }
-
 
         fun updateUserDetails(realm: Realm, userId: String?, firstName: String?, lastName: String?,
         middleName: String?, email: String?, phoneNumber: String?, level: String?, language: String?,
@@ -356,6 +359,33 @@ open class RealmUserModel : RealmObject() {
             }) {
                 Utilities.toast(context, "User details update failed")
             }
+        }
+
+        @JvmStatic
+        fun parseLeadersJson(jsonString: String): List<RealmUserModel> {
+            val leadersList = mutableListOf<RealmUserModel>()
+            try {
+                val jsonObject = JSONObject(jsonString)
+                val docsArray = jsonObject.getJSONArray("docs")
+                for (i in 0 until docsArray.length()) {
+                    val docObject = docsArray.getJSONObject(i)
+                    val user = RealmUserModel()
+                    user.name = docObject.getString("name")
+                    if (!docObject.isNull("firstName")) {
+                        user.firstName = docObject.getString("firstName")
+                    }
+                    if (!docObject.isNull("lastName")) {
+                        user.lastName = docObject.getString("lastName")
+                    }
+                    if (!docObject.isNull("email")) {
+                        user.email = docObject.getString("email")
+                    }
+                    leadersList.add(user)
+                }
+            } catch (e: JSONException) {
+                e.printStackTrace()
+            }
+            return leadersList
         }
     }
 }

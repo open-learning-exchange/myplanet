@@ -10,37 +10,18 @@ import android.os.*
 import android.os.storage.StorageManager
 import android.provider.MediaStore
 import android.text.TextUtils
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import java.io.*
-import java.util.UUID
+import android.text.format.Formatter
 import androidx.core.net.toUri
+import java.io.*
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
+import java.util.UUID
+import org.ole.planet.myplanet.MainApplication.Companion.context
 
 object FileUtils {
     @JvmStatic
     @Throws(IOException::class)
-    fun fullyReadFileToBytes(f: File): ByteArray {
-        val size = f.length().toInt()
-        val bytes = ByteArray(size)
-        val tmpBuff = ByteArray(size)
-        val fis = FileInputStream(f)
-        try {
-            var read = fis.read(bytes, 0, size)
-            if (read < size) {
-                var remain = size - read
-                while (remain > 0) {
-                    read = fis.read(tmpBuff, 0, remain)
-                    System.arraycopy(tmpBuff, 0, bytes, size - remain, read)
-                    remain -= read
-                }
-            }
-        } catch (e: IOException) {
-            e.printStackTrace()
-            throw e
-        } finally {
-            fis.close()
-        }
-        return bytes
-    }
+    fun fullyReadFileToBytes(f: File): ByteArray = f.readBytes()
 
     private fun createFilePath(folder: String, filename: String): File {
         val baseDirectory = File(context.getExternalFilesDir(null), folder)
@@ -94,11 +75,9 @@ object FileUtils {
     @JvmStatic
     fun getFileNameFromUrl(url: String?): String {
         return try {
-            if (url.isNullOrEmpty()) return ""
-            val id = getIdFromUrl(url)
-            if (id.isEmpty()) return ""
-            val parts = url.split("/resources/$id/")
-            if (parts.size > 1) parts[1] else ""
+            url?.toUri()?.lastPathSegment?.let {
+                URLDecoder.decode(it, StandardCharsets.UTF_8.name())
+            } ?: ""
         } catch (e: Exception) {
             e.printStackTrace()
             ""
@@ -108,11 +87,10 @@ object FileUtils {
     @JvmStatic
     fun getIdFromUrl(url: String?): String {
         return try {
-            if (url.isNullOrEmpty()) return ""
-            val index = url.indexOf("resources/")
-            if (index == -1) return ""
-            val sp = url.substring(index).split("/").filter { it.isNotEmpty() }
-            sp.getOrNull(1) ?: ""
+            url?.toUri()?.pathSegments?.let { segments ->
+                val idx = segments.indexOf("resources")
+                if (idx != -1 && idx + 1 < segments.size) segments[idx + 1] else ""
+            } ?: ""
         } catch (e: Exception) {
             e.printStackTrace()
             ""
@@ -121,9 +99,7 @@ object FileUtils {
 
     @JvmStatic
     fun getFileExtension(address: String?): String {
-        if (TextUtils.isEmpty(address)) return ""
-        val filenameArray = address?.split("\\.".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
-        return filenameArray?.get(filenameArray.size - 1) ?: ""
+        return address?.let { File(it).extension } ?: ""
     }
 
     @JvmStatic
@@ -150,16 +126,10 @@ object FileUtils {
 
     @Throws(IOException::class)
     private fun addApkToInstallSession(apkFile: File, session: PackageInstaller.Session) {
-        val out: OutputStream = session.openWrite("my_app_session", 0, -1)
-        val fis = FileInputStream(apkFile)
-        fis.use { input ->
-            out.use { output ->
-                val buffer = ByteArray(4096)
-                var length: Int
-                while (input.read(buffer).also { length = it } != -1) {
-                    output.write(buffer, 0, length)
-                }
-                session.fsync(out)
+        session.openWrite("my_app_session", 0, -1).use { output ->
+            apkFile.inputStream().use { input ->
+                input.copyTo(output)
+                session.fsync(output)
             }
         }
     }
@@ -185,11 +155,7 @@ object FileUtils {
 
     @Throws(IOException::class)
     private fun copyFile(`in`: InputStream, out: OutputStream) {
-        val buffer = ByteArray(1024)
-        var read: Int
-        while (`in`.read(buffer).also { read = it } != -1) {
-            out.write(buffer, 0, read)
-        }
+        `in`.copyTo(out)
     }
 
     @JvmStatic
@@ -209,23 +175,13 @@ object FileUtils {
     @JvmStatic
     @Throws(Exception::class)
     fun convertStreamToString(`is`: InputStream?): String {
-        val reader = BufferedReader(InputStreamReader(`is`))
-        val sb = StringBuilder()
-        var line: String?
-        while (reader.readLine().also { line = it } != null) {
-            sb.append(line).append("\n")
-        }
-        reader.close()
-        return sb.toString()
+        return `is`?.bufferedReader()?.use { it.readText() } ?: ""
     }
 
     @JvmStatic
     @Throws(Exception::class)
     fun getStringFromFile(fl: File?): String {
-        val fin = FileInputStream(fl)
-        val ret = convertStreamToString(fin)
-        fin.close()
-        return ret
+        return fl?.inputStream()?.bufferedReader()?.use { it.readText() } ?: ""
     }
 
     @JvmStatic
@@ -240,39 +196,34 @@ object FileUtils {
     fun getImagePath(context: Context, uri: Uri?): String? {
         if (uri == null) return null
         val projection = arrayOf(MediaStore.Images.Media._ID, MediaStore.Images.Media.DATA)
-        var cursor: Cursor? = null
-        try {
-            cursor = context.contentResolver.query(uri, projection, null, null, null)
-            if (cursor != null && cursor.moveToFirst()) {
-                val documentIdIndex = cursor.getColumnIndex(MediaStore.Images.Media._ID)
-                if (documentIdIndex >= 0) {
-                    val documentId = cursor.getString(documentIdIndex)
-                    cursor.close()
-                    val selection = "${MediaStore.Images.Media._ID} = ?"
-                    val selectionArgs = arrayOf(documentId)
-                    cursor = context.contentResolver.query(
-                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                        projection,
-                        selection,
-                        selectionArgs,
-                        null
-                    )
-                    if (cursor != null && cursor.moveToFirst()) {
-                        val dataIndex = cursor.getColumnIndex(MediaStore.Images.Media.DATA)
-                        if (dataIndex >= 0) {
-                            val path = cursor.getString(dataIndex)
-                            cursor.close()
-                            return path
+        return try {
+            context.contentResolver.query(uri, projection, null, null, null)?.use { firstCursor ->
+                if (firstCursor.moveToFirst()) {
+                    val idIndex = firstCursor.getColumnIndex(MediaStore.Images.Media._ID)
+                    if (idIndex >= 0) {
+                        val documentId = firstCursor.getString(idIndex)
+                        val selection = "${MediaStore.Images.Media._ID} = ?"
+                        val args = arrayOf(documentId)
+                        context.contentResolver.query(
+                            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                            projection,
+                            selection,
+                            args,
+                            null
+                        )?.use { cursor ->
+                            if (cursor.moveToFirst()) {
+                                val dataIndex = cursor.getColumnIndex(MediaStore.Images.Media.DATA)
+                                if (dataIndex >= 0) return cursor.getString(dataIndex)
+                            }
                         }
                     }
                 }
             }
+            null
         } catch (e: Exception) {
             e.printStackTrace()
-        } finally {
-            cursor?.close()
+            null
         }
-        return null
     }
 
     @JvmStatic
@@ -305,28 +256,7 @@ object FileUtils {
      */
     @JvmStatic
     fun formatSize(size: Long): String {
-        var formattedSize = size
-        var suffix: String? = null
-        if (formattedSize >= 1024) {
-            suffix = "KB"
-            formattedSize /= 1024
-        }
-        if (formattedSize >= 1024) {
-            suffix = "MB"
-            formattedSize /= 1024
-        }
-        if (formattedSize >= 1024) {
-            suffix = "GB"
-            formattedSize /= 1024
-        }
-        val resultBuffer = StringBuilder(formattedSize.toString())
-        var commaOffset = resultBuffer.length - 3
-        while (commaOffset > 0) {
-            resultBuffer.insert(commaOffset, ',')
-            commaOffset -= 3
-        }
-        if (suffix != null) resultBuffer.append(suffix)
-        return resultBuffer.toString()
+        return Formatter.formatFileSize(context, size)
     }
 
     @JvmStatic
@@ -369,16 +299,11 @@ object FileUtils {
 
         return Pair(totalBytes, availableBytes)
     }
-    private fun extractFileName(filePath: String?): String?{
-        if(filePath.isNullOrEmpty()) return null
-        val regex = Regex(".+/(.+\\.[a-zA-Z0-9]+)")
-        return regex.find(filePath)?.groupValues?.get(1)
+    private fun extractFileName(filePath: String?): String? {
+        return filePath?.let { File(it).name.takeIf { name -> name.isNotEmpty() } }
     }
 
-    fun nameWithoutExtension(fileName: String?): String?{
-        extractFileName(fileName)
-        val nameWithExtension = extractFileName(fileName)
-        val nameWithoutExtension = nameWithExtension?.substringBeforeLast(".")
-        return nameWithoutExtension
+    fun nameWithoutExtension(fileName: String?): String? {
+        return extractFileName(fileName)?.substringBeforeLast('.')
     }
 }

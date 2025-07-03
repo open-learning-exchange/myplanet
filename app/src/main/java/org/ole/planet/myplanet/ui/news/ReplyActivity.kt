@@ -22,6 +22,7 @@ import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.Sort
+import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -33,7 +34,6 @@ import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import java.io.File
 
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private lateinit var activityReplyBinding: ActivityReplyBinding

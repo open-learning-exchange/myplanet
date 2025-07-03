@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.util.Base64
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -9,9 +8,9 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
+import java.util.Locale
 import org.ole.planet.myplanet.utilities.JsonParserUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
-import java.util.Locale
 
 open class RealmExamQuestion : RealmObject() {
     @PrimaryKey
@@ -23,6 +22,7 @@ open class RealmExamQuestion : RealmObject() {
     private var correctChoice: RealmList<String>? = null
     var marks: String? = null
     var choices: String? = null
+    var hasOtherOption: Boolean = false
     private fun setCorrectChoiceArray(array: JsonArray, question: RealmExamQuestion?) {
         for (i in 0 until array.size()) {
             question?.correctChoice?.add(JsonUtils.getString(array, i).lowercase(Locale.getDefault()))
@@ -68,13 +68,13 @@ open class RealmExamQuestion : RealmObject() {
                     type = JsonUtils.getString("type", question)
                     header = JsonUtils.getString("title", question)
                     marks = JsonUtils.getString("marks", question)
-
                     choices = if (question.has("choices")) {
                         Gson().toJson(JsonUtils.getJsonArray("choices", question))
                     } else {
                         "[]"
                     }
 
+                    hasOtherOption = JsonUtils.getBoolean("hasOtherOption", question)
                     val isMultipleChoice = type?.startsWith("select") == true && question.has("choices")
                     if (isMultipleChoice) {
                         insertCorrectChoice(question["choices"].asJsonArray, question, this)
@@ -107,6 +107,7 @@ open class RealmExamQuestion : RealmObject() {
                 `object`.addProperty("marks", que.marks)
                 `object`.add("choices", JsonParserUtils.getStringAsJsonArray(que.choices))
                 `object`.add("correctChoice", que.correctChoiceArray)
+                `object`.addProperty("hasOtherOption", que.hasOtherOption)
                 array.add(`object`)
             }
             return array

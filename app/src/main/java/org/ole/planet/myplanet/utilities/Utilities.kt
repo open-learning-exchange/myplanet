@@ -1,10 +1,11 @@
 package org.ole.planet.myplanet.utilities
 
+import android.app.ActivityManager
+import android.app.AlarmManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.graphics.Color
-import android.net.Uri
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.text.TextUtils
@@ -15,18 +16,24 @@ import android.util.Patterns
 import android.webkit.MimeTypeMap
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.annotation.RequiresApi
+import androidx.core.content.edit
+import androidx.core.graphics.toColorInt
+import androidx.core.net.toUri
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.bumptech.glide.Glide
 import fisk.chipcloud.ChipCloudConfig
+import java.lang.ref.WeakReference
+import java.math.BigInteger
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.datamanager.DownloadWorker
 import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import java.lang.ref.WeakReference
-import java.math.BigInteger
-import androidx.core.graphics.toColorInt
-import androidx.core.net.toUri
-import androidx.core.content.edit
+import org.ole.planet.myplanet.utilities.UrlUtils
 
 object Utilities {
     private var contextRef: WeakReference<Context>? = null
@@ -60,21 +67,91 @@ object Utilities {
         return "${getUrl()}/_users/$userId/$imageName"
     }
 
+    @RequiresApi(Build.VERSION_CODES.S)
     fun openDownloadService(context: Context?, urls: ArrayList<String>, fromSync: Boolean) {
         context?.let { ctx ->
             val preferences = ctx.getSharedPreferences(MyDownloadService.PREFS_NAME, Context.MODE_PRIVATE)
             preferences.edit {
                 putStringSet("url_list_key", urls.toSet())
             }
-            MyDownloadService.startService(ctx, "url_list_key", fromSync)
+            startDownloadServiceSafely(ctx, "url_list_key", fromSync)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.S)
+    private fun startDownloadServiceSafely(context: Context, urlsKey: String, fromSync: Boolean) {
+        if (canStartForegroundService(context)) {
+            try {
+                MyDownloadService.startService(context, urlsKey, fromSync)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                handleForegroundServiceNotAllowed(context, urlsKey, fromSync)
+            }
+        } else {
+            handleForegroundServiceNotAllowed(context, urlsKey, fromSync)
+        }
+    }
+
+    private fun handleForegroundServiceNotAllowed(context: Context, urlsKey: String, fromSync: Boolean) {
+        if (!fromSync) {
+            toast(context, context.getString(R.string.download_in_background))
+        }
+        startDownloadWork(context, urlsKey, fromSync)
+    }
+
+    private fun startDownloadWork(context: Context, urlsKey: String, fromSync: Boolean) {
+        val workRequest = OneTimeWorkRequestBuilder<DownloadWorker>()
+            .setInputData(workDataOf(
+                "urls_key" to urlsKey,
+                "fromSync" to fromSync
+            ))
+            .addTag("download_work")
+            .build()
+
+        WorkManager.getInstance(context).enqueue(workRequest)
+    }
+
+    fun canStartForegroundService(context: Context): Boolean {
+        return when {
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.O -> true
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.S -> {
+                // Android 8-11: Check if app is in foreground or has special permissions
+                isAppInForeground(context)
+            }
+            else -> {
+                // Android 12+: More restrictions
+                isAppInForeground(context) || hasSpecialForegroundPermissions(context)
+            }
+        }
+    }
+
+    private fun isAppInForeground(context: Context): Boolean {
+        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val appProcesses = activityManager.runningAppProcesses ?: return false
+
+        val packageName = context.packageName
+        return appProcesses.any { processInfo ->
+            processInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND && processInfo.processName == packageName
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.S)
+    private fun hasSpecialForegroundPermissions(context: Context): Boolean {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+        return when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+                alarmManager.canScheduleExactAlarms()
+            }
+            else -> false
         }
     }
 
     @JvmStatic
-    fun toast(context: Context?, s: String?) {
+    fun toast(context: Context?, s: String?, duration: Int = Toast.LENGTH_LONG) {
         context ?: return
         Handler(Looper.getMainLooper()).post {
-            Toast.makeText(context, s, Toast.LENGTH_LONG).show()
+            Toast.makeText(context, s, duration).show()
         }
     }
 
@@ -87,8 +164,8 @@ object Utilities {
             .uncheckedTextColor("#000000".toColorInt())
     }
 
-    fun checkNA(s: String): String {
-        return if (TextUtils.isEmpty(s)) "N/A" else s
+    fun checkNA(s: String?): String {
+        return if (s.isNullOrEmpty()) "N/A" else s
     }
 
     fun getRelativeTime(timestamp: Long): String {
@@ -130,18 +207,7 @@ object Utilities {
 
     fun getUrl(): String {
         val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        var url: String? = ""
-
-        url = if (settings.getBoolean("isAlternativeUrl", false)) {
-            settings.getString("processedAlternativeUrl", "")
-        } else {
-            settings.getString("couchdbURL", "")
-        }
-
-        if (!url?.endsWith("/db")!!) {
-            url += "/db"
-        }
-        return url
+        return UrlUtils.dbUrl(settings)
     }
 
     val hostUrl: String
@@ -170,66 +236,28 @@ object Utilities {
         }
 
     fun getUpdateUrl(settings: SharedPreferences): String {
-        var url: String? = ""
-        url = if (settings.getBoolean("isAlternativeUrl", false)) {
-            settings.getString("processedAlternativeUrl", "")
-        } else {
-            settings.getString("couchdbURL", "")
-        }
-
-        if (url != null) {
-            if (url.endsWith("/db")) {
-                url = url.replace("/db", "")
-            }
-        }
-
+        val url = UrlUtils.baseUrl(settings)
         return "$url/versions"
     }
 
     fun getChecksumUrl(settings: SharedPreferences): String {
-        var url = settings.getString("couchdbURL", "")
-        if (url != null) {
-            if (url.endsWith("/db")) {
-                url = url.replace("/db", "")
-            }
-        }
+        val url = UrlUtils.baseUrl(settings)
         return "$url/fs/myPlanet.apk.sha256"
     }
 
     fun getHealthAccessUrl(settings: SharedPreferences): String {
-        var url = settings.getString("couchdbURL", "")
-        if (url != null) {
-            if (url.endsWith("/db")) {
-                url = url.replace("/db", "")
-            }
-        }
+        val url = UrlUtils.baseUrl(settings)
         return String.format("%s/healthaccess?p=%s", url, settings.getString("serverPin", "0000"))
     }
 
     fun getApkVersionUrl(settings: SharedPreferences): String {
-        var url: String? = ""
-        url = if (settings.getBoolean("isAlternativeUrl", false)){
-            settings.getString("processedAlternativeUrl", "")
-        } else {
-            settings.getString("couchdbURL", "")
-        }
-
-        if (url != null) {
-            if (url.endsWith("/db")) {
-                url = url.replace("/db", "")
-            }
-        }
+        val url = UrlUtils.baseUrl(settings)
         return "$url/apkversion"
     }
 
     fun getApkUpdateUrl(path: String?): String {
         val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        var url = preferences.getString("couchdbURL", "")
-        if (url != null) {
-            if (url.endsWith("/db")) {
-                url = url.replace("/db", "")
-            }
-        }
+        val url = UrlUtils.baseUrl(preferences)
         return "$url$path"
     }
 
