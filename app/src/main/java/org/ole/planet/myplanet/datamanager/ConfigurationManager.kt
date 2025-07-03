@@ -67,10 +67,10 @@ class ConfigurationManager(
                     is UrlCheckResult.Success -> {
                         val isAlternativeUrl = result.url != url
                         listener?.onConfigurationIdReceived(result.id, result.code, result.url, url, isAlternativeUrl, callerActivity)
-                        activity.setSyncFailed(false)
+                        activity.syncFailed = false
                     }
                     is UrlCheckResult.Failure -> {
-                        activity.setSyncFailed(true)
+                        activity.syncFailed = true
                         val errorMessage = when (extractProtocol(url)) {
                             context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
                             context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
@@ -81,7 +81,7 @@ class ConfigurationManager(
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                activity.setSyncFailed(true)
+                activity.syncFailed = true
                 withContext(Dispatchers.Main) {
                     showAlertDialog(context.getString(R.string.device_couldn_t_reach_local_server), false)
                 }
