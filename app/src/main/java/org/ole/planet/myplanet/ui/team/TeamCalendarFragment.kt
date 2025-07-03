@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.team
 
-import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
@@ -31,7 +30,6 @@ import java.time.Instant
 import java.time.ZoneId
 import java.util.ArrayList
 import java.util.Calendar
-import java.util.List
 import java.util.Locale
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers

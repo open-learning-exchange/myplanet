@@ -7,9 +7,7 @@ import android.widget.BaseExpandableListAdapter
 import android.widget.CheckBox
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.content.ContextCompat
-import java.util.ArrayList
-import java.util.HashMap
-import java.util.List
+import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.collections.List
 import org.ole.planet.myplanet.R
