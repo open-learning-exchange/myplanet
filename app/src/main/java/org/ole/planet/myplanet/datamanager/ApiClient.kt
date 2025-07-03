@@ -1,14 +1,14 @@
 package org.ole.planet.myplanet.datamanager
 
 import com.google.gson.GsonBuilder
-import okhttp3.OkHttpClient
-import retrofit2.Response
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import java.io.IOException
 import java.lang.reflect.Modifier
 import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
+import okhttp3.OkHttpClient
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
 object ApiClient {
     private const val BASE_URL = "https://vi.media.mit.edu/"

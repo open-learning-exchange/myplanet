@@ -16,6 +16,11 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import io.realm.Realm
+import java.net.HttpURLConnection
+import java.net.URL
+import java.util.Date
+import java.util.UUID
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -45,11 +50,6 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.ThemeMode
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
-import java.net.HttpURLConnection
-import java.net.URL
-import java.util.Date
-import java.util.UUID
-import java.util.concurrent.TimeUnit
 
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     companion object {

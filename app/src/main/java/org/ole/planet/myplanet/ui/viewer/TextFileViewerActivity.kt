@@ -3,12 +3,12 @@ package org.ole.planet.myplanet.ui.viewer
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.ActivityTextfileViewerBinding
-import org.ole.planet.myplanet.utilities.FileUtils
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileReader
+import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.ActivityTextfileViewerBinding
+import org.ole.planet.myplanet.utilities.FileUtils
 
 class TextFileViewerActivity : AppCompatActivity() {
     private lateinit var activityTextFileViewerBinding: ActivityTextfileViewerBinding

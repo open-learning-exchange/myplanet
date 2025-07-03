@@ -11,12 +11,12 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
 import android.text.TextUtils
+import androidx.core.net.toUri
+import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.*
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import java.util.Locale
-import androidx.core.net.toUri
 
 object NetworkUtils {
     lateinit var coroutineScope: CoroutineScope
