@@ -1,162 +1,164 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:app="http://schemas.android.com/apk/res/auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/card_bg"
     tools:context=".ui.viewer.AudioPlayerActivity">
 
-    <LinearLayout
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:orientation="vertical"
-        android:padding="24dp">
-
-        <ImageView
-            android:id="@+id/albumArt"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_gravity="center_horizontal"
-            android:layout_marginBottom="12dp"
-            android:src="@drawable/musical_note"
-            android:contentDescription="Album Art" />
-
-        <TextView
-            android:id="@+id/trackTitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:gravity="center"
-            android:text="Track Title"
-            android:textColor="@color/daynight_textColor"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:maxLines="2"
-            android:ellipsize="end" />
-
-        <TextView
-            android:id="@+id/artistName"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="32dp"
-            android:gravity="center"
-            android:text="Unknown Artist"
-            android:textColor="@color/daynight_textColor"
-            android:textSize="16sp"
-            android:alpha="0.7"
-            android:maxLines="1"
-            android:ellipsize="end" />
+        android:layout_height="match_parent"
+        android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            android:orientation="vertical">
+            android:layout_gravity="center"
+            android:orientation="vertical"
+            android:padding="24dp">
 
-            <SeekBar
-                android:id="@+id/seekBar"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
-                android:progressTint="@color/colorPrimary"
-                android:thumbTint="@color/colorPrimary"
-                android:secondaryProgressTint="@color/colorPrimary" />
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="center">
+
+                <ImageView
+                    android:id="@+id/albumArt"
+                    android:layout_width="280dp"
+                    android:layout_height="280dp"
+                    android:layout_marginBottom="32dp"
+                    android:src="@drawable/musical_note"
+                    android:contentDescription="Album Art"
+                    android:scaleType="centerInside"
+                    android:background="@drawable/rounded_corner_bg"
+                    android:elevation="4dp" />
+
+                <TextView
+                    android:id="@+id/trackTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center"
+                    android:text="Track Title"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:maxLines="2"
+                    android:ellipsize="end" />
+
+                <TextView
+                    android:id="@+id/artistName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="24dp"
+                    android:gravity="center"
+                    android:text="Unknown Artist"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="16sp"
+                    android:alpha="0.7"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:orientation="vertical"
+                android:background="@drawable/bg_player_white"
+                android:padding="20dp"
+                android:elevation="2dp">
 
-                <TextView
-                    android:id="@+id/currentTime"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="00:00"
-                    android:textColor="@color/daynight_textColor"
-                    android:textSize="12sp"
-                    android:alpha="0.7" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
 
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="1dp"
-                    android:layout_weight="1" />
+                    <TextView
+                        android:id="@+id/currentTime"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0:00"
+                        android:textColor="@color/daynight_textColor"
+                        android:textSize="12sp"
+                        android:layout_marginEnd="8dp" />
 
-                <TextView
-                    android:id="@+id/totalTime"
-                    android:layout_width="wrap_content"
+                    <SeekBar
+                        android:id="@+id/seekBar"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:max="100"
+                        android:progress="0"
+                        android:progressTint="@color/primary"
+                        android:thumbTint="@color/primary" />
+
+                    <TextView
+                        android:id="@+id/totalTime"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0:00"
+                        android:textColor="@color/daynight_textColor"
+                        android:textSize="12sp"
+                        android:layout_marginStart="8dp" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="00:00"
-                    android:textColor="@color/daynight_textColor"
-                    android:textSize="12sp"
-                    android:alpha="0.7" />
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:layout_marginTop="8dp">
+
+                    <ImageButton
+                        android:id="@+id/rewindButton"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:src="@drawable/backward_10"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Rewind 10 seconds"
+                        android:layout_marginEnd="16dp"
+                        android:scaleType="centerInside" />
+
+                    <ImageButton
+                        android:id="@+id/playPauseButton"
+                        android:layout_width="64dp"
+                        android:layout_height="64dp"
+                        android:src="@drawable/ic_play_arrow"
+                        android:background="@drawable/circular_button_bg"
+                        android:contentDescription="Play/Pause"
+                        android:layout_marginHorizontal="16dp"
+                        android:scaleType="centerInside"
+                        android:elevation="4dp" />
+
+                    <ImageButton
+                        android:id="@+id/fastForwardButton"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:src="@drawable/foward_10"
+                        android:background="?android:attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Fast forward 10 seconds"
+                        android:layout_marginStart="16dp"
+                        android:scaleType="centerInside" />
+
+                </LinearLayout>
 
             </LinearLayout>
 
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:orientation="horizontal">
-
-            <ImageButton
-                android:id="@+id/rewindButton"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_marginEnd="32dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/backward_10"
-                android:contentDescription="Rewind 10 seconds"
-                app:tint="@color/daynight_textColor" />
-
-            <ImageButton
-                android:id="@+id/playPauseButton"
-                android:layout_width="72dp"
-                android:layout_height="72dp"
-                android:layout_marginStart="8dp"
-                android:layout_marginEnd="8dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/ic_play_arrow"
-                android:contentDescription="Play/Pause"
-                android:elevation="4dp"
-                app:tint="@color/colorPrimary" />
-
-            <ImageButton
-                android:id="@+id/fastForwardButton"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:layout_marginStart="32dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/foward_10"
-                android:contentDescription="Fast forward 10 seconds"
-                app:tint="@color/daynight_textColor" />
+            <androidx.media3.ui.PlayerView
+                android:id="@+id/playerView"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:visibility="gone" />
 
         </LinearLayout>
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:gravity="center"
-            android:orientation="horizontal">
-
-            <ImageButton
-                android:id="@+id/volumeButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:src="@drawable/ic_volume_up"
-                android:contentDescription="Volume Control"
-                android:alpha="0.7"
-                app:tint="@color/daynight_textColor" />
-
-        </LinearLayout>
-
-    </LinearLayout>
-
+    </ScrollView>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
