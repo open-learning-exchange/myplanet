@@ -4,17 +4,37 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.wifi.SupplicantState
 import android.net.wifi.WifiManager
+import androidx.core.content.edit
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import io.realm.Realm
-import kotlinx.coroutines.*
+import java.util.Date
+import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.datamanager.ApiClient
+import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.ManagerSync
+import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.insertMyCourses
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
@@ -23,24 +43,16 @@ import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.removeDeletedResou
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.save
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertMyTeams
 import org.ole.planet.myplanet.model.RealmResourceActivity.Companion.onSynced
+import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
+import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancel
 import org.ole.planet.myplanet.utilities.NotificationUtil.create
-import org.ole.planet.myplanet.utilities.Utilities
-import java.util.Date
-import androidx.core.content.edit
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
-import org.ole.planet.myplanet.datamanager.ApiClient
-import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.model.DocumentResponse
-import org.ole.planet.myplanet.model.Rows
-import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utilities.SyncTimeLogger
-import java.util.concurrent.ConcurrentHashMap
+import org.ole.planet.myplanet.utilities.Utilities
 
 class SyncManager private constructor(private val context: Context) {
     private var td: Thread? = null
@@ -55,12 +67,12 @@ class SyncManager private constructor(private val context: Context) {
     private val semaphore = Semaphore(5)
     private var betaSync = false
 
-    fun start(listener: SyncListener?, type: String) {
+    fun start(listener: SyncListener?, type: String, syncTables: List<String>? = null) {
         this.listener = listener
         if (!isSyncing) {
             settings.edit { remove("concatenated_links") }
             listener?.onSyncStarted()
-            authenticateAndSync(type)
+            authenticateAndSync(type, syncTables)
         }
     }
 
@@ -88,10 +100,10 @@ class SyncManager private constructor(private val context: Context) {
         }
     }
 
-    private fun authenticateAndSync(type: String) {
+    private fun authenticateAndSync(type: String, syncTables: List<String>?) {
         td = Thread {
             if (TransactionSyncManager.authenticate()) {
-                startSync(type)
+                startSync(type, syncTables)
             } else {
                 handleException(context.getString(R.string.invalid_configuration))
                 cleanupMainSync()
@@ -100,12 +112,12 @@ class SyncManager private constructor(private val context: Context) {
         td?.start()
     }
 
-    private fun startSync(type: String) {
+    private fun startSync(type: String, syncTables: List<String>?) {
         val isFastSync = settings.getBoolean("fastSync", false)
         if (!isFastSync || type == "upload") {
             startFullSync()
         } else {
-            startFastSync()
+            startFastSync(syncTables)
         }
     }
 
@@ -206,6 +218,195 @@ class SyncManager private constructor(private val context: Context) {
             logger.startProcess("resource_sync")
             resourceTransactionSync()
             logger.endProcess("resource_sync")
+
+            logger.startProcess("on_synced")
+            onSynced(mRealm, settings)
+            logger.endProcess("on_synced")
+            mRealm.close()
+
+            logger.stopLogging()
+        } catch (err: Exception) {
+            err.printStackTrace()
+            handleException(err.message)
+        } finally {
+            destroy()
+        }
+    }
+
+    private fun startFastSync(syncTables: List<String>? = null) {
+        try {
+            val logger = SyncTimeLogger.getInstance()
+            logger.startLogging()
+
+            initializeSync()
+            runBlocking {
+                val syncJobs = mutableListOf<Deferred<Unit>>()
+                if (syncTables?.contains("tablet_users") != false) {
+                    syncJobs.add(
+                        async {
+                            logger.startProcess("tablet_users_sync")
+                            TransactionSyncManager.syncDb(mRealm, "tablet_users")
+                            logger.endProcess("tablet_users_sync")
+                        })
+
+                    syncJobs.add(
+                        async { logger.startProcess("login_activities_sync")
+                            TransactionSyncManager.syncDb(mRealm, "login_activities")
+                            logger.endProcess("login_activities_sync")
+                        })
+
+                    syncJobs.add(
+                        async {
+                            logger.startProcess("tags_sync")
+                            TransactionSyncManager.syncDb(mRealm, "tags")
+                            logger.endProcess("tags_sync")
+                        })
+
+                    syncJobs.add(
+                        async {
+                            logger.startProcess("teams_sync")
+                            TransactionSyncManager.syncDb(mRealm, "teams")
+                            logger.endProcess("teams_sync")
+                        })
+
+                    syncJobs.add(
+                        async {
+                            logger.startProcess("news_sync")
+                            TransactionSyncManager.syncDb(mRealm, "news")
+                            logger.endProcess("news_sync")
+                        })
+                }
+
+                if (syncTables?.contains("resources") == true) {
+                    syncJobs.add(
+                        async {
+                            logger.startProcess("library_sync")
+                            myLibraryTransactionSync()
+                            logger.endProcess("library_sync")
+                        })
+
+                    syncJobs.add(
+                        async {
+                            logger.startProcess("resource_sync")
+                            resourceTransactionSync()
+                            logger.endProcess("resource_sync")
+                        })
+                }
+
+                if (syncTables?.contains("courses") == true) {
+                    syncJobs.add(
+                        async {
+                            logger.startProcess("courses_sync")
+                            TransactionSyncManager.syncDb(mRealm, "courses")
+                            logger.endProcess("courses_sync")
+                        })
+
+                    syncJobs.add(
+                        async {
+                            logger.startProcess("courses_progress_sync")
+                            TransactionSyncManager.syncDb(mRealm, "courses_progress")
+                            logger.endProcess("courses_progress_sync")
+                        })
+
+                    syncJobs.add(
+                        async {
+                            logger.startProcess("ratings_sync")
+                            TransactionSyncManager.syncDb(mRealm, "ratings")
+                            logger.endProcess("ratings_sync")
+                        })
+                }
+
+                if (syncTables?.contains("tasks") == true) {
+                    syncJobs.add(
+                        async {
+                            logger.startProcess("tasks_sync")
+                            TransactionSyncManager.syncDb(mRealm, "tasks")
+                            logger.endProcess("tasks_sync")
+                        })
+                }
+
+                if (syncTables?.contains("meetups") == true) {
+                    syncJobs.add(
+                        async {
+                            logger.startProcess("meetups_sync")
+                            TransactionSyncManager.syncDb(mRealm, "meetups")
+                            logger.endProcess("meetups_sync")
+                        })
+                }
+
+                if (syncTables?.contains("team_activities") == true) {
+                    syncJobs.add(
+                        async {
+                            logger.startProcess("team_activities_sync")
+                            TransactionSyncManager.syncDb(mRealm, "team_activities")
+                            logger.endProcess("team_activities_sync")
+                        })
+                }
+
+                if (syncTables?.contains("chat_history") == true) {
+                    syncJobs.add(
+                        async {
+                            logger.startProcess("chat_history_sync")
+                            TransactionSyncManager.syncDb(mRealm, "chat_history")
+                            logger.endProcess("chat_history_sync")
+                        })
+                }
+
+                if (syncTables?.contains("feedback") == true) {
+                    syncJobs.add(
+                        async {
+                            logger.startProcess("feedback_sync")
+                            TransactionSyncManager.syncDb(mRealm, "feedback")
+                            logger.endProcess("feedback_sync")
+                        })
+                }
+
+                if (syncTables?.contains("achievements") == true) {
+                    syncJobs.add(
+                        async {
+                            logger.startProcess("achievements_sync")
+                            TransactionSyncManager.syncDb(mRealm, "achievements")
+                            logger.endProcess("achievements_sync")
+                        })
+                }
+
+                if (syncTables?.contains("health") == true) {
+                    syncJobs.add(
+                        async { logger.startProcess("health_sync")
+                            TransactionSyncManager.syncDb(mRealm, "health")
+                            logger.endProcess("health_sync")
+                        })
+
+                    syncJobs.add(
+                        async {
+                            logger.startProcess("certifications_sync")
+                            TransactionSyncManager.syncDb(mRealm, "certifications")
+                            logger.endProcess("certifications_sync")
+                        })
+                }
+
+                if (syncTables?.contains("courses") == true || syncTables?.contains("exams") == true) {
+                    syncJobs.add(
+                        async {
+                            logger.startProcess("exams_sync")
+                            TransactionSyncManager.syncDb(mRealm, "exams")
+                            logger.endProcess("exams_sync")
+                        })
+
+                    syncJobs.add(
+                        async {
+                            logger.startProcess("submissions_sync")
+                            TransactionSyncManager.syncDb(mRealm, "submissions")
+                            logger.endProcess("submissions_sync")
+                        })
+                }
+
+                syncJobs.awaitAll()
+            }
+
+            logger.startProcess("admin_sync")
+            ManagerSync.instance?.syncAdmin()
+            logger.endProcess("admin_sync")
 
             logger.startProcess("on_synced")
             onSynced(mRealm, settings)
@@ -395,8 +596,11 @@ class SyncManager private constructor(private val context: Context) {
 
             val batchSize = 200
             var skip = 0
+            var batchCount = 0
 
             while (skip < totalRows || (totalRows == 0 && skip == 0)) {
+                batchCount++
+
                 try {
                     var response: JsonObject? = null
                     ApiClient.executeWithRetry {
@@ -416,29 +620,66 @@ class SyncManager private constructor(private val context: Context) {
                         break
                     }
 
+                    val batchDocuments = JsonArray()
+                    val validDocuments = mutableListOf<Pair<JsonObject, String>>()
+
                     for (i in 0 until rows.size()) {
                         val rowObj = rows[i].asJsonObject
                         if (rowObj.has("doc")) {
                             val doc = getJsonObject("doc", rowObj)
                             val id = getString("_id", doc)
 
-                            if (!id.startsWith("_design")) {
+                            if (!id.startsWith("_design") && id.isNotBlank()) {
+                                batchDocuments.add(doc)
+                                validDocuments.add(Pair(doc, id))
+                            }
+                        }
+                    }
+
+                    if (validDocuments.isNotEmpty()) {
+                        try {
+                            realmInstance.beginTransaction()
+                            val idsWeAreProcessing = validDocuments.map { it.second }
+                            val ids = save(batchDocuments, realmInstance)
+
+                            if (ids.isNotEmpty()) {
+                                val validIds = ids.filter { it.isNotBlank() }
+                                if (validIds.isNotEmpty()) {
+                                    newIds.addAll(validIds)
+                                    processedItems += validIds.size
+                                } else {
+                                    newIds.addAll(idsWeAreProcessing)
+                                    processedItems += idsWeAreProcessing.size
+                                }
+                            } else {
+                                newIds.addAll(idsWeAreProcessing)
+                                processedItems += idsWeAreProcessing.size
+                            }
+
+                            if (realmInstance.isInTransaction) {
+                                realmInstance.commitTransaction()
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            if (realmInstance.isInTransaction) {
+                                realmInstance.cancelTransaction()
+                            }
+
+                            for ((doc, _) in validDocuments) {
                                 try {
                                     realmInstance.beginTransaction()
                                     val singleDocArray = JsonArray()
                                     singleDocArray.add(doc)
-
-                                    val ids = save(singleDocArray, realmInstance)
-                                    if (ids.isNotEmpty()) {
-                                        newIds.addAll(ids)
+                                    val singleIds = save(singleDocArray, realmInstance)
+                                    if (singleIds.isNotEmpty()) {
+                                        newIds.addAll(singleIds)
                                         processedItems++
                                     }
-
                                     if (realmInstance.isInTransaction) {
                                         realmInstance.commitTransaction()
                                     }
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
+                                } catch (e2: Exception) {
+                                    e2.printStackTrace()
                                     if (realmInstance.isInTransaction) {
                                         realmInstance.cancelTransaction()
                                     }
@@ -448,13 +689,11 @@ class SyncManager private constructor(private val context: Context) {
                     }
 
                     skip += rows.size()
-
                     val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                     settings.edit {
                         putLong("ResourceLastSyncTime", System.currentTimeMillis())
                         putInt("ResourceSyncPosition", skip)
                     }
-
                 } catch (e: Exception) {
                     e.printStackTrace()
                     skip += batchSize
@@ -462,17 +701,12 @@ class SyncManager private constructor(private val context: Context) {
             }
 
             try {
-                realmInstance.beginTransaction()
-                removeDeletedResource(newIds, realmInstance)
-
-                if (realmInstance.isInTransaction) {
-                    realmInstance.commitTransaction()
+                val validNewIds = newIds.filter { !it.isNullOrBlank() }
+                if (validNewIds.isNotEmpty() && validNewIds.size == newIds.size) {
+                    removeDeletedResource(validNewIds, realmInstance)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                if (realmInstance.isInTransaction) {
-                    realmInstance.cancelTransaction()
-                }
             }
             logger.endProcess("resource_sync", processedItems)
         } catch (e: Exception) {
@@ -620,7 +854,6 @@ class SyncManager private constructor(private val context: Context) {
         try {
             val apiInterface = ApiClient.getEnhancedClient()
             val realmInstance = backgroundRealm ?: mRealm
-
             var shelfResponse: DocumentResponse? = null
             ApiClient.executeWithRetry {
                 apiInterface.getDocuments(Utilities.header, "${Utilities.getUrl()}/shelf/_all_docs?include_docs=true").execute()
@@ -632,8 +865,10 @@ class SyncManager private constructor(private val context: Context) {
                 return
             }
 
-            for (row in shelfResponse.rows) {
+            val rows = shelfResponse.rows!!
+            for ((_, row) in rows.withIndex()) {
                 val shelfId = row.id
+
                 var shelfDoc: JsonObject? = null
                 ApiClient.executeWithRetry {
                     apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/$shelfId").execute()
@@ -641,11 +876,29 @@ class SyncManager private constructor(private val context: Context) {
                     shelfDoc = it.body()
                 }
 
-                if (shelfDoc == null) continue
+                if (shelfDoc == null) {
+                    continue
+                }
 
+                var shelfHasData = false
                 for (shelfData in Constants.shelfDataList) {
                     val array = getJsonArray(shelfData.key, shelfDoc)
-                    if (array.size() == 0) continue
+                    if (array.size() > 0) {
+                        shelfHasData = true
+                        break
+                    }
+                }
+
+                if (!shelfHasData) {
+                    continue
+                }
+
+                for ((_, shelfData) in Constants.shelfDataList.withIndex()) {
+                    val array = getJsonArray(shelfData.key, shelfDoc)
+
+                    if (array.size() == 0) {
+                        continue
+                    }
 
                     stringArray[0] = shelfId
                     stringArray[1] = shelfData.categoryKey
@@ -658,7 +911,10 @@ class SyncManager private constructor(private val context: Context) {
                         }
                     }
 
-                    if (validIds.isEmpty()) continue
+                    if (validIds.isEmpty()) {
+                        continue
+                    }
+
                     val batchSize = 50
 
                     for (i in 0 until validIds.size step batchSize) {
@@ -676,47 +932,79 @@ class SyncManager private constructor(private val context: Context) {
                                 response = it.body()
                             }
 
-                            if (response == null) continue
+                            if (response == null) {
+                                continue
+                            }
 
-                            val rows = getJsonArray("rows", response)
+                            val batchRows = getJsonArray("rows", response)
+                            val documentsToProcess = mutableListOf<Pair<JsonObject, String>>()
 
-                            for (j in 0 until rows.size()) {
-                                val rowObj = rows[j].asJsonObject
+                            for (j in 0 until batchRows.size()) {
+                                val rowObj = batchRows[j].asJsonObject
                                 if (rowObj.has("doc")) {
                                     val doc = getJsonObject("doc", rowObj)
+                                    val docId = getString("_id", doc)
+                                    documentsToProcess.add(Pair(doc, docId))
+                                }
+                            }
 
-                                    try {
-                                        realmInstance.beginTransaction()
+                            if (documentsToProcess.isNotEmpty()) {
+                                try {
+                                    realmInstance.beginTransaction()
+
+                                    for ((doc, _) in documentsToProcess) {
                                         when (shelfData.type) {
                                             "resources" -> insertMyLibrary(shelfId, doc, realmInstance)
                                             "meetups" -> insert(realmInstance, doc)
                                             "courses" -> insertMyCourses(shelfId, doc, realmInstance)
                                             "teams" -> insertMyTeams(doc, realmInstance)
                                         }
+                                    }
 
-                                        if (realmInstance.isInTransaction) {
-                                            realmInstance.commitTransaction()
-                                            processedItems++
-                                        }
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                        if (realmInstance.isInTransaction) {
-                                            realmInstance.cancelTransaction()
+                                    if (realmInstance.isInTransaction) {
+                                        realmInstance.commitTransaction()
+                                        processedItems += documentsToProcess.size
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    if (realmInstance.isInTransaction) {
+                                        realmInstance.cancelTransaction()
+                                    }
+
+                                    for ((doc, _) in documentsToProcess) {
+                                        try {
+                                            realmInstance.beginTransaction()
+                                            when (shelfData.type) {
+                                                "resources" -> insertMyLibrary(shelfId, doc, realmInstance)
+                                                "meetups" -> insert(realmInstance, doc)
+                                                "courses" -> insertMyCourses(shelfId, doc, realmInstance)
+                                                "teams" -> insertMyTeams(doc, realmInstance)
+                                            }
+                                            if (realmInstance.isInTransaction) {
+                                                realmInstance.commitTransaction()
+                                                processedItems++
+                                            }
+                                        } catch (e2: Exception) {
+                                            e2.printStackTrace()
+                                            if (realmInstance.isInTransaction) {
+                                                realmInstance.cancelTransaction()
+                                            }
                                         }
                                     }
                                 }
                             }
-                            logger.endProcess("library_sync", processedItems)
                         } catch (e: Exception) {
                             e.printStackTrace()
-                            logger.endProcess("library_sync", processedItems)
                         }
                     }
                 }
             }
+
             saveConcatenatedLinksToPrefs()
+            logger.endProcess("library_sync", processedItems)
         } catch (e: Exception) {
             e.printStackTrace()
+            logger.endProcess("library_sync", processedItems)
         }
     }
 
@@ -925,3 +1213,4 @@ class SyncManager private constructor(private val context: Context) {
             }
     }
 }
+

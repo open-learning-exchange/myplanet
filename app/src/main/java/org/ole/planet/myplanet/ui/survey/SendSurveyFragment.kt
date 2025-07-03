@@ -9,6 +9,7 @@ import android.widget.ArrayAdapter
 import android.widget.ListView
 import io.realm.Realm
 import io.realm.Sort
+import java.util.Date
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDialogFragment
 import org.ole.planet.myplanet.databinding.FragmentSendSurveyBinding
@@ -18,7 +19,6 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.Date
 
 class SendSurveyFragment : BaseDialogFragment() {
     private lateinit var fragmentSendSurveyBinding: FragmentSendSurveyBinding

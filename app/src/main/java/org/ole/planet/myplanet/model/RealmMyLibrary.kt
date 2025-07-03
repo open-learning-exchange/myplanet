@@ -5,22 +5,19 @@ import android.content.SharedPreferences
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
-import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
 import java.util.Calendar
 import java.util.Date
 import java.util.UUID
+import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.CsvUtils
+import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.NetworkUtils
 
 open class RealmMyLibrary : RealmObject() {
     @PrimaryKey
@@ -373,23 +370,46 @@ open class RealmMyLibrary : RealmObject() {
             libraryDataList.add(csvRow)
         }
 
-        fun writeCsv(filePath: String, data: List<Array<String>>) {
-            try {
-                val file = File(filePath)
-                file.parentFile?.mkdirs()
-                CSVWriter(FileWriter(file)).use { writer ->
-                    writer.writeNext(arrayOf("libraryId", "library_rev", "title", "description", "resourceRemoteAddress", "resourceLocalAddress", "resourceOffline", "resourceId", "addedBy", "uploadDate", "createdDate", "openWith", "articleDate", "kind", "language", "author", "year", "medium", "filename", "mediaType", "resourceType", "timesRated", "averageRating", "publisher", "linkToLicense", "subject", "level", "tags", "languages", "courseId", "stepId", "downloaded", "private"))
-                    data.forEach { row ->
-                        writer.writeNext(row)
-                    }
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
         fun libraryWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/library.csv", libraryDataList)
+            CsvUtils.writeCsv(
+                "${context.getExternalFilesDir(null)}/ole/library.csv",
+                arrayOf(
+                    "libraryId",
+                    "library_rev",
+                    "title",
+                    "description",
+                    "resourceRemoteAddress",
+                    "resourceLocalAddress",
+                    "resourceOffline",
+                    "resourceId",
+                    "addedBy",
+                    "uploadDate",
+                    "createdDate",
+                    "openWith",
+                    "articleDate",
+                    "kind",
+                    "language",
+                    "author",
+                    "year",
+                    "medium",
+                    "filename",
+                    "mediaType",
+                    "resourceType",
+                    "timesRated",
+                    "averageRating",
+                    "publisher",
+                    "linkToLicense",
+                    "subject",
+                    "level",
+                    "tags",
+                    "languages",
+                    "courseId",
+                    "stepId",
+                    "downloaded",
+                    "private"
+                ),
+                libraryDataList
+            )
         }
 
         @JvmStatic

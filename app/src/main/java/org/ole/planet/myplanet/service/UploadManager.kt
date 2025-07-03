@@ -5,12 +5,14 @@ import android.os.Looper
 import android.text.TextUtils
 import com.google.gson.*
 import io.realm.*
+import java.io.*
+import java.util.Date
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
-import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.*
+import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
@@ -19,16 +21,22 @@ import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getAndroidId
 import retrofit2.*
-import java.io.*
-import java.util.Date
+
+private const val BATCH_SIZE = 50
+
+private inline fun <T> Iterable<T>.processInBatches(action: (T) -> Unit) {
+    chunked(BATCH_SIZE).forEach { chunk ->
+        chunk.forEach { item ->
+            action(item)
+        }
+    }
+}
 
 class UploadManager(var context: Context) : FileUploadService() {
     var pref: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val dbService: DatabaseService = DatabaseService(context)
 
     companion object {
-        private const val BATCH_SIZE = 50
-
         var instance: UploadManager? = null
             get() {
                 if (field == null) {
@@ -51,8 +59,7 @@ class UploadManager(var context: Context) : FileUploadService() {
                 .isNull("_id").or().isEmpty("_id")
                 .findAll()
 
-            newsLog.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
-                batch.forEach { news ->
+            newsLog.processInBatches { news ->
                     try {
                         val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/myplanet_activities", RealmNewsLog.serialize(news))?.execute()?.body()
 
@@ -63,7 +70,6 @@ class UploadManager(var context: Context) : FileUploadService() {
                     } catch (e: IOException) {
                         e.printStackTrace()
                     }
-                }
             }
         }
 
@@ -137,8 +143,7 @@ class UploadManager(var context: Context) : FileUploadService() {
         realm.executeTransactionAsync({ realm: Realm ->
             val submissions: List<RealmSubmission> = realm.where(RealmSubmission::class.java).findAll()
 
-            submissions.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
-                batch.forEach { sub ->
+            submissions.processInBatches { sub ->
                     try {
                         if ((sub.answers?.size ?: 0) > 0) {
                             RealmSubmission.continueResultUpload(sub, apiInterface, realm, context)
@@ -146,7 +151,6 @@ class UploadManager(var context: Context) : FileUploadService() {
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
-                }
             }
         }, {
             uploadCourseProgress()
@@ -179,15 +183,13 @@ class UploadManager(var context: Context) : FileUploadService() {
         val realm = getRealm()
         realm.executeTransactionAsync { realm: Realm ->
             val list: List<RealmAchievement> = realm.where(RealmAchievement::class.java).findAll()
-            list.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
-                batch.forEach { sub ->
-                    try {
-                        if (sub._id?.startsWith("guest") == true) {
-                            return@forEach
-                        }
-                    } catch (e: IOException) {
-                        e.printStackTrace()
+            list.processInBatches { sub ->
+                try {
+                    if (sub._id?.startsWith("guest") == true) {
+                        return@processInBatches
                     }
+                } catch (e: IOException) {
+                    e.printStackTrace()
                 }
             }
         }
@@ -203,12 +205,11 @@ class UploadManager(var context: Context) : FileUploadService() {
             var skipCount = 0
             var errorCount = 0
 
-            data.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
-                batch.forEach { sub ->
+            data.processInBatches { sub ->
                     try {
                         if (sub.userId?.startsWith("guest") == true) {
                             skipCount++
-                            return@forEach
+                            return@processInBatches
                         }
 
                         val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/courses_progress", RealmCourseProgress.serializeProgress(sub))?.execute()?.body()
@@ -223,7 +224,6 @@ class UploadManager(var context: Context) : FileUploadService() {
                         errorCount++
                         e.printStackTrace()
                     }
-                }
             }
 
         }
@@ -237,8 +237,7 @@ class UploadManager(var context: Context) : FileUploadService() {
             var successCount = 0
             var errorCount = 0
 
-            feedbacks.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
-                batch.forEach { feedback ->
+            feedbacks.processInBatches { feedback ->
                     try {
                         val res: Response<JsonObject>? = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/feedback", RealmFeedback.serializeFeedback(feedback))?.execute()
                         val r = res?.body()
@@ -259,7 +258,6 @@ class UploadManager(var context: Context) : FileUploadService() {
                         errorCount++
                         e.printStackTrace()
                     }
-                }
             }
         }, Realm.Transaction.OnSuccess {
             listener.onSuccess("Feedback sync completed successfully")
@@ -272,8 +270,7 @@ class UploadManager(var context: Context) : FileUploadService() {
         realm.executeTransactionAsync { realm: Realm ->
             val data: List<RealmSubmitPhotos> = realm.where(RealmSubmitPhotos::class.java).equalTo("uploaded", false).findAll()
 
-            data.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
-                batch.forEach { sub ->
+            data.processInBatches { sub ->
                     try {
                         val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/submissions", RealmSubmitPhotos.serializeRealmSubmitPhotos(sub))?.execute()?.body()
                         if (`object` != null) {
@@ -287,7 +284,6 @@ class UploadManager(var context: Context) : FileUploadService() {
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
-                }
             }
 
             if (data.isEmpty()) {
@@ -303,8 +299,7 @@ class UploadManager(var context: Context) : FileUploadService() {
             val user = realm.where(RealmUserModel::class.java).equalTo("id", pref.getString("userId", "")).findFirst()
             val data: List<RealmMyLibrary> = realm.where(RealmMyLibrary::class.java).isNull("_rev").findAll()
 
-            data.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
-                batch.forEach { sub ->
+            data.processInBatches { sub ->
                     try {
                         val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/resources", RealmMyLibrary.serialize(sub, user))?.execute()?.body()
                         if (`object` != null) {
@@ -317,7 +312,6 @@ class UploadManager(var context: Context) : FileUploadService() {
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
-                }
             }
 
             if (data.isEmpty()) {
@@ -376,8 +370,7 @@ class UploadManager(var context: Context) : FileUploadService() {
                 TextUtils.isEmpty(task._id) || task.isUpdated
             }
 
-            tasksToUpload.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
-                batch.forEach { task ->
+            tasksToUpload.processInBatches { task ->
                     try {
                         val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/tasks", RealmTeamTask.serialize(realm, task))?.execute()?.body()
 
@@ -390,7 +383,6 @@ class UploadManager(var context: Context) : FileUploadService() {
                     } catch (e: IOException) {
                         e.printStackTrace()
                     }
-                }
             }
         }
     }
@@ -403,8 +395,7 @@ class UploadManager(var context: Context) : FileUploadService() {
             val list: List<RealmSubmission> = realm.where(RealmSubmission::class.java)
                 .equalTo("isUpdated", true).or().isEmpty("_id").findAll()
 
-            list.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
-                batch.forEach { submission ->
+            list.processInBatches { submission ->
                     try {
                         val requestJson = RealmSubmission.serialize(realm, submission)
                         val response = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/submissions", requestJson)?.execute()
@@ -420,7 +411,6 @@ class UploadManager(var context: Context) : FileUploadService() {
                     } catch (e: IOException) {
                         e.printStackTrace()
                     }
-                }
             }
         }
     }
@@ -431,8 +421,7 @@ class UploadManager(var context: Context) : FileUploadService() {
 
         realm.executeTransactionAsync { realm: Realm ->
             val teams: List<RealmMyTeam> = realm.where(RealmMyTeam::class.java).equalTo("updated", true).findAll()
-            teams.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
-                batch.forEach { team ->
+            teams.processInBatches { team ->
                     try {
                         val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/teams", RealmMyTeam.serialize(team))?.execute()?.body()
                         if (`object` != null) {
@@ -442,7 +431,6 @@ class UploadManager(var context: Context) : FileUploadService() {
                     } catch (e: IOException) {
                         e.printStackTrace()
                     }
-                }
             }
         }
     }
@@ -463,11 +451,10 @@ class UploadManager(var context: Context) : FileUploadService() {
         realm.executeTransactionAsync({ transactionRealm: Realm ->
             val activities = transactionRealm.where(RealmOfflineActivity::class.java).isNull("_rev").equalTo("type", "login").findAll()
 
-            activities.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
-                batch.forEach { act ->
+            activities.processInBatches { act ->
                     try {
                         if (act.userId?.startsWith("guest") == true) {
-                            return@forEach
+                            return@processInBatches
                         }
 
                         val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/login_activities", RealmOfflineActivity.serializeLoginActivities(act, context))?.execute()?.body()
@@ -475,7 +462,6 @@ class UploadManager(var context: Context) : FileUploadService() {
                     } catch (e: IOException) {
                         e.printStackTrace()
                     }
-                }
             }
             uploadTeamActivities(transactionRealm, apiInterface)
         }, {
@@ -489,8 +475,7 @@ class UploadManager(var context: Context) : FileUploadService() {
 
     fun uploadTeamActivities(realm: Realm, apiInterface: ApiInterface?) {
         val logs = realm.where(RealmTeamLog::class.java).isNull("_rev").findAll()
-        logs.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
-            batch.forEach { log ->
+        logs.processInBatches { log ->
                 try {
                     val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/team_activities", RealmTeamLog.serializeTeamActivities(log, context))?.execute()?.body()
                     if (`object` != null) {
@@ -500,7 +485,6 @@ class UploadManager(var context: Context) : FileUploadService() {
                 } catch (e: IOException) {
                     e.printStackTrace()
                 }
-            }
         }
     }
 
@@ -510,11 +494,10 @@ class UploadManager(var context: Context) : FileUploadService() {
 
         realm.executeTransactionAsync { realm: Realm ->
             val activities = realm.where(RealmRating::class.java).equalTo("isUpdated", true).findAll()
-            activities.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
-                batch.forEach { act ->
+            activities.processInBatches { act ->
                     try {
                         if (act.userId?.startsWith("guest") == true) {
-                            return@forEach
+                            return@processInBatches
                         }
 
                         val `object`: Response<JsonObject>? =
@@ -531,7 +514,6 @@ class UploadManager(var context: Context) : FileUploadService() {
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
-                }
             }
         }
     }
@@ -542,11 +524,10 @@ class UploadManager(var context: Context) : FileUploadService() {
 
         realm.executeTransactionAsync { realm: Realm ->
             val activities = realm.where(RealmNews::class.java).findAll()
-            activities.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
-                batch.forEach { act ->
+            activities.processInBatches { act ->
                     try {
                         if (act.userId?.startsWith("guest") == true) {
-                            return@forEach
+                            return@processInBatches
                         }
 
                         val `object` = RealmNews.serializeNews(act)
@@ -609,7 +590,6 @@ class UploadManager(var context: Context) : FileUploadService() {
                     }
                 }
             }
-        }
         uploadNewsActivities()
     }
 
@@ -637,8 +617,7 @@ class UploadManager(var context: Context) : FileUploadService() {
     private fun uploadCrashLogData(realm: Realm, apiInterface: ApiInterface?) {
         val logs: RealmResults<RealmApkLog> = realm.where(RealmApkLog::class.java).isNull("_rev").findAll()
 
-        logs.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
-            batch.forEach { act ->
+        logs.processInBatches { act ->
                 try {
                     val o = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/apk_logs", RealmApkLog.serialize(act, context))?.execute()?.body()
 
@@ -648,7 +627,6 @@ class UploadManager(var context: Context) : FileUploadService() {
                 } catch (e: IOException) {
                     e.printStackTrace()
                 }
-            }
         }
     }
 
@@ -657,8 +635,7 @@ class UploadManager(var context: Context) : FileUploadService() {
         val apiInterface = client?.create(ApiInterface::class.java)
         realm.executeTransactionAsync { realm: Realm ->
             val logs: RealmResults<RealmSearchActivity> = realm.where(RealmSearchActivity::class.java).isEmpty("_rev").findAll()
-            logs.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
-                batch.forEach { act ->
+            logs.processInBatches { act ->
                     try {
                         val o = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/search_activities", act.serialize())?.execute()?.body()
                         if (o != null) {
@@ -667,7 +644,6 @@ class UploadManager(var context: Context) : FileUploadService() {
                     } catch (e: IOException) {
                         e.printStackTrace()
                     }
-                }
             }
         }
 
@@ -690,8 +666,7 @@ class UploadManager(var context: Context) : FileUploadService() {
                 } else {
                     realm.where(RealmResourceActivity::class.java).isNull("_rev").notEqualTo("type", "sync").findAll()
                 }
-            activities.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
-                batch.forEach { act ->
+            activities.processInBatches { act ->
                     try {
                         val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/" + db, RealmResourceActivity.serializeResourceActivities(act))?.execute()?.body()
 
@@ -702,7 +677,6 @@ class UploadManager(var context: Context) : FileUploadService() {
                     } catch (e: IOException) {
                         e.printStackTrace()
                     }
-                }
             }
         }
     }
@@ -713,8 +687,7 @@ class UploadManager(var context: Context) : FileUploadService() {
 
         realm.executeTransactionAsync { realm: Realm ->
             val activities: RealmResults<RealmCourseActivity> = realm.where(RealmCourseActivity::class.java).isNull("_rev").notEqualTo("type", "sync").findAll()
-            activities.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
-                batch.forEach { act ->
+            activities.processInBatches { act ->
                     try {
                         val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/course_activities", RealmCourseActivity.serializeSerialize(act))?.execute()?.body()
 
@@ -725,7 +698,6 @@ class UploadManager(var context: Context) : FileUploadService() {
                     } catch (e: IOException) {
                         e.printStackTrace()
                     }
-                }
             }
         }
     }
@@ -735,8 +707,7 @@ class UploadManager(var context: Context) : FileUploadService() {
         val apiInterface = client?.create(ApiInterface::class.java)
         realm.executeTransactionAsync { realm: Realm ->
             val meetups: List<RealmMeetup> = realm.where(RealmMeetup::class.java).findAll()
-            meetups.chunked(BATCH_SIZE).forEachIndexed { batchIndex, batch ->
-                batch.forEach { meetup ->
+            meetups.processInBatches { meetup ->
                     try {
                         val meetupJson = RealmMeetup.serialize(meetup)
                         val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/meetups", meetupJson)?.execute()?.body()
@@ -748,7 +719,6 @@ class UploadManager(var context: Context) : FileUploadService() {
                     } catch (e: IOException) {
                         e.printStackTrace()
                     }
-                }
             }
         }
     }

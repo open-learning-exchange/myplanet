@@ -4,30 +4,52 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Typeface
 import android.os.Bundle
-import android.text.*
-import android.view.*
+import android.text.Editable
+import android.text.TextUtils
+import android.text.TextWatcher
+import android.view.KeyEvent
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TableRow
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
+import androidx.core.view.isNotEmpty
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.*
-import com.google.gson.*
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.gson.Gson
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
 import io.realm.Realm
+import java.util.Date
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
-import org.ole.planet.myplanet.datamanager.*
-import org.ole.planet.myplanet.ui.chat.ChatApiHelper
-import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.AiProvider
+import org.ole.planet.myplanet.model.ChatModel
+import org.ole.planet.myplanet.model.ChatRequestModel
+import org.ole.planet.myplanet.model.ChatViewModel
+import org.ole.planet.myplanet.model.ContentData
+import org.ole.planet.myplanet.model.ContinueChatModel
+import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.Data
+import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.chat.ChatApiHelper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DialogUtils
@@ -36,11 +58,6 @@ import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.util.Date
-import java.util.Locale
-import androidx.core.net.toUri
-import androidx.core.view.isNotEmpty
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
 
 class ChatDetailFragment : Fragment() {
     lateinit var fragmentChatDetailBinding: FragmentChatDetailBinding
@@ -345,14 +362,8 @@ class ChatDetailFragment : Fragment() {
         serverUrlMapper.processUrl(serverUrl)
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        val primaryAvailable = isServerReachable(mapping.primaryUrl)
-        val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
-
-        if (!primaryAvailable && alternativeAvailable) {
-            mapping.alternativeUrl?.let { alternativeUrl ->
-                val editor = settings.edit()
-                serverUrlMapper.updateUrlPreferences(editor, serverUrl.toUri(), alternativeUrl, mapping.primaryUrl, settings)
-            }
+        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
+            isServerReachable(url)
         }
     }
 

@@ -2,70 +2,54 @@ package org.ole.planet.myplanet.ui.news
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.app.Dialog
 import android.content.Context
 import android.content.DialogInterface
 import android.content.SharedPreferences
-import android.graphics.Color
-import android.graphics.Rect
 import android.os.Build
-import android.text.SpannableStringBuilder
-import android.text.Spanned
 import android.text.TextUtils
-import android.text.method.LinkMovementMethod
-import android.text.style.ClickableSpan
 import android.view.LayoutInflater
-import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.PopupMenu
 import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.view.ContextThemeWrapper
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.github.chrisbanes.photoview.PhotoView
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import fisk.chipcloud.ChipCloud
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.Sort
+import java.util.Calendar
+import java.util.Locale
+import kotlin.toString
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.Conversation
-import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
+import org.ole.planet.myplanet.ui.courses.CourseStepFragment.Companion.prependBaseUrlToImages
+import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
 import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
+import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
-import java.io.File
-import java.util.Calendar
-import androidx.core.graphics.drawable.toDrawable
-import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.ui.courses.CourseStepFragment.Companion.prependBaseUrlToImages
-import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.makeExpandable
-import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
-import kotlin.toString
 
 class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "") : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
     private lateinit var rowNewsBinding: RowNewsBinding
@@ -77,7 +61,8 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private var sharedPreferences: SharedPrefManager? = null
     private var recyclerView: RecyclerView? = null
     var user: RealmUserModel? = null
-    private var currentZoomDialog: Dialog? = null
+    private var imageLoader: NewsImageLoader? = null
+    private var labelManager: NewsLabelManager? = null
     private val profileDbHandler = UserProfileDbHandler(context)
     lateinit var settings: SharedPreferences
     private val leadersList: List<RealmUserModel> by lazy {
@@ -109,6 +94,8 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     fun setmRealm(mRealm: Realm?) {
         if (mRealm != null) {
             this.mRealm = mRealm
+            imageLoader = NewsImageLoader(context, this.mRealm)
+            labelManager = NewsLabelManager(context, this.mRealm, currentUser)
         }
     }
 
@@ -117,6 +104,10 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         sharedPreferences = SharedPrefManager(context)
         user = UserProfileDbHandler(context).userModel
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        if (::mRealm.isInitialized) {
+            if (imageLoader == null) imageLoader = NewsImageLoader(context, mRealm)
+            if (labelManager == null) labelManager = NewsLabelManager(context, mRealm, currentUser)
+        }
         return ViewHolderNews(rowNewsBinding)
     }
 
@@ -128,7 +119,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             val news = getNews(holder, position)
 
             if (news?.isValid == true) {
-                val viewHolder = holder as ViewHolderNews
+                val viewHolder = holder
                 val sharedTeamName = extractSharedTeamName(news)
 
                 resetViews(viewHolder)
@@ -140,10 +131,10 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
                 configureEditDeleteButtons(viewHolder, news)
 
-                loadImage(viewHolder, news)
+                imageLoader?.loadImage(viewHolder.rowNewsBinding, news)
                 showReplyButton(viewHolder, news, position)
-                addLabels(viewHolder, news)
-                showChips(viewHolder, news)
+                labelManager?.setupAddLabelMenu(viewHolder.rowNewsBinding, news)
+                news.let { labelManager?.showChips(viewHolder.rowNewsBinding, it) }
 
                 handleChat(viewHolder, news)
 
@@ -344,146 +335,8 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         tx.commit()
     }
 
-    private fun addLabels(holder: RecyclerView.ViewHolder, news: RealmNews?) {
-        val viewHolder = holder as ViewHolderNews
-        viewHolder.rowNewsBinding.btnAddLabel.setOnClickListener {
-            val usedLabels = news?.labels?.toSet() ?: emptySet()
-            val availableLabels = Constants.LABELS.filterValues { it !in usedLabels }
 
 
-            val wrapper = ContextThemeWrapper(context, R.style.CustomPopupMenu)
-            val menu = PopupMenu(wrapper, viewHolder.rowNewsBinding.btnAddLabel)
-            availableLabels.keys.forEach { labelName ->
-                menu.menu.add(labelName)
-            }
-            menu.setOnMenuItemClickListener { menuItem: MenuItem ->
-                val selectedLabel = Constants.LABELS[menuItem.title]
-                if (selectedLabel != null && !news?.labels?.contains(selectedLabel)!!) {
-                    if (!mRealm.isInTransaction) mRealm.beginTransaction()
-                    news.labels?.add(selectedLabel)
-                    Utilities.toast(context, context.getString(R.string.label_added))
-                    mRealm.commitTransaction()
-                    showChips(holder, news)
-                    false
-                }
-                true
-            }
-            menu.show()
-        }
-    }
-
-    private fun updateAddLabelVisibility(holder: ViewHolderNews, news: RealmNews?) {
-        val usedLabels = news?.labels?.toSet() ?: emptySet()
-        val labels = Constants.LABELS.values.toSet()
-        holder.rowNewsBinding.btnAddLabel.visibility = if (usedLabels.containsAll(labels))
-            View.GONE else View.VISIBLE
-    }
-
-    private fun showChips(holder: RecyclerView.ViewHolder, news: RealmNews) {
-        val viewHolder = holder as ViewHolderNews
-        val isOwner = (news.userId == currentUser?.id)
-        viewHolder.rowNewsBinding.fbChips.removeAllViews()
-
-        for (label in news.labels ?: emptyList()) {
-            val chipConfig = Utilities.getCloudConfig().apply {
-                selectMode(if (isOwner) ChipCloud.SelectMode.close else ChipCloud.SelectMode.none)
-            }
-
-            val chipCloud = ChipCloud(context, viewHolder.rowNewsBinding.fbChips, chipConfig)
-            chipCloud.addChip(getLabel(label))
-
-            if (isOwner) {
-                chipCloud.setDeleteListener { _: Int, labelText: String? ->
-
-                    if (!mRealm.isInTransaction) mRealm.beginTransaction()
-
-                    news.labels?.remove(Constants.LABELS[labelText])
-                    mRealm.commitTransaction()
-                    showChips(holder, news)
-                }
-            }
-        }
-        updateAddLabelVisibility(viewHolder, news)
-    }
-
-    private fun loadImage(holder: RecyclerView.ViewHolder, news: RealmNews?) {
-        val viewHolder = holder as ViewHolderNews
-        val imageUrls = news?.imageUrls
-        if (imageUrls != null && imageUrls.isNotEmpty()) {
-            try {
-                val imgObject = Gson().fromJson(imageUrls[0], JsonObject::class.java)
-                viewHolder.rowNewsBinding.imgNews.visibility = View.VISIBLE
-                Glide.with(context).load(File(getString("imageUrl", imgObject)))
-                    .into(viewHolder.rowNewsBinding.imgNews)
-
-                viewHolder.rowNewsBinding.imgNews.setOnClickListener {
-                    showZoomableImage(it.context, getString("imageUrl", imgObject))
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        } else {
-            loadRemoteImage(holder, news)
-        }
-    }
-
-    private fun loadRemoteImage(holder: RecyclerView.ViewHolder, news: RealmNews?) {
-        val viewHolder = holder as ViewHolderNews
-        news?.imagesArray?.let { imagesArray ->
-            if (imagesArray.size() > 0) {
-                val ob = imagesArray[0]?.asJsonObject
-                getString("resourceId", ob).let { resourceId ->
-                    mRealm.where(RealmMyLibrary::class.java).equalTo("_id", resourceId).findFirst()?.let { library ->
-                        context.getExternalFilesDir(null)?.let { basePath ->
-                            val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-                            if (imageFile.exists()) {
-                                Glide.with(context)
-                                    .load(imageFile)
-                                    .into(viewHolder.rowNewsBinding.imgNews)
-                                viewHolder.rowNewsBinding.imgNews.visibility = View.VISIBLE
-
-                                viewHolder.rowNewsBinding.imgNews.setOnClickListener {
-                                    showZoomableImage(it.context, imageFile.toString())
-                                }
-                                return
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        viewHolder.rowNewsBinding.imgNews.visibility = View.GONE
-    }
-
-    private fun showZoomableImage(context: Context, imageUrl: String) {
-        currentZoomDialog?.dismiss()
-
-        val dialog = Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
-        currentZoomDialog = dialog
-
-        val view = LayoutInflater.from(context).inflate(R.layout.dialog_zoomable_image, null)
-        val photoView = view.findViewById<PhotoView>(R.id.photoView)
-        val closeButton = view.findViewById<ImageView>(R.id.closeButton)
-
-        dialog.setContentView(view)
-        dialog.window?.setBackgroundDrawable(Color.BLACK.toDrawable())
-
-        Glide.with(context)
-            .load(imageUrl)
-            .error(R.drawable.ic_loading)
-            .into(photoView)
-
-        closeButton.setOnClickListener {
-            dialog.dismiss()
-            currentZoomDialog = null
-        }
-
-        dialog.setOnDismissListener {
-            currentZoomDialog = null
-        }
-
-        dialog.show()
-    }
 
     private fun isGuestUser() = user?.id?.startsWith("guest") == true
 
@@ -496,7 +349,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun updateReplyCount(viewHolder: ViewHolderNews, replies: List<RealmNews>, position: Int) {
         with(viewHolder.rowNewsBinding) {
-            btnShowReply.text = String.format("(%d)", replies.size)
+            btnShowReply.text = String.format(Locale.getDefault(),"(%d)", replies.size)
             btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
             val visible = replies.isNotEmpty() && !(position == 0 && parentNews != null) && shouldShowReplyButton()
             btnShowReply.visibility = if (visible) View.VISIBLE else View.GONE
@@ -678,15 +531,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         fun addImage(llImage: LinearLayout?)
         fun onNewsItemClick(news: RealmNews?)
         fun clearImages()
-    }
-
-    private fun getLabel(s: String): String {
-        for (key in Constants.LABELS.keys) {
-            if (s == Constants.LABELS[key]) {
-                return key
-            }
-        }
-        return ""
     }
 
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {

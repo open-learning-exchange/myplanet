@@ -16,10 +16,13 @@ import androidx.core.widget.NestedScrollView
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmQuery
 import io.realm.Sort
-import io.realm.Realm
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeExamBinding
@@ -32,16 +35,13 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.exam.ExamAnswerUtils
 import org.ole.planet.myplanet.ui.exam.ExamSubmissionUtils
-import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
+import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.JsonParserUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.hideSoftKeyboard
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.Utilities.toast
-import java.util.Date
-import java.util.Locale
-import java.util.UUID
 
 class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {
     private lateinit var fragmentTakeExamBinding: FragmentTakeExamBinding
@@ -395,14 +395,18 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun addCompoundButton(choice: JsonObject?, isRadio: Boolean, oldAnswer: String) {
-        val rdBtn = LayoutInflater.from(activity).inflate(
-            if (isRadio) {
-                R.layout.item_radio_btn
-            } else {
-                R.layout.item_checkbox
-            }, null
-        ) as CompoundButton
-
+        val rdBtn = if (isRadio) {
+            LayoutInflater.from(activity)
+                .inflate(
+                    R.layout.item_radio_btn,
+                    fragmentTakeExamBinding.groupChoices, false
+                ) as RadioButton
+        } else {
+            LayoutInflater.from(activity)
+                .inflate(
+                    R.layout.item_checkbox, null
+                ) as CompoundButton
+        }
         val choiceText = getString("text", choice)
         val choiceId = getString("id", choice)
 
@@ -417,6 +421,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
         rdBtn.setOnCheckedChangeListener(this)
         if (isRadio) {
+            rdBtn.id = View.generateViewId()
             fragmentTakeExamBinding.groupChoices.addView(rdBtn)
         } else {
             rdBtn.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
@@ -426,7 +431,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
         if (choiceText.equals("Other", ignoreCase = true) && rdBtn.isChecked) {
             fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
-            fragmentTakeExamBinding.etAnswer.setText(oldAnswer)
         }
     }
 
@@ -491,7 +495,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             questions?.size ?: 0
         )
     }
-
 
     override fun onDestroy() {
         super.onDestroy()

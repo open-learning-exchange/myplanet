@@ -20,10 +20,22 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Case
 import io.realm.Realm
-import kotlinx.coroutines.*
+import java.util.Date
+import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
-import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.model.RealmCertification
+import org.ole.planet.myplanet.model.RealmCourseProgress
+import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
@@ -36,8 +48,6 @@ import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.TimeUtils
-import java.util.*
-import java.util.concurrent.TimeUnit
 
 class BellDashboardFragment : BaseDashboardFragment() {
     private lateinit var fragmentHomeBellBinding: FragmentHomeBellBinding

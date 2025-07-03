@@ -1,22 +1,44 @@
 package org.ole.planet.myplanet.ui.chat
 
+import android.content.Context.MODE_PRIVATE
+import android.content.SharedPreferences
 import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.os.Bundle
-import android.text.*
-import android.view.*
+import android.text.Editable
+import android.text.TextWatcher
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
-import io.realm.*
+import com.google.android.material.snackbar.Snackbar
+import io.realm.Realm
+import io.realm.RealmList
+import io.realm.Sort
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
+import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.model.ChatViewModel
+import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.RealmChatHistory
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 class ChatHistoryListFragment : Fragment() {
     private lateinit var fragmentChatHistoryListBinding: FragmentChatHistoryListBinding
@@ -24,15 +46,25 @@ class ChatHistoryListFragment : Fragment() {
     var user: RealmUserModel? = null
     private var isFullSearch: Boolean = false
     private var isQuestion: Boolean = false
+    private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+    lateinit var prefManager: SharedPrefManager
+    lateinit var settings: SharedPreferences
+    private val serverUrlMapper = ServerUrlMapper()
+    private val serverUrl: String
+        get() = settings.getString("serverURL", "") ?: ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sharedViewModel = ViewModelProvider(requireActivity())[ChatViewModel::class.java]
+        prefManager = SharedPrefManager(requireContext())
+        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        startChatHistorySync()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentChatHistoryListBinding = FragmentChatHistoryListBinding.inflate(inflater, container, false)
         user = UserProfileDbHandler(requireContext()).userModel
+
         return fragmentChatHistoryListBinding.root
     }
 
@@ -112,6 +144,68 @@ class ChatHistoryListFragment : Fragment() {
         }
     }
 
+    private fun startChatHistorySync() {
+        val isFastSync = settings.getBoolean("fastSync", false)
+        if (isFastSync && !prefManager.isChatHistorySynced()) {
+            checkServerAndStartSync()
+        }
+    }
+
+    private fun checkServerAndStartSync() {
+        val mapping = serverUrlMapper.processUrl(serverUrl)
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            updateServerIfNecessary(mapping)
+            withContext(Dispatchers.Main) {
+                startSyncManager()
+            }
+        }
+    }
+
+    private fun startSyncManager() {
+        SyncManager.instance?.start(object : SyncListener {
+            override fun onSyncStarted() {
+                activity?.runOnUiThread {
+                    if (isAdded && !requireActivity().isFinishing) {
+                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                        customProgressDialog?.setText(getString(R.string.syncing_chat_history))
+                        customProgressDialog?.show()
+                    }
+                }
+            }
+
+            override fun onSyncComplete() {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
+                        prefManager.setChatHistorySynced(true)
+
+                        refreshChatHistoryList()
+                    }
+                }
+            }
+
+            override fun onSyncFailed(message: String?) {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
+                        refreshChatHistoryList()
+
+                        Snackbar.make(fragmentChatHistoryListBinding.root, "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG)
+                            .setAction("Retry") { startChatHistorySync() }.show()
+                    }
+                }
+            } }, "full", listOf("chat_history"))
+    }
+
+    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
+        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
+            isServerReachable(url)
+        }
+    }
+
     fun refreshChatHistoryList() {
         val mRealm = DatabaseService(requireActivity()).realmInstance
         val list = mRealm.where(RealmChatHistory::class.java).equalTo("user", user?.name)
@@ -142,6 +236,12 @@ class ChatHistoryListFragment : Fragment() {
             fragmentChatHistoryListBinding.searchBar.visibility = View.GONE
             fragmentChatHistoryListBinding.recyclerView.visibility = View.GONE
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        customProgressDialog?.dismiss()
+        customProgressDialog = null
     }
 }
 
