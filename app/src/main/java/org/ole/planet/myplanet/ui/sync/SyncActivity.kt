@@ -775,9 +775,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    fun setSyncFailed(newValue: Boolean) {
-        syncFailed = newValue
-    }
 
     override fun onSelectedUser(userModel: RealmUserModel) {
         mRealm = Realm.getDefaultInstance()
