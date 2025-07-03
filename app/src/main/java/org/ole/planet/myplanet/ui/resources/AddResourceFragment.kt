@@ -26,11 +26,16 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toDrawable
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import io.realm.Realm
+import java.io.File
+import java.io.FileOutputStream
+import java.util.Date
+import java.util.UUID
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertSoundRecorderBinding
@@ -42,11 +47,6 @@ import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment
 import org.ole.planet.myplanet.utilities.Utilities
-import java.io.File
-import java.io.FileOutputStream
-import java.util.Date
-import java.util.UUID
-import androidx.core.graphics.drawable.toDrawable
 
 class AddResourceFragment : BottomSheetDialogFragment() {
     private lateinit var fragmentAddResourceBinding: FragmentAddResourceBinding

@@ -2,8 +2,8 @@ package org.ole.planet.myplanet.utilities
 
 import android.content.SharedPreferences
 import android.net.Uri
-import org.ole.planet.myplanet.BuildConfig
 import androidx.core.net.toUri
+import org.ole.planet.myplanet.BuildConfig
 
 class ServerUrlMapper() {
     private val serverMappings = mapOf(
