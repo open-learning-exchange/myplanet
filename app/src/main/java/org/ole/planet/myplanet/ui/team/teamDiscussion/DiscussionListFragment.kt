@@ -158,7 +158,16 @@ class DiscussionListFragment : BaseTeamFragment() {
 
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
         val adapterNews = activity?.let {
-            realmNewsList?.let { it1 -> AdapterNews(it, it1.toMutableList(), user, null, getEffectiveTeamName()) }
+            realmNewsList?.let { it1 ->
+                AdapterNews(
+                    it,
+                    it1.toMutableList(),
+                    user,
+                    null,
+                    getEffectiveTeamName(),
+                    teamId
+                )
+            }
         }
         adapterNews?.setmRealm(mRealm)
         adapterNews?.setListener(this)

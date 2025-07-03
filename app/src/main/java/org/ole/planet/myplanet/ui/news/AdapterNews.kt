@@ -43,15 +43,24 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Calendar
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.ui.courses.CourseStepFragment.Companion.prependBaseUrlToImages
 import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.makeExpandable
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import java.util.Locale
+import kotlin.jvm.java
 import kotlin.toString
 
-class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "") : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
+class AdapterNews(
+    var context: Context,
+    private val list: MutableList<RealmNews?>,
+    private var currentUser: RealmUserModel?,
+    private val parentNews: RealmNews?,
+    private val teamName: String = "",
+    private val teamId: String? = null
+) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
     private lateinit var rowNewsBinding: RowNewsBinding
     private var listener: OnNewsItemClickListener? = null
     private var imageList: RealmList<String>? = null
@@ -347,22 +356,31 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         !fromLogin && !nonTeamMember
 
     private fun canEdit(news: RealmNews?): Boolean =
-        isLoggedInAndMember() && (isOwner(news) || isAdmin())
+        isLoggedInAndMember() && (isOwner(news) || isAdmin() || isTeamLeader())
 
     private fun canDelete(news: RealmNews?): Boolean =
-        isLoggedInAndMember() && (isOwner(news) || isSharedByCurrentUser(news) || isAdmin())
+        isLoggedInAndMember() && (isOwner(news) || isSharedByCurrentUser(news) || isAdmin() || isTeamLeader())
 
     private fun canReply(): Boolean =
         isLoggedInAndMember() && !isGuestUser()
 
     private fun canAddLabel(news: RealmNews?): Boolean =
-        isLoggedInAndMember() && (isOwner(news) || isAdmin())
+        isLoggedInAndMember() && (isOwner(news) || isTeamLeader() || isAdmin())
 
     private fun canShare(news: RealmNews?): Boolean =
         isLoggedInAndMember() && !news?.isCommunityNews!! && !isGuestUser()
 
     private fun View.setVisibility(condition: Boolean) {
         visibility = if (condition) View.VISIBLE else View.GONE
+    }
+
+    fun isTeamLeader(): Boolean {
+        if(teamId==null)return false
+        val team = mRealm.where(RealmMyTeam::class.java)
+            .equalTo("teamId", teamId)
+            .equalTo("isLeader", true)
+            .findFirst()
+        return team?.userId == currentUser?._id
     }
 
     private fun getReplies(finalNews: RealmNews?): List<RealmNews> = mRealm.where(RealmNews::class.java)
@@ -551,15 +569,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         fun addImage(llImage: LinearLayout?)
         fun onNewsItemClick(news: RealmNews?)
         fun clearImages()
-    }
-
-    private fun getLabel(s: String): String {
-        for (key in Constants.LABELS.keys) {
-            if (s == Constants.LABELS[key]) {
-                return key
-            }
-        }
-        return ""
     }
 
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {
