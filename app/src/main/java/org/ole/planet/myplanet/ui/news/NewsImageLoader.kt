@@ -12,12 +12,12 @@ import com.github.chrisbanes.photoview.PhotoView
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
+import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import java.io.File
 
 class NewsImageLoader(private val context: Context, private val realm: Realm) {
     private var currentZoomDialog: Dialog? = null

@@ -12,11 +12,11 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.ListView
+import androidx.core.view.isGone
 import androidx.fragment.app.DialogFragment
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnFilterListener
 import org.ole.planet.myplanet.databinding.FragmentLibraryFilterBinding
-import androidx.core.view.isGone
 
 class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListener {
     private lateinit var fragmentLibraryFilterBinding: FragmentLibraryFilterBinding

@@ -2,9 +2,9 @@ package org.ole.planet.myplanet.utilities
 
 import android.content.Context
 import android.content.res.Configuration
+import androidx.core.content.edit
 import androidx.preference.PreferenceManager
 import java.util.Locale
-import androidx.core.content.edit
 
 object LocaleHelper {
     private const val SELECTED_LANGUAGE = "Locale.Helper.Selected.Language"

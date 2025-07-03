@@ -17,6 +17,8 @@ import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import io.realm.Realm
+import java.util.Date
+import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddExaminationBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -35,8 +37,6 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getBoolean
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.getAge
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.Date
-import java.util.Locale
 
 class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
     private lateinit var activityAddExaminationBinding: ActivityAddExaminationBinding
