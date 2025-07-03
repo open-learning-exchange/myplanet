@@ -7,13 +7,12 @@ import android.widget.BaseExpandableListAdapter
 import android.widget.CheckBox
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.content.ContextCompat
+import kotlin.collections.HashMap
+import kotlin.collections.List
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowAdapterNavigationChildBinding
 import org.ole.planet.myplanet.databinding.RowAdapterNavigationParentBinding
 import org.ole.planet.myplanet.model.RealmTag
-import java.util.*
-import kotlin.collections.HashMap
-import kotlin.collections.List
 
 class TagExpandableAdapter(private var tagList: List<RealmTag>, private val childMap: HashMap<String, List<RealmTag>>, private val selectedItemsList: ArrayList<RealmTag>) : BaseExpandableListAdapter() {
     private var clickListener: OnClickTagItem? = null
