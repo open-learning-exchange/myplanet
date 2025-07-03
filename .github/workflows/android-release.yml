@@ -78,8 +78,8 @@ jobs:
       - name: copy builds to output and generate sha256
         run: |
           mkdir -p output
-          cp sign/app-${{ matrix.build }}-release-unsigned-signed.apk output/myPlanet.apk
-          cp sign/app-${{ matrix.build }}-release.aab output/myPlanet.aab
+          cp sign/app-release-unsigned-signed.apk output/myPlanet.apk
+          cp sign/app-release.aab output/myPlanet.aab
           sha256sum output/myPlanet.apk > output/myPlanet.apk.sha256
           sha256sum output/myPlanet.aab > output/myPlanet.aab.sha256
           ls -alR output
