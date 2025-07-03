@@ -12,14 +12,14 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import java.util.Date
+import java.util.UUID
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import org.ole.planet.myplanet.utilities.CsvUtils
-import java.util.Date
-import java.util.UUID
 
 open class RealmNews : RealmObject() {
     @PrimaryKey

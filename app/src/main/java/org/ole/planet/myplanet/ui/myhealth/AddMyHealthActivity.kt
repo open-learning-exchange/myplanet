@@ -12,6 +12,8 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.google.gson.Gson
 import io.realm.Realm
+import java.util.Calendar
+import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddMyHealthBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -23,8 +25,6 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.decrypt
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.encrypt
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.Calendar
-import java.util.Locale
 
 class AddMyHealthActivity : AppCompatActivity() {
     private lateinit var activityAddMyHealthBinding: ActivityAddMyHealthBinding

@@ -25,6 +25,8 @@ import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.RealmList
+import java.io.File
+import java.io.FileOutputStream
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.model.RealmNews
@@ -36,8 +38,6 @@ import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import java.io.File
-import java.io.FileOutputStream
 
 @RequiresApi(api = Build.VERSION_CODES.O)
 abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListener {

@@ -17,22 +17,22 @@ import android.webkit.MimeTypeMap
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.annotation.RequiresApi
-import com.bumptech.glide.Glide
-import fisk.chipcloud.ChipCloudConfig
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.datamanager.MyDownloadService
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import java.lang.ref.WeakReference
-import java.math.BigInteger
+import androidx.core.content.edit
 import androidx.core.graphics.toColorInt
 import androidx.core.net.toUri
-import androidx.core.content.edit
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import com.bumptech.glide.Glide
+import fisk.chipcloud.ChipCloudConfig
+import java.lang.ref.WeakReference
+import java.math.BigInteger
+import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DownloadWorker
+import org.ole.planet.myplanet.datamanager.MyDownloadService
+import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.UrlUtils
 
 object Utilities {

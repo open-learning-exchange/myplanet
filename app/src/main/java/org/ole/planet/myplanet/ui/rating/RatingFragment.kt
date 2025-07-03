@@ -11,6 +11,8 @@ import android.widget.RatingBar.OnRatingBarChangeListener
 import androidx.fragment.app.DialogFragment
 import com.google.gson.Gson
 import io.realm.Realm
+import java.util.Date
+import java.util.UUID
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentRatingBinding
@@ -19,8 +21,6 @@ import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.Date
-import java.util.UUID
 
 class RatingFragment : DialogFragment() {
     private lateinit var fragmentRatingBinding: FragmentRatingBinding
