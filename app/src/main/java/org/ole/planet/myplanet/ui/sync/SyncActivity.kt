@@ -58,8 +58,8 @@ import org.ole.planet.myplanet.databinding.LayoutChildLoginBinding
 import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.datamanager.CheckVersionCallback
-import org.ole.planet.myplanet.datamanager.ConfigurationIdListener
+import org.ole.planet.myplanet.datamanager.Service.CheckVersionCallback
+import org.ole.planet.myplanet.datamanager.Service.ConfigurationIdListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.PlanetAvailableListener
 import org.ole.planet.myplanet.datamanager.Service
