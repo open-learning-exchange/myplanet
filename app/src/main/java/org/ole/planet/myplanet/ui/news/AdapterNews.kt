@@ -553,6 +553,15 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         fun clearImages()
     }
 
+    private fun getLabel(s: String): String {
+        for (key in Constants.LABELS.keys) {
+            if (s == Constants.LABELS[key]) {
+                return key
+            }
+        }
+        return ""
+    }
+
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {
         val viewHolder = holder as ViewHolderNews
 
