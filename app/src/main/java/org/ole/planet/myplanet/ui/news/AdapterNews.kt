@@ -186,7 +186,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             holder.rowNewsBinding.tvName.text =
                 if (userFullName.isNullOrEmpty()) news.userName else userFullName
             Utilities.loadImage(userModel.userImage, holder.rowNewsBinding.imgUser)
-            showHideButtons(userModel, holder)
+            showHideButtons(news, holder)
         } else {
             holder.rowNewsBinding.tvName.text = news.userName
             Utilities.loadImage(null, holder.rowNewsBinding.imgUser)
@@ -232,15 +232,12 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             }
         }
 
-        if (news.userId == currentUser?._id) {
-            holder.rowNewsBinding.imgEdit.setOnClickListener { showEditAlert(news.id, true) }
-            holder.rowNewsBinding.btnAddLabel.visibility = if (fromLogin || nonTeamMember) View.GONE else View.VISIBLE
-        } else {
-            holder.rowNewsBinding.imgEdit.visibility = View.GONE
-            holder.rowNewsBinding.btnAddLabel.visibility = View.GONE
+        with(holder.rowNewsBinding) {
+            imgEdit.setVisibility(canEdit(news))
+            btnAddLabel.setVisibility(canAddLabel(news))
+            btnReply.setVisibility(canReply())
+            llEditDelete.setVisibility(canEdit(news) || canDelete(news))
         }
-        holder.rowNewsBinding.llEditDelete.visibility = if (fromLogin || nonTeamMember) View.GONE else View.VISIBLE
-        holder.rowNewsBinding.btnReply.visibility = if (fromLogin || nonTeamMember) View.GONE else View.VISIBLE
     }
 
     private fun handleChat(holder: ViewHolderNews, news: RealmNews) {
@@ -335,12 +332,38 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         tx.commit()
     }
 
-
-
-
     private fun isGuestUser() = user?.id?.startsWith("guest") == true
 
-    private fun shouldShowReplyButton() = listener != null && !fromLogin && !isGuestUser()
+    private fun isOwner(news: RealmNews?): Boolean =
+        news?.userId == currentUser?._id
+
+    private fun isSharedByCurrentUser(news: RealmNews?): Boolean =
+        news?.sharedBy == currentUser?._id
+
+    private fun isAdmin(): Boolean =
+        currentUser?.level.equals("admin", ignoreCase = true)
+
+    private fun isLoggedInAndMember(): Boolean =
+        !fromLogin && !nonTeamMember
+
+    private fun canEdit(news: RealmNews?): Boolean =
+        isLoggedInAndMember() && (isOwner(news) || isAdmin())
+
+    private fun canDelete(news: RealmNews?): Boolean =
+        isLoggedInAndMember() && (isOwner(news) || isSharedByCurrentUser(news) || isAdmin())
+
+    private fun canReply(): Boolean =
+        isLoggedInAndMember() && !isGuestUser()
+
+    private fun canAddLabel(news: RealmNews?): Boolean =
+        isLoggedInAndMember() && (isOwner(news) || isAdmin())
+
+    private fun canShare(news: RealmNews?): Boolean =
+        isLoggedInAndMember() && !news?.isCommunityNews!! && !isGuestUser()
+
+    private fun View.setVisibility(condition: Boolean) {
+        visibility = if (condition) View.VISIBLE else View.GONE
+    }
 
     private fun getReplies(finalNews: RealmNews?): List<RealmNews> = mRealm.where(RealmNews::class.java)
         .sort("time", Sort.DESCENDING)
@@ -351,14 +374,14 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         with(viewHolder.rowNewsBinding) {
             btnShowReply.text = String.format(Locale.getDefault(),"(%d)", replies.size)
             btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
-            val visible = replies.isNotEmpty() && !(position == 0 && parentNews != null) && shouldShowReplyButton()
+            val visible = replies.isNotEmpty() && !(position == 0 && parentNews != null) && canReply()
             btnShowReply.visibility = if (visible) View.VISIBLE else View.GONE
         }
     }
 
     private fun showReplyButton(holder: RecyclerView.ViewHolder, finalNews: RealmNews?, position: Int) {
         val viewHolder = holder as ViewHolderNews
-        if (shouldShowReplyButton()) {
+        if (canReply()) {
             viewHolder.rowNewsBinding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
             viewHolder.rowNewsBinding.btnReply.setOnClickListener { showEditAlert(finalNews?.id, false) }
         } else {
@@ -475,16 +498,13 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         return news
     }
 
-    private fun showHideButtons(userModel: RealmUserModel, holder: RecyclerView.ViewHolder) {
+    private fun showHideButtons(news: RealmNews?, holder: RecyclerView.ViewHolder) {
         val viewHolder = holder as ViewHolderNews
-        if (currentUser?.id == userModel.id && !fromLogin && !nonTeamMember) {
-            viewHolder.rowNewsBinding.llEditDelete.visibility = View.VISIBLE
-            viewHolder.rowNewsBinding.btnAddLabel.visibility = View.VISIBLE
-            viewHolder.rowNewsBinding.imgEdit.visibility = View.VISIBLE
-            viewHolder.rowNewsBinding.imgDelete.visibility = View.VISIBLE
-        } else {
-            viewHolder.rowNewsBinding.llEditDelete.visibility = View.GONE
-            viewHolder.rowNewsBinding.btnAddLabel.visibility = View.GONE
+        with(viewHolder.rowNewsBinding) {
+            imgEdit.setVisibility(canEdit(news))
+            imgDelete.setVisibility(canDelete(news))
+            btnAddLabel.setVisibility(canAddLabel(news))
+            llEditDelete.setVisibility(canEdit(news) || canDelete(news))
         }
     }
 
@@ -535,13 +555,8 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {
         val viewHolder = holder as ViewHolderNews
-        val isGuest = user?.id?.startsWith("guest") == true
 
-        viewHolder.rowNewsBinding.btnShare.visibility = if (news?.isCommunityNews == true || fromLogin || nonTeamMember || isGuest) {
-            View.GONE
-        } else {
-            View.VISIBLE
-        }
+        viewHolder.rowNewsBinding.btnShare.setVisibility(canShare(news))
 
         viewHolder.rowNewsBinding.btnShare.setOnClickListener {
             AlertDialog.Builder(context, R.style.AlertDialogTheme)
