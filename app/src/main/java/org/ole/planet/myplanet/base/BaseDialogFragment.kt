@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.base
 
-import org.ole.planet.myplanet.R
 import android.os.Bundle
 import androidx.fragment.app.DialogFragment
+import org.ole.planet.myplanet.R
 
 abstract class BaseDialogFragment : DialogFragment() {
     @JvmField

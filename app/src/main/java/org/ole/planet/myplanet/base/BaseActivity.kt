@@ -5,9 +5,9 @@ import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Bundle
 import android.view.MenuItem
+import java.util.Locale
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.LocaleHelper
-import java.util.Locale
 
 abstract class BaseActivity : SyncActivity() {
     override fun attachBaseContext(newBase: Context) {
