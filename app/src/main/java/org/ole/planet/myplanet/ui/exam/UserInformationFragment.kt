@@ -246,26 +246,10 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
             val settings = MainApplication.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
             checkAvailableServer(settings)
-            navigateToTeamSurveys(safeTeamId)
-        }
-    }
-
-    private fun navigateToTeamSurveys(teamId: String?) {
-        val activity = requireActivity()
-        if (activity is AppCompatActivity) {
-            val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", teamId)?.findFirst()
-
-            val teamDetailFragment = TeamDetailFragment.newInstance(
-                teamId = teamId ?: "",
-                teamName = teamObject?.name ?: "",
-                teamType = teamObject?.type ?: "",
-                isMyTeam = true,
-                navigateToPage = TeamPage.SURVEY
-            )
-
-            activity.supportFragmentManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE)
-            activity.supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, teamDetailFragment).commit()
+            val activity = requireActivity()
+            if (activity is AppCompatActivity) {
+                activity.supportFragmentManager.popBackStack()
+            }
         }
     }
 
