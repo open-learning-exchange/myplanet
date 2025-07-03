@@ -100,7 +100,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     lateinit var processedUrl: String
     var isSync = false
     var forceSync = false
-    private var syncFailed = false
+    var syncFailed = false
     lateinit var defaultPref: SharedPreferences
     lateinit var service: Service
     var currentDialog: MaterialDialog? = null
@@ -163,7 +163,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    private fun clearDataDialog(message: String, config: Boolean, onCancel: () -> Unit = {}) {
+    fun clearDataDialog(message: String, config: Boolean, onCancel: () -> Unit = {}) {
         AlertDialog.Builder(this, R.style.AlertDialogTheme)
             .setMessage(message)
             .setPositiveButton(getString(R.string.clear_data)) { dialog, _ ->
