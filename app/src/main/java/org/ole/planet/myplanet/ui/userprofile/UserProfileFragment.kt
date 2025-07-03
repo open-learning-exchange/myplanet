@@ -20,6 +20,7 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.activity.result.ActivityResultLauncher
@@ -43,7 +44,9 @@ import java.lang.String.format
 import java.util.ArrayList
 import java.util.Calendar
 import java.util.LinkedHashMap
+import java.util.LinkedList
 import java.util.Locale
+import java.util.UUID
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.language
 import org.ole.planet.myplanet.R.array.subject_level
