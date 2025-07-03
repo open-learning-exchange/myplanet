@@ -6,7 +6,8 @@ import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import java.util.Date
 import java.util.UUID
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.utilities.NetworkUtils
 
 open class RealmCourseActivity : RealmObject() {

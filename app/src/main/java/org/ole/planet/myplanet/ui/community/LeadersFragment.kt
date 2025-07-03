@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.ui.community
 
-import android.content.*
+import android.content.Context
 import android.os.Bundle
-import android.view.*
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import org.ole.planet.myplanet.R

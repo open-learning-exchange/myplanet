@@ -15,7 +15,9 @@ import androidx.viewpager.widget.ViewPager
 import io.realm.Realm
 import java.util.Locale
 import kotlin.collections.isNotEmpty
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService

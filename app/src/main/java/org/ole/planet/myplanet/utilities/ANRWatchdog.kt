@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.utilities
 
-import android.os.*
+import android.os.Handler
+import android.os.Looper
 
 class ANRWatchdog(private val timeout: Long = DEFAULT_ANR_TIMEOUT, private val listener: ANRListener? = null) {
     companion object {

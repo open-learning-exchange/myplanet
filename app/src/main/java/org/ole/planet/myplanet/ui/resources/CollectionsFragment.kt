@@ -9,7 +9,10 @@ import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.fragment.app.DialogFragment
 import io.realm.Realm
-import java.util.*
+import java.util.ArrayList
+import java.util.HashMap
+import java.util.List
+import java.util.Locale
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
 import kotlin.collections.List

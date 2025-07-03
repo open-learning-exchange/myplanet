@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.datamanager
 
 import android.content.Context
-import io.realm.*
-import io.realm.log.*
+import io.realm.Realm
+import io.realm.log.LogLevel
 
 class DatabaseService(context: Context) {
     init {

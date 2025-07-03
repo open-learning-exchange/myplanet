@@ -17,7 +17,9 @@ import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
-import io.realm.*
+import io.realm.Case
+import io.realm.RealmObject
+import io.realm.RealmResults
 import java.util.Calendar
 import java.util.UUID
 import org.ole.planet.myplanet.R
