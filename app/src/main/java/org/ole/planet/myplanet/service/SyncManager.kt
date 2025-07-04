@@ -128,86 +128,31 @@ class SyncManager private constructor(private val context: Context) {
 
             initializeSync()
             runBlocking {
-                val syncJobs = listOf(
-                    async {
-                        logger.startProcess("tablet_users_sync")
-                        TransactionSyncManager.syncDb(mRealm, "tablet_users")
-                        logger.endProcess("tablet_users_sync")
-                    },
-                    async {
-                        logger.startProcess("library_sync")
-                        myLibraryTransactionSync()
-                        logger.endProcess("library_sync")
-                    },
-                    async { logger.startProcess("courses_sync")
-                        TransactionSyncManager.syncDb(mRealm, "courses")
-                        logger.endProcess("courses_sync")
-                    },
-                    async { logger.startProcess("exams_sync")
-                        TransactionSyncManager.syncDb(mRealm, "exams")
-                        logger.endProcess("exams_sync")
-                    },
-                    async { logger.startProcess("ratings_sync")
-                        TransactionSyncManager.syncDb(mRealm, "ratings")
-                        logger.endProcess("ratings_sync")
-                    },
-                    async { logger.startProcess("courses_progress_sync")
-                        TransactionSyncManager.syncDb(mRealm, "courses_progress")
-                        logger.endProcess("courses_progress_sync")
-                    },
-                    async { logger.startProcess("achievements_sync")
-                        TransactionSyncManager.syncDb(mRealm, "achievements")
-                        logger.endProcess("achievements_sync")
-                    },
-                    async { logger.startProcess("tags_sync")
-                        TransactionSyncManager.syncDb(mRealm, "tags")
-                        logger.endProcess("tags_sync")
-                    },
-                    async { logger.startProcess("submissions_sync")
-                        TransactionSyncManager.syncDb(mRealm, "submissions")
-                        logger.endProcess("submissions_sync")
-                    },
-                    async { logger.startProcess("news_sync")
-                        TransactionSyncManager.syncDb(mRealm, "news")
-                        logger.endProcess("news_sync")
-                    },
-                    async { logger.startProcess("feedback_sync")
-                        TransactionSyncManager.syncDb(mRealm, "feedback")
-                        logger.endProcess("feedback_sync")
-                    },
-                    async { logger.startProcess("teams_sync")
-                        TransactionSyncManager.syncDb(mRealm, "teams")
-                        logger.endProcess("teams_sync")
-                    },
-                    async { logger.startProcess("tasks_sync")
-                        TransactionSyncManager.syncDb(mRealm, "tasks")
-                        logger.endProcess("tasks_sync")
-                    },
-                    async { logger.startProcess("login_activities_sync")
-                        TransactionSyncManager.syncDb(mRealm, "login_activities")
-                        logger.endProcess("login_activities_sync")
-                    },
-                    async { logger.startProcess("meetups_sync")
-                        TransactionSyncManager.syncDb(mRealm, "meetups")
-                        logger.endProcess("meetups_sync")
-                    },
-                    async { logger.startProcess("health_sync")
-                        TransactionSyncManager.syncDb(mRealm, "health")
-                        logger.endProcess("health_sync")
-                    },
-                    async { logger.startProcess("certifications_sync")
-                        TransactionSyncManager.syncDb(mRealm, "certifications")
-                        logger.endProcess("certifications_sync")
-                    },
-                    async { logger.startProcess("team_activities_sync")
-                        TransactionSyncManager.syncDb(mRealm, "team_activities")
-                        logger.endProcess("team_activities_sync")
-                    },
-                    async { logger.startProcess("chat_history_sync")
-                        TransactionSyncManager.syncDb(mRealm, "chat_history")
-                        logger.endProcess("chat_history_sync")
-                    }
+                val tasks = listOf(
+                    "tablet_users" to suspend { TransactionSyncManager.syncDb(mRealm, "tablet_users") },
+                    "library" to suspend { myLibraryTransactionSync() },
+                    "courses" to suspend { TransactionSyncManager.syncDb(mRealm, "courses") },
+                    "exams" to suspend { TransactionSyncManager.syncDb(mRealm, "exams") },
+                    "ratings" to suspend { TransactionSyncManager.syncDb(mRealm, "ratings") },
+                    "courses_progress" to suspend { TransactionSyncManager.syncDb(mRealm, "courses_progress") },
+                    "achievements" to suspend { TransactionSyncManager.syncDb(mRealm, "achievements") },
+                    "tags" to suspend { TransactionSyncManager.syncDb(mRealm, "tags") },
+                    "submissions" to suspend { TransactionSyncManager.syncDb(mRealm, "submissions") },
+                    "news" to suspend { TransactionSyncManager.syncDb(mRealm, "news") },
+                    "feedback" to suspend { TransactionSyncManager.syncDb(mRealm, "feedback") },
+                    "teams" to suspend { TransactionSyncManager.syncDb(mRealm, "teams") },
+                    "tasks" to suspend { TransactionSyncManager.syncDb(mRealm, "tasks") },
+                    "login_activities" to suspend { TransactionSyncManager.syncDb(mRealm, "login_activities") },
+                    "meetups" to suspend { TransactionSyncManager.syncDb(mRealm, "meetups") },
+                    "health" to suspend { TransactionSyncManager.syncDb(mRealm, "health") },
+                    "certifications" to suspend { TransactionSyncManager.syncDb(mRealm, "certifications") },
+                    "team_activities" to suspend { TransactionSyncManager.syncDb(mRealm, "team_activities") },
+                    "chat_history" to suspend { TransactionSyncManager.syncDb(mRealm, "chat_history") }
                 )
+
+                val syncJobs = tasks.map { (name, op) ->
+                    launchSyncJob(logger, name, op)
+                }
                 syncJobs.awaitAll()
             }
 
@@ -240,167 +185,64 @@ class SyncManager private constructor(private val context: Context) {
 
             initializeSync()
             runBlocking {
-                val syncJobs = mutableListOf<Deferred<Unit>>()
+                val ops = mutableListOf<Pair<String, suspend () -> Unit>>()
+
                 if (syncTables?.contains("tablet_users") != false) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("tablet_users_sync")
-                            TransactionSyncManager.syncDb(mRealm, "tablet_users")
-                            logger.endProcess("tablet_users_sync")
-                        })
-
-                    syncJobs.add(
-                        async { logger.startProcess("login_activities_sync")
-                            TransactionSyncManager.syncDb(mRealm, "login_activities")
-                            logger.endProcess("login_activities_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("tags_sync")
-                            TransactionSyncManager.syncDb(mRealm, "tags")
-                            logger.endProcess("tags_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("teams_sync")
-                            TransactionSyncManager.syncDb(mRealm, "teams")
-                            logger.endProcess("teams_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("news_sync")
-                            TransactionSyncManager.syncDb(mRealm, "news")
-                            logger.endProcess("news_sync")
-                        })
+                    ops.add("tablet_users" to suspend { TransactionSyncManager.syncDb(mRealm, "tablet_users") })
+                    ops.add("login_activities" to suspend { TransactionSyncManager.syncDb(mRealm, "login_activities") })
+                    ops.add("tags" to suspend { TransactionSyncManager.syncDb(mRealm, "tags") })
+                    ops.add("teams" to suspend { TransactionSyncManager.syncDb(mRealm, "teams") })
+                    ops.add("news" to suspend { TransactionSyncManager.syncDb(mRealm, "news") })
                 }
 
                 if (syncTables?.contains("resources") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("library_sync")
-                            myLibraryTransactionSync()
-                            logger.endProcess("library_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("resource_sync")
-                            resourceTransactionSync()
-                            logger.endProcess("resource_sync")
-                        })
+                    ops.add("library" to suspend { myLibraryTransactionSync() })
+                    ops.add("resource" to suspend { resourceTransactionSync() })
                 }
 
                 if (syncTables?.contains("courses") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("courses_sync")
-                            TransactionSyncManager.syncDb(mRealm, "courses")
-                            logger.endProcess("courses_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("courses_progress_sync")
-                            TransactionSyncManager.syncDb(mRealm, "courses_progress")
-                            logger.endProcess("courses_progress_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("ratings_sync")
-                            TransactionSyncManager.syncDb(mRealm, "ratings")
-                            logger.endProcess("ratings_sync")
-                        })
+                    ops.add("courses" to suspend { TransactionSyncManager.syncDb(mRealm, "courses") })
+                    ops.add("courses_progress" to suspend { TransactionSyncManager.syncDb(mRealm, "courses_progress") })
+                    ops.add("ratings" to suspend { TransactionSyncManager.syncDb(mRealm, "ratings") })
                 }
 
                 if (syncTables?.contains("tasks") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("tasks_sync")
-                            TransactionSyncManager.syncDb(mRealm, "tasks")
-                            logger.endProcess("tasks_sync")
-                        })
+                    ops.add("tasks" to suspend { TransactionSyncManager.syncDb(mRealm, "tasks") })
                 }
 
                 if (syncTables?.contains("meetups") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("meetups_sync")
-                            TransactionSyncManager.syncDb(mRealm, "meetups")
-                            logger.endProcess("meetups_sync")
-                        })
+                    ops.add("meetups" to suspend { TransactionSyncManager.syncDb(mRealm, "meetups") })
                 }
 
                 if (syncTables?.contains("team_activities") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("team_activities_sync")
-                            TransactionSyncManager.syncDb(mRealm, "team_activities")
-                            logger.endProcess("team_activities_sync")
-                        })
+                    ops.add("team_activities" to suspend { TransactionSyncManager.syncDb(mRealm, "team_activities") })
                 }
 
                 if (syncTables?.contains("chat_history") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("chat_history_sync")
-                            TransactionSyncManager.syncDb(mRealm, "chat_history")
-                            logger.endProcess("chat_history_sync")
-                        })
+                    ops.add("chat_history" to suspend { TransactionSyncManager.syncDb(mRealm, "chat_history") })
                 }
 
                 if (syncTables?.contains("feedback") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("feedback_sync")
-                            TransactionSyncManager.syncDb(mRealm, "feedback")
-                            logger.endProcess("feedback_sync")
-                        })
+                    ops.add("feedback" to suspend { TransactionSyncManager.syncDb(mRealm, "feedback") })
                 }
 
                 if (syncTables?.contains("achievements") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("achievements_sync")
-                            TransactionSyncManager.syncDb(mRealm, "achievements")
-                            logger.endProcess("achievements_sync")
-                        })
+                    ops.add("achievements" to suspend { TransactionSyncManager.syncDb(mRealm, "achievements") })
                 }
 
                 if (syncTables?.contains("health") == true) {
-                    syncJobs.add(
-                        async { logger.startProcess("health_sync")
-                            TransactionSyncManager.syncDb(mRealm, "health")
-                            logger.endProcess("health_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("certifications_sync")
-                            TransactionSyncManager.syncDb(mRealm, "certifications")
-                            logger.endProcess("certifications_sync")
-                        })
+                    ops.add("health" to suspend { TransactionSyncManager.syncDb(mRealm, "health") })
+                    ops.add("certifications" to suspend { TransactionSyncManager.syncDb(mRealm, "certifications") })
                 }
 
                 if (syncTables?.contains("courses") == true || syncTables?.contains("exams") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("exams_sync")
-                            TransactionSyncManager.syncDb(mRealm, "exams")
-                            logger.endProcess("exams_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("submissions_sync")
-                            TransactionSyncManager.syncDb(mRealm, "submissions")
-                            logger.endProcess("submissions_sync")
-                        })
+                    ops.add("exams" to suspend { TransactionSyncManager.syncDb(mRealm, "exams") })
+                    ops.add("submissions" to suspend { TransactionSyncManager.syncDb(mRealm, "submissions") })
                 }
 
+                val syncJobs = ops.map { (name, op) ->
+                    launchSyncJob(logger, name, op)
+                }
                 syncJobs.awaitAll()
             }
 
@@ -559,6 +401,17 @@ class SyncManager private constructor(private val context: Context) {
             logger.startProcess("${name}_sync")
             try {
                 syncOperation()
+            } finally {
+                logger.endProcess("${name}_sync")
+            }
+        }
+    }
+
+    private fun CoroutineScope.launchSyncJob(logger: SyncTimeLogger, name: String, op: suspend () -> Unit): Deferred<Unit> {
+        return async {
+            logger.startProcess("${name}_sync")
+            try {
+                op()
             } finally {
                 logger.endProcess("${name}_sync")
             }
