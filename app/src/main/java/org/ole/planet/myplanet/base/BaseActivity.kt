@@ -3,8 +3,15 @@ package org.ole.planet.myplanet.base
 import android.content.Context
 import android.content.pm.PackageManager
 import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
 import android.view.MenuItem
+import android.view.View
+import android.view.WindowInsets
+import android.view.WindowManager
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import java.util.Locale
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.LocaleHelper
@@ -17,6 +24,7 @@ abstract class BaseActivity : SyncActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        setupEdgeToEdge()
         resetTitle()
         updateConfigurationIfNeeded()
     }
@@ -71,6 +79,20 @@ abstract class BaseActivity : SyncActivity() {
             true
         } else {
             super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun setupEdgeToEdge() {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            window.attributes.layoutInDisplayCutoutMode =
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+        }
+        val root = findViewById<View>(android.R.id.content)
+        ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            WindowInsetsCompat.CONSUMED
         }
     }
 }
