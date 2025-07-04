@@ -128,7 +128,7 @@ jobs:
           echo "${{ env.OUTPUTS }}" | xargs -n 1 | while read type; do
             mv "output/myPlanet${type}" "output/myPlanet-lite${type}"
           done
-          echo "ANDROID_VERSION_NAME=${ANDROID_VERSION_LITE}" >> $GITHUB_ENV
+          #echo "ANDROID_VERSION_NAME=${ANDROID_VERSION_LITE}" >> $GITHUB_ENV
 
       - name: release APK and AAB on GitHub
         if: github.event_name != 'workflow_dispatch'
