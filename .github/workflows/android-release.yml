@@ -43,11 +43,12 @@ jobs:
           cache-read-only: false
           cache-write-only: false
 
+      - name: set release version
+        run: echo ANDROID_VERSION=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle)-lite >> $GITHUB_ENV
+
       - name: set lite version name
         if: matrix.build == 'lite'
-        run: |
-          echo ANDROID_VERSION_LITE=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle)-lite >> $GITHUB_ENV
-          sed -i 's/\(versionName = "[0-9.]\+\)"/\1-lite"/' app/build.gradle
+        run: sed -i 's/\(versionName = "[0-9.]\+\)"/\1-lite"/' app/build.gradle
 
       - name: build release APK and AAB
         run: |
@@ -135,7 +136,7 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: output/*
-          tag: v${{ env.ANDROID_VERSION_NAME }}
+          tag: v${{ env.ANDROID_VERSION }}
           overwrite: 'true'
           file_glob: 'true'
 
