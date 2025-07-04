@@ -40,7 +40,7 @@ import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
-import org.ole.planet.myplanet.ui.courses.CourseStepFragment.Companion.prependBaseUrlToImages
+import org.ole.planet.myplanet.utilities.MarkdownImageUtils
 import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -195,9 +195,11 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     }
 
     private fun setMessageAndDate(holder: ViewHolderNews, news: RealmNews, sharedTeamName: String) {
-        val markdownContentWithLocalPaths = prependBaseUrlToImages(
+        val markdownContentWithLocalPaths = MarkdownImageUtils.prependBaseUrlToImages(
             news.message,
-            "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/"
+            "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/",
+            600,
+            350
         )
         setMarkdownText(holder.rowNewsBinding.tvMessage, markdownContentWithLocalPaths)
         val fulltext = holder.rowNewsBinding.tvMessage.text
