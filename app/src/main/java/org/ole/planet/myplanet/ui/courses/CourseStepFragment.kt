@@ -11,7 +11,6 @@ import androidx.fragment.app.Fragment
 import io.realm.Realm
 import java.util.Date
 import java.util.UUID
-import java.util.regex.Pattern
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -32,6 +31,7 @@ import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.CustomClickableSpan
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+import org.ole.planet.myplanet.utilities.MarkdownImageUtils
 
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
@@ -97,7 +97,12 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         fragmentCourseStepBinding.btnResources.text = getString(R.string.resources_size, resources.size)
         hideTestIfNoQuestion()
         fragmentCourseStepBinding.tvTitle.text = step.stepTitle
-        val markdownContentWithLocalPaths = prependBaseUrlToImages(step.description, "file://${MainApplication.context.getExternalFilesDir(null)}/ole/")
+        val markdownContentWithLocalPaths = MarkdownImageUtils.prependBaseUrlToImages(
+            step.description,
+            "file://${MainApplication.context.getExternalFilesDir(null)}/ole/",
+            600,
+            350
+        )
         setMarkdownText(fragmentCourseStepBinding.description, markdownContentWithLocalPaths)
         fragmentCourseStepBinding.description.movementMethod = LinkMovementMethod.getInstance()
         if (!isMyCourse(user?.id, step.courseId, cRealm)) {
@@ -199,22 +204,4 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     override fun onImageCapture(fileUri: String?) {}
 
-    companion object {
-        fun prependBaseUrlToImages(markdownContent: String?, baseUrl: String): String {
-            val pattern = "!\\[.*?]\\((.*?)\\)"
-            val imagePattern = Pattern.compile(pattern)
-            val matcher = markdownContent?.let { imagePattern.matcher(it) }
-            val result = StringBuffer()
-            if (matcher != null) {
-                while (matcher.find()) {
-                    val relativePath = matcher.group(1)
-                    val modifiedPath = relativePath?.replaceFirst("resources/".toRegex(), "")
-                    val fullUrl = baseUrl + modifiedPath
-                    matcher.appendReplacement(result, "<img src=$fullUrl width=600 height=350/>")
-                }
-            }
-            matcher?.appendTail(result)
-            return result.toString()
-        }
-    }
 }

@@ -35,6 +35,8 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.JsonUtils.getInt
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+import org.ole.planet.myplanet.utilities.MarkdownImageUtils
+import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -178,9 +180,11 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     private fun configureDescription(holder: ViewHoldercourse, course: RealmMyCourse, position: Int) {
         holder.rowCourseBinding.description.apply {
             text = course.description
-            val markdownContentWithLocalPaths = prependBaseUrlToImages(
+            val markdownContentWithLocalPaths = MarkdownImageUtils.prependBaseUrlToImages(
                 course.description,
-                "file://${MainApplication.context.getExternalFilesDir(null)}/ole/"
+                "file://${MainApplication.context.getExternalFilesDir(null)}/ole/",
+                150,
+                100
             )
             setMarkdownText(this, markdownContentWithLocalPaths)
 
@@ -298,7 +302,12 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         showProgress(position)
         if (map.containsKey(courseList[position]!!.courseId)) {
             val `object` = map[courseList[position]!!.courseId]
-            showRating(`object`, viewHolder.rowCourseBinding.rating, viewHolder.rowCourseBinding.timesRated, viewHolder.rowCourseBinding.ratingBar)
+            CourseRatingUtils.showRating(
+                `object`,
+                viewHolder.rowCourseBinding.rating,
+                viewHolder.rowCourseBinding.timesRated,
+                viewHolder.rowCourseBinding.ratingBar
+            )
         } else {
             viewHolder.rowCourseBinding.ratingBar.rating = 0f
         }
@@ -379,38 +388,4 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         }
     }
 
-    companion object {
-        @JvmStatic
-        fun showRating(`object`: JsonObject?, average: TextView?, ratingCount: TextView?, ratingBar: AppCompatRatingBar?) {
-            if (average != null) {
-                average.text = String.format(Locale.getDefault(), "%.2f", `object`?.get("averageRating")?.asFloat)
-            }
-            if (ratingCount != null) {
-                ratingCount.text = context.getString(R.string.rating_count_format, `object`?.get("total")?.asInt)
-            }
-            if (`object` != null) {
-                if (`object`.has("ratingByUser"))
-                    if (ratingBar != null) {
-                        ratingBar.rating = `object`["ratingByUser"].asInt.toFloat()
-                    }
-            }
-        }
-
-        fun prependBaseUrlToImages(markdownContent: String?, baseUrl: String): String {
-            val pattern = "!\\[.*?]\\((.*?)\\)"
-            val imagePattern = Pattern.compile(pattern)
-            val matcher = markdownContent?.let { imagePattern.matcher(it) }
-            val result = StringBuffer()
-            if (matcher != null) {
-                while (matcher.find()) {
-                    val relativePath = matcher.group(1)
-                    val modifiedPath = relativePath?.replaceFirst("resources/".toRegex(), "")
-                    val fullUrl = baseUrl + modifiedPath
-                    matcher.appendReplacement(result, "<img src=$fullUrl width=150 height=100/>")
-                }
-            }
-            matcher?.appendTail(result)
-            return result.toString()
-        }
-    }
 }

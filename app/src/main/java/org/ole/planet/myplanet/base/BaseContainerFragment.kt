@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_DOWNLOAD
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_OPEN
 import org.ole.planet.myplanet.ui.courses.AdapterCourses
+import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity
 import org.ole.planet.myplanet.ui.viewer.CSVViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
@@ -73,7 +74,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
     fun setRatings(`object`: JsonObject?) {
         if (`object` != null) {
-            AdapterCourses.showRating(`object`, rating, timesRated, ratingBar)
+            CourseRatingUtils.showRating(`object`, rating, timesRated, ratingBar)
         }
     }
     fun getUrlsAndStartDownload(lib: List<RealmMyLibrary?>, urls: ArrayList<String>) {
