@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.model.RealmStepExam.Companion.getNoOfExam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
-import org.ole.planet.myplanet.utilities.MarkdownImageUtils
+import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 
 class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private lateinit var fragmentCourseDetailBinding: FragmentCourseDetailBinding
@@ -57,7 +57,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         setTextViewVisibility(fragmentCourseDetailBinding.method, courses?.method, fragmentCourseDetailBinding.ltMethod)
         setTextViewVisibility(fragmentCourseDetailBinding.gradeLevel, courses?.gradeLevel, fragmentCourseDetailBinding.ltGradeLevel)
         setTextViewVisibility(fragmentCourseDetailBinding.language, courses?.languageOfInstruction, fragmentCourseDetailBinding.ltLanguage)
-        val markdownContentWithLocalPaths = MarkdownImageUtils.prependBaseUrlToImages(
+        val markdownContentWithLocalPaths = prependBaseUrlToImages(
             courses?.description,
             "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/",
             600,

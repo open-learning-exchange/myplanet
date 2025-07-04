@@ -31,7 +31,7 @@ import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.CustomClickableSpan
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
-import org.ole.planet.myplanet.utilities.MarkdownImageUtils
+import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
@@ -97,7 +97,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         fragmentCourseStepBinding.btnResources.text = getString(R.string.resources_size, resources.size)
         hideTestIfNoQuestion()
         fragmentCourseStepBinding.tvTitle.text = step.stepTitle
-        val markdownContentWithLocalPaths = MarkdownImageUtils.prependBaseUrlToImages(
+        val markdownContentWithLocalPaths = prependBaseUrlToImages(
             step.description,
             "file://${MainApplication.context.getExternalFilesDir(null)}/ole/",
             600,

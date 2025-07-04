@@ -21,7 +21,6 @@ import fisk.chipcloud.ChipCloudConfig
 import io.realm.Realm
 import java.util.Collections
 import java.util.Locale
-import java.util.regex.Pattern
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
@@ -35,7 +34,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.JsonUtils.getInt
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
-import org.ole.planet.myplanet.utilities.MarkdownImageUtils
+import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
@@ -180,7 +179,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     private fun configureDescription(holder: ViewHoldercourse, course: RealmMyCourse, position: Int) {
         holder.rowCourseBinding.description.apply {
             text = course.description
-            val markdownContentWithLocalPaths = MarkdownImageUtils.prependBaseUrlToImages(
+            val markdownContentWithLocalPaths = prependBaseUrlToImages(
                 course.description,
                 "file://${MainApplication.context.getExternalFilesDir(null)}/ole/",
                 150,
