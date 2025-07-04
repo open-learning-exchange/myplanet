@@ -12,6 +12,7 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -92,7 +93,7 @@ abstract class PermissionActivity : AppCompatActivity() {
         const val PERMISSION_REQUEST_CODE_FILE = 111
         @JvmStatic
         fun hasInstallPermission(context: Context): Boolean {
-            return context.packageManager.canRequestPackageInstalls()
+            return !BuildConfig.LITE && context.packageManager.canRequestPackageInstalls()
         }
     }
 }
