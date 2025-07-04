@@ -14,12 +14,12 @@ jobs:
       fail-fast: false
       matrix:
         build: [default, lite]
-      env:
-        OUTPUTS: |
-          .apk
-          .apk.sha256
-          .aab
-          .aab.sha256
+    env:
+      OUTPUTS: |
+        .apk
+        .apk.sha256
+        .aab
+        .aab.sha256
 
     steps:
       - name: checkout repository code
