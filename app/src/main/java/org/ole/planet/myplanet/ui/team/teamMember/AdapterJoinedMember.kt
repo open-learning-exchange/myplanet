@@ -209,10 +209,6 @@ class AdapterJoinedMember(
     }
 
     private fun makeLeader(userModel: RealmUserModel) {
-        if (userModel == null) {
-            Utilities.toast(context, context.getString(R.string.cannot_remove_user))
-            return
-        }
         mRealm.executeTransaction { realm ->
             val currentLeader = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)

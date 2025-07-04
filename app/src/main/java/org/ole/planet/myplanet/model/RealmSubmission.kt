@@ -88,7 +88,7 @@ open class RealmSubmission : RealmObject() {
                 val userJson = JsonUtils.getJsonObject("user", submission)
                 if (userJson.has("membershipDoc")) {
                     val membershipJson = JsonUtils.getJsonObject("membershipDoc", userJson)
-                    if (membershipJson != null) {
+                    if (membershipJson.entrySet().isNotEmpty()) {
                         val membership = mRealm.createObject(RealmMembershipDoc::class.java)
                         membership.teamId = JsonUtils.getString("teamId", membershipJson)
                         sub?.membershipDoc = membership

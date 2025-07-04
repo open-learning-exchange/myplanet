@@ -126,13 +126,13 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                 }
             }
 
-            override fun onSyncFailed(message: String?) {
+            override fun onSyncFailed(msg: String?) {
                 activity?.runOnUiThread {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
 
-                        Snackbar.make(fragmentTeamDetailBinding.root, "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG)
+                        Snackbar.make(fragmentTeamDetailBinding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
                             .setAction("Retry") { startTeamSync() }
                             .show()
                     }

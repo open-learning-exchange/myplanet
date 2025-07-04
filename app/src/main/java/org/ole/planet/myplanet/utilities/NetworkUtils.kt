@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.utilities
 
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
@@ -122,8 +123,9 @@ object NetworkUtils {
 
     @JvmStatic
     fun isBluetoothEnabled(): Boolean {
-        val mBluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
-        return mBluetoothAdapter != null && mBluetoothAdapter.isEnabled
+        val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        val adapter: BluetoothAdapter? = bluetoothManager.adapter
+        return adapter != null && adapter.isEnabled
     }
 
     @JvmStatic

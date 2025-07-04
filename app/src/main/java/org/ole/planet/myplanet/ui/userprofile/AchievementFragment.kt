@@ -119,12 +119,12 @@ class AchievementFragment : BaseContainerFragment() {
                 }
             }
 
-            override fun onSyncFailed(message: String?) {
+            override fun onSyncFailed(msg: String?) {
                 activity?.runOnUiThread {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
-                        Snackbar.make(fragmentAchievementBinding.root, "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG)
+                        Snackbar.make(fragmentAchievementBinding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
                             .setAction("Retry") { startAchievementSync() }
                             .show()
                     }
