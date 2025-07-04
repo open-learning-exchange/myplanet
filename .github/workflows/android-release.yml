@@ -44,18 +44,20 @@ jobs:
 
       - name: set lite version name
         if: matrix.build == 'lite'
-        run: echo ANDROID_VERSION_LITE=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle)-lite >> $GITHUB_ENV
+        run: |
+          echo ANDROID_VERSION_LITE=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle)-lite >> $GITHUB_ENV
+          sed -i 's/\(versionName = "[0-9.]\+\)"/\1-lite"/' app/build.gradle
 
       - name: build release APK and AAB
         run: |
-          echo ANDROID_VERSION_NAME=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle) >> $GITHUB_ENV
-          echo ANDROID_VERSION_CODE=$(grep versionCode app/build.gradle | sed 's/[^0-9]//g') >> $GITHUB_ENV
           FLAVOR=${{ matrix.build }}
           ./gradlew assemble${FLAVOR^}Release bundle${FLAVOR^}Release --warning-mode all --stacktrace
           ls -alR app/build/outputs
           mkdir -p sign
           cp app/build/outputs/bundle/${FLAVOR}Release/app-${FLAVOR}-release.aab sign/.
           cp app/build/outputs/apk/${FLAVOR}/release/app-${FLAVOR}-release-unsigned.apk sign/.
+          echo ANDROID_VERSION_NAME=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle) >> $GITHUB_ENV
+          echo ANDROID_VERSION_CODE=$(grep versionCode app/build.gradle | sed 's/[^0-9]//g') >> $GITHUB_ENV
 
       - name: sign release APK and AAB
         uses: dogi/sign-android-release@v5.1
