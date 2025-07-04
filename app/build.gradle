@@ -39,8 +39,8 @@ android {
         }
         create("lite") {
             dimension "mode"
-            applicationIdSuffix ".lite"
-            versionNameSuffix "-lite"
+            //applicationIdSuffix ".lite"
+            //versionNameSuffix "-lite"
             buildConfigField "boolean", "LITE", "true"
         }
     }
