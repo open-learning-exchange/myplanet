@@ -50,9 +50,9 @@ jobs:
       - name: diff the code to get lite
         if: matrix.build == 'lite'
         run: |
-          echo ANDROID_VERSION_LITE=$(grep -oP 'versionName "\K[^\"]+' app/build.gradle) >> $GITHUB_ENV
+          echo ANDROID_VERSION_LITE=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle) >> $GITHUB_ENV
           ls -al app/build.gradle
-          sed -i 's/\(versionName "[0-9.]\+\)"/\1-lite"/' app/build.gradle
+          sed -i 's/\(versionName = "[0-9.]\+\)"/\1-lite"/' app/build.gradle
           echo "${{ env.LITES }}" | xargs -n 1 | while read file; do
             ls -al $file*
             cp "${file}.lite" "$file"
@@ -60,7 +60,7 @@ jobs:
 
       - name: build release APK and AAB
         run: |
-          echo ANDROID_VERSION_NAME=$(grep -oP 'versionName "\K[^\"]+' app/build.gradle) >> $GITHUB_ENV
+          echo ANDROID_VERSION_NAME=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle) >> $GITHUB_ENV
           echo ANDROID_VERSION_CODE=$(grep versionCode app/build.gradle | sed 's/[^0-9]//g') >> $GITHUB_ENV
           ./gradlew assembleRelease bundleRelease --warning-mode all --stacktrace
           ls -alR app/build/outputs
