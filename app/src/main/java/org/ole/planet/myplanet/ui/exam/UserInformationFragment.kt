@@ -236,11 +236,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
         val safeTeamId = arguments?.getString("teamId") ?: ""
-
-        if (safeTeamId.isEmpty()) {
-            Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
-            BaseExamFragment.navigateToSurveyList(requireActivity())
-        } else if (safeTeamId == "") {
+        if (safeTeamId == "") {
             return
         } else {
             Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
