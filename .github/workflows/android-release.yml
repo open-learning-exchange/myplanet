@@ -54,8 +54,8 @@ jobs:
           ./gradlew assemble${FLAVOR^}Release bundle${FLAVOR^}Release --warning-mode all --stacktrace
           ls -alR app/build/outputs
           mkdir -p sign
-          cp app/build/outputs/bundle/${FLAVOR}/release/app-${FLAVOR}-release.aab sign/.
-          cp app/build/outputs/apk/${FLAVOR}/release/app-${FLAVOR}-release-unsigned.apk sign/.
+          cp app/build/outputs/bundle/${FLAVOR}Release/app-${FLAVOR}-release.aab sign/.
+          cp app/build/outputs/apk/${FLAVOR}Release/app-${FLAVOR}-release-unsigned.apk sign/.
 
       - name: sign release APK and AAB
         uses: dogi/sign-android-release@v5.1
