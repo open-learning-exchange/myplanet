@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.datamanager
 
 import com.google.gson.JsonObject
+import java.io.File
+import java.io.IOException
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
@@ -15,8 +17,6 @@ import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.io.File
-import java.io.IOException
 
 open class FileUploadService {
     fun uploadAttachment(id: String, rev: String, personal: RealmMyPersonal, listener: SuccessListener) {

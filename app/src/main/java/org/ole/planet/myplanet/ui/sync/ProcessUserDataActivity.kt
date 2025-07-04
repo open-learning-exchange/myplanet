@@ -24,6 +24,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.google.android.material.textfield.TextInputLayout
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -47,8 +49,6 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.FileUtils.installApk
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
-import java.util.concurrent.atomic.AtomicInteger
-import kotlin.math.roundToInt
 
 abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     lateinit var settings: SharedPreferences

@@ -8,8 +8,8 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseByUserId
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
-import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.CsvUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmCourseProgress : RealmObject() {
     @PrimaryKey
