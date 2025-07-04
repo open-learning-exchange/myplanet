@@ -323,6 +323,35 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         }
     }
 
+    private fun getNews(holder: RecyclerView.ViewHolder, position: Int): RealmNews? {
+        val news: RealmNews? = if (parentNews != null) {
+            if (position == 0) {
+                (holder.itemView as CardView).setCardBackgroundColor(ContextCompat.getColor(context, R.color.md_blue_50))
+                parentNews
+            } else {
+                (holder.itemView as CardView).setCardBackgroundColor(ContextCompat.getColor(context, R.color.md_white_1000))
+                list[position - 1]
+            }
+        } else {
+            (holder.itemView as CardView).setCardBackgroundColor(ContextCompat.getColor(context, R.color.md_white_1000))
+            list[position]
+        }
+        return news
+    }
+
+    private fun showHideButtons(userModel: RealmUserModel, holder: RecyclerView.ViewHolder) {
+        val viewHolder = holder as ViewHolderNews
+        if (currentUser?.id == userModel.id && !fromLogin && !nonTeamMember) {
+            viewHolder.rowNewsBinding.llEditDelete.visibility = View.VISIBLE
+            viewHolder.rowNewsBinding.btnAddLabel.visibility = View.VISIBLE
+            viewHolder.rowNewsBinding.imgEdit.visibility = View.VISIBLE
+            viewHolder.rowNewsBinding.imgDelete.visibility = View.VISIBLE
+        } else {
+            viewHolder.rowNewsBinding.llEditDelete.visibility = View.GONE
+            viewHolder.rowNewsBinding.btnAddLabel.visibility = View.GONE
+        }
+    }
+
     private fun showReplyButton(holder: RecyclerView.ViewHolder, finalNews: RealmNews?, position: Int) {
         val viewHolder = holder as ViewHolderNews
         if (shouldShowReplyButton()) {
