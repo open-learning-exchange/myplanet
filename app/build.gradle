@@ -44,6 +44,7 @@ android {
             buildConfigField "boolean", "LITE", "true"
         }
     }
+
     packagingOptions {
         resources {
             excludes += [
