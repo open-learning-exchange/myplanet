@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'master'
+      - 'codex/add-lite-flavor-and-update-activities'
   workflow_dispatch:
 
 jobs:
