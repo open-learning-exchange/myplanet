@@ -7,10 +7,10 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utilities.JsonUtils
 import java.util.Date
+import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.CsvUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmChatHistory : RealmObject() {
     @PrimaryKey
