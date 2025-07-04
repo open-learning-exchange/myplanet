@@ -312,7 +312,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     private fun uploadExamResultWrapper() {
         val successListener = object : SuccessListener {
-            override fun onSuccess(message: String?) {}
+            override fun onSuccess(success: String?) {}
         }
 
         val newUploadManager = UploadManager(MainApplication.context)

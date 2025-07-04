@@ -30,7 +30,6 @@ import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
 import org.ole.planet.myplanet.ui.news.GrandChildAdapter
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment.Companion.settings
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.osmdroid.views.overlay.gridlines.LatLonGridlineOverlay.backgroundColor
 import java.text.Normalizer
 import java.util.Date
 import java.util.Locale
@@ -267,6 +266,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
             dialog?.dismiss()
         }
         dialog = builder.create()
+        val backgroundColor = ContextCompat.getColor(context, R.color.daynight_grey)
         dialog.window?.setBackgroundDrawable(backgroundColor.toDrawable())
         dialog.show()
     }

@@ -183,9 +183,9 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     fun startUpload(source: String, userName: String? = null, securityCallback: SecurityDataCallback? = null) {
         if (source == "becomeMember") {
             UploadToShelfService.instance?.uploadSingleUserData(userName ,object : SuccessListener {
-                override fun onSuccess(message: String?) {
+                override fun onSuccess(success: String?) {
                     UploadToShelfService.instance?.uploadSingleUserHealth("org.couchdb.user:${userName}", object : SuccessListener {
-                        override fun onSuccess(healthMessage: String?) {
+                        override fun onSuccess(success: String?) {
                             userName?.let { name ->
                                 fetchAndLogUserSecurityData(name, securityCallback)
                             } ?: run {
@@ -235,37 +235,37 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         }
 
         UploadManager.instance?.uploadUserActivities(object : SuccessListener {
-            override fun onSuccess(message: String?) {
+            override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
         UploadManager.instance?.uploadExamResult(object : SuccessListener {
-            override fun onSuccess(message: String?) {
+            override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
         UploadManager.instance?.uploadFeedback(object : SuccessListener {
-            override fun onSuccess(message: String?) {
+            override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
         UploadManager.instance?.uploadResource(object : SuccessListener {
-            override fun onSuccess(message: String?) {
+            override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
         UploadManager.instance?.uploadSubmitPhotos(object : SuccessListener {
-            override fun onSuccess(message: String?) {
+            override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
         UploadManager.instance?.uploadActivities(object : SuccessListener {
-            override fun onSuccess(message: String?) {
+            override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })

@@ -20,7 +20,7 @@ class SurveyAdapter(
 
         init {
             itemView.setOnClickListener {
-                onItemClick(adapterPosition)
+                onItemClick(bindingAdapterPosition)
                 dialog.dismiss()
             }
         }

@@ -4,6 +4,7 @@ import com.google.gson.JsonObject
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyPersonal
@@ -47,7 +48,8 @@ open class FileUploadService {
         try {
             val connection = f.toURI().toURL().openConnection()
             val mimeType = connection.contentType
-            val body = RequestBody.create("application/octet-stream".toMediaTypeOrNull(), FileUtils.fullyReadFileToBytes(f))
+            val body = FileUtils.fullyReadFileToBytes(f)
+                .toRequestBody("application/octet-stream".toMediaTypeOrNull())
             val url = String.format(format, Utilities.getUrl(), id, name)
             apiInterface?.uploadResource(getHeaderMap(mimeType, rev), url, body)?.enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
