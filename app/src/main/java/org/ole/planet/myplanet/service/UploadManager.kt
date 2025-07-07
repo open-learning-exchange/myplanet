@@ -594,7 +594,6 @@ class UploadManager(var context: Context) : FileUploadService() {
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
-                }
             },
             onSuccess = { uploadNewsActivities() }
         )
