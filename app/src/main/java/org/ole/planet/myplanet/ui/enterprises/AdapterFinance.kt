@@ -12,12 +12,12 @@ import android.widget.LinearLayout
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.RealmResults
+import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFinanceBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.ui.enterprises.AdapterFinance.ViewHolderFinance
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import java.util.Locale
 
 class AdapterFinance(private val context: Context, private val list: RealmResults<RealmMyTeam>) : RecyclerView.Adapter<ViewHolderFinance>() {
     private lateinit var rowFinanceBinding: RowFinanceBinding

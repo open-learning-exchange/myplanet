@@ -1,7 +1,10 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.app.AlertDialog
+import android.content.Context
+import android.content.Context.MODE_PRIVATE
 import android.content.DialogInterface
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -14,13 +17,24 @@ import android.widget.EditText
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.view.ContextThemeWrapper
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import java.util.Calendar
+import java.util.UUID
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnCourseItemSelected
+import org.ole.planet.myplanet.callback.OnHomeItemClickListener
+import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TagClickListener
 import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -30,15 +44,14 @@ import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
-import java.util.Calendar
-import java.util.UUID
-import android.content.Context
-import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import androidx.core.view.isVisible
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener {
 
@@ -67,8 +80,116 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     lateinit var searchTags: MutableList<RealmTag>
     private lateinit var confirmation: AlertDialog
     private var isCheckboxChangedByCode = false
+    private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+    lateinit var prefManager: SharedPrefManager
+//    lateinit var settings: SharedPreferences
+    private val serverUrlMapper = ServerUrlMapper()
+    private val serverUrl: String
+        get() = settings.getString("serverURL", "") ?: ""
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        prefManager = SharedPrefManager(requireContext())
+        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        startCoursesSync()
+    }
+
     override fun getLayout(): Int {
         return R.layout.fragment_my_course
+    }
+
+    private fun startCoursesSync() {
+        val isFastSync = settings.getBoolean("fastSync", false)
+        if (isFastSync && !prefManager.isCoursesSynced()) {
+            checkServerAndStartSync()
+        }
+    }
+
+    private fun checkServerAndStartSync() {
+        val mapping = serverUrlMapper.processUrl(serverUrl)
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            updateServerIfNecessary(mapping)
+            withContext(Dispatchers.Main) {
+                startSyncManager()
+            }
+        }
+    }
+
+    private fun startSyncManager() {
+        SyncManager.instance?.start(object : SyncListener {
+            override fun onSyncStarted() {
+                activity?.runOnUiThread {
+                    if (isAdded && !requireActivity().isFinishing) {
+                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                        customProgressDialog?.setText(getString(R.string.syncing_courses_data))
+                        customProgressDialog?.show()
+                    }
+                }
+            }
+
+            override fun onSyncComplete() {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
+
+                        refreshCoursesData()
+                        prefManager.setCoursesSynced(true)
+                    }
+                }
+            }
+
+            override fun onSyncFailed(message: String?) {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
+
+                        Snackbar.make(requireView(), "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG).setAction("Retry") {
+                            startCoursesSync()
+                        }.show()
+                    }
+                }
+            }
+        }, "full", listOf("courses"))
+    }
+
+    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
+        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
+            isServerReachable(url)
+        }
+    }
+
+    private fun refreshCoursesData() {
+        if (!isAdded || requireActivity().isFinishing) return
+
+        try {
+            val map = getRatings(mRealm, "course", model?.id)
+            val progressMap = getCourseProgress(mRealm, model?.id)
+            val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>()
+            val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
+
+            adapterCourses.updateCourseList(sortedCourseList)
+            adapterCourses.setProgressMap(progressMap)
+            adapterCourses.setRatingMap(map)
+            adapterCourses.notifyDataSetChanged()
+
+            if (isMyCourseLib) {
+                val courseIds = courseList.mapNotNull { it?.id }
+                resources = mRealm.where(RealmMyLibrary::class.java)
+                    .`in`("courseId", courseIds.toTypedArray())
+                    .equalTo("resourceOffline", false)
+                    .isNotNull("resourceLocalAddress")
+                    .findAll()
+            }
+
+            checkList()
+            showNoData(tvMessage, adapterCourses.itemCount, "courses")
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
@@ -100,15 +221,30 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         searchTags = ArrayList()
         initializeView()
         updateCheckBoxState(false)
+        setupButtonVisibility()
+        setupEventListeners()
+        clearTags()
+        showNoData(tvMessage, adapterCourses.itemCount, "courses")
+        setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
+
+        if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
+        additionalSetup()
+        setupMyProgressButton()
+    }
+
+    private fun setupButtonVisibility() {
         if (isMyCourseLib) {
             btnRemove.visibility = View.VISIBLE
             btnArchive.visibility = View.VISIBLE
             checkList()
-        }else {
+        } else {
             btnRemove.visibility = View.GONE
             btnArchive.visibility = View.GONE
         }
         hideButtons()
+    }
+
+    private fun setupEventListeners() {
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
@@ -124,7 +260,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     showNoData(tvMessage, adapterCourses.itemCount, "courses")
                 }
             }
-
             override fun afterTextChanged(s: Editable) {}
         })
 
@@ -144,6 +279,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
+
         btnArchive.setOnClickListener {
             val alertDialogBuilder = AlertDialog.Builder(ContextThemeWrapper(this.context, R.style.CustomAlertDialog))
             val message = if (countSelected() == 1) {
@@ -166,14 +302,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             f.setListener(this)
             f.show(childFragmentManager, "")
         }
+    }
 
-        clearTags()
-        showNoData(tvMessage, adapterCourses.itemCount, "courses")
-        setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
-
-        if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
-        additionalSetup()
-
+    private fun setupMyProgressButton() {
         if (isMyCourseLib) {
             requireView().findViewById<View>(R.id.fabMyProgress).apply {
                 visibility = View.VISIBLE
@@ -232,6 +363,13 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         tvMessage = requireView().findViewById(R.id.tv_message)
         requireView().findViewById<View>(R.id.tl_tags).visibility = View.GONE
         tvFragmentInfo = requireView().findViewById(R.id.tv_fragment_info)
+
+        setupSpinners()
+        setupSelectAll()
+        checkList()
+    }
+
+    private fun setupSpinners() {
         val gradeAdapter = ArrayAdapter.createFromResource(requireContext(), R.array.grade_level, R.layout.spinner_item)
         gradeAdapter.setDropDownViewResource(R.layout.custom_simple_list_item_1)
         spnGrade.adapter = gradeAdapter
@@ -242,6 +380,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         spnGrade.onItemSelectedListener = itemSelectedListener
         spnSubject.onItemSelectedListener = itemSelectedListener
+    }
+
+    private fun setupSelectAll() {
         selectAll = requireView().findViewById(R.id.selectAllCourse)
         if (userModel?.isGuest() == true) {
             tvAddToLib.visibility = View.GONE
@@ -249,7 +390,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             btnArchive.visibility = View.GONE
             selectAll.visibility = View.GONE
         }
-        checkList()
+
         selectAll.setOnCheckedChangeListener { _, isChecked ->
             if (isCheckboxChangedByCode) {
                 isCheckboxChangedByCode = false
@@ -264,8 +405,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 selectAll.text = getString(R.string.select_all)
             }
         }
-
-        checkList()
     }
 
     private fun hideButtons() {
@@ -364,11 +503,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 val newFragment = CoursesFragment()
                 recreateFragment(newFragment)
             }
-           .setOnDismissListener {
-               val newFragment = CoursesFragment()
-               recreateFragment(newFragment)
-           }
-        
+            .setOnDismissListener {
+                val newFragment = CoursesFragment()
+                recreateFragment(newFragment)
+            }
+
         return builder.create()
     }
 
@@ -386,11 +525,13 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         showTagText(searchTags, tvSelected)
         showNoData(tvMessage, adapterCourses.itemCount, "courses")
     }
+
     private fun updateCheckBoxState(programmaticState: Boolean) {
         isCheckboxChangedByCode = true
         selectAll.isChecked = programmaticState
         isCheckboxChangedByCode = false
     }
+
     private fun changeButtonStatus() {
         tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
         btnRemove.isEnabled = (selectedItems?.size ?: 0) > 0
@@ -452,6 +593,12 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     override fun onPause() {
         super.onPause()
         saveSearchActivity()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        customProgressDialog?.dismiss()
+        customProgressDialog = null
     }
 
     private fun recreateFragment(fragment: Fragment) {

@@ -10,10 +10,7 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
-import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -28,28 +25,26 @@ import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.Sort
+import java.util.Calendar
+import java.util.Locale
+import kotlin.toString
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
+import org.ole.planet.myplanet.ui.courses.CourseStepFragment.Companion.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.Calendar
-import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.ui.courses.CourseStepFragment.Companion.prependBaseUrlToImages
-import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.makeExpandable
-import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
-import java.util.Locale
-import kotlin.toString
+import org.ole.planet.myplanet.ui.news.NewsActions
 
 class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "") : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
     private lateinit var rowNewsBinding: RowNewsBinding
@@ -225,7 +220,8 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 AlertDialog.Builder(context, R.style.AlertDialogTheme)
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                        deletePost(news, context)
+                        NewsActions.deletePost(context, mRealm, news, list, teamName)
+                        notifyDataSetChanged()
                     }
                     .setNegativeButton(R.string.cancel, null)
                     .show()
@@ -233,7 +229,9 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         }
 
         if (news.userId == currentUser?._id) {
-            holder.rowNewsBinding.imgEdit.setOnClickListener { showEditAlert(news.id, true) }
+            holder.rowNewsBinding.imgEdit.setOnClickListener {
+                NewsActions.showEditAlert(context, mRealm, news.id, true, currentUser, imageList, listener)
+            }
             holder.rowNewsBinding.btnAddLabel.visibility = if (fromLogin || nonTeamMember) View.GONE else View.VISIBLE
         } else {
             holder.rowNewsBinding.imgEdit.visibility = View.GONE
@@ -292,47 +290,16 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private fun setMemberClickListeners(holder: ViewHolderNews, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
         if (!fromLogin) {
             holder.rowNewsBinding.imgUser.setOnClickListener {
-                if (userModel == null) {
-                    showMemberDetails(currentLeader, it)
-                } else {
-                    showMemberDetails(userModel, it)
-                }
+                val activity = it.context as AppCompatActivity
+                val model = userModel ?: currentLeader
+                NewsActions.showMemberDetails(activity, model, profileDbHandler)
             }
             holder.rowNewsBinding.tvName.setOnClickListener {
-                if (userModel == null) {
-                    showMemberDetails(currentLeader, it)
-                } else {
-                    showMemberDetails(userModel, it)
-                }
+                val activity = it.context as AppCompatActivity
+                val model = userModel ?: currentLeader
+                NewsActions.showMemberDetails(activity, model, profileDbHandler)
             }
         }
-    }
-    private fun showMemberDetails(userModel: RealmUserModel?, it: View){
-        if (userModel == null) {
-            return
-        }
-        val activity = it.context as AppCompatActivity
-        val userName = "${userModel.firstName} ${userModel.lastName}".trim().ifBlank { userModel.name }
-        val fragment = MemberDetailFragment.newInstance(
-            userName.toString(),
-            userModel.email.toString(),
-            userModel.dob.toString().substringBefore("T"),
-            userModel.language.toString(),
-            userModel.phoneNumber.toString(),
-            profileDbHandler.getOfflineVisits(userModel).toString(),
-            profileDbHandler.getLastVisit(userModel),
-            "${userModel.firstName} ${userModel.lastName}",
-            userModel.level.toString(),
-            userModel.userImage
-        )
-        val fm = activity.supportFragmentManager
-        val tx = fm.beginTransaction()
-        fm.findFragmentById(R.id.fragment_container)?.let { currentFragment ->
-            tx.hide(currentFragment)
-        }
-        tx.add(R.id.fragment_container, fragment)
-        tx.addToBackStack(null)
-        tx.commit()
     }
 
 
@@ -354,109 +321,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             val visible = replies.isNotEmpty() && !(position == 0 && parentNews != null) && shouldShowReplyButton()
             btnShowReply.visibility = if (visible) View.VISIBLE else View.GONE
         }
-    }
-
-    private fun showReplyButton(holder: RecyclerView.ViewHolder, finalNews: RealmNews?, position: Int) {
-        val viewHolder = holder as ViewHolderNews
-        if (shouldShowReplyButton()) {
-            viewHolder.rowNewsBinding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
-            viewHolder.rowNewsBinding.btnReply.setOnClickListener { showEditAlert(finalNews?.id, false) }
-        } else {
-            viewHolder.rowNewsBinding.btnReply.visibility = View.GONE
-        }
-
-        val replies = getReplies(finalNews)
-        updateReplyCount(viewHolder, replies, position)
-
-        viewHolder.rowNewsBinding.btnShowReply.setOnClickListener {
-            sharedPreferences?.setRepliedNewsId(finalNews?.id)
-            listener?.showReply(finalNews, fromLogin, nonTeamMember)
-        }
-    }
-
-    private data class EditDialogComponents(
-        val view: View,
-        val editText: EditText,
-        val inputLayout: com.google.android.material.textfield.TextInputLayout,
-        val imageLayout: LinearLayout
-    )
-
-    private fun createEditDialogComponents(): EditDialogComponents {
-        val v = LayoutInflater.from(context).inflate(R.layout.alert_input, null)
-        val tlInput = v.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.tl_input)
-        val et = v.findViewById<EditText>(R.id.et_input)
-        v.findViewById<View>(R.id.ll_image).visibility =
-            if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, context)) View.VISIBLE else View.GONE
-        val llImage = v.findViewById<LinearLayout>(R.id.ll_alert_image)
-        v.findViewById<View>(R.id.add_news_image).setOnClickListener { listener?.addImage(llImage) }
-        return EditDialogComponents(v, et, tlInput, llImage)
-    }
-
-    private fun handlePositiveButton(dialog: AlertDialog, isEdit: Boolean, components: EditDialogComponents, news: RealmNews?) {
-        val s = components.editText.text.toString().trim()
-        if (s.isEmpty()) {
-            components.inputLayout.error = context.getString(R.string.please_enter_message)
-            return
-        }
-        if (isEdit) {
-            editPost(s, news)
-        } else {
-            postReply(s, news)
-        }
-        dialog.dismiss()
-    }
-
-    private fun showEditAlert(id: String?, isEdit: Boolean) {
-        val components = createEditDialogComponents()
-        val message = components.view.findViewById<TextView>(R.id.cust_msg)
-        message.text = context.getString(if (isEdit) R.string.edit_post else R.string.reply)
-        val icon = components.view.findViewById<ImageView>(R.id.alert_icon)
-        icon.setImageResource(R.drawable.ic_edit)
-
-        val news = mRealm.where(RealmNews::class.java).equalTo("id", id).findFirst()
-        if (isEdit) {
-            components.editText.setText(context.getString(R.string.message_placeholder, news?.message))
-        }
-        val dialog = AlertDialog.Builder(context, R.style.ReplyAlertDialog)
-            .setView(components.view)
-            .setPositiveButton(R.string.button_submit, null)
-            .setNegativeButton(R.string.cancel) { d, _ ->
-                listener?.clearImages()
-                d.dismiss()
-            }
-            .create()
-        dialog.show()
-        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            handlePositiveButton(dialog, isEdit, components, news)
-        }
-    }
-
-    private fun postReply(s: String?, news: RealmNews?) {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        val map = HashMap<String?, String>()
-        map["message"] = s ?: ""
-        map["viewableBy"] = news?.viewableBy ?: ""
-        map["viewableId"] = news?.viewableId ?: ""
-        map["replyTo"] = news?.id ?: ""
-        map["messageType"] = news?.messageType ?: ""
-        map["messagePlanetCode"] = news?.messagePlanetCode ?: ""
-        map["viewIn"] = news?.viewIn ?: ""
-
-        currentUser?.let { createNews(map, mRealm, it, imageList, true) }
-        notifyDataSetChanged()
-        listener?.clearImages()
-    }
-
-    private fun editPost(s: String, news: RealmNews?) {
-        if (s.isEmpty()) {
-            Utilities.toast(context, context.getString(R.string.please_enter_message))
-            return
-        }
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        news?.updateMessage(s)
-        mRealm.commitTransaction()
-        notifyDataSetChanged()
-        listener?.clearImages()
     }
 
     private fun getNews(holder: RecyclerView.ViewHolder, position: Int): RealmNews? {
@@ -488,38 +352,24 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-    private fun deletePost(news: RealmNews?, context: Context) {
-        val ar = Gson().fromJson(news?.viewIn, JsonArray::class.java)
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        val position = list.indexOf(news)
-        if (position != -1) {
-            list.removeAt(position)
-            notifyItemRemoved(position)
-        }
-        if(teamName.isNotEmpty() || ar.size() < 2){
-            news?.let {
-                it.deleteFromRealm()
-                if (context is ReplyActivity) {
-                    val restartIntent = context.intent
-                    context.finish()
-                    context.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_OPEN, 0, 0, 0)
-                    context.startActivity(restartIntent)
-                    context.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_OPEN, 0, 0, 0)
-                }
+    private fun showReplyButton(holder: RecyclerView.ViewHolder, finalNews: RealmNews?, position: Int) {
+        val viewHolder = holder as ViewHolderNews
+        if (shouldShowReplyButton()) {
+            viewHolder.rowNewsBinding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
+            viewHolder.rowNewsBinding.btnReply.setOnClickListener {
+                NewsActions.showEditAlert(context, mRealm, finalNews?.id, false, currentUser, imageList, listener)
             }
         } else {
-            val filtered = JsonArray().apply {
-                ar.forEach { elem ->
-                    if (!elem.asJsonObject.has("sharedDate")) {
-                        add(elem)
-                    }
-                }
-            }
-            news?.viewIn = Gson().toJson(filtered)
+            viewHolder.rowNewsBinding.btnReply.visibility = View.GONE
         }
-        mRealm.commitTransaction()
-        notifyDataSetChanged()
+
+        val replies = getReplies(finalNews)
+        updateReplyCount(viewHolder, replies, position)
+
+        viewHolder.rowNewsBinding.btnShowReply.setOnClickListener {
+            sharedPreferences?.setRepliedNewsId(finalNews?.id)
+            listener?.showReply(finalNews, fromLogin, nonTeamMember)
+        }
     }
 
     override fun getItemCount(): Int {
