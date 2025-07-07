@@ -13,6 +13,7 @@ import com.google.android.material.snackbar.Snackbar
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogProgressBinding
+import org.ole.planet.myplanet.databinding.AlertInputBinding
 import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.MyPlanet

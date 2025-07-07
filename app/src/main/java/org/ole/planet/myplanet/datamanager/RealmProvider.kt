@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.datamanager
 
 import android.content.Context
 import io.realm.Realm
+import org.ole.planet.myplanet.datamanager.DatabaseService
 
 /**
  * Singleton provider for Realm instances used across the app.

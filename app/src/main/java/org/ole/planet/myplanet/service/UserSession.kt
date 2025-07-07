@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.service
 
 import android.content.Context
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 /**
  * Provides the current logged in [RealmUserModel].
