@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.team
 
-import android.content.DialogInterface
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -11,7 +10,6 @@ import android.widget.ArrayAdapter
 import android.widget.LinearLayout
 import android.widget.ListView
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -23,7 +21,6 @@ import java.util.UUID
 import org.json.JSONArray
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseNewsFragment
-import org.ole.planet.myplanet.databinding.AlertInputBinding
 import org.ole.planet.myplanet.databinding.FragmentMyTeamsDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -43,6 +40,7 @@ import org.ole.planet.myplanet.ui.userprofile.UserDetailFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.DialogUtils
 
 class MyTeamsDetailFragment : BaseNewsFragment() {
     private lateinit var fragmentMyTeamsDetailBinding: FragmentMyTeamsDetailBinding
@@ -97,28 +95,20 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
     }
 
     private fun showAddMessage() {
-        val alertInputBinding = AlertInputBinding.inflate(layoutInflater)
-        alertInputBinding.tlInput.hint = getString(R.string.enter_message)
-        alertInputBinding.custMsg.text = getString(R.string.add_message)
-
-        val dialog = AlertDialog.Builder(requireActivity(), R.style.CustomAlertDialog)
-            .setView(alertInputBinding.root)
-            .setPositiveButton(R.string.save) { _: DialogInterface?, _: Int ->
-                val msg = "${alertInputBinding.tlInput.editText?.text}".trim { it <= ' ' }
-                if (msg.isEmpty()) {
-                    Utilities.toast(activity, R.string.message_is_required.toString())
-                    return@setPositiveButton
-                }
-                val map = HashMap<String?, String>()
-                map["viewableBy"] = "teams"
-                map["viewableId"] = teamId!!
-                map["message"] = msg
-                map["messageType"] = team?.teamType!!
-                map["messagePlanetCode"] = team?.teamPlanetCode!!
-                createNews(map, mRealm, user, imageList)
-                rvDiscussion.adapter?.notifyItemInserted(0)
-            }.setNegativeButton(R.string.cancel, null).create()
-        dialog.show()
+        DialogUtils.showInputDialog(
+            requireContext(),
+            getString(R.string.add_message),
+            getString(R.string.enter_message)
+        ) { msg ->
+            val map = HashMap<String?, String>()
+            map["viewableBy"] = "teams"
+            map["viewableId"] = teamId!!
+            map["message"] = msg
+            map["messageType"] = team?.teamType!!
+            map["messagePlanetCode"] = team?.teamPlanetCode!!
+            createNews(map, mRealm, user, imageList)
+            rvDiscussion.adapter?.notifyItemInserted(0)
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

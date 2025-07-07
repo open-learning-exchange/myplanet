@@ -25,19 +25,19 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.RealmProvider
 import org.ole.planet.myplanet.model.ChatViewModel
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserSession
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.utilities.showEmpty
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 class ChatHistoryListFragment : Fragment() {
@@ -63,7 +63,7 @@ class ChatHistoryListFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentChatHistoryListBinding = FragmentChatHistoryListBinding.inflate(inflater, container, false)
-        user = UserProfileDbHandler(requireContext()).userModel
+        user = UserSession.user
 
         return fragmentChatHistoryListBinding.root
     }
@@ -207,7 +207,8 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     fun refreshChatHistoryList() {
-        val mRealm = DatabaseService(requireActivity()).realmInstance
+        RealmProvider.init(requireContext())
+        val mRealm = RealmProvider.getRealm()
         val list = mRealm.where(RealmChatHistory::class.java).equalTo("user", user?.name)
             .sort("id", Sort.DESCENDING)
             .findAll()
@@ -231,7 +232,7 @@ class ChatHistoryListFragment : Fragment() {
             fragmentChatHistoryListBinding.recyclerView.visibility = View.VISIBLE
         }
 
-        showNoData(fragmentChatHistoryListBinding.noChats, list.size, "chatHistory")
+        fragmentChatHistoryListBinding.noChats.showEmpty(list.size, "chatHistory")
         if (list.isEmpty()) {
             fragmentChatHistoryListBinding.searchBar.visibility = View.GONE
             fragmentChatHistoryListBinding.recyclerView.visibility = View.GONE

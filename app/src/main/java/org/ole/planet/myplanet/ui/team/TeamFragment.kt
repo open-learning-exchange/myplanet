@@ -20,11 +20,11 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.RealmProvider
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getMyTeamsByUserId
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserSession
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
@@ -56,8 +56,9 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTeamBinding = FragmentTeamBinding.inflate(inflater, container, false)
-        mRealm = DatabaseService(requireContext()).realmInstance
-        user = UserProfileDbHandler(requireActivity()).userModel
+        RealmProvider.init(requireContext())
+        mRealm = RealmProvider.getRealm()
+        user = UserSession.user
 
         if (user?.isGuest() == true) {
             fragmentTeamBinding.addTeam.visibility = View.GONE
@@ -162,7 +163,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     }
 
     private fun createTeam(name: String?, type: String?, map: HashMap<String, String>, isPublic: Boolean) {
-        val user = UserProfileDbHandler(requireContext()).userModel!!
+        val user = UserSession.user!!
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
         val teamId = AndroidDecrypter.generateIv()
         val team = mRealm.createObject(RealmMyTeam::class.java, teamId)

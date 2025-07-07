@@ -141,6 +141,42 @@ object DialogUtils {
             .show()
     }
 
+    /**
+     * Display a simple input dialog used for creating or editing items.
+     * This avoids repeating AlertDialog boilerplate across fragments.
+     */
+    @JvmStatic
+    fun showInputDialog(
+        context: Context,
+        title: String,
+        hint: String,
+        onResult: (String) -> Unit
+    ) {
+        val binding = AlertInputBinding.inflate(LayoutInflater.from(context))
+        binding.tlInput.hint = hint
+        binding.custMsg.text = title
+
+        val dialog = AlertDialog.Builder(context, R.style.CustomAlertDialog)
+            .setView(binding.root)
+            .setPositiveButton(R.string.save, null)
+            .setNegativeButton(R.string.cancel, null)
+            .create()
+
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val text = binding.tlInput.editText?.text.toString().trim()
+                if (text.isEmpty()) {
+                    binding.tlInput.error = context.getString(R.string.name_is_required)
+                } else {
+                    onResult(text)
+                    dialog.dismiss()
+                }
+            }
+        }
+
+        dialog.show()
+    }
+
     @JvmStatic
     fun getAlertDialog(context: Context, title: String, v: View): AlertDialog {
         return AlertDialog.Builder(ContextThemeWrapper(context, R.style.CustomAlertDialog))

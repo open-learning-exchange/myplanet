@@ -33,11 +33,13 @@ import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDow
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.callback.TeamPageListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.RealmProvider
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.service.AutoSyncWorker
 import org.ole.planet.myplanet.service.StayOnlineWorker
 import org.ole.planet.myplanet.service.TaskNotificationWorker
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserSession
 import org.ole.planet.myplanet.utilities.ANRWatchdog
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
@@ -206,8 +208,10 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         startListenNetworkState()
 
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        RealmProvider.init(context)
         service = DatabaseService(context)
         mRealm = service.realmInstance
+        UserSession.init(context)
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
 
         val builder = VmPolicy.Builder()

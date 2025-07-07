@@ -36,7 +36,8 @@ import okhttp3.RequestBody
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.RealmProvider
+import org.ole.planet.myplanet.datamanager.RealmProvider
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatModel
 import org.ole.planet.myplanet.model.ChatRequestModel
@@ -48,7 +49,7 @@ import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserSession
 import org.ole.planet.myplanet.ui.chat.ChatApiHelper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.Constants
@@ -108,8 +109,9 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun initChatComponents() {
-        mRealm = DatabaseService(requireContext()).realmInstance
-        user = UserProfileDbHandler(requireContext()).userModel
+        RealmProvider.init(requireContext())
+        mRealm = RealmProvider.getRealm()
+        user = UserSession.user
         mAdapter = ChatAdapter(ArrayList(), requireContext(), fragmentChatDetailBinding.recyclerGchat)
         fragmentChatDetailBinding.recyclerGchat.apply {
             adapter = mAdapter

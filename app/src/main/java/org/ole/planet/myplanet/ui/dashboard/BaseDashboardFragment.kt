@@ -53,6 +53,8 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.datamanager.RealmProvider
+import org.ole.planet.myplanet.service.UserSession
 
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
     SyncListener {
@@ -111,7 +113,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun forceDownloadNewsImages() {
-        mRealm = DatabaseService(requireContext()).realmInstance
+        RealmProvider.init(requireContext())
+        mRealm = RealmProvider.getRealm()
         Utilities.toast(activity, getString(R.string.please_select_starting_date))
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(requireActivity(), { _: DatePicker?, i: Int, i1: Int, i2: Int ->
@@ -210,7 +213,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     private fun myTeamInit(flexboxLayout: FlexboxLayout): Int {
         val dbMyTeam = RealmMyTeam.getMyTeamsByUserId(mRealm, settings)
-        val userId = UserProfileDbHandler(requireContext()).userModel?.id
+        val userId = UserSession.user?.id
         for ((count, ob) in dbMyTeam.withIndex()) {
             val v = LayoutInflater.from(activity).inflate(R.layout.item_home_my_team, flexboxLayout, false)
             val name = v.findViewById<TextView>(R.id.tv_name)
@@ -254,7 +257,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun setUpMyLife(userId: String?) {
-        val realm = DatabaseService(requireContext()).realmInstance
+        RealmProvider.init(requireContext())
+        val realm = RealmProvider.getRealm()
         val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings)
         if (realmObjects.isEmpty()) {
             if (!realm.isInTransaction) {

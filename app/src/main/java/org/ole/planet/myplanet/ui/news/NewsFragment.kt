@@ -16,16 +16,17 @@ import io.realm.Sort
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.databinding.FragmentNewsBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.RealmProvider
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.UserSession
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
+import org.ole.planet.myplanet.utilities.showEmpty
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 
@@ -38,8 +39,9 @@ class NewsFragment : BaseNewsFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentNewsBinding = FragmentNewsBinding.inflate(inflater, container, false)
         llImage = fragmentNewsBinding.llImages
-        mRealm = DatabaseService(requireActivity()).realmInstance
-        user = UserProfileDbHandler(requireContext()).userModel
+        RealmProvider.init(requireContext())
+        mRealm = RealmProvider.getRealm()
+        user = UserSession.user
         setupUI(fragmentNewsBinding.newsFragmentParentLayout, requireActivity())
         if (user?.id?.startsWith("guest") == true) {
             fragmentNewsBinding.btnNewVoice.visibility = View.GONE
@@ -185,7 +187,7 @@ class NewsFragment : BaseNewsFragment() {
             adapterNews?.setListener(this)
             adapterNews?.registerAdapterDataObserver(observer)
             fragmentNewsBinding.rvNews.adapter = adapterNews
-            adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount, "news") }
+            adapterNews?.let { fragmentNewsBinding.tvMessage.showEmpty(it.itemCount, "news") }
             fragmentNewsBinding.llAddNews.visibility = View.GONE
             fragmentNewsBinding.btnNewVoice.text = getString(R.string.new_voice)
             adapterNews?.notifyDataSetChanged()
@@ -223,15 +225,15 @@ class NewsFragment : BaseNewsFragment() {
 
     private val observer: AdapterDataObserver = object : AdapterDataObserver() {
         override fun onChanged() {
-            adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount, "news") }
+            adapterNews?.let { fragmentNewsBinding.tvMessage.showEmpty(it.itemCount, "news") }
         }
 
         override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-            adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount, "news") }
+            adapterNews?.let { fragmentNewsBinding.tvMessage.showEmpty(it.itemCount, "news") }
         }
 
         override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
-            adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount, "news") }
+            adapterNews?.let { fragmentNewsBinding.tvMessage.showEmpty(it.itemCount, "news") }
         }
     }
     private fun getSortDate(news: RealmNews?): Long {
