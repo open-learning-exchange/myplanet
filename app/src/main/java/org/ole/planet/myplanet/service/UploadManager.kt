@@ -570,10 +570,7 @@ class UploadManager(var context: Context) : FileUploadService() {
                                     resourceObject.addProperty("markdown", markdown)
 
                                     var msg = getString("message", `object`)
-                                    msg += """
-                                    
-                                    $markdown
-                                    """.trimIndent()
+                                    msg += "\n$markdown"
                                     `object`.addProperty("message", msg)
                                     image.add(resourceObject)
                                 }
