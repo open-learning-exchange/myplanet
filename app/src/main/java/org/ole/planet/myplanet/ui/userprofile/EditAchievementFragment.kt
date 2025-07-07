@@ -21,6 +21,13 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import io.realm.Realm
+import java.util.Calendar
+import java.util.Locale
+import kotlin.Array
+import kotlin.Int
+import kotlin.String
+import kotlin.arrayOf
+import kotlin.plus
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.AlertAddAttachmentBinding
@@ -40,13 +47,6 @@ import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.Calendar
-import java.util.Locale
-import kotlin.Array
-import kotlin.Int
-import kotlin.String
-import kotlin.arrayOf
-import kotlin.plus
 
 class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDateSetListener {
     private lateinit var fragmentEditAchievementBinding: FragmentEditAchievementBinding

@@ -4,16 +4,16 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import androidx.core.net.toUri
+import java.util.Locale
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.service.UploadManager
-import java.util.Locale
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.TimeUnit
-import kotlin.math.roundToInt
 
 class SyncTimeLogger private constructor() {
     private val processTimes = ConcurrentHashMap<String, Long>()

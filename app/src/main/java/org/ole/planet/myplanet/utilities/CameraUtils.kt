@@ -6,7 +6,11 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.ImageFormat
 import android.graphics.SurfaceTexture
-import android.hardware.camera2.*
+import android.hardware.camera2.CameraAccessException
+import android.hardware.camera2.CameraCaptureSession
+import android.hardware.camera2.CameraDevice
+import android.hardware.camera2.CameraManager
+import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.params.OutputConfiguration
 import android.hardware.camera2.params.SessionConfiguration
 import android.media.ImageReader
@@ -15,11 +19,11 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.view.Surface
 import androidx.core.content.ContextCompat
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import java.io.File
 import java.io.FileOutputStream
-import java.util.*
+import java.util.Date
 import java.util.concurrent.Executors
+import org.ole.planet.myplanet.MainApplication.Companion.context
 
 object CameraUtils {
     private var cameraDevice: CameraDevice? = null

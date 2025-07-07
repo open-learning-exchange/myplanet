@@ -22,7 +22,10 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.appcompat.widget.AppCompatRatingBar
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
+import org.ole.planet.myplanet.BuildConfig
 import com.google.gson.JsonObject
+import java.io.File
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity.Companion.hasInstallPermission
@@ -33,13 +36,16 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_DOWNLOAD
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_OPEN
 import org.ole.planet.myplanet.ui.courses.AdapterCourses
-import org.ole.planet.myplanet.ui.viewer.*
+import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity
+import org.ole.planet.myplanet.ui.viewer.CSVViewerActivity
+import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
+import org.ole.planet.myplanet.ui.viewer.MarkdownViewerActivity
+import org.ole.planet.myplanet.ui.viewer.TextFileViewerActivity
+import org.ole.planet.myplanet.ui.viewer.WebViewActivity
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.ResourceOpener
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
-import java.io.File
-import androidx.core.net.toUri
 
 abstract class BaseContainerFragment : BaseResourceFragment() {
     private var timesRated: TextView? = null
@@ -48,18 +54,20 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private val installUnknownSourcesRequestCode = 112
     var hasInstallPermission = hasInstallPermission(MainApplication.context)
     private var currentLibrary: RealmMyLibrary? = null
-    private lateinit var installApkLauncher: ActivityResultLauncher<Intent>
+    private var installApkLauncher: ActivityResultLauncher<Intent>? = null
     lateinit var prefData: SharedPrefManager
     private var pendingAutoOpenLibrary: RealmMyLibrary? = null
     private var shouldAutoOpenAfterDownload = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         profileDbHandler = UserProfileDbHandler(requireActivity())
-        installApkLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                if (currentLibrary != null) {
-                    installApk(currentLibrary!!)
-                    currentLibrary = null
+        if (!BuildConfig.LITE) {
+            installApkLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                if (result.resultCode == Activity.RESULT_OK) {
+                    currentLibrary?.let {
+                        installApk(it)
+                        currentLibrary = null
+                    }
                 }
             }
         }
@@ -234,13 +242,16 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 ResourceOpener.openIntent(requireActivity(), items, CSVViewerActivity::class.java)
             }
             "apk" -> {
-                installApk(items)
+                if (!BuildConfig.LITE) {
+                    installApk(items)
+                }
             }
             else -> Toast.makeText(activity, getString(R.string.this_file_type_is_currently_unsupported), Toast.LENGTH_LONG).show()
         }
     }
 
     private fun installApk(items: RealmMyLibrary) {
+        if (BuildConfig.LITE) return
         currentLibrary = items
         val directory = File(MainApplication.context.getExternalFilesDir(null).toString() + "/ole" + "/" + items.id)
         if (!directory.exists()) {
@@ -274,9 +285,10 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     private fun requestInstallPermission() {
+        if (BuildConfig.LITE) return
         val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
         intent.data = ("package:" + MainApplication.context.packageName).toUri()
-        installApkLauncher.launch(intent)
+        installApkLauncher?.launch(intent)
     }
 
     private fun openFileType(items: RealmMyLibrary, videoType: String) {

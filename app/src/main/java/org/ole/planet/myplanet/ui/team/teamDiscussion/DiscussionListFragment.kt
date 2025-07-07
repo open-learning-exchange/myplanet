@@ -14,6 +14,7 @@ import com.google.gson.JsonArray
 import io.realm.Realm
 import io.realm.RealmResults
 import io.realm.Sort
+import java.util.UUID
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertInputBinding
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
@@ -29,7 +30,6 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.UUID
 
 class DiscussionListFragment : BaseTeamFragment() {
     private lateinit var fragmentDiscussionListBinding: FragmentDiscussionListBinding
