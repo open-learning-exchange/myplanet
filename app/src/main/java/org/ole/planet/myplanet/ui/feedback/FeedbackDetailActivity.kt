@@ -14,6 +14,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
+import java.util.Date
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityFeedbackDetailBinding
 import org.ole.planet.myplanet.databinding.RowFeedbackReplyBinding
@@ -24,7 +25,6 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.feedback.FeedbackDetailActivity.RvFeedbackAdapter.ReplyViewHolder
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDateWithTime
-import java.util.Date
 
 class FeedbackDetailActivity : AppCompatActivity() {
     private lateinit var activityFeedbackDetailBinding: ActivityFeedbackDetailBinding
