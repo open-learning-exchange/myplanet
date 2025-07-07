@@ -47,6 +47,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
+import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
@@ -296,7 +297,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                             Handler(Looper.getMainLooper()).postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
                         } else {
                             val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
-                            if (fragment is BaseContainerFragment) {
+                            if (!BuildConfig.LITE && fragment is BaseContainerFragment) {
                                 fragment.handleBackPressed()
                             }
                             finish()
