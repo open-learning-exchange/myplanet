@@ -10,12 +10,12 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
+import androidx.navigation.fragment.findNavController
 import com.google.android.material.snackbar.Snackbar
 import io.realm.Realm
 import io.realm.RealmList
@@ -72,24 +72,13 @@ class ChatHistoryListFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         val slidingPaneLayout = fragmentChatHistoryListBinding.slidingPaneLayout
         slidingPaneLayout.lockMode = SlidingPaneLayout.LOCK_MODE_LOCKED
-        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, ChatHistoryListOnBackPressedCallback(slidingPaneLayout))
 
         fragmentChatHistoryListBinding.toggleGroup.visibility = View.GONE
         fragmentChatHistoryListBinding.newChat.setOnClickListener {
             if (resources.getBoolean(R.bool.isLargeScreen)) {
-                val chatHistoryListFragment = ChatHistoryListFragment()
-                parentFragmentManager.beginTransaction().apply {
-                    replace(R.id.fragment_container, chatHistoryListFragment)
-                    addToBackStack("ChatHistoryList")
-                    commit()
-                }
+                findNavController().navigate(R.id.action_chatHistoryListFragment_self)
             } else {
-                val chatDetailFragment = ChatDetailFragment()
-                parentFragmentManager.beginTransaction().apply {
-                    replace(R.id.fragment_container, chatDetailFragment)
-                    addToBackStack("ChatDetail")
-                    commit()
-                }
+                findNavController().navigate(R.id.action_chatHistoryListFragment_to_chatDetailFragment)
             }
         }
 
@@ -242,26 +231,5 @@ class ChatHistoryListFragment : Fragment() {
         super.onDestroy()
         customProgressDialog?.dismiss()
         customProgressDialog = null
-    }
-}
-
-class ChatHistoryListOnBackPressedCallback(private val slidingPaneLayout: SlidingPaneLayout) :
-    OnBackPressedCallback(slidingPaneLayout.isSlideable && slidingPaneLayout.isOpen),
-    SlidingPaneLayout.PanelSlideListener {
-    init {
-        slidingPaneLayout.addPanelSlideListener(this)
-    }
-    override fun handleOnBackPressed() {
-        slidingPaneLayout.closePane()
-    }
-
-    override fun onPanelSlide(panel: View, slideOffset: Float) {}
-
-    override fun onPanelOpened(panel: View) {
-        isEnabled = true
-    }
-
-    override fun onPanelClosed(panel: View) {
-        isEnabled = false
     }
 }

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:startDestination="@id/bellDashboardFragment">
+
+    <fragment
+        android:id="@+id/bellDashboardFragment"
+        android:name="org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment"
+        android:label="Home">
+        <action
+            android:id="@+id/action_bellDashboardFragment_to_teamFragment"
+            app:destination="@id/teamFragment" />
+        <action
+            android:id="@+id/action_bellDashboardFragment_to_chatHistoryListFragment"
+            app:destination="@id/chatHistoryListFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/teamFragment"
+        android:name="org.ole.planet.myplanet.ui.team.TeamFragment"
+        android:label="Teams" />
+
+    <fragment
+        android:id="@+id/resourcesFragment"
+        android:name="org.ole.planet.myplanet.ui.resources.ResourcesFragment"
+        android:label="Resources" />
+
+    <fragment
+        android:id="@+id/coursesFragment"
+        android:name="org.ole.planet.myplanet.ui.courses.CoursesFragment"
+        android:label="Courses" />
+
+    <fragment
+        android:id="@+id/chatHistoryListFragment"
+        android:name="org.ole.planet.myplanet.ui.chat.ChatHistoryListFragment"
+        android:label="Chat History">
+        <action
+            android:id="@+id/action_chatHistoryListFragment_to_chatDetailFragment"
+            app:destination="@id/chatDetailFragment" />
+        <action
+            android:id="@+id/action_chatHistoryListFragment_self"
+            app:destination="@id/chatHistoryListFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/chatDetailFragment"
+        android:name="org.ole.planet.myplanet.ui.chat.ChatDetailFragment"
+        android:label="Chat Detail" />
+
+    <fragment
+        android:id="@+id/feedbackListFragment"
+        android:name="org.ole.planet.myplanet.ui.feedback.FeedbackListFragment"
+        android:label="Feedback" />
+</navigation>

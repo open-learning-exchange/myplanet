@@ -35,11 +35,12 @@
             app:itemTextColor="@drawable/drawable_nav_color"
             app:menu="@menu/menu_topbar" />
 
-        <FrameLayout
-            android:id="@+id/fragment_container"
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/nav_host_fragment"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1">
-        </FrameLayout>
+            android:layout_weight="1"
+            app:navGraph="@navigation/nav_graph"
+            app:defaultNavHost="true" />
     </LinearLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

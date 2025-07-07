@@ -98,6 +98,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private val realmListeners = mutableListOf<RealmListener>()
     private val dashboardViewModel: DashboardViewModel by viewModels()
     private lateinit var challengeHelper: ChallengeHelper
+    private lateinit var navController: androidx.navigation.NavController
 
     private interface RealmListener {
         fun removeListener()
@@ -128,6 +129,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun initViews() {
         activityDashboardBinding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(activityDashboardBinding.root)
+        val navHost = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as androidx.navigation.fragment.NavHostFragment
+        navController = navHost.navController
+        androidx.navigation.ui.NavigationUI.setupWithNavController(activityDashboardBinding.topBarNavigation, navController)
         setupUI(activityDashboardBinding.activityDashboardParentLayout, this@DashboardActivity)
         setSupportActionBar(activityDashboardBinding.myToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
@@ -223,10 +227,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (intent != null && intent.hasExtra("fragmentToOpen")) {
             val fragmentToOpen = intent.getStringExtra("fragmentToOpen")
             if ("feedbackList" == fragmentToOpen) {
-                openMyFragment(FeedbackListFragment())
+                navController.navigate(R.id.feedbackListFragment)
             }
         } else {
-            openCallFragment(BellDashboardFragment())
             activityDashboardBinding.appBarBell.bellToolbar.visibility = View.VISIBLE
         }
     }
@@ -244,10 +247,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         when (itemId) {
             R.id.action_chat -> {
                 if (user?.id?.startsWith("guest") == false) {
-                    openCallFragment(
-                        ChatHistoryListFragment(),
-                        ChatHistoryListFragment::class.java.simpleName
-                    )
+                    navController.navigate(R.id.chatHistoryListFragment)
                 } else {
                     guestDialog(this)
                 }
@@ -256,10 +256,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             R.id.action_sync -> logSyncInSharedPrefs()
             R.id.action_feedback -> {
                 if (user?.id?.startsWith("guest") == false) {
-                    openCallFragment(
-                        FeedbackListFragment(),
-                        FeedbackListFragment::class.java.simpleName
-                    )
+                    navController.navigate(R.id.feedbackListFragment)
                 } else {
                     guestDialog(this)
                 }
@@ -800,30 +797,30 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         item.isChecked = true
         when (item.itemId) {
             R.id.menu_library -> {
-                openCallFragment(ResourcesFragment())
+                navController.navigate(R.id.resourcesFragment)
             }
             R.id.menu_courses -> {
-                openCallFragment(CoursesFragment())
+                navController.navigate(R.id.coursesFragment)
             }
             R.id.menu_mycourses -> {
                 if (user?.id?.startsWith("guest") == true) {
                     guestDialog(this)
                 } else {
-                    openMyFragment(CoursesFragment())
+                    navController.navigate(R.id.coursesFragment)
                 }
             }
             R.id.menu_mylibrary -> {
                 if (user?.id?.startsWith("guest") == true) {
                     guestDialog(this)
                 } else {
-                    openMyFragment(ResourcesFragment())
+                    navController.navigate(R.id.resourcesFragment)
                 }
             }
             R.id.menu_enterprises -> {
                 openEnterpriseFragment()
             }
             R.id.menu_home -> {
-                openCallFragment(BellDashboardFragment())
+                navController.navigate(R.id.bellDashboardFragment)
             }
         }
         item.isChecked = true
