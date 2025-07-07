@@ -538,9 +538,10 @@ class UploadManager(var context: Context) : FileUploadService() {
                     return@processBatch
                 }
 
-                val `object` = RealmNews.serializeNews(act)
-                val image = act.imagesArray
-                val user = r.where(RealmUserModel::class.java).equalTo("id", pref.getString("userId", "")).findFirst()
+                try {
+                    val `object` = RealmNews.serializeNews(act)
+                    val image = act.imagesArray
+                    val user = r.where(RealmUserModel::class.java).equalTo("id", pref.getString("userId", "")).findFirst()
 
                         if (act.imageUrls != null && act.imageUrls?.isNotEmpty() == true) {
                             act.imageUrls?.chunked(5)?.forEach { imageChunk ->
