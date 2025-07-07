@@ -20,8 +20,8 @@ import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
-import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.extensions.dbUrl
 
 class ConfigurationManager(
     private val context: Context,
@@ -228,7 +228,7 @@ class ConfigurationManager(
     }
 
     private fun getUrl(couchdbURL: String): String {
-        return UrlUtils.dbUrl(couchdbURL)
+        return couchdbURL.dbUrl()
     }
 
     private fun getUserInfo(uri: android.net.Uri): Array<String> {

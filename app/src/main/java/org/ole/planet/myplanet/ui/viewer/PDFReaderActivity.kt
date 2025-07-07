@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.service.AudioRecorderService
 import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
+import org.ole.planet.myplanet.utilities.extensions.openAudioFile
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.NotificationUtil.create
 import org.ole.planet.myplanet.utilities.Utilities
@@ -45,7 +45,7 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         activityPdfReaderBinding.fabRecord.setOnClickListener { audioRecorderService.onRecordClicked()}
         activityPdfReaderBinding.fabPlay.setOnClickListener {
             if (this::library.isInitialized && !TextUtils.isEmpty(library.translationAudioPath)) {
-                openAudioFile(this, library.translationAudioPath)
+                openAudioFile(library.translationAudioPath)
             }
         }
     }

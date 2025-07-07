@@ -61,7 +61,7 @@ import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.ServerConfigUtils
-import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
+import org.ole.planet.myplanet.utilities.extensions.relativeTime
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
 
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
@@ -298,7 +298,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         return if (lastSynced == 0L) {
             " Never Synced"
         } else {
-            getRelativeTime(lastSynced)
+            lastSynced.relativeTime()
         }
     }
 
@@ -523,7 +523,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private fun updateUIWithNewLanguage() {
         try {
             if (::lblLastSyncDate.isInitialized) {
-                lblLastSyncDate.text = getString(R.string.last_sync, getRelativeTime(Date().time))
+                lblLastSyncDate.text = getString(R.string.last_sync, Date().time.relativeTime())
             }
 
             lblVersion.text = getString(R.string.app_version)
@@ -574,7 +574,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             lblLastSyncDate.text = getString(R.string.last_synced_never)
         } else {
             val lastSyncMillis = settings.getLong(getString(R.string.last_syncs), 0)
-            var relativeTime = getRelativeTime(lastSyncMillis)
+            var relativeTime = lastSyncMillis.relativeTime()
 
             if (relativeTime.matches(Regex("^\\d{1,2} seconds ago$"))) {
                 relativeTime = getString(R.string.a_few_seconds_ago)
@@ -717,7 +717,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
         editor.putLong("lastUsageUploaded", Date().time).apply()
         if (::lblLastSyncDate.isInitialized) {
-            lblLastSyncDate.text = getString(R.string.message_placeholder, "${getString(R.string.last_sync, getRelativeTime(Date().time))} >>")
+            lblLastSyncDate.text = getString(R.string.message_placeholder, "${getString(R.string.last_sync, Date().time.relativeTime())} >>")
         }
         syncFailed = false
     }

@@ -24,7 +24,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.myhealth.AdapterHealthExamination.ViewHolderMyHealthExamination
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.extensions.orNA
 
 class AdapterHealthExamination(private val context: Context, private val list: List<RealmMyHealthPojo>?, private val mh: RealmMyHealthPojo, private val userModel: RealmUserModel?) : RecyclerView.Adapter<ViewHolderMyHealthExamination>() {
     private lateinit var rowExaminationBinding: RowExaminationBinding
@@ -122,11 +122,18 @@ class AdapterHealthExamination(private val context: Context, private val list: L
     }
 
     private fun showEncryptedData(tvOtherNotes: TextView, encrypted: JsonObject) {
-        tvOtherNotes.text = context.getString(R.string.observations_notes_colon, Utilities.checkNA(getString("notes", encrypted)),
-            Utilities.checkNA(getString("diagnosis", encrypted)), Utilities.checkNA(getString("treatments", encrypted)),
-            Utilities.checkNA(getString("medications", encrypted)), Utilities.checkNA(getString("immunizations", encrypted)),
-            Utilities.checkNA(getString("allergies", encrypted)), Utilities.checkNA(getString("xrays", encrypted)),
-            Utilities.checkNA(getString("tests", encrypted)), Utilities.checkNA(getString("referrals", encrypted)))
+        tvOtherNotes.text = context.getString(
+            R.string.observations_notes_colon,
+            getString("notes", encrypted).orNA(),
+            getString("diagnosis", encrypted).orNA(),
+            getString("treatments", encrypted).orNA(),
+            getString("medications", encrypted).orNA(),
+            getString("immunizations", encrypted).orNA(),
+            getString("allergies", encrypted).orNA(),
+            getString("xrays", encrypted).orNA(),
+            getString("tests", encrypted).orNA(),
+            getString("referrals", encrypted).orNA()
+        )
     }
 
     override fun getItemCount(): Int {

@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.extensions.toHex
 import retrofit2.Response
 
 class UploadToShelfService(context: Context) {
@@ -192,7 +193,7 @@ class UploadToShelfService(context: Context) {
 
     @Throws(IOException::class)
     fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject): Boolean {
-        val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
+        val table = "userdb-${model.planetCode.toHex()}-${model.name.toHex()}"
         val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
         val ob = JsonObject()
         var keyString = generateKey()
@@ -410,7 +411,7 @@ class UploadToShelfService(context: Context) {
             private set
 
         private fun changeUserSecurity(model: RealmUserModel, obj: JsonObject) {
-            val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
+            val table = "userdb-${model.planetCode.toHex()}-${model.name.toHex()}"
             val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
             val apiInterface = client?.create(ApiInterface::class.java)
             try {

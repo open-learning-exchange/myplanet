@@ -9,7 +9,6 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.text.TextUtils
-import android.text.format.DateUtils
 import android.util.Base64
 import android.util.Log
 import android.util.Patterns
@@ -26,14 +25,15 @@ import androidx.work.workDataOf
 import com.bumptech.glide.Glide
 import fisk.chipcloud.ChipCloudConfig
 import java.lang.ref.WeakReference
-import java.math.BigInteger
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DownloadWorker
 import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.UrlUtils
+import org.ole.planet.myplanet.utilities.extensions.baseUrl
+import org.ole.planet.myplanet.utilities.extensions.dbUrl
+import org.ole.planet.myplanet.utilities.extensions.relativeTime
 
 object Utilities {
     private var contextRef: WeakReference<Context>? = null
@@ -164,20 +164,6 @@ object Utilities {
             .uncheckedTextColor("#000000".toColorInt())
     }
 
-    fun checkNA(s: String?): String {
-        return if (s.isNullOrEmpty()) "N/A" else s
-    }
-
-    fun getRelativeTime(timestamp: Long): String {
-        val timeNow = System.currentTimeMillis()
-        return if (timestamp < timeNow) {
-            DateUtils.getRelativeTimeSpanString(timestamp, timeNow, 0).toString()
-        } else "Just now"
-    }
-
-    fun getUserName(settings: SharedPreferences): String {
-        return settings.getString("name", "") ?: ""
-    }
 
     fun loadImage(userImage: String?, imageView: ImageView) {
         if (!TextUtils.isEmpty(userImage)) {
@@ -207,7 +193,7 @@ object Utilities {
 
     fun getUrl(): String {
         val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return UrlUtils.dbUrl(settings)
+        return settings.dbUrl()
     }
 
     val hostUrl: String
@@ -236,33 +222,29 @@ object Utilities {
         }
 
     fun getUpdateUrl(settings: SharedPreferences): String {
-        val url = UrlUtils.baseUrl(settings)
+        val url = settings.baseUrl()
         return "$url/versions"
     }
 
     fun getChecksumUrl(settings: SharedPreferences): String {
-        val url = UrlUtils.baseUrl(settings)
+        val url = settings.baseUrl()
         return "$url/fs/myPlanet.apk.sha256"
     }
 
     fun getHealthAccessUrl(settings: SharedPreferences): String {
-        val url = UrlUtils.baseUrl(settings)
+        val url = settings.baseUrl()
         return String.format("%s/healthaccess?p=%s", url, settings.getString("serverPin", "0000"))
     }
 
     fun getApkVersionUrl(settings: SharedPreferences): String {
-        val url = UrlUtils.baseUrl(settings)
+        val url = settings.baseUrl()
         return "$url/apkversion"
     }
 
     fun getApkUpdateUrl(path: String?): String {
         val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val url = UrlUtils.baseUrl(preferences)
+        val url = preferences.baseUrl()
         return "$url$path"
-    }
-
-    fun toHex(arg: String?): String {
-        return String.format("%x", BigInteger(1, arg?.toByteArray()))
     }
 
     fun getMimeType(url: String?): String? {

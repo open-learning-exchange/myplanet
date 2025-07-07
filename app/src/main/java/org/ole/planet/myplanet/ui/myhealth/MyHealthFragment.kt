@@ -53,6 +53,7 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.extensions.orNA
 
 class MyHealthFragment : Fragment() {
     private lateinit var fragmentVitalSignBinding: FragmentVitalSignBinding
@@ -315,9 +316,9 @@ class MyHealthFragment : Fragment() {
         fragmentVitalSignBinding.layoutUserDetail.visibility = View.VISIBLE
         fragmentVitalSignBinding.tvMessage.visibility = View.GONE
         fragmentVitalSignBinding.txtFullName.text = getString(R.string.three_strings, userModel?.firstName, userModel?.middleName, userModel?.lastName)
-        fragmentVitalSignBinding.txtEmail.text = Utilities.checkNA(userModel?.email!!)
-        fragmentVitalSignBinding.txtLanguage.text = Utilities.checkNA(userModel?.language!!)
-        fragmentVitalSignBinding.txtDob.text = Utilities.checkNA(userModel?.dob!!)
+        fragmentVitalSignBinding.txtEmail.text = userModel?.email.orNA()
+        fragmentVitalSignBinding.txtLanguage.text = userModel?.language.orNA()
+        fragmentVitalSignBinding.txtDob.text = userModel?.dob.orNA()
         var mh = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
         if (mh == null) {
             mh = mRealm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
@@ -332,13 +333,14 @@ class MyHealthFragment : Fragment() {
                 return
             }
             val myHealths = mm.profile
-            fragmentVitalSignBinding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes)
-            fragmentVitalSignBinding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds)
-            fragmentVitalSignBinding.txtBirthPlace.text = Utilities.checkNA(userModel?.birthPlace)
+            fragmentVitalSignBinding.txtOtherNeed.text = myHealths?.notes.orNA()
+            fragmentVitalSignBinding.txtSpecialNeeds.text = myHealths?.specialNeeds.orNA()
+            fragmentVitalSignBinding.txtBirthPlace.text = userModel?.birthPlace.orNA()
             fragmentVitalSignBinding.txtEmergencyContact.text = getString(R.string.emergency_contact_details,
-                Utilities.checkNA(myHealths?.emergencyContactName),
-                Utilities.checkNA(myHealths?.emergencyContactType),
-                Utilities.checkNA(myHealths?.emergencyContact)).trimIndent()
+                myHealths?.emergencyContactName.orNA(),
+                myHealths?.emergencyContactType.orNA(),
+                myHealths?.emergencyContact.orNA()
+            ).trimIndent()
 
             val list = getExaminations(mm)
 

@@ -44,6 +44,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.extensions.toHex
 import retrofit2.Response
 
 object TransactionSyncManager {
@@ -76,7 +77,7 @@ object TransactionSyncManager {
     }
 
     private fun syncHealthData(userModel: RealmUserModel?, header: String) {
-        val table = "userdb-${userModel?.planetCode?.let { Utilities.toHex(it) }}-${userModel?.name?.let { Utilities.toHex(it) }}"
+        val table = "userdb-${userModel?.planetCode?.let { it.toHex() }}-${userModel?.name?.let { it.toHex() }}"
         val apiInterface = client?.create(ApiInterface::class.java)
         val response: Response<DocumentResponse>?
         try {

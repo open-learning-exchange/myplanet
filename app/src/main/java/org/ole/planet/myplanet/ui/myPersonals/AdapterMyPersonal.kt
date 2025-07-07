@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.ui.myPersonals.AdapterMyPersonal.ViewHolderMyPers
 import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
 import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
 import org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity
-import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
+import org.ole.planet.myplanet.utilities.extensions.openAudioFile
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -77,7 +77,7 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
                 ii.putExtra("isFullPath", true)
                 context.startActivity(ii)
             }
-            "aac", "mp3" -> openAudioFile(context, path)
+            "aac", "mp3" -> context.openAudioFile(path)
             "mp4" -> openVideo(path)
         }
     }

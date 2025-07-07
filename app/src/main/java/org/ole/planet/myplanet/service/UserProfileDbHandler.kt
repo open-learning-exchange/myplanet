@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.extensions.userName
 
 class UserProfileDbHandler(context: Context) {
     private val settings: SharedPreferences
@@ -28,7 +28,7 @@ class UserProfileDbHandler(context: Context) {
             val validContext = context.applicationContext ?: throw IllegalArgumentException("Invalid context provided")
             realmService = DatabaseService(validContext)
             settings = validContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            fullName = Utilities.getUserName(settings)
+            fullName = settings.userName()
             mRealm = realmService.realmInstance
         } catch (e: IllegalArgumentException) {
             throw e

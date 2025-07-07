@@ -18,6 +18,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
+import org.ole.planet.myplanet.utilities.extensions.relativeTime
 import androidx.preference.Preference.OnPreferenceClickListener
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
@@ -224,7 +225,7 @@ class SettingActivity : AppCompatActivity() {
             if (lastSynced == 0L) {
                 lastSyncDate?.setTitle(R.string.last_synced_never)
             } else if (lastSyncDate != null) {
-                lastSyncDate.title = getString(R.string.last_synced_colon) + Utilities.getRelativeTime(lastSynced)
+                lastSyncDate.title = getString(R.string.last_synced_colon) + lastSynced.relativeTime()
             }
         }
 
