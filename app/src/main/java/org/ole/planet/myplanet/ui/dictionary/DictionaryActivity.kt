@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.ui.dictionary
 
 import android.os.Bundle
 import androidx.core.text.HtmlCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import io.realm.Case
@@ -24,6 +26,11 @@ class DictionaryActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         fragmentDictionaryBinding = FragmentDictionaryBinding.inflate(layoutInflater)
         setContentView(fragmentDictionaryBinding.root)
+        ViewCompat.setOnApplyWindowInsetsListener(fragmentDictionaryBinding.root) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
         initActionBar()
         title = getString(R.string.dictionary)
         mRealm = DatabaseService(this).realmInstance

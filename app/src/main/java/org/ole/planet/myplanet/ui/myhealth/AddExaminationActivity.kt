@@ -12,6 +12,8 @@ import android.widget.CompoundButton
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
@@ -64,6 +66,11 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         super.onCreate(savedInstanceState)
         activityAddExaminationBinding = ActivityAddExaminationBinding.inflate(layoutInflater)
         setContentView(activityAddExaminationBinding.root)
+        ViewCompat.setOnApplyWindowInsetsListener(activityAddExaminationBinding.root) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         customDiag = HashSet()

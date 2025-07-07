@@ -7,6 +7,8 @@ import android.text.style.ForegroundColorSpan
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.opencsv.CSVParserBuilder
 import com.opencsv.CSVReaderBuilder
 import java.io.File
@@ -21,6 +23,11 @@ class CSVViewerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityCsvViewerBinding = ActivityCsvviewerBinding.inflate(layoutInflater)
         setContentView(activityCsvViewerBinding.root)
+        ViewCompat.setOnApplyWindowInsetsListener(activityCsvViewerBinding.root) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
         renderCSVFile()
     }
 

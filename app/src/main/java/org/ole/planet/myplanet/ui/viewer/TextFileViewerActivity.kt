@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.ui.viewer
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileReader
@@ -17,6 +19,11 @@ class TextFileViewerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityTextFileViewerBinding = ActivityTextfileViewerBinding.inflate(layoutInflater)
         setContentView(activityTextFileViewerBinding.root)
+        ViewCompat.setOnApplyWindowInsetsListener(activityTextFileViewerBinding.root) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
         renderTextFile()
     }
 

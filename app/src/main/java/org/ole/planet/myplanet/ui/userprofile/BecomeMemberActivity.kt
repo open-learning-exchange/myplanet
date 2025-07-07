@@ -7,6 +7,9 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.widget.ArrayAdapter
 import androidx.core.content.edit
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -188,8 +191,14 @@ class BecomeMemberActivity : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         activityBecomeMemberBinding = ActivityBecomeMemberBinding.inflate(layoutInflater)
         setContentView(activityBecomeMemberBinding.root)
+        ViewCompat.setOnApplyWindowInsetsListener(activityBecomeMemberBinding.root) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         val mRealm: Realm = DatabaseService(this).realmInstance

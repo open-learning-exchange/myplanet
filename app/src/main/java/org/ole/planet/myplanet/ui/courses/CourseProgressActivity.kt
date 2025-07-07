@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.os.Bundle
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -29,6 +31,11 @@ class CourseProgressActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         activityCourseProgressBinding = ActivityCourseProgressBinding.inflate(layoutInflater)
         setContentView(activityCourseProgressBinding.root)
+        ViewCompat.setOnApplyWindowInsetsListener(activityCourseProgressBinding.root) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
         initActionBar()
         courseId = intent.getStringExtra("courseId").toString()
         realm = DatabaseService(this).realmInstance

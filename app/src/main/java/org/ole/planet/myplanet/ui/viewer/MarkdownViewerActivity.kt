@@ -4,6 +4,8 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileReader
@@ -20,6 +22,11 @@ class MarkdownViewerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityMarkdownViewerBinding = ActivityMarkdownViewerBinding.inflate(layoutInflater)
         setContentView(activityMarkdownViewerBinding.root)
+        ViewCompat.setOnApplyWindowInsetsListener(activityMarkdownViewerBinding.root) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
         renderMarkdownFile()
     }
 

@@ -8,6 +8,8 @@ import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.viewpager.widget.ViewPager
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityOnBoardingBinding
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -30,6 +32,12 @@ class OnBoardingActivity : AppCompatActivity() {
         binding = ActivityOnBoardingBinding.inflate(layoutInflater)
         setContentView(binding.root)
         prefData = SharedPrefManager(this)
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
 
         copyAssets(this)
         val settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)

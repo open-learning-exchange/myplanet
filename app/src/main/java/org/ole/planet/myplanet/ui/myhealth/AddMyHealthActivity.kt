@@ -10,6 +10,8 @@ import android.widget.ImageView
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.gson.Gson
 import io.realm.Realm
 import java.util.Calendar
@@ -40,6 +42,11 @@ class AddMyHealthActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityAddMyHealthBinding = ActivityAddMyHealthBinding.inflate(layoutInflater)
         setContentView(activityAddMyHealthBinding.root)
+        ViewCompat.setOnApplyWindowInsetsListener(activityAddMyHealthBinding.root) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         realm = DatabaseService(this).realmInstance

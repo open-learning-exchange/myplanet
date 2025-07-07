@@ -17,6 +17,8 @@ import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
@@ -30,6 +32,11 @@ class WebViewActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityWebViewBinding = ActivityWebViewBinding.inflate(layoutInflater)
         setContentView(activityWebViewBinding.root)
+        ViewCompat.setOnApplyWindowInsetsListener(activityWebViewBinding.root) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
         val dataFromDeepLink = intent.dataString
         fromDeepLink = !TextUtils.isEmpty(dataFromDeepLink)
         val title: String? = intent.getStringExtra("title")

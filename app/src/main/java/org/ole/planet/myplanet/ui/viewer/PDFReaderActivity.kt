@@ -5,6 +5,8 @@ import android.text.TextUtils
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.github.barteksc.pdfviewer.listener.OnLoadCompleteListener
 import com.github.barteksc.pdfviewer.listener.OnPageChangeListener
 import com.github.barteksc.pdfviewer.listener.OnPageErrorListener
@@ -34,6 +36,11 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         super.onCreate(savedInstanceState)
         activityPdfReaderBinding = ActivityPdfreaderBinding.inflate(layoutInflater)
         setContentView(activityPdfReaderBinding.root)
+        ViewCompat.setOnApplyWindowInsetsListener(activityPdfReaderBinding.root) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
         audioRecorderService = AudioRecorderService().setAudioRecordListener(this)
         audioRecorderService.setCaller(this, this)
         mRealm = DatabaseService(this).realmInstance

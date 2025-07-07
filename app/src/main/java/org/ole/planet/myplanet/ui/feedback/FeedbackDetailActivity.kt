@@ -8,6 +8,8 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
@@ -42,6 +44,11 @@ class FeedbackDetailActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityFeedbackDetailBinding = ActivityFeedbackDetailBinding.inflate(layoutInflater)
         setContentView(activityFeedbackDetailBinding.root)
+        ViewCompat.setOnApplyWindowInsetsListener(activityFeedbackDetailBinding.root) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         setTitle(R.string.feedback)

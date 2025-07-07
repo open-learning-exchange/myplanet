@@ -23,6 +23,9 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.MenuItemCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowCompat
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
@@ -109,6 +112,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         checkUser()
         initViews()
         updateAppTitle()
@@ -213,7 +217,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         ) {
             result?.openDrawer()
         }
-        result?.stickyFooter?.setPadding(0, 0, 0, 0)
         result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
         dl = result?.drawerLayout
         topbarSetting()
@@ -648,7 +651,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val dimenHolder = DimenHolder.fromDp(headerHeight)
 
         result = headerResult?.let {
-            DrawerBuilder().withActivity(this).withFullscreen(false).withTranslucentStatusBar(false)
+            DrawerBuilder().withActivity(this).withFullscreen(true).withTranslucentStatusBar(true).withTranslucentNavigationBar(true)
                 .withSliderBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary))
                 .withToolbar(activityDashboardBinding.myToolbar)
                 .withAccountHeader(it).withHeaderHeight(dimenHolder)

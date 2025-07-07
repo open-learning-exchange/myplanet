@@ -14,6 +14,8 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.google.gson.Gson
@@ -49,6 +51,11 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         super.onCreate(savedInstanceState)
         activityReplyBinding = ActivityReplyBinding.inflate(layoutInflater)
         setContentView(activityReplyBinding.root)
+        ViewCompat.setOnApplyWindowInsetsListener(activityReplyBinding.root) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         mRealm = DatabaseService(this).realmInstance

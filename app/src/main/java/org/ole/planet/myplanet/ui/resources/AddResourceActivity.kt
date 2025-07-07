@@ -11,6 +11,8 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import io.realm.Realm
 import io.realm.RealmList
 import java.util.Calendar
@@ -46,6 +48,11 @@ class AddResourceActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         activityAddResourceBinding = ActivityAddResourceBinding.inflate(layoutInflater)
         setContentView(activityAddResourceBinding.root)
+        ViewCompat.setOnApplyWindowInsetsListener(activityAddResourceBinding.root) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         userModel = UserProfileDbHandler(this).userModel

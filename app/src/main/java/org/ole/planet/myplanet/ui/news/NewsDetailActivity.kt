@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.ui.news
 import android.os.Bundle
 import android.view.View
 import android.webkit.WebSettings
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -30,6 +32,11 @@ class NewsDetailActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         activityNewsDetailBinding = ActivityNewsDetailBinding.inflate(layoutInflater)
         setContentView(activityNewsDetailBinding.root)
+        ViewCompat.setOnApplyWindowInsetsListener(activityNewsDetailBinding.root) { view, windowInsets ->
+            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
         setSupportActionBar(activityNewsDetailBinding.toolbar)
         initActionBar()
         realm = DatabaseService(this).realmInstance
