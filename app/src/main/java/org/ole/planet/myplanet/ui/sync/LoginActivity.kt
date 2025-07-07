@@ -373,7 +373,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         Locale.setDefault(locale)
         val config = resources.configuration
         config.setLocale(locale)
-        @Suppress("DEPRECATION")
         resources.updateConfiguration(config, resources.displayMetrics)
     }
 
