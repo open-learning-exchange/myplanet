@@ -470,25 +470,27 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 val library = mRealm.where(RealmMyLibrary::class.java)
                     .equalTo("_id", resourceId)
                     .findFirst()
+
                 val basePath = context.getExternalFilesDir(null)
-                val imageFile = if (library != null && basePath != null) {
-                    File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-                } else null
-                if (imageFile?.exists() == true) {
-                    val request = Glide.with(context)
-                    val target = if (library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true) {
-                        request.asGif().load(imageFile)
-                    } else {
-                        request.load(imageFile)
+                if (library != null && basePath != null) {
+                    val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+                    if (imageFile.exists()) {
+                        val request = Glide.with(context)
+                        val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
+                        val target = if (isGif) {
+                            request.asGif().load(imageFile)
+                        } else {
+                            request.load(imageFile)
+                        }
+                        target.placeholder(R.drawable.ic_loading)
+                            .error(R.drawable.ic_loading)
+                            .into(binding.imgNews)
+                        binding.imgNews.visibility = View.VISIBLE
+                        binding.imgNews.setOnClickListener {
+                            showZoomableImage(it.context, imageFile.toString())
+                        }
+                        return
                     }
-                    target.placeholder(R.drawable.ic_loading)
-                        .error(R.drawable.ic_loading)
-                        .into(binding.imgNews)
-                    binding.imgNews.visibility = View.VISIBLE
-                    binding.imgNews.setOnClickListener {
-                        showZoomableImage(it.context, imageFile.toString())
-                    }
-                    return
                 }
             }
         }
