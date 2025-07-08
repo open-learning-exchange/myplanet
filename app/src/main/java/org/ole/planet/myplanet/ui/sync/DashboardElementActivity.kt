@@ -39,7 +39,7 @@ import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
-import org.ole.planet.myplanet.ui.dashboard.SurveyFragment
+import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.rating.RatingFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment

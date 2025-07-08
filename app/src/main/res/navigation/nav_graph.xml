@@ -40,7 +40,8 @@
         android:label="Resource Detail">
         <argument
             android:name="libraryId"
-            app:argType="string" />
+            app:argType="string"
+            app:nullable="true" />
     </fragment>
 
     <action
@@ -53,7 +54,8 @@
         android:label="Send Survey">
         <argument
             android:name="surveyId"
-            app:argType="string" />
+            app:argType="string"
+            app:nullable="true" />
     </dialog>
 
     <action
