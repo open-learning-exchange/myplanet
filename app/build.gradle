@@ -9,10 +9,10 @@ android {
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
-        targetSdk = 34
-        versionCode = 2674
-        versionName = "0.26.74"
-        ndkVersion = '21.3.6528147'
+        targetSdk = 35
+        versionCode = 2675
+        versionName = "0.26.75"
+        ndkVersion = '26.3.11579264'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled = true
@@ -198,7 +198,7 @@ dependencies {
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
     implementation 'com.github.jeancsanchez:jcplayer:2.7.2'
     implementation 'com.github.clans:fab:1.6.4'
-    implementation 'com.github.barteksc:pdfium-android:1.9.0'
+    implementation 'com.github.mhiew:pdfium-android:1.9.2'
     implementation 'com.applandeo:material-calendar-view:1.9.2'
     implementation 'com.afollestad.material-dialogs:commons:0.9.6.0'
     implementation 'com.borax12.materialdaterangepicker:library:2.0'
