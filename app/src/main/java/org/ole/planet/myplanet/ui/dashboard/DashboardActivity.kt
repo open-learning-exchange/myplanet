@@ -15,6 +15,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
+import org.ole.planet.myplanet.databinding.CustomNotificationBadgeBinding
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatDelegate
@@ -138,7 +139,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         navigationView.labelVisibilityMode = NavigationBarView.LABEL_VISIBILITY_LABELED
         activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
         service = Service(this)
-        tl = findViewById(R.id.tab_layout)
+        tl = activityDashboardBinding.appBarBell.root.findViewById(R.id.tab_layout)
         activityDashboardBinding.root.viewTreeObserver.addOnGlobalLayoutListener { topBarVisible() }
         activityDashboardBinding.appBarBell.ivSetting.setOnClickListener {
             startActivity(Intent(this, SettingActivity::class.java))
@@ -485,9 +486,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun updateNotificationBadge(count: Int, onClickListener: View.OnClickListener) {
         val menuItem = activityDashboardBinding.appBarBell.bellToolbar.menu.findItem(R.id.action_notifications)
         val actionView = MenuItemCompat.getActionView(menuItem)
-        val smsCountTxt = actionView.findViewById<TextView>(R.id.notification_badge)
-        smsCountTxt.text = "$count"
-        smsCountTxt.visibility = if (count > 0) View.VISIBLE else View.GONE
+        val badgeBinding = CustomNotificationBadgeBinding.bind(actionView)
+        badgeBinding.notificationBadge.text = "$count"
+        badgeBinding.notificationBadge.visibility = if (count > 0) View.VISIBLE else View.GONE
         actionView.setOnClickListener(onClickListener)
     }
 
@@ -541,7 +542,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun topBarVisible(){
         val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
+        val tabLayout = activityDashboardBinding.appBarBell.root.findViewById<TabLayout>(R.id.tab_layout)
 
         tabLayout.visibility = if (isLandscape) {
             View.VISIBLE
@@ -552,7 +553,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun topbarSetting() {
         UITheme()
-        val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
+        val tabLayout = activityDashboardBinding.appBarBell.root.findViewById<TabLayout>(R.id.tab_layout)
         tabLayout.addOnTabSelectedListener(object : OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
                 onClickTabItems(tab.position)

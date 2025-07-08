@@ -36,7 +36,7 @@ class AudioPlayerActivity : AppCompatActivity(), JcPlayerManagerListener {
         }
 
         extractedFileName = FileUtils.nameWithoutExtension(filePath).toString()
-        val textView: TextView = findViewById(R.id.textView)
+        val textView: TextView = activityAudioPlayerBinding.textView
         textView.text = extractedFileName
     }
 

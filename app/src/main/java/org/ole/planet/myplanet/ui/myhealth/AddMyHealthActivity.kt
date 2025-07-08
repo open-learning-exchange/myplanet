@@ -51,14 +51,14 @@ class AddMyHealthActivity : AppCompatActivity() {
         userModelB = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
         key = userModelB?.key
         iv = userModelB?.iv
-        findViewById<View>(R.id.btn_submit).setOnClickListener {
+        activityAddMyHealthBinding.btnSubmit.setOnClickListener {
             createMyHealth()
             Utilities.toast(this@AddMyHealthActivity, getString(R.string.my_health_saved_successfully))
         }
 
         val contactTypes = resources.getStringArray(R.array.contact_type)
         val contactAdapter = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, contactTypes)
-        findViewById<Spinner>(R.id.spn_contact_type).adapter = contactAdapter
+        activityAddMyHealthBinding.spnContactType.adapter = contactAdapter
 
         initViews()
         val datePickerClickListener = View.OnClickListener {
@@ -71,7 +71,7 @@ class AddMyHealthActivity : AppCompatActivity() {
             dpd.show()
         }
         activityAddMyHealthBinding.etBirthdateLayout.editText?.setOnClickListener(datePickerClickListener)
-        findViewById<ImageView>(R.id.iv_date_picker).setOnClickListener(datePickerClickListener)
+        activityAddMyHealthBinding.ivDatePicker.setOnClickListener(datePickerClickListener)
     }
 
     private fun createMyHealth() {

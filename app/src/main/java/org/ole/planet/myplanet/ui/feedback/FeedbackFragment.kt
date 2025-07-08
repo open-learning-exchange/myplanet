@@ -74,18 +74,23 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
             fragmentFeedbackBinding.tlMessage.error = getString(R.string.please_enter_feedback)
             return
         }
-        val rbUrgent = requireView().findViewById<RadioButton>(fragmentFeedbackBinding.rgUrgent.checkedRadioButtonId)
-        val rbType = requireView().findViewById<RadioButton>(fragmentFeedbackBinding.rgType.checkedRadioButtonId)
-        if (rbUrgent == null) {
-            fragmentFeedbackBinding.tlUrgent.error = getString(R.string.feedback_priority_is_required)
-            return
+        val urgent = when (fragmentFeedbackBinding.rgUrgent.checkedRadioButtonId) {
+            R.id.urgent_yes -> getString(R.string.yes)
+            R.id.urgent_no -> getString(R.string.no)
+            else -> {
+                fragmentFeedbackBinding.tlUrgent.error = getString(R.string.feedback_priority_is_required)
+                return
+            }
         }
-        if (rbType == null) {
-            fragmentFeedbackBinding.tlType.error = getString(R.string.feedback_type_is_required)
-            return
+        val type = when (fragmentFeedbackBinding.rgType.checkedRadioButtonId) {
+            R.id.type_question -> getString(R.string.question)
+            R.id.type_bug -> getString(R.string.bug)
+            R.id.type_suggestion -> getString(R.string.suggestion)
+            else -> {
+                fragmentFeedbackBinding.tlType.error = getString(R.string.feedback_type_is_required)
+                return
+            }
         }
-        val urgent = rbUrgent.text.toString()
-        val type = rbType.text.toString()
         val arguments = arguments
         if (arguments != null) {
             val argumentArray = getArgumentArray(message)
