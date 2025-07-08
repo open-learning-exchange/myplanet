@@ -215,27 +215,22 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         UploadManager.instance?.uploadSubmissions()
         UploadManager.instance?.uploadCrashLog()
 
-        val completedOperations = AtomicInteger(0)
-        val totalOperations = 6
-
-        fun completeUploadProcess() {
-            runOnUiThread {
-                if (!isFinishing && !isDestroyed) {
-                    customProgressDialog.dismiss()
-                    Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
+        val asyncOperationsCounter = AtomicInteger(0)
+        val totalAsyncOperations = 6
 
         fun checkAllOperationsComplete() {
-            if (completedOperations.incrementAndGet() == totalOperations) {
-                completeUploadProcess()
+            if (asyncOperationsCounter.incrementAndGet() == totalAsyncOperations) {
+                runOnUiThread {
+                    if (!isFinishing && !isDestroyed) {
+                        customProgressDialog.dismiss()
+                        Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
         }
 
         UploadToShelfService.instance?.uploadUserData {
             UploadToShelfService.instance?.uploadHealth()
-
             checkAllOperationsComplete()
         }
 

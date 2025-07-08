@@ -40,19 +40,15 @@ class UploadToShelfService(context: Context) {
     fun uploadUserData(listener: SuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm = dbService.realmInstance
-
         mRealm.executeTransactionAsync({ realm: Realm ->
             val userModels: List<RealmUserModel> = realm.where(RealmUserModel::class.java)
                 .isEmpty("_id").or().equalTo("isUpdated", true)
                 .findAll()
                 .take(100)
-
             if (userModels.isEmpty()) {
                 return@executeTransactionAsync
             }
-
             val password = sharedPreferences.getString("loginUserPassword", "")
-
             userModels.forEachIndexed { index, model ->
                 try {
                     val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
@@ -73,7 +69,6 @@ class UploadToShelfService(context: Context) {
                     listener.onSuccess(success)
                 }
             })
-
         }) { error ->
             listener.onSuccess("Error during user data sync: ${error.localizedMessage}")
         }
@@ -116,7 +111,6 @@ class UploadToShelfService(context: Context) {
             val res = apiInterface?.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")?.execute()
             val exists = res?.body() != null
             return exists
-
         } catch (e: IOException) {
             e.printStackTrace()
             return false
@@ -145,7 +139,6 @@ class UploadToShelfService(context: Context) {
             val password = sharedPreferences.getString("loginUserPassword", "")
             val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
             val fetchDataResponse = apiInterface?.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")?.execute()
-
             if (fetchDataResponse?.isSuccessful == true) {
                 model.password_scheme = getString("password_scheme", fetchDataResponse.body())
                 model.derived_key = getString("derived_key", fetchDataResponse.body())
@@ -221,12 +214,10 @@ class UploadToShelfService(context: Context) {
         ob.addProperty("key", keyString)
         ob.addProperty("iv", iv)
         ob.addProperty("createdOn", Date().time)
-
         var success = false
         var attemptCount = 0
         val maxAttempts = 3
         val retryDelayMs = 2000L
-        val retryStartTime = System.currentTimeMillis()
 
         while (!success && attemptCount < maxAttempts) {
             attemptCount++
@@ -258,8 +249,7 @@ class UploadToShelfService(context: Context) {
         }
 
         if (!success) {
-            val totalRetryDuration = System.currentTimeMillis() - retryStartTime
-            val errorMessage = "Failed to save key/IV after $maxAttempts attempts in ${totalRetryDuration}ms"
+            val errorMessage = "Failed to save key/IV after $maxAttempts"
             throw IOException(errorMessage)
         }
 

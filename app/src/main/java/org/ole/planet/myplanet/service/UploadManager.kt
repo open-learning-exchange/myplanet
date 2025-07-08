@@ -232,7 +232,6 @@ class UploadManager(var context: Context) : FileUploadService() {
     fun uploadFeedback(listener: SuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
         val realm = getRealm()
-
         realm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
             val feedbacks: List<RealmFeedback> = realm.where(RealmFeedback::class.java).findAll()
 
@@ -245,12 +244,7 @@ class UploadManager(var context: Context) : FileUploadService() {
 
             feedbacks.processInBatches { feedback ->
                 try {
-                    val res: Response<JsonObject>? = apiInterface?.postDoc(
-                        Utilities.header,
-                        "application/json",
-                        "${Utilities.getUrl()}/feedback",
-                        RealmFeedback.serializeFeedback(feedback)
-                    )?.execute()
+                    val res: Response<JsonObject>? = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/feedback", RealmFeedback.serializeFeedback(feedback))?.execute()
 
                     val r = res?.body()
                     if (r != null) {
@@ -271,7 +265,6 @@ class UploadManager(var context: Context) : FileUploadService() {
                     e.printStackTrace()
                 }
             }
-
         }, {
             listener.onSuccess("Feedback sync completed successfully")
         }, { error ->
@@ -285,7 +278,6 @@ class UploadManager(var context: Context) : FileUploadService() {
         val apiInterface = client?.create(ApiInterface::class.java)
         realm.executeTransactionAsync { realm: Realm ->
             val data: List<RealmSubmitPhotos> = realm.where(RealmSubmitPhotos::class.java).equalTo("uploaded", false).findAll()
-
             data.processInBatches { sub ->
                     try {
                         val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/submissions", RealmSubmitPhotos.serializeRealmSubmitPhotos(sub))?.execute()?.body()
@@ -301,7 +293,6 @@ class UploadManager(var context: Context) : FileUploadService() {
                         e.printStackTrace()
                     }
             }
-
             if (data.isEmpty()) {
                 listener?.onSuccess("No photos to upload")
             }
@@ -480,12 +471,8 @@ class UploadManager(var context: Context) : FileUploadService() {
         }
 
         val realm = getRealm()
-
         realm.executeTransactionAsync({ transactionRealm: Realm ->
-            val activities = transactionRealm.where(RealmOfflineActivity::class.java)
-                .isNull("_rev")
-                .equalTo("type", "login")
-                .findAll()
+            val activities = transactionRealm.where(RealmOfflineActivity::class.java).isNull("_rev").equalTo("type", "login").findAll()
 
             activities.processInBatches { act ->
                 try {
@@ -493,18 +480,12 @@ class UploadManager(var context: Context) : FileUploadService() {
                         return@processInBatches
                     }
 
-                    val `object` = apiInterface?.postDoc(
-                        Utilities.header,
-                        "application/json",
-                        "${Utilities.getUrl()}/login_activities",
-                        RealmOfflineActivity.serializeLoginActivities(act, context)
-                    )?.execute()?.body()
+                    val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/login_activities", RealmOfflineActivity.serializeLoginActivities(act, context))?.execute()?.body()
                     act.changeRev(`object`)
                 } catch (e: IOException) {
                     e.printStackTrace()
                 }
             }
-
             uploadTeamActivities(transactionRealm, apiInterface)
         }, {
             realm.close()
