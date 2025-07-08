@@ -148,8 +148,8 @@ class BecomeMemberActivity : BaseActivity() {
         }
 
         Service(this).becomeMember(realm, obj, object : Service.CreateUserCallback {
-            override fun onSuccess(message: String) {
-                runOnUiThread { Utilities.toast(this@BecomeMemberActivity, message) }
+            override fun onSuccess(success: String) {
+                runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
             }
         }, object : SecurityDataCallback {
             override fun onSecurityDataUpdated() {

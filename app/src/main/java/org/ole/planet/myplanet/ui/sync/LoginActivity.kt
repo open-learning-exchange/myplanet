@@ -7,8 +7,9 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -129,9 +130,10 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
 
         if (autoLogin && username != null && password != null) {
-            Handler(Looper.getMainLooper()).postDelayed({
+            lifecycleScope.launch {
+                delay(500)
                 submitForm(username, password)
-            }, 500)
+            }
         }
 
         getTeamMembers()
