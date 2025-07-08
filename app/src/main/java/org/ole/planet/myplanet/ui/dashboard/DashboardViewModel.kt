@@ -1,6 +1,12 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import io.realm.Case
 import io.realm.Realm
 import java.util.Date
@@ -9,8 +15,19 @@ import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.utilities.FileUtils.totalAvailableMemoryRatio
+import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+
+data class DashboardUiState(
+    val unreadCount: Int = 0
+)
 
 class DashboardViewModel : ViewModel() {
+    private val _uiState = MutableStateFlow(DashboardUiState())
+    val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
     fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
         val earnedDollarsVoice = minOf(voiceCount, 5) * 2
         val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
@@ -91,6 +108,96 @@ class DashboardViewModel : ViewModel() {
             .equalTo("isRead", false)
             .count()
             .toInt()
+    }
+
+    fun refreshNotifications(realm: Realm, userId: String?) {
+        viewModelScope.launch(Dispatchers.IO) {
+            var backgroundRealm: Realm? = null
+            var unreadCount = 0
+            try {
+                backgroundRealm = Realm.getDefaultInstance()
+                backgroundRealm.executeTransaction { r ->
+                    updateResourceNotification(r, userId)
+                    createSurveyNotifications(r, userId)
+                    createTaskNotifications(r, userId)
+                    createStorageNotification(r, userId)
+                    createJoinRequestNotifications(r, userId)
+                }
+                unreadCount = getUnreadNotificationsSize(backgroundRealm, userId)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                backgroundRealm?.close()
+                _uiState.value = _uiState.value.copy(unreadCount = unreadCount)
+            }
+        }
+    }
+
+    private fun createSurveyNotifications(realm: Realm, userId: String?) {
+        val pendingSurveys = getPendingSurveys(realm, userId)
+        val surveyTitles = getSurveyTitlesFromSubmissions(realm, pendingSurveys)
+        surveyTitles.forEach { title ->
+            createNotificationIfNotExists(realm, "survey", title, title, userId)
+        }
+    }
+
+    private fun createTaskNotifications(realm: Realm, userId: String?) {
+        val tasks = realm.where(RealmTeamTask::class.java)
+            .notEqualTo("status", "archived")
+            .equalTo("completed", false)
+            .equalTo("assignee", userId)
+            .findAll()
+        tasks.forEach { task ->
+            createNotificationIfNotExists(
+                realm,
+                "task",
+                "${task.title} ${formatDate(task.deadline)}",
+                task.id,
+                userId
+            )
+        }
+    }
+
+    private fun createStorageNotification(realm: Realm, userId: String?) {
+        val storageRatio = totalAvailableMemoryRatio
+        createNotificationIfNotExists(realm, "storage", "$storageRatio", "storage", userId)
+    }
+
+    private fun createJoinRequestNotifications(realm: Realm, userId: String?) {
+        val teamLeaderMemberships = realm.where(RealmMyTeam::class.java)
+            .equalTo("userId", userId)
+            .equalTo("docType", "membership")
+            .equalTo("isLeader", true)
+            .findAll()
+
+        teamLeaderMemberships.forEach { leadership ->
+            val pendingJoinRequests = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", leadership.teamId)
+                .equalTo("docType", "request")
+                .findAll()
+
+            pendingJoinRequests.forEach { joinRequest ->
+                val team = realm.where(RealmMyTeam::class.java)
+                    .equalTo("_id", leadership.teamId)
+                    .findFirst()
+
+                val requester = realm.where(RealmUserModel::class.java)
+                    .equalTo("id", joinRequest.userId)
+                    .findFirst()
+
+                val requesterName = requester?.name ?: "Unknown User"
+                val teamName = team?.name ?: "Unknown Team"
+                val message = "$requesterName has requested to join $teamName"
+
+                createNotificationIfNotExists(
+                    realm,
+                    "join_request",
+                    message,
+                    joinRequest._id,
+                    userId
+                )
+            }
+        }
     }
 }
 

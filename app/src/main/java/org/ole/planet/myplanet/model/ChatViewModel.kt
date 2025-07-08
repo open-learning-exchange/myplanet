@@ -1,45 +1,35 @@
 package org.ole.planet.myplanet.model
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import io.realm.RealmList
 
+data class ChatUiState(
+    val selectedChatHistory: RealmList<Conversation>? = null,
+    val selectedId: String? = null,
+    val selectedRev: String? = null,
+    val selectedAiProvider: String? = null
+)
+
 class ChatViewModel : ViewModel() {
-    private val selectedChatHistoryLiveData = MutableLiveData<RealmList<Conversation>>()
-    private val selectedId = MutableLiveData<String>()
-    private val selectedRev = MutableLiveData<String>()
-    private val selectedAiProvider = MutableLiveData<String?>()
+    private val _uiState = MutableStateFlow(ChatUiState())
+    val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
-    fun setSelectedChatHistory(conversations: RealmList<Conversation>) {
-        selectedChatHistoryLiveData.value = conversations
-    }
-
-    fun getSelectedChatHistory(): LiveData<RealmList<Conversation>> {
-        return selectedChatHistoryLiveData
+    fun setSelectedChatHistory(conversations: RealmList<Conversation>?) {
+        _uiState.value = _uiState.value.copy(selectedChatHistory = conversations)
     }
 
     fun setSelectedId(id: String) {
-        selectedId.value = id
+        _uiState.value = _uiState.value.copy(selectedId = id)
     }
 
     fun setSelectedRev(rev: String) {
-        selectedRev.value = rev
-    }
-
-    fun getSelectedId(): LiveData<String> {
-        return selectedId
-    }
-
-    fun getSelectedRev(): LiveData<String> {
-        return selectedRev
+        _uiState.value = _uiState.value.copy(selectedRev = rev)
     }
 
     fun setSelectedAiProvider(aiProvider: String?) {
-        selectedAiProvider.value = aiProvider
-    }
-    fun getSelectedAiProvider(): LiveData<String?> {
-        return selectedAiProvider
+        _uiState.value = _uiState.value.copy(selectedAiProvider = aiProvider)
     }
 }
-

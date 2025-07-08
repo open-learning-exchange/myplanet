@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
+import org.ole.planet.myplanet.datamanager.NetworkRepository
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.callback.SuccessListener
@@ -191,8 +191,8 @@ class Service(private val context: Context) {
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
         CoroutineScope(Dispatchers.IO).launch {
-            val primaryAvailable = isServerReachable(mapping.primaryUrl)
-            val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
+            val primaryAvailable = NetworkRepository.isServerReachable(mapping.primaryUrl)
+            val alternativeAvailable = mapping.alternativeUrl?.let { NetworkRepository.isServerReachable(it) } == true
 
             if (!primaryAvailable && alternativeAvailable) {
                 mapping.alternativeUrl.let { alternativeUrl ->

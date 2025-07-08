@@ -89,8 +89,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
         networkStatusJob?.cancel()
         networkStatusJob = viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.networkStatus.collect { status ->
-                    updateNetworkIndicator(status)
+                viewModel.uiState.collect { state ->
+                    updateNetworkIndicator(state.networkStatus)
                 }
             }
         }
