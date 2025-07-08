@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2675
-        versionName = "0.26.75"
+        versionCode = 2676
+        versionName = "0.26.76"
         ndkVersion = '26.3.11579264'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -237,7 +237,7 @@ dependencies {
     def retrofit2_version = "3.0.0"
     implementation "com.squareup.retrofit2:retrofit:$retrofit2_version"
     implementation "com.squareup.retrofit2:converter-gson:$retrofit2_version"
-    implementation("com.squareup.okhttp3:okhttp:5.0.0")
+    implementation("com.squareup.okhttp3:okhttp:5.1.0")
 
     def glide_version = "4.16.0"
     implementation "com.github.bumptech.glide:glide:$glide_version"
