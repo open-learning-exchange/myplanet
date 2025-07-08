@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.service
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Handler
+import android.os.Looper
 import android.text.TextUtils
 import android.util.Base64
 import android.util.Log
@@ -515,123 +517,45 @@ class UploadToShelfService(context: Context) {
     }
 
     private fun uploadToShelf(listener: SuccessListener) {
-        val overallStartTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "uploadToShelf: Starting")
-
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm = dbService.realmInstance
+        var unmanagedUsers: List<RealmUserModel> = emptyList()
+        val mainHandler = Handler(Looper.getMainLooper())
 
-        val transactionStartTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "uploadToShelf: Starting async transaction")
-
-        mRealm.executeTransactionAsync({ realm: Realm ->
-            val queryStartTime = System.currentTimeMillis()
-            Log.d("UploadTiming", "uploadToShelf: Starting user query")
-
+        mRealm.executeTransactionAsync({ realm ->
             val users = realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll()
-
-            val queryDuration = System.currentTimeMillis() - queryStartTime
-            Log.d("UploadTiming", "uploadToShelf: User query took ${queryDuration}ms")
-            Log.d("UploadTiming", "uploadToShelf: Found ${users.size} users to process")
-
-            if (users.isEmpty()) {
-                Log.d("UploadTiming", "uploadToShelf: No users to process")
+            unmanagedUsers = realm.copyFromRealm(users)
+        }, {
+            if (unmanagedUsers.isEmpty()) {
+                listener.onSuccess("Sync with server completed successfully")
                 return@executeTransactionAsync
             }
-
-            val processingStartTime = System.currentTimeMillis()
-            Log.d("UploadTiming", "uploadToShelf: Starting user processing")
-
-            var processedCount = 0
-            var skippedCount = 0
-            var errorCount = 0
-
-            users.forEachIndexed { index, model ->
-                val userStartTime = System.currentTimeMillis()
-                Log.d("UploadTiming", "uploadToShelf: Processing user ${index + 1}/${users.size} (${model.id})")
-
+            Thread {
+                var backgroundRealm: Realm? = null
                 try {
-                    if (model.id?.startsWith("guest") == true) {
-                        skippedCount++
-                        Log.d("UploadTiming", "uploadToShelf: Skipping guest user ${model.id}")
-                        return@forEachIndexed
+                    backgroundRealm = dbService.realmInstance
+                    unmanagedUsers.forEach { model ->
+                        try {
+                            if (model.id?.startsWith("guest") == true) return@forEach
+                            val jsonDoc = apiInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/${model._id}")?.execute()?.body()
+                            val `object` = getShelfData(backgroundRealm, model.id, jsonDoc)
+                            `object`.addProperty("_rev", getString("_rev", jsonDoc))
+                            apiInterface?.putDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}", `object`)?.execute()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
                     }
-
-                    // First network call - get shelf by _id
-                    val firstCallStartTime = System.currentTimeMillis()
-                    Log.d("UploadTiming", "uploadToShelf: Making first network call for user ${model.id}")
-                    val jsonDoc = apiInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/${model._id}")?.execute()?.body()
-                    val firstCallDuration = System.currentTimeMillis() - firstCallStartTime
-                    Log.d("UploadTiming", "uploadToShelf: First network call took ${firstCallDuration}ms")
-
-                    // Heavy data processing
-                    val dataProcessStartTime = System.currentTimeMillis()
-                    Log.d("UploadTiming", "uploadToShelf: Starting getShelfData processing for user ${model.id}")
-                    val `object` = getShelfData(realm, model.id, jsonDoc)
-                    val dataProcessDuration = System.currentTimeMillis() - dataProcessStartTime
-                    Log.d("UploadTiming", "uploadToShelf: getShelfData processing took ${dataProcessDuration}ms")
-
-                    // Second network call - get shelf by id
-                    val revUpdateStartTime = System.currentTimeMillis()
-                    `object`.addProperty("_rev", getString("_rev", jsonDoc))
-                    val revUpdateDuration = System.currentTimeMillis() - revUpdateStartTime
-                    Log.d("UploadTiming", "uploadToShelf: Rev update took ${revUpdateDuration}ms")
-
-                    // Second network call - put updated data
-                    val secondCallStartTime = System.currentTimeMillis()
-                    Log.d("UploadTiming", "uploadToShelf: Making second network call for user ${model.id}")
-                    val putResponse = apiInterface?.putDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}", `object`)?.execute()?.body()
-                    val secondCallDuration = System.currentTimeMillis() - secondCallStartTime
-                    Log.d("UploadTiming", "uploadToShelf: Second network call took ${secondCallDuration}ms")
-
-                    processedCount++
-
-                    val userTotalDuration = System.currentTimeMillis() - userStartTime
-                    Log.d("UploadTiming", "uploadToShelf: User ${index + 1} total processing time: ${userTotalDuration}ms")
-                    Log.d("UploadTiming", "uploadToShelf: User ${index + 1} breakdown - First call: ${firstCallDuration}ms, Data processing: ${dataProcessDuration}ms, Second call: ${secondCallDuration}ms")
-
-                    // Log progress every 10 users
-                    if ((index + 1) % 10 == 0) {
-                        val progressDuration = System.currentTimeMillis() - processingStartTime
-                        val avgTimePerUser = progressDuration / (index + 1)
-                        val estimatedTotal = avgTimePerUser * users.size
-                        val remainingTime = estimatedTotal - progressDuration
-                        Log.d("UploadTiming", "uploadToShelf: Progress ${index + 1}/${users.size} users")
-                        Log.d("UploadTiming", "uploadToShelf: Elapsed: ${progressDuration}ms, Avg per user: ${avgTimePerUser}ms")
-                        Log.d("UploadTiming", "uploadToShelf: Estimated remaining time: ${remainingTime}ms")
-                    }
-
+                    mainHandler.post { listener.onSuccess("Sync with server completed successfully") }
                 } catch (e: Exception) {
-                    errorCount++
-                    val userErrorDuration = System.currentTimeMillis() - userStartTime
-                    Log.e("UploadTiming", "uploadToShelf: Error processing user ${model.id} after ${userErrorDuration}ms", e)
                     e.printStackTrace()
+                    mainHandler.post { listener.onSuccess("Unable to update documents: ${e.localizedMessage}") }
+                } finally {
+                    backgroundRealm?.close()
                 }
-            }
-
-            val processingDuration = System.currentTimeMillis() - processingStartTime
-            Log.d("UploadTiming", "uploadToShelf: All user processing completed in ${processingDuration}ms")
-            Log.d("UploadTiming", "uploadToShelf: Processed: $processedCount, Skipped: $skippedCount, Errors: $errorCount")
-
-            if (processedCount > 0) {
-                val avgTimePerUser = processingDuration / processedCount
-                Log.d("UploadTiming", "uploadToShelf: Average time per processed user: ${avgTimePerUser}ms")
-            }
-
-        }, {
-            val transactionDuration = System.currentTimeMillis() - transactionStartTime
-            val totalDuration = System.currentTimeMillis() - overallStartTime
-
-            Log.d("UploadTiming", "uploadToShelf: Transaction completed in ${transactionDuration}ms")
-            Log.d("UploadTiming", "uploadToShelf: TOTAL METHOD DURATION: ${totalDuration}ms (${totalDuration/1000.0}s)")
-
-            listener.onSuccess("Sync with server completed successfully")
-
-        }) { error ->
-            val errorDuration = System.currentTimeMillis() - overallStartTime
-            Log.e("UploadTiming", "uploadToShelf: Error after ${errorDuration}ms", error)
+            }.start()
+        }, { error ->
             listener.onSuccess("Unable to update documents: ${error.localizedMessage}")
-        }
+        })
     }
 
     private fun uploadSingleUserToShelf(userName: String?, listener: SuccessListener) {
