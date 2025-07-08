@@ -46,7 +46,7 @@ object Markdown {
         return Markwon.builder(context)
             .usePlugin(HtmlPlugin.create())
             .usePlugin(ImagesPlugin.create())
-            .usePlugin(MovementMethodPlugin.create())
+            .usePlugin(MovementMethodPlugin.create(LinkMovementMethod.getInstance()))
             .usePlugin(TablePlugin.create(context))
             .usePlugin(HtmlPlugin.create { plugin: HtmlPlugin -> plugin.addHandler(AlignTagHandler()) })
             .usePlugin(object : AbstractMarkwonPlugin() {

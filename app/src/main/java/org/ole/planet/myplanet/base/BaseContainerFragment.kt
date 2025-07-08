@@ -23,6 +23,7 @@ import androidx.appcompat.view.ContextThemeWrapper
 import androidx.appcompat.widget.AppCompatRatingBar
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
+import org.ole.planet.myplanet.BuildConfig
 import com.google.gson.JsonObject
 import java.io.File
 import org.ole.planet.myplanet.MainApplication
@@ -54,18 +55,20 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private val installUnknownSourcesRequestCode = 112
     var hasInstallPermission = hasInstallPermission(MainApplication.context)
     private var currentLibrary: RealmMyLibrary? = null
-    private lateinit var installApkLauncher: ActivityResultLauncher<Intent>
+    private var installApkLauncher: ActivityResultLauncher<Intent>? = null
     lateinit var prefData: SharedPrefManager
     private var pendingAutoOpenLibrary: RealmMyLibrary? = null
     private var shouldAutoOpenAfterDownload = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         profileDbHandler = UserProfileDbHandler(requireActivity())
-        installApkLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                if (currentLibrary != null) {
-                    installApk(currentLibrary!!)
-                    currentLibrary = null
+        if (!BuildConfig.LITE) {
+            installApkLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                if (result.resultCode == Activity.RESULT_OK) {
+                    currentLibrary?.let {
+                        installApk(it)
+                        currentLibrary = null
+                    }
                 }
             }
         }
@@ -240,13 +243,16 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 ResourceOpener.openIntent(requireActivity(), items, CSVViewerActivity::class.java)
             }
             "apk" -> {
-                installApk(items)
+                if (!BuildConfig.LITE) {
+                    installApk(items)
+                }
             }
             else -> Toast.makeText(activity, getString(R.string.this_file_type_is_currently_unsupported), Toast.LENGTH_LONG).show()
         }
     }
 
     private fun installApk(items: RealmMyLibrary) {
+        if (BuildConfig.LITE) return
         currentLibrary = items
         val directory = File(MainApplication.context.getExternalFilesDir(null).toString() + "/ole" + "/" + items.id)
         if (!directory.exists()) {
@@ -280,9 +286,10 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     private fun requestInstallPermission() {
+        if (BuildConfig.LITE) return
         val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
         intent.data = ("package:" + MainApplication.context.packageName).toUri()
-        installApkLauncher.launch(intent)
+        installApkLauncher?.launch(intent)
     }
 
     private fun openFileType(items: RealmMyLibrary, videoType: String) {
