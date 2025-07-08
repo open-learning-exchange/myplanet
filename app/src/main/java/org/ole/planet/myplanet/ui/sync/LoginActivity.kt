@@ -457,48 +457,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     private fun submitForm(name: String?, password: String?) {
-        if (forceSyncTrigger()) {
-            return
-        }
-        settings.edit {
-            putString("loginUserName", name)
-            putString("loginUserPassword", password)
-            val isLoggedIn = authenticateUser(settings, name, password, false)
-            if (isLoggedIn) {
-                Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT)
-                    .show()
-                onLogin()
-                saveUsers(name, password, "member")
-            } else {
-                ManagerSync.instance?.login(name, password, object : SyncListener {
-                    override fun onSyncStarted() {
-                        customProgressDialog.setText(getString(R.string.please_wait))
-                        customProgressDialog.show()
-                    }
-
-                    override fun onSyncComplete() {
-                        customProgressDialog.dismiss()
-                        val log = authenticateUser(settings, name, password, true)
-                        if (log) {
-                            Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
-                            onLogin()
-                            saveUsers(name, password, "member")
-                        } else {
-                            alertDialogOkay(getString(R.string.err_msg_login))
-                        }
-                        syncIconDrawable.stop()
-                        syncIconDrawable.selectDrawable(0)
-                    }
-
-                    override fun onSyncFailed(msg: String?) {
-                        toast(context, msg)
-                        customProgressDialog.dismiss()
-                        syncIconDrawable.stop()
-                        syncIconDrawable.selectDrawable(0)
-                    }
-                })
-            }
-        }
+        AuthHelper.login(this, name, password)
     }
 
     internal fun showGuestDialog(username: String) {
