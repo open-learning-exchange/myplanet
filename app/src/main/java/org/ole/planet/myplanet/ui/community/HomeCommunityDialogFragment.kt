@@ -17,12 +17,13 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.TimeUtils
 
 class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
-    private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
+    private var _binding: FragmentTeamDetailBinding? = null
+    private val binding get() = _binding!!
     private var bottomSheetBehavior: BottomSheetBehavior<View>? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentTeamDetailBinding = FragmentTeamDetailBinding.inflate(inflater, container, false)
-        return fragmentTeamDetailBinding.root
+        _binding = FragmentTeamDetailBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -77,18 +78,23 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
     }
 
     private fun initCommunityTab() {
-        fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
+        binding.llActionButtons.visibility = View.GONE
         val settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val sParentcode = settings.getString("parentCode", "")
         val communityName = settings.getString("communityName", "")
-        fragmentTeamDetailBinding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "$communityName@$sParentcode", true)
-        TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
-            tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
+        binding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "$communityName@$sParentcode", true)
+        TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
+            tab.text = (binding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
         }.attach()
-        fragmentTeamDetailBinding.title.text = communityName
-        fragmentTeamDetailBinding.title.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-        fragmentTeamDetailBinding.subtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-        fragmentTeamDetailBinding.subtitle.text = TimeUtils.getFormatedDateWithTime(Date().time)
-        fragmentTeamDetailBinding.appBar.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
+        binding.title.text = communityName
+        binding.title.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+        binding.subtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+        binding.subtitle.text = TimeUtils.getFormatedDateWithTime(Date().time)
+        binding.appBar.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }
