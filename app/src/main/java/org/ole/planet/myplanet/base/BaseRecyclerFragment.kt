@@ -69,7 +69,11 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             isMyCourseLib = it.getBoolean("isMyCourseLib")
             courseLib = it.getString("courseLib")
             @Suppress("UNCHECKED_CAST")
-            resources = it.getSerializable("resources") as? ArrayList<RealmMyLibrary>
+            resources = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                it.getSerializable("resources", ArrayList::class.java) as? ArrayList<RealmMyLibrary>
+            } else {
+                it.getSerializable("resources") as? ArrayList<RealmMyLibrary>
+            }
         }
     }
 

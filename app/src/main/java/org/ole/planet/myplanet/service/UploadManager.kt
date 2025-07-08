@@ -10,6 +10,7 @@ import java.io.*
 import java.util.Date
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.*
@@ -684,7 +685,8 @@ class UploadManager(var context: Context) : FileUploadService() {
                                     val format = "%s/resources/%s/%s"
                                     val connection = f.toURI().toURL().openConnection()
                                     val mimeType = connection.contentType
-                                    val body = RequestBody.create("application/octet-stream".toMediaTypeOrNull(), FileUtils.fullyReadFileToBytes(f))
+                                    val body = FileUtils.fullyReadFileToBytes(f)
+                                        .toRequestBody("application/octet-stream".toMediaTypeOrNull())
                                     val url = String.format(format, Utilities.getUrl(), id, name)
 
                                     val res = apiInterface?.uploadResource(getHeaderMap(mimeType, rev), url, body)?.execute()

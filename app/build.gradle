@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 34
-        versionCode = 2665
-        versionName = "0.26.65"
+        versionCode = 2674
+        versionName = "0.26.74"
         ndkVersion = '21.3.6528147'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -30,6 +30,19 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    flavorDimensions "mode"
+    productFlavors {
+        create("default") {
+            dimension "mode"
+            buildConfigField "boolean", "LITE", "false"
+        }
+        create("lite") {
+            dimension "mode"
+            buildConfigField "boolean", "LITE", "true"
+        }
+    }
+
     packagingOptions {
         resources {
             excludes += [
@@ -224,7 +237,7 @@ dependencies {
     def retrofit2_version = "3.0.0"
     implementation "com.squareup.retrofit2:retrofit:$retrofit2_version"
     implementation "com.squareup.retrofit2:converter-gson:$retrofit2_version"
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:okhttp:5.0.0")
 
     def glide_version = "4.16.0"
     implementation "com.github.bumptech.glide:glide:$glide_version"

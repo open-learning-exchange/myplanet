@@ -69,6 +69,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import java.io.File
 import java.util.Date
+import java.util.concurrent.atomic.AtomicInteger
 
 abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     lateinit var settings: SharedPreferences
@@ -200,9 +201,6 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         return true
     }
 
-    // APPROACH 1: Sequential Execution Fix
-// Replace the async section in your startUpload method with this:
-
     fun startUpload(source: String, userName: String? = null, securityCallback: SecurityDataCallback? = null) {
         val overallStartTime = System.currentTimeMillis()
         Log.d("UploadTiming", "=== UPLOAD PROCESS STARTED ===")
@@ -213,10 +211,10 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         logDatabaseDiagnostics()
 
         if (source == "becomeMember") {
-            UploadToShelfService.instance?.uploadSingleUserData(userName ,object : SuccessListener {
-                override fun onSuccess(message: String?) {
+            UploadToShelfService.instance?.uploadSingleUserData(userName, object : SuccessListener {
+                override fun onSuccess(success: String?) {
                     UploadToShelfService.instance?.uploadSingleUserHealth("org.couchdb.user:${userName}", object : SuccessListener {
-                        override fun onSuccess(healthMessage: String?) {
+                        override fun onSuccess(success: String?) {
                             userName?.let { name ->
                                 fetchAndLogUserSecurityData(name, securityCallback)
                             } ?: run {
@@ -232,7 +230,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             return
         }
 
-        // Main upload process with sequential execution
+        // Main upload process with hybrid approach - sequential for heavy operations, parallel for lighter ones
         Log.d("UploadTiming", "Starting main upload process")
         customProgressDialog.setText(context.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
@@ -301,11 +299,13 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         val syncUploadsDuration = System.currentTimeMillis() - syncUploadsStartTime
         Log.d("UploadTiming", "All synchronous uploads completed in ${syncUploadsDuration}ms")
 
-        // SEQUENTIAL async uploads to avoid Realm transaction queue bottleneck
+        // Hybrid approach for async uploads - combine both approaches
         val asyncStartTime = System.currentTimeMillis()
         val asyncTimings = mutableMapOf<String, Long>()
 
-        Log.d("UploadTiming", "Starting SEQUENTIAL asynchronous uploads")
+        // Counter for parallel operations
+        val completedOperations = AtomicInteger(0)
+        val totalOperations = 6 // parallel operations
 
         fun completeUploadProcess() {
             val asyncDuration = System.currentTimeMillis() - asyncStartTime
@@ -332,9 +332,18 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             Log.d("UploadTiming", "=== UPLOAD PROCESS COMPLETED ===")
         }
 
-        // Chain 1: Upload user data with health
+        fun checkAllOperationsComplete() {
+            if (completedOperations.incrementAndGet() == totalOperations) {
+                completeUploadProcess()
+            }
+        }
+
+        Log.d("UploadTiming", "Starting hybrid asynchronous uploads (sequential for heavy, parallel for light)")
+
+        // Heavy operations that should be sequential to avoid Realm bottlenecks
+        // Chain 1: Upload user data with health (sequential)
         val userDataStartTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "Step 1/6: Starting uploadUserData")
+        Log.d("UploadTiming", "Sequential chain: Starting uploadUserData")
         UploadToShelfService.instance?.uploadUserData {
             asyncTimings["uploadUserData"] = System.currentTimeMillis() - userDataStartTime
             Log.d("UploadTiming", "uploadUserData completed in ${asyncTimings["uploadUserData"]}ms")
@@ -344,69 +353,70 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             asyncTimings["uploadHealth"] = System.currentTimeMillis() - healthStartTime
             Log.d("UploadTiming", "uploadHealth completed in ${asyncTimings["uploadHealth"]}ms")
 
-            // Chain 2: Upload user activities
-            val userActivitiesStartTime = System.currentTimeMillis()
-            Log.d("UploadTiming", "Step 2/6: Starting uploadUserActivities")
-            UploadManager.instance?.uploadUserActivities(object : SuccessListener {
-                override fun onSuccess(message: String?) {
-                    asyncTimings["uploadUserActivities"] = System.currentTimeMillis() - userActivitiesStartTime
-                    Log.d("UploadTiming", "uploadUserActivities completed in ${asyncTimings["uploadUserActivities"]}ms - Result: $message")
-
-                    // Chain 3: Upload exam results
-                    val examResultStartTime = System.currentTimeMillis()
-                    Log.d("UploadTiming", "Step 3/6: Starting uploadExamResult")
-                    UploadManager.instance?.uploadExamResult(object : SuccessListener {
-                        override fun onSuccess(message: String?) {
-                            asyncTimings["uploadExamResult"] = System.currentTimeMillis() - examResultStartTime
-                            Log.d("UploadTiming", "uploadExamResult completed in ${asyncTimings["uploadExamResult"]}ms - Result: $message")
-
-                            // Chain 4: Upload feedback
-                            val feedbackStartTime = System.currentTimeMillis()
-                            Log.d("UploadTiming", "Step 4/6: Starting uploadFeedback")
-                            UploadManager.instance?.uploadFeedback(object : SuccessListener {
-                                override fun onSuccess(message: String?) {
-                                    asyncTimings["uploadFeedback"] = System.currentTimeMillis() - feedbackStartTime
-                                    Log.d("UploadTiming", "uploadFeedback completed in ${asyncTimings["uploadFeedback"]}ms - Result: $message")
-
-                                    // Chain 5: Upload resources
-                                    val resourceStartTime = System.currentTimeMillis()
-                                    Log.d("UploadTiming", "Step 5/6: Starting uploadResource")
-                                    UploadManager.instance?.uploadResource(object : SuccessListener {
-                                        override fun onSuccess(message: String?) {
-                                            asyncTimings["uploadResource"] = System.currentTimeMillis() - resourceStartTime
-                                            Log.d("UploadTiming", "uploadResource completed in ${asyncTimings["uploadResource"]}ms - Result: $message")
-
-                                            // Chain 6: Upload submit photos
-                                            val submitPhotosStartTime = System.currentTimeMillis()
-                                            Log.d("UploadTiming", "Step 6/6: Starting uploadSubmitPhotos")
-                                            UploadManager.instance?.uploadSubmitPhotos(object : SuccessListener {
-                                                override fun onSuccess(message: String?) {
-                                                    asyncTimings["uploadSubmitPhotos"] = System.currentTimeMillis() - submitPhotosStartTime
-                                                    Log.d("UploadTiming", "uploadSubmitPhotos completed in ${asyncTimings["uploadSubmitPhotos"]}ms - Result: $message")
-
-                                                    // Final: Upload activities
-                                                    val activitiesStartTime = System.currentTimeMillis()
-                                                    Log.d("UploadTiming", "Final step: Starting uploadActivities")
-                                                    UploadManager.instance?.uploadActivities(object : SuccessListener {
-                                                        override fun onSuccess(message: String?) {
-                                                            asyncTimings["uploadActivities"] = System.currentTimeMillis() - activitiesStartTime
-                                                            Log.d("UploadTiming", "uploadActivities completed in ${asyncTimings["uploadActivities"]}ms - Result: $message")
-
-                                                            // Complete the process
-                                                            completeUploadProcess()
-                                                        }
-                                                    })
-                                                }
-                                            })
-                                        }
-                                    })
-                                }
-                            })
-                        }
-                    })
-                }
-            })
+            // Mark the sequential chain as complete
+            checkAllOperationsComplete()
         }
+
+        // Lighter operations that can run in parallel
+        val userActivitiesStartTime = System.currentTimeMillis()
+        Log.d("UploadTiming", "Parallel: Starting uploadUserActivities")
+        UploadManager.instance?.uploadUserActivities(object : SuccessListener {
+            override fun onSuccess(success: String?) {
+                asyncTimings["uploadUserActivities"] = System.currentTimeMillis() - userActivitiesStartTime
+                Log.d("UploadTiming", "uploadUserActivities completed in ${asyncTimings["uploadUserActivities"]}ms - Result: $success")
+                checkAllOperationsComplete()
+            }
+        })
+
+        val examResultStartTime = System.currentTimeMillis()
+        Log.d("UploadTiming", "Parallel: Starting uploadExamResult")
+        UploadManager.instance?.uploadExamResult(object : SuccessListener {
+            override fun onSuccess(success: String?) {
+                asyncTimings["uploadExamResult"] = System.currentTimeMillis() - examResultStartTime
+                Log.d("UploadTiming", "uploadExamResult completed in ${asyncTimings["uploadExamResult"]}ms - Result: $success")
+                checkAllOperationsComplete()
+            }
+        })
+
+        val feedbackStartTime = System.currentTimeMillis()
+        Log.d("UploadTiming", "Parallel: Starting uploadFeedback")
+        UploadManager.instance?.uploadFeedback(object : SuccessListener {
+            override fun onSuccess(success: String?) {
+                asyncTimings["uploadFeedback"] = System.currentTimeMillis() - feedbackStartTime
+                Log.d("UploadTiming", "uploadFeedback completed in ${asyncTimings["uploadFeedback"]}ms - Result: $success")
+                checkAllOperationsComplete()
+            }
+        })
+
+        val resourceStartTime = System.currentTimeMillis()
+        Log.d("UploadTiming", "Parallel: Starting uploadResource")
+        UploadManager.instance?.uploadResource(object : SuccessListener {
+            override fun onSuccess(success: String?) {
+                asyncTimings["uploadResource"] = System.currentTimeMillis() - resourceStartTime
+                Log.d("UploadTiming", "uploadResource completed in ${asyncTimings["uploadResource"]}ms - Result: $success")
+                checkAllOperationsComplete()
+            }
+        })
+
+        val submitPhotosStartTime = System.currentTimeMillis()
+        Log.d("UploadTiming", "Parallel: Starting uploadSubmitPhotos")
+        UploadManager.instance?.uploadSubmitPhotos(object : SuccessListener {
+            override fun onSuccess(success: String?) {
+                asyncTimings["uploadSubmitPhotos"] = System.currentTimeMillis() - submitPhotosStartTime
+                Log.d("UploadTiming", "uploadSubmitPhotos completed in ${asyncTimings["uploadSubmitPhotos"]}ms - Result: $success")
+                checkAllOperationsComplete()
+            }
+        })
+
+        val activitiesStartTime = System.currentTimeMillis()
+        Log.d("UploadTiming", "Parallel: Starting uploadActivities")
+        UploadManager.instance?.uploadActivities(object : SuccessListener {
+            override fun onSuccess(success: String?) {
+                asyncTimings["uploadActivities"] = System.currentTimeMillis() - activitiesStartTime
+                Log.d("UploadTiming", "uploadActivities completed in ${asyncTimings["uploadActivities"]}ms - Result: $success")
+                checkAllOperationsComplete()
+            }
+        })
     }
 
     protected fun hideKeyboard(view: View?) {
@@ -557,5 +567,4 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             Log.e("DatabaseDiagnostics", "Error getting database diagnostics: ${e.message}", e)
         }
     }
-
 }
