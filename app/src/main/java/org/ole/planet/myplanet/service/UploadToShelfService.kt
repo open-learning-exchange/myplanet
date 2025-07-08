@@ -6,7 +6,6 @@ import android.os.Handler
 import android.os.Looper
 import android.text.TextUtils
 import android.util.Base64
-import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -39,111 +38,43 @@ class UploadToShelfService(context: Context) {
     lateinit var mRealm: Realm
 
     fun uploadUserData(listener: SuccessListener) {
-        val overallStartTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "UploadToShelfService.uploadUserData: Starting")
-
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm = dbService.realmInstance
 
-        val transactionStartTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "UploadToShelfService.uploadUserData: Starting async transaction")
-
         mRealm.executeTransactionAsync({ realm: Realm ->
-            val queryStartTime = System.currentTimeMillis()
-            Log.d("UploadTiming", "UploadToShelfService.uploadUserData: Starting database query")
-
             val userModels: List<RealmUserModel> = realm.where(RealmUserModel::class.java)
                 .isEmpty("_id").or().equalTo("isUpdated", true)
                 .findAll()
                 .take(100)
 
-            val queryDuration = System.currentTimeMillis() - queryStartTime
-            Log.d("UploadTiming", "UploadToShelfService.uploadUserData: Database query took ${queryDuration}ms")
-            Log.d("UploadTiming", "UploadToShelfService.uploadUserData: Found ${userModels.size} users to process")
-
             if (userModels.isEmpty()) {
-                Log.d("UploadTiming", "UploadToShelfService.uploadUserData: No users to process")
                 return@executeTransactionAsync
             }
 
-            val processingStartTime = System.currentTimeMillis()
-            Log.d("UploadTiming", "UploadToShelfService.uploadUserData: Starting user processing")
-
             val password = sharedPreferences.getString("loginUserPassword", "")
-            Log.d("UploadTiming", "UploadToShelfService.uploadUserData: Retrieved password from preferences")
 
             userModels.forEachIndexed { index, model ->
-                val userStartTime = System.currentTimeMillis()
-                Log.d("UploadTiming", "UploadToShelfService.uploadUserData: Processing user ${index + 1}/${userModels.size} (${model.name})")
-
                 try {
-                    val headerStartTime = System.currentTimeMillis()
                     val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
-                    val headerDuration = System.currentTimeMillis() - headerStartTime
-                    Log.d("UploadTiming", "UploadToShelfService.uploadUserData: Header creation took ${headerDuration}ms")
-
-                    val checkUserStartTime = System.currentTimeMillis()
-                    Log.d("UploadTiming", "UploadToShelfService.uploadUserData: Checking if user exists for ${model.name}")
                     val userExists = checkIfUserExists(apiInterface, header, model)
-                    val checkUserDuration = System.currentTimeMillis() - checkUserStartTime
-                    Log.d("UploadTiming", "UploadToShelfService.uploadUserData: User existence check took ${checkUserDuration}ms - Exists: $userExists")
 
                     if (!userExists) {
-                        val uploadNewStartTime = System.currentTimeMillis()
-                        Log.d("UploadTiming", "UploadToShelfService.uploadUserData: Uploading new user ${model.name}")
                         uploadNewUser(apiInterface, realm, model)
-                        val uploadNewDuration = System.currentTimeMillis() - uploadNewStartTime
-                        Log.d("UploadTiming", "UploadToShelfService.uploadUserData: New user upload took ${uploadNewDuration}ms")
                     } else if (model.isUpdated) {
-                        val updateUserStartTime = System.currentTimeMillis()
-                        Log.d("UploadTiming", "UploadToShelfService.uploadUserData: Updating existing user ${model.name}")
                         updateExistingUser(apiInterface, header, model)
-                        val updateUserDuration = System.currentTimeMillis() - updateUserStartTime
-                        Log.d("UploadTiming", "UploadToShelfService.uploadUserData: User update took ${updateUserDuration}ms")
-                    } else {
-                        Log.d("UploadTiming", "UploadToShelfService.uploadUserData: User ${model.name} already exists and not updated, skipping")
                     }
-
-                    val userTotalDuration = System.currentTimeMillis() - userStartTime
-                    Log.d("UploadTiming", "UploadToShelfService.uploadUserData: User ${index + 1} total processing time: ${userTotalDuration}ms")
-
-                    // Log progress every 10 users
-                    if ((index + 1) % 10 == 0) {
-                        val progressDuration = System.currentTimeMillis() - processingStartTime
-                        Log.d("UploadTiming", "UploadToShelfService.uploadUserData: Progress ${index + 1}/${userModels.size} users, elapsed: ${progressDuration}ms")
-                    }
-
                 } catch (e: IOException) {
-                    val userErrorDuration = System.currentTimeMillis() - userStartTime
-                    Log.e("UploadTiming", "UploadToShelfService.uploadUserData: Error processing user ${model.name} after ${userErrorDuration}ms", e)
                     e.printStackTrace()
                 }
             }
-
-            val processingDuration = System.currentTimeMillis() - processingStartTime
-            Log.d("UploadTiming", "UploadToShelfService.uploadUserData: All user processing completed in ${processingDuration}ms")
-
         }, {
-            val transactionDuration = System.currentTimeMillis() - transactionStartTime
-            Log.d("UploadTiming", "UploadToShelfService.uploadUserData: Transaction completed in ${transactionDuration}ms")
-            Log.d("UploadTiming", "UploadToShelfService.uploadUserData: Starting uploadToShelf")
-
-            val uploadToShelfStartTime = System.currentTimeMillis()
             uploadToShelf(object : SuccessListener {
-                override fun onSuccess(message: String?) {
-                    val uploadToShelfDuration = System.currentTimeMillis() - uploadToShelfStartTime
-                    val totalDuration = System.currentTimeMillis() - overallStartTime
-
-                    Log.d("UploadTiming", "UploadToShelfService.uploadUserData: uploadToShelf completed in ${uploadToShelfDuration}ms")
-                    Log.d("UploadTiming", "UploadToShelfService.uploadUserData: TOTAL METHOD DURATION: ${totalDuration}ms (${totalDuration/1000.0}s)")
-
-                    listener.onSuccess(message)
+                override fun onSuccess(success: String?) {
+                    listener.onSuccess(success)
                 }
             })
 
         }) { error ->
-            val errorDuration = System.currentTimeMillis() - overallStartTime
-            Log.e("UploadTiming", "UploadToShelfService.uploadUserData: Error after ${errorDuration}ms", error)
             listener.onSuccess("Error during user data sync: ${error.localizedMessage}")
         }
     }
@@ -181,133 +112,60 @@ class UploadToShelfService(context: Context) {
     }
 
     private fun checkIfUserExists(apiInterface: ApiInterface?, header: String, model: RealmUserModel): Boolean {
-        val startTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "checkIfUserExists: Starting for user ${model.name}")
-
         try {
-            val networkStartTime = System.currentTimeMillis()
             val res = apiInterface?.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")?.execute()
-            val networkDuration = System.currentTimeMillis() - networkStartTime
-
             val exists = res?.body() != null
-            val totalDuration = System.currentTimeMillis() - startTime
-
-            Log.d("UploadTiming", "checkIfUserExists: Network call took ${networkDuration}ms, total: ${totalDuration}ms, exists: $exists")
             return exists
 
         } catch (e: IOException) {
-            val errorDuration = System.currentTimeMillis() - startTime
-            Log.e("UploadTiming", "checkIfUserExists: Error after ${errorDuration}ms for user ${model.name}", e)
             e.printStackTrace()
             return false
         }
     }
 
     private fun uploadNewUser(apiInterface: ApiInterface?, realm: Realm, model: RealmUserModel) {
-        val startTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "uploadNewUser: Starting for user ${model.name}")
-
         try {
-            val serializationStartTime = System.currentTimeMillis()
             val obj = model.serialize()
-            val serializationDuration = System.currentTimeMillis() - serializationStartTime
-            Log.d("UploadTiming", "uploadNewUser: Serialization took ${serializationDuration}ms")
-
-            val createNetworkStartTime = System.currentTimeMillis()
             val createResponse = apiInterface?.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj)?.execute()
-            val createNetworkDuration = System.currentTimeMillis() - createNetworkStartTime
-            Log.d("UploadTiming", "uploadNewUser: Create user network call took ${createNetworkDuration}ms")
 
             if (createResponse?.isSuccessful == true) {
                 val id = createResponse.body()?.get("id")?.asString
                 val rev = createResponse.body()?.get("rev")?.asString
                 model._id = id
                 model._rev = rev
-                Log.d("UploadTiming", "uploadNewUser: User created successfully, starting post-creation processing")
-
-                val postProcessStartTime = System.currentTimeMillis()
                 processUserAfterCreation(apiInterface, realm, model, obj)
-                val postProcessDuration = System.currentTimeMillis() - postProcessStartTime
-                Log.d("UploadTiming", "uploadNewUser: Post-creation processing took ${postProcessDuration}ms")
-            } else {
-                Log.w("UploadTiming", "uploadNewUser: Create user failed for ${model.name}")
             }
-
-            val totalDuration = System.currentTimeMillis() - startTime
-            Log.d("UploadTiming", "uploadNewUser: Total duration ${totalDuration}ms for user ${model.name}")
-
         } catch (e: IOException) {
-            val errorDuration = System.currentTimeMillis() - startTime
-            Log.e("UploadTiming", "uploadNewUser: Error after ${errorDuration}ms for user ${model.name}", e)
             e.printStackTrace()
         }
     }
 
     private fun processUserAfterCreation(apiInterface: ApiInterface?, realm: Realm, model: RealmUserModel, obj: JsonObject) {
-        val startTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "processUserAfterCreation: Starting for user ${model.name}")
-
         try {
-            val headerStartTime = System.currentTimeMillis()
             val password = sharedPreferences.getString("loginUserPassword", "")
             val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
-            val headerDuration = System.currentTimeMillis() - headerStartTime
-            Log.d("UploadTiming", "processUserAfterCreation: Header creation took ${headerDuration}ms")
-
-            val fetchNetworkStartTime = System.currentTimeMillis()
             val fetchDataResponse = apiInterface?.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")?.execute()
-            val fetchNetworkDuration = System.currentTimeMillis() - fetchNetworkStartTime
-            Log.d("UploadTiming", "processUserAfterCreation: Fetch user data took ${fetchNetworkDuration}ms")
 
             if (fetchDataResponse?.isSuccessful == true) {
-                val dataProcessStartTime = System.currentTimeMillis()
                 model.password_scheme = getString("password_scheme", fetchDataResponse.body())
                 model.derived_key = getString("derived_key", fetchDataResponse.body())
                 model.salt = getString("salt", fetchDataResponse.body())
                 model.iterations = getString("iterations", fetchDataResponse.body())
-                val dataProcessDuration = System.currentTimeMillis() - dataProcessStartTime
-                Log.d("UploadTiming", "processUserAfterCreation: Data processing took ${dataProcessDuration}ms")
 
-                val saveKeyStartTime = System.currentTimeMillis()
-                Log.d("UploadTiming", "processUserAfterCreation: Starting saveKeyIv")
                 if (saveKeyIv(apiInterface, model, obj)) {
-                    val saveKeyDuration = System.currentTimeMillis() - saveKeyStartTime
-                    Log.d("UploadTiming", "processUserAfterCreation: saveKeyIv took ${saveKeyDuration}ms")
-
-                    val healthUpdateStartTime = System.currentTimeMillis()
                     updateHealthData(realm, model)
-                    val healthUpdateDuration = System.currentTimeMillis() - healthUpdateStartTime
-                    Log.d("UploadTiming", "processUserAfterCreation: Health update took ${healthUpdateDuration}ms")
-                } else {
-                    val saveKeyDuration = System.currentTimeMillis() - saveKeyStartTime
-                    Log.w("UploadTiming", "processUserAfterCreation: saveKeyIv failed after ${saveKeyDuration}ms")
                 }
-            } else {
-                Log.w("UploadTiming", "processUserAfterCreation: Fetch user data failed for ${model.name}")
             }
-
-            val totalDuration = System.currentTimeMillis() - startTime
-            Log.d("UploadTiming", "processUserAfterCreation: Total duration ${totalDuration}ms for user ${model.name}")
-
         } catch (e: IOException) {
-            val errorDuration = System.currentTimeMillis() - startTime
-            Log.e("UploadTiming", "processUserAfterCreation: Error after ${errorDuration}ms for user ${model.name}", e)
             e.printStackTrace()
         }
     }
 
     private fun updateExistingUser(apiInterface: ApiInterface?, header: String, model: RealmUserModel) {
-        val startTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "updateExistingUser: Starting for user ${model.name}")
-
         try {
-            val fetchLatestStartTime = System.currentTimeMillis()
             val latestDocResponse = apiInterface?.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")?.execute()
-            val fetchLatestDuration = System.currentTimeMillis() - fetchLatestStartTime
-            Log.d("UploadTiming", "updateExistingUser: Fetch latest doc took ${fetchLatestDuration}ms")
 
             if (latestDocResponse?.isSuccessful == true) {
-                val dataProcessStartTime = System.currentTimeMillis()
                 val latestRev = latestDocResponse.body()?.get("_rev")?.asString
                 val obj = model.serialize()
                 val objMap = obj.entrySet().associate { (key, value) -> key to value }
@@ -317,32 +175,16 @@ class UploadToShelfService(context: Context) {
                 val gson = Gson()
                 val jsonElement = gson.toJsonTree(mutableObj)
                 val jsonObject = jsonElement.asJsonObject
-                val dataProcessDuration = System.currentTimeMillis() - dataProcessStartTime
-                Log.d("UploadTiming", "updateExistingUser: Data processing took ${dataProcessDuration}ms")
 
-                val updateNetworkStartTime = System.currentTimeMillis()
                 val updateResponse = apiInterface.putDoc(header, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", jsonObject).execute()
-                val updateNetworkDuration = System.currentTimeMillis() - updateNetworkStartTime
-                Log.d("UploadTiming", "updateExistingUser: Update network call took ${updateNetworkDuration}ms")
 
                 if (updateResponse.isSuccessful) {
                     val updatedRev = updateResponse.body()?.get("rev")?.asString
                     model._rev = updatedRev
                     model.isUpdated = false
-                    Log.d("UploadTiming", "updateExistingUser: User updated successfully")
-                } else {
-                    Log.w("UploadTiming", "updateExistingUser: Update failed for user ${model.name}")
                 }
-            } else {
-                Log.w("UploadTiming", "updateExistingUser: Failed to fetch latest doc for user ${model.name}")
             }
-
-            val totalDuration = System.currentTimeMillis() - startTime
-            Log.d("UploadTiming", "updateExistingUser: Total duration ${totalDuration}ms for user ${model.name}")
-
         } catch (e: IOException) {
-            val errorDuration = System.currentTimeMillis() - startTime
-            Log.e("UploadTiming", "updateExistingUser: Error after ${errorDuration}ms for user ${model.name}", e)
             e.printStackTrace()
         }
     }
@@ -365,10 +207,6 @@ class UploadToShelfService(context: Context) {
 
     @Throws(IOException::class)
     fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject): Boolean {
-        val startTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "saveKeyIv: Starting for user ${model.name}")
-
-        val setupStartTime = System.currentTimeMillis()
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
         val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
         val ob = JsonObject()
@@ -383,8 +221,6 @@ class UploadToShelfService(context: Context) {
         ob.addProperty("key", keyString)
         ob.addProperty("iv", iv)
         ob.addProperty("createdOn", Date().time)
-        val setupDuration = System.currentTimeMillis() - setupStartTime
-        Log.d("UploadTiming", "saveKeyIv: Setup took ${setupDuration}ms")
 
         var success = false
         var attemptCount = 0
@@ -394,46 +230,28 @@ class UploadToShelfService(context: Context) {
 
         while (!success && attemptCount < maxAttempts) {
             attemptCount++
-            val attemptStartTime = System.currentTimeMillis()
-            Log.d("UploadTiming", "saveKeyIv: Attempt ${attemptCount}/${maxAttempts} for user ${model.name}")
-
             try {
-                val networkCallStartTime = System.currentTimeMillis()
                 val response: Response<JsonObject>? = apiInterface?.postDoc(header, "application/json", "${Utilities.getUrl()}/$table", ob)?.execute()
-                val networkCallDuration = System.currentTimeMillis() - networkCallStartTime
-                Log.d("UploadTiming", "saveKeyIv: Network call attempt $attemptCount took ${networkCallDuration}ms")
 
                 if (response != null) {
                     if (response.isSuccessful && response.body() != null) {
                         model.key = keyString
                         model.iv = iv
                         success = true
-                        val attemptDuration = System.currentTimeMillis() - attemptStartTime
-                        Log.d("UploadTiming", "saveKeyIv: Attempt $attemptCount succeeded in ${attemptDuration}ms")
                     } else {
-                        Log.w("UploadTiming", "saveKeyIv: Attempt $attemptCount failed - response not successful")
                         if (attemptCount < maxAttempts) {
-                            Log.d("UploadTiming", "saveKeyIv: Sleeping ${retryDelayMs}ms before retry")
                             Thread.sleep(retryDelayMs)
                         }
                     }
                 } else {
-                    Log.w("UploadTiming", "saveKeyIv: Attempt $attemptCount failed - null response")
                     if (attemptCount < maxAttempts) {
-                        Log.d("UploadTiming", "saveKeyIv: Sleeping ${retryDelayMs}ms before retry")
                         Thread.sleep(retryDelayMs)
                     }
                 }
             } catch (e: Exception) {
-                val attemptDuration = System.currentTimeMillis() - attemptStartTime
-                Log.e("UploadTiming", "saveKeyIv: Attempt $attemptCount failed after ${attemptDuration}ms", e)
-
                 if (attemptCount >= maxAttempts) {
-                    val totalRetryDuration = System.currentTimeMillis() - retryStartTime
-                    Log.e("UploadTiming", "saveKeyIv: All attempts failed after ${totalRetryDuration}ms")
                     throw IOException("Failed to save key/IV after $maxAttempts attempts", e)
                 } else {
-                    Log.d("UploadTiming", "saveKeyIv: Sleeping ${retryDelayMs}ms before retry")
                     Thread.sleep(retryDelayMs)
                 }
             }
@@ -442,18 +260,10 @@ class UploadToShelfService(context: Context) {
         if (!success) {
             val totalRetryDuration = System.currentTimeMillis() - retryStartTime
             val errorMessage = "Failed to save key/IV after $maxAttempts attempts in ${totalRetryDuration}ms"
-            Log.e("UploadTiming", "saveKeyIv: $errorMessage")
             throw IOException(errorMessage)
         }
 
-        val securityChangeStartTime = System.currentTimeMillis()
         changeUserSecurity(model, obj)
-        val securityChangeDuration = System.currentTimeMillis() - securityChangeStartTime
-        Log.d("UploadTiming", "saveKeyIv: Security change took ${securityChangeDuration}ms")
-
-        val totalDuration = System.currentTimeMillis() - startTime
-        Log.d("UploadTiming", "saveKeyIv: Total duration ${totalDuration}ms for user ${model.name} (${attemptCount} attempts)")
-
         return true
     }
 

@@ -11,7 +11,6 @@ import android.graphics.PorterDuff
 import android.net.Uri
 import android.os.Build
 import android.text.TextUtils
-import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
@@ -39,24 +38,6 @@ import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.Download
-import org.ole.planet.myplanet.model.RealmAchievement
-import org.ole.planet.myplanet.model.RealmApkLog
-import org.ole.planet.myplanet.model.RealmCourseActivity
-import org.ole.planet.myplanet.model.RealmCourseProgress
-import org.ole.planet.myplanet.model.RealmFeedback
-import org.ole.planet.myplanet.model.RealmMeetup
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNewsLog
-import org.ole.planet.myplanet.model.RealmOfflineActivity
-import org.ole.planet.myplanet.model.RealmRating
-import org.ole.planet.myplanet.model.RealmResourceActivity
-import org.ole.planet.myplanet.model.RealmSearchActivity
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmitPhotos
-import org.ole.planet.myplanet.model.RealmTeamLog
-import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UploadToShelfService
@@ -67,8 +48,6 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.FileUtils.installApk
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
-import java.io.File
-import java.util.Date
 import java.util.concurrent.atomic.AtomicInteger
 
 abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
@@ -202,14 +181,6 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     }
 
     fun startUpload(source: String, userName: String? = null, securityCallback: SecurityDataCallback? = null) {
-        val overallStartTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "=== UPLOAD PROCESS STARTED ===")
-        Log.d("UploadTiming", "Source: $source, UserName: $userName")
-        Log.d("UploadTiming", "Overall start time: ${Date(overallStartTime)}")
-
-        // Add database diagnostics
-        logDatabaseDiagnostics()
-
         if (source == "becomeMember") {
             UploadToShelfService.instance?.uploadSingleUserData(userName, object : SuccessListener {
                 override fun onSuccess(success: String?) {
@@ -229,107 +200,31 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
             return
         }
-
-        // Main upload process with hybrid approach - sequential for heavy operations, parallel for lighter ones
-        Log.d("UploadTiming", "Starting main upload process")
         customProgressDialog.setText(context.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        // Synchronous uploads (these are fast, keep as-is)
-        val syncUploadsStartTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "Starting synchronous uploads")
-
-        val uploadTimings = mutableMapOf<String, Long>()
-
-        val achievementStartTime = System.currentTimeMillis()
         UploadManager.instance?.uploadAchievement()
-        uploadTimings["uploadAchievement"] = System.currentTimeMillis() - achievementStartTime
-        Log.d("UploadTiming", "uploadAchievement completed in ${uploadTimings["uploadAchievement"]}ms")
-
-        val newsStartTime = System.currentTimeMillis()
         UploadManager.instance?.uploadNews()
-        uploadTimings["uploadNews"] = System.currentTimeMillis() - newsStartTime
-        Log.d("UploadTiming", "uploadNews completed in ${uploadTimings["uploadNews"]}ms")
-
-        val resourceActivitiesStartTime = System.currentTimeMillis()
         UploadManager.instance?.uploadResourceActivities("")
-        uploadTimings["uploadResourceActivities"] = System.currentTimeMillis() - resourceActivitiesStartTime
-        Log.d("UploadTiming", "uploadResourceActivities completed in ${uploadTimings["uploadResourceActivities"]}ms")
-
-        val courseActivitiesStartTime = System.currentTimeMillis()
         UploadManager.instance?.uploadCourseActivities()
-        uploadTimings["uploadCourseActivities"] = System.currentTimeMillis() - courseActivitiesStartTime
-        Log.d("UploadTiming", "uploadCourseActivities completed in ${uploadTimings["uploadCourseActivities"]}ms")
-
-        val searchActivityStartTime = System.currentTimeMillis()
         UploadManager.instance?.uploadSearchActivity()
-        uploadTimings["uploadSearchActivity"] = System.currentTimeMillis() - searchActivityStartTime
-        Log.d("UploadTiming", "uploadSearchActivity completed in ${uploadTimings["uploadSearchActivity"]}ms")
-
-        val teamsStartTime = System.currentTimeMillis()
         UploadManager.instance?.uploadTeams()
-        uploadTimings["uploadTeams"] = System.currentTimeMillis() - teamsStartTime
-        Log.d("UploadTiming", "uploadTeams completed in ${uploadTimings["uploadTeams"]}ms")
-
-        val ratingStartTime = System.currentTimeMillis()
         UploadManager.instance?.uploadRating()
-        uploadTimings["uploadRating"] = System.currentTimeMillis() - ratingStartTime
-        Log.d("UploadTiming", "uploadRating completed in ${uploadTimings["uploadRating"]}ms")
-
-        val teamTaskStartTime = System.currentTimeMillis()
         UploadManager.instance?.uploadTeamTask()
-        uploadTimings["uploadTeamTask"] = System.currentTimeMillis() - teamTaskStartTime
-        Log.d("UploadTiming", "uploadTeamTask completed in ${uploadTimings["uploadTeamTask"]}ms")
-
-        val meetupsStartTime = System.currentTimeMillis()
         UploadManager.instance?.uploadMeetups()
-        uploadTimings["uploadMeetups"] = System.currentTimeMillis() - meetupsStartTime
-        Log.d("UploadTiming", "uploadMeetups completed in ${uploadTimings["uploadMeetups"]}ms")
-
-        val submissionsStartTime = System.currentTimeMillis()
         UploadManager.instance?.uploadSubmissions()
-        uploadTimings["uploadSubmissions"] = System.currentTimeMillis() - submissionsStartTime
-        Log.d("UploadTiming", "uploadSubmissions completed in ${uploadTimings["uploadSubmissions"]}ms")
-
-        val crashLogStartTime = System.currentTimeMillis()
         UploadManager.instance?.uploadCrashLog()
-        uploadTimings["uploadCrashLog"] = System.currentTimeMillis() - crashLogStartTime
-        Log.d("UploadTiming", "uploadCrashLog completed in ${uploadTimings["uploadCrashLog"]}ms")
 
-        val syncUploadsDuration = System.currentTimeMillis() - syncUploadsStartTime
-        Log.d("UploadTiming", "All synchronous uploads completed in ${syncUploadsDuration}ms")
-
-        // Hybrid approach for async uploads - combine both approaches
-        val asyncStartTime = System.currentTimeMillis()
-        val asyncTimings = mutableMapOf<String, Long>()
-
-        // Counter for parallel operations
         val completedOperations = AtomicInteger(0)
-        val totalOperations = 6 // parallel operations
+        val totalOperations = 6
 
         fun completeUploadProcess() {
-            val asyncDuration = System.currentTimeMillis() - asyncStartTime
-            val totalDuration = System.currentTimeMillis() - overallStartTime
-
             runOnUiThread {
                 if (!isFinishing && !isDestroyed) {
                     customProgressDialog.dismiss()
                     Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
                 }
             }
-
-            // Log comprehensive timing summary
-            Log.d("UploadTiming", "=== UPLOAD TIMING SUMMARY ===")
-            Log.d("UploadTiming", "Synchronous uploads total: ${syncUploadsDuration}ms")
-            uploadTimings.forEach { (operation, duration) ->
-                Log.d("UploadTiming", "  - $operation: ${duration}ms")
-            }
-            Log.d("UploadTiming", "Asynchronous uploads total: ${asyncDuration}ms")
-            asyncTimings.forEach { (operation, duration) ->
-                Log.d("UploadTiming", "  - $operation: ${duration}ms")
-            }
-            Log.d("UploadTiming", "TOTAL UPLOAD PROCESS DURATION: ${totalDuration}ms (${totalDuration/1000.0}s)")
-            Log.d("UploadTiming", "=== UPLOAD PROCESS COMPLETED ===")
         }
 
         fun checkAllOperationsComplete() {
@@ -338,82 +233,44 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             }
         }
 
-        Log.d("UploadTiming", "Starting hybrid asynchronous uploads (sequential for heavy, parallel for light)")
-
-        // Heavy operations that should be sequential to avoid Realm bottlenecks
-        // Chain 1: Upload user data with health (sequential)
-        val userDataStartTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "Sequential chain: Starting uploadUserData")
         UploadToShelfService.instance?.uploadUserData {
-            asyncTimings["uploadUserData"] = System.currentTimeMillis() - userDataStartTime
-            Log.d("UploadTiming", "uploadUserData completed in ${asyncTimings["uploadUserData"]}ms")
-
-            val healthStartTime = System.currentTimeMillis()
             UploadToShelfService.instance?.uploadHealth()
-            asyncTimings["uploadHealth"] = System.currentTimeMillis() - healthStartTime
-            Log.d("UploadTiming", "uploadHealth completed in ${asyncTimings["uploadHealth"]}ms")
 
-            // Mark the sequential chain as complete
             checkAllOperationsComplete()
         }
 
-        // Lighter operations that can run in parallel
-        val userActivitiesStartTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "Parallel: Starting uploadUserActivities")
         UploadManager.instance?.uploadUserActivities(object : SuccessListener {
             override fun onSuccess(success: String?) {
-                asyncTimings["uploadUserActivities"] = System.currentTimeMillis() - userActivitiesStartTime
-                Log.d("UploadTiming", "uploadUserActivities completed in ${asyncTimings["uploadUserActivities"]}ms - Result: $success")
                 checkAllOperationsComplete()
             }
         })
 
-        val examResultStartTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "Parallel: Starting uploadExamResult")
         UploadManager.instance?.uploadExamResult(object : SuccessListener {
             override fun onSuccess(success: String?) {
-                asyncTimings["uploadExamResult"] = System.currentTimeMillis() - examResultStartTime
-                Log.d("UploadTiming", "uploadExamResult completed in ${asyncTimings["uploadExamResult"]}ms - Result: $success")
                 checkAllOperationsComplete()
             }
         })
 
-        val feedbackStartTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "Parallel: Starting uploadFeedback")
         UploadManager.instance?.uploadFeedback(object : SuccessListener {
             override fun onSuccess(success: String?) {
-                asyncTimings["uploadFeedback"] = System.currentTimeMillis() - feedbackStartTime
-                Log.d("UploadTiming", "uploadFeedback completed in ${asyncTimings["uploadFeedback"]}ms - Result: $success")
                 checkAllOperationsComplete()
             }
         })
 
-        val resourceStartTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "Parallel: Starting uploadResource")
         UploadManager.instance?.uploadResource(object : SuccessListener {
             override fun onSuccess(success: String?) {
-                asyncTimings["uploadResource"] = System.currentTimeMillis() - resourceStartTime
-                Log.d("UploadTiming", "uploadResource completed in ${asyncTimings["uploadResource"]}ms - Result: $success")
                 checkAllOperationsComplete()
             }
         })
 
-        val submitPhotosStartTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "Parallel: Starting uploadSubmitPhotos")
         UploadManager.instance?.uploadSubmitPhotos(object : SuccessListener {
             override fun onSuccess(success: String?) {
-                asyncTimings["uploadSubmitPhotos"] = System.currentTimeMillis() - submitPhotosStartTime
-                Log.d("UploadTiming", "uploadSubmitPhotos completed in ${asyncTimings["uploadSubmitPhotos"]}ms - Result: $success")
                 checkAllOperationsComplete()
             }
         })
 
-        val activitiesStartTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "Parallel: Starting uploadActivities")
         UploadManager.instance?.uploadActivities(object : SuccessListener {
             override fun onSuccess(success: String?) {
-                asyncTimings["uploadActivities"] = System.currentTimeMillis() - activitiesStartTime
-                Log.d("UploadTiming", "uploadActivities completed in ${asyncTimings["uploadActivities"]}ms - Result: $success")
                 checkAllOperationsComplete()
             }
         })
@@ -528,43 +385,6 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
         } catch (e: Exception) {
             e.printStackTrace()
             securityCallback?.onSecurityDataUpdated()
-        }
-    }
-
-    fun logDatabaseDiagnostics() {
-        try {
-            val realm = DatabaseService(this).realmInstance
-            val realmFile = File(realm.path)
-            val dbSizeMB = realmFile.length() / (1024 * 1024)
-
-            Log.d("DatabaseDiagnostics", "=== DATABASE DIAGNOSTICS ===")
-            Log.d("DatabaseDiagnostics", "Database file path: ${realm.path}")
-            Log.d("DatabaseDiagnostics", "Database size: ${dbSizeMB} MB (${realmFile.length()} bytes)")
-
-            // Check record counts for all major tables
-            Log.d("DatabaseDiagnostics", "=== RECORD COUNTS ===")
-            Log.d("DatabaseDiagnostics", "RealmFeedback: ${realm.where(RealmFeedback::class.java).count()}")
-            Log.d("DatabaseDiagnostics", "RealmSubmission: ${realm.where(RealmSubmission::class.java).count()}")
-            Log.d("DatabaseDiagnostics", "RealmOfflineActivity: ${realm.where(RealmOfflineActivity::class.java).count()}")
-            Log.d("DatabaseDiagnostics", "RealmMyLibrary: ${realm.where(RealmMyLibrary::class.java).count()}")
-            Log.d("DatabaseDiagnostics", "RealmSubmitPhotos: ${realm.where(RealmSubmitPhotos::class.java).count()}")
-            Log.d("DatabaseDiagnostics", "RealmCourseProgress: ${realm.where(RealmCourseProgress::class.java).count()}")
-            Log.d("DatabaseDiagnostics", "RealmRating: ${realm.where(RealmRating::class.java).count()}")
-            Log.d("DatabaseDiagnostics", "RealmNews: ${realm.where(RealmNews::class.java).count()}")
-            Log.d("DatabaseDiagnostics", "RealmTeamTask: ${realm.where(RealmTeamTask::class.java).count()}")
-            Log.d("DatabaseDiagnostics", "RealmMyTeam: ${realm.where(RealmMyTeam::class.java).count()}")
-            Log.d("DatabaseDiagnostics", "RealmTeamLog: ${realm.where(RealmTeamLog::class.java).count()}")
-            Log.d("DatabaseDiagnostics", "RealmMeetup: ${realm.where(RealmMeetup::class.java).count()}")
-            Log.d("DatabaseDiagnostics", "RealmAchievement: ${realm.where(RealmAchievement::class.java).count()}")
-            Log.d("DatabaseDiagnostics", "RealmResourceActivity: ${realm.where(RealmResourceActivity::class.java).count()}")
-            Log.d("DatabaseDiagnostics", "RealmCourseActivity: ${realm.where(RealmCourseActivity::class.java).count()}")
-            Log.d("DatabaseDiagnostics", "RealmSearchActivity: ${realm.where(RealmSearchActivity::class.java).count()}")
-            Log.d("DatabaseDiagnostics", "RealmApkLog: ${realm.where(RealmApkLog::class.java).count()}")
-            Log.d("DatabaseDiagnostics", "RealmNewsLog: ${realm.where(RealmNewsLog::class.java).count()}")
-
-            realm.close()
-        } catch (e: Exception) {
-            Log.e("DatabaseDiagnostics", "Error getting database diagnostics: ${e.message}", e)
         }
     }
 }

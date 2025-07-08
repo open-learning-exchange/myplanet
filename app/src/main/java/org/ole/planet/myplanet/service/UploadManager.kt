@@ -3,13 +3,11 @@ package org.ole.planet.myplanet.service
 import android.content.*
 import android.os.Looper
 import android.text.TextUtils
-import android.util.Log
 import com.google.gson.*
 import io.realm.*
 import java.io.*
 import java.util.Date
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
@@ -232,48 +230,27 @@ class UploadManager(var context: Context) : FileUploadService() {
     }
 
     fun uploadFeedback(listener: SuccessListener) {
-        val methodStartTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "uploadFeedback: Method started")
-
         val apiInterface = client?.create(ApiInterface::class.java)
         val realm = getRealm()
 
-        val transactionStartTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "uploadFeedback: Starting async transaction")
-
         realm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
-            val queryStartTime = System.currentTimeMillis()
-            Log.d("UploadTiming", "uploadFeedback: Starting database query")
-
             val feedbacks: List<RealmFeedback> = realm.where(RealmFeedback::class.java).findAll()
 
-            val queryDuration = System.currentTimeMillis() - queryStartTime
-            Log.d("UploadTiming", "uploadFeedback: Database query completed in ${queryDuration}ms")
-            Log.d("UploadTiming", "uploadFeedback: Found ${feedbacks.size} feedback items")
-
             if (feedbacks.isEmpty()) {
-                Log.d("UploadTiming", "uploadFeedback: No feedback items to process")
                 return@Transaction
             }
-
-            val processingStartTime = System.currentTimeMillis()
-            Log.d("UploadTiming", "uploadFeedback: Starting batch processing")
 
             var successCount = 0
             var errorCount = 0
 
             feedbacks.processInBatches { feedback ->
                 try {
-                    val networkStartTime = System.currentTimeMillis()
                     val res: Response<JsonObject>? = apiInterface?.postDoc(
                         Utilities.header,
                         "application/json",
                         "${Utilities.getUrl()}/feedback",
                         RealmFeedback.serializeFeedback(feedback)
                     )?.execute()
-
-                    val networkDuration = System.currentTimeMillis() - networkStartTime
-                    Log.d("UploadTiming", "uploadFeedback: Network call took ${networkDuration}ms")
 
                     val r = res?.body()
                     if (r != null) {
@@ -288,26 +265,18 @@ class UploadManager(var context: Context) : FileUploadService() {
                         }
                     } else {
                         errorCount++
-                        Log.w("UploadTiming", "uploadFeedback: Network call returned null response")
                     }
                 } catch (e: IOException) {
                     errorCount++
-                    Log.e("UploadTiming", "uploadFeedback: Network error: ${e.message}", e)
+                    e.printStackTrace()
                 }
             }
 
-            val processingDuration = System.currentTimeMillis() - processingStartTime
-            Log.d("UploadTiming", "uploadFeedback: Batch processing completed in ${processingDuration}ms")
-            Log.d("UploadTiming", "uploadFeedback: Success: $successCount, Errors: $errorCount")
-
         }, {
-            val totalMethodDuration = System.currentTimeMillis() - methodStartTime
-            Log.d("UploadTiming", "uploadFeedback: Method completed in ${totalMethodDuration}ms")
             listener.onSuccess("Feedback sync completed successfully")
         }, { error ->
-            val totalMethodDuration = System.currentTimeMillis() - methodStartTime
-            Log.e("UploadTiming", "uploadFeedback: Method failed after ${totalMethodDuration}ms", error)
             listener.onSuccess("Feedback sync failed: ${error.message}")
+            error.printStackTrace()
         })
     }
 
@@ -340,52 +309,30 @@ class UploadManager(var context: Context) : FileUploadService() {
     }
 
     fun uploadResource(listener: SuccessListener?) {
-        val methodStartTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "uploadResource: Method started")
-
         val realm = getRealm()
         val apiInterface = client?.create(ApiInterface::class.java)
 
         realm.executeTransactionAsync({ realm: Realm ->
-            val queryStartTime = System.currentTimeMillis()
-            Log.d("UploadTiming", "uploadResource: Starting database queries")
-
             val user = realm.where(RealmUserModel::class.java)
                 .equalTo("id", pref.getString("userId", ""))
                 .findFirst()
 
-            val userQueryDuration = System.currentTimeMillis() - queryStartTime
-            Log.d("UploadTiming", "uploadResource: User query took ${userQueryDuration}ms")
-
-            val dataQueryStartTime = System.currentTimeMillis()
             val data: List<RealmMyLibrary> = realm.where(RealmMyLibrary::class.java)
                 .isNull("_rev")
                 .findAll()
 
-            val dataQueryDuration = System.currentTimeMillis() - dataQueryStartTime
-            Log.d("UploadTiming", "uploadResource: Data query took ${dataQueryDuration}ms")
-            Log.d("UploadTiming", "uploadResource: Found ${data.size} resources to upload")
-
             if (data.isEmpty()) {
-                Log.d("UploadTiming", "uploadResource: No resources to upload")
                 return@executeTransactionAsync
             }
 
-            val processingStartTime = System.currentTimeMillis()
-            Log.d("UploadTiming", "uploadResource: Starting batch processing")
-
             data.processInBatches { sub ->
                 try {
-                    val networkStartTime = System.currentTimeMillis()
                     val `object` = apiInterface?.postDoc(
                         Utilities.header,
                         "application/json",
                         "${Utilities.getUrl()}/resources",
                         RealmMyLibrary.serialize(sub, user)
                     )?.execute()?.body()
-
-                    val networkDuration = System.currentTimeMillis() - networkStartTime
-                    Log.d("UploadTiming", "uploadResource: Network call took ${networkDuration}ms")
 
                     if (`object` != null) {
                         val rev = getString("rev", `object`)
@@ -395,20 +342,12 @@ class UploadManager(var context: Context) : FileUploadService() {
                         uploadAttachment(id, rev, sub, listener!!)
                     }
                 } catch (e: Exception) {
-                    Log.e("UploadTiming", "uploadResource: Error processing item: ${e.message}", e)
+                    e.printStackTrace()
                 }
             }
-
-            val processingDuration = System.currentTimeMillis() - processingStartTime
-            Log.d("UploadTiming", "uploadResource: Processing completed in ${processingDuration}ms")
-
         }, {
-            val totalMethodDuration = System.currentTimeMillis() - methodStartTime
-            Log.d("UploadTiming", "uploadResource: Method completed in ${totalMethodDuration}ms")
             listener?.onSuccess("No resources to upload")
         }) { error ->
-            val totalMethodDuration = System.currentTimeMillis() - methodStartTime
-            Log.e("UploadTiming", "uploadResource: Method failed after ${totalMethodDuration}ms", error)
             listener?.onSuccess("Resource upload failed: ${error.message}")
         }
     }
@@ -529,18 +468,13 @@ class UploadManager(var context: Context) : FileUploadService() {
     }
 
     fun uploadUserActivities(listener: SuccessListener) {
-        val methodStartTime = System.currentTimeMillis()
-        Log.d("UploadTiming", "uploadUserActivities: Method started")
-
         val apiInterface = client?.create(ApiInterface::class.java)
         val model = UserProfileDbHandler(MainApplication.context).userModel ?: run {
-            Log.d("UploadTiming", "uploadUserActivities: User model is null, exiting")
             listener.onSuccess("Cannot upload user activities: user model is null")
             return
         }
 
         if (model.isManager()) {
-            Log.d("UploadTiming", "uploadUserActivities: User is manager, skipping")
             listener.onSuccess("Skipping user activities upload for manager")
             return
         }
@@ -548,20 +482,10 @@ class UploadManager(var context: Context) : FileUploadService() {
         val realm = getRealm()
 
         realm.executeTransactionAsync({ transactionRealm: Realm ->
-            val queryStartTime = System.currentTimeMillis()
-            Log.d("UploadTiming", "uploadUserActivities: Starting database query")
-
             val activities = transactionRealm.where(RealmOfflineActivity::class.java)
                 .isNull("_rev")
                 .equalTo("type", "login")
                 .findAll()
-
-            val queryDuration = System.currentTimeMillis() - queryStartTime
-            Log.d("UploadTiming", "uploadUserActivities: Database query took ${queryDuration}ms")
-            Log.d("UploadTiming", "uploadUserActivities: Found ${activities.size} activities")
-
-            val processingStartTime = System.currentTimeMillis()
-            Log.d("UploadTiming", "uploadUserActivities: Starting batch processing")
 
             activities.processInBatches { act ->
                 try {
@@ -569,43 +493,25 @@ class UploadManager(var context: Context) : FileUploadService() {
                         return@processInBatches
                     }
 
-                    val networkStartTime = System.currentTimeMillis()
                     val `object` = apiInterface?.postDoc(
                         Utilities.header,
                         "application/json",
                         "${Utilities.getUrl()}/login_activities",
                         RealmOfflineActivity.serializeLoginActivities(act, context)
                     )?.execute()?.body()
-
-                    val networkDuration = System.currentTimeMillis() - networkStartTime
-                    Log.d("UploadTiming", "uploadUserActivities: Network call took ${networkDuration}ms")
-
                     act.changeRev(`object`)
                 } catch (e: IOException) {
-                    Log.e("UploadTiming", "uploadUserActivities: Network error: ${e.message}", e)
+                    e.printStackTrace()
                 }
             }
 
-            val processingDuration = System.currentTimeMillis() - processingStartTime
-            Log.d("UploadTiming", "uploadUserActivities: Activity processing took ${processingDuration}ms")
-
-            val teamActivitiesStartTime = System.currentTimeMillis()
-            Log.d("UploadTiming", "uploadUserActivities: Starting team activities upload")
-
             uploadTeamActivities(transactionRealm, apiInterface)
-
-            val teamActivitiesDuration = System.currentTimeMillis() - teamActivitiesStartTime
-            Log.d("UploadTiming", "uploadUserActivities: Team activities took ${teamActivitiesDuration}ms")
-
         }, {
             realm.close()
-            val totalMethodDuration = System.currentTimeMillis() - methodStartTime
-            Log.d("UploadTiming", "uploadUserActivities: Method completed in ${totalMethodDuration}ms")
             listener.onSuccess("User activities sync completed successfully")
         }) { e: Throwable ->
             realm.close()
-            val totalMethodDuration = System.currentTimeMillis() - methodStartTime
-            Log.e("UploadTiming", "uploadUserActivities: Method failed after ${totalMethodDuration}ms", e)
+            e.printStackTrace()
             listener.onSuccess(e.message)
         }
     }
@@ -739,9 +645,9 @@ class UploadManager(var context: Context) : FileUploadService() {
             val hasLooper = Looper.myLooper() != null
 
             if (hasLooper) {
-                realm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
+                realm.executeTransactionAsync { realm: Realm ->
                     uploadCrashLogData(realm, apiInterface)
-                })
+                }
             } else {
                 realm.executeTransaction { realm: Realm ->
                     uploadCrashLogData(realm, apiInterface)
