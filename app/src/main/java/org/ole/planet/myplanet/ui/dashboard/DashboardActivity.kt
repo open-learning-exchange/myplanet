@@ -73,6 +73,8 @@ import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
+import androidx.navigation.findNavController
+import org.ole.planet.myplanet.NavGraphDirections
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
@@ -738,19 +740,15 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun openLibraryDetailFragment(library: RealmMyLibrary?) {
-        val f: Fragment = ResourceDetailFragment()
-        val b = Bundle()
-        b.putString("libraryId", library?.resourceId)
-        f.arguments = b
-        openCallFragment(f)
+        val navController = findNavController(R.id.nav_host_fragment)
+        val action = NavGraphDirections.actionGlobalResourceDetailFragment(library?.resourceId)
+        navController.navigate(action)
     }
 
     override fun sendSurvey(current: RealmStepExam?) {
-        val f = SendSurveyFragment()
-        val b = Bundle()
-        b.putString("surveyId", current?.id)
-        f.arguments = b
-        f.show(supportFragmentManager, "")
+        val navController = findNavController(R.id.nav_host_fragment)
+        val action = NavGraphDirections.actionGlobalSendSurveyFragment(current?.id)
+        navController.navigate(action)
     }
 
     private val drawerItems: Array<IDrawerItem<*, *>>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/bellDashboardFragment">
+
+    <fragment
+        android:id="@+id/bellDashboardFragment"
+        android:name="org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment"
+        android:label="Bell Dashboard" />
+
+    <fragment
+        android:id="@+id/resourcesFragment"
+        android:name="org.ole.planet.myplanet.ui.resources.ResourcesFragment"
+        android:label="Resources" />
+
+    <fragment
+        android:id="@+id/coursesFragment"
+        android:name="org.ole.planet.myplanet.ui.courses.CoursesFragment"
+        android:label="Courses" />
+
+    <fragment
+        android:id="@+id/teamFragment"
+        android:name="org.ole.planet.myplanet.ui.team.TeamFragment"
+        android:label="Team" />
+
+    <fragment
+        android:id="@+id/communityTabFragment"
+        android:name="org.ole.planet.myplanet.ui.community.CommunityTabFragment"
+        android:label="Community" />
+
+    <fragment
+        android:id="@+id/surveyFragment"
+        android:name="org.ole.planet.myplanet.ui.survey.SurveyFragment"
+        android:label="Survey" />
+
+    <fragment
+        android:id="@+id/resourceDetailFragment"
+        android:name="org.ole.planet.myplanet.ui.resources.ResourceDetailFragment"
+        android:label="Resource Detail">
+        <argument
+            android:name="libraryId"
+            app:argType="string" />
+    </fragment>
+
+    <action
+        android:id="@+id/action_global_resourceDetailFragment"
+        app:destination="@id/resourceDetailFragment" />
+
+    <dialog
+        android:id="@+id/sendSurveyFragment"
+        android:name="org.ole.planet.myplanet.ui.survey.SendSurveyFragment"
+        android:label="Send Survey">
+        <argument
+            android:name="surveyId"
+            app:argType="string" />
+    </dialog>
+
+    <action
+        android:id="@+id/action_global_sendSurveyFragment"
+        app:destination="@id/sendSurveyFragment" />
+</navigation>

@@ -22,6 +22,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.navigation.findNavController
 import com.afollestad.materialdialogs.MaterialDialog
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.CoroutineScope
@@ -38,10 +39,13 @@ import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
+import org.ole.planet.myplanet.ui.dashboard.SurveyFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.rating.RatingFragment.Companion.newInstance
+import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
+import org.ole.planet.myplanet.NavGraphDirections
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
@@ -89,40 +93,22 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun openCallFragment(newFragment: Fragment, tag: String?) {
-        val fragmentManager = supportFragmentManager
-        if(c<2){
-            c=0
-        }
-        val existingFragment = fragmentManager.findFragmentByTag(tag)
-        if (tag == "") {
-            c++
-            if(c>2){
-                c--
-                fragmentManager.popBackStack(tag, 0)
-            }else{
-                fragmentManager.beginTransaction()
-                    .replace(R.id.fragment_container, newFragment, tag)
-                    .addToBackStack(tag)
-                    .commit()
+        val navController = findNavController(R.id.nav_host_fragment)
+        when (newFragment) {
+            is BellDashboardFragment -> navController.navigate(R.id.bellDashboardFragment)
+            is ResourcesFragment -> navController.navigate(R.id.resourcesFragment)
+            is CoursesFragment -> navController.navigate(R.id.coursesFragment)
+            is TeamFragment -> navController.navigate(R.id.teamFragment)
+            is CommunityTabFragment -> navController.navigate(R.id.communityTabFragment)
+            is SurveyFragment -> navController.navigate(R.id.surveyFragment)
+            is ResourceDetailFragment -> {
+                val libraryId = newFragment.arguments?.getString("libraryId")
+                val action = NavGraphDirections.actionGlobalResourceDetailFragment(libraryId)
+                navController.navigate(action)
             }
-        } else {
-            if (existingFragment != null && existingFragment.isVisible) {
-                return
-            } else if (existingFragment != null) {
-                if(c>0 && c>2){
-                    c=0
-                }
-                fragmentManager.popBackStack(tag, 0)
-            } else {
-                if(c>0 && c>2){
-                    c=0
-                }
-                if(tag!="") {
-                    fragmentManager.beginTransaction()
-                        .replace(R.id.fragment_container, newFragment, tag)
-                        .addToBackStack(tag)
-                        .commit()
-                }
+            else -> {
+                // default fallback to dashboard
+                navController.navigate(R.id.bellDashboardFragment)
             }
         }
     }
