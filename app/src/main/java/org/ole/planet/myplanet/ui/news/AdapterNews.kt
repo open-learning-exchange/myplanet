@@ -444,15 +444,19 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         if (!imageUrls.isNullOrEmpty()) {
             try {
                 val imgObject = Gson().fromJson(imageUrls[0], JsonObject::class.java)
-                val file = File(JsonUtils.getString("imageUrl", imgObject))
-                Glide.with(context)
-                    .load(file)
-                    .placeholder(R.drawable.ic_loading)
+                val path = JsonUtils.getString("imageUrl", imgObject)
+                val request = Glide.with(context)
+                val target = if (path.lowercase(Locale.getDefault()).endsWith(".gif")) {
+                    request.asGif().load(if (File(path).exists()) File(path) else path)
+                } else {
+                    request.load(if (File(path).exists()) File(path) else path)
+                }
+                target.placeholder(R.drawable.ic_loading)
                     .error(R.drawable.ic_loading)
                     .into(binding.imgNews)
                 binding.imgNews.visibility = View.VISIBLE
                 binding.imgNews.setOnClickListener {
-                    showZoomableImage(it.context, file.toString())
+                    showZoomableImage(it.context, path)
                 }
                 return
             } catch (_: Exception) {
@@ -471,9 +475,13 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
                 } else null
                 if (imageFile?.exists() == true) {
-                    Glide.with(context)
-                        .load(imageFile)
-                        .placeholder(R.drawable.ic_loading)
+                    val request = Glide.with(context)
+                    val target = if (library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true) {
+                        request.asGif().load(imageFile)
+                    } else {
+                        request.load(imageFile)
+                    }
+                    target.placeholder(R.drawable.ic_loading)
                         .error(R.drawable.ic_loading)
                         .into(binding.imgNews)
                     binding.imgNews.visibility = View.VISIBLE
@@ -496,10 +504,15 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         dialog.setContentView(view)
         dialog.window?.setBackgroundDrawable(Color.BLACK.toDrawable())
 
-        Glide.with(context)
-            .load(imageUrl)
-            .error(R.drawable.ic_loading)
-            .into(photoView)
+        val request = Glide.with(context)
+        val target = if (imageUrl.lowercase(Locale.getDefault()).endsWith(".gif")) {
+            val file = File(imageUrl)
+            if (file.exists()) request.asGif().load(file) else request.asGif().load(imageUrl)
+        } else {
+            val file = File(imageUrl)
+            if (file.exists()) request.load(file) else request.load(imageUrl)
+        }
+        target.error(R.drawable.ic_loading).into(photoView)
 
         closeButton.setOnClickListener { dialog.dismiss() }
 
