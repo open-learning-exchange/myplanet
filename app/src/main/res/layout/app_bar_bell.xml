@@ -35,6 +35,7 @@
             android:textSize="@dimen/text_size_large"
             android:textStyle="bold" />
         <include
+            android:id="@+id/tabLayout"
             layout="@layout/bell_actionbar_items"
             android:layout_width="wrap_content"
             android:layout_height="?android:attr/actionBarSize" />

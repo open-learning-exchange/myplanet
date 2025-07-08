@@ -31,11 +31,12 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
     var selectedTeam: RealmMyTeam? = null
 
     override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-        val query = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").isNotEmpty("name").equalTo(             "type",
-            if (fragmentAddLinkBinding.spnLink.selectedItem.toString() == "Enterprises") "enterprise"
+        val query = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").isNotEmpty("name").equalTo(
+            "type",
+            if (binding.spnLink.selectedItem.toString() == "Enterprises") "enterprise"
             else ""
         ).notEqualTo("status", "archived").findAll()
-        fragmentAddLinkBinding.rvList.layoutManager = LinearLayoutManager(requireActivity())
+        binding.rvList.layoutManager = LinearLayoutManager(requireActivity())
         val adapter = AdapterTeam(requireActivity(), query, mRealm)
         adapter.setTeamSelectedListener(object : AdapterTeam.OnTeamSelectedListener {
             override fun onSelectedTeam(team: RealmMyTeam) {
@@ -44,7 +45,7 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
             }
         })
 
-        fragmentAddLinkBinding.rvList.adapter = adapter
+        binding.rvList.adapter = adapter
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
