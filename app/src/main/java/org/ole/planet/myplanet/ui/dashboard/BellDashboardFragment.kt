@@ -51,6 +51,7 @@ import org.ole.planet.myplanet.data.repository.NetworkRepositoryImpl
 import org.ole.planet.myplanet.data.repository.SurveyRepositoryImpl
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.presentation.dashboard.BellDashboardViewModel
+import org.ole.planet.myplanet.presentation.dashboard.NetworkStatus
 import org.ole.planet.myplanet.domain.repository.SurveyRepository
 import org.ole.planet.myplanet.utilities.TimeUtils
 

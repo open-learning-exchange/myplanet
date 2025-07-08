@@ -373,7 +373,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     createNotifications(realm, userId)
                 }
 
-                unreadCount = dashboardViewModel.getUnreadNotificationsSize(backgroundRealm, userId)
+                unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
 
                 backgroundRealm.close()
                 backgroundRealm = null
@@ -404,7 +404,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun createNotifications(realm: Realm, userId: String?) {
-        dashboardViewModel.updateResourceNotification(realm, userId)
+        dashboardViewModel.updateResourceNotification(userId)
 
         createSurveyNotifications(realm, userId)
         createTaskNotifications(realm, userId)
@@ -413,10 +413,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun createSurveyNotifications(realm: Realm, userId: String?) {
-        val pendingSurveys = dashboardViewModel.getPendingSurveys(realm, userId)
-        val surveyTitles = dashboardViewModel.getSurveyTitlesFromSubmissions(realm, pendingSurveys)
+        val pendingSurveys = dashboardViewModel.getPendingSurveys(userId)
+        val surveyTitles = dashboardViewModel.getSurveyTitlesFromSubmissions(pendingSurveys)
         surveyTitles.forEach { title ->
-            dashboardViewModel.createNotificationIfNotExists(realm, "survey", "$title", title, userId)
+            dashboardViewModel.createNotificationIfNotExists("survey", "$title", title, userId)
         }
     }
 
@@ -428,7 +428,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .findAll()
         tasks.forEach { task ->
             dashboardViewModel.createNotificationIfNotExists(
-                realm,
                 "task",
                 "${task.title} ${formatDate(task.deadline)}",
                 task.id,
@@ -439,7 +438,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun createStorageNotification(realm: Realm, userId: String?) {
         val storageRatio = totalAvailableMemoryRatio
-        dashboardViewModel.createNotificationIfNotExists(realm, "storage", "$storageRatio", "storage", userId)
+        dashboardViewModel.createNotificationIfNotExists("storage", "$storageRatio", "storage", userId)
     }
 
     private fun createJoinRequestNotifications(realm: Realm, userId: String?) {
@@ -469,7 +468,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 val message = "$requesterName has requested to join $teamName"
 
                 dashboardViewModel.createNotificationIfNotExists(
-                    realm,
                     "join_request",
                     message,
                     joinRequest._id,
