@@ -572,30 +572,23 @@ class UploadToShelfService(context: Context) {
                     Log.d("UploadTiming", "uploadToShelf: getShelfData processing took ${dataProcessDuration}ms")
 
                     // Second network call - get shelf by id
-                    val secondCallStartTime = System.currentTimeMillis()
-                    Log.d("UploadTiming", "uploadToShelf: Making second network call for user ${model.id}")
-                    val d = apiInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/${model.id}")?.execute()?.body()
-                    val secondCallDuration = System.currentTimeMillis() - secondCallStartTime
-                    Log.d("UploadTiming", "uploadToShelf: Second network call took ${secondCallDuration}ms")
-
-                    // Update object with revision
                     val revUpdateStartTime = System.currentTimeMillis()
-                    `object`.addProperty("_rev", getString("_rev", d))
+                    `object`.addProperty("_rev", getString("_rev", jsonDoc))
                     val revUpdateDuration = System.currentTimeMillis() - revUpdateStartTime
                     Log.d("UploadTiming", "uploadToShelf: Rev update took ${revUpdateDuration}ms")
 
-                    // Third network call - put updated data
-                    val thirdCallStartTime = System.currentTimeMillis()
-                    Log.d("UploadTiming", "uploadToShelf: Making third network call for user ${model.id}")
+                    // Second network call - put updated data
+                    val secondCallStartTime = System.currentTimeMillis()
+                    Log.d("UploadTiming", "uploadToShelf: Making second network call for user ${model.id}")
                     val putResponse = apiInterface?.putDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}", `object`)?.execute()?.body()
-                    val thirdCallDuration = System.currentTimeMillis() - thirdCallStartTime
-                    Log.d("UploadTiming", "uploadToShelf: Third network call took ${thirdCallDuration}ms")
+                    val secondCallDuration = System.currentTimeMillis() - secondCallStartTime
+                    Log.d("UploadTiming", "uploadToShelf: Second network call took ${secondCallDuration}ms")
 
                     processedCount++
 
                     val userTotalDuration = System.currentTimeMillis() - userStartTime
                     Log.d("UploadTiming", "uploadToShelf: User ${index + 1} total processing time: ${userTotalDuration}ms")
-                    Log.d("UploadTiming", "uploadToShelf: User ${index + 1} breakdown - First call: ${firstCallDuration}ms, Data processing: ${dataProcessDuration}ms, Second call: ${secondCallDuration}ms, Third call: ${thirdCallDuration}ms")
+                    Log.d("UploadTiming", "uploadToShelf: User ${index + 1} breakdown - First call: ${firstCallDuration}ms, Data processing: ${dataProcessDuration}ms, Second call: ${secondCallDuration}ms")
 
                     // Log progress every 10 users
                     if ((index + 1) % 10 == 0) {
@@ -658,9 +651,7 @@ class UploadToShelfService(context: Context) {
                     val shelfUrl = "${Utilities.getUrl()}/shelf/${model._id}"
                     val jsonDoc = apiInterface?.getJsonObject(Utilities.header, shelfUrl)?.execute()?.body()
                     val shelfObject = getShelfData(realm, model.id, jsonDoc)
-
-                    val revDoc = apiInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/${model.id}")?.execute()?.body()
-                    shelfObject.addProperty("_rev", getString("_rev", revDoc))
+                    shelfObject.addProperty("_rev", getString("_rev", jsonDoc))
 
                     val targetUrl = "${Utilities.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}"
                     apiInterface?.putDoc(Utilities.header, "application/json", targetUrl, shelfObject)?.execute()?.body()
