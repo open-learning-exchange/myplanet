@@ -87,9 +87,9 @@ class TeamViewModel(application: Application) : AndroidViewModel(application) {
         _teams.value = realm.copyFromRealm(results)
     }
 
-    fun createTeam(name: String, map: HashMap<String, String>, isPublic: Boolean) {
+    fun createTeam(name: String, teamType: String?, map: HashMap<String, String>, isPublic: Boolean) {
         val currentUser = user ?: return
-        val teamType = type
+        val screenType = type
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 realm.executeTransaction { r ->
@@ -97,7 +97,7 @@ class TeamViewModel(application: Application) : AndroidViewModel(application) {
                     r.createObject(RealmMyTeam::class.java, teamId).apply {
                         status = "active"
                         createdDate = Date().time
-                        if (teamType == "enterprise") {
+                        if (screenType == "enterprise") {
                             this.type = "enterprise"
                             this.services = map["services"]
                             this.rules = map["rules"]

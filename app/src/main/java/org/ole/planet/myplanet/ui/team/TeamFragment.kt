@@ -101,8 +101,10 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                         alertCreateTeamBinding.etName.error = getString(R.string.please_enter_a_name)
                     } else -> {
                         if (team == null) {
+                            val selectedType = if (alertCreateTeamBinding.spnTeamType.selectedItemPosition == 0) "local" else "sync"
                             teamViewModel.createTeam(
                                 name,
+                                selectedType,
                                 map,
                                 alertCreateTeamBinding.switchPublic.isChecked
                             )
