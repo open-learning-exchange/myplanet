@@ -36,7 +36,6 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
-import org.ole.planet.myplanet.ui.courses.CourseStepFragment.Companion.prependBaseUrlToImages
 import org.ole.planet.myplanet.ui.news.NewsActions
 import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
 import org.ole.planet.myplanet.utilities.Constants
