@@ -8,17 +8,25 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.view.isGone
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmList
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
+import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.FragmentAchievementBinding
 import org.ole.planet.myplanet.databinding.LayoutButtonPrimaryBinding
 import org.ole.planet.myplanet.databinding.RowAchievementBinding
@@ -26,22 +34,14 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.Utilities
-import androidx.core.view.isGone
-import androidx.lifecycle.lifecycleScope
-import com.google.android.material.snackbar.Snackbar
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
-import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.service.SyncManager
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.utilities.Utilities
 
 class AchievementFragment : BaseContainerFragment() {
     private lateinit var fragmentAchievementBinding: FragmentAchievementBinding
@@ -119,12 +119,12 @@ class AchievementFragment : BaseContainerFragment() {
                 }
             }
 
-            override fun onSyncFailed(message: String?) {
+            override fun onSyncFailed(msg: String?) {
                 activity?.runOnUiThread {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
-                        Snackbar.make(fragmentAchievementBinding.root, "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG)
+                        Snackbar.make(fragmentAchievementBinding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
                             .setAction("Retry") { startAchievementSync() }
                             .show()
                     }

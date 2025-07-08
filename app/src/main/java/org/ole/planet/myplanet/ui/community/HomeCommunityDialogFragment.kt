@@ -10,11 +10,11 @@ import androidx.lifecycle.Lifecycle
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.tabs.TabLayoutMediator
+import java.util.Date
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.TimeUtils
-import java.util.Date
 
 class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding

@@ -11,6 +11,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
+import java.util.Date
+import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -35,8 +37,6 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.Date
-import java.util.UUID
 
 class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
@@ -126,13 +126,13 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                 }
             }
 
-            override fun onSyncFailed(message: String?) {
+            override fun onSyncFailed(msg: String?) {
                 activity?.runOnUiThread {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
 
-                        Snackbar.make(fragmentTeamDetailBinding.root, "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG)
+                        Snackbar.make(fragmentTeamDetailBinding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
                             .setAction("Retry") { startTeamSync() }
                             .show()
                     }

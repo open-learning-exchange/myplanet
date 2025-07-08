@@ -1,12 +1,17 @@
 package org.ole.planet.myplanet.ui.team
 
-import android.app.*
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.content.Context
 import android.content.res.Resources
-import android.os.*
+import android.os.Bundle
 import android.util.TypedValue
-import android.view.*
-import android.widget.*
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.RadioButton
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -14,24 +19,29 @@ import androidx.recyclerview.widget.RecyclerView
 import com.applandeo.materialcalendarview.CalendarDay
 import com.applandeo.materialcalendarview.CalendarView
 import com.applandeo.materialcalendarview.listeners.OnCalendarDayClickListener
-import com.google.gson.*
+import com.google.gson.Gson
+import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmResults
+import java.net.MalformedURLException
+import java.net.URL
+import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.util.Calendar
+import java.util.Locale
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.*
+import org.ole.planet.myplanet.databinding.AddMeetupBinding
+import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.mymeetup.AdapterMeetup
-import org.ole.planet.myplanet.utilities.*
-import java.text.SimpleDateFormat
-import java.time.Instant
-import java.time.ZoneId
-import java.util.*
-import java.net.MalformedURLException
-import java.net.URL
+import org.ole.planet.myplanet.utilities.TimeUtils
+import org.ole.planet.myplanet.utilities.Utilities
 
 class TeamCalendarFragment : BaseTeamFragment() {
     private lateinit var fragmentEnterpriseCalendarBinding: FragmentEnterpriseCalendarBinding

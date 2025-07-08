@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.ui.resources
 
 import android.app.AlertDialog
+import android.content.Context
+import android.content.Context.MODE_PRIVATE
 import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Editable
@@ -11,19 +13,30 @@ import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.TextView
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.github.clans.fab.FloatingActionButton
 import com.google.android.flexbox.FlexboxLayout
+import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import fisk.chipcloud.ChipDeletedListener
+import java.util.Calendar
+import java.util.UUID
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnFilterListener
+import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected
+import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TagClickListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getArrayList
@@ -34,28 +47,15 @@ import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
-import android.content.Context
-import android.content.Context.MODE_PRIVATE
-import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
-import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utilities.Utilities
-import java.util.Calendar
-import java.util.UUID
-import androidx.core.view.isVisible
-import androidx.lifecycle.lifecycleScope
-import com.google.android.material.snackbar.Snackbar
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
-import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.service.SyncManager
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
+import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.utilities.Utilities
 
 class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSelected,
     ChipDeletedListener, TagClickListener, OnFilterListener {
@@ -135,13 +135,13 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 }
             }
 
-            override fun onSyncFailed(message: String?) {
+            override fun onSyncFailed(msg: String?) {
                 activity?.runOnUiThread {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
 
-                        Snackbar.make(requireView(), "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG
+                        Snackbar.make(requireView(), "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG
                         ).setAction("Retry") {
                             startResourcesSync()
                         }.show()

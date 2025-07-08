@@ -4,43 +4,59 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Typeface
 import android.os.Bundle
-import android.text.*
-import android.view.*
+import android.text.Editable
+import android.text.TextUtils
+import android.text.TextWatcher
+import android.view.KeyEvent
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TableRow
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
+import androidx.core.view.isNotEmpty
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.*
-import com.google.gson.*
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.google.gson.Gson
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
 import io.realm.Realm
+import java.util.Date
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.*
+import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
-import org.ole.planet.myplanet.datamanager.*
-import org.ole.planet.myplanet.ui.chat.ChatApiHelper
-import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.AiProvider
+import org.ole.planet.myplanet.model.ChatModel
+import org.ole.planet.myplanet.model.ChatRequestModel
+import org.ole.planet.myplanet.model.ChatViewModel
+import org.ole.planet.myplanet.model.ContentData
+import org.ole.planet.myplanet.model.ContinueChatModel
+import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.Data
+import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
-import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.util.Date
-import java.util.Locale
-import androidx.core.net.toUri
-import androidx.core.view.isNotEmpty
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
 
 class ChatDetailFragment : Fragment() {
     lateinit var fragmentChatDetailBinding: FragmentChatDetailBinding
@@ -76,23 +92,38 @@ class ChatDetailFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        mRealm = DatabaseService(requireContext()).realmInstance
-        user = UserProfileDbHandler(requireContext()).userModel
-        mAdapter = ChatAdapter(ArrayList(), requireContext(), fragmentChatDetailBinding.recyclerGchat)
-        fragmentChatDetailBinding.recyclerGchat.adapter = mAdapter
-        val layoutManager: RecyclerView.LayoutManager = LinearLayoutManager(requireContext())
-        fragmentChatDetailBinding.recyclerGchat.layoutManager = layoutManager
-        fragmentChatDetailBinding.recyclerGchat.isNestedScrollingEnabled = true
-        fragmentChatDetailBinding.recyclerGchat.setHasFixedSize(true)
-        newsId = arguments?.getString("newsId")
+        initChatComponents()
         val newsRev = arguments?.getString("newsRev")
         val newsConversations = arguments?.getString("conversations")
         checkAiProviders()
+        setupSendButton()
+        setupMessageInputListeners()
+        if (newsId != null) {
+            loadNewsConversations(newsId, newsRev, newsConversations)
+        } else {
+            observeViewModelData()
+        }
+        view.post { clearChatDetail() }
+    }
+
+    private fun initChatComponents() {
+        mRealm = DatabaseService(requireContext()).realmInstance
+        user = UserProfileDbHandler(requireContext()).userModel
+        mAdapter = ChatAdapter(ArrayList(), requireContext(), fragmentChatDetailBinding.recyclerGchat)
+        fragmentChatDetailBinding.recyclerGchat.apply {
+            adapter = mAdapter
+            layoutManager = LinearLayoutManager(requireContext())
+            isNestedScrollingEnabled = true
+            setHasFixedSize(true)
+        }
+        newsId = arguments?.getString("newsId")
         if (mAdapter.itemCount > 0) {
             fragmentChatDetailBinding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
             fragmentChatDetailBinding.recyclerGchat.smoothScrollToPosition(mAdapter.itemCount - 1)
         }
+    }
 
+    private fun setupSendButton() {
         fragmentChatDetailBinding.buttonGchatSend.setOnClickListener {
             val aiProvider = AiProvider(name = aiName, model = aiModel)
             fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
@@ -102,21 +133,28 @@ class ChatDetailFragment : Fragment() {
             } else {
                 val message = "${fragmentChatDetailBinding.editGchatMessage.text}".replace("\n", " ")
                 mAdapter.addQuery(message)
-                if (_id != "") {
-                    val newRev = getLatestRev(_id) ?: _rev
-                    val requestBody = createContinueChatRequest(message, aiProvider, _id, newRev)
-                    launchRequest(requestBody, message, _id)
-                } else if (currentID != "") {
-                    val requestBody = createContinueChatRequest(message, aiProvider, currentID, _rev)
-                    launchRequest(requestBody, message, currentID)
-                } else {
-                    val requestBody = createChatRequest(message, aiProvider)
-                    launchRequest(requestBody, message, null)
+                when {
+                    _id.isNotEmpty() -> {
+                        val newRev = getLatestRev(_id) ?: _rev
+                        val requestBody = createContinueChatRequest(message, aiProvider, _id, newRev)
+                        launchRequest(requestBody, message, _id)
+                    }
+                    currentID.isNotEmpty() -> {
+                        val requestBody = createContinueChatRequest(message, aiProvider, currentID, _rev)
+                        launchRequest(requestBody, message, currentID)
+                    }
+                    else -> {
+                        val requestBody = createChatRequest(message, aiProvider)
+                        launchRequest(requestBody, message, null)
+                    }
                 }
                 fragmentChatDetailBinding.editGchatMessage.text.clear()
                 fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
             }
         }
+    }
+
+    private fun setupMessageInputListeners() {
         fragmentChatDetailBinding.editGchatMessage.setOnKeyListener { _, _, event ->
             if (event.action == KeyEvent.ACTION_DOWN) {
                 if (event.keyCode == KeyEvent.KEYCODE_ENTER && event.isShiftPressed) {
@@ -134,73 +172,55 @@ class ChatDetailFragment : Fragment() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
             }
-
             override fun afterTextChanged(s: Editable?) {}
         })
+    }
 
-        if (newsId != null) {
-            _id = "$newsId"
-            _rev = newsRev ?: ""
-            val conversations = gson.fromJson(newsConversations, Array<Conversation>::class.java).toList()
-            for (conversation in conversations) {
-                val query = conversation.query
-                val response = conversation.response
-                if (query != null) {
-                    mAdapter.addQuery(query)
+    private fun loadNewsConversations(newsId: String?, newsRev: String?, newsConversations: String?) {
+        _id = newsId ?: ""
+        _rev = newsRev ?: ""
+        val conversations = gson.fromJson(newsConversations, Array<Conversation>::class.java).toList()
+        for (conversation in conversations) {
+            conversation.query?.let { mAdapter.addQuery(it) }
+            mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
+            conversation.response?.let { mAdapter.addResponse(it) }
+        }
+    }
+
+    private fun observeViewModelData() {
+        sharedViewModel.getSelectedChatHistory().observe(viewLifecycleOwner) { conversations ->
+            mAdapter.clearData()
+            fragmentChatDetailBinding.editGchatMessage.text.clear()
+            fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
+            if (conversations != null && conversations.isValid && conversations.isNotEmpty()) {
+                for (conversation in conversations) {
+                    conversation.query?.let { mAdapter.addQuery(it) }
+                    mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
+                    conversation.response?.let { mAdapter.addResponse(it) }
                 }
-                mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
-                if (response != null) {
-                    mAdapter.addResponse(response)
-                }
-            }
-        } else {
-            sharedViewModel.getSelectedChatHistory().observe(viewLifecycleOwner) { conversations ->
-                mAdapter.clearData()
-                fragmentChatDetailBinding.editGchatMessage.text.clear()
-                fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
-                if (conversations != null && conversations.isValid && conversations.isNotEmpty()) {
-                    for (conversation in conversations) {
-                        val query = conversation.query
-                        val response = conversation.response
-                        if (query != null) {
-                            mAdapter.addQuery(query)
-                        }
-
-                        mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
-
-                        if (response != null) {
-                            mAdapter.addResponse(response)
-                        }
-                    }
-                    fragmentChatDetailBinding.recyclerGchat.post {
-                        fragmentChatDetailBinding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
-                    }
+                fragmentChatDetailBinding.recyclerGchat.post {
+                    fragmentChatDetailBinding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
                 }
             }
-            sharedViewModel.getSelectedAiProvider().observe(viewLifecycleOwner) { selectedAiProvider ->
-                aiName = selectedAiProvider ?: aiName
-                if (fragmentChatDetailBinding.aiTableRow.isNotEmpty()) {
-                    for (i in 0 until fragmentChatDetailBinding.aiTableRow.childCount) {
-                        val view = fragmentChatDetailBinding.aiTableRow.getChildAt(i)
-                        if (view is Button && view.text.toString().equals(selectedAiProvider, ignoreCase = true)) {
+        }
+        sharedViewModel.getSelectedAiProvider().observe(viewLifecycleOwner) { selectedAiProvider ->
+            aiName = selectedAiProvider ?: aiName
+            if (fragmentChatDetailBinding.aiTableRow.isNotEmpty()) {
+                for (i in 0 until fragmentChatDetailBinding.aiTableRow.childCount) {
+                    val view = fragmentChatDetailBinding.aiTableRow.getChildAt(i)
+                    if (view is Button && view.text.toString().equals(selectedAiProvider, ignoreCase = true)) {
                         val modelName = getModelsMap()[selectedAiProvider?.lowercase()] ?: "default-model"
                         selectAI(view, "$selectedAiProvider", modelName)
                         break
-                        }
                     }
                 }
             }
         }
-
         sharedViewModel.getSelectedId().observe(viewLifecycleOwner) { selectedId ->
             _id = selectedId
         }
-
         sharedViewModel.getSelectedRev().observe(viewLifecycleOwner) { selectedRev ->
             _rev = selectedRev
-        }
-        view.post {
-            clearChatDetail()
         }
     }
 
@@ -360,7 +380,7 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun jsonRequestBody(json: String): RequestBody =
-        RequestBody.create(jsonMediaType, json)
+        json.toRequestBody(jsonMediaType)
 
     private fun createContinueChatRequest(message: String, aiProvider: AiProvider, id: String, rev: String): RequestBody {
         val continueChatData = ContinueChatModel(data = Data("${user?.name}", message, aiProvider, id, rev), save = true)

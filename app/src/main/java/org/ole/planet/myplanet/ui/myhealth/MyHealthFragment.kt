@@ -27,6 +27,8 @@ import com.google.gson.Gson
 import io.realm.Case
 import io.realm.Realm
 import io.realm.Sort
+import java.util.Calendar
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -51,8 +53,6 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.Calendar
-import java.util.Locale
 
 class MyHealthFragment : Fragment() {
     private lateinit var fragmentVitalSignBinding: FragmentVitalSignBinding
@@ -126,12 +126,12 @@ class MyHealthFragment : Fragment() {
                 }
             }
 
-            override fun onSyncFailed(message: String?) {
+            override fun onSyncFailed(msg: String?) {
                 activity?.runOnUiThread {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
-                        Snackbar.make(fragmentVitalSignBinding.root, "Sync failed: ${message ?: "Unknown error"}", Snackbar.LENGTH_LONG).setAction("Retry") { startHealthSync() }.show()
+                        Snackbar.make(fragmentVitalSignBinding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG).setAction("Retry") { startHealthSync() }.show()
                     }
                 }
             }

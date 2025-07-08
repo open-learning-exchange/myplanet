@@ -16,10 +16,13 @@ import androidx.core.widget.NestedScrollView
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmQuery
 import io.realm.Sort
-import io.realm.Realm
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeExamBinding
@@ -32,16 +35,13 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.exam.ExamAnswerUtils
 import org.ole.planet.myplanet.ui.exam.ExamSubmissionUtils
-import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
+import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.JsonParserUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.hideSoftKeyboard
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.Utilities.toast
-import java.util.Date
-import java.util.Locale
-import java.util.UUID
 
 class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {
     private lateinit var fragmentTakeExamBinding: FragmentTakeExamBinding

@@ -7,6 +7,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.ui.enterprises.FinanceFragment
 import org.ole.planet.myplanet.ui.enterprises.ReportsFragment
@@ -17,7 +18,6 @@ import org.ole.planet.myplanet.ui.team.teamMember.JoinedMemberFragment
 import org.ole.planet.myplanet.ui.team.teamMember.MembersFragment
 import org.ole.planet.myplanet.ui.team.teamResource.TeamResourceFragment
 import org.ole.planet.myplanet.ui.team.teamTask.TeamTaskFragment
-import org.ole.planet.myplanet.callback.MemberChangeListener
 
 class TeamPagerAdapter(
     private val fm: FragmentActivity,
@@ -69,7 +69,6 @@ class TeamPagerAdapter(
                 }
                 TeamPage.JOIN_REQUESTS,
                 TeamPage.APPLICANTS -> MembersFragment().apply { setMemberChangeListener(memberChangeListener) }
-                else -> throw IllegalArgumentException("Unknown page $page")
             }.apply {
                 if (arguments == null) {
                     arguments = Bundle().apply { putString("id", teamId) }

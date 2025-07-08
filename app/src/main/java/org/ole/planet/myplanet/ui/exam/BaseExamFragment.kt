@@ -25,6 +25,8 @@ import io.noties.markwon.editor.MarkwonEditor
 import io.noties.markwon.editor.MarkwonEditorTextWatcher
 import io.realm.Realm
 import io.realm.RealmResults
+import java.util.Date
+import java.util.UUID
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseProgress
@@ -37,8 +39,6 @@ import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.NetworkUtils.getUniqueIdentifier
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.Date
-import java.util.UUID
 
 abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var exam: RealmStepExam? = null
