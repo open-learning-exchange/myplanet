@@ -62,7 +62,9 @@
 
                 </LinearLayout>
 
-                <include layout="@layout/content_team_detail_tab" />
+                <include
+                    android:id="@+id/contentTeamDetail"
+                    layout="@layout/content_team_detail_tab" />
 
             </LinearLayout>
         </androidx.cardview.widget.CardView>
