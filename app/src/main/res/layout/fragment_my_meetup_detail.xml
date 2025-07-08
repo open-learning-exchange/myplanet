@@ -67,7 +67,9 @@
                 </LinearLayout>
 
 
-                <include layout="@layout/content_meetup_detail" />
+                <include
+                    android:id="@+id/contentMeetupDetail"
+                    layout="@layout/content_meetup_detail" />
 
             </LinearLayout>
 

@@ -21,7 +21,8 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 
 class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
-    private lateinit var fragmentMyMeetupDetailBinding: FragmentMyMeetupDetailBinding
+    private var _binding: FragmentMyMeetupDetailBinding? = null
+    private val binding get() = _binding!!
     private var meetups: RealmMeetup? = null
     lateinit var mRealm: Realm
     private var meetUpId: String? = null
@@ -38,17 +39,17 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentMyMeetupDetailBinding = FragmentMyMeetupDetailBinding.inflate(inflater, container, false)
-        listDesc = fragmentMyMeetupDetailBinding.root.findViewById(R.id.list_desc)
-        listUsers = fragmentMyMeetupDetailBinding.root.findViewById(R.id.list_users)
-        tvJoined = fragmentMyMeetupDetailBinding.root.findViewById(R.id.tv_joined)
-        fragmentMyMeetupDetailBinding.btnInvite.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
-        fragmentMyMeetupDetailBinding.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
-        fragmentMyMeetupDetailBinding.btnLeave.setOnClickListener(this)
+        _binding = FragmentMyMeetupDetailBinding.inflate(inflater, container, false)
+        listDesc = binding.contentMeetupDetail.listDesc
+        listUsers = binding.contentMeetupDetail.listUsers
+        tvJoined = binding.contentMeetupDetail.tvJoined
+        binding.btnInvite.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
+        binding.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
+        binding.btnLeave.setOnClickListener(this)
         mRealm = DatabaseService(requireActivity()).realmInstance
         profileDbHandler = UserProfileDbHandler(requireContext())
         user = profileDbHandler?.userModel?.let { mRealm.copyFromRealm(it) }
-        return fragmentMyMeetupDetailBinding.root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -66,7 +67,7 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     }
 
     private fun setUpData() {
-        fragmentMyMeetupDetailBinding.meetupTitle.text = meetups?.title
+        binding.meetupTitle.text = meetups?.title
         val map: HashMap<String, String>? = meetups?.let { getHashMap(it) }
         val keys = ArrayList(map?.keys ?: emptyList())
         listDesc?.adapter = object : ArrayAdapter<String?>(requireActivity(), R.layout.row_description, keys) {
@@ -92,11 +93,16 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
         mRealm.executeTransaction {
             if (meetups?.userId?.isEmpty() == true) {
                 meetups?.userId = user?.id
-                fragmentMyMeetupDetailBinding.btnLeave.setText(R.string.leave)
+                binding.btnLeave.setText(R.string.leave)
             } else {
                 meetups?.userId = ""
-                fragmentMyMeetupDetailBinding.btnLeave.setText(R.string.join)
+                binding.btnLeave.setText(R.string.join)
             }
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

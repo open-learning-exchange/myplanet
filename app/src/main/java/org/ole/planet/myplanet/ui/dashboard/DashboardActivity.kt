@@ -138,7 +138,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         navigationView.labelVisibilityMode = NavigationBarView.LABEL_VISIBILITY_LABELED
         activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
         service = Service(this)
-        tl = findViewById(R.id.tab_layout)
+        tl = activityDashboardBinding.appBarBell.tabLayout
         activityDashboardBinding.root.viewTreeObserver.addOnGlobalLayoutListener { topBarVisible() }
         activityDashboardBinding.appBarBell.ivSetting.setOnClickListener {
             startActivity(Intent(this, SettingActivity::class.java))
@@ -541,7 +541,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun topBarVisible(){
         val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
+        val tabLayout = activityDashboardBinding.appBarBell.tabLayout
 
         tabLayout.visibility = if (isLandscape) {
             View.VISIBLE
@@ -552,7 +552,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun topbarSetting() {
         UITheme()
-        val tabLayout = findViewById<TabLayout>(R.id.tab_layout)
+        val tabLayout = activityDashboardBinding.appBarBell.tabLayout
         tabLayout.addOnTabSelectedListener(object : OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
                 onClickTabItems(tab.position)
