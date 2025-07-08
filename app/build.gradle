@@ -9,9 +9,9 @@ android {
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 2676
-        versionName = "0.26.76"
+        targetSdk = 34
+        versionCode = 2677
+        versionName = "0.26.77"
         ndkVersion = '26.3.11579264'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -214,6 +214,7 @@ dependencies {
     implementation 'org.jetbrains:annotations:26.0.2'
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0"
     implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.29'
 
     implementation 'com.mikepenz:google-material-typeface:3.0.1.1.original@aar'
