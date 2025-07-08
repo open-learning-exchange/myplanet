@@ -17,6 +17,8 @@ import android.view.View
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
@@ -73,6 +75,9 @@ import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
+import org.ole.planet.myplanet.data.repository.NotificationRepositoryImpl
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.presentation.dashboard.DashboardViewModel
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
@@ -96,7 +101,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var tl: TabLayout? = null
     private var dl: DrawerLayout? = null
     private val realmListeners = mutableListOf<RealmListener>()
-    private val dashboardViewModel: DashboardViewModel by viewModels()
+    private val dashboardViewModel: DashboardViewModel by viewModels {
+        object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                val repo = NotificationRepositoryImpl(DatabaseService(this@DashboardActivity))
+                return DashboardViewModel(repo) as T
+            }
+        }
+    }
     private lateinit var challengeHelper: ChallengeHelper
 
     private interface RealmListener {

@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.dashboard
+package org.ole.planet.myplanet.presentation.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,10 +8,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
+import org.ole.planet.myplanet.domain.repository.NetworkRepository
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 
-class BellDashboardViewModel : ViewModel() {
+class BellDashboardViewModel(
+    private val networkRepository: NetworkRepository
+) : ViewModel() {
     private val _networkStatus = MutableStateFlow<NetworkStatus>(NetworkStatus.Disconnected)
     val networkStatus: StateFlow<NetworkStatus> = _networkStatus.asStateFlow()
 
@@ -34,7 +36,7 @@ class BellDashboardViewModel : ViewModel() {
 
     suspend fun checkServerConnection(serverUrl: String): Boolean {
         return withContext(Dispatchers.IO) {
-            isServerReachable(serverUrl)
+            networkRepository.isServerReachable(serverUrl)
         }
     }
 }

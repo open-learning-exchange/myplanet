@@ -13,12 +13,13 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Case
 import io.realm.Realm
 import java.util.Date
 import java.util.concurrent.TimeUnit
@@ -33,7 +34,6 @@ import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -47,12 +47,26 @@ import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.data.repository.NetworkRepositoryImpl
+import org.ole.planet.myplanet.data.repository.SurveyRepositoryImpl
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.presentation.dashboard.BellDashboardViewModel
+import org.ole.planet.myplanet.domain.repository.SurveyRepository
 import org.ole.planet.myplanet.utilities.TimeUtils
 
 class BellDashboardFragment : BaseDashboardFragment() {
     private lateinit var fragmentHomeBellBinding: FragmentHomeBellBinding
     private var networkStatusJob: Job? = null
-    private val viewModel: BellDashboardViewModel by viewModels()
+    private lateinit var surveyRepository: SurveyRepository
+    private val viewModel: BellDashboardViewModel by viewModels {
+        object : ViewModelProvider.Factory {
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                surveyRepository = SurveyRepositoryImpl(DatabaseService(requireContext()))
+                val networkRepo = NetworkRepositoryImpl()
+                return BellDashboardViewModel(networkRepo) as T
+            }
+        }
+    }
     var user: RealmUserModel? = null
     private var surveyReminderJob: Job? = null
 
@@ -148,7 +162,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         if (checkScheduledReminders()) {
             return
         }
-        val pendingSurveys = getPendingSurveys(user?.id, mRealm)
+        val pendingSurveys = surveyRepository.getPendingSurveys(user?.id)
 
         if (pendingSurveys.isNotEmpty()) {
             val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
@@ -156,7 +170,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             if (preferences.contains("reminder_time_$surveyIds")) {
                 return
             }
-            val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)
+            val surveyTitles = surveyRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
 
             val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
             val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
@@ -319,7 +333,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun showPendingSurveysReminder(pendingSurveys: List<RealmSubmission>) {
-        val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)
+        val surveyTitles = surveyRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
 
         val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
         val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
@@ -355,38 +369,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
     }
 
-    private fun getPendingSurveys(userId: String?, realm: Realm): List<RealmSubmission> {
-        val pendingSurveys = realm.where(RealmSubmission::class.java).equalTo("userId", userId)
-            .equalTo("type", "survey").equalTo("status", "pending", Case.INSENSITIVE).findAll()
-
-        val uniqueSurveyMap = mutableMapOf<String, RealmSubmission>()
-
-        pendingSurveys.forEach { submission ->
-            val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
-
-            val exam = realm.where(RealmStepExam::class.java)
-                .equalTo("id", examId)
-                .findFirst()
-
-            if (exam != null && !uniqueSurveyMap.containsKey(examId)) {
-                uniqueSurveyMap[examId] = submission
-            }
-        }
-
-        return uniqueSurveyMap.values.toList()
-    }
-
-    private fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>, realm: Realm): List<String> {
-        val titles = mutableListOf<String>()
-        submissions.forEach { submission ->
-            val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
-            val exam = realm.where(RealmStepExam::class.java)
-                .equalTo("id", examId)
-                .findFirst()
-            exam?.name?.let { titles.add(it) }
-        }
-        return titles
-    }
 
     private fun showBadges() {
         fragmentHomeBellBinding.cardProfileBell.llBadges.removeAllViews()
