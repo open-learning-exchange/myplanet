@@ -32,6 +32,8 @@ class TeamViewModel(application: Application) : AndroidViewModel(application) {
     val realmInstance: Realm
         get() = realm
 
+    fun getUserId(): String? = user?.id
+
     private var fromDashboard: Boolean = false
     private var type: String? = null
 
@@ -120,7 +122,7 @@ class TeamViewModel(application: Application) : AndroidViewModel(application) {
                         userPlanetCode = currentUser.planetCode
                         docType = "membership"
                         isLeader = true
-                        teamType = teamType
+                        this.teamType = teamType
                         updated = true
                     }
                 }

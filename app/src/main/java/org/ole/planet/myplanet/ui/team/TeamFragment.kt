@@ -170,7 +170,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     }
 
     private fun sortTeams(list: List<RealmMyTeam>): List<RealmMyTeam> {
-        val userId = UserProfileDbHandler(requireContext()).userModel?.id
+        val userId = teamViewModel.getUserId()
         val realm = teamViewModel.realmInstance
         return list.sortedWith(compareByDescending<RealmMyTeam> { team ->
             when {
