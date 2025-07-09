@@ -18,38 +18,37 @@
         android:text="@string/menu_home" />
 
     <com.google.android.material.tabs.TabItem
-        android:id="@+id/menu_library"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:icon="@drawable/ourlibrary"
-        android:text="@string/menu_library" />
+        android:text="@string/menu_library"
+        tools:viewBindingIgnore="true" />
 
     <com.google.android.material.tabs.TabItem
-        android:id="@+id/menu_courses"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:icon="@drawable/ourcourses"
-        android:text="@string/menu_courses" />
+        android:text="@string/menu_courses"
+        tools:viewBindingIgnore="true" />
 
     <com.google.android.material.tabs.TabItem
-        android:id="@+id/menu_teams"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:icon="@drawable/team"
-        android:text="@string/team" />
+        android:text="@string/team"
+        tools:viewBindingIgnore="true" />
 
     <com.google.android.material.tabs.TabItem
-        android:id="@+id/menu_enterprises"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:icon="@drawable/business"
-        android:text="@string/enterprises" />
+        android:text="@string/enterprises"
+        tools:viewBindingIgnore="true" />
 
     <com.google.android.material.tabs.TabItem
-        android:id="@+id/menu_community"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:icon="@drawable/survey"
-        android:text="@string/menu_community" />
-
+        android:text="@string/menu_community"
+        tools:viewBindingIgnore="true" />
 </com.google.android.material.tabs.TabLayout>
