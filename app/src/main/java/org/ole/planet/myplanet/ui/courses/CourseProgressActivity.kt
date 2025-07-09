@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.os.Bundle
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -19,6 +21,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 
 class CourseProgressActivity : BaseActivity() {
     private lateinit var activityCourseProgressBinding: ActivityCourseProgressBinding
@@ -29,6 +32,7 @@ class CourseProgressActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         activityCourseProgressBinding = ActivityCourseProgressBinding.inflate(layoutInflater)
         setContentView(activityCourseProgressBinding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityCourseProgressBinding.root)
         initActionBar()
         courseId = intent.getStringExtra("courseId").toString()
         realm = DatabaseService(this).realmInstance

@@ -12,6 +12,8 @@ import androidx.activity.OnBackPressedCallback
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -29,6 +31,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityExoPlayerVideoBinding
 import org.ole.planet.myplanet.utilities.AuthSessionUpdater
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.Utilities
 
 class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback {
@@ -54,6 +57,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         super.onCreate(savedInstanceState)
         binding = ActivityExoPlayerVideoBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
 
         val extras = intent.extras

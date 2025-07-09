@@ -5,6 +5,8 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.example.jean.jcplayer.JcPlayerManagerListener
 import com.example.jean.jcplayer.general.JcStatus
 import com.example.jean.jcplayer.model.JcAudio
@@ -12,6 +14,7 @@ import java.io.File
 import java.util.regex.Pattern
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAudioPlayerBinding
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -26,6 +29,7 @@ class AudioPlayerActivity : AppCompatActivity(), JcPlayerManagerListener {
         super.onCreate(savedInstanceState)
         activityAudioPlayerBinding = ActivityAudioPlayerBinding.inflate(layoutInflater)
         setContentView(activityAudioPlayerBinding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityAudioPlayerBinding.root)
         filePath = intent.getStringExtra("TOUCHED_FILE")
         jcAudios = ArrayList()
         isFullPath = intent.getBooleanExtra("isFullPath", false)

@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.ui.dictionary
 
 import android.os.Bundle
 import androidx.core.text.HtmlCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import io.realm.Case
@@ -13,6 +15,7 @@ import org.ole.planet.myplanet.databinding.FragmentDictionaryBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmDictionary
 import org.ole.planet.myplanet.utilities.Constants
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -24,6 +27,7 @@ class DictionaryActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         fragmentDictionaryBinding = FragmentDictionaryBinding.inflate(layoutInflater)
         setContentView(fragmentDictionaryBinding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, fragmentDictionaryBinding.root)
         initActionBar()
         title = getString(R.string.dictionary)
         mRealm = DatabaseService(this).realmInstance

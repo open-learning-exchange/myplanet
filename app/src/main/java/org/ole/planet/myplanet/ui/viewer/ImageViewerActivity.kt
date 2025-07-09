@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.ui.viewer
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.request.RequestOptions
@@ -10,6 +12,7 @@ import java.io.File
 import java.util.regex.Pattern
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityImageViewerBinding
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
 
 class ImageViewerActivity : AppCompatActivity() {
@@ -19,6 +22,7 @@ class ImageViewerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityImageViewerBinding = ActivityImageViewerBinding.inflate(layoutInflater)
         setContentView(activityImageViewerBinding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityImageViewerBinding.root)
         renderImageFile()
     }
 
