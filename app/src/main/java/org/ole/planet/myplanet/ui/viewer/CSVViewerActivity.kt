@@ -15,6 +15,7 @@ import java.io.File
 import java.io.FileReader
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityCsvviewerBinding
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
 
 class CSVViewerActivity : AppCompatActivity() {
@@ -23,11 +24,7 @@ class CSVViewerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityCsvViewerBinding = ActivityCsvviewerBinding.inflate(layoutInflater)
         setContentView(activityCsvViewerBinding.root)
-        ViewCompat.setOnApplyWindowInsetsListener(activityCsvViewerBinding.root) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
-            WindowInsetsCompat.CONSUMED
-        }
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityCsvViewerBinding.root)
         renderCSVFile()
     }
 

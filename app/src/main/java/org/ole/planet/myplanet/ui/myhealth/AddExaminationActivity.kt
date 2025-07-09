@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DimenUtils.dpToPx
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.JsonUtils.getBoolean
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.getAge
@@ -66,11 +67,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         super.onCreate(savedInstanceState)
         activityAddExaminationBinding = ActivityAddExaminationBinding.inflate(layoutInflater)
         setContentView(activityAddExaminationBinding.root)
-        ViewCompat.setOnApplyWindowInsetsListener(activityAddExaminationBinding.root) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
-            WindowInsetsCompat.CONSUMED
-        }
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityAddExaminationBinding.root)
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         customDiag = HashSet()

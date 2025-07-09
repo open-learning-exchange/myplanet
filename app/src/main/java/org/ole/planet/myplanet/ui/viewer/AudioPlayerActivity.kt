@@ -14,6 +14,7 @@ import java.io.File
 import java.util.regex.Pattern
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAudioPlayerBinding
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -28,11 +29,7 @@ class AudioPlayerActivity : AppCompatActivity(), JcPlayerManagerListener {
         super.onCreate(savedInstanceState)
         activityAudioPlayerBinding = ActivityAudioPlayerBinding.inflate(layoutInflater)
         setContentView(activityAudioPlayerBinding.root)
-        ViewCompat.setOnApplyWindowInsetsListener(activityAudioPlayerBinding.root) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
-            WindowInsetsCompat.CONSUMED
-        }
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityAudioPlayerBinding.root)
         filePath = intent.getStringExtra("TOUCHED_FILE")
         jcAudios = ArrayList()
         isFullPath = intent.getBooleanExtra("isFullPath", false)

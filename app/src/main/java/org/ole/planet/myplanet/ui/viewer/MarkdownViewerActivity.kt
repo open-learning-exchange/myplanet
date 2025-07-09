@@ -12,6 +12,7 @@ import java.io.FileReader
 import java.io.IOException
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityMarkdownViewerBinding
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
@@ -22,11 +23,7 @@ class MarkdownViewerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityMarkdownViewerBinding = ActivityMarkdownViewerBinding.inflate(layoutInflater)
         setContentView(activityMarkdownViewerBinding.root)
-        ViewCompat.setOnApplyWindowInsetsListener(activityMarkdownViewerBinding.root) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
-            WindowInsetsCompat.CONSUMED
-        }
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityMarkdownViewerBinding.root)
         renderMarkdownFile()
     }
 

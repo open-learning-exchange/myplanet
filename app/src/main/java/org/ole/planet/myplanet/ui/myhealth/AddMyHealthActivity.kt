@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.decrypt
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.encrypt
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.Utilities
 
 class AddMyHealthActivity : AppCompatActivity() {
@@ -42,11 +43,7 @@ class AddMyHealthActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityAddMyHealthBinding = ActivityAddMyHealthBinding.inflate(layoutInflater)
         setContentView(activityAddMyHealthBinding.root)
-        ViewCompat.setOnApplyWindowInsetsListener(activityAddMyHealthBinding.root) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
-            WindowInsetsCompat.CONSUMED
-        }
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityAddMyHealthBinding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         realm = DatabaseService(this).realmInstance

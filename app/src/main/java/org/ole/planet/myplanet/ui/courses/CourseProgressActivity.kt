@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 
 class CourseProgressActivity : BaseActivity() {
     private lateinit var activityCourseProgressBinding: ActivityCourseProgressBinding
@@ -31,11 +32,7 @@ class CourseProgressActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         activityCourseProgressBinding = ActivityCourseProgressBinding.inflate(layoutInflater)
         setContentView(activityCourseProgressBinding.root)
-        ViewCompat.setOnApplyWindowInsetsListener(activityCourseProgressBinding.root) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
-            WindowInsetsCompat.CONSUMED
-        }
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityCourseProgressBinding.root)
         initActionBar()
         courseId = intent.getStringExtra("courseId").toString()
         realm = DatabaseService(this).realmInstance

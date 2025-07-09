@@ -10,6 +10,7 @@ import java.io.File
 import java.io.FileReader
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityTextfileViewerBinding
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
 
 class TextFileViewerActivity : AppCompatActivity() {
@@ -19,11 +20,7 @@ class TextFileViewerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityTextFileViewerBinding = ActivityTextfileViewerBinding.inflate(layoutInflater)
         setContentView(activityTextFileViewerBinding.root)
-        ViewCompat.setOnApplyWindowInsetsListener(activityTextFileViewerBinding.root) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
-            WindowInsetsCompat.CONSUMED
-        }
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityTextFileViewerBinding.root)
         renderTextFile()
     }
 

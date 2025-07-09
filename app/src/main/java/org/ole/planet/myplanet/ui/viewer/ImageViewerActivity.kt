@@ -12,6 +12,7 @@ import java.io.File
 import java.util.regex.Pattern
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityImageViewerBinding
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
 
 class ImageViewerActivity : AppCompatActivity() {
@@ -21,11 +22,7 @@ class ImageViewerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityImageViewerBinding = ActivityImageViewerBinding.inflate(layoutInflater)
         setContentView(activityImageViewerBinding.root)
-        ViewCompat.setOnApplyWindowInsetsListener(activityImageViewerBinding.root) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
-            WindowInsetsCompat.CONSUMED
-        }
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityImageViewerBinding.root)
         renderImageFile()
     }
 

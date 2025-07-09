@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityExoPlayerVideoBinding
 import org.ole.planet.myplanet.utilities.AuthSessionUpdater
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.Utilities
 
 class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback {
@@ -55,11 +56,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         super.onCreate(savedInstanceState)
         binding = ActivityExoPlayerVideoBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
-            WindowInsetsCompat.CONSUMED
-        }
+        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
 
         val extras = intent.extras

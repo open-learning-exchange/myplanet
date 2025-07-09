@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.service.AudioRecorderService
 import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
@@ -36,11 +37,7 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         super.onCreate(savedInstanceState)
         activityPdfReaderBinding = ActivityPdfreaderBinding.inflate(layoutInflater)
         setContentView(activityPdfReaderBinding.root)
-        ViewCompat.setOnApplyWindowInsetsListener(activityPdfReaderBinding.root) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
-            WindowInsetsCompat.CONSUMED
-        }
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityPdfReaderBinding.root)
         audioRecorderService = AudioRecorderService().setAudioRecordListener(this)
         audioRecorderService.setCaller(this, this)
         mRealm = DatabaseService(this).realmInstance

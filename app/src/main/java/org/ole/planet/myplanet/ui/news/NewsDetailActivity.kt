@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNewsLog
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -32,11 +33,7 @@ class NewsDetailActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         activityNewsDetailBinding = ActivityNewsDetailBinding.inflate(layoutInflater)
         setContentView(activityNewsDetailBinding.root)
-        ViewCompat.setOnApplyWindowInsetsListener(activityNewsDetailBinding.root) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
-            WindowInsetsCompat.CONSUMED
-        }
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityNewsDetailBinding.root)
         setSupportActionBar(activityNewsDetailBinding.toolbar)
         initActionBar()
         realm = DatabaseService(this).realmInstance

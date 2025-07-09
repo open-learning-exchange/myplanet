@@ -62,14 +62,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
         activityLoginBinding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(activityLoginBinding.root)
-        ViewCompat.setOnApplyWindowInsetsListener(activityLoginBinding.root) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
-            WindowInsetsCompat.CONSUMED
-        }
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityLoginBinding.root)
         lblLastSyncDate = activityLoginBinding.lblLastSyncDate
         btnSignIn = activityLoginBinding.btnSignin
         syncIcon = activityLoginBinding.syncIcon
