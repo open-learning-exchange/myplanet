@@ -3,12 +3,12 @@ package org.ole.planet.myplanet.datamanager
 import com.google.gson.GsonBuilder
 import java.io.IOException
 import java.lang.reflect.Modifier
-import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import org.ole.planet.myplanet.utilities.RetryUtils
 
 object ApiClient {
     private const val BASE_URL = "https://vi.media.mit.edu/"
@@ -48,35 +48,11 @@ object ApiClient {
     }
 
     fun <T> executeWithRetry(operation: () -> Response<T>?): Response<T>? {
-        var retryCount = 0
-        var response: Response<T>? = null
-        var lastException: Exception? = null
-
-        while (response == null && retryCount < 3) {
-            try {
-                response = operation()
-                if (response?.isSuccessful == false) {
-                    if (retryCount < 2) {
-                        response = null
-                    }
-                }
-            } catch (e: SocketTimeoutException) {
-                lastException = e
-            } catch (e: IOException) {
-                lastException = e
-            } catch (e: Exception) {
-                lastException = e
-            }
-
-            if (response == null && retryCount < 2) {
-                retryCount++
-                val sleepTime = (2000L * (retryCount + 1))
-                Thread.sleep(sleepTime)
-            } else {
-                break
-            }
-        }
-
-        return response
+        return RetryUtils.retry(
+            maxAttempts = 3,
+            delayMs = 2000L,
+            shouldRetry = { resp -> resp == null || !resp.isSuccessful },
+            block = operation,
+        )
     }
 }
