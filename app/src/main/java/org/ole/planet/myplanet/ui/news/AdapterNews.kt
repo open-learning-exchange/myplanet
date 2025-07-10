@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.news
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
 import android.content.SharedPreferences
@@ -27,7 +26,6 @@ import io.realm.RealmList
 import io.realm.Sort
 import java.util.Calendar
 import java.util.Locale
-import kotlin.toString
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
@@ -37,15 +35,12 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
-import org.ole.planet.myplanet.ui.courses.CourseStepFragment.Companion.prependBaseUrlToImages
-import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
-import org.ole.planet.myplanet.ui.news.NewsActions
 import org.ole.planet.myplanet.utilities.JsonUtils
 import android.app.Dialog
 import android.graphics.Color
@@ -54,6 +49,7 @@ import androidx.core.graphics.drawable.toDrawable
 import com.github.chrisbanes.photoview.PhotoView
 import com.bumptech.glide.Glide
 import java.io.File
+import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 
 class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "") : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
     private lateinit var rowNewsBinding: RowNewsBinding
@@ -198,7 +194,9 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private fun setMessageAndDate(holder: ViewHolderNews, news: RealmNews, sharedTeamName: String) {
         val markdownContentWithLocalPaths = prependBaseUrlToImages(
             news.message,
-            "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/"
+            "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/",
+            600,
+            350
         )
         setMarkdownText(holder.rowNewsBinding.tvMessage, markdownContentWithLocalPaths)
         val fulltext = holder.rowNewsBinding.tvMessage.text

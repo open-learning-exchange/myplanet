@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.model.RealmStepExam.Companion.getNoOfExam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 
 class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private lateinit var fragmentCourseDetailBinding: FragmentCourseDetailBinding
@@ -56,7 +57,12 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         setTextViewVisibility(fragmentCourseDetailBinding.method, courses?.method, fragmentCourseDetailBinding.ltMethod)
         setTextViewVisibility(fragmentCourseDetailBinding.gradeLevel, courses?.gradeLevel, fragmentCourseDetailBinding.ltGradeLevel)
         setTextViewVisibility(fragmentCourseDetailBinding.language, courses?.languageOfInstruction, fragmentCourseDetailBinding.ltLanguage)
-        val markdownContentWithLocalPaths = CourseStepFragment.prependBaseUrlToImages(courses?.description, "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/")
+        val markdownContentWithLocalPaths = prependBaseUrlToImages(
+            courses?.description,
+            "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/",
+            600,
+            350
+        )
         setMarkdownText(fragmentCourseDetailBinding.description, markdownContentWithLocalPaths)
         fragmentCourseDetailBinding.noOfExams.text = context?.getString(R.string.number_placeholder, getNoOfExam(cRealm, id))
         val resources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("courseId", id).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll()
