@@ -79,7 +79,6 @@ object ApiClient {
 
         return response
     }
-}
 
     fun <T> executeWithResult(operation: () -> Response<T>?): NetworkResult<T> {
         var retryCount = 0
