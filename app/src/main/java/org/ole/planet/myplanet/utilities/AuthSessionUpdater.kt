@@ -1,40 +1,55 @@
 package org.ole.planet.myplanet.utilities
 
 import android.content.SharedPreferences
-import org.json.JSONObject
 import java.io.DataOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.Timer
-import java.util.TimerTask
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
 
-class AuthSessionUpdater(private val callback: AuthCallback, private val settings: SharedPreferences) {
+class AuthSessionUpdater(
+    private val callback: AuthCallback,
+    private val settings: SharedPreferences,
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
+) {
 
     interface AuthCallback {
         fun setAuthSession(responseHeader: Map<String, List<String>>)
         fun onError(s: String)
     }
 
+    private var job: Job? = null
+
     init {
-        timerSendPostNewAuthSessionID()
+        start()
     }
 
-    private fun timerSendPostNewAuthSessionID() {
-        val timer = Timer()
-        val hourlyTask = object : TimerTask() {
-            override fun run() {
+    fun start() {
+        job?.cancel()
+        job = scope.launch {
+            while (isActive) {
                 sendPost(settings)
+                delay(15 * 60 * 1000L)
             }
         }
-        timer.schedule(hourlyTask, 0, 1000 * 60 * 15.toLong())
+    }
+
+    fun stop() {
+        job?.cancel()
     }
 
     // sendPost() - Meant to get New AuthSession Token for viewing Online resources such as Video, and basically any file.
     // It creates a session of about 20 mins after which a new AuthSession Token will be needed.
     // During these 20 mins items.getResourceRemoteAddress() will work in obtaining the files necessary.
-    private fun sendPost(settings: SharedPreferences) {
-        val thread = Thread {
-            try {
+    private suspend fun sendPost(settings: SharedPreferences) {
+        try {
+            withContext(Dispatchers.IO) {
                 val conn = getSessionUrl()?.openConnection() as HttpURLConnection
                 conn.requestMethod = "GET"
                 conn.setRequestProperty("Content-Type", "application/json")
@@ -50,13 +65,11 @@ class AuthSessionUpdater(private val callback: AuthCallback, private val setting
 
                 callback.setAuthSession(conn.headerFields)
                 conn.disconnect()
-            } catch (e: Exception) {
-                callback.onError(e.message.orEmpty())
-                e.printStackTrace()
             }
+        } catch (e: Exception) {
+            callback.onError(e.message.orEmpty())
+            e.printStackTrace()
         }
-
-        thread.start()
     }
 
     private fun getJsonObject(settings: SharedPreferences): JSONObject? {

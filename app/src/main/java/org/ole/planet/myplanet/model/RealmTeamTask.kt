@@ -3,15 +3,12 @@ package org.ole.planet.myplanet.model
 import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
 
 open class RealmTeamTask : RealmObject() {
     @PrimaryKey
@@ -79,23 +76,25 @@ open class RealmTeamTask : RealmObject() {
             taskDataList.add(csvRow)
         }
 
-        fun writeCsv(filePath: String, data: List<Array<String>>) {
-            try {
-                val file = File(filePath)
-                file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("_id", "_rev", "title", "status", "deadline", "completedTime", "description", "link", "sync", "teams", "assignee", "completed"))
-                for (row in data) {
-                    writer.writeNext(row)
-                }
-                writer.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
         fun teamTaskWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/teamTask.csv", taskDataList)
+            CsvUtils.writeCsv(
+                "${context.getExternalFilesDir(null)}/ole/teamTask.csv",
+                arrayOf(
+                    "_id",
+                    "_rev",
+                    "title",
+                    "status",
+                    "deadline",
+                    "completedTime",
+                    "description",
+                    "link",
+                    "sync",
+                    "teams",
+                    "assignee",
+                    "completed"
+                ),
+                taskDataList
+            )
         }
 
         @JvmStatic

@@ -18,6 +18,8 @@ import io.realm.RealmList
 import io.realm.RealmModel
 import io.realm.RealmObject
 import io.realm.RealmResults
+import java.text.Normalizer
+import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -38,8 +40,6 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities.toast
-import java.text.Normalizer
-import java.util.Locale
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
     var subjects: MutableSet<String> = mutableSetOf()
@@ -69,7 +69,11 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             isMyCourseLib = it.getBoolean("isMyCourseLib")
             courseLib = it.getString("courseLib")
             @Suppress("UNCHECKED_CAST")
-            resources = it.getSerializable("resources") as? ArrayList<RealmMyLibrary>
+            resources = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                it.getSerializable("resources", ArrayList::class.java) as? ArrayList<RealmMyLibrary>
+            } else {
+                it.getSerializable("resources") as? ArrayList<RealmMyLibrary>
+            }
         }
     }
 

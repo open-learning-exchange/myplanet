@@ -2,11 +2,11 @@ package org.ole.planet.myplanet.ui.exam
 
 import io.realm.Realm
 import io.realm.RealmList
+import java.util.Date
+import java.util.UUID
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmSubmission
-import java.util.Date
-import java.util.UUID
 
 object ExamSubmissionUtils {
     fun saveAnswer(
@@ -92,7 +92,7 @@ object ExamSubmissionUtils {
         otherText: String?,
         otherVisible: Boolean,
     ) {
-        if (ans == "other" && otherVisible && !otherText.isNullOrEmpty()) {
+        if (otherVisible && !otherText.isNullOrEmpty()) {
             answer.value = otherText
             answer.valueChoices = RealmList<String>().apply {
                 add("""{"id":"other","text":"$otherText"}""")

@@ -6,16 +6,13 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.stream.JsonReader
-import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utilities.JsonUtils
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
 import java.io.StringReader
+import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.utilities.CsvUtils
+import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmFeedback : RealmObject() {
     @PrimaryKey
@@ -153,23 +150,26 @@ open class RealmFeedback : RealmObject() {
             feedbacksDataList.add(csvRow)
         }
 
-        fun writeCsv(filePath: String, data: List<Array<String>>) {
-            try {
-                val file = File(filePath)
-                file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("feedbackId", "title", "source", "status", "priority", "owner", "openTime", "type", "url", "parentCode", "state", "item", "messages"))
-                for (row in data) {
-                    writer.writeNext(row)
-                }
-                writer.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
         fun feedbackWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/feedback.csv", feedbacksDataList)
+            CsvUtils.writeCsv(
+                "${context.getExternalFilesDir(null)}/ole/feedback.csv",
+                arrayOf(
+                    "feedbackId",
+                    "title",
+                    "source",
+                    "status",
+                    "priority",
+                    "owner",
+                    "openTime",
+                    "type",
+                    "url",
+                    "parentCode",
+                    "state",
+                    "item",
+                    "messages"
+                ),
+                feedbacksDataList
+            )
         }
     }
 }

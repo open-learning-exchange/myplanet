@@ -4,12 +4,14 @@ import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
-import android.text.TextUtils
 import android.text.TextWatcher
 import android.widget.ArrayAdapter
+import androidx.core.content.edit
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
+import java.util.Calendar
+import java.util.Locale
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
@@ -18,26 +20,20 @@ import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
-import java.text.Normalizer
-import java.util.Calendar
-import java.util.Locale
-import java.util.regex.Pattern
+import org.ole.planet.myplanet.utilities.AuthHelper
 
 class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
     var guest: Boolean = false
 
-    companion object {
-        private const val DIACRITIC_REGEX = ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"
-        private val DIACRITIC_PATTERN: Pattern = Pattern.compile(DIACRITIC_REGEX)
-    }
 
     private data class MemberInfo(
         val username: String,
@@ -54,28 +50,8 @@ class BecomeMemberActivity : BaseActivity() {
         val gender: String?
     )
 
-    private fun hasInvalidCharacters(input: String) =
-        input.any { it != '_' && it != '.' && it != '-' && !it.isDigit() && !it.isLetter() }
-
-    private fun hasSpecialCharacters(input: String) = DIACRITIC_PATTERN.matcher(input).matches()
-
-    private fun hasDiacriticCharacters(input: String): Boolean {
-        val normalized = Normalizer.normalize(input, Normalizer.Form.NFD)
-        return !normalized.codePoints().allMatch {
-            Character.isLetterOrDigit(it) || it == '.'.code || it == '-'.code || it == '_'.code
-        }
-    }
-
     private fun usernameValidationError(username: String, realm: Realm? = null): String? {
-        val firstChar = username.firstOrNull()
-        return when {
-            username.isEmpty() -> getString(R.string.please_enter_a_username)
-            username.contains(" ") -> getString(R.string.invalid_username)
-            firstChar != null && !firstChar.isDigit() && !firstChar.isLetter() -> getString(R.string.must_start_with_letter_or_number)
-            hasInvalidCharacters(username) || hasSpecialCharacters(username) || hasDiacriticCharacters(username) -> getString(R.string.only_letters_numbers_and_are_allowed)
-            realm != null && RealmUserModel.isUserExists(realm, username) -> getString(R.string.username_taken)
-            else -> null
-        }
+        return AuthHelper.validateUsername(this, username, realm)
     }
 
     private fun selectedGender(): String? = when {
@@ -172,21 +148,14 @@ class BecomeMemberActivity : BaseActivity() {
         }
 
         Service(this).becomeMember(realm, obj, object : Service.CreateUserCallback {
-            override fun onSuccess(message: String) {
-                runOnUiThread { Utilities.toast(this@BecomeMemberActivity, message) }
+            override fun onSuccess(success: String) {
+                runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
             }
         }, object : SecurityDataCallback {
             override fun onSecurityDataUpdated() {
                 runOnUiThread {
                     customProgressDialog.dismiss()
-                    val intent = Intent(this@BecomeMemberActivity, LoginActivity::class.java)
-                    if (guest) {
-                        intent.putExtra("username", info.username)
-                        intent.putExtra("guest", guest)
-                    }
-                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                    startActivity(intent)
-                    finish()
+                    autoLoginNewMember(info.username, info.password)
                 }
             }
         })
@@ -233,6 +202,18 @@ class BecomeMemberActivity : BaseActivity() {
         }
     }
 
+    private fun autoLoginNewMember(username: String, password: String) {
+        val intent = Intent(this, LoginActivity::class.java)
+        intent.putExtra("username", username)
+        intent.putExtra("password", password)
+        intent.putExtra("auto_login", true)
+        if (guest) {
+            intent.putExtra("guest", guest)
+        }
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+        startActivity(intent)
+        finish()
+    }
 
     private fun setupTextWatchers(mRealm: Realm) {
         activityBecomeMemberBinding.etUsername.addTextChangedListener(object : TextWatcher {

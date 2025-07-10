@@ -5,26 +5,24 @@ import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import com.opencsv.CSVWriter
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.Sort
 import io.realm.annotations.PrimaryKey
+import java.io.IOException
+import java.util.Date
+import java.util.UUID
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.settings
 import org.ole.planet.myplanet.datamanager.ApiInterface
+import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
-import java.util.Date
-import java.util.UUID
 
 open class RealmSubmission : RealmObject() {
     @PrimaryKey
@@ -90,7 +88,7 @@ open class RealmSubmission : RealmObject() {
                 val userJson = JsonUtils.getJsonObject("user", submission)
                 if (userJson.has("membershipDoc")) {
                     val membershipJson = JsonUtils.getJsonObject("membershipDoc", userJson)
-                    if (membershipJson != null) {
+                    if (membershipJson.entrySet().isNotEmpty()) {
                         val membership = mRealm.createObject(RealmMembershipDoc::class.java)
                         membership.teamId = JsonUtils.getString("teamId", membershipJson)
                         sub?.membershipDoc = membership
@@ -132,23 +130,24 @@ open class RealmSubmission : RealmObject() {
             }
         }
 
-        fun writeCsv(filePath: String, data: List<Array<String>>) {
-            try {
-                val file = File(filePath)
-                file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("_id", "parentId", "type", "status", "grade", "startTime", "lastUpdateTime", "sender", "source", "parentCode", "user"))
-                for (row in data) {
-                    writer.writeNext(row)
-                }
-                writer.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
         fun submissionWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/submission.csv", submissionDataList)
+            CsvUtils.writeCsv(
+                "${context.getExternalFilesDir(null)}/ole/submission.csv",
+                arrayOf(
+                    "_id",
+                    "parentId",
+                    "type",
+                    "status",
+                    "grade",
+                    "startTime",
+                    "lastUpdateTime",
+                    "sender",
+                    "source",
+                    "parentCode",
+                    "user"
+                ),
+                submissionDataList
+            )
         }
 
         private fun serializeExamResult(mRealm: Realm, sub: RealmSubmission, context: Context): JsonObject {

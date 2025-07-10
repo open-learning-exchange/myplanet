@@ -11,6 +11,7 @@ import android.os.Bundle
 import androidx.activity.OnBackPressedCallback
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.net.toUri
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -29,7 +30,6 @@ import org.ole.planet.myplanet.databinding.ActivityExoPlayerVideoBinding
 import org.ole.planet.myplanet.utilities.AuthSessionUpdater
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities
-import androidx.core.net.toUri
 
 class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback {
     private lateinit var binding: ActivityExoPlayerVideoBinding
@@ -40,6 +40,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     private var playWhenReady = true
     private var currentPosition = 0L
     private var isActivityVisible = false
+    private var authSessionUpdater: AuthSessionUpdater? = null
 
     private val audioBecomingNoisyReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -64,7 +65,9 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
 
         when (videoType) {
             "offline" -> prepareExoPlayerFromFileUri(videoURL)
-            "online" -> AuthSessionUpdater(this, settings)
+            "online" -> {
+                authSessionUpdater = AuthSessionUpdater(this, settings)
+            }
         }
 
         val callback = object : OnBackPressedCallback(true) {
@@ -220,6 +223,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
 
     override fun onDestroy() {
         super.onDestroy()
+        authSessionUpdater?.stop()
         try {
             unregisterReceiver(audioBecomingNoisyReceiver)
         } catch (e: IllegalArgumentException) {

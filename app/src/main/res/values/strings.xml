@@ -75,6 +75,7 @@
     <string name="your_feedback">Your Feedback *</string>
     <string name="button_update">Update</string>
     <string name="level">level</string>
+    <string name="select_level">Select Level</string>
     <string name="male">male</string>
     <string name="female">female</string>
     <string name="gender">Gender</string>
@@ -1312,5 +1313,13 @@
     <string name="download_progress_with_errors">%1$d of %2$d files downloaded (with some errors)</string>
     <string name="download_in_background">Starting download in background…</string>
     <string name="creating_member_account">Creating member account…</string>
+    <string name="cancel_adding_examination">Are you sure you want to cancel adding examination? The data will be lost.</string>
+    <string name="syncing_team_data">Syncing team data…</string>
+    <string name="syncing_chat_history">Syncing chat history…</string>
+    <string name="syncing_courses_data">Syncing courses data…</string>
+    <string name="syncing_feedback">Syncing feedback…</string>
+    <string name="syncing_health_data">Syncing health data…</string>
+    <string name="syncing_resources">Syncing resources…</string>
+    <string name="syncing_achievements">Syncing achievements…</string>
 
 </resources>

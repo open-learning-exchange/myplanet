@@ -20,6 +20,9 @@ import com.google.gson.JsonObject
 import com.nex3z.togglebuttongroup.SingleSelectToggleGroup
 import io.realm.RealmResults
 import io.realm.Sort
+import java.util.Calendar
+import java.util.Date
+import java.util.UUID
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertTaskBinding
 import org.ole.planet.myplanet.databinding.AlertUsersSpinnerBinding
@@ -35,9 +38,6 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.Calendar
-import java.util.Date
-import java.util.UUID
 
 class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     private lateinit var fragmentTeamTaskBinding: FragmentTeamTaskBinding

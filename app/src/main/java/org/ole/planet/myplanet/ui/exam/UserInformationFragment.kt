@@ -11,33 +11,34 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.RadioButton
-import androidx.core.net.toUri
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentManager
 import com.google.gson.JsonObject
 import io.realm.Realm
-import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseDialogFragment
-import org.ole.planet.myplanet.databinding.FragmentUserInformationBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.team.TeamDetailFragment
-import org.ole.planet.myplanet.utilities.Utilities
 import java.util.Calendar
 import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseDialogFragment
 import org.ole.planet.myplanet.callback.SuccessListener
+import org.ole.planet.myplanet.databinding.FragmentUserInformationBinding
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
+import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.team.TeamDetailFragment
+import org.ole.planet.myplanet.ui.team.TeamPage
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.utilities.Utilities
 
 class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     private lateinit var fragmentUserInformationBinding: FragmentUserInformationBinding
@@ -235,36 +236,16 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
         val safeTeamId = arguments?.getString("teamId") ?: ""
-
-        if (safeTeamId.isEmpty()) {
-            Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
-            BaseExamFragment.navigateToSurveyList(requireActivity())
-        } else if (safeTeamId == "") {
+        if (safeTeamId == "") {
             return
         } else {
             Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
             val settings = MainApplication.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
             checkAvailableServer(settings)
-            navigateToTeamSurveys(safeTeamId)
-        }
-    }
-
-    private fun navigateToTeamSurveys(teamId: String?) {
-        val activity = requireActivity()
-        if (activity is AppCompatActivity) {
-            val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", teamId)?.findFirst()
-
-            val teamDetailFragment = TeamDetailFragment.newInstance(
-                teamId = teamId ?: "",
-                teamName = teamObject?.name ?: "",
-                teamType = teamObject?.type ?: "",
-                isMyTeam = true,
-                navigateToPage = 5
-            )
-
-            activity.supportFragmentManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE)
-            activity.supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, teamDetailFragment).commit()
+            val activity = requireActivity()
+            if (activity is AppCompatActivity) {
+                activity.supportFragmentManager.popBackStack()
+            }
         }
     }
 
@@ -311,7 +292,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     private fun uploadExamResultWrapper() {
         val successListener = object : SuccessListener {
-            override fun onSuccess(message: String?) {}
+            override fun onSuccess(success: String?) {}
         }
 
         val newUploadManager = UploadManager(MainApplication.context)
