@@ -69,7 +69,6 @@ class TeamPagerAdapter(
                 }
                 TeamPage.JOIN_REQUESTS,
                 TeamPage.APPLICANTS -> MembersFragment().apply { setMemberChangeListener(memberChangeListener) }
-                else -> throw IllegalArgumentException("Unknown page $page")
             }.apply {
                 if (arguments == null) {
                     arguments = Bundle().apply { putString("id", teamId) }
