@@ -2,16 +2,13 @@ package org.ole.planet.myplanet.model
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
 
 open class RealmTag : RealmObject() {
     @PrimaryKey
@@ -77,23 +74,21 @@ open class RealmTag : RealmObject() {
             tagDataList.add(csvRow)
         }
 
-        fun writeCsv(filePath: String, data: List<Array<String>>) {
-            try {
-                val file = File(filePath)
-                file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("_id", "_rev", "name", "db", "docType", "tagId", "linkId", "attachedTo"))
-                for (row in data) {
-                    writer.writeNext(row)
-                }
-                writer.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
         fun tagWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/tags.csv", tagDataList)
+            CsvUtils.writeCsv(
+                "${context.getExternalFilesDir(null)}/ole/tags.csv",
+                arrayOf(
+                    "_id",
+                    "_rev",
+                    "name",
+                    "db",
+                    "docType",
+                    "tagId",
+                    "linkId",
+                    "attachedTo"
+                ),
+                tagDataList
+            )
         }
 
         @JvmStatic

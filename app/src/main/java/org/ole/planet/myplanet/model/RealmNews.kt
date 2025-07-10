@@ -8,21 +8,18 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonSyntaxException
-import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import java.util.Date
+import java.util.UUID
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
-import java.util.Date
-import java.util.UUID
 
 open class RealmNews : RealmObject() {
     @PrimaryKey
@@ -196,23 +193,34 @@ open class RealmNews : RealmObject() {
             newsDataList.add(csvRow)
         }
 
-        fun writeCsv(filePath: String, data: List<Array<String>>) {
-            try {
-                val file = File(filePath)
-                file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("_id", "_rev", "viewableBy", "docType", "avatar", "updatedDate", "viewableId", "createdOn", "messageType", "messagePlanetCode", "replyTo", "parentCode", "user", "time", "message", "images", "labels", "viewIn", "chat", "news", "sharedBy"))
-                for (row in data) {
-                    writer.writeNext(row)
-                }
-                writer.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
         fun newsWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/news.csv", newsDataList)
+            CsvUtils.writeCsv(
+                "${context.getExternalFilesDir(null)}/ole/news.csv",
+                arrayOf(
+                    "_id",
+                    "_rev",
+                    "viewableBy",
+                    "docType",
+                    "avatar",
+                    "updatedDate",
+                    "viewableId",
+                    "createdOn",
+                    "messageType",
+                    "messagePlanetCode",
+                    "replyTo",
+                    "parentCode",
+                    "user",
+                    "time",
+                    "message",
+                    "images",
+                    "labels",
+                    "viewIn",
+                    "chat",
+                    "news",
+                    "sharedBy"
+                ),
+                newsDataList
+            )
         }
 
         @JvmStatic

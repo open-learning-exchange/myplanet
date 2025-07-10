@@ -7,6 +7,7 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.ui.enterprises.FinanceFragment
 import org.ole.planet.myplanet.ui.enterprises.ReportsFragment
@@ -17,54 +18,57 @@ import org.ole.planet.myplanet.ui.team.teamMember.JoinedMemberFragment
 import org.ole.planet.myplanet.ui.team.teamMember.MembersFragment
 import org.ole.planet.myplanet.ui.team.teamResource.TeamResourceFragment
 import org.ole.planet.myplanet.ui.team.teamTask.TeamTaskFragment
-import org.ole.planet.myplanet.callback.MemberChangeListener
 
-class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boolean, private val memberChangeListener: MemberChangeListener ) : FragmentStateAdapter(fm) {
+class TeamPagerAdapter(
+    private val fm: FragmentActivity,
+    team: RealmMyTeam?,
+    isInMyTeam: Boolean,
+    private val memberChangeListener: MemberChangeListener
+) : FragmentStateAdapter(fm) {
     private val teamId = team?._id
     private val isEnterprise = team?.type == "enterprise"
 
-    private val pages = mutableListOf<Int>()
+    private val pages = mutableListOf<TeamPage>()
     private val fragments: List<Fragment>
 
     init {
         if (isInMyTeam || team?.isPublic == true) {
-            pages += R.string.chat
-            pages += if (isEnterprise) R.string.mission else R.string.plan
-            pages += if (isEnterprise) R.string.team else R.string.members
-            pages += R.string.tasks
-            pages += R.string.calendar
-            pages += R.string.survey
-            pages += if (isEnterprise) R.string.finances else R.string.courses
-            if (isEnterprise) pages += R.string.reports
-            pages += if (isEnterprise) R.string.documents else R.string.resources
-            pages += if (isEnterprise) R.string.applicants else R.string.join_requests
+            pages += TeamPage.CHAT
+            pages += if (isEnterprise) TeamPage.MISSION else TeamPage.PLAN
+            pages += if (isEnterprise) TeamPage.TEAM else TeamPage.MEMBERS
+            pages += TeamPage.TASKS
+            pages += TeamPage.CALENDAR
+            pages += TeamPage.SURVEY
+            pages += if (isEnterprise) TeamPage.FINANCES else TeamPage.COURSES
+            if (isEnterprise) pages += TeamPage.REPORTS
+            pages += if (isEnterprise) TeamPage.DOCUMENTS else TeamPage.RESOURCES
+            pages += if (isEnterprise) TeamPage.APPLICANTS else TeamPage.JOIN_REQUESTS
         } else {
-            pages += if (isEnterprise) R.string.mission else R.string.plan
-            pages += if (isEnterprise) R.string.team else R.string.members
+            pages += if (isEnterprise) TeamPage.MISSION else TeamPage.PLAN
+            pages += if (isEnterprise) TeamPage.TEAM else TeamPage.MEMBERS
         }
 
-        fragments = pages.map { id ->
-            when (id) {
-                R.string.chat -> DiscussionListFragment()
-                R.string.plan, R.string.mission -> PlanFragment()
-                R.string.members, R.string.team -> JoinedMemberFragment().apply { setMemberChangeListener(memberChangeListener) }
-                R.string.tasks -> TeamTaskFragment()
-                R.string.calendar -> TeamCalendarFragment()
-                R.string.survey -> SurveyFragment().apply {
+        fragments = pages.map { page ->
+            when (page) {
+                TeamPage.CHAT -> DiscussionListFragment()
+                TeamPage.PLAN, TeamPage.MISSION -> PlanFragment()
+                TeamPage.MEMBERS, TeamPage.TEAM -> JoinedMemberFragment().apply { setMemberChangeListener(memberChangeListener) }
+                TeamPage.TASKS -> TeamTaskFragment()
+                TeamPage.CALENDAR -> TeamCalendarFragment()
+                TeamPage.SURVEY -> SurveyFragment().apply {
                     arguments = Bundle().apply {
                         putBoolean("isTeam", true)
                         putString("teamId", teamId)
                     }
                 }
-                R.string.courses -> TeamCourseFragment()
-                R.string.finances -> FinanceFragment()
-                R.string.reports -> ReportsFragment()
-                R.string.resources, R.string.documents -> TeamResourceFragment().apply {
+                TeamPage.COURSES -> TeamCourseFragment()
+                TeamPage.FINANCES -> FinanceFragment()
+                TeamPage.REPORTS -> ReportsFragment()
+                TeamPage.RESOURCES, TeamPage.DOCUMENTS -> TeamResourceFragment().apply {
                     MainApplication.listener = this
                 }
-                R.string.join_requests,
-                R.string.applicants -> MembersFragment().apply { setMemberChangeListener(memberChangeListener) }
-                else -> throw IllegalArgumentException("Unknown page id $id")
+                TeamPage.JOIN_REQUESTS,
+                TeamPage.APPLICANTS -> MembersFragment().apply { setMemberChangeListener(memberChangeListener) }
             }.apply {
                 if (arguments == null) {
                     arguments = Bundle().apply { putString("id", teamId) }
@@ -76,13 +80,16 @@ class TeamPagerAdapter(fm: FragmentActivity, team: RealmMyTeam?, isInMyTeam: Boo
     override fun getItemCount(): Int = fragments.size
 
     fun getPageTitle(position: Int): CharSequence =
-        context.getString(pages[position])
+        fm.getString(pages[position].getTitleRes())
+
+    fun TeamPage.getTitleRes(): Int =
+        R.string::class.java.getDeclaredField(this.name.lowercase()).getInt(null)
 
     override fun getItemId(position: Int): Long =
-        pages[position].toLong()
+        pages[position].ordinal.toLong()
 
     override fun containsItem(itemId: Long): Boolean =
-        pages.contains(itemId.toInt())
+        pages.any { it.ordinal.toLong() == itemId }
 
     override fun createFragment(position: Int): Fragment =
         fragments[position]

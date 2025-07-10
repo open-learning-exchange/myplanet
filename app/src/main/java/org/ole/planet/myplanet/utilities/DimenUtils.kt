@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.utilities
 
 import android.util.DisplayMetrics
-import org.ole.planet.myplanet.MainApplication
 import kotlin.math.roundToInt
+import org.ole.planet.myplanet.MainApplication
 
 object DimenUtils {
     @JvmStatic

@@ -16,9 +16,11 @@ import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
+import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -29,6 +31,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
+import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createActionAsync
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
@@ -43,9 +46,6 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.SharedPrefManager
-import androidx.core.content.edit
-import androidx.lifecycle.lifecycleScope
-import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createActionAsync
 
 abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBackStackChangedListener {
     lateinit var navigationView: BottomNavigationView

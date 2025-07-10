@@ -17,6 +17,8 @@ import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import io.realm.Realm
+import java.util.Date
+import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddExaminationBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -35,8 +37,6 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getBoolean
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.getAge
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.Date
-import java.util.Locale
 
 class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
     private lateinit var activityAddExaminationBinding: ActivityAddExaminationBinding
@@ -372,7 +372,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
 
     override fun finish() {
         val alertDialogBuilder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
-        alertDialogBuilder.setMessage(R.string.are_you_sure_you_want_to_exit_your_data_will_be_lost)
+        alertDialogBuilder.setMessage(R.string.cancel_adding_examination)
         alertDialogBuilder.setPositiveButton(getString(R.string.yes_i_want_to_exit)) { _: DialogInterface?, _: Int -> super.finish() }
             .setNegativeButton(getString(R.string.cancel), null)
         alertDialogBuilder.show()

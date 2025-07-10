@@ -13,6 +13,7 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import io.realm.Realm
 import io.realm.Sort
+import java.util.ArrayList
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.status_options
@@ -27,7 +28,7 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
-import java.util.ArrayList
+import org.ole.planet.myplanet.ui.team.TeamPage
 
 class NotificationsFragment : Fragment() {
     private lateinit var fragmentNotificationsBinding: FragmentNotificationsBinding
@@ -133,7 +134,7 @@ class NotificationsFragment : Fragment() {
                             teamName = teamObject?.name ?: "",
                             teamType = teamObject?.type ?: "",
                             isMyTeam = true,
-                            navigateToPage = 3
+                            navigateToPage = TeamPage.TASKS
                         )
 
                         (context as OnHomeItemClickListener).openCallFragment(f)
@@ -160,7 +161,7 @@ class NotificationsFragment : Fragment() {
                         val b = Bundle()
                         b.putString("id", teamId)
                         b.putBoolean("isMyTeam", true)
-                        b.putInt("navigateToPage", 8)
+                        b.putInt("navigateToPage", TeamPage.JOIN_REQUESTS.ordinal)
                         f.arguments = b
                         (context as OnHomeItemClickListener).openCallFragment(f)
                     }

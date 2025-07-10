@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.ui.map
 
 import android.os.Bundle
-import androidx.preference.PreferenceManager
 import androidx.appcompat.app.AppCompatActivity
+import androidx.preference.PreferenceManager
 import org.ole.planet.myplanet.databinding.ActivityOfflineMapBinding
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory

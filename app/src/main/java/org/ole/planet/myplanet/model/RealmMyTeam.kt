@@ -6,12 +6,12 @@ import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import com.opencsv.CSVWriter
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
+import java.util.Date
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -24,15 +24,12 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
-import java.io.File
-import java.io.FileWriter
-import java.io.IOException
-import java.util.Date
 
 open class RealmMyTeam : RealmObject() {
     @PrimaryKey
@@ -175,23 +172,47 @@ open class RealmMyTeam : RealmObject() {
             teamDataList.add(csvRow)
         }
 
-        fun writeCsv(filePath: String, data: List<Array<String>>) {
-            try {
-                val file = File(filePath)
-                file.parentFile?.mkdirs()
-                val writer = CSVWriter(FileWriter(file))
-                writer.writeNext(arrayOf("userId", "teamId", "teamId_rev", "name", "sourcePlanet", "title", "description", "limit", "status", "teamPlanetCode", "createdDate", "resourceId", "teamType", "route", "type", "services", "rules", "parentCode", "createdBy", "userPlanetCode", "isLeader", "amount", "date", "docType", "public", "beginningBalance", "sales", "otherIncome", "wages", "otherExpenses", "startDate", "endDate", "updatedDate", "courses"))
-                for (row in data) {
-                    writer.writeNext(row)
-                }
-                writer.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-
         fun teamWriteCsv() {
-            writeCsv("${context.getExternalFilesDir(null)}/ole/team.csv", teamDataList)
+            CsvUtils.writeCsv(
+                "${context.getExternalFilesDir(null)}/ole/team.csv",
+                arrayOf(
+                    "userId",
+                    "teamId",
+                    "teamId_rev",
+                    "name",
+                    "sourcePlanet",
+                    "title",
+                    "description",
+                    "limit",
+                    "status",
+                    "teamPlanetCode",
+                    "createdDate",
+                    "resourceId",
+                    "teamType",
+                    "route",
+                    "type",
+                    "services",
+                    "rules",
+                    "parentCode",
+                    "createdBy",
+                    "userPlanetCode",
+                    "isLeader",
+                    "amount",
+                    "date",
+                    "docType",
+                    "public",
+                    "beginningBalance",
+                    "sales",
+                    "otherIncome",
+                    "wages",
+                    "otherExpenses",
+                    "startDate",
+                    "endDate",
+                    "updatedDate",
+                    "courses"
+                ),
+                teamDataList
+            )
         }
 
         @JvmStatic

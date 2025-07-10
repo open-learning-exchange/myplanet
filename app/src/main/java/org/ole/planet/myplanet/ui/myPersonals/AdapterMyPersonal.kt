@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
+import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSelectedMyPersonal
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
@@ -21,7 +22,6 @@ import org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity
 import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
 import org.ole.planet.myplanet.utilities.Utilities
-import java.io.File
 
 class AdapterMyPersonal(private val context: Context, private val list: List<RealmMyPersonal>) : RecyclerView.Adapter<ViewHolderMyPersonal>() {
     private lateinit var rowMyPersonalBinding: RowMyPersonalBinding

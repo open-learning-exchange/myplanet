@@ -4,10 +4,10 @@ import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.os.Handler
-import android.os.Looper
+import androidx.core.content.edit
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import java.util.Date
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.callback.SyncListener
@@ -18,8 +18,6 @@ import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.Date
-import androidx.core.content.edit
 
 class AutoSyncWorker(private val context: Context, workerParams: WorkerParameters) : Worker(context, workerParams), SyncListener, CheckVersionCallback, SuccessListener {
     private lateinit var preferences: SharedPreferences
@@ -29,14 +27,8 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
         val currentTime = System.currentTimeMillis()
         val syncInterval = preferences.getInt("autoSyncInterval", 60 * 60)
         if (currentTime - lastSync > syncInterval * 1000) {
-            // Post a Runnable to the main thread's Handler to show the Toast
             if (isAppInForeground(context)) {
-                val mainHandler = Handler(Looper.getMainLooper())
-                mainHandler.post {
-                    Utilities.toast(
-                        context, "Syncing started..."
-                    )
-                }
+                Utilities.toast(context, "Syncing started...")
             }
             Service(context).checkVersion(this, preferences)
         }

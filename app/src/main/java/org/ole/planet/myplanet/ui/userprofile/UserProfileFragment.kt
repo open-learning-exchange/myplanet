@@ -20,11 +20,14 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.TextView
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -37,6 +40,13 @@ import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
 import com.google.android.material.snackbar.Snackbar
 import io.realm.Realm
+import java.lang.String.format
+import java.util.ArrayList
+import java.util.Calendar
+import java.util.LinkedHashMap
+import java.util.LinkedList
+import java.util.Locale
+import java.util.UUID
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.language
 import org.ole.planet.myplanet.R.array.subject_level
@@ -50,9 +60,6 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import java.lang.String.format
-import java.util.*
-import androidx.core.net.toUri
 
 class UserProfileFragment : Fragment() {
     private lateinit var fragmentUserProfileBinding: FragmentUserProfileBinding
@@ -156,12 +163,12 @@ class UserProfileFragment : Fragment() {
         } else {
             model?.name ?: ""
         }
-        fragmentUserProfileBinding.txtEmail.text = getString(R.string.two_strings, getString(R.string.email_colon), Utilities.checkNA("${model?.email}"))
-        val dob = if (TextUtils.isEmpty(model?.dob)) "N/A" else TimeUtils.getFormatedDate(model?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        fragmentUserProfileBinding.txtEmail.text = getString(R.string.two_strings, getString(R.string.email_colon), Utilities.checkNA(model?.email))
+        val dob = if (TextUtils.isEmpty(model?.dob)) getString(R.string.n_a) else TimeUtils.getFormatedDate(model?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         fragmentUserProfileBinding.txtDob.text = getString(R.string.two_strings, getString(R.string.date_of_birth), dob)
-        fragmentUserProfileBinding.txtGender.text = getString(R.string.gender_colon, Utilities.checkNA("${model?.gender}"))
-        fragmentUserProfileBinding.txtLanguage.text = getString(R.string.two_strings, getString(R.string.language_colon), Utilities.checkNA("${model?.language}"))
-        fragmentUserProfileBinding.txtLevel.text = getString(R.string.level_colon, Utilities.checkNA("${model?.level}"))
+        fragmentUserProfileBinding.txtGender.text = getString(R.string.gender_colon, Utilities.checkNA(model?.gender))
+        fragmentUserProfileBinding.txtLanguage.text = getString(R.string.two_strings, getString(R.string.language_colon), Utilities.checkNA(model?.language))
+        fragmentUserProfileBinding.txtLevel.text = getString(R.string.level_colon, Utilities.checkNA(model?.level))
     }
 
     private fun loadProfileImage() {
@@ -208,7 +215,7 @@ class UserProfileFragment : Fragment() {
         binding.email.setText(model?.email)
         binding.phoneNumber.setText(model?.phoneNumber)
         val dobText = if (TextUtils.isEmpty(model?.dob)) {
-            "N/A"
+            getString(R.string.n_a)
         } else {
             TimeUtils.getFormatedDate(model?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         }
@@ -218,7 +225,7 @@ class UserProfileFragment : Fragment() {
     private fun setupLanguageSpinner(binding: EditProfileDialogBinding) {
         val languages = resources.getStringArray(language)
         val languageList: MutableList<String?> = ArrayList(listOf(*languages))
-        languageList.add(0, "Language")
+        languageList.add(0, getString(R.string.language))
         val adapter = ArrayAdapter(requireContext(), R.layout.spinner_item, languageList)
         adapter.setDropDownViewResource(R.layout.spinner_item)
         binding.language.adapter = adapter
@@ -237,8 +244,8 @@ class UserProfileFragment : Fragment() {
 
     private fun setupLevelSpinner(binding: EditProfileDialogBinding) {
         val levels = resources.getStringArray(subject_level).toMutableList().apply { remove("All") }
-        levels.add(0, "Select Level")
-        selectedLevel = Utilities.checkNA("${model?.level}")
+        levels.add(0, getString(R.string.select_level))
+        selectedLevel = Utilities.checkNA(model?.level)
         val levelAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, levels)
         levelAdapter.setDropDownViewResource(R.layout.spinner_item)
         binding.level.adapter = levelAdapter
@@ -301,7 +308,7 @@ class UserProfileFragment : Fragment() {
                 binding.email.text.toString(),
                 binding.phoneNumber.text.toString(),
                 selectedLevel,
-                selectedLanguage,
+                selectedLanguage.takeUnless { it == getString(R.string.language) },
                 selectedGender,
                 date?: model?.dob
             ) {
@@ -350,7 +357,7 @@ class UserProfileFragment : Fragment() {
 
     private fun createStatsMap(): LinkedHashMap<String, String?> {
         return linkedMapOf(
-            getString(R.string.community_name) to Utilities.checkNA(model?.planetCode!!),
+            getString(R.string.community_name) to Utilities.checkNA(model?.planetCode),
             getString(R.string.last_login) to handler.lastVisit?.let { Utilities.getRelativeTime(it) },
             getString(R.string.total_visits_overall) to handler.offlineVisits.toString(),
             getString(R.string.most_opened_resource) to Utilities.checkNA(handler.maxOpenedResource),
@@ -448,12 +455,12 @@ class UserProfileFragment : Fragment() {
     private fun updateUIWithUserData(model: RealmUserModel?) {
         model?.let {
             fragmentUserProfileBinding.txtName.text = String.format("%s %s %s", it.firstName, it.middleName, it.lastName)
-            fragmentUserProfileBinding.txtEmail.text = getString(R.string.two_strings, getString(R.string.email_colon), Utilities.checkNA("${it.email}"))
+            fragmentUserProfileBinding.txtEmail.text = getString(R.string.two_strings, getString(R.string.email_colon), Utilities.checkNA(it.email))
             val dob = if (TextUtils.isEmpty(it.dob)) "N/A" else TimeUtils.getFormatedDate(it.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
             fragmentUserProfileBinding.txtDob.text = getString(R.string.two_strings, getString(R.string.date_of_birth), dob)
-            fragmentUserProfileBinding.txtGender.text = getString(R.string.gender_colon, Utilities.checkNA("${it.gender}"))
-            fragmentUserProfileBinding.txtLanguage.text = getString(R.string.two_strings, getString(R.string.language_colon), Utilities.checkNA("${it.language}"))
-            fragmentUserProfileBinding.txtLevel.text = getString(R.string.level_colon, Utilities.checkNA("${it.level}"))
+            fragmentUserProfileBinding.txtGender.text = getString(R.string.gender_colon, Utilities.checkNA(it.gender))
+            fragmentUserProfileBinding.txtLanguage.text = getString(R.string.two_strings, getString(R.string.language_colon), Utilities.checkNA(it.language))
+            fragmentUserProfileBinding.txtLevel.text = getString(R.string.level_colon, Utilities.checkNA(it.level))
         }
     }
 

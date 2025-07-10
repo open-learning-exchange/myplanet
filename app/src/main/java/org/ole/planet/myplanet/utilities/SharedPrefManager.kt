@@ -20,6 +20,17 @@ class SharedPrefManager(context: Context) {
     var firstLaunch = "firstLaunch"
     private var teamName = "teamName"
 
+    enum class SyncKey(val key: String) {
+        CHAT_HISTORY("chat_history_synced"),
+        TEAMS("teams_synced"),
+        FEEDBACK("feedback_synced"),
+        ACHIEVEMENTS("achievements_synced"),
+        HEALTH("health_synced"),
+        COURSES("courses_synced"),
+        RESOURCES("resources_synced"),
+        EXAMS("exams_synced")
+    }
+
     fun getSavedUsers(): List<User> {
         val usersJson = pref.getString(savedUsers, null)
         return if (usersJson != null) {
@@ -38,6 +49,7 @@ class SharedPrefManager(context: Context) {
                 }
                 userList
             } catch (e: JSONException) {
+                e.printStackTrace()
                 emptyList()
             }
         } else {
@@ -105,4 +117,48 @@ class SharedPrefManager(context: Context) {
         editor.putString(this.teamName, teamName)
         editor.apply()
     }
+
+    private fun isSynced(key: SyncKey): Boolean {
+        return pref.getBoolean(key.key, false)
+    }
+
+    private fun setSynced(key: SyncKey, synced: Boolean) {
+        editor.putBoolean(key.key, synced)
+        if (synced) {
+            editor.putLong("${key.key}_time", System.currentTimeMillis())
+        }
+        editor.apply()
+    }
+
+    fun isChatHistorySynced(): Boolean = isSynced(SyncKey.CHAT_HISTORY)
+
+    fun setChatHistorySynced(synced: Boolean) = setSynced(SyncKey.CHAT_HISTORY, synced)
+
+    fun isTeamsSynced(): Boolean = isSynced(SyncKey.TEAMS)
+
+    fun setTeamsSynced(synced: Boolean) = setSynced(SyncKey.TEAMS, synced)
+
+    fun isFeedbackSynced(): Boolean = isSynced(SyncKey.FEEDBACK)
+
+    fun setFeedbackSynced(synced: Boolean) = setSynced(SyncKey.FEEDBACK, synced)
+
+    fun isAchievementsSynced(): Boolean = isSynced(SyncKey.ACHIEVEMENTS)
+
+    fun setAchievementsSynced(synced: Boolean) = setSynced(SyncKey.ACHIEVEMENTS, synced)
+
+    fun isHealthSynced(): Boolean = isSynced(SyncKey.HEALTH)
+
+    fun setHealthSynced(synced: Boolean) = setSynced(SyncKey.HEALTH, synced)
+
+    fun isCoursesSynced(): Boolean = isSynced(SyncKey.COURSES)
+
+    fun setCoursesSynced(synced: Boolean) = setSynced(SyncKey.COURSES, synced)
+
+    fun isResourcesSynced(): Boolean = isSynced(SyncKey.RESOURCES)
+
+    fun setResourcesSynced(synced: Boolean) = setSynced(SyncKey.RESOURCES, synced)
+
+    fun isExamsSynced(): Boolean = isSynced(SyncKey.EXAMS)
+
+    fun setExamsSynced(synced: Boolean) = setSynced(SyncKey.EXAMS, synced)
 }

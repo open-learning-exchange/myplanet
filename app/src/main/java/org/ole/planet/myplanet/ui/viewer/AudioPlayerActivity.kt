@@ -10,14 +10,13 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import java.io.File
+import java.util.regex.Pattern
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAudioPlayerBinding
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import java.io.File
 import java.util.concurrent.TimeUnit
-import java.util.regex.Pattern
-
 class AudioPlayerActivity : AppCompatActivity() {
     private lateinit var activityAudioPlayerBinding: ActivityAudioPlayerBinding
     private var exoPlayer: ExoPlayer? = null

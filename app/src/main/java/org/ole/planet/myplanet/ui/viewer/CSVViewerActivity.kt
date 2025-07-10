@@ -9,11 +9,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.opencsv.CSVParserBuilder
 import com.opencsv.CSVReaderBuilder
+import java.io.File
+import java.io.FileReader
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityCsvviewerBinding
 import org.ole.planet.myplanet.utilities.FileUtils
-import java.io.File
-import java.io.FileReader
 
 class CSVViewerActivity : AppCompatActivity() {
     private lateinit var activityCsvViewerBinding: ActivityCsvviewerBinding
