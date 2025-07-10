@@ -23,7 +23,6 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.ImageButton
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
@@ -34,8 +33,6 @@ import com.bumptech.glide.Glide
 import io.realm.Realm
 import java.util.Locale
 import org.ole.planet.myplanet.*
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.*
 import org.ole.planet.myplanet.datamanager.*
 import org.ole.planet.myplanet.model.*
