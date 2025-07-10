@@ -34,7 +34,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
+import org.ole.planet.myplanet.datamanager.NetworkRepository
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -188,39 +188,41 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun observeViewModelData() {
-        sharedViewModel.getSelectedChatHistory().observe(viewLifecycleOwner) { conversations ->
-            mAdapter.clearData()
-            fragmentChatDetailBinding.editGchatMessage.text.clear()
-            fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
-            if (conversations != null && conversations.isValid && conversations.isNotEmpty()) {
-                for (conversation in conversations) {
-                    conversation.query?.let { mAdapter.addQuery(it) }
-                    mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
-                    conversation.response?.let { mAdapter.addResponse(it) }
-                }
-                fragmentChatDetailBinding.recyclerGchat.post {
-                    fragmentChatDetailBinding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
-                }
-            }
-        }
-        sharedViewModel.getSelectedAiProvider().observe(viewLifecycleOwner) { selectedAiProvider ->
-            aiName = selectedAiProvider ?: aiName
-            if (fragmentChatDetailBinding.aiTableRow.isNotEmpty()) {
-                for (i in 0 until fragmentChatDetailBinding.aiTableRow.childCount) {
-                    val view = fragmentChatDetailBinding.aiTableRow.getChildAt(i)
-                    if (view is Button && view.text.toString().equals(selectedAiProvider, ignoreCase = true)) {
-                        val modelName = getModelsMap()[selectedAiProvider?.lowercase()] ?: "default-model"
-                        selectAI(view, "$selectedAiProvider", modelName)
-                        break
+        viewLifecycleOwner.lifecycleScope.launch {
+            sharedViewModel.uiState.collect { state ->
+                state.selectedChatHistory?.let { conversations ->
+                    mAdapter.clearData()
+                    fragmentChatDetailBinding.editGchatMessage.text.clear()
+                    fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
+                    if (conversations.isValid && conversations.isNotEmpty()) {
+                        for (conversation in conversations) {
+                            conversation.query?.let { mAdapter.addQuery(it) }
+                            mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
+                            conversation.response?.let { mAdapter.addResponse(it) }
+                        }
+                        fragmentChatDetailBinding.recyclerGchat.post {
+                            fragmentChatDetailBinding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
+                        }
                     }
                 }
+
+                state.selectedAiProvider?.let { selectedAiProvider ->
+                    aiName = selectedAiProvider
+                    if (fragmentChatDetailBinding.aiTableRow.isNotEmpty()) {
+                        for (i in 0 until fragmentChatDetailBinding.aiTableRow.childCount) {
+                            val view = fragmentChatDetailBinding.aiTableRow.getChildAt(i)
+                            if (view is Button && view.text.toString().equals(selectedAiProvider, ignoreCase = true)) {
+                                val modelName = getModelsMap()[selectedAiProvider.lowercase()] ?: "default-model"
+                                selectAI(view, selectedAiProvider, modelName)
+                                break
+                            }
+                        }
+                    }
+                }
+
+                state.selectedId?.let { _id = it }
+                state.selectedRev?.let { _rev = it }
             }
-        }
-        sharedViewModel.getSelectedId().observe(viewLifecycleOwner) { selectedId ->
-            _id = selectedId
-        }
-        sharedViewModel.getSelectedRev().observe(viewLifecycleOwner) { selectedRev ->
-            _rev = selectedRev
         }
     }
 
@@ -366,7 +368,7 @@ class ChatDetailFragment : Fragment() {
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
         serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
-            isServerReachable(url)
+            NetworkRepository.isServerReachable(url)
         }
     }
 

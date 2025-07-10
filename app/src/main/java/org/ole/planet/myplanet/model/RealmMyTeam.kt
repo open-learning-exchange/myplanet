@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.datamanager.NetworkRepository
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
 
@@ -372,9 +373,9 @@ open class RealmMyTeam : RealmObject() {
             val mapping = serverUrlMapper.processUrl(updateUrl)
 
             CoroutineScope(Dispatchers.IO).launch {
-                val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
+                val primaryAvailable = NetworkRepository.isServerReachable(mapping.primaryUrl)
                 val alternativeAvailable =
-                    mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
+                    mapping.alternativeUrl?.let { NetworkRepository.isServerReachable(it) } == true
 
                 if (!primaryAvailable && alternativeAvailable) {
                     mapping.alternativeUrl.let { alternativeUrl ->

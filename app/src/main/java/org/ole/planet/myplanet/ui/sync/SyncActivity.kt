@@ -32,6 +32,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.datamanager.NetworkRepository
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
@@ -632,7 +633,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 val serverUrl = settings.getString("serverURL", "")
                 if (!serverUrl.isNullOrEmpty()) {
                     MainApplication.applicationScope.launch(Dispatchers.IO) {
-                        val canReachServer = MainApplication.Companion.isServerReachable(serverUrl)
+                        val canReachServer = NetworkRepository.isServerReachable(serverUrl)
                         if (canReachServer) {
                             withContext(Dispatchers.Main) {
                                 startUpload("login")

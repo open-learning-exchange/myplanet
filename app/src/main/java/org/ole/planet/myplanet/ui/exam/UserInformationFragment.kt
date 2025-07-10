@@ -24,6 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.datamanager.NetworkRepository
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDialogFragment
 import org.ole.planet.myplanet.callback.SuccessListener
@@ -255,9 +256,9 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
         CoroutineScope(Dispatchers.IO).launch {
-            val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
+            val primaryAvailable = NetworkRepository.isServerReachable(mapping.primaryUrl)
             val alternativeAvailable =
-                mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
+                mapping.alternativeUrl?.let { NetworkRepository.isServerReachable(it) } == true
 
             if (!primaryAvailable && alternativeAvailable) {
                 mapping.alternativeUrl.let { alternativeUrl ->

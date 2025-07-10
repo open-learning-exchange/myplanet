@@ -41,7 +41,7 @@ import io.realm.RealmObject
 import io.realm.RealmResults
 import kotlin.math.ceil
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
@@ -76,10 +76,8 @@ import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
-import org.ole.planet.myplanet.utilities.FileUtils.totalAvailableMemoryRatio
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
@@ -120,6 +118,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         hideWifi()
         setupRealmListeners()
         checkAndCreateNewNotifications()
+        lifecycleScope.launch {
+            dashboardViewModel.uiState.collect { state ->
+                updateNotificationBadge(state.unreadCount) {
+                    openNotificationsList(user?.id ?: "")
+                }
+            }
+        }
         addBackPressCallback()
         challengeHelper = ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel)
         challengeHelper.evaluateChallengeDialog()
@@ -349,123 +354,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun checkAndCreateNewNotifications() {
         val userId = user?.id
-
-        GlobalScope.launch(Dispatchers.IO) {
-            var backgroundRealm: Realm? = null
-            var unreadCount = 0
-
-            try {
-                backgroundRealm = Realm.getDefaultInstance()
-
-                backgroundRealm.executeTransaction { realm ->
-                    createNotifications(realm, userId)
-                }
-
-                unreadCount = dashboardViewModel.getUnreadNotificationsSize(backgroundRealm, userId)
-
-                backgroundRealm.close()
-                backgroundRealm = null
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-                backgroundRealm?.let {
-                    if (!it.isClosed) {
-                        try {
-                            it.close()
-                        } catch (err: Exception) {
-                            err.printStackTrace()
-                        }
-                    }
-                }
-            }
-
-            withContext(Dispatchers.Main) {
-                try {
-                    updateNotificationBadge(unreadCount) {
-                        openNotificationsList(userId ?: "")
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }
+        dashboardViewModel.refreshNotifications(mRealm, userId)
     }
 
-    private fun createNotifications(realm: Realm, userId: String?) {
-        dashboardViewModel.updateResourceNotification(realm, userId)
-
-        createSurveyNotifications(realm, userId)
-        createTaskNotifications(realm, userId)
-        createStorageNotification(realm, userId)
-        createJoinRequestNotifications(realm, userId)
-    }
-
-    private fun createSurveyNotifications(realm: Realm, userId: String?) {
-        val pendingSurveys = dashboardViewModel.getPendingSurveys(realm, userId)
-        val surveyTitles = dashboardViewModel.getSurveyTitlesFromSubmissions(realm, pendingSurveys)
-        surveyTitles.forEach { title ->
-            dashboardViewModel.createNotificationIfNotExists(realm, "survey", "$title", title, userId)
-        }
-    }
-
-    private fun createTaskNotifications(realm: Realm, userId: String?) {
-        val tasks = realm.where(RealmTeamTask::class.java)
-            .notEqualTo("status", "archived")
-            .equalTo("completed", false)
-            .equalTo("assignee", userId)
-            .findAll()
-        tasks.forEach { task ->
-            dashboardViewModel.createNotificationIfNotExists(
-                realm,
-                "task",
-                "${task.title} ${formatDate(task.deadline)}",
-                task.id,
-                userId
-            )
-        }
-    }
-
-    private fun createStorageNotification(realm: Realm, userId: String?) {
-        val storageRatio = totalAvailableMemoryRatio
-        dashboardViewModel.createNotificationIfNotExists(realm, "storage", "$storageRatio", "storage", userId)
-    }
-
-    private fun createJoinRequestNotifications(realm: Realm, userId: String?) {
-        val teamLeaderMemberships = realm.where(RealmMyTeam::class.java)
-            .equalTo("userId", userId)
-            .equalTo("docType", "membership")
-            .equalTo("isLeader", true)
-            .findAll()
-
-        teamLeaderMemberships.forEach { leadership ->
-            val pendingJoinRequests = realm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", leadership.teamId)
-                .equalTo("docType", "request")
-                .findAll()
-
-            pendingJoinRequests.forEach { joinRequest ->
-                val team = realm.where(RealmMyTeam::class.java)
-                    .equalTo("_id", leadership.teamId)
-                    .findFirst()
-
-                val requester = realm.where(RealmUserModel::class.java)
-                    .equalTo("id", joinRequest.userId)
-                    .findFirst()
-
-                val requesterName = requester?.name ?: "Unknown User"
-                val teamName = team?.name ?: "Unknown Team"
-                val message = "$requesterName has requested to join $teamName"
-
-                dashboardViewModel.createNotificationIfNotExists(
-                    realm,
-                    "join_request",
-                    message,
-                    joinRequest._id,
-                    userId
-                )
-            }
-        }
-    }
     private fun openNotificationsList(userId: String) {
         val fragment = NotificationsFragment().apply {
             arguments = Bundle().apply {
