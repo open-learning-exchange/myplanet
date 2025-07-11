@@ -22,7 +22,8 @@ import org.ole.planet.myplanet.ui.team.AdapterTeam
 import org.ole.planet.myplanet.utilities.Utilities
 
 class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedListener {
-    private lateinit var fragmentAddLinkBinding: FragmentAddLinkBinding
+    private var _binding: FragmentAddLinkBinding? = null
+    private val binding get() = _binding!!
     override fun onNothingSelected(p0: AdapterView<*>?) {
     }
 
@@ -30,11 +31,12 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
     var selectedTeam: RealmMyTeam? = null
 
     override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-        val query = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").isNotEmpty("name").equalTo(             "type",
-            if (fragmentAddLinkBinding.spnLink.selectedItem.toString() == "Enterprises") "enterprise"
+        val query = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").isNotEmpty("name").equalTo(
+            "type",
+            if (binding.spnLink.selectedItem.toString() == "Enterprises") "enterprise"
             else ""
         ).notEqualTo("status", "archived").findAll()
-        fragmentAddLinkBinding.rvList.layoutManager = LinearLayoutManager(requireActivity())
+        binding.rvList.layoutManager = LinearLayoutManager(requireActivity())
         val adapter = AdapterTeam(requireActivity(), query, mRealm)
         adapter.setTeamSelectedListener(object : AdapterTeam.OnTeamSelectedListener {
             override fun onSelectedTeam(team: RealmMyTeam) {
@@ -43,7 +45,7 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
             }
         })
 
-        fragmentAddLinkBinding.rvList.adapter = adapter
+        binding.rvList.adapter = adapter
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -60,17 +62,17 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentAddLinkBinding = FragmentAddLinkBinding.inflate(inflater, container, false)
-        return fragmentAddLinkBinding.root
+        _binding = FragmentAddLinkBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         mRealm = DatabaseService(requireActivity()).realmInstance
-        fragmentAddLinkBinding.spnLink.onItemSelectedListener = this
-        fragmentAddLinkBinding.btnSave.setOnClickListener {
-            val type = fragmentAddLinkBinding.spnLink.selectedItem.toString()
-            val title = fragmentAddLinkBinding.etName.text.toString()
+        binding.spnLink.onItemSelectedListener = this
+        binding.btnSave.setOnClickListener {
+            val type = binding.spnLink.selectedItem.toString()
+            val title = binding.etName.text.toString()
             if (title.isEmpty()) {
                 Utilities.toast(requireActivity(), getString(R.string.title_is_required))
                 return@setOnClickListener
@@ -90,5 +92,10 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
 
             }
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

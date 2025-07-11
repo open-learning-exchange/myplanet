@@ -45,7 +45,8 @@ import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.Utilities
 
 class MyTeamsDetailFragment : BaseNewsFragment() {
-    private lateinit var fragmentMyTeamsDetailBinding: FragmentMyTeamsDetailBinding
+    private var _binding: FragmentMyTeamsDetailBinding? = null
+    private val binding get() = _binding!!
     lateinit var tvDescription: TextView
     var user: RealmUserModel? = null
     var teamId: String? = null
@@ -67,33 +68,32 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentMyTeamsDetailBinding = FragmentMyTeamsDetailBinding.inflate(inflater, container, false)
-        val v: View = fragmentMyTeamsDetailBinding.root
-        initializeViews(v)
+        _binding = FragmentMyTeamsDetailBinding.inflate(inflater, container, false)
+        initializeViews()
         dbService = DatabaseService(requireActivity())
         mRealm = dbService.realmInstance
         user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
         team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-        return fragmentMyTeamsDetailBinding.root
+        return binding.root
     }
 
-    private fun initializeViews(v: View) {
-        llRv = v.findViewById(R.id.ll_rv)
-        rvDiscussion = v.findViewById(R.id.rv_discussion)
-        tvDescription = v.findViewById(R.id.description)
-        tabLayout = v.findViewById(R.id.tab_layout)
-        listContent = v.findViewById(R.id.list_content)
-        fragmentMyTeamsDetailBinding.btnInvite.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) {
+    private fun initializeViews() {
+        llRv = binding.contentTeamDetail.llRv
+        rvDiscussion = binding.contentTeamDetail.rvDiscussion
+        tvDescription = binding.contentTeamDetail.description
+        tabLayout = binding.contentTeamDetail.tabLayout
+        listContent = binding.contentTeamDetail.listContent
+        binding.btnInvite.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) {
             View.VISIBLE
         } else {
             View.GONE
         }
-        fragmentMyTeamsDetailBinding.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) {
+        binding.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) {
             View.VISIBLE
         } else {
             View.GONE
         }
-        v.findViewById<View>(R.id.add_message).setOnClickListener { showAddMessage() }
+        binding.contentTeamDetail.addMessage.setOnClickListener { showAddMessage() }
     }
 
     private fun showAddMessage() {
@@ -123,7 +123,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        fragmentMyTeamsDetailBinding.title.text = team?.name
+        binding.title.text = team?.name
         tvDescription.text = team?.description
         setTeamList()
     }
@@ -175,6 +175,11 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         log.parentCode = user?.parentCode
         log.time = Date().time
         mRealm.commitTransaction()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {

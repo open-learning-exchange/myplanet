@@ -21,22 +21,23 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Utilities
 
 class SendSurveyFragment : BaseDialogFragment() {
-    private lateinit var fragmentSendSurveyBinding: FragmentSendSurveyBinding
+    private var _binding: FragmentSendSurveyBinding? = null
+    private val binding get() = _binding!!
     lateinit var mRealm: Realm
     lateinit var dbService: DatabaseService
     override val key: String
         get() = "surveyId"
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentSendSurveyBinding = FragmentSendSurveyBinding.inflate(inflater, container, false)
+        _binding = FragmentSendSurveyBinding.inflate(inflater, container, false)
         dbService = DatabaseService(requireActivity())
         mRealm = dbService.realmInstance
         if (TextUtils.isEmpty(id)) {
             dismiss()
-            return fragmentSendSurveyBinding.root
+            return binding.root
         }
-        fragmentSendSurveyBinding.btnCancel.setOnClickListener { dismiss() }
-        return fragmentSendSurveyBinding.root
+        binding.btnCancel.setOnClickListener { dismiss() }
+        return binding.root
     }
 
     private fun createSurveySubmission(userId: String?) {
@@ -59,8 +60,8 @@ class SendSurveyFragment : BaseDialogFragment() {
         super.onViewCreated(view, savedInstanceState)
         val users: List<RealmUserModel> = mRealm.where(RealmUserModel::class.java).findAll()
         initListView(users)
-        fragmentSendSurveyBinding.sendSurvey.setOnClickListener {
-            for (i in fragmentSendSurveyBinding.listUsers.selectedItemsList.indices) {
+        binding.sendSurvey.setOnClickListener {
+            for (i in binding.listUsers.selectedItemsList.indices) {
                 val u = users[i]
                 createSurveySubmission(u.id)
             }
@@ -71,7 +72,12 @@ class SendSurveyFragment : BaseDialogFragment() {
 
     private fun initListView(users: List<RealmUserModel>) {
         val adapter = ArrayAdapter(requireActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, users)
-        fragmentSendSurveyBinding.listUsers.choiceMode = ListView.CHOICE_MODE_MULTIPLE
-        fragmentSendSurveyBinding.listUsers.adapter = adapter
+        binding.listUsers.choiceMode = ListView.CHOICE_MODE_MULTIPLE
+        binding.listUsers.adapter = adapter
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }
