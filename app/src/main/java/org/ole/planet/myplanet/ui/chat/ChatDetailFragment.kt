@@ -19,6 +19,8 @@ import androidx.core.view.isNotEmpty
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.lifecycle.Lifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
@@ -188,39 +190,51 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun observeViewModelData() {
-        sharedViewModel.getSelectedChatHistory().observe(viewLifecycleOwner) { conversations ->
-            mAdapter.clearData()
-            fragmentChatDetailBinding.editGchatMessage.text.clear()
-            fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
-            if (conversations != null && conversations.isValid && conversations.isNotEmpty()) {
-                for (conversation in conversations) {
-                    conversation.query?.let { mAdapter.addQuery(it) }
-                    mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
-                    conversation.response?.let { mAdapter.addResponse(it) }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    sharedViewModel.selectedChatHistory.collect { conversations ->
+                        mAdapter.clearData()
+                        fragmentChatDetailBinding.editGchatMessage.text.clear()
+                        fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
+                        if (conversations != null && conversations.isValid && conversations.isNotEmpty()) {
+                            for (conversation in conversations) {
+                                conversation.query?.let { mAdapter.addQuery(it) }
+                                mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
+                                conversation.response?.let { mAdapter.addResponse(it) }
+                            }
+                            fragmentChatDetailBinding.recyclerGchat.post {
+                                fragmentChatDetailBinding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
+                            }
+                        }
+                    }
                 }
-                fragmentChatDetailBinding.recyclerGchat.post {
-                    fragmentChatDetailBinding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
+                launch {
+                    sharedViewModel.selectedAiProvider.collect { selectedAiProvider ->
+                        aiName = selectedAiProvider ?: aiName
+                        if (fragmentChatDetailBinding.aiTableRow.isNotEmpty()) {
+                            for (i in 0 until fragmentChatDetailBinding.aiTableRow.childCount) {
+                                val view = fragmentChatDetailBinding.aiTableRow.getChildAt(i)
+                                if (view is Button && view.text.toString().equals(selectedAiProvider, ignoreCase = true)) {
+                                    val modelName = getModelsMap()[selectedAiProvider?.lowercase()] ?: "default-model"
+                                    selectAI(view, "$selectedAiProvider", modelName)
+                                    break
+                                }
+                            }
+                        }
+                    }
                 }
-            }
-        }
-        sharedViewModel.getSelectedAiProvider().observe(viewLifecycleOwner) { selectedAiProvider ->
-            aiName = selectedAiProvider ?: aiName
-            if (fragmentChatDetailBinding.aiTableRow.isNotEmpty()) {
-                for (i in 0 until fragmentChatDetailBinding.aiTableRow.childCount) {
-                    val view = fragmentChatDetailBinding.aiTableRow.getChildAt(i)
-                    if (view is Button && view.text.toString().equals(selectedAiProvider, ignoreCase = true)) {
-                        val modelName = getModelsMap()[selectedAiProvider?.lowercase()] ?: "default-model"
-                        selectAI(view, "$selectedAiProvider", modelName)
-                        break
+                launch {
+                    sharedViewModel.selectedId.collect { selectedId ->
+                        _id = selectedId
+                    }
+                }
+                launch {
+                    sharedViewModel.selectedRev.collect { selectedRev ->
+                        _rev = selectedRev
                     }
                 }
             }
-        }
-        sharedViewModel.getSelectedId().observe(viewLifecycleOwner) { selectedId ->
-            _id = selectedId
-        }
-        sharedViewModel.getSelectedRev().observe(viewLifecycleOwner) { selectedRev ->
-            _rev = selectedRev
         }
     }
 
