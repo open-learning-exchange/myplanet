@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.RetryUtils
 import retrofit2.Response
 
 class UploadToShelfService(context: Context) {
@@ -214,42 +215,22 @@ class UploadToShelfService(context: Context) {
         ob.addProperty("key", keyString)
         ob.addProperty("iv", iv)
         ob.addProperty("createdOn", Date().time)
-        var success = false
-        var attemptCount = 0
         val maxAttempts = 3
         val retryDelayMs = 2000L
 
-        while (!success && attemptCount < maxAttempts) {
-            attemptCount++
-            try {
-                val response: Response<JsonObject>? = apiInterface?.postDoc(header, "application/json", "${Utilities.getUrl()}/$table", ob)?.execute()
-
-                if (response != null) {
-                    if (response.isSuccessful && response.body() != null) {
-                        model.key = keyString
-                        model.iv = iv
-                        success = true
-                    } else {
-                        if (attemptCount < maxAttempts) {
-                            Thread.sleep(retryDelayMs)
-                        }
-                    }
-                } else {
-                    if (attemptCount < maxAttempts) {
-                        Thread.sleep(retryDelayMs)
-                    }
-                }
-            } catch (e: Exception) {
-                if (attemptCount >= maxAttempts) {
-                    throw IOException("Failed to save key/IV after $maxAttempts attempts", e)
-                } else {
-                    Thread.sleep(retryDelayMs)
-                }
-            }
+        val response = RetryUtils.retry(
+            maxAttempts = maxAttempts,
+            delayMs = retryDelayMs,
+            shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
+        ) {
+            apiInterface?.postDoc(header, "application/json", "${Utilities.getUrl()}/$table", ob)?.execute()
         }
 
-        if (!success) {
-            val errorMessage = "Failed to save key/IV after $maxAttempts"
+        if (response?.isSuccessful == true && response.body() != null) {
+            model.key = keyString
+            model.iv = iv
+        } else {
+            val errorMessage = "Failed to save key/IV after $maxAttempts attempts"
             throw IOException(errorMessage)
         }
 
