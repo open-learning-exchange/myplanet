@@ -38,7 +38,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.availableExternalMemorySize
 import org.ole.planet.myplanet.utilities.FileUtils.externalMemoryAvailable
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getSDPathFromUrl
-import org.ole.planet.myplanet.utilities.DownloadNotificationHelper
+import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.Utilities.header
 import retrofit2.Call
 
@@ -63,9 +63,9 @@ class MyDownloadService : Service() {
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
-        DownloadNotificationHelper.createChannels(this)
+        DownloadUtils.createChannels(this)
 
-        val initialNotification = DownloadNotificationHelper.buildInitialNotification(this)
+        val initialNotification = DownloadUtils.buildInitialNotification(this)
         startForeground(ONGOING_NOTIFICATION_ID, initialNotification)
 
         val urlsKey = intent?.getStringExtra("urls_key") ?: "url_list_key"
@@ -94,7 +94,7 @@ class MyDownloadService : Service() {
 
 
     private fun updateNotificationForBatchDownload() {
-        DownloadNotificationHelper.createChannels(this)
+        DownloadUtils.createChannels(this)
         notificationBuilder = NotificationCompat.Builder(this, "DownloadChannel")
             .setContentTitle(getString(R.string.downloading_files))
             .setContentText("Starting downloads (0/$totalDownloadsCount)")
@@ -282,7 +282,7 @@ class MyDownloadService : Service() {
     }
 
     private fun showCompletionNotification(hadErrors: Boolean) {
-        val notification = DownloadNotificationHelper.buildCompletionNotification(
+        val notification = DownloadUtils.buildCompletionNotification(
             this,
             completedDownloadsCount,
             totalDownloadsCount,

@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getSDPathFromUrl
-import org.ole.planet.myplanet.utilities.DownloadNotificationHelper
+import org.ole.planet.myplanet.utilities.DownloadUtils
 
 class DownloadWorker(val context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -37,7 +37,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
             }
 
             val urls = urlSet.toTypedArray()
-            DownloadNotificationHelper.createChannels(context)
+            DownloadUtils.createChannels(context)
 
             showProgressNotification(0, urls.size, context.getString(R.string.starting_downloads))
 
@@ -126,7 +126,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
     }
 
     private fun showProgressNotification(current: Int, total: Int, text: String) {
-        val notification = DownloadNotificationHelper.buildProgressNotification(
+        val notification = DownloadUtils.buildProgressNotification(
             context,
             current,
             total,
@@ -138,7 +138,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
     }
 
     private fun showCompletionNotification(completed: Int, total: Int, hadErrors: Boolean) {
-        val notification = DownloadNotificationHelper.buildCompletionNotification(
+        val notification = DownloadUtils.buildCompletionNotification(
             context,
             completed,
             total,
