@@ -19,7 +19,6 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
-import io.realm.Realm
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -34,7 +33,7 @@ import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Download
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils.availableExternalMemorySize
 import org.ole.planet.myplanet.utilities.FileUtils.externalMemoryAvailable
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
@@ -287,7 +286,7 @@ class MyDownloadService : Service() {
 
     private fun onDownloadComplete(url: String) {
         if ((outputFile?.length() ?: 0) > 0) {
-            changeOfflineStatus(url)
+            DownloadUtils.updateResourceOfflineStatus(url)
         }
         completedDownloadsCount++
 
@@ -324,26 +323,6 @@ class MyDownloadService : Service() {
         notificationManager?.notify(COMPLETION_NOTIFICATION_ID, completionNotification.build())
     }
 
-    private fun changeOfflineStatus(url: String) {
-        CoroutineScope(Dispatchers.IO).launch {
-            val currentFileName = getFileNameFromUrl(url)
-            try {
-                val backgroundRealm = Realm.getDefaultInstance()
-                backgroundRealm.use { realm ->
-                    realm.executeTransaction {
-                        realm.where(RealmMyLibrary::class.java)
-                            .equalTo("resourceLocalAddress", currentFileName)
-                            .findAll()?.forEach {
-                                it.resourceOffline = true
-                                it.downloadedRev = it._rev
-                            }
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
 
     companion object {
         const val PREFS_NAME = "MyPrefsFile"
