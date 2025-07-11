@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.ConfigurationManager
+import org.ole.planet.myplanet.datamanager.NetworkResult
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.isUserExists
@@ -360,19 +361,23 @@ class Service(private val context: Context) {
 
     private suspend fun fetchVersionInfo(settings: SharedPreferences): MyPlanet? =
         withContext(Dispatchers.IO) {
-            try {
-                retrofitInterface?.checkVersion(Utilities.getUpdateUrl(settings))?.execute()?.body()
-            } catch (_: Exception) {
-                null
+            val result = ApiClient.executeWithResult {
+                retrofitInterface?.checkVersion(Utilities.getUpdateUrl(settings))?.execute()
+            }
+            when (result) {
+                is NetworkResult.Success -> result.data
+                else -> null
             }
         }
 
     private suspend fun fetchApkVersionString(settings: SharedPreferences): String? =
         withContext(Dispatchers.IO) {
-            try {
-                retrofitInterface?.getApkVersion(Utilities.getApkVersionUrl(settings))?.execute()?.body()?.string()
-            } catch (_: Exception) {
-                null
+            val result = ApiClient.executeWithResult {
+                retrofitInterface?.getApkVersion(Utilities.getApkVersionUrl(settings))?.execute()
+            }
+            when (result) {
+                is NetworkResult.Success -> result.data.string()
+                else -> null
             }
         }
 
