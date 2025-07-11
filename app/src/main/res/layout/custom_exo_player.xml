@@ -20,23 +20,19 @@
             android:id="@id/exo_rew"
             app:tint="@color/daynight_textColor"
             style="@style/ExoMediaButton.Rewind"/>
-
         <ImageButton
             android:id="@id/exo_play"
             app:tint="@color/daynight_textColor"
             android:visibility="gone"
             style="@style/ExoMediaButton.Play"/>
-
         <ImageButton
             android:id="@id/exo_pause"
             app:tint="@color/daynight_textColor"
             style="@style/ExoMediaButton.Pause"/>
-
         <ImageButton
             android:id="@id/exo_ffwd"
             app:tint="@color/daynight_textColor"
             style="@style/ExoMediaButton.FastForward"/>
-
     </LinearLayout>
 
     <LinearLayout
@@ -55,12 +51,10 @@
             android:paddingRight="4dp"
             android:includeFontPadding="false"
             android:textColor="@color/daynight_textColor"/>
-
         <View android:id="@id/exo_progress_placeholder"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="26dp"/>
-
         <TextView android:id="@id/exo_duration"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -70,7 +64,5 @@
             android:paddingRight="4dp"
             android:includeFontPadding="false"
             android:textColor="@color/daynight_textColor"/>
-
     </LinearLayout>
-
 </LinearLayout>
