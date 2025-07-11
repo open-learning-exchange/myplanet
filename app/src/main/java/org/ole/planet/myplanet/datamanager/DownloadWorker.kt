@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.datamanager
 
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
@@ -21,6 +20,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getSDPathFromUrl
+import org.ole.planet.myplanet.utilities.DownloadNotificationHelper
 
 class DownloadWorker(val context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -37,7 +37,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
             }
 
             val urls = urlSet.toTypedArray()
-            initializeNotificationChannels()
+            DownloadNotificationHelper.createChannels(context)
 
             showProgressNotification(0, urls.size, context.getString(R.string.starting_downloads))
 
@@ -125,43 +125,26 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
         changeOfflineStatus(url)
     }
 
-    private fun initializeNotificationChannels() {
-        val channelId = "DownloadWorkerChannel"
-        if (notificationManager.getNotificationChannel(channelId) == null) {
-            val channel = NotificationChannel(channelId, "Background Downloads", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "Shows progress for background downloads"
-                setSound(null, null)
-            }
-            notificationManager.createNotificationChannel(channel)
-        }
-    }
-
     private fun showProgressNotification(current: Int, total: Int, text: String) {
-        val notification = NotificationCompat.Builder(applicationContext, "DownloadWorkerChannel")
-            .setContentTitle(context.getString(R.string.downloading_files))
-            .setContentText(text)
-            .setSmallIcon(R.drawable.ic_download)
-            .setProgress(total, current, false)
-            .setOngoing(true)
-            .setSilent(true)
-            .build()
+        val notification = DownloadNotificationHelper.buildProgressNotification(
+            context,
+            current,
+            total,
+            text,
+            forWorker = true
+        )
 
         notificationManager.notify(WORKER_NOTIFICATION_ID, notification)
     }
 
     private fun showCompletionNotification(completed: Int, total: Int, hadErrors: Boolean) {
-        val notification = NotificationCompat.Builder(applicationContext, "DownloadWorkerChannel")
-            .setContentTitle(context.getString(R.string.downloads_completed))
-            .setContentText(
-                if (hadErrors) {
-                    context.getString(R.string.download_progress_with_errors, completed, total)
-                } else {
-                    context.getString(R.string.download_progress, completed, total)
-                }
-            )
-            .setSmallIcon(R.drawable.ic_download)
-            .setAutoCancel(true)
-            .build()
+        val notification = DownloadNotificationHelper.buildCompletionNotification(
+            context,
+            completed,
+            total,
+            hadErrors,
+            forWorker = true
+        )
 
         notificationManager.notify(COMPLETION_NOTIFICATION_ID, notification)
     }
