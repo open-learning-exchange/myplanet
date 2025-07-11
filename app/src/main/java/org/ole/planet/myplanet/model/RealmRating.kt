@@ -6,7 +6,6 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 
@@ -29,7 +28,6 @@ open class RealmRating : RealmObject() {
     var user: String? = null
 
     companion object {
-        private val ratingDataList: MutableList<Array<String>> = mutableListOf()
         @JvmStatic
         fun getRatings(mRealm: Realm, type: String?, userId: String?): HashMap<String?, JsonObject> {
             val r = mRealm.where(RealmRating::class.java).equalTo("type", type).findAll()
@@ -44,7 +42,7 @@ open class RealmRating : RealmObject() {
         @JvmStatic
         fun getRatingsById(mRealm: Realm, type: String?, id: String?, userid: String?): JsonObject? {
             val r = mRealm.where(RealmRating::class.java).equalTo("type", type).equalTo("item", id).findAll()
-            if (r.size == 0) {
+            if (r.isEmpty()) {
                 return null
             }
             val `object` = JsonObject()
@@ -105,44 +103,6 @@ open class RealmRating : RealmObject() {
                 rating.parentCode = JsonUtils.getString("planetCode", act)
                 rating.createdOn = JsonUtils.getString("createdOn", act)
             }
-
-            val csvRow = arrayOf(
-                JsonUtils.getString("_id", act),
-                JsonUtils.getString("_rev", act),
-                JsonUtils.getString("user", act),
-                JsonUtils.getString("item", act),
-                JsonUtils.getString("type", act),
-                JsonUtils.getString("title", act),
-                JsonUtils.getLong("time", act).toString(),
-                JsonUtils.getString("comment", act),
-                JsonUtils.getInt("rate", act).toString(),
-                JsonUtils.getString("createdOn", act),
-                JsonUtils.getString("parentCode", act),
-                JsonUtils.getString("planetCode", act)
-            )
-
-            ratingDataList.add(csvRow)
-        }
-
-        fun ratingWriteCsv() {
-            CsvUtils.writeCsv(
-                "${context.getExternalFilesDir(null)}/ole/ratings.csv",
-                arrayOf(
-                    "_id",
-                    "_rev",
-                    "user",
-                    "item",
-                    "type",
-                    "title",
-                    "time",
-                    "comment",
-                    "rate",
-                    "createdOn",
-                    "parentCode",
-                    "planetCode"
-                ),
-                ratingDataList
-            )
         }
     }
 }
