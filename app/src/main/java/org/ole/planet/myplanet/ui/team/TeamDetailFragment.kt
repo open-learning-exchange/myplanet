@@ -148,16 +148,19 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     private fun setupTeamDetails(isMyTeam: Boolean, user: RealmUserModel?) {
-        fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, isMyTeam, this)
-        TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
-            tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
-        }.attach()
+        fragmentTeamDetailBinding.root.post {
+            if (isAdded && !requireActivity().isFinishing) {
+                setupViewPager(isMyTeam)
+            }
+        }
 
         val pageOrdinal = arguments?.getInt("navigateToPage", -1) ?: -1
-        if (pageOrdinal >= 0 &&
-            pageOrdinal < (fragmentTeamDetailBinding.viewPager2.adapter?.itemCount ?: 0)
-        ) {
-            fragmentTeamDetailBinding.viewPager2.currentItem = pageOrdinal
+        if (pageOrdinal >= 0) {
+            fragmentTeamDetailBinding.root.post {
+                if (pageOrdinal < (fragmentTeamDetailBinding.viewPager2.adapter?.itemCount ?: 0)) {
+                    fragmentTeamDetailBinding.viewPager2.currentItem = pageOrdinal
+                }
+            }
         }
 
         fragmentTeamDetailBinding.title.text = getEffectiveTeamName()
@@ -172,6 +175,13 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         if(getJoinedMemberCount(team!!._id.toString(), mRealm) <= 1 && isMyTeam){
             fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
         }
+    }
+
+    private fun setupViewPager(isMyTeam: Boolean) {
+        fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, isMyTeam, this)
+        TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
+            tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
+        }.attach()
     }
 
     private fun setupNonMyTeamButtons(user: RealmUserModel?) {
