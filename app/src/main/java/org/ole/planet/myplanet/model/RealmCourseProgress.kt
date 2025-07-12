@@ -4,11 +4,9 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseByUserId
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
-import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmCourseProgress : RealmObject() {
@@ -26,7 +24,6 @@ open class RealmCourseProgress : RealmObject() {
     var parentCode: String? = null
 
     companion object {
-        val progressDataList: MutableList<Array<String>> = mutableListOf()
         @JvmStatic
         fun serializeProgress(progress: RealmCourseProgress): JsonObject {
             val `object` = JsonObject()
@@ -99,39 +96,6 @@ open class RealmCourseProgress : RealmObject() {
             courseProgress?.createdOn = JsonUtils.getString("createdOn", act)
             courseProgress?.createdDate = JsonUtils.getLong("createdDate", act)
             courseProgress?.updatedDate = JsonUtils.getLong("updatedDate", act)
-
-            val csvRow = arrayOf(
-                JsonUtils.getString("_id", act),
-                JsonUtils.getString("_rev", act),
-                JsonUtils.getBoolean("passed", act).toString(),
-                JsonUtils.getInt("stepNum", act).toString(),
-                JsonUtils.getString("userId", act),
-                JsonUtils.getString("parentCode", act),
-                JsonUtils.getString("courseId", act),
-                JsonUtils.getString("createdOn", act),
-                JsonUtils.getLong("createdDate", act).toString(),
-                JsonUtils.getLong("updatedDate", act).toString()
-            )
-            progressDataList.add(csvRow)
-        }
-
-        fun progressWriteCsv() {
-            CsvUtils.writeCsv(
-                "${context.getExternalFilesDir(null)}/ole/chatHistory.csv",
-                arrayOf(
-                    "progressId",
-                    "progress_rev",
-                    "passed",
-                    "stepNum",
-                    "userId",
-                    "parentCode",
-                    "courseId",
-                    "createdOn",
-                    "createdDate",
-                    "updatedDate"
-                ),
-                progressDataList
-            )
         }
     }
 }

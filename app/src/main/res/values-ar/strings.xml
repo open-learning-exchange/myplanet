@@ -1113,7 +1113,6 @@
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
-    <string name="download_sync_files">تنزيل ملفات المزامنة</string>
     <string name="member_description"><![CDATA[(\u200E%2$d زيارة) \u200E%1$s]]></string>
     <string name="last_visit">الزيارة الأخيرة: %1$s</string>
     <string name="no_visit">لا زيارة</string>

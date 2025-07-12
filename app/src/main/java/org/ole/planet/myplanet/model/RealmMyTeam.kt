@@ -24,7 +24,6 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
@@ -72,8 +71,6 @@ open class RealmMyTeam : RealmObject() {
     var updatedDate: Long = 0
 
     companion object {
-        private val teamDataList: MutableList<Array<String>> = mutableListOf()
-        val reportsDataList: MutableList<Array<String>> = mutableListOf()
         private val concatenatedLinks = ArrayList<String>()
 
         @JvmStatic
@@ -133,86 +130,6 @@ open class RealmMyTeam : RealmObject() {
                     }
                 }
             }
-            val csvRow = arrayOf(
-                JsonUtils.getString("userId", doc),
-                JsonUtils.getString("teamId", doc),
-                JsonUtils.getString("_rev", doc),
-                JsonUtils.getString("name", doc),
-                JsonUtils.getString("sourcePlanet", doc),
-                JsonUtils.getString("title", doc),
-                JsonUtils.getString("description", doc),
-                JsonUtils.getInt("limit", doc).toString(),
-                JsonUtils.getString("status", doc),
-                JsonUtils.getString("teamPlanetCode", doc),
-                JsonUtils.getLong("createdDate", doc).toString(),
-                JsonUtils.getString("resourceId", doc),
-                JsonUtils.getString("teamType", doc),
-                JsonUtils.getString("route", doc),
-                JsonUtils.getString("type", doc),
-                JsonUtils.getString("services", doc),
-                JsonUtils.getString("rules", doc),
-                JsonUtils.getString("parentCode", doc),
-                JsonUtils.getString("createdBy", doc),
-                JsonUtils.getString("userPlanetCode", doc),
-                JsonUtils.getBoolean("isLeader", doc).toString(),
-                JsonUtils.getInt("amount", doc).toString(),
-                JsonUtils.getLong("date", doc).toString(),
-                JsonUtils.getString("docType", doc),
-                JsonUtils.getBoolean("public", doc).toString(),
-                JsonUtils.getInt("beginningBalance", doc).toString(),
-                JsonUtils.getInt("sales", doc).toString(),
-                JsonUtils.getInt("otherIncome", doc).toString(),
-                JsonUtils.getInt("wages", doc).toString(),
-                JsonUtils.getInt("otherExpenses", doc).toString(),
-                JsonUtils.getLong("startDate", doc).toString(),
-                JsonUtils.getLong("endDate", doc).toString(),
-                JsonUtils.getLong("updatedDate", doc).toString(),
-                JsonUtils.getJsonArray("courses", doc).toString()
-            )
-            teamDataList.add(csvRow)
-        }
-
-        fun teamWriteCsv() {
-            CsvUtils.writeCsv(
-                "${context.getExternalFilesDir(null)}/ole/team.csv",
-                arrayOf(
-                    "userId",
-                    "teamId",
-                    "teamId_rev",
-                    "name",
-                    "sourcePlanet",
-                    "title",
-                    "description",
-                    "limit",
-                    "status",
-                    "teamPlanetCode",
-                    "createdDate",
-                    "resourceId",
-                    "teamType",
-                    "route",
-                    "type",
-                    "services",
-                    "rules",
-                    "parentCode",
-                    "createdBy",
-                    "userPlanetCode",
-                    "isLeader",
-                    "amount",
-                    "date",
-                    "docType",
-                    "public",
-                    "beginningBalance",
-                    "sales",
-                    "otherIncome",
-                    "wages",
-                    "otherExpenses",
-                    "startDate",
-                    "endDate",
-                    "updatedDate",
-                    "courses"
-                ),
-                teamDataList
-            )
         }
 
         @JvmStatic
@@ -243,25 +160,6 @@ open class RealmMyTeam : RealmObject() {
                 myTeams.updated = JsonUtils.getBoolean("updated", doc)
             }
             mRealm.commitTransaction()
-
-            val csvRow = arrayOf(
-                JsonUtils.getString("teamId", doc),
-                JsonUtils.getString("description", doc),
-                JsonUtils.getString("teamPlanetCode", doc),
-                JsonUtils.getLong("createdDate", doc).toString(),
-                JsonUtils.getString("teamType", doc),
-                JsonUtils.getString("docType", doc),
-                JsonUtils.getInt("beginningBalance", doc).toString(),
-                JsonUtils.getInt("sales", doc).toString(),
-                JsonUtils.getInt("otherIncome", doc).toString(),
-                JsonUtils.getInt("wages", doc).toString(),
-                JsonUtils.getInt("otherExpenses", doc).toString(),
-                JsonUtils.getLong("startDate", doc).toString(),
-                JsonUtils.getLong("endDate", doc).toString(),
-                JsonUtils.getLong("updatedDate", doc).toString(),
-                JsonUtils.getBoolean("updated", doc).toString()
-            )
-            reportsDataList.add(csvRow)
         }
 
         @JvmStatic
@@ -538,7 +436,7 @@ open class RealmMyTeam : RealmObject() {
             .equalTo("userId", userId)
             .findAll()
 
-        return m.size > 0
+        return m.isNotEmpty()
     }
 
     fun isMyTeam(userID: String?, mRealm: Realm): Boolean {

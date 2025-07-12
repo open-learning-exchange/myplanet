@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.settings
 import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
@@ -48,8 +47,6 @@ open class RealmSubmission : RealmObject() {
     var isUpdated = false
 
     companion object {
-        private val submissionDataList: MutableList<Array<String>> = mutableListOf()
-
         @JvmStatic
         fun insert(mRealm: Realm, submission: JsonObject) {
             if (submission.has("_attachments")) {
@@ -95,22 +92,6 @@ open class RealmSubmission : RealmObject() {
                     }
                 }
 
-                val csvRow = arrayOf(
-                    JsonUtils.getString("_id", submission),
-                    JsonUtils.getString("parentId", submission),
-                    JsonUtils.getString("type", submission),
-                    JsonUtils.getString("status", submission),
-                    JsonUtils.getString("grade", submission),
-                    JsonUtils.getString("team", submission),
-                    JsonUtils.getString("startTime", submission),
-                    JsonUtils.getString("lastUpdateTime", submission),
-                    JsonUtils.getString("sender", submission),
-                    JsonUtils.getString("source", submission),
-                    JsonUtils.getString("parentCode", submission),
-                    JsonUtils.getString("user", submission)
-                )
-                submissionDataList.add(csvRow)
-
                 val userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission))
                 sub?.userId = if (userId.contains("@")) {
                     val us = userId.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
@@ -128,26 +109,6 @@ open class RealmSubmission : RealmObject() {
                     mRealm.cancelTransaction()
                 }
             }
-        }
-
-        fun submissionWriteCsv() {
-            CsvUtils.writeCsv(
-                "${context.getExternalFilesDir(null)}/ole/submission.csv",
-                arrayOf(
-                    "_id",
-                    "parentId",
-                    "type",
-                    "status",
-                    "grade",
-                    "startTime",
-                    "lastUpdateTime",
-                    "sender",
-                    "source",
-                    "parentCode",
-                    "user"
-                ),
-                submissionDataList
-            )
         }
 
         private fun serializeExamResult(mRealm: Realm, sub: RealmSubmission, context: Context): JsonObject {

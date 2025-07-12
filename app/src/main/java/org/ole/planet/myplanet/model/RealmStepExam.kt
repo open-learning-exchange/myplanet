@@ -6,8 +6,6 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmStepExam : RealmObject() {
@@ -31,8 +29,6 @@ open class RealmStepExam : RealmObject() {
     var isTeamShareAllowed = false
 
     companion object {
-        val examDataList: MutableList<Array<String>> = mutableListOf()
-
         @JvmStatic
         fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, mRealm: Realm) {
             insertCourseStepsExams(myCoursesID, stepId, exam, "", mRealm)
@@ -81,46 +77,6 @@ open class RealmStepExam : RealmObject() {
             } else {
                 mRealm.executeTransaction { performInsert() }
             }
-
-            val csvRow = arrayOf(
-                JsonUtils.getString("_id", exam),
-                JsonUtils.getString("_rev", exam),
-                JsonUtils.getString("name", exam),
-                JsonUtils.getString("passingPercentage", exam),
-                JsonUtils.getString("type", exam),
-                JsonUtils.getString("createdBy", exam),
-                JsonUtils.getString("sourcePlanet", exam),
-                JsonUtils.getString("createdDate", exam),
-                JsonUtils.getString("updatedDate", exam),
-                JsonUtils.getString("totalMarks", exam),
-                JsonUtils.getString("noOfQuestions", exam),
-                JsonUtils.getString("isFromNation", exam),
-                JsonUtils.getString("teamId", exam)
-            )
-
-            examDataList.add(csvRow)
-        }
-
-        fun stepExamWriteCsv() {
-            CsvUtils.writeCsv(
-                "${context.getExternalFilesDir(null)}/ole/stepExam.csv",
-                arrayOf(
-                    "_id",
-                    "_rev",
-                    "name",
-                    "passingPercentage",
-                    "type",
-                    "createdBy",
-                    "sourcePlanet",
-                    "createdDate",
-                    "updatedDate",
-                    "totalMarks",
-                    "noOfQuestions",
-                    "isFromNation",
-                    "teamId"
-                ),
-                examDataList
-            )
         }
 
         private fun checkIdsAndInsert(myCoursesID: String?, stepId: String?, myExam: RealmStepExam?) {

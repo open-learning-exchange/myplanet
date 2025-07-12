@@ -6,9 +6,7 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
-import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmMyHealthPojo : RealmObject() {
@@ -51,8 +49,6 @@ open class RealmMyHealthPojo : RealmObject() {
     }
 
     companion object {
-        val healthDataList: MutableList<Array<String>> = mutableListOf()
-
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
             var myHealth = mRealm.where(RealmMyHealthPojo::class.java)
@@ -80,56 +76,6 @@ open class RealmMyHealthPojo : RealmObject() {
             myHealth?.gender = JsonUtils.getString("gender", act)
             myHealth?.planetCode = JsonUtils.getString("planetCode", act)
             myHealth?.conditions = Gson().toJson(JsonUtils.getJsonObject("conditions", act))
-            val csvRow = arrayOf(
-                JsonUtils.getString("_id", act),
-                JsonUtils.getString("_rev", act),
-                JsonUtils.getString("data", act),
-                JsonUtils.getFloat("temperature", act).toString(),
-                JsonUtils.getInt("pulse", act).toString(),
-                JsonUtils.getString("bp", act),
-                JsonUtils.getFloat("height", act).toString(),
-                JsonUtils.getFloat("weight", act).toString(),
-                JsonUtils.getString("vision", act),
-                JsonUtils.getString("hearing", act),
-                JsonUtils.getLong("date", act).toString(),
-                JsonUtils.getBoolean("selfExamination", act).toString(),
-                JsonUtils.getString("planetCode", act),
-                JsonUtils.getBoolean("hasInfo", act).toString(),
-                JsonUtils.getString("profileId", act),
-                JsonUtils.getString("creatorId", act),
-                JsonUtils.getInt("age", act).toString(),
-                JsonUtils.getString("gender", act),
-                JsonUtils.getJsonObject("conditions", act).toString()
-            )
-            healthDataList.add(csvRow)
-        }
-
-        fun healthWriteCsv() {
-            CsvUtils.writeCsv(
-                "${context.getExternalFilesDir(null)}/ole/health.csv",
-                arrayOf(
-                    "healthId",
-                    "health_rev",
-                    "data",
-                    "temperature",
-                    "pulse",
-                    "bp",
-                    "height",
-                    "weight",
-                    "vision",
-                    "hearing",
-                    "date",
-                    "selfExamination",
-                    "planetCode",
-                    "hasInfo",
-                    "profileId",
-                    "creator",
-                    "age",
-                    "gender",
-                    "conditions"
-                ),
-                healthDataList
-            )
         }
 
         @JvmStatic

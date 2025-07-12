@@ -14,7 +14,6 @@ import java.util.Date
 import java.util.UUID
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
@@ -165,8 +164,6 @@ open class RealmMyLibrary : RealmObject() {
     }
 
     companion object {
-        val libraryDataList: MutableList<Array<String>> = mutableListOf()
-
         fun getMyLibraryByUserId(mRealm: Realm, settings: SharedPreferences?): List<RealmMyLibrary> {
             val libs = mRealm.where(RealmMyLibrary::class.java).findAll()
             return getMyLibraryByUserId(settings?.getString("userId", "--"), libs, mRealm)
@@ -330,86 +327,6 @@ open class RealmMyLibrary : RealmObject() {
                 isPrivate = JsonUtils.getBoolean("private", doc)
                 setLanguages(JsonUtils.getJsonArray("languages", doc), this)
             }
-
-
-            val csvRow = arrayOf(
-                JsonUtils.getString("_id", doc),
-                JsonUtils.getString("_rev", doc),
-                JsonUtils.getString("title", doc),
-                JsonUtils.getString("description", doc),
-                JsonUtils.getString("resourceRemoteAddress", doc),
-                JsonUtils.getString("resourceLocalAddress", doc),
-                JsonUtils.getBoolean("resourceOffline", doc).toString(),
-                JsonUtils.getString("resourceId", doc),
-                JsonUtils.getString("addedBy", doc),
-                JsonUtils.getString("uploadDate", doc),
-                JsonUtils.getLong("createdDate", doc).toString(),
-                JsonUtils.getString("openWith", doc),
-                JsonUtils.getString("articleDate", doc),
-                JsonUtils.getString("kind", doc),
-                JsonUtils.getString("language", doc),
-                JsonUtils.getString("author", doc),
-                JsonUtils.getString("year", doc),
-                JsonUtils.getString("medium", doc),
-                JsonUtils.getString("filename", doc),
-                JsonUtils.getString("mediaType", doc),
-                JsonUtils.getString("resourceType", doc),
-                JsonUtils.getInt("timesRated", doc).toString(),
-                JsonUtils.getString("averageRating", doc),
-                JsonUtils.getString("publisher", doc),
-                JsonUtils.getString("linkToLicense", doc),
-                JsonUtils.getString("subject", doc),
-                JsonUtils.getString("level", doc),
-                JsonUtils.getString("tags", doc),
-                JsonUtils.getString("languages", doc),
-                JsonUtils.getString("courseId", doc),
-                JsonUtils.getString("stepId", doc),
-                JsonUtils.getString("downloaded", doc),
-                JsonUtils.getBoolean("private", doc).toString(),
-            )
-            libraryDataList.add(csvRow)
-        }
-
-        fun libraryWriteCsv() {
-            CsvUtils.writeCsv(
-                "${context.getExternalFilesDir(null)}/ole/library.csv",
-                arrayOf(
-                    "libraryId",
-                    "library_rev",
-                    "title",
-                    "description",
-                    "resourceRemoteAddress",
-                    "resourceLocalAddress",
-                    "resourceOffline",
-                    "resourceId",
-                    "addedBy",
-                    "uploadDate",
-                    "createdDate",
-                    "openWith",
-                    "articleDate",
-                    "kind",
-                    "language",
-                    "author",
-                    "year",
-                    "medium",
-                    "filename",
-                    "mediaType",
-                    "resourceType",
-                    "timesRated",
-                    "averageRating",
-                    "publisher",
-                    "linkToLicense",
-                    "subject",
-                    "level",
-                    "tags",
-                    "languages",
-                    "courseId",
-                    "stepId",
-                    "downloaded",
-                    "private"
-                ),
-                libraryDataList
-            )
         }
 
         @JvmStatic
@@ -444,7 +361,7 @@ open class RealmMyLibrary : RealmObject() {
 
         @JvmStatic
         fun getArrayList(libraries: List<RealmMyLibrary>, type: String): Set<String?> {
-            return libraries.mapNotNull { if (type == "mediums") it.mediaType else it.language }.filterNot { it.isNullOrBlank() }.toSet()
+            return libraries.mapNotNull { if (type == "mediums") it.mediaType else it.language }.filterNot { it.isBlank() }.toSet()
         }
 
         @JvmStatic

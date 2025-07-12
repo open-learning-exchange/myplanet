@@ -10,8 +10,6 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import java.io.StringReader
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmFeedback : RealmObject() {
@@ -83,7 +81,6 @@ open class RealmFeedback : RealmObject() {
     }
 
     companion object {
-        val feedbacksDataList: MutableList<Array<String>> = mutableListOf()
         @JvmStatic
         fun serializeFeedback(feedback: RealmFeedback): JsonObject {
             val `object` = JsonObject()
@@ -131,45 +128,6 @@ open class RealmFeedback : RealmObject() {
             feedback?.item = JsonUtils.getString("item", act)
             feedback?.state = JsonUtils.getString("state", act)
             feedback?._rev = JsonUtils.getString("_rev", act)
-
-            val csvRow = arrayOf(
-                JsonUtils.getString("_id", act),
-                JsonUtils.getString("title", act),
-                JsonUtils.getString("source", act),
-                JsonUtils.getString("status", act),
-                JsonUtils.getString("priority", act),
-                JsonUtils.getString("owner", act),
-                JsonUtils.getLong("openTime", act).toString(),
-                JsonUtils.getString("type", act),
-                JsonUtils.getString("url", act),
-                JsonUtils.getString("parentCode", act),
-                JsonUtils.getString("state", act),
-                JsonUtils.getString("item", act),
-                JsonUtils.getJsonArray("messages", act).toString()
-            )
-            feedbacksDataList.add(csvRow)
-        }
-
-        fun feedbackWriteCsv() {
-            CsvUtils.writeCsv(
-                "${context.getExternalFilesDir(null)}/ole/feedback.csv",
-                arrayOf(
-                    "feedbackId",
-                    "title",
-                    "source",
-                    "status",
-                    "priority",
-                    "owner",
-                    "openTime",
-                    "type",
-                    "url",
-                    "parentCode",
-                    "state",
-                    "item",
-                    "messages"
-                ),
-                feedbacksDataList
-            )
         }
     }
 }

@@ -6,8 +6,6 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmTeamTask : RealmObject() {
@@ -33,8 +31,6 @@ open class RealmTeamTask : RealmObject() {
     }
 
     companion object {
-        val taskDataList: MutableList<Array<String>> = mutableListOf()
-
         @JvmStatic
         fun insert(mRealm: Realm, obj: JsonObject?) {
             var task = mRealm.where(RealmTeamTask::class.java).equalTo("_id", JsonUtils.getString("_id", obj)).findFirst()
@@ -58,43 +54,6 @@ open class RealmTeamTask : RealmObject() {
                 }
                 task.completed = JsonUtils.getBoolean("completed", obj)
             }
-
-            val csvRow = arrayOf(
-                JsonUtils.getString("_id", obj),
-                JsonUtils.getString("_rev", obj),
-                JsonUtils.getString("title", obj),
-                JsonUtils.getString("status", obj),
-                JsonUtils.getLong("deadline", obj).toString(),
-                JsonUtils.getLong("completedTime", obj).toString(),
-                JsonUtils.getString("description", obj),
-                JsonUtils.getString("link", obj),
-                JsonUtils.getString("sync", obj),
-                JsonUtils.getString("teams", JsonUtils.getJsonObject("link", obj)),
-                JsonUtils.getString("assignee", JsonUtils.getJsonObject("assignee", obj)),
-                JsonUtils.getBoolean("completed", obj).toString()
-            )
-            taskDataList.add(csvRow)
-        }
-
-        fun teamTaskWriteCsv() {
-            CsvUtils.writeCsv(
-                "${context.getExternalFilesDir(null)}/ole/teamTask.csv",
-                arrayOf(
-                    "_id",
-                    "_rev",
-                    "title",
-                    "status",
-                    "deadline",
-                    "completedTime",
-                    "description",
-                    "link",
-                    "sync",
-                    "teams",
-                    "assignee",
-                    "completed"
-                ),
-                taskDataList
-            )
         }
 
         @JvmStatic

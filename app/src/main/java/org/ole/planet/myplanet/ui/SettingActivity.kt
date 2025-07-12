@@ -102,7 +102,6 @@ class SettingActivity : AppCompatActivity() {
 
             setBetaToggleOn()
             setAutoSyncToggleOn()
-            setDownloadSyncFilesToggle()
             val lp = findPreference<Preference>("app_language")
             lp?.setOnPreferenceClickListener {
                 context?.let { it1 -> languageChanger(it1) }
@@ -225,16 +224,6 @@ class SettingActivity : AppCompatActivity() {
                 lastSyncDate?.setTitle(R.string.last_synced_never)
             } else if (lastSyncDate != null) {
                 lastSyncDate.title = getString(R.string.last_synced_colon) + Utilities.getRelativeTime(lastSynced)
-            }
-        }
-
-        private fun setDownloadSyncFilesToggle() {
-            val downloadSyncFiles = findPreference<SwitchPreference>("download_sync_files")
-            downloadSyncFiles?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
-                val isEnabled = newValue as Boolean
-                val sharedPreferences = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                sharedPreferences.edit { putBoolean("download_sync_files", isEnabled) }
-                true
             }
         }
 

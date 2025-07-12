@@ -6,9 +6,7 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.Sort
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 
@@ -34,7 +32,6 @@ open class RealmOfflineActivity : RealmObject() {
     }
 
     companion object {
-        private val offlineDataList: MutableList<Array<String>> = mutableListOf()
         @JvmStatic
         fun serializeLoginActivities(realmOfflineActivities: RealmOfflineActivity, context: Context): JsonObject {
             val ob = JsonObject()
@@ -81,37 +78,6 @@ open class RealmOfflineActivity : RealmObject() {
                 activities.logoutTime = JsonUtils.getLong("logoutTime", act)
                 activities.androidId = JsonUtils.getString("androidId", act)
             }
-
-            val csvRow = arrayOf(
-                JsonUtils.getString("_id", act),
-                JsonUtils.getString("_rev", act),
-                JsonUtils.getString("user", act),
-                JsonUtils.getString("type", act),
-                JsonUtils.getString("createdOn", act),
-                JsonUtils.getString("parentCode", act),
-                JsonUtils.getLong("loginTime", act).toString(),
-                JsonUtils.getLong("logoutTime", act).toString(),
-                JsonUtils.getString("androidId", act)
-            )
-            offlineDataList.add(csvRow)
-        }
-
-        fun offlineWriteCsv() {
-            CsvUtils.writeCsv(
-                "${context.getExternalFilesDir(null)}/ole/offlineActivity.csv",
-                arrayOf(
-                    "id",
-                    "_rev",
-                    "userName",
-                    "type",
-                    "createdOn",
-                    "parentCode",
-                    "loginTime",
-                    "logoutTime",
-                    "androidId"
-                ),
-                offlineDataList
-            )
         }
     }
 }
