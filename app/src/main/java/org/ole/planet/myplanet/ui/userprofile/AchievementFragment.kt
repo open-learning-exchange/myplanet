@@ -59,6 +59,7 @@ class AchievementFragment : BaseContainerFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefManager = SharedPrefManager(requireContext())
+        settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         startAchievementSync()
     }
 
@@ -85,7 +86,6 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun checkServerAndStartSync() {
-        settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
         lifecycleScope.launch(Dispatchers.IO) {
