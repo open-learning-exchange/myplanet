@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
+import dagger.hilt.android.HiltAndroidApp
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -51,6 +52,7 @@ import org.ole.planet.myplanet.utilities.ThemeMode
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
 
+@HiltAndroidApp
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"

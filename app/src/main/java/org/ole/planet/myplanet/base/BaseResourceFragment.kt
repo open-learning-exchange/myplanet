@@ -52,12 +52,16 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadFiles
 import org.ole.planet.myplanet.utilities.Utilities
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUserModel? = null
     lateinit var mRealm: Realm
     lateinit var profileDbHandler: UserProfileDbHandler
+    @Inject lateinit var service: Service
     var editor: SharedPreferences.Editor? = null
     var lv: CheckboxListView? = null
     var convertView: View? = null
@@ -121,7 +125,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
         if (!isAdded) return
-        Service(MainApplication.context).isPlanetAvailable(object : PlanetAvailableListener {
+        service.isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 if (!isAdded) return
                 if (dbMyLibrary.isEmpty()) {
@@ -228,7 +232,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun startDownload(urls: ArrayList<String>) {
         if (!isFragmentActive()) return
-        Service(requireActivity()).isPlanetAvailable(object : PlanetAvailableListener {
+        service.isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 if (!isFragmentActive()) return
                 if (urls.isNotEmpty()) {

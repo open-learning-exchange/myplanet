@@ -11,7 +11,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object ApiClient {
-    private const val BASE_URL = "https://vi.media.mit.edu/"
+    const val BASE_URL = "https://vi.media.mit.edu/"
     private var retrofit: Retrofit? = null
     @JvmStatic
     val client: Retrofit?

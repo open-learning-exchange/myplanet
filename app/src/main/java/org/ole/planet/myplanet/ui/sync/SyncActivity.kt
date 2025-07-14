@@ -63,7 +63,10 @@ import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.ServerConfigUtils
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
     OnUserSelectedListener, ConfigurationIdListener {
     private lateinit var syncDate: TextView
@@ -102,7 +105,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     var forceSync = false
     var syncFailed = false
     lateinit var defaultPref: SharedPreferences
-    lateinit var service: Service
+    @Inject lateinit var service: Service
     var currentDialog: MaterialDialog? = null
     var serverConfigAction = ""
     var serverCheck = true
@@ -695,9 +698,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && settings.getBoolean("firstRun", true)) {
             clearInternalStorage()
         }
-        Service(this).isPlanetAvailable(object : PlanetAvailableListener {
+        service.isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
-                Service(context).checkVersion(this@SyncActivity, settings)
+                service.checkVersion(this@SyncActivity, settings)
             }
             override fun notAvailable() {
                 if (!isFinishing) {
