@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utilities.Utilities
-import dagger.hilt.EntryPointAccessors
+import dagger.hilt.android.EntryPointAccessors
 import org.ole.planet.myplanet.di.WorkerEntryPoint
 
 class AutoSyncWorker(private val context: Context, workerParams: WorkerParameters) : Worker(context, workerParams), SyncListener, CheckVersionCallback, SuccessListener {

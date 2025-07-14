@@ -25,7 +25,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.di.UploadManagerEntryPoint
-import dagger.hilt.EntryPointAccessors
+import dagger.hilt.android.EntryPointAccessors
 
 private const val BATCH_SIZE = 50
 
