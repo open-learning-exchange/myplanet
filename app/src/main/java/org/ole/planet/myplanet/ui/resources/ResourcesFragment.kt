@@ -65,7 +65,6 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSelected,
     ChipDeletedListener, TagClickListener, OnFilterListener {
-
     private lateinit var tvAddToLib: TextView
     private lateinit var tvSelected: TextView
     private lateinit var etSearch: EditText
@@ -85,8 +84,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private var confirmation: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
-
-    // NEW: Progressive loading properties
     private var isDataLoading = false
     private var dataRefreshHandler: Handler? = null
     private var loadingIndicator: View? = null
@@ -134,7 +131,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             override fun onSyncStarted() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
-                        // Show both progress dialog and loading indicator
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
                         customProgressDialog?.setText(getString(R.string.syncing_resources))
                         customProgressDialog?.show()
@@ -148,10 +144,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             override fun onProgressUpdate(processName: String, itemsProcessed: Int) {
                 activity?.runOnUiThread {
                     if (isAdded) {
-                        // Update loading text with progress
                         loadingText?.text = getString(R.string.loading_progress, processName, itemsProcessed)
 
-                        // Update progress dialog
                         customProgressDialog?.setText("$processName: $itemsProcessed items processed")
                     }
                 }
@@ -162,11 +156,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                     if (isAdded) {
                         dataReadyCounter++
                         loadingText?.text = getString(R.string.data_ready, dataType)
-
-                        // Refresh data immediately when ready
                         refreshResourcesDataSilently()
 
-                        // Dismiss progress dialog after first data is ready but keep loading indicator
                         if (dataReadyCounter == 1) {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
@@ -178,11 +169,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             override fun onSyncComplete() {
                 activity?.runOnUiThread {
                     if (isAdded) {
-                        // Dismiss progress dialog if still showing
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
 
-                        // Final data refresh and hide loading
                         refreshResourcesData()
                         hideLoadingState()
                         stopPeriodicDataRefresh()
@@ -218,12 +207,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    // NEW: Progressive loading UI methods
     private fun showLoadingState() {
         loadingIndicator?.visibility = View.VISIBLE
         loadingText?.text = "preparing sync"
-
-        // Hide empty state message while loading
         tvMessage.visibility = View.GONE
     }
 
@@ -236,7 +222,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             override fun run() {
                 if (isDataLoading && isAdded) {
                     refreshResourcesDataSilently()
-                    dataRefreshHandler?.postDelayed(this, 2000) // Refresh every 2 seconds
+                    dataRefreshHandler?.postDelayed(this, 2000)
                 }
             }
         }
@@ -247,7 +233,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         dataRefreshHandler?.removeCallbacksAndMessages(null)
     }
 
-    // Silent refresh that doesn't show/hide loading states
     private fun refreshResourcesDataSilently() {
         if (!isAdded || requireActivity().isFinishing) return
 
@@ -261,7 +246,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 adapterLibrary.notifyDataSetChanged()
                 checkList()
 
-                // Only show "no data" if we're not loading and list is actually empty
                 if (!isDataLoading) {
                     showNoData(tvMessage, adapterLibrary.itemCount, "resources")
                 } else {
@@ -287,11 +271,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    // Enhanced version of existing refreshResourcesData
     private fun refreshResourcesData() {
         refreshResourcesDataSilently()
 
-        // Show appropriate state after loading is complete
         if (!isDataLoading) {
             showNoData(tvMessage, adapterLibrary.itemCount, "resources")
         }
@@ -308,11 +290,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        // Initialize loading indicator
         setupLoadingIndicator(view)
-
-        // Setup periodic data refresh during loading
         setupDataRefreshHandler()
 
         isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
@@ -339,45 +317,32 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun setupLoadingIndicator(view: View) {
-        // Try to find existing loading views in XML
         loadingIndicator = view.findViewById(R.id.loading_indicator)
         loadingText = view.findViewById(R.id.loading_text)
-
-        // If views don't exist in XML, create them programmatically
         if (loadingIndicator == null) {
             createLoadingViews(view)
         }
     }
 
     private fun createLoadingViews(parentView: View) {
-        // Create loading indicator programmatically if not in XML
         val rootLayout = parentView.findViewById<ViewGroup>(R.id.my_library_parent_layout)
 
         val loadingLayout = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             setPadding(16, 16, 16, 16)
         }
 
         val progressBar = ProgressBar(requireContext(), null, android.R.attr.progressBarStyleHorizontal).apply {
             isIndeterminate = true
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         }
 
         loadingText = TextView(requireContext()).apply {
             text = "Loading resources..."
             textAlignment = View.TEXT_ALIGNMENT_CENTER
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
                 topMargin = 16
             }
         }
@@ -446,9 +411,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 adapterLibrary.setLibraryList(
                     applyFilter(
-                        filterLibraryByTag(
-                            etSearch.text.toString().trim(), searchTags
-                        )
+                        filterLibraryByTag(etSearch.text.toString().trim(), searchTags)
                     )
                 )
                 showNoData(tvMessage, adapterLibrary.itemCount, "resources")
@@ -665,7 +628,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun onResume() {
         super.onResume()
-        // Refresh data when user returns to fragment
         if (!isDataLoading) {
             refreshResourcesDataSilently()
         }

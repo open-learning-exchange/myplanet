@@ -110,6 +110,97 @@ object TransactionSyncManager {
         }
     }
 
+    fun syncDbWithProgress(realm: Realm, table: String, progressCallback: ((Int) -> Unit)? = null) {
+        realm.executeTransactionAsync { mRealm: Realm ->
+            val apiInterface = client?.create(ApiInterface::class.java)
+            val allDocs = apiInterface?.getJsonObject(Utilities.header, Utilities.getUrl() + "/" + table + "/_all_docs?include_doc=false")
+            var totalProcessed = 0
+
+            try {
+                val all = allDocs?.execute()
+                val rows = getJsonArray("rows", all?.body())
+                val keys: MutableList<String> = ArrayList()
+                val totalRows = rows.size()
+
+                for (i in 0 until rows.size()) {
+                    val `object` = rows[i].asJsonObject
+                    if (!TextUtils.isEmpty(getString("id", `object`))) keys.add(getString("key", `object`))
+
+                    if (i == rows.size() - 1 || keys.size == 1000) {
+                        val obj = JsonObject()
+                        obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
+                        val response = apiInterface?.findDocs(Utilities.header, "application/json", Utilities.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj)?.execute()
+
+                        if (response?.body() != null) {
+                            val arr = getJsonArray("rows", response.body())
+                            if (table == "chat_history") {
+                                insertToChatWithProgress(arr, mRealm) { processed ->
+                                    totalProcessed += processed
+                                    progressCallback?.invoke(totalProcessed)
+                                }
+                            } else {
+                                insertDocsWithProgress(arr, mRealm, table) { processed ->
+                                    totalProcessed += processed
+                                    progressCallback?.invoke(totalProcessed)
+                                }
+                            }
+                        }
+                        keys.clear()
+                    }
+                }
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    // Enhanced chat insertion with progress
+    private fun insertToChatWithProgress(arr: JsonArray, mRealm: Realm, progressCallback: ((Int) -> Unit)? = null) {
+        val chatHistoryList = mutableListOf<JsonObject>()
+        var processedCount = 0
+
+        for (j in arr) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = getJsonObject("doc", jsonDoc)
+            chatHistoryList.add(jsonDoc)
+        }
+
+        chatHistoryList.forEach { jsonDoc ->
+            insert(mRealm, jsonDoc)
+            processedCount++
+
+            // Report progress every 10 items or at the end
+            if (processedCount % 10 == 0 || processedCount == chatHistoryList.size) {
+                progressCallback?.invoke(processedCount)
+            }
+        }
+    }
+
+    // Enhanced document insertion with progress
+    private fun insertDocsWithProgress(arr: JsonArray, mRealm: Realm, table: String, progressCallback: ((Int) -> Unit)? = null) {
+        val documentList = mutableListOf<JsonObject>()
+        var processedCount = 0
+
+        for (j in arr) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = getJsonObject("doc", jsonDoc)
+            val id = getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                documentList.add(jsonDoc)
+            }
+        }
+
+        documentList.forEach { jsonDoc ->
+            continueInsert(mRealm, table, jsonDoc)
+            processedCount++
+
+            // Report progress every 5 items or at the end
+            if (processedCount % 5 == 0 || processedCount == documentList.size) {
+                progressCallback?.invoke(processedCount)
+            }
+        }
+    }
+
     fun syncDb(realm: Realm, table: String) {
         realm.executeTransactionAsync { mRealm: Realm ->
             val apiInterface = client?.create(ApiInterface::class.java)

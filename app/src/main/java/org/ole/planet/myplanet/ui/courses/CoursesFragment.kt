@@ -86,8 +86,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private var isCheckboxChangedByCode = false
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
-
-    // NEW: Progressive loading properties
     private var isDataLoading = false
     private var dataRefreshHandler: Handler? = null
     private var loadingIndicator: View? = null
@@ -135,7 +133,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             override fun onSyncStarted() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
-                        // Show both progress dialog and loading indicator
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
                         customProgressDialog?.setText(getString(R.string.syncing_courses_data))
                         customProgressDialog?.show()
@@ -149,10 +146,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             override fun onProgressUpdate(processName: String, itemsProcessed: Int) {
                 activity?.runOnUiThread {
                     if (isAdded) {
-                        // Update loading text with progress
                         loadingText?.text = "Loading $processName: $itemsProcessed items"
-
-                        // Update progress dialog
                         customProgressDialog?.setText("$processName: $itemsProcessed items processed")
                     }
                 }
@@ -164,10 +158,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                         dataReadyCounter++
                         loadingText?.text = "$dataType data ready"
 
-                        // Refresh data immediately when ready
                         refreshCoursesDataSilently()
 
-                        // Dismiss progress dialog after first data is ready but keep loading indicator
                         if (dataReadyCounter == 1) {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
@@ -179,11 +171,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             override fun onSyncComplete() {
                 activity?.runOnUiThread {
                     if (isAdded) {
-                        // Dismiss progress dialog if still showing
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
 
-                        // Final data refresh and hide loading
                         refreshCoursesData()
                         hideLoadingState()
                         stopPeriodicDataRefresh()
@@ -218,13 +208,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
     }
 
-    // NEW: Progressive loading UI methods
     private fun showLoadingState() {
         loadingIndicator?.visibility = View.VISIBLE
         loadingText?.text = "Preparing courses sync..."
-
-        // Hide empty state message while loading
-        tvMessage?.visibility = View.GONE
+        tvMessage.visibility = View.GONE
     }
 
     private fun hideLoadingState() {
@@ -236,7 +223,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             override fun run() {
                 if (isDataLoading && isAdded) {
                     refreshCoursesDataSilently()
-                    dataRefreshHandler?.postDelayed(this, 2000) // Refresh every 2 seconds
+                    dataRefreshHandler?.postDelayed(this, 2000)
                 }
             }
         }
@@ -247,7 +234,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         dataRefreshHandler?.removeCallbacksAndMessages(null)
     }
 
-    // Silent refresh that doesn't show/hide loading states
     private fun refreshCoursesDataSilently() {
         if (!isAdded || requireActivity().isFinishing) return
 
@@ -274,11 +260,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
                 checkList()
 
-                // Only show "no data" if we're not loading and list is actually empty
                 if (!isDataLoading) {
                     showNoData(tvMessage, adapterCourses.itemCount, "courses")
                 } else {
-                    tvMessage?.visibility = View.GONE
+                    tvMessage.visibility = View.GONE
                 }
             }
 
@@ -287,11 +272,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
     }
 
-    // Enhanced version of existing refreshCoursesData
     private fun refreshCoursesData() {
         refreshCoursesDataSilently()
 
-        // Show appropriate state after loading is complete
         if (!isDataLoading) {
             showNoData(tvMessage, adapterCourses.itemCount, "courses")
         }
@@ -322,8 +305,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        // Initialize loading indicator and refresh handler
         setupLoadingIndicator(view)
         setupDataRefreshHandler()
 
@@ -343,49 +324,33 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun setupLoadingIndicator(view: View) {
-        // Try to find existing loading views in XML
         loadingIndicator = view.findViewById(R.id.loading_indicator)
         loadingText = view.findViewById(R.id.loading_text)
 
-        // If views don't exist in XML, create them programmatically
         if (loadingIndicator == null) {
             createLoadingViews(view)
         }
     }
 
     private fun createLoadingViews(parentView: View) {
-        // Create loading indicator programmatically if not in XML
         val rootLayout = parentView.findViewById<ViewGroup>(R.id.my_course_parent_layout)
 
         val loadingLayout = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             setPadding(16, 16, 16, 16)
         }
 
-        val progressBar = ProgressBar(
-            requireContext(),
-            null,
-            android.R.attr.progressBarStyleHorizontal
-        ).apply {
+        val progressBar = ProgressBar(requireContext(), null, android.R.attr.progressBarStyleHorizontal).apply {
             isIndeterminate = true
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         }
 
         loadingText = TextView(requireContext()).apply {
             text = "Loading courses..."
             textAlignment = View.TEXT_ALIGNMENT_CENTER
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
                 topMargin = 16
             }
         }
@@ -394,7 +359,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         loadingLayout.addView(loadingText)
 
         loadingIndicator = loadingLayout
-        rootLayout?.addView(loadingLayout, 1) // Add after toolbar but before recycler view
+        rootLayout?.addView(loadingLayout, 1)
     }
 
     private fun setupDataRefreshHandler() {
@@ -761,7 +726,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun onResume() {
         super.onResume()
-        // Refresh data when user returns to fragment
         if (!isDataLoading) {
             refreshCoursesDataSilently()
         }

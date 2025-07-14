@@ -99,8 +99,6 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        // Initialize loading indicator and refresh handler
         setupLoadingIndicator(view)
         setupDataRefreshHandler()
 
@@ -108,45 +106,33 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     private fun setupLoadingIndicator(view: View) {
-        // Try to find existing loading views in XML
         loadingIndicator = view.findViewById(R.id.loading_indicator)
         loadingText = view.findViewById(R.id.loading_text)
 
-        // If views don't exist in XML, create them programmatically
         if (loadingIndicator == null) {
             createLoadingViews()
         }
     }
 
     private fun createLoadingViews() {
-        // Create loading indicator programmatically if not in XML
         val rootLayout = fragmentTeamDetailBinding.root as? ViewGroup
 
         val loadingLayout = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             setPadding(16, 16, 16, 16)
         }
 
         val progressBar = ProgressBar(requireContext(), null, android.R.attr.progressBarStyleHorizontal).apply {
             isIndeterminate = true
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         }
 
         loadingText = TextView(requireContext()).apply {
             text = "Loading team data..."
             textAlignment = View.TEXT_ALIGNMENT_CENTER
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
                 topMargin = 16
             }
         }
@@ -155,7 +141,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         loadingLayout.addView(loadingText)
 
         loadingIndicator = loadingLayout
-        rootLayout?.addView(loadingLayout, 1) // Add after header but before tabs
+        rootLayout?.addView(loadingLayout, 1)
     }
 
     private fun setupDataRefreshHandler() {
@@ -188,7 +174,6 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
             override fun onSyncStarted() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
-                        // Show both progress dialog and loading indicator
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
                         customProgressDialog?.setText(requireContext().getString(R.string.syncing_team_data))
                         customProgressDialog?.show()
@@ -202,10 +187,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
             override fun onProgressUpdate(processName: String, itemsProcessed: Int) {
                 activity?.runOnUiThread {
                     if (isAdded) {
-                        // Update loading text with progress
                         loadingText?.text = "Loading $processName: $itemsProcessed items"
-
-                        // Update progress dialog
                         customProgressDialog?.setText("$processName: $itemsProcessed items processed")
                     }
                 }
@@ -216,11 +198,8 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                     if (isAdded) {
                         dataReadyCounter++
                         loadingText?.text = "$dataType data ready"
-
-                        // Refresh data immediately when ready
                         refreshTeamDataSilently()
 
-                        // Dismiss progress dialog after first data is ready but keep loading indicator
                         if (dataReadyCounter == 1) {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
@@ -232,11 +211,9 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
             override fun onSyncComplete() {
                 activity?.runOnUiThread {
                     if (isAdded) {
-                        // Dismiss progress dialog if still showing
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
 
-                        // Final data refresh and hide loading
                         refreshTeamData()
                         hideLoadingState()
                         stopPeriodicDataRefresh()
@@ -271,20 +248,15 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         }
     }
 
-    // NEW: Progressive loading UI methods
     private fun showLoadingState() {
         loadingIndicator?.visibility = View.VISIBLE
         loadingText?.text = "Preparing team sync..."
-
-        // Optionally hide some UI elements while loading
         fragmentTeamDetailBinding.tabLayout.visibility = View.GONE
         fragmentTeamDetailBinding.viewPager2.visibility = View.GONE
     }
 
     private fun hideLoadingState() {
         loadingIndicator?.visibility = View.GONE
-
-        // Restore UI elements
         fragmentTeamDetailBinding.tabLayout.visibility = View.VISIBLE
         fragmentTeamDetailBinding.viewPager2.visibility = View.VISIBLE
     }
@@ -294,7 +266,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
             override fun run() {
                 if (isDataLoading && isAdded) {
                     refreshTeamDataSilently()
-                    dataRefreshHandler?.postDelayed(this, 2000) // Refresh every 2 seconds
+                    dataRefreshHandler?.postDelayed(this, 2000)
                 }
             }
         }
@@ -305,7 +277,6 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         dataRefreshHandler?.removeCallbacksAndMessages(null)
     }
 
-    // Silent refresh that doesn't show/hide loading states
     private fun refreshTeamDataSilently() {
         if (!isAdded || requireActivity().isFinishing) return
 
@@ -318,7 +289,6 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                 if (updatedTeam != null) {
                     team = updatedTeam
 
-                    // Only update UI if we have data and we're not in initial loading state
                     if (!isDataLoading || dataReadyCounter > 0) {
                         fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, isMyTeam, this)
                         TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
@@ -334,7 +304,6 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                             fragmentTeamDetailBinding.btnLeave.visibility = View.VISIBLE
                         }
 
-                        // Show UI elements if data is available
                         if (dataReadyCounter > 0) {
                             fragmentTeamDetailBinding.tabLayout.visibility = View.VISIBLE
                             fragmentTeamDetailBinding.viewPager2.visibility = View.VISIBLE
@@ -347,11 +316,9 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         }
     }
 
-    // Enhanced version of existing refreshTeamData
     private fun refreshTeamData() {
         refreshTeamDataSilently()
 
-        // Ensure UI is fully visible after loading is complete
         if (!isDataLoading) {
             fragmentTeamDetailBinding.tabLayout.visibility = View.VISIBLE
             fragmentTeamDetailBinding.viewPager2.visibility = View.VISIBLE
@@ -455,7 +422,6 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
     override fun onResume() {
         super.onResume()
-        // Refresh data when user returns to fragment
         if (!isDataLoading) {
             refreshTeamDataSilently()
         }

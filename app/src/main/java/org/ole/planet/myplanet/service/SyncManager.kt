@@ -56,7 +56,6 @@ import org.ole.planet.myplanet.utilities.NotificationUtil.create
 import org.ole.planet.myplanet.utilities.SyncTimeLogger
 import org.ole.planet.myplanet.utilities.Utilities
 
-// 2. Complete SyncManager with all optimizations and progress updates
 class SyncManager private constructor(private val context: Context) {
     private var td: Thread? = null
     private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -320,21 +319,30 @@ class SyncManager private constructor(private val context: Context) {
                     syncJobs.add(
                         async {
                             logger.startProcess("courses_sync")
-                            TransactionSyncManager.syncDb(mRealm, "courses")
+                            TransactionSyncManager.syncDbWithProgress(mRealm, "courses") { processed ->
+                                enhancedListener?.onProgressUpdate("Courses", processed)
+                            }
+                            enhancedListener?.onDataReady("courses")
                             logger.endProcess("courses_sync")
                         })
 
                     syncJobs.add(
                         async {
                             logger.startProcess("courses_progress_sync")
-                            TransactionSyncManager.syncDb(mRealm, "courses_progress")
+                            TransactionSyncManager.syncDbWithProgress(mRealm, "courses_progress") { processed ->
+                                enhancedListener?.onProgressUpdate("Course Progress", processed)
+                            }
+                            enhancedListener?.onDataReady("courses_progress")
                             logger.endProcess("courses_progress_sync")
                         })
 
                     syncJobs.add(
                         async {
                             logger.startProcess("ratings_sync")
-                            TransactionSyncManager.syncDb(mRealm, "ratings")
+                            TransactionSyncManager.syncDbWithProgress(mRealm, "ratings") { processed ->
+                                enhancedListener?.onProgressUpdate("Ratings", processed)
+                            }
+                            enhancedListener?.onDataReady("ratings")
                             logger.endProcess("ratings_sync")
                         })
                 }
@@ -343,7 +351,10 @@ class SyncManager private constructor(private val context: Context) {
                     syncJobs.add(
                         async {
                             logger.startProcess("tasks_sync")
-                            TransactionSyncManager.syncDb(mRealm, "tasks")
+                            TransactionSyncManager.syncDbWithProgress(mRealm, "tasks") { processed ->
+                                enhancedListener?.onProgressUpdate("Tasks", processed)
+                            }
+                            enhancedListener?.onDataReady("tasks")
                             logger.endProcess("tasks_sync")
                         })
                 }
@@ -352,7 +363,10 @@ class SyncManager private constructor(private val context: Context) {
                     syncJobs.add(
                         async {
                             logger.startProcess("meetups_sync")
-                            TransactionSyncManager.syncDb(mRealm, "meetups")
+                            TransactionSyncManager.syncDbWithProgress(mRealm, "meetups") { processed ->
+                                enhancedListener?.onProgressUpdate("Meetups", processed)
+                            }
+                            enhancedListener?.onDataReady("meetups")
                             logger.endProcess("meetups_sync")
                         })
                 }
@@ -361,7 +375,10 @@ class SyncManager private constructor(private val context: Context) {
                     syncJobs.add(
                         async {
                             logger.startProcess("team_activities_sync")
-                            TransactionSyncManager.syncDb(mRealm, "team_activities")
+                            TransactionSyncManager.syncDbWithProgress(mRealm, "team_activities") { processed ->
+                                enhancedListener?.onProgressUpdate("Team Activities", processed)
+                            }
+                            enhancedListener?.onDataReady("team_activities")
                             logger.endProcess("team_activities_sync")
                         })
                 }
@@ -370,7 +387,10 @@ class SyncManager private constructor(private val context: Context) {
                     syncJobs.add(
                         async {
                             logger.startProcess("chat_history_sync")
-                            TransactionSyncManager.syncDb(mRealm, "chat_history")
+                            TransactionSyncManager.syncDbWithProgress(mRealm, "chat_history") { processed ->
+                                enhancedListener?.onProgressUpdate("Chat History", processed)
+                            }
+                            enhancedListener?.onDataReady("chat_history")
                             logger.endProcess("chat_history_sync")
                         })
                 }
@@ -379,7 +399,10 @@ class SyncManager private constructor(private val context: Context) {
                     syncJobs.add(
                         async {
                             logger.startProcess("feedback_sync")
-                            TransactionSyncManager.syncDb(mRealm, "feedback")
+                            TransactionSyncManager.syncDbWithProgress(mRealm, "feedback") { processed ->
+                                enhancedListener?.onProgressUpdate("Feedback", processed)
+                            }
+                            enhancedListener?.onDataReady("feedback")
                             logger.endProcess("feedback_sync")
                         })
                 }
@@ -631,27 +654,23 @@ class SyncManager private constructor(private val context: Context) {
         }
     }
 
-    // OPTIMIZED SHELF PRE-FILTERING WITH CACHING
     private suspend fun getShelvesWithDataBatchOptimized(): List<String> {
         val apiInterface = ApiClient.getEnhancedClient()
         val shelvesWithData = mutableListOf<String>()
 
-        // Check cache first
         val cachedShelves = getCachedShelvesWithData()
         if (cachedShelves.isNotEmpty()) {
             Log.d("LIBRARY_SYNC", "Using cached shelf data (${cachedShelves.size} shelves)")
             return cachedShelves
         }
 
-        // Get all shelf IDs first
         val allShelves = ApiClient.executeWithRetry {
             apiInterface.getDocuments(Utilities.header, "${Utilities.getUrl()}/shelf/_all_docs").execute()
         }?.body()?.rows ?: return emptyList()
 
-        // Process shelves in larger parallel batches
         runBlocking {
-            val semaphore = Semaphore(8) // Increased from 5
-            val checkJobs = allShelves.chunked(25).map { shelfBatch -> // Increased from 10
+            val semaphore = Semaphore(8)
+            val checkJobs = allShelves.chunked(25).map { shelfBatch ->
                 async(Dispatchers.IO) {
                     semaphore.withPermit {
                         checkShelfBatchForDataOptimized(shelfBatch, apiInterface)
@@ -664,31 +683,20 @@ class SyncManager private constructor(private val context: Context) {
             }
         }
 
-        // Cache the results
         cacheShelvesWithData(shelvesWithData)
-
         return shelvesWithData
     }
 
-    private suspend fun checkShelfBatchForDataOptimized(
-        shelfBatch: List<Rows>,
-        apiInterface: ApiInterface
-    ): List<String> {
+    private suspend fun checkShelfBatchForDataOptimized(shelfBatch: List<Rows>, apiInterface: ApiInterface): List<String> {
         val shelvesWithData = mutableListOf<String>()
 
-        // Get multiple shelf documents in one API call
         val shelfIds = shelfBatch.map { it.id }
         val keysObject = JsonObject().apply {
             add("keys", Gson().fromJson(Gson().toJson(shelfIds), JsonArray::class.java))
         }
 
         val response = ApiClient.executeWithRetry {
-            apiInterface.findDocs(
-                Utilities.header,
-                "application/json",
-                "${Utilities.getUrl()}/shelf/_all_docs?include_docs=true",
-                keysObject
-            ).execute()
+            apiInterface.findDocs(Utilities.header, "application/json", "${Utilities.getUrl()}/shelf/_all_docs?include_docs=true", keysObject).execute()
         }?.body()
 
         response?.let { responseBody ->
@@ -699,7 +707,6 @@ class SyncManager private constructor(private val context: Context) {
                     val doc = getJsonObject("doc", row)
                     val shelfId = getString("_id", doc)
 
-                    // Use even faster data check
                     if (hasShelfDataUltraFast(doc)) {
                         shelvesWithData.add(shelfId)
                     }
@@ -710,9 +717,7 @@ class SyncManager private constructor(private val context: Context) {
         return shelvesWithData
     }
 
-    // Ultra-fast shelf data detection
     private fun hasShelfDataUltraFast(shelfDoc: JsonObject): Boolean {
-        // Check if any of the expected data fields exist and are non-empty arrays
         return listOf("resourceIds", "courseIds", "meetupIds", "teamIds").any { key ->
             shelfDoc.has(key) && shelfDoc.get(key).let { element ->
                 element.isJsonArray && element.asJsonArray.size() > 0
@@ -720,11 +725,10 @@ class SyncManager private constructor(private val context: Context) {
         }
     }
 
-    // Simple caching mechanism
     private fun getCachedShelvesWithData(): List<String> {
         val cacheKey = "shelves_with_data"
         val cacheTimeKey = "shelves_cache_time"
-        val cacheValidityHours = 6 // Cache for 6 hours
+        val cacheValidityHours = 6
 
         val cacheTime = settings.getLong(cacheTimeKey, 0)
         val now = System.currentTimeMillis()
@@ -749,7 +753,6 @@ class SyncManager private constructor(private val context: Context) {
         }
     }
 
-    // OPTIMIZED RESOURCE SYNC WITH PROGRESS UPDATES
     private fun resourceTransactionSyncWithProgress(backgroundRealm: Realm? = null) {
         val logger = SyncTimeLogger.getInstance()
         logger.startProcess("resource_sync")
@@ -775,7 +778,6 @@ class SyncManager private constructor(private val context: Context) {
             }
             Log.d("RESOURCE_SYNC","RESOURCE_SYNC: Get total rows took ${System.currentTimeMillis() - totalRowsStartTime}ms (Total: $totalRows)")
 
-            // Smaller batch size for more consistent performance
             val batchSize = 50
             var skip = 0
             var batchCount = 0
@@ -829,7 +831,6 @@ class SyncManager private constructor(private val context: Context) {
                     if (validDocuments.isNotEmpty()) {
                         val dbSaveStartTime = System.currentTimeMillis()
                         try {
-                            // Chunked processing to avoid large transaction bottlenecks
                             val chunkSize = 10
                             val chunks = validDocuments.chunked(chunkSize)
                             val idsWeAreProcessing = validDocuments.map { it.second }
@@ -845,7 +846,6 @@ class SyncManager private constructor(private val context: Context) {
                                     savedIds.addAll(chunkIds)
                                 }
 
-                                // Update progress after each chunk
                                 processedItems += chunk.size
                                 enhancedListener?.onProgressUpdate("Resources", processedItems)
 
@@ -1015,7 +1015,6 @@ class SyncManager private constructor(private val context: Context) {
                     }
                     val extractIdsTime = System.currentTimeMillis() - extractIdsStartTime
 
-                    // Process in smaller batches for better performance
                     val batchSize = 25
                     val batchProcessingStartTime = System.currentTimeMillis()
                     var totalBatchApiTime = 0L
@@ -1025,7 +1024,6 @@ class SyncManager private constructor(private val context: Context) {
 
                     for (i in 0 until validIds.size step batchSize) {
                         val batchNumber = (i / batchSize) + 1
-                        val batchStartTime = System.currentTimeMillis()
 
                         val end = minOf(i + batchSize, validIds.size)
                         val batch = validIds.subList(i, end)
@@ -1078,14 +1076,11 @@ class SyncManager private constructor(private val context: Context) {
                                         }
                                     }
                                     processedItems += documentsToProcess.size
-
-                                    // Update progress
                                     enhancedListener?.onProgressUpdate("Library", processedItems)
 
                                 } catch (e: Exception) {
                                     e.printStackTrace()
 
-                                    // Fallback to individual processing
                                     val fallbackStartTime = System.currentTimeMillis()
                                     for ((doc, _) in documentsToProcess) {
                                         try {
@@ -1132,12 +1127,10 @@ class SyncManager private constructor(private val context: Context) {
                 Log.d("LIBRARY_SYNC","  - Document fetch: ${shelfDocTime}ms")
                 Log.d("LIBRARY_SYNC","  - Data processing: ${shelfDataTime}ms")
 
-                // Update progress periodically
                 if (shelfIndex % 5 == 0) {
                     enhancedListener?.onProgressUpdate("Library Shelves", shelfIndex + 1)
                 }
 
-                // Notify data ready after first few shelves
                 if (shelfIndex == 2) {
                     enhancedListener?.onDataReady("library")
                 }
@@ -1153,7 +1146,6 @@ class SyncManager private constructor(private val context: Context) {
 
             logger.endProcess("library_sync", processedItems)
 
-            // Final notification
             enhancedListener?.onDataReady("library_complete")
 
         } catch (e: Exception) {
@@ -1162,7 +1154,6 @@ class SyncManager private constructor(private val context: Context) {
         }
     }
 
-    // EXISTING FAST SYNC METHODS (unchanged)
     private fun fastResourceTransactionSync() {
         val logger = SyncTimeLogger.getInstance()
         logger.startProcess("resource_sync")

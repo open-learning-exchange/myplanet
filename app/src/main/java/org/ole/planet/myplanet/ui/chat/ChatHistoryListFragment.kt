@@ -23,7 +23,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import com.google.android.material.snackbar.Snackbar
-import io.realm.Realm
 import io.realm.RealmList
 import io.realm.Sort
 import kotlinx.coroutines.Dispatchers
@@ -33,7 +32,6 @@ import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.EnhancedSyncListener
-import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.ChatViewModel
@@ -56,8 +54,6 @@ class ChatHistoryListFragment : Fragment() {
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
     lateinit var settings: SharedPreferences
-
-    // NEW: Progressive loading properties
     private var isDataLoading = false
     private var dataRefreshHandler: Handler? = null
     private var loadingIndicator: View? = null
@@ -85,8 +81,6 @@ class ChatHistoryListFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        // Initialize loading indicator and refresh handler
         setupLoadingIndicator(view)
         setupDataRefreshHandler()
 
@@ -165,49 +159,33 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     private fun setupLoadingIndicator(view: View) {
-        // Try to find existing loading views in the binding
         loadingIndicator = view.findViewById(R.id.loading_indicator)
         loadingText = view.findViewById(R.id.loading_text)
 
-        // If views don't exist, create them programmatically
         if (loadingIndicator == null) {
-            createLoadingViews(view)
+            createLoadingViews()
         }
     }
 
-    private fun createLoadingViews(parentView: View) {
-        // Create loading indicator programmatically if not in XML
+    private fun createLoadingViews() {
         val rootLayout = fragmentChatHistoryListBinding.root as? ViewGroup
 
         val loadingLayout = LinearLayout(requireContext()).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             setPadding(16, 16, 16, 16)
         }
 
-        val progressBar = ProgressBar(
-            requireContext(),
-            null,
-            android.R.attr.progressBarStyleHorizontal
-        ).apply {
+        val progressBar = ProgressBar(requireContext(), null, android.R.attr.progressBarStyleHorizontal).apply {
             isIndeterminate = true
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         }
 
         loadingText = TextView(requireContext()).apply {
             text = "Loading chat history..."
             textAlignment = View.TEXT_ALIGNMENT_CENTER
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            ).apply {
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
                 topMargin = 16
             }
         }
@@ -216,7 +194,7 @@ class ChatHistoryListFragment : Fragment() {
         loadingLayout.addView(loadingText)
 
         loadingIndicator = loadingLayout
-        rootLayout?.addView(loadingLayout, 1) // Add after search bar but before recycler view
+        rootLayout?.addView(loadingLayout, 1)
     }
 
     private fun setupDataRefreshHandler() {
@@ -249,7 +227,6 @@ class ChatHistoryListFragment : Fragment() {
             override fun onSyncStarted() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
-                        // Show both progress dialog and loading indicator
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
                         customProgressDialog?.setText(getString(R.string.syncing_chat_history))
                         customProgressDialog?.show()
@@ -263,10 +240,7 @@ class ChatHistoryListFragment : Fragment() {
             override fun onProgressUpdate(processName: String, itemsProcessed: Int) {
                 activity?.runOnUiThread {
                     if (isAdded) {
-                        // Update loading text with progress
                         loadingText?.text = "Loading $processName: $itemsProcessed items"
-
-                        // Update progress dialog
                         customProgressDialog?.setText("$processName: $itemsProcessed items processed")
                     }
                 }
@@ -277,11 +251,7 @@ class ChatHistoryListFragment : Fragment() {
                     if (isAdded) {
                         dataReadyCounter++
                         loadingText?.text = "$dataType data ready"
-
-                        // Refresh data immediately when ready
                         refreshChatHistoryListSilently()
-
-                        // Dismiss progress dialog after first data is ready but keep loading indicator
                         if (dataReadyCounter == 1) {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
@@ -293,11 +263,9 @@ class ChatHistoryListFragment : Fragment() {
             override fun onSyncComplete() {
                 activity?.runOnUiThread {
                     if (isAdded) {
-                        // Dismiss progress dialog if still showing
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
 
-                        // Final data refresh and hide loading
                         refreshChatHistoryList()
                         hideLoadingState()
                         stopPeriodicDataRefresh()
@@ -333,12 +301,10 @@ class ChatHistoryListFragment : Fragment() {
         }
     }
 
-    // NEW: Progressive loading UI methods
     private fun showLoadingState() {
         loadingIndicator?.visibility = View.VISIBLE
         loadingText?.text = "Preparing chat history sync..."
 
-        // Hide no data message while loading
         fragmentChatHistoryListBinding.noChats.visibility = View.GONE
     }
 
@@ -351,7 +317,7 @@ class ChatHistoryListFragment : Fragment() {
             override fun run() {
                 if (isDataLoading && isAdded) {
                     refreshChatHistoryListSilently()
-                    dataRefreshHandler?.postDelayed(this, 2000) // Refresh every 2 seconds
+                    dataRefreshHandler?.postDelayed(this, 2000)
                 }
             }
         }
@@ -362,7 +328,6 @@ class ChatHistoryListFragment : Fragment() {
         dataRefreshHandler?.removeCallbacksAndMessages(null)
     }
 
-    // Silent refresh that doesn't show/hide loading states
     private fun refreshChatHistoryListSilently() {
         if (!isAdded || requireActivity().isFinishing) return
 
@@ -395,7 +360,6 @@ class ChatHistoryListFragment : Fragment() {
                 }
             }
 
-            // Only show "no data" if we're not loading and list is actually empty
             if (!isDataLoading) {
                 showNoData(fragmentChatHistoryListBinding.noChats, list.size, "chatHistory")
                 if (list.isEmpty()) {
@@ -411,11 +375,8 @@ class ChatHistoryListFragment : Fragment() {
         }
     }
 
-    // Enhanced version of existing refreshChatHistoryList
     fun refreshChatHistoryList() {
         refreshChatHistoryListSilently()
-
-        // Show appropriate state after loading is complete
         if (!isDataLoading) {
             val mRealm = DatabaseService(requireActivity()).realmInstance
             val list = mRealm.where(RealmChatHistory::class.java).equalTo("user", user?.name)
@@ -427,7 +388,6 @@ class ChatHistoryListFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        // Refresh data when user returns to fragment
         if (!isDataLoading) {
             refreshChatHistoryListSilently()
         }

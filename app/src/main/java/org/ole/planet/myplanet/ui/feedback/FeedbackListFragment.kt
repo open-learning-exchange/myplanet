@@ -42,8 +42,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
     lateinit var settings: SharedPreferences
-
-    // NEW: Progressive loading properties
     private var isDataLoading = false
     private var dataRefreshHandler: Handler? = null
     private var loadingIndicator: View? = null
@@ -81,23 +79,14 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        // Initialize loading indicator and refresh handler
-        setupLoadingIndicator(view)
+        setupLoadingIndicator()
         setupDataRefreshHandler()
 
         fragmentFeedbackListBinding.rvFeedback.layoutManager = LinearLayoutManager(activity)
         loadInitialFeedbackData()
     }
 
-    private fun setupLoadingIndicator(view: View) {
-        // The loading indicator already exists in the XML layout
-        loadingIndicator = fragmentFeedbackListBinding.loadingIndicator
-        loadingText = fragmentFeedbackListBinding.loadingText
-    }
-
-    private fun createLoadingViews(parentView: View) {
-        // Since loading indicator already exists in XML, just get references to it
+    private fun setupLoadingIndicator() {
         loadingIndicator = fragmentFeedbackListBinding.loadingIndicator
         loadingText = fragmentFeedbackListBinding.loadingText
     }
@@ -132,7 +121,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
             override fun onSyncStarted() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
-                        // Show both progress dialog and loading indicator
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
                         customProgressDialog?.setText(getString(R.string.syncing_feedback))
                         customProgressDialog?.show()
@@ -146,10 +134,8 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
             override fun onProgressUpdate(processName: String, itemsProcessed: Int) {
                 activity?.runOnUiThread {
                     if (isAdded) {
-                        // Update loading text with progress
                         loadingText?.text = "Loading $processName: $itemsProcessed items"
 
-                        // Update progress dialog
                         customProgressDialog?.setText("$processName: $itemsProcessed items processed")
                     }
                 }
@@ -161,10 +147,8 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
                         dataReadyCounter++
                         loadingText?.text = "$dataType data ready"
 
-                        // Refresh data immediately when ready
                         refreshFeedbackDataSilently()
 
-                        // Dismiss progress dialog after first data is ready but keep loading indicator
                         if (dataReadyCounter == 1) {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
@@ -176,11 +160,9 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
             override fun onSyncComplete() {
                 activity?.runOnUiThread {
                     if (isAdded) {
-                        // Dismiss progress dialog if still showing
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
 
-                        // Final data refresh and hide loading
                         refreshFeedbackData()
                         hideLoadingState()
                         stopPeriodicDataRefresh()
@@ -214,12 +196,9 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         }
     }
 
-    // NEW: Progressive loading UI methods
     private fun showLoadingState() {
         loadingIndicator?.visibility = View.VISIBLE
         loadingText?.text = "Preparing feedback sync..."
-
-        // Hide empty state message while loading
         fragmentFeedbackListBinding.tvMessage.visibility = View.GONE
     }
 
@@ -232,7 +211,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
             override fun run() {
                 if (isDataLoading && isAdded) {
                     refreshFeedbackDataSilently()
-                    dataRefreshHandler?.postDelayed(this, 2000) // Refresh every 2 seconds
+                    dataRefreshHandler?.postDelayed(this, 2000)
                 }
             }
         }
@@ -243,7 +222,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         dataRefreshHandler?.removeCallbacksAndMessages(null)
     }
 
-    // Silent refresh that doesn't show/hide loading states
     private fun refreshFeedbackDataSilently() {
         if (!isAdded || requireActivity().isFinishing) return
 
@@ -258,10 +236,8 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
             if (list?.isNotEmpty() == true) {
                 val adapterFeedback = AdapterFeedback(requireActivity(), list)
                 fragmentFeedbackListBinding.rvFeedback.adapter = adapterFeedback
-
                 val itemCount = list.size
 
-                // Only show "no data" if we're not loading and list is actually empty
                 if (!isDataLoading) {
                     showNoData(fragmentFeedbackListBinding.tvMessage, itemCount, "feedback")
                 } else {
@@ -270,7 +246,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
                 updateTextViewsVisibility(itemCount)
 
-                // Re-setup listener for real-time updates
                 setupFeedbackListener()
             }
 
@@ -279,11 +254,8 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         }
     }
 
-    // Enhanced version of existing refreshFeedbackData
     private fun refreshFeedbackData() {
         refreshFeedbackDataSilently()
-
-        // Show appropriate state after loading is complete
         if (!isDataLoading) {
             val itemCount = feedbackList?.size ?: 0
             showNoData(fragmentFeedbackListBinding.tvMessage, itemCount, "feedback")
@@ -291,7 +263,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     private fun setupFeedbackListener() {
-        // Remove existing listener to avoid duplicates
         feedbackList?.removeAllChangeListeners()
 
         feedbackList = mRealm.where(RealmFeedback::class.java)
@@ -316,8 +287,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         fragmentFeedbackListBinding.rvFeedback.adapter = adapterFeedback
 
         val itemCount = list?.size ?: 0
-
-        // Only show no data message if we're not currently loading
         if (!isDataLoading) {
             showNoData(fragmentFeedbackListBinding.tvMessage, itemCount, "feedback")
         }
@@ -327,7 +296,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onResume() {
         super.onResume()
-        // Refresh data when user returns to fragment
         if (!isDataLoading) {
             refreshFeedbackDataSilently()
         }
@@ -368,7 +336,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
             val itemCount = updatedList?.size ?: 0
 
-            // Only show no data message if we're not currently loading
             if (!isDataLoading) {
                 showNoData(fragmentFeedbackListBinding.tvMessage, itemCount, "feedback")
             }
