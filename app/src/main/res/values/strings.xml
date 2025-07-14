@@ -1328,5 +1328,6 @@
     <string name="loading_chat_history">Loading chat history...</string>
     <string name="loading_courses">Loading courses...</string>
     <string name="loading_team_data">Loading team data...</string>
+    <string name="loading_feedback">Loading feedback...</string>
 
 </resources>
