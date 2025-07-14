@@ -3,8 +3,10 @@ package org.ole.planet.myplanet.ui.chat
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.os.Handler
-import android.os.Looper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,6 +24,7 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
     private val viewTypeResponse = 2
     val animatedMessages = HashMap<Int, Boolean>()
     var lastAnimatedPosition: Int = -1
+    private val coroutineScope = CoroutineScope(Dispatchers.Main)
 
     interface OnChatItemClickListener {
         fun onChatItemClick(position: Int, chatItem: String)
@@ -44,16 +47,19 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
         }
     }
 
-    class ResponseViewHolder(private val textAiMessageBinding: ItemAiResponseMessageBinding, private val copyToClipboard: (String) -> Unit, val context: Context) : RecyclerView.ViewHolder(textAiMessageBinding.root) {
+    class ResponseViewHolder(
+        private val textAiMessageBinding: ItemAiResponseMessageBinding,
+        private val copyToClipboard: (String) -> Unit,
+        val context: Context,
+        private val coroutineScope: CoroutineScope
+    ) : RecyclerView.ViewHolder(textAiMessageBinding.root) {
         fun bind(response: String, responseSource: Int,  shouldAnimate: Boolean, markAnimated: () -> Unit) {
             if (responseSource == RESPONSE_SOURCE_NETWORK) {
                 if (shouldAnimate) {
-                    val typingDelayMillis = 10L
-                    val typingAnimationDurationMillis = response.length * typingDelayMillis
                     textAiMessageBinding.textGchatMessageOther.text = context.getString(R.string.empty_text)
-                    Handler(Looper.getMainLooper()).postDelayed({
+                    coroutineScope.launch {
                         animateTyping(response, markAnimated)
-                    }, typingAnimationDurationMillis)
+                    }
                 } else{
                     textAiMessageBinding.textGchatMessageOther.text = response
                 }
@@ -71,20 +77,14 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
             }
         }
 
-        private fun animateTyping(response: String, markAnimated: () -> Unit) {
+        private suspend fun animateTyping(response: String, markAnimated: () -> Unit) {
             var currentIndex = 0
-            val typingRunnable = object : Runnable {
-                override fun run() {
-                    if (currentIndex < response.length) {
-                        textAiMessageBinding.textGchatMessageOther.text = response.substring(0, currentIndex + 1)
-                        currentIndex++
-                        Handler(Looper.getMainLooper()).postDelayed(this, 10L)
-                    } else{
-                        markAnimated()
-                    }
-                }
+            while (currentIndex < response.length) {
+                textAiMessageBinding.textGchatMessageOther.text = response.substring(0, currentIndex + 1)
+                currentIndex++
+                delay(10L)
             }
-            Handler(Looper.getMainLooper()).postDelayed(typingRunnable, 10L)
+            markAnimated()
         }
     }
 
@@ -133,7 +133,7 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
             }
             viewTypeResponse -> {
                 textAiMessageBinding = ItemAiResponseMessageBinding.inflate(LayoutInflater.from(context), parent, false)
-                ResponseViewHolder(textAiMessageBinding, this::copyToClipboard, context)
+                ResponseViewHolder(textAiMessageBinding, this::copyToClipboard, context, coroutineScope)
             }
             else -> throw IllegalArgumentException("Invalid view type")
         }

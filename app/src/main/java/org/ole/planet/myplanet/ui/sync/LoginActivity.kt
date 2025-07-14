@@ -7,8 +7,9 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -21,15 +22,17 @@ import android.view.inputmethod.EditorInfo
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.ImageButton
-import android.widget.Toast
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import io.realm.Realm
+import java.util.Locale
 import org.ole.planet.myplanet.*
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.callback.SyncListener
@@ -44,8 +47,6 @@ import org.ole.planet.myplanet.utilities.*
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
-import java.util.Locale
-import androidx.core.content.edit
 
 class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private lateinit var activityLoginBinding: ActivityLoginBinding
@@ -129,9 +130,10 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
 
         if (autoLogin && username != null && password != null) {
-            Handler(Looper.getMainLooper()).postDelayed({
+            lifecycleScope.launch {
+                delay(500)
                 submitForm(username, password)
-            }, 500)
+            }
         }
 
         getTeamMembers()
@@ -455,48 +457,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     private fun submitForm(name: String?, password: String?) {
-        if (forceSyncTrigger()) {
-            return
-        }
-        settings.edit {
-            putString("loginUserName", name)
-            putString("loginUserPassword", password)
-            val isLoggedIn = authenticateUser(settings, name, password, false)
-            if (isLoggedIn) {
-                Toast.makeText(context, getString(R.string.welcome, name), Toast.LENGTH_SHORT)
-                    .show()
-                onLogin()
-                saveUsers(name, password, "member")
-            } else {
-                ManagerSync.instance?.login(name, password, object : SyncListener {
-                    override fun onSyncStarted() {
-                        customProgressDialog.setText(getString(R.string.please_wait))
-                        customProgressDialog.show()
-                    }
-
-                    override fun onSyncComplete() {
-                        customProgressDialog.dismiss()
-                        val log = authenticateUser(settings, name, password, true)
-                        if (log) {
-                            Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
-                            onLogin()
-                            saveUsers(name, password, "member")
-                        } else {
-                            alertDialogOkay(getString(R.string.err_msg_login))
-                        }
-                        syncIconDrawable.stop()
-                        syncIconDrawable.selectDrawable(0)
-                    }
-
-                    override fun onSyncFailed(msg: String?) {
-                        toast(context, msg)
-                        customProgressDialog.dismiss()
-                        syncIconDrawable.stop()
-                        syncIconDrawable.selectDrawable(0)
-                    }
-                })
-            }
-        }
+        AuthHelper.login(this, name, password)
     }
 
     internal fun showGuestDialog(username: String) {

@@ -6,6 +6,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import io.realm.Case
 import io.realm.RealmResults
+import java.util.UUID
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.FragmentDictionaryBinding
@@ -15,7 +16,6 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.UUID
 
 class DictionaryActivity : BaseActivity() {
     private lateinit var fragmentDictionaryBinding: FragmentDictionaryBinding

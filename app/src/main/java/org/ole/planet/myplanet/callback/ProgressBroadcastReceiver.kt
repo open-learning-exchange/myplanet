@@ -4,9 +4,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import java.util.Locale
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import java.util.Locale
 
 class ProgressBroadcastReceiver : BroadcastReceiver() {
     private var onProgressChange: OnProgressChange? = null

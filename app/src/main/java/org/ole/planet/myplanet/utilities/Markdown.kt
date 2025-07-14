@@ -15,6 +15,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.graphics.drawable.toDrawable
 import com.bumptech.glide.Glide
 import com.github.chrisbanes.photoview.PhotoView
 import io.noties.markwon.AbstractMarkwonPlugin
@@ -36,7 +37,7 @@ import io.noties.markwon.image.network.OkHttpNetworkSchemeHandler
 import io.noties.markwon.movement.MovementMethodPlugin
 import org.commonmark.node.Image
 import org.ole.planet.myplanet.R
-import androidx.core.graphics.drawable.toDrawable
+import java.util.regex.Pattern
 
 object Markdown {
     private var currentZoomDialog: Dialog? = null
@@ -45,7 +46,7 @@ object Markdown {
         return Markwon.builder(context)
             .usePlugin(HtmlPlugin.create())
             .usePlugin(ImagesPlugin.create())
-            .usePlugin(MovementMethodPlugin.create())
+            .usePlugin(MovementMethodPlugin.create(LinkMovementMethod.getInstance()))
             .usePlugin(TablePlugin.create(context))
             .usePlugin(HtmlPlugin.create { plugin: HtmlPlugin -> plugin.addHandler(AlignTagHandler()) })
             .usePlugin(object : AbstractMarkwonPlugin() {
@@ -110,6 +111,27 @@ object Markdown {
         }
 
         dialog.show()
+    }
+
+    fun prependBaseUrlToImages(
+        markdownContent: String?,
+        baseUrl: String,
+        width: Int = 150,
+        height: Int = 100
+    ): String {
+        val pattern = "!\\[.*?]\\((.*?)\\)"
+        val imagePattern = Pattern.compile(pattern)
+        val matcher = markdownContent?.let { imagePattern.matcher(it) }
+            ?: return markdownContent.orEmpty()
+        val result = StringBuffer()
+        while (matcher.find()) {
+            val relativePath = matcher.group(1)
+            val modifiedPath = relativePath?.replaceFirst("resources/".toRegex(), "")
+            val fullUrl = baseUrl + modifiedPath
+            matcher.appendReplacement(result, "<img src=$fullUrl width=$width height=$height/>")
+        }
+        matcher.appendTail(result)
+        return result.toString()
     }
 
     private class CustomLinkMovementMethod : LinkMovementMethod() {

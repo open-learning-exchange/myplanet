@@ -11,18 +11,18 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.Sort
 import io.realm.annotations.PrimaryKey
+import java.io.IOException
+import java.util.Date
+import java.util.UUID
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.settings
 import org.ole.planet.myplanet.datamanager.ApiInterface
+import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import org.ole.planet.myplanet.utilities.CsvUtils
-import java.io.IOException
-import java.util.Date
-import java.util.UUID
 
 open class RealmSubmission : RealmObject() {
     @PrimaryKey
@@ -88,7 +88,7 @@ open class RealmSubmission : RealmObject() {
                 val userJson = JsonUtils.getJsonObject("user", submission)
                 if (userJson.has("membershipDoc")) {
                     val membershipJson = JsonUtils.getJsonObject("membershipDoc", userJson)
-                    if (membershipJson != null) {
+                    if (membershipJson.entrySet().isNotEmpty()) {
                         val membership = mRealm.createObject(RealmMembershipDoc::class.java)
                         membership.teamId = JsonUtils.getString("teamId", membershipJson)
                         sub?.membershipDoc = membership

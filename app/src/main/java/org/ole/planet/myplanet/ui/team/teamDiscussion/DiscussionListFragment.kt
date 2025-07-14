@@ -14,6 +14,7 @@ import com.google.gson.JsonArray
 import io.realm.Realm
 import io.realm.RealmResults
 import io.realm.Sort
+import java.util.UUID
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertInputBinding
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
@@ -29,7 +30,6 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.UUID
 
 class DiscussionListFragment : BaseTeamFragment() {
     private lateinit var fragmentDiscussionListBinding: FragmentDiscussionListBinding
@@ -157,17 +157,26 @@ class DiscussionListFragment : BaseTeamFragment() {
     }
 
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
-        if (fragmentDiscussionListBinding.rvDiscussion.adapter == null) {
+        val existingAdapter = fragmentDiscussionListBinding.rvDiscussion.adapter
+        if (existingAdapter == null) {
             val adapterNews = activity?.let {
-                realmNewsList?.let { it1 -> AdapterNews(it, it1.toMutableList(), user, null, getEffectiveTeamName()) }
+                realmNewsList?.let { list ->
+                    AdapterNews(it, list.toMutableList(), user, null, getEffectiveTeamName(), teamId)
+                }
             }
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setListener(this)
             if (!isMember()) adapterNews?.setNonTeamMember(true)
             fragmentDiscussionListBinding.rvDiscussion.adapter = adapterNews
+            adapterNews?.let {
+                showNoData(fragmentDiscussionListBinding.tvNodata, it.itemCount, "discussions")
+            }
         } else {
-            (fragmentDiscussionListBinding.rvDiscussion.adapter as? AdapterNews)?.let { adapter ->
-                realmNewsList?.let { adapter.updateList(it) }
+            (existingAdapter as? AdapterNews)?.let { adapter ->
+                realmNewsList?.let {
+                    adapter.updateList(it)
+                    showNoData(fragmentDiscussionListBinding.tvNodata, adapter.itemCount, "discussions")
+                }
             }
         }
     }

@@ -2,8 +2,8 @@ package org.ole.planet.myplanet.utilities
 
 import android.content.SharedPreferences
 import android.net.Uri
-import org.ole.planet.myplanet.BuildConfig
 import androidx.core.net.toUri
+import org.ole.planet.myplanet.BuildConfig
 
 class ServerUrlMapper() {
     private val serverMappings = mapOf(
@@ -70,6 +70,22 @@ class ServerUrlMapper() {
             putString("processedAlternativeUrl", couchdbURL)
             putBoolean("isAlternativeUrl", true)
             apply()
+        }
+    }
+
+    suspend fun updateServerIfNecessary(
+        mapping: UrlMapping,
+        settings: SharedPreferences,
+        isServerReachable: suspend (String) -> Boolean
+    ) {
+        val primaryAvailable = isServerReachable(mapping.primaryUrl)
+        val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
+
+        if (!primaryAvailable && alternativeAvailable) {
+            mapping.alternativeUrl.let { alternativeUrl ->
+                val editor = settings.edit()
+                updateUrlPreferences(editor, mapping.primaryUrl.toUri(), alternativeUrl, mapping.primaryUrl, settings)
+            }
         }
     }
 

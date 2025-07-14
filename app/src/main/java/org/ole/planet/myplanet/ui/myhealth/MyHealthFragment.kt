@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.ui.myhealth
 
 import android.app.DatePickerDialog
+import android.content.Context.MODE_PRIVATE
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.text.Editable
@@ -17,28 +19,40 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import io.realm.Case
 import io.realm.Realm
 import io.realm.Sort
+import java.util.Calendar
+import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseRecyclerFragment
+import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
-import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
 import org.ole.planet.myplanet.utilities.Utilities
-import java.util.Calendar
-import java.util.Locale
 
 class MyHealthFragment : Fragment() {
     private lateinit var fragmentVitalSignBinding: FragmentVitalSignBinding
@@ -51,11 +65,99 @@ class MyHealthFragment : Fragment() {
     lateinit var userModelList: List<RealmUserModel>
     lateinit var adapter: UserListArrayAdapter
     var dialog: AlertDialog? = null
+    private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+    lateinit var prefManager: SharedPrefManager
+    lateinit var settings: SharedPreferences
+    private val serverUrlMapper = ServerUrlMapper()
+    private val serverUrl: String
+        get() = settings.getString("serverURL", "") ?: ""
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        prefManager = SharedPrefManager(requireContext())
+        settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        startHealthSync()
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentVitalSignBinding = FragmentVitalSignBinding.inflate(inflater, container, false)
         mRealm = DatabaseService(requireContext()).realmInstance
         return fragmentVitalSignBinding.root
+    }
+
+    private fun startHealthSync() {
+        val isFastSync = settings.getBoolean("fastSync", false)
+        if (isFastSync && !prefManager.isHealthSynced()) {
+            checkServerAndStartSync()
+        }
+    }
+
+    private fun checkServerAndStartSync() {
+        val mapping = serverUrlMapper.processUrl(serverUrl)
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            updateServerIfNecessary(mapping)
+            withContext(Dispatchers.Main) {
+                startSyncManager()
+            }
+        }
+    }
+
+    private fun startSyncManager() {
+        SyncManager.instance?.start(object : SyncListener {
+            override fun onSyncStarted() {
+                activity?.runOnUiThread {
+                    if (isAdded && !requireActivity().isFinishing) {
+                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                        customProgressDialog?.setText(getString(R.string.syncing_health_data))
+                        customProgressDialog?.show()
+                    }
+                }
+            }
+
+            override fun onSyncComplete() {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
+                        refreshHealthData()
+                        prefManager.setHealthSynced(true)
+                    }
+                }
+            }
+
+            override fun onSyncFailed(msg: String?) {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        customProgressDialog?.dismiss()
+                        customProgressDialog = null
+                        Snackbar.make(fragmentVitalSignBinding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG).setAction("Retry") { startHealthSync() }.show()
+                    }
+                }
+            }
+        }, "full", listOf("health"))
+    }
+
+    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
+        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
+            isServerReachable(url)
+        }
+    }
+
+    private fun refreshHealthData() {
+        if (!isAdded || requireActivity().isFinishing) return
+
+        try {
+            profileDbHandler = UserProfileDbHandler(requireContext())
+            userId = if (TextUtils.isEmpty(profileDbHandler?.userModel?._id)) {
+                profileDbHandler?.userModel?.id
+            } else {
+                profileDbHandler?.userModel?._id
+            }
+            getHealthRecords(userId)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -78,10 +180,20 @@ class MyHealthFragment : Fragment() {
         } else {
             disableDobField()
         }
+
         fragmentVitalSignBinding.rvRecords.addItemDecoration(DividerItemDecoration(activity, DividerItemDecoration.VERTICAL))
+
+        setupInitialData()
+        setupButtons()
+    }
+
+    private fun setupInitialData() {
         profileDbHandler = UserProfileDbHandler(alertMyPersonalBinding.root.context)
         userId = if (TextUtils.isEmpty(profileDbHandler?.userModel?._id)) profileDbHandler?.userModel?.id else profileDbHandler?.userModel?._id
         getHealthRecords(userId)
+    }
+
+    private fun setupButtons() {
         val isHealthProvider = userModel?.rolesList?.contains("health") ?: false
         fragmentVitalSignBinding.btnnewPatient.visibility =
             if (isHealthProvider) View.VISIBLE else View.GONE
@@ -288,5 +400,11 @@ class MyHealthFragment : Fragment() {
         fragmentVitalSignBinding.txtDob.isClickable = false
         fragmentVitalSignBinding.txtDob.isFocusable = false
         fragmentVitalSignBinding.txtDob.setOnClickListener(null)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        customProgressDialog?.dismiss()
+        customProgressDialog = null
     }
 }

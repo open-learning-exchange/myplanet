@@ -10,7 +10,10 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.view.*
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
+import android.view.View
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
@@ -36,14 +39,21 @@ import io.realm.Realm
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmResults
+import kotlin.math.ceil
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import androidx.lifecycle.lifecycleScope
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
+import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
@@ -71,9 +81,6 @@ import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities.toast
-import kotlin.math.ceil
-import kotlinx.coroutines.*
-import org.ole.planet.myplanet.model.RealmMyTeam
 
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
@@ -290,7 +297,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                             Handler(Looper.getMainLooper()).postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
                         } else {
                             val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
-                            if (fragment is BaseContainerFragment) {
+                            if (!BuildConfig.LITE && fragment is BaseContainerFragment) {
                                 fragment.handleBackPressed()
                             }
                             finish()
@@ -343,33 +350,19 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun checkAndCreateNewNotifications() {
         val userId = user?.id
 
-        GlobalScope.launch(Dispatchers.IO) {
-            var backgroundRealm: Realm? = null
+        lifecycleScope.launch(Dispatchers.IO) {
             var unreadCount = 0
 
             try {
-                backgroundRealm = Realm.getDefaultInstance()
+                Realm.getDefaultInstance().use { backgroundRealm ->
+                    backgroundRealm.executeTransaction { realm ->
+                        createNotifications(realm, userId)
+                    }
 
-                backgroundRealm.executeTransaction { realm ->
-                    createNotifications(realm, userId)
+                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(backgroundRealm, userId)
                 }
-
-                unreadCount = dashboardViewModel.getUnreadNotificationsSize(backgroundRealm, userId)
-
-                backgroundRealm.close()
-                backgroundRealm = null
-
             } catch (e: Exception) {
                 e.printStackTrace()
-                backgroundRealm?.let {
-                    if (!it.isClosed) {
-                        try {
-                            it.close()
-                        } catch (err: Exception) {
-                            err.printStackTrace()
-                        }
-                    }
-                }
             }
 
             withContext(Dispatchers.Main) {

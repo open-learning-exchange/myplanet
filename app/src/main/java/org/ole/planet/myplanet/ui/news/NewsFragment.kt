@@ -6,6 +6,7 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -27,7 +28,6 @@ import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
-import androidx.core.view.isVisible
 
 class NewsFragment : BaseNewsFragment() {
     private lateinit var fragmentNewsBinding: FragmentNewsBinding
