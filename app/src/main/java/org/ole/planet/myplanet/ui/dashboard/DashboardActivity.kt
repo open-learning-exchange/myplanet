@@ -44,9 +44,9 @@ import io.realm.RealmObject
 import io.realm.RealmResults
 import kotlin.math.ceil
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.lifecycle.lifecycleScope
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -354,33 +354,19 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun checkAndCreateNewNotifications() {
         val userId = user?.id
 
-        GlobalScope.launch(Dispatchers.IO) {
-            var backgroundRealm: Realm? = null
+        lifecycleScope.launch(Dispatchers.IO) {
             var unreadCount = 0
 
             try {
-                backgroundRealm = Realm.getDefaultInstance()
+                Realm.getDefaultInstance().use { backgroundRealm ->
+                    backgroundRealm.executeTransaction { realm ->
+                        createNotifications(realm, userId)
+                    }
 
-                backgroundRealm.executeTransaction { realm ->
-                    createNotifications(realm, userId)
+                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(backgroundRealm, userId)
                 }
-
-                unreadCount = dashboardViewModel.getUnreadNotificationsSize(backgroundRealm, userId)
-
-                backgroundRealm.close()
-                backgroundRealm = null
-
             } catch (e: Exception) {
                 e.printStackTrace()
-                backgroundRealm?.let {
-                    if (!it.isClosed) {
-                        try {
-                            it.close()
-                        } catch (err: Exception) {
-                            err.printStackTrace()
-                        }
-                    }
-                }
             }
 
             withContext(Dispatchers.Main) {
