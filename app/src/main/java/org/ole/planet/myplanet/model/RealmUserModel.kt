@@ -310,7 +310,9 @@ open class RealmUserModel : RealmObject() {
 
         @JvmStatic
         fun isUserExists(realm: Realm, name: String?): Boolean {
-            return realm.where(RealmUserModel::class.java).equalTo("name", name).count() > 0
+            return realm.where(RealmUserModel::class.java)
+                .equalTo("name", name)
+                .not().beginsWith("_id", "guest").count() > 0
         }
 
         fun userWriteCsv() {

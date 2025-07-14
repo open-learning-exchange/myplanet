@@ -1,22 +1,16 @@
 package org.ole.planet.myplanet.ui.sync
 
 import android.text.Editable
-import android.text.TextUtils
 import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import io.realm.Realm
-import java.text.Normalizer
-import java.util.regex.Pattern
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.utilities.AuthHelper
 import org.ole.planet.myplanet.utilities.Utilities.toast
-
-private val SPECIAL_CHAR_PATTERN = Pattern.compile(
-    ".*[ßäöüéèêæÆœøØ¿àìòùÀÈÌÒÙáíóúýÁÉÍÓÚÝâîôûÂÊÎÔÛãñõÃÑÕëïÿÄËÏÖÜŸåÅŒçÇðÐ].*"
-)
 
 fun LoginActivity.showGuestLoginDialog() {
     try {
@@ -29,7 +23,7 @@ fun LoginActivity.showGuestLoginDialog() {
 
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 val input = s.toString()
-                val error = validateGuestUsername(input)
+                val error = AuthHelper.validateUsername(this@showGuestLoginDialog, input)
                 if (error != null) {
                     binding.etUserName.error = error
                 } else {
@@ -58,7 +52,7 @@ fun LoginActivity.showGuestLoginDialog() {
                 mRealm = Realm.getDefaultInstance()
             }
             val username = binding.etUserName.text.toString().trim { it <= ' ' }
-            val error = validateGuestUsername(username)
+            val error = AuthHelper.validateUsername(this@showGuestLoginDialog, username)
             if (error == null) {
                 val existingUser = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
                 dialog.dismiss()
@@ -87,29 +81,5 @@ fun LoginActivity.showGuestLoginDialog() {
             mRealm.close()
         }
     }
-}
-
-private fun LoginActivity.validateGuestUsername(username: String): String? {
-    if (TextUtils.isEmpty(username)) {
-        return getString(R.string.username_cannot_be_empty)
-    }
-    val firstChar = username[0]
-    if (!Character.isDigit(firstChar) && !Character.isLetter(firstChar)) {
-        return getString(R.string.must_start_with_letter_or_number)
-    }
-    val normalizedText = Normalizer.normalize(username, Normalizer.Form.NFD)
-    val hasInvalidCharacters = username.any {
-        it != '_' && it != '.' && it != '-' && !Character.isDigit(it) && !Character.isLetter(it)
-    }
-    val hasSpecialCharacters = SPECIAL_CHAR_PATTERN.matcher(username).matches()
-    val hasDiacriticCharacters = !normalizedText.codePoints().allMatch { codePoint ->
-        Character.isLetterOrDigit(codePoint) ||
-            codePoint == '.'.code ||
-            codePoint == '-'.code ||
-            codePoint == '_'.code
-    }
-    return if (hasInvalidCharacters || hasSpecialCharacters || hasDiacriticCharacters) {
-        getString(R.string.only_letters_numbers_and_are_allowed)
-    } else null
 }
 
