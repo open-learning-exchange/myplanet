@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.courses.AdapterCourses
+import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
@@ -102,7 +103,12 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
                 }
             if (ratingMap.containsKey(libraryList[position]?.resourceId)) {
                 val `object` = ratingMap[libraryList[position]?.resourceId]
-                AdapterCourses.showRating(`object`, holder.rowLibraryBinding.rating, holder.rowLibraryBinding.timesRated, holder.rowLibraryBinding.ratingBar)
+                CourseRatingUtils.showRating(
+                    `object`,
+                    holder.rowLibraryBinding.rating,
+                    holder.rowLibraryBinding.timesRated,
+                    holder.rowLibraryBinding.ratingBar
+                )
             } else {
                 holder.rowLibraryBinding.ratingBar.rating = 0f
             }

@@ -19,6 +19,8 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
+import org.ole.planet.myplanet.utilities.FileUtils.getSDPathFromUrl
 
 class DownloadWorker(val context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -200,15 +202,6 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
         } catch (e: Exception) {
             e.printStackTrace()
         }
-    }
-
-    private fun getSDPathFromUrl(url: String): File {
-        val fileName = getFileNameFromUrl(url)
-        return File(Utilities.SD_PATH, fileName)
-    }
-
-    private fun getFileNameFromUrl(url: String): String {
-        return url.substringAfterLast("/")
     }
 
     companion object {

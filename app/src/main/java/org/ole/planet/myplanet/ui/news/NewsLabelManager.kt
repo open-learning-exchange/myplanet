@@ -66,7 +66,7 @@ class NewsLabelManager(private val context: Context, private val realm: Realm, p
     private fun updateAddLabelVisibility(binding: RowNewsBinding, news: RealmNews?) {
         val usedLabels = news?.labels?.toSet() ?: emptySet()
         val labels = Constants.LABELS.values.toSet()
-        binding.btnAddLabel.visibility = if (usedLabels.containsAll(labels)) View.GONE else View.VISIBLE
+        if (usedLabels.containsAll(labels)) binding.btnAddLabel.visibility = View.GONE
     }
 
     private fun getLabel(s: String): String {

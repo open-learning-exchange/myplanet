@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.courses.CourseStepFragment
+import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
@@ -63,7 +63,12 @@ class ServicesFragment : BaseTeamFragment() {
             fragmentServicesBinding.tvDescription.visibility = View.VISIBLE
             fragmentServicesBinding.tvNoDescription.visibility = View.GONE
         }
-        val markdownContentWithLocalPaths = CourseStepFragment.prependBaseUrlToImages(description, "file://${MainApplication.context.getExternalFilesDir(null)}/ole/")
+        val markdownContentWithLocalPaths = prependBaseUrlToImages(
+            description,
+            "file://${MainApplication.context.getExternalFilesDir(null)}/ole/",
+            600,
+            350
+        )
         setMarkdownText(fragmentServicesBinding.tvDescription, markdownContentWithLocalPaths)
         setRecyclerView(links)
 

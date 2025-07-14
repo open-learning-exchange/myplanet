@@ -43,6 +43,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     private var playWhenReady = true
     private var currentPosition = 0L
     private var isActivityVisible = false
+    private var authSessionUpdater: AuthSessionUpdater? = null
 
     private val audioBecomingNoisyReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -68,7 +69,9 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
 
         when (videoType) {
             "offline" -> prepareExoPlayerFromFileUri(videoURL)
-            "online" -> AuthSessionUpdater(this, settings)
+            "online" -> {
+                authSessionUpdater = AuthSessionUpdater(this, settings)
+            }
         }
 
         val callback = object : OnBackPressedCallback(true) {
@@ -224,6 +227,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
 
     override fun onDestroy() {
         super.onDestroy()
+        authSessionUpdater?.stop()
         try {
             unregisterReceiver(audioBecomingNoisyReceiver)
         } catch (e: IllegalArgumentException) {
