@@ -178,9 +178,11 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
     }
 
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
-        val adapterNews = activity?.let { realmNewsList?.let { it1 ->
-            AdapterNews(it, it1.toMutableList(), user, null, team?.name.toString())
-        } }
+        val adapterNews = activity?.let {
+            realmNewsList?.let { it1 ->
+                AdapterNews(it, it1.toMutableList(), user, null, team?.name.toString(), teamId)
+            }
+        }
         adapterNews?.setmRealm(mRealm)
         adapterNews?.setListener(this)
         rvDiscussion.adapter = adapterNews
