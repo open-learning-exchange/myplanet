@@ -28,7 +28,7 @@ jobs:
         run: |
           file="app/src/main/AndroidManifest.xml"
           lite="app/src/lite/AndroidManifest.xml"
-          ls -al $file $lite
+          ls -al "$file" "$lite"
           diff <(sed 's/^\s*<!--//; s/-->\s*$//' "$file") <(sed 's/^\s*<!--//; s/-->\s*$//' "$lite")
           cp "$lite" "$file"
 
