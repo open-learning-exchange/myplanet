@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.news
 
-import android.app.Activity
 import android.content.Context
 import android.widget.EditText
 import android.widget.ImageView
@@ -8,6 +7,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -73,7 +73,9 @@ object NewsActions {
         isEdit: Boolean,
         currentUser: RealmUserModel?,
         imageList: RealmList<String>?,
-        listener: AdapterNews.OnNewsItemClickListener?
+        listener: AdapterNews.OnNewsItemClickListener?,
+        viewHolder: RecyclerView.ViewHolder,
+        updateReplyButton: (RecyclerView.ViewHolder, RealmNews?, Int) -> Unit = { _, _, _ -> }
     ) {
         val components = createEditDialogComponents(context, listener)
         val message = components.view.findViewById<TextView>(R.id.cust_msg)
@@ -93,6 +95,7 @@ object NewsActions {
         dialog.show()
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             handlePositiveButton(dialog, isEdit, components, news, realm, currentUser, imageList, listener)
+            updateReplyButton(viewHolder, news, viewHolder.adapterPosition)
         }
     }
 
@@ -166,13 +169,12 @@ object NewsActions {
         }
         if (teamName.isNotEmpty() || ar.size() < 2) {
             news?.let {
+                deleteChildPosts(realm, it.id, list)
                 it.deleteFromRealm()
                 if (context is ReplyActivity) {
                     val restartIntent = context.intent
                     context.finish()
-                    context.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_OPEN, 0, 0, 0)
                     context.startActivity(restartIntent)
-                    context.overrideActivityTransition(Activity.OVERRIDE_TRANSITION_OPEN, 0, 0, 0)
                 }
             }
         } else {
@@ -186,5 +188,22 @@ object NewsActions {
             news?.viewIn = Gson().toJson(filtered)
         }
         realm.commitTransaction()
+    }
+
+    private fun deleteChildPosts(
+        realm: Realm,
+        parentId: String?,
+        list: MutableList<RealmNews?>
+    ) {
+        if (parentId == null) return
+        val children = realm.where(RealmNews::class.java)
+            .equalTo("replyTo", parentId)
+            .findAll()
+        children.forEach { child ->
+            deleteChildPosts(realm, child.id, list)
+            val idx = list.indexOf(child)
+            if (idx != -1) list.removeAt(idx)
+            child.deleteFromRealm()
+        }
     }
 }

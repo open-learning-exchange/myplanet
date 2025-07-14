@@ -116,6 +116,8 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
                 resetViews(viewHolder)
 
+                updateReplyCount(viewHolder = viewHolder, getReplies(news), position)
+
                 val userModel = configureUser(viewHolder, news)
                 showShareButton(viewHolder, news)
 
@@ -219,7 +221,9 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
                         NewsActions.deletePost(context, mRealm, news, list, teamName)
-                        notifyDataSetChanged()
+                        val pos = holder.adapterPosition
+                        notifyItemRemoved(pos)
+                        notifyItemRangeChanged(pos, list.size)
                     }
                     .setNegativeButton(R.string.cancel, null)
                     .show()
@@ -228,7 +232,19 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
         if (news.userId == currentUser?._id) {
             holder.rowNewsBinding.imgEdit.setOnClickListener {
-                NewsActions.showEditAlert(context, mRealm, news.id, true, currentUser, imageList, listener)
+                NewsActions.showEditAlert(
+                    context,
+                    mRealm,
+                    news.id,
+                    true,
+                    currentUser,
+                    imageList,
+                    listener,
+                    holder,
+                ) { holder, updatedNews, position ->
+                    showReplyButton(holder, updatedNews, position)
+                    notifyItemChanged(position)
+                }
             }
             holder.rowNewsBinding.btnAddLabel.visibility = if (fromLogin || nonTeamMember) View.GONE else View.VISIBLE
         } else {
@@ -387,7 +403,16 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         if (shouldShowReplyButton()) {
             viewHolder.rowNewsBinding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
             viewHolder.rowNewsBinding.btnReply.setOnClickListener {
-                NewsActions.showEditAlert(context, mRealm, finalNews?.id, false, currentUser, imageList, listener)
+                NewsActions.showEditAlert(
+                    context,
+                    mRealm,
+                    finalNews?.id,
+                    false,
+                    currentUser,
+                    imageList,
+                    listener,
+                     viewHolder,
+                ) { holder, news, i -> showReplyButton(holder, news, i) }
             }
         } else {
             viewHolder.rowNewsBinding.btnReply.visibility = View.GONE

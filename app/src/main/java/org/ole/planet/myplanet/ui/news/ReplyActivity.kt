@@ -79,6 +79,14 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         activityReplyBinding.rvReply.adapter = newsAdapter
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (id != null) {
+            showData(id)
+        }
+
+    }
+
     override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
         startActivity(Intent(this, ReplyActivity::class.java).putExtra("id", news?.id))
     }
