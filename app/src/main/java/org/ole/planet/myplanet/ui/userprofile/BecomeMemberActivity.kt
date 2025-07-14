@@ -203,6 +203,10 @@ class BecomeMemberActivity : BaseActivity() {
     }
 
     private fun autoLoginNewMember(username: String, password: String) {
+        val mRealm = DatabaseService(this).realmInstance
+        RealmUserModel.cleanupDuplicateUsers(mRealm)
+        mRealm.close()
+
         val intent = Intent(this, LoginActivity::class.java)
         intent.putExtra("username", username)
         intent.putExtra("password", password)
