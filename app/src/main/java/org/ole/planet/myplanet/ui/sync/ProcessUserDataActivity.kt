@@ -197,23 +197,23 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             })
             return
         } else if (source == "login") {
-            UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
+            UploadManager.instance.uploadUserActivities(this@ProcessUserDataActivity)
             return
         }
         customProgressDialog.setText(context.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        UploadManager.instance?.uploadAchievement()
-        UploadManager.instance?.uploadNews()
-        UploadManager.instance?.uploadResourceActivities("")
-        UploadManager.instance?.uploadCourseActivities()
-        UploadManager.instance?.uploadSearchActivity()
-        UploadManager.instance?.uploadTeams()
-        UploadManager.instance?.uploadRating()
-        UploadManager.instance?.uploadTeamTask()
-        UploadManager.instance?.uploadMeetups()
-        UploadManager.instance?.uploadSubmissions()
-        UploadManager.instance?.uploadCrashLog()
+        UploadManager.instance.uploadAchievement()
+        UploadManager.instance.uploadNews()
+        UploadManager.instance.uploadResourceActivities("")
+        UploadManager.instance.uploadCourseActivities()
+        UploadManager.instance.uploadSearchActivity()
+        UploadManager.instance.uploadTeams()
+        UploadManager.instance.uploadRating()
+        UploadManager.instance.uploadTeamTask()
+        UploadManager.instance.uploadMeetups()
+        UploadManager.instance.uploadSubmissions()
+        UploadManager.instance.uploadCrashLog()
 
         val asyncOperationsCounter = AtomicInteger(0)
         val totalAsyncOperations = 6
@@ -234,37 +234,37 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             checkAllOperationsComplete()
         }
 
-        UploadManager.instance?.uploadUserActivities(object : SuccessListener {
+        UploadManager.instance.uploadUserActivities(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
-        UploadManager.instance?.uploadExamResult(object : SuccessListener {
+        UploadManager.instance.uploadExamResult(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
-        UploadManager.instance?.uploadFeedback(object : SuccessListener {
+        UploadManager.instance.uploadFeedback(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
-        UploadManager.instance?.uploadResource(object : SuccessListener {
+        UploadManager.instance.uploadResource(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
-        UploadManager.instance?.uploadSubmitPhotos(object : SuccessListener {
+        UploadManager.instance.uploadSubmitPhotos(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
-        UploadManager.instance?.uploadActivities(object : SuccessListener {
+        UploadManager.instance.uploadActivities(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }

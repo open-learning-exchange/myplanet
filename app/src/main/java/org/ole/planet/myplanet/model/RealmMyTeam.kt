@@ -394,13 +394,13 @@ open class RealmMyTeam : RealmObject() {
             MainApplication.applicationScope.launch {
                 try {
                     withContext(Dispatchers.IO) {
-                        UploadManager.instance?.uploadTeams()
+                        UploadManager.instance.uploadTeams()
                     }
                     withContext(Dispatchers.IO) {
                         val apiInterface = client?.create(ApiInterface::class.java)
                         val realm = DatabaseService(context).realmInstance
                         realm.executeTransaction { transactionRealm ->
-                            UploadManager.instance?.uploadTeamActivities(transactionRealm, apiInterface)
+                            UploadManager.instance.uploadTeamActivities(transactionRealm, apiInterface)
                         }
                     }
                 } catch (e: Exception) {

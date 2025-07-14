@@ -88,7 +88,7 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
         pg.setText("Please wait......")
         pg.show()
         if (personal != null) {
-            UploadManager.instance?.uploadMyPersonal(personal) { s: String? ->
+            UploadManager.instance.uploadMyPersonal(personal) { s: String? ->
                 if (s != null) {
                     Utilities.toast(activity, s)
                 }

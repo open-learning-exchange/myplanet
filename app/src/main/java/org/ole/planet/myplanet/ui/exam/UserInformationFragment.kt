@@ -278,7 +278,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         MainApplication.applicationScope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    UploadManager.instance?.uploadSubmissions()
+                    UploadManager.instance.uploadSubmissions()
                 }
 
                 withContext(Dispatchers.Main) {

@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.service
 import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.work.Worker
 import androidx.work.WorkerParameters
@@ -18,11 +17,13 @@ import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utilities.Utilities
+import dagger.hilt.EntryPointAccessors
+import org.ole.planet.myplanet.di.WorkerEntryPoint
 
 class AutoSyncWorker(private val context: Context, workerParams: WorkerParameters) : Worker(context, workerParams), SyncListener, CheckVersionCallback, SuccessListener {
-    private lateinit var preferences: SharedPreferences
+    private val entryPoint: WorkerEntryPoint = EntryPointAccessors.fromApplication(context.applicationContext, WorkerEntryPoint::class.java)
     override fun doWork(): Result {
-        preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val preferences = entryPoint.sharedPreferences()
         val lastSync = preferences.getLong("LastSync", 0)
         val currentTime = System.currentTimeMillis()
         val syncInterval = preferences.getInt("autoSyncInterval", 60 * 60)
@@ -30,7 +31,7 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
             if (isAppInForeground(context)) {
                 Utilities.toast(context, "Syncing started...")
             }
-            Service(context).checkVersion(this, preferences)
+            entryPoint.service().checkVersion(this, preferences)
         }
         return Result.success()
     }
@@ -56,34 +57,34 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
         if (!blockSync) {
             SyncManager.instance?.start(this, "upload")
             UploadToShelfService.instance?.uploadUserData {
-                Service(MainApplication.context).healthAccess {
+                entryPoint.service().healthAccess {
                     UploadToShelfService.instance?.uploadHealth()
                 }
             }
             if (!MainApplication.isSyncRunning) {
                 MainApplication.isSyncRunning = true
-                UploadManager.instance?.uploadExamResult(this)
-                UploadManager.instance?.uploadFeedback(this)
-                UploadManager.instance?.uploadAchievement()
-                UploadManager.instance?.uploadResourceActivities("")
-                UploadManager.instance?.uploadUserActivities(this)
-                UploadManager.instance?.uploadCourseActivities()
-                UploadManager.instance?.uploadSearchActivity()
-                UploadManager.instance?.uploadRating()
-                UploadManager.instance?.uploadResource(this)
-                UploadManager.instance?.uploadNews()
-                UploadManager.instance?.uploadTeams()
-                UploadManager.instance?.uploadTeamTask()
-                UploadManager.instance?.uploadMeetups()
-                UploadManager.instance?.uploadCrashLog()
-                UploadManager.instance?.uploadSubmissions()
-                UploadManager.instance?.uploadActivities { MainApplication.isSyncRunning = false }
+                UploadManager.instance.uploadExamResult(this)
+                UploadManager.instance.uploadFeedback(this)
+                UploadManager.instance.uploadAchievement()
+                UploadManager.instance.uploadResourceActivities("")
+                UploadManager.instance.uploadUserActivities(this)
+                UploadManager.instance.uploadCourseActivities()
+                UploadManager.instance.uploadSearchActivity()
+                UploadManager.instance.uploadRating()
+                UploadManager.instance.uploadResource(this)
+                UploadManager.instance.uploadNews()
+                UploadManager.instance.uploadTeams()
+                UploadManager.instance.uploadTeamTask()
+                UploadManager.instance.uploadMeetups()
+                UploadManager.instance.uploadCrashLog()
+                UploadManager.instance.uploadSubmissions()
+                UploadManager.instance.uploadActivities { MainApplication.isSyncRunning = false }
             }
         }
     }
 
     override fun onSuccess(success: String?) {
-        val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val settings = entryPoint.sharedPreferences()
         settings.edit { putLong("lastUsageUploaded", Date().time) }
     }
 

@@ -21,6 +21,11 @@ import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getAndroidId
 import retrofit2.*
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
+import org.ole.planet.myplanet.di.UploadManagerEntryPoint
+import dagger.hilt.EntryPointAccessors
 
 private const val BATCH_SIZE = 50
 
@@ -32,19 +37,20 @@ private inline fun <T> Iterable<T>.processInBatches(action: (T) -> Unit) {
     }
 }
 
-class UploadManager(var context: Context) : FileUploadService() {
+@Singleton
+class UploadManager @Inject constructor(
+    @ApplicationContext var context: Context,
+    private val dbService: DatabaseService,
+    private val apiInterface: ApiInterface
+) : FileUploadService() {
     var pref: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val dbService: DatabaseService = DatabaseService(context)
 
     companion object {
-        var instance: UploadManager? = null
-            get() {
-                if (field == null) {
-                    field = UploadManager(MainApplication.context)
-                }
-                return field
-            }
-            private set
+        val instance: UploadManager
+            get() = EntryPointAccessors.fromApplication(
+                MainApplication.context,
+                UploadManagerEntryPoint::class.java
+            ).uploadManager()
     }
 
     private fun getRealm(): Realm {
@@ -52,7 +58,7 @@ class UploadManager(var context: Context) : FileUploadService() {
     }
 
     private fun uploadNewsActivities() {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = this.apiInterface
         val realm = getRealm()
         realm.executeTransactionAsync { realm: Realm ->
             val newsLog: List<RealmNewsLog> = realm.where(RealmNewsLog::class.java)
@@ -76,7 +82,7 @@ class UploadManager(var context: Context) : FileUploadService() {
     }
 
     fun uploadActivities(listener: SuccessListener?) {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = this.apiInterface
         val model = UserProfileDbHandler(MainApplication.context).userModel ?: run {
             listener?.onSuccess("Cannot upload activities: user model is null")
             return
@@ -138,7 +144,7 @@ class UploadManager(var context: Context) : FileUploadService() {
 
     fun uploadExamResult(listener: SuccessListener) {
         val realm = getRealm()
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = this.apiInterface
 
         realm.executeTransactionAsync({ realm: Realm ->
             val submissions: List<RealmSubmission> = realm.where(RealmSubmission::class.java).findAll()
@@ -197,7 +203,7 @@ class UploadManager(var context: Context) : FileUploadService() {
     }
 
     private fun uploadCourseProgress() {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = this.apiInterface
         val realm = getRealm()
         realm.executeTransactionAsync { realm: Realm ->
             val data: List<RealmCourseProgress> = realm.where(RealmCourseProgress::class.java).isNull("_id").findAll()
@@ -230,7 +236,7 @@ class UploadManager(var context: Context) : FileUploadService() {
     }
 
     fun uploadFeedback(listener: SuccessListener) {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = this.apiInterface
         val realm = getRealm()
         realm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
             val feedbacks: List<RealmFeedback> = realm.where(RealmFeedback::class.java).findAll()
@@ -275,7 +281,7 @@ class UploadManager(var context: Context) : FileUploadService() {
 
     fun uploadSubmitPhotos(listener: SuccessListener?) {
         val realm = getRealm()
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = this.apiInterface
         realm.executeTransactionAsync { realm: Realm ->
             val data: List<RealmSubmitPhotos> = realm.where(RealmSubmitPhotos::class.java).equalTo("uploaded", false).findAll()
             data.processInBatches { sub ->
@@ -301,7 +307,7 @@ class UploadManager(var context: Context) : FileUploadService() {
 
     fun uploadResource(listener: SuccessListener?) {
         val realm = getRealm()
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = this.apiInterface
 
         realm.executeTransactionAsync({ realm: Realm ->
             val user = realm.where(RealmUserModel::class.java)
@@ -345,7 +351,7 @@ class UploadManager(var context: Context) : FileUploadService() {
 
     fun uploadMyPersonal(personal: RealmMyPersonal, listener: SuccessListener) {
         val realm = getRealm()
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = this.apiInterface
 
         if (!personal.isUploaded) {
             apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/resources", RealmMyPersonal.serialize(personal, context))?.enqueue(object : Callback<JsonObject?> {
@@ -386,7 +392,7 @@ class UploadManager(var context: Context) : FileUploadService() {
 
     fun uploadTeamTask() {
         val realm = getRealm()
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = this.apiInterface
         realm.executeTransactionAsync { realm: Realm ->
             val list: List<RealmTeamTask> = realm.where(RealmTeamTask::class.java).findAll()
             val tasksToUpload = list.filter { task ->
@@ -412,7 +418,7 @@ class UploadManager(var context: Context) : FileUploadService() {
 
     fun uploadSubmissions() {
         val realm = getRealm()
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = this.apiInterface
 
         realm.executeTransactionAsync { realm: Realm ->
             val list: List<RealmSubmission> = realm.where(RealmSubmission::class.java)
@@ -439,7 +445,7 @@ class UploadManager(var context: Context) : FileUploadService() {
     }
 
     fun uploadTeams() {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = this.apiInterface
         val realm = getRealm()
 
         realm.executeTransactionAsync { realm: Realm ->
@@ -459,7 +465,7 @@ class UploadManager(var context: Context) : FileUploadService() {
     }
 
     fun uploadUserActivities(listener: SuccessListener) {
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = this.apiInterface
         val model = UserProfileDbHandler(MainApplication.context).userModel ?: run {
             listener.onSuccess("Cannot upload user activities: user model is null")
             return
@@ -514,7 +520,7 @@ class UploadManager(var context: Context) : FileUploadService() {
 
     fun uploadRating() {
         val realm = getRealm()
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = this.apiInterface
 
         realm.executeTransactionAsync { realm: Realm ->
             val activities = realm.where(RealmRating::class.java).equalTo("isUpdated", true).findAll()
@@ -544,7 +550,7 @@ class UploadManager(var context: Context) : FileUploadService() {
 
     fun uploadNews() {
         val realm = getRealm()
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = this.apiInterface
 
         realm.executeTransactionAsync { realm: Realm ->
             val activities = realm.where(RealmNews::class.java).findAll()
@@ -620,7 +626,7 @@ class UploadManager(var context: Context) : FileUploadService() {
 
     fun uploadCrashLog() {
         val realm = getRealm()
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = this.apiInterface
 
         try {
             val hasLooper = Looper.myLooper() != null
@@ -657,7 +663,7 @@ class UploadManager(var context: Context) : FileUploadService() {
 
     fun uploadSearchActivity() {
         val realm = getRealm()
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = this.apiInterface
         realm.executeTransactionAsync { realm: Realm ->
             val logs: RealmResults<RealmSearchActivity> = realm.where(RealmSearchActivity::class.java).isEmpty("_rev").findAll()
             logs.processInBatches { act ->
@@ -676,7 +682,7 @@ class UploadManager(var context: Context) : FileUploadService() {
 
     fun uploadResourceActivities(type: String) {
         val realm = getRealm()
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = this.apiInterface
 
         val db = if (type == "sync") {
             "admin_activities"
@@ -708,7 +714,7 @@ class UploadManager(var context: Context) : FileUploadService() {
 
     fun uploadCourseActivities() {
         val realm = getRealm()
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = this.apiInterface
 
         realm.executeTransactionAsync { realm: Realm ->
             val activities: RealmResults<RealmCourseActivity> = realm.where(RealmCourseActivity::class.java).isNull("_rev").notEqualTo("type", "sync").findAll()
@@ -729,7 +735,7 @@ class UploadManager(var context: Context) : FileUploadService() {
 
     fun uploadMeetups() {
         val realm = getRealm()
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = this.apiInterface
         realm.executeTransactionAsync { realm: Realm ->
             val meetups: List<RealmMeetup> = realm.where(RealmMeetup::class.java).findAll()
             meetups.processInBatches { meetup ->

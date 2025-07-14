@@ -72,7 +72,7 @@ class SyncTimeLogger private constructor() {
         MainApplication.applicationScope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    UploadManager.instance?.uploadCrashLog()
+                    UploadManager.instance.uploadCrashLog()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
