@@ -1327,5 +1327,6 @@
     <string name="loading_resources">Loading resources...</string>
     <string name="loading_chat_history">Loading chat history...</string>
     <string name="loading_courses">Loading courses...</string>
+    <string name="loading_team_data">Loading team data...</string>
 
 </resources>
