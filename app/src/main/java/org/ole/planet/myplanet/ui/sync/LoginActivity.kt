@@ -27,6 +27,9 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
@@ -59,6 +62,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         super.onCreate(savedInstanceState)
         activityLoginBinding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(activityLoginBinding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityLoginBinding.root)
         lblLastSyncDate = activityLoginBinding.lblLastSyncDate
         btnSignIn = activityLoginBinding.btnSignin
         syncIcon = activityLoginBinding.syncIcon

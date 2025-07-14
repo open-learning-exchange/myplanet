@@ -8,6 +8,8 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
@@ -23,6 +25,7 @@ import org.ole.planet.myplanet.model.FeedbackReply
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.feedback.FeedbackDetailActivity.RvFeedbackAdapter.ReplyViewHolder
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDateWithTime
 
@@ -42,6 +45,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityFeedbackDetailBinding = ActivityFeedbackDetailBinding.inflate(layoutInflater)
         setContentView(activityFeedbackDetailBinding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityFeedbackDetailBinding.root)
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         setTitle(R.string.feedback)
