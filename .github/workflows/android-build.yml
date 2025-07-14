@@ -23,6 +23,14 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: check and diff the code to get lite
+        if: matrix.build == 'lite'
+        run: |
+          file="app/src/main/AndroidManifest.xml"
+          ls -al $file*
+          diff <(sed 's/^\s*\/\///; s/^\s*<!--//; s/-->\s*$//' "$file") <(sed 's/^\s*\/\///; s/^\s*<!--//; s/-->\s*$//' "$file.lite")
+          cp "${file}.lite" "$file"
+
       - name: setup JDK 17
         uses: actions/setup-java@v4
         with:
