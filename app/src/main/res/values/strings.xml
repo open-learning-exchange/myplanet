@@ -1325,5 +1325,6 @@
     <string name="loading_progress">%1$s: %2$d items loaded</string>
     <string name="data_ready">%1$s data ready</string>
     <string name="preparing_sync">Preparing sync...</string>
+    <string name="loading_chat_history">Loading chat history...</string>
 
 </resources>
