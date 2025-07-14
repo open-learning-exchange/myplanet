@@ -2,8 +2,11 @@ package org.ole.planet.myplanet.ui.map
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.preference.PreferenceManager
 import org.ole.planet.myplanet.databinding.ActivityOfflineMapBinding
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
@@ -16,6 +19,7 @@ class OfflineMapActivity : AppCompatActivity() {
         Configuration.getInstance().load(this, PreferenceManager.getDefaultSharedPreferences(this))
         activityOfflineMapBinding = ActivityOfflineMapBinding.inflate(layoutInflater)
         setContentView(activityOfflineMapBinding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityOfflineMapBinding.root)
         activityOfflineMapBinding.map.setTileSource(TileSourceFactory.MAPNIK)
         activityOfflineMapBinding.map.zoomController.setVisibility(CustomZoomButtonsController.Visibility.SHOW_AND_FADEOUT)
         activityOfflineMapBinding.map.setMultiTouchControls(true)

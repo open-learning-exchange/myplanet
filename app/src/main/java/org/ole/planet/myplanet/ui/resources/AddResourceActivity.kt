@@ -11,6 +11,8 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import io.realm.Realm
 import io.realm.RealmList
 import java.util.Calendar
@@ -25,6 +27,7 @@ import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.CheckboxListView
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
@@ -46,6 +49,7 @@ class AddResourceActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         activityAddResourceBinding = ActivityAddResourceBinding.inflate(layoutInflater)
         setContentView(activityAddResourceBinding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityAddResourceBinding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         userModel = UserProfileDbHandler(this).userModel
