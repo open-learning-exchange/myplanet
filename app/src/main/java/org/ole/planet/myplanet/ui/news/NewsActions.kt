@@ -64,6 +64,7 @@ object NewsActions {
         }
         dialog.dismiss()
         listener?.clearImages()
+        listener?.onDataChanged()
     }
 
     fun showEditAlert(
@@ -95,7 +96,7 @@ object NewsActions {
         dialog.show()
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             handlePositiveButton(dialog, isEdit, components, news, realm, currentUser, imageList, listener)
-            updateReplyButton(viewHolder, news, viewHolder.adapterPosition)
+            updateReplyButton(viewHolder,news,viewHolder.bindingAdapterPosition)
         }
     }
 
@@ -159,7 +160,8 @@ object NewsActions {
         realm: Realm,
         news: RealmNews?,
         list: MutableList<RealmNews?>,
-        teamName: String
+        teamName: String,
+        listener: AdapterNews.OnNewsItemClickListener? = null
     ) {
         val ar = Gson().fromJson(news?.viewIn, JsonArray::class.java)
         if (!realm.isInTransaction) realm.beginTransaction()
@@ -171,11 +173,6 @@ object NewsActions {
             news?.let {
                 deleteChildPosts(realm, it.id, list)
                 it.deleteFromRealm()
-                if (context is ReplyActivity) {
-                    val restartIntent = context.intent
-                    context.finish()
-                    context.startActivity(restartIntent)
-                }
             }
         } else {
             val filtered = JsonArray().apply {
@@ -188,6 +185,7 @@ object NewsActions {
             news?.viewIn = Gson().toJson(filtered)
         }
         realm.commitTransaction()
+        listener?.onDataChanged()
     }
 
     private fun deleteChildPosts(

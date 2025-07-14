@@ -81,10 +81,15 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     override fun onResume() {
         super.onResume()
-        if (id != null) {
-            showData(id)
-        }
+        refreshData()
 
+    }
+    private fun refreshData() {
+        id?.let { showData(it) }
+    }
+
+    override fun onDataChanged() {
+        refreshData()
     }
 
     override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {

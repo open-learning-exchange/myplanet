@@ -436,6 +436,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         fun addImage(llImage: LinearLayout?)
         fun onNewsItemClick(news: RealmNews?)
         fun clearImages()
+        fun onDataChanged()
     }
 
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {
