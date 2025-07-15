@@ -37,6 +37,8 @@ import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
@@ -50,8 +52,11 @@ import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import java.util.concurrent.atomic.AtomicInteger
 
+@AndroidEntryPoint
 abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     lateinit var settings: SharedPreferences
+    @Inject
+    lateinit var dbService: DatabaseService
     val customProgressDialog: DialogUtils.CustomProgressDialog by lazy {
         DialogUtils.CustomProgressDialog(this)
     }
@@ -356,7 +361,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
 
     private fun updateRealmUserSecurityData(name: String, userId: String?, rev: String?, derivedKey: String?, salt: String?, passwordScheme: String?, iterations: String?, securityCallback: SecurityDataCallback? = null) {
         try {
-            val realm = DatabaseService(this).realmInstance
+            val realm = dbService.realmInstance
             realm.executeTransactionAsync({ transactionRealm ->
                 val user = transactionRealm.where(RealmUserModel::class.java)
                     .equalTo("name", name)

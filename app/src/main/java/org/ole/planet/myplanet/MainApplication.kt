@@ -2,6 +2,8 @@ package org.ole.planet.myplanet
 
 import android.app.Activity
 import android.app.Application
+import dagger.hilt.android.HiltAndroidApp
+import javax.inject.Inject
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -51,7 +53,10 @@ import org.ole.planet.myplanet.utilities.ThemeMode
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
 
+@HiltAndroidApp
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
+    @Inject
+    lateinit var databaseService: DatabaseService
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
@@ -206,7 +211,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         startListenNetworkState()
 
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        service = DatabaseService(context)
+        service = databaseService
         mRealm = service.realmInstance
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
 

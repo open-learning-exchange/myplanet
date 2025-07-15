@@ -63,7 +63,9 @@ import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.ServerConfigUtils
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
     OnUserSelectedListener, ConfigurationIdListener {
     private lateinit var syncDate: TextView
@@ -116,8 +118,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         super.onCreate(savedInstanceState)
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         editor = settings.edit()
-        mRealm = DatabaseService(this).realmInstance
-        mRealm = Realm.getDefaultInstance()
+        mRealm = dbService.realmInstance
         requestAllPermissions()
         prefData = SharedPrefManager(this)
         profileDbHandler = UserProfileDbHandler(this)
