@@ -8,19 +8,17 @@ import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import io.realm.Realm
 import java.io.BufferedInputStream
-import java.io.File
 import java.io.FileOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Download
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getSDPathFromUrl
+import org.ole.planet.myplanet.utilities.Utilities
 
 class DownloadWorker(val context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -122,7 +120,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
             output.close()
             bis.close()
         }
-        changeOfflineStatus(url)
+        DownloadUtils.updateResourceOfflineStatus(url)
     }
 
     private fun initializeNotificationChannels() {
@@ -185,24 +183,6 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
         LocalBroadcastManager.getInstance(applicationContext).sendBroadcast(intent)
     }
 
-    private fun changeOfflineStatus(url: String) {
-        val currentFileName = getFileNameFromUrl(url)
-        try {
-            val backgroundRealm = Realm.getDefaultInstance()
-            backgroundRealm.use { realm ->
-                realm.executeTransaction {
-                    realm.where(RealmMyLibrary::class.java)
-                        .equalTo("resourceLocalAddress", currentFileName)
-                        .findAll()?.forEach {
-                            it.resourceOffline = true
-                            it.downloadedRev = it._rev
-                        }
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
 
     companion object {
         const val WORKER_NOTIFICATION_ID = 3

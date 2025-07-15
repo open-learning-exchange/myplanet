@@ -7,6 +7,9 @@ import android.text.Editable
 import android.text.TextWatcher
 import android.widget.ArrayAdapter
 import androidx.core.content.edit
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -24,6 +27,7 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
@@ -165,6 +169,7 @@ class BecomeMemberActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         activityBecomeMemberBinding = ActivityBecomeMemberBinding.inflate(layoutInflater)
         setContentView(activityBecomeMemberBinding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityBecomeMemberBinding.root)
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         val mRealm: Realm = DatabaseService(this).realmInstance
@@ -203,6 +208,10 @@ class BecomeMemberActivity : BaseActivity() {
     }
 
     private fun autoLoginNewMember(username: String, password: String) {
+        val mRealm = DatabaseService(this).realmInstance
+        RealmUserModel.cleanupDuplicateUsers(mRealm)
+        mRealm.close()
+
         val intent = Intent(this, LoginActivity::class.java)
         intent.putExtra("username", username)
         intent.putExtra("password", password)
