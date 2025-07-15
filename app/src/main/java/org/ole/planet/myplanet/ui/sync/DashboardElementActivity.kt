@@ -45,6 +45,7 @@ import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
+import org.ole.planet.myplanet.utilities.NotificationUtil
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBackStackChangedListener {
@@ -224,6 +225,10 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             profileDbHandler.logoutAsync()
             settings.edit { putBoolean(Constants.KEY_LOGIN, false) }
             settings.edit { putBoolean(Constants.KEY_NOTIFICATION_SHOWN, false) }
+            
+            // Clear all notifications on logout
+            NotificationUtil.cancelAll(this@DashboardElementActivity)
+            
             val loginScreen = Intent(this@DashboardElementActivity, LoginActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(loginScreen)
