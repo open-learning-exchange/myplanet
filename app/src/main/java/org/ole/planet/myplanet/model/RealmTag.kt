@@ -6,8 +6,6 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmTag : RealmObject() {
@@ -35,8 +33,6 @@ open class RealmTag : RealmObject() {
     }
 
     companion object {
-        private val tagDataList: MutableList<Array<String>> = mutableListOf()
-
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject) {
             var tag = mRealm.where(RealmTag::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
@@ -59,36 +55,6 @@ open class RealmTag : RealmObject() {
                 }
                 tag.isAttached = (tag.attachedTo?.size ?: 0) > 0
             }
-
-            val csvRow = arrayOf(
-                JsonUtils.getString("_id", act),
-                JsonUtils.getString("_rev", act),
-                JsonUtils.getString("name", act),
-                JsonUtils.getString("db", act),
-                JsonUtils.getString("docType", act),
-                JsonUtils.getString("tagId", act),
-                JsonUtils.getString("linkId", act),
-                JsonUtils.getString("attachedTo", act)
-            )
-
-            tagDataList.add(csvRow)
-        }
-
-        fun tagWriteCsv() {
-            CsvUtils.writeCsv(
-                "${context.getExternalFilesDir(null)}/ole/tags.csv",
-                arrayOf(
-                    "_id",
-                    "_rev",
-                    "name",
-                    "db",
-                    "docType",
-                    "tagId",
-                    "linkId",
-                    "attachedTo"
-                ),
-                tagDataList
-            )
         }
 
         @JvmStatic
