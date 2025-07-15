@@ -7,8 +7,6 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import java.util.Calendar
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 
@@ -26,8 +24,6 @@ open class RealmTeamLog : RealmObject() {
     var time: Long? = null
     var uploaded = false
     companion object {
-        private val teamLogDataList: MutableList<Array<String>> = mutableListOf()
-
         @JvmStatic
         fun getVisitCount(realm: Realm, userName: String?, teamId: String?): Long {
             return realm.where(RealmTeamLog::class.java).equalTo("type", "teamVisit").equalTo("user", userName).equalTo("teamId", teamId).count()
@@ -87,38 +83,6 @@ open class RealmTeamLog : RealmObject() {
                 tag.teamId = JsonUtils.getString("teamId", act)
                 tag.teamType = JsonUtils.getString("teamType", act)
             }
-
-            val csvRow = arrayOf(
-                JsonUtils.getString("_id", act),
-                JsonUtils.getString("_rev", act),
-                JsonUtils.getString("user", act),
-                JsonUtils.getString("type", act),
-                JsonUtils.getString("createdOn", act),
-                JsonUtils.getString("parentCode", act),
-                JsonUtils.getLong("time", act).toString(),
-                JsonUtils.getString("teamId", act),
-                JsonUtils.getString("teamType", act)
-            )
-            teamLogDataList.add(csvRow)
         }
-
-        fun teamLogWriteCsv() {
-            CsvUtils.writeCsv(
-                "${context.getExternalFilesDir(null)}/ole/teamLog.csv",
-                arrayOf(
-                    "_id",
-                    "_rev",
-                    "user",
-                    "type",
-                    "createdOn",
-                    "parentCode",
-                    "time",
-                    "teamId",
-                    "teamType"
-                ),
-                teamLogDataList
-            )
-        }
-
     }
 }

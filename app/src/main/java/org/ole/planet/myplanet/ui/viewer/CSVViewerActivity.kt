@@ -7,12 +7,15 @@ import android.text.style.ForegroundColorSpan
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.opencsv.CSVParserBuilder
 import com.opencsv.CSVReaderBuilder
 import java.io.File
 import java.io.FileReader
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityCsvviewerBinding
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
 
 class CSVViewerActivity : AppCompatActivity() {
@@ -21,6 +24,7 @@ class CSVViewerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityCsvViewerBinding = ActivityCsvviewerBinding.inflate(layoutInflater)
         setContentView(activityCsvViewerBinding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityCsvViewerBinding.root)
         renderCSVFile()
     }
 
