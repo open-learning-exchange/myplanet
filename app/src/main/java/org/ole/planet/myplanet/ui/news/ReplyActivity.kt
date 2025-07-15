@@ -65,7 +65,8 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                 handleImageSelection(url)
             }
         }
-        setResult(Activity.RESULT_OK)
+        val resultIntent = Intent().putExtra("newsId", id)
+        setResult(Activity.RESULT_OK, resultIntent)
     }
 
     private fun showData(id: String?) {

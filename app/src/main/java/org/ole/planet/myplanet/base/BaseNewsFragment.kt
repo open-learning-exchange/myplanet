@@ -85,6 +85,8 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
         replyActivityLauncher = registerForActivityResult(
             ActivityResultContracts.StartActivityForResult()) { result: ActivityResult ->
             if (result.resultCode == Activity.RESULT_OK) {
+                val newsId = result.data?.getStringExtra("newsId")
+                newsId.let { adapterNews?.updateReplyBadge(it) }
                 adapterNews?.notifyDataSetChanged()
             }
         }

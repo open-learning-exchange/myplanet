@@ -138,6 +138,21 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         }
     }
 
+    fun updateReplyBadge(newsId: String?) {
+        if (newsId.isNullOrEmpty()) return
+        val index = if (parentNews != null) {
+            when {
+                parentNews.id == newsId -> 0
+                else -> list.indexOfFirst { it?.id == newsId }.let { if (it != -1) it + 1 else -1 }
+            }
+        } else {
+            list.indexOfFirst { it?.id == newsId }
+        }
+        if (index >= 0) {
+            notifyItemChanged(index)
+        }
+    }
+
     private fun extractSharedTeamName(news: RealmNews): String {
         if (!TextUtils.isEmpty(news.viewIn)) {
             val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)

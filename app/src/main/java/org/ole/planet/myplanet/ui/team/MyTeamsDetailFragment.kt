@@ -178,7 +178,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
     }
 
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
-        val adapterNews = activity?.let {
+        adapterNews = activity?.let {
             realmNewsList?.let { it1 ->
                 AdapterNews(it, it1.toMutableList(), user, null, team?.name.toString(), teamId)
             }
