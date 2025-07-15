@@ -121,7 +121,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         initViews()
         updateAppTitle()
         notificationManager = NotificationUtil.getInstance(this)
-
         if (handleGuestAccess()) return
         setupNavigation()
         handleInitialFragment()
@@ -133,7 +132,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         addBackPressCallback()
         challengeHelper = ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel)
         challengeHelper.evaluateChallengeDialog()
-
         handleNotificationIntent(intent)
     }
 
@@ -363,12 +361,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
         }
-        
-        // Handle auto-navigation from notification actions
+
         if (intent?.getBooleanExtra("auto_navigate", false) == true) {
             isFromNotificationAction = true
-            
-            // Close the drawer immediately
             result?.closeDrawer()
             
             val notificationType = intent.getStringExtra("notification_type")
@@ -388,9 +383,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     openCallFragment(ResourcesFragment(), "Resources")
                 }
             }
-            
-            // Reset the flag after a short delay to allow the fragment to initialize
-            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+
+            Handler(Looper.getMainLooper()).postDelayed({
                 isFromNotificationAction = false
             }, 1000)
         }
@@ -560,7 +554,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val notificationKey = "survey-$title"
 
             if (!notificationManager.hasNotificationBeenShown(notificationKey)) {
-                dashboardViewModel.createNotificationIfNotExists(realm, "survey", "$title", title, userId)
+                dashboardViewModel.createNotificationIfNotExists(realm, "survey", title, title, userId)
 
                 val config = notificationManager.createSurveyNotification(title, title)
                 newNotifications.add(config)
@@ -1050,10 +1044,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    override fun onNotificationPermissionDenied() {
-        super.onNotificationPermissionDenied()
-    }
-
     override fun onNotificationPermissionChanged(isEnabled: Boolean) {
         super.onNotificationPermissionChanged(isEnabled)
         if (!isEnabled) {
@@ -1071,13 +1061,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             ensureNotificationPermission(true)
         }
         snackbar.show()
-    }
-
-    fun clearAllNotifications() {
-        notificationManager.clearAllNotifications()
-        updateNotificationBadge(0) {
-            openNotificationsList(user?.id ?: "")
-        }
     }
 
     companion object {

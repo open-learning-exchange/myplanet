@@ -14,16 +14,10 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
-import io.realm.Realm
-import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.team.TeamPage
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -46,8 +40,6 @@ object NotificationUtil {
     private const val KEY_SYSTEM_ENABLED = "system_notifications_enabled"
     private const val KEY_TEAM_ENABLED = "team_notifications_enabled"
     private const val KEY_ACTIVE_NOTIFICATIONS = "active_notifications"
-    
-    // Action constants
     const val ACTION_MARK_AS_READ = "mark_as_read"
     const val ACTION_OPEN_NOTIFICATION = "open_notification"
     const val ACTION_STORAGE_SETTINGS = "storage_settings"
@@ -216,7 +208,6 @@ object NotificationUtil {
         }
 
         private fun addNotificationActions(builder: NotificationCompat.Builder, config: NotificationConfig) {
-            // Mark as read action (always available)
             val markAsReadIntent = Intent(context, NotificationActionReceiver::class.java).apply {
                 action = ACTION_MARK_AS_READ
                 putExtra(EXTRA_NOTIFICATION_ID, config.id)
@@ -227,7 +218,6 @@ object NotificationUtil {
             )
             builder.addAction(R.drawable.ole_logo, "Mark as Read", markAsReadPendingIntent)
 
-            // Type-specific actions
             when (config.type) {
                 TYPE_SURVEY -> {
                     val openIntent = Intent(context, NotificationActionReceiver::class.java).apply {
@@ -472,7 +462,6 @@ class NotificationActionReceiver : BroadcastReceiver() {
         when (action) {
             NotificationUtil.ACTION_MARK_AS_READ -> {
                 markNotificationAsRead(context, notificationId)
-                // Cancel the notification
                 val notificationManager = NotificationManagerCompat.from(context)
                 notificationManager.cancel(notificationId.hashCode())
             }
@@ -483,7 +472,6 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 }
                 context.startActivity(storageIntent)
-                // Cancel the notification
                 val notificationManager = NotificationManagerCompat.from(context)
                 notificationManager.cancel(notificationId.hashCode())
             }
@@ -501,8 +489,6 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     putExtra("auto_navigate", true)
                 }
                 context.startActivity(dashboardIntent)
-                
-                // Cancel the notification
                 val notificationManager = NotificationManagerCompat.from(context)
                 notificationManager.cancel(notificationId.hashCode())
             }
@@ -517,7 +503,6 @@ class NotificationActionReceiver : BroadcastReceiver() {
             val realm = databaseService.realmInstance
             
             realm.executeTransaction { r ->
-                // Find notification by ID
                 val notification = r.where(RealmNotification::class.java)
                     .contains("id", notificationId)
                     .findFirst()
