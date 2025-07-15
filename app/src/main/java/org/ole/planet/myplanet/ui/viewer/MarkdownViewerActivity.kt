@@ -4,12 +4,15 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileReader
 import java.io.IOException
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityMarkdownViewerBinding
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
@@ -20,6 +23,7 @@ class MarkdownViewerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityMarkdownViewerBinding = ActivityMarkdownViewerBinding.inflate(layoutInflater)
         setContentView(activityMarkdownViewerBinding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityMarkdownViewerBinding.root)
         renderMarkdownFile()
     }
 

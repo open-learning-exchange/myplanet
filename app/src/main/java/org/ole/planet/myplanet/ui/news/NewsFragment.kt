@@ -157,10 +157,12 @@ class NewsFragment : BaseNewsFragment() {
     }
 
     override fun setData(list: List<RealmNews?>?) {
-        if (isAdded) {
+        if (!isAdded || list == null) return
+
+        if (fragmentNewsBinding.rvNews.adapter == null) {
             changeLayoutManager(resources.configuration.orientation, fragmentNewsBinding.rvNews)
             val resourceIds: MutableList<String> = ArrayList()
-            list?.forEach { news ->
+            list.forEach { news ->
                 if ((news?.imagesArray?.size() ?: 0) > 0) {
                     val ob = news?.imagesArray?.get(0)?.asJsonObject
                     val resourceId = getString("resourceId", ob?.asJsonObject)
@@ -169,27 +171,28 @@ class NewsFragment : BaseNewsFragment() {
                     }
                 }
             }
-            val urls = ArrayList<String>()
-            val stringArray: Array<String?> = resourceIds.toTypedArray()
             val lib: List<RealmMyLibrary?> = mRealm.where(RealmMyLibrary::class.java)
-                .`in`("_id", stringArray)
+                .`in`("_id", resourceIds.toTypedArray())
                 .findAll()
-            getUrlsAndStartDownload(lib, urls)
-            val updatedListAsMutable: MutableList<RealmNews?> = list?.toMutableList() ?: mutableListOf()
+            getUrlsAndStartDownload(lib, ArrayList<String>())
+            val updatedListAsMutable: MutableList<RealmNews?> = list.toMutableList()
             val sortedList = updatedListAsMutable.sortedWith(compareByDescending { news ->
                 getSortDate(news)
             })
-            adapterNews = activity?.let { AdapterNews(it, sortedList.toMutableList(), user, null) }
+            adapterNews = AdapterNews(requireActivity(), sortedList.toMutableList(), user, null)
+
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
             adapterNews?.setListener(this)
             adapterNews?.registerAdapterDataObserver(observer)
+
             fragmentNewsBinding.rvNews.adapter = adapterNews
-            adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount, "news") }
-            fragmentNewsBinding.llAddNews.visibility = View.GONE
-            fragmentNewsBinding.btnNewVoice.text = getString(R.string.new_voice)
-            adapterNews?.notifyDataSetChanged()
+        } else {
+            (fragmentNewsBinding.rvNews.adapter as? AdapterNews)?.updateList(list)
         }
+        adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount, "news") }
+        fragmentNewsBinding.llAddNews.visibility = View.GONE
+        fragmentNewsBinding.btnNewVoice.text = getString(R.string.new_voice)
     }
 
     override fun onNewsItemClick(news: RealmNews?) {
