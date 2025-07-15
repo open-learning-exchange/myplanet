@@ -26,6 +26,8 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.datamanager.Service
@@ -53,9 +55,11 @@ import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadFiles
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUserModel? = null
+    @Inject lateinit var databaseService: DatabaseService
     lateinit var mRealm: Realm
     lateinit var profileDbHandler: UserProfileDbHandler
     var editor: SharedPreferences.Editor? = null
@@ -86,7 +90,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            showDownloadDialog(getLibraryList(DatabaseService(context).realmInstance))
+            showDownloadDialog(getLibraryList(databaseService.realmInstance))
         }
     }
 
@@ -308,7 +312,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = databaseService.realmInstance
         prgDialog = getProgressDialog(requireActivity())
         settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         editor = settings?.edit()

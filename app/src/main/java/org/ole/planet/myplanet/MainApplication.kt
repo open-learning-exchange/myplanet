@@ -32,6 +32,8 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.callback.TeamPageListener
+import dagger.hilt.android.HiltAndroidApp
+import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.service.AutoSyncWorker
@@ -51,7 +53,9 @@ import org.ole.planet.myplanet.utilities.ThemeMode
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
 
+@HiltAndroidApp
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
+    @Inject lateinit var databaseService: DatabaseService
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
@@ -206,7 +210,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         startListenNetworkState()
 
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        service = DatabaseService(context)
+        service = databaseService
         mRealm = service.realmInstance
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
 
