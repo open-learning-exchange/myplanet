@@ -36,6 +36,7 @@ class OnBoardingActivity : AppCompatActivity() {
         if (settings.getBoolean(Constants.KEY_LOGIN, false) && !Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext)) {
             val dashboard = Intent(applicationContext, DashboardActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                .putExtra("from_login", true)
             startActivity(dashboard)
             finish()
             return

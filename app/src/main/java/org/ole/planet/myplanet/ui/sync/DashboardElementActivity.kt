@@ -225,8 +225,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             profileDbHandler.logoutAsync()
             settings.edit { putBoolean(Constants.KEY_LOGIN, false) }
             settings.edit { putBoolean(Constants.KEY_NOTIFICATION_SHOWN, false) }
-            
-            // Clear all notifications on logout
             NotificationUtil.cancelAll(this@DashboardElementActivity)
             
             val loginScreen = Intent(this@DashboardElementActivity, LoginActivity::class.java)

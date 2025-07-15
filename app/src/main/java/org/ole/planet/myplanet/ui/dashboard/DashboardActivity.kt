@@ -101,6 +101,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private val dashboardViewModel: DashboardViewModel by viewModels()
     private lateinit var challengeHelper: ChallengeHelper
     private lateinit var notificationManager: NotificationUtil.NotificationManager
+    private var notificationsShownThisSession = false
 
     private interface RealmListener {
         fun removeListener()
@@ -124,7 +125,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         initTabs()
         hideWifi()
         setupRealmListeners()
-        checkAndCreateNewNotifications()
+        checkIfShouldShowNotifications()
         addBackPressCallback()
         challengeHelper = ChallengeHelper(this, mRealm, user, settings, editor, dashboardViewModel)
         challengeHelper.evaluateChallengeDialog()
@@ -387,7 +388,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private inline fun <reified T : RealmObject> setupListener(crossinline query: () -> RealmResults<T>) {
         val results = query()
         val listener = RealmChangeListener<RealmResults<T>> { _ ->
-            checkAndCreateNewNotifications()
+            if (notificationsShownThisSession) {
+                checkAndCreateNewNotifications()
+            }
         }
         results.addChangeListener(listener)
         realmListeners.add(object : RealmListener {
@@ -395,6 +398,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 results.removeChangeListener(listener)
             }
         })
+    }
+
+    private fun checkIfShouldShowNotifications() {
+        val fromLogin = intent.getBooleanExtra("from_login", false)
+        if (fromLogin || !notificationsShownThisSession) {
+            notificationsShownThisSession = true
+            checkAndCreateNewNotifications()
+        }
     }
 
     private fun checkAndCreateNewNotifications() {
@@ -941,7 +952,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     override fun onNotificationPermissionGranted() {
         super.onNotificationPermissionGranted()
-        checkAndCreateNewNotifications()
+        if (notificationsShownThisSession) {
+            checkAndCreateNewNotifications()
+        }
     }
 
     override fun onNotificationPermissionDenied() {
