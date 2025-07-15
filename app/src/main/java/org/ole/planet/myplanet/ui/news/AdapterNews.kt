@@ -235,7 +235,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 AlertDialog.Builder(context, R.style.AlertDialogTheme)
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                        NewsActions.deletePost(context, mRealm, news, list, teamName)
+                        NewsActions.deletePost(context, mRealm, news, list, teamName,listener)
                         val pos = holder.adapterPosition
                         notifyItemRemoved(pos)
                         notifyItemRangeChanged(pos, list.size)
