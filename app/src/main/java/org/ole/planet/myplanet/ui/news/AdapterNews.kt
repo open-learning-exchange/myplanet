@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -41,6 +42,14 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
+import org.ole.planet.myplanet.utilities.JsonUtils
+import android.app.Dialog
+import android.graphics.Color
+import android.widget.ImageView
+import androidx.core.graphics.drawable.toDrawable
+import com.github.chrisbanes.photoview.PhotoView
+import com.bumptech.glide.Glide
+import java.io.File
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 
 class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
@@ -53,7 +62,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private var sharedPreferences: SharedPrefManager? = null
     private var recyclerView: RecyclerView? = null
     var user: RealmUserModel? = null
-    private var imageLoader: NewsImageLoader? = null
     private var labelManager: NewsLabelManager? = null
     private val profileDbHandler = UserProfileDbHandler(context)
     lateinit var settings: SharedPreferences
@@ -86,7 +94,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     fun setmRealm(mRealm: Realm?) {
         if (mRealm != null) {
             this.mRealm = mRealm
-            imageLoader = NewsImageLoader(context, this.mRealm)
             labelManager = NewsLabelManager(context, this.mRealm, currentUser)
         }
     }
@@ -97,7 +104,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         user = UserProfileDbHandler(context).userModel
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         if (::mRealm.isInitialized) {
-            if (imageLoader == null) imageLoader = NewsImageLoader(context, mRealm)
             if (labelManager == null) labelManager = NewsLabelManager(context, mRealm, currentUser)
         }
         return ViewHolderNews(rowNewsBinding)
@@ -123,7 +129,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
                 configureEditDeleteButtons(viewHolder, news)
 
-                imageLoader?.loadImage(viewHolder.rowNewsBinding, news)
+                loadImage(viewHolder.rowNewsBinding, news)
                 showReplyButton(viewHolder, news, position)
                 labelManager?.setupAddLabelMenu(viewHolder.rowNewsBinding, news)
                 news.let { labelManager?.showChips(viewHolder.rowNewsBinding, it) }
@@ -462,6 +468,88 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
         this.recyclerView = null
+    }
+
+    private fun loadImage(binding: RowNewsBinding, news: RealmNews?) {
+        val imageUrls = news?.imageUrls
+        if (!imageUrls.isNullOrEmpty()) {
+            try {
+                val imgObject = Gson().fromJson(imageUrls[0], JsonObject::class.java)
+                val path = JsonUtils.getString("imageUrl", imgObject)
+                val request = Glide.with(context)
+                val target = if (path.lowercase(Locale.getDefault()).endsWith(".gif")) {
+                    request.asGif().load(if (File(path).exists()) File(path) else path)
+                } else {
+                    request.load(if (File(path).exists()) File(path) else path)
+                }
+                target.placeholder(R.drawable.ic_loading)
+                    .error(R.drawable.ic_loading)
+                    .into(binding.imgNews)
+                binding.imgNews.visibility = View.VISIBLE
+                binding.imgNews.setOnClickListener {
+                    showZoomableImage(it.context, path)
+                }
+                return
+            } catch (_: Exception) {
+            }
+        }
+
+        news?.imagesArray?.let { imagesArray ->
+            if (imagesArray.size() > 0) {
+                val ob = imagesArray[0]?.asJsonObject
+                val resourceId = JsonUtils.getString("resourceId", ob)
+                val library = mRealm.where(RealmMyLibrary::class.java)
+                    .equalTo("_id", resourceId)
+                    .findFirst()
+
+                val basePath = context.getExternalFilesDir(null)
+                if (library != null && basePath != null) {
+                    val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
+                    if (imageFile.exists()) {
+                        val request = Glide.with(context)
+                        val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
+                        val target = if (isGif) {
+                            request.asGif().load(imageFile)
+                        } else {
+                            request.load(imageFile)
+                        }
+                        target.placeholder(R.drawable.ic_loading)
+                            .error(R.drawable.ic_loading)
+                            .into(binding.imgNews)
+                        binding.imgNews.visibility = View.VISIBLE
+                        binding.imgNews.setOnClickListener {
+                            showZoomableImage(it.context, imageFile.toString())
+                        }
+                        return
+                    }
+                }
+            }
+        }
+        binding.imgNews.visibility = View.GONE
+    }
+
+    private fun showZoomableImage(context: Context, imageUrl: String) {
+        val dialog = Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+        val view = LayoutInflater.from(context).inflate(R.layout.dialog_zoomable_image, null)
+        val photoView = view.findViewById<PhotoView>(R.id.photoView)
+        val closeButton = view.findViewById<ImageView>(R.id.closeButton)
+
+        dialog.setContentView(view)
+        dialog.window?.setBackgroundDrawable(Color.BLACK.toDrawable())
+
+        val request = Glide.with(context)
+        val target = if (imageUrl.lowercase(Locale.getDefault()).endsWith(".gif")) {
+            val file = File(imageUrl)
+            if (file.exists()) request.asGif().load(file) else request.asGif().load(imageUrl)
+        } else {
+            val file = File(imageUrl)
+            if (file.exists()) request.load(file) else request.load(imageUrl)
+        }
+        target.error(R.drawable.ic_loading).into(photoView)
+
+        closeButton.setOnClickListener { dialog.dismiss() }
+
+        dialog.show()
     }
 
     internal inner class ViewHolderNews(val rowNewsBinding: RowNewsBinding) : RecyclerView.ViewHolder(rowNewsBinding.root) {

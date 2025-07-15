@@ -12,6 +12,8 @@ import android.widget.CompoundButton
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
@@ -33,6 +35,7 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DimenUtils.dpToPx
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.JsonUtils.getBoolean
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.getAge
@@ -64,6 +67,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         super.onCreate(savedInstanceState)
         activityAddExaminationBinding = ActivityAddExaminationBinding.inflate(layoutInflater)
         setContentView(activityAddExaminationBinding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityAddExaminationBinding.root)
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         customDiag = HashSet()

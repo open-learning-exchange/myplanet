@@ -8,6 +8,8 @@ import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
+import java.io.File
+import java.util.regex.Pattern
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -15,10 +17,9 @@ import androidx.media3.exoplayer.ExoPlayer
 import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAudioPlayerBinding
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import java.io.File
-import java.util.regex.Pattern
 
 class AudioPlayerActivity : AppCompatActivity() {
 
@@ -34,9 +35,9 @@ class AudioPlayerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityAudioPlayerBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-
         filePath = intent.getStringExtra("TOUCHED_FILE")
         isFullPath = intent.getBooleanExtra("isFullPath", false)
 
