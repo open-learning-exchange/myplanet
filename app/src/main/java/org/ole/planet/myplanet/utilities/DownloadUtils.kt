@@ -2,7 +2,9 @@ package org.ole.planet.myplanet.utilities
 
 import java.util.regex.Pattern
 import kotlin.text.isNotEmpty
+import io.realm.Realm
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.utilities.FileUtils
 
 object DownloadUtils {
     @JvmStatic
@@ -38,5 +40,25 @@ object DownloadUtils {
             }
         }
         return links
+    }
+
+    @JvmStatic
+    fun updateResourceOfflineStatus(url: String) {
+        val currentFileName = FileUtils.getFileNameFromUrl(url)
+        try {
+            val backgroundRealm = Realm.getDefaultInstance()
+            backgroundRealm.use { realm ->
+                realm.executeTransaction {
+                    realm.where(RealmMyLibrary::class.java)
+                        .equalTo("resourceLocalAddress", currentFileName)
+                        .findAll()?.forEach {
+                            it.resourceOffline = true
+                            it.downloadedRev = it._rev
+                        }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }
