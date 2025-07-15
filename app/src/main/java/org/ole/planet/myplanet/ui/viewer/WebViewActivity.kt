@@ -17,9 +17,12 @@ import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 
 class WebViewActivity : AppCompatActivity() {
     private lateinit var activityWebViewBinding: ActivityWebViewBinding
@@ -30,6 +33,7 @@ class WebViewActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityWebViewBinding = ActivityWebViewBinding.inflate(layoutInflater)
         setContentView(activityWebViewBinding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityWebViewBinding.root)
         val dataFromDeepLink = intent.dataString
         fromDeepLink = !TextUtils.isEmpty(dataFromDeepLink)
         val title: String? = intent.getStringExtra("title")

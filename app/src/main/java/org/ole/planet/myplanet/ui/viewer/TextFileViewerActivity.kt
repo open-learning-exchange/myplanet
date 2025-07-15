@@ -3,11 +3,14 @@ package org.ole.planet.myplanet.ui.viewer
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileReader
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityTextfileViewerBinding
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
 
 class TextFileViewerActivity : AppCompatActivity() {
@@ -17,6 +20,7 @@ class TextFileViewerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityTextFileViewerBinding = ActivityTextfileViewerBinding.inflate(layoutInflater)
         setContentView(activityTextFileViewerBinding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityTextFileViewerBinding.root)
         renderTextFile()
     }
 
