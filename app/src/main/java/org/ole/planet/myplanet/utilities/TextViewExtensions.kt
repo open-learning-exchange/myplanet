@@ -26,10 +26,7 @@ fun TextView.makeExpandable(
             post {
                 if (lineCount > collapsedMaxLines) {
                     val lastChar = layout.getLineEnd(collapsedMaxLines - 2)
-
-
                     val safeLastChar = minOf(lastChar, fullText.length)
-
 
                     if (safeLastChar > 0 && safeLastChar <= fullText.length) {
                         val visiblePortion = SpannableStringBuilder(fullText.subSequence(0, safeLastChar))
@@ -44,12 +41,10 @@ fun TextView.makeExpandable(
                             }, start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                         }
 
-
                         text = visiblePortion
                         movementMethod = LinkMovementMethod.getInstance()
                     }
                 }
-
             }
         } else {
             val expanded = SpannableStringBuilder(fullText).apply {
@@ -69,6 +64,5 @@ fun TextView.makeExpandable(
             ellipsize = null
         }
     }
-
     refresh()
 }
