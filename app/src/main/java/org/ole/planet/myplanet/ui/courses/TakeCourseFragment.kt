@@ -10,6 +10,8 @@ import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager.widget.ViewPager
 import io.realm.Realm
@@ -39,8 +41,10 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnClickListener {
     private lateinit var fragmentTakeCourseBinding: FragmentTakeCourseBinding
+    @Inject
     lateinit var dbService: DatabaseService
     lateinit var mRealm: Realm
     private var currentCourse: RealmMyCourse? = null
@@ -60,7 +64,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTakeCourseBinding = FragmentTakeCourseBinding.inflate(inflater, container, false)
-        dbService = DatabaseService(requireActivity())
         mRealm = dbService.realmInstance
         userModel = UserProfileDbHandler(requireContext()).userModel
         currentCourse = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
@@ -266,7 +269,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun getCourseProgress(): Int {
-        val realm = DatabaseService(requireActivity()).realmInstance
+        val realm = dbService.realmInstance
         val user = UserProfileDbHandler(requireActivity()).userModel
         val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
         val courseProgress = courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt

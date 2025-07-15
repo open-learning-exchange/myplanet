@@ -8,6 +8,8 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmResults
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityCourseProgressBinding
@@ -23,8 +25,11 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 
+
 class CourseProgressActivity : BaseActivity() {
     private lateinit var activityCourseProgressBinding: ActivityCourseProgressBinding
+    @Inject
+    lateinit var dbService: DatabaseService
     lateinit var realm: Realm
     var user: RealmUserModel? = null
     lateinit var courseId: String
@@ -35,7 +40,7 @@ class CourseProgressActivity : BaseActivity() {
         EdgeToEdgeUtil.setupEdgeToEdge(this, activityCourseProgressBinding.root)
         initActionBar()
         courseId = intent.getStringExtra("courseId").toString()
-        realm = DatabaseService(this).realmInstance
+        realm = dbService.realmInstance
         user = UserProfileDbHandler(this).userModel
         val courseProgress = RealmCourseProgress.getCourseProgress(realm, user?.id)
         val progress = courseProgress[courseId]

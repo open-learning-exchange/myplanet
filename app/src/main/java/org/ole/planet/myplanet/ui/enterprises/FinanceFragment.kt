@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.DatePicker
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.LinearLayoutManager
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmResults
 import io.realm.Sort
@@ -25,12 +26,13 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
+@AndroidEntryPoint
 
 class FinanceFragment : BaseTeamFragment() {
     private lateinit var fragmentFinanceBinding: FragmentFinanceBinding
     private lateinit var addTransactionBinding: AddTransactionBinding
-    private lateinit var fRealm: Realm
     private var adapterFinance: AdapterFinance? = null
+    private lateinit var fRealm: Realm
     var date: Calendar? = null
     var list: RealmResults<RealmMyTeam>? = null
     private var isAsc = false
@@ -48,7 +50,7 @@ class FinanceFragment : BaseTeamFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentFinanceBinding = FragmentFinanceBinding.inflate(inflater, container, false)
-        fRealm = DatabaseService(requireActivity()).realmInstance
+        fRealm = dbService.realmInstance
         date = Calendar.getInstance()
         fragmentFinanceBinding.tvFromDateCalendar.setOnClickListener {
             showDatePickerDialog(isFromDate = true)

@@ -1,0 +1,29 @@
+package org.ole.planet.myplanet.di
+
+import android.content.Context
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+import org.ole.planet.myplanet.datamanager.ApiClient
+import org.ole.planet.myplanet.datamanager.ApiInterface
+import org.ole.planet.myplanet.datamanager.DatabaseService
+
+@Module
+@InstallIn(SingletonComponent::class)
+object AppModule {
+
+    @Provides
+    @Singleton
+    fun provideDatabaseService(@ApplicationContext context: Context): DatabaseService {
+        return DatabaseService(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideApiInterface(): ApiInterface {
+        return ApiClient.getEnhancedClient()
+    }
+}

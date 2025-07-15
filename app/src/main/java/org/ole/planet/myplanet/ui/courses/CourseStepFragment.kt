@@ -8,6 +8,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import io.realm.Realm
 import java.util.Date
 import java.util.UUID
@@ -33,10 +35,15 @@ import org.ole.planet.myplanet.utilities.CustomClickableSpan
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 
+
+@AndroidEntryPoint
+
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
-    private lateinit var dbService: DatabaseService
+    
+    @Inject
+    lateinit var dbService: DatabaseService
     private lateinit var cRealm: Realm
     private lateinit var step: RealmCourseStep
     private lateinit var resources: List<RealmMyLibrary>
@@ -54,7 +61,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentCourseStepBinding = FragmentCourseStepBinding.inflate(inflater, container, false)
-        dbService = DatabaseService(requireActivity())
         cRealm = dbService.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
         fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE

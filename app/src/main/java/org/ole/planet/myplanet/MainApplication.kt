@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet
 
+import dagger.hilt.android.HiltAndroidApp
 import android.app.Activity
 import android.app.Application
 import android.content.Context
@@ -50,6 +51,8 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.ThemeMode
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
+
+@HiltAndroidApp
 
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     companion object {
