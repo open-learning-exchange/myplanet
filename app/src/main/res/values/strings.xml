@@ -1100,7 +1100,7 @@
     <string name="team_financial_report">%s Financial Report</string>
     <string name="report_date_details">Report created on: %1$s | Updated on: %2$s</string>
     <string name="formatted_date">%1$d/%2$d/%3$d</string>
-    <string name="prefix_content">%1$s%2$s</string>
+    <string name="prefix_content">%1$s %2$s</string>
     <string name="rating_count_format">%d total</string>
     <string name="step_progress">Current step: %1$d of %2$d</string>
     <string name="percentage">%s%%</string>
