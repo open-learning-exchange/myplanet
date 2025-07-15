@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.datamanager
 import com.google.gson.GsonBuilder
 import java.io.IOException
 import java.lang.reflect.Modifier
+import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.utilities.RetryUtils
