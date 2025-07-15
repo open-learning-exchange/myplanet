@@ -38,12 +38,9 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
-@AndroidEntryPoint
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
     var subjects: MutableSet<String> = mutableSetOf()
     var languages: MutableSet<String> = mutableSetOf()
@@ -52,7 +49,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var selectedItems: MutableList<LI>? = null
     var gradeLevel = ""
     var subjectLevel = ""
-    @Inject lateinit var realmService: DatabaseService
+    private lateinit var realmService: DatabaseService
     lateinit var recyclerView: RecyclerView
     lateinit var tvMessage: TextView
     lateinit var tvFragmentInfo: TextView
@@ -93,6 +90,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         tvMessage = v.findViewById(R.id.tv_message)
         selectedItems = mutableListOf()
         list = mutableListOf()
+        realmService = DatabaseService(requireActivity())
         mRealm = realmService.realmInstance
         profileDbHandler = UserProfileDbHandler(requireActivity())
         model = profileDbHandler.userModel!!
