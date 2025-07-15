@@ -45,6 +45,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
+import org.json.JSONObject
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -69,10 +70,13 @@ import org.ole.planet.myplanet.ui.dashboard.notification.NotificationsFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
+import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.survey.SendSurveyFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
+import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
+import org.ole.planet.myplanet.ui.team.TeamPage
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
@@ -357,6 +361,95 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 else -> {
                     openNotificationsList(user?.id ?: "")
                 }
+            }
+        }
+        
+        // Handle auto-navigation from notification actions
+        if (intent?.getBooleanExtra("auto_navigate", false) == true) {
+            isFromNotificationAction = true
+            
+            // Close the drawer immediately
+            result?.closeDrawer()
+            
+            val notificationType = intent.getStringExtra("notification_type")
+            val relatedId = intent.getStringExtra("related_id")
+            
+            when (notificationType) {
+                NotificationUtil.TYPE_SURVEY -> {
+                    handleSurveyNavigation(relatedId)
+                }
+                NotificationUtil.TYPE_TASK -> {
+                    handleTaskNavigation(relatedId)
+                }
+                NotificationUtil.TYPE_JOIN_REQUEST -> {
+                    handleJoinRequestNavigation(relatedId)
+                }
+                NotificationUtil.TYPE_RESOURCE -> {
+                    openCallFragment(ResourcesFragment(), "Resources")
+                }
+            }
+            
+            // Reset the flag after a short delay to allow the fragment to initialize
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                isFromNotificationAction = false
+            }, 1000)
+        }
+    }
+    
+    private fun handleSurveyNavigation(surveyId: String?) {
+        if (surveyId != null) {
+            val currentStepExam = mRealm.where(RealmStepExam::class.java).equalTo("name", surveyId)
+                .findFirst()
+            AdapterMySubmission.openSurvey(this, currentStepExam?.id, false, false, "")
+        }
+    }
+    
+    private fun handleTaskNavigation(taskId: String?) {
+        if (taskId != null) {
+            val task = mRealm.where(RealmTeamTask::class.java)
+                .equalTo("id", taskId)
+                .findFirst()
+
+            val linkJson = JSONObject(task?.link ?: "{}")
+            val teamId = linkJson.optString("teams")
+            if (teamId.isNotEmpty()) {
+                val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", teamId)?.findFirst()
+
+                val f = TeamDetailFragment.newInstance(
+                    teamId = teamId,
+                    teamName = teamObject?.name ?: "",
+                    teamType = teamObject?.type ?: "",
+                    isMyTeam = true,
+                    navigateToPage = TeamPage.TASKS
+                )
+
+                openCallFragment(f)
+            }
+        }
+    }
+    
+    private fun handleJoinRequestNavigation(requestId: String?) {
+        if (requestId != null) {
+            val actualJoinRequestId = if (requestId.startsWith("join_request_")) {
+                requestId.removePrefix("join_request_")
+            } else {
+                requestId
+            }
+            val joinRequest = mRealm.where(RealmMyTeam::class.java)
+                .equalTo("_id", actualJoinRequestId)
+                .equalTo("docType", "request")
+                .findFirst()
+
+            val teamId = joinRequest?.teamId
+
+            if (teamId?.isNotEmpty() == true) {
+                val f = TeamDetailFragment()
+                val b = Bundle()
+                b.putString("id", teamId)
+                b.putBoolean("isMyTeam", true)
+                b.putInt("navigateToPage", TeamPage.JOIN_REQUESTS.ordinal)
+                f.arguments = b
+                openCallFragment(f)
             }
         }
     }
@@ -989,5 +1082,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     companion object {
         const val MESSAGE_PROGRESS = "message_progress"
+        @JvmStatic
+        var isFromNotificationAction = false
     }
 }
