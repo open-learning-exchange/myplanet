@@ -4,7 +4,7 @@
     <string name="resource_not_found_message">No se pudo encontrar el recurso solicitado</string>
     <string name="community_earnings">Ingresos totales de la comunidad: **$%1$d** /$500</string>
     <string name="your_earnings">Tus ganancias totales: **$%1$d** /$11</string>
-    <string name="congratulations">¡Felicidades! Reto Completado</string>
+    <string name="congratulations">¡Felicidades! Reto completado</string>
     <string name="daily_voices">de 5 Voces diarias</string>
     <string name="share_opinion">Comparte tu opinión en Nuestras Voces.[$2/voz]</string>
     <string name="remember_sync">Recuerda sincronizar la aplicación móvil.</string>
@@ -12,8 +12,8 @@
     <string name="course_completed">%1$s terminado!</string>
     <string name="course_in_progress">Ingresa al curso %1$s completalo (%2$d de %3$d hecho)</string>
     <string name="course_not_started">%1$s no iniciado</string>
-    <string name="app_name">My Planet</string>
-    <string name="planet">Planet</string>
+    <string name="app_name">myPlanet</string>
+    <string name="planet">Planeta</string>
     <string name="app_project_name">myPlanet</string>
     <string name="action_settings">configuración</string>
     <string name="hint_name">Nombre</string>
@@ -27,7 +27,7 @@
     <string name="err_msg_name">Ingresa tu nombre de usuario</string>
     <string name="err_msg_password">Ingresa la contraseña</string>
     <string name="err_msg_login">El nombre de usuario y/o la contraseña no coinciden</string>
-    <string name="hint_serverURL">planet ipag</string>
+    <string name="hint_serverURl">planet ipag</string>
     <string name="hint_serverPin">pin del servidor</string>
     <string name="radio_protocol">Protocolo:</string>
     <string name="radio_http">http</string>
@@ -37,10 +37,10 @@
     <string name="menu_home">Inicio</string>
     <string name="menu_library">Nuestra biblioteca</string>
     <string name="menu_courses">Nuestros cursos</string>
-    <string name="menu_meetups">reunirse</string>
+    <string name="menu_meetups">Reuniones</string>
     <string name="menu_surveys">Encuestas</string>
     <string name="menu_logout">Cerrar sesión</string>
-    <string name="menu_feedback">Retroalimentación</string>
+    <string name="menu_feedback">Comentario</string>
     <string name="system_name">myPlanet</string>
     <string name="txt_myLibrary">miBiblioteca</string>
     <string name="txt_myCourses">misCursos</string>
@@ -65,17 +65,16 @@
     <string name="your_ans">Tu respuesta</string>
     <string name="delete_my_course">Eliminar miCurso</string>
     <string name="invite_member">Invitar miembro</string>
-    <string name="is_urgent">¿Tu retroalimentación es urgente? *</string>
-    <string name="feedback_type">Tipo de retroalimentación: *</string>
+    <string name="is_urgent">¿Tu comentario es urgente?</string>
+    <string name="feedback_type">Tipo de comentario:</string>
     <string name="suggestion">Sugerencia</string>
     <string name="no">No</string>
     <string name="yes">Sí</string>
     <string name="question">Pregunta</string>
     <string name="bug">Error</string>
-    <string name="your_feedback">Tu retroalimentación *</string>
+    <string name="your_feedback">Tu comentario *</string>
     <string name="button_update">Actualizar</string>
     <string name="level">Nivel</string>
-    <string name="select_level">Seleccionar nivel</string>
     <string name="male">Masculino</string>
     <string name="female">Femenino</string>
     <string name="gender">Género</string>
@@ -92,7 +91,7 @@
     <string name="published_by">Publicado por:</string>
     <string name="author">Autor:</string>
     <string name="language_with_colon">Idioma:</string>
-    <string name="subject">Asunto(s)*:</string>
+    <string name="subject">Asunto/s:</string>
     <string name="license">Licencia:</string>
     <string name="type">Tipo:</string>
     <string name="resource_colon">Recurso:</string>
@@ -112,7 +111,7 @@
     <string name="stop_download">Detener descarga</string>
     <string name="downloading_file">Descargando archivo…</string>
     <string name="cancel">Cancelar</string>
-    <string name="add_to_mycourses">Agregar a MisCursos</string>
+    <string name="add_to_mycourses">Agregar a misCursos</string>
     <string name="added_to">agregado a</string>
     <string name="removed_from">eliminado de</string>
     <string name="my_courses">misCursos</string>
@@ -124,9 +123,9 @@
     <string name="inactive_message">El usuario no está activado. Por favor, ponte en contacto con el administrador o el responsable para activar tu cuenta.</string>
     <string name="archive_mycourse">Archivar miCurso</string>
     <string name="menu_achievement">Logros</string>
-    <string name="edit_achievement">Editar logros</string>
+    <string name="edit_achievement">Editar logro</string>
     <string name="add_resources">Agregar recursos</string>
-    <string name="description">Descripción *</string>
+    <string name="description">Descripción</string>
     <string name="title_asterisk">Título *</string>
     <string name="name_asterisk">Nombre *</string>
     <string name="relationship">Relación</string>
@@ -139,7 +138,7 @@
     <string name="show_filter">Mostrar filtro</string>
     <string name="subjects">Asignaturas</string>
     <string name="mediums">Medios</string>
-    <string name="levels">Niveles*</string>
+    <string name="levels">Niveles</string>
     <string name="languages">Idiomas</string>
     <string name="txt_myLife">miVida</string>
     <string name="achievements">misLogros</string>
@@ -164,12 +163,12 @@
     <string name="search_user">Buscar usuario</string>
     <string name="get_started">EMPEZAR</string>
     <string name="enter_password">Ingresar contraseña</string>
-    <string name="managerial_login">Inicio de Sesión del Gerente</string>
+    <string name="managerial_login">Iniciar sesión como administrador</string>
     <string name="year">Año</string>
     <string name="publisher">Editor</string>
     <string name="link_to_license">Enlace a la licencia</string>
     <string name="resource_for">Recurso para</string>
-    <string name="open_which_file">Abrir qué archivo</string>
+    <string name="open_which_file">Qué archivo abrir</string>
     <string name="file_upload">Cargar archivo</string>
     <string name="choose_file">Elegir archivo</string>
     <string name="file_downloadable">Archivo descargable</string>
@@ -191,7 +190,7 @@
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">mostrando la respuesta de:</string>
     <string name="open_date">Fecha de apertura</string>
-    <string name="my_survey">mySurveys</string>
+    <string name="my_survey">miEncuesta</string>
     <string name="cannot_remove_user">No se pudo eliminar al usuario</string>
     <string name="no_members_task">No hay miembros del equipo presentes para asignar tareas</string>
     <string name="no_member_selected">No se seleccionó ningún miembro. Por favor, inténtalo de nuevo</string>
@@ -341,7 +340,7 @@
     <string name="remove">Eliminar</string>
     <string name="make_leader">Asignar como líder</string>
     <string name="mission"><![CDATA[Misión y Servicios]]></string>
-    <string name="team">Equipos</string>
+    <string name="team">Equipo</string>
     <string name="applicants">Solicitantes</string>
     <string name="finances">Finanzas</string>
     <string name="messages">Mensajes</string>
@@ -370,33 +369,33 @@
     <string name="special_needs">Necesidades especiales</string>
     <string name="other_need">Otras necesidades</string>
     <string name="update_health_record">Actualizar registro de salud</string>
-    <string name="vital_sign">Signo Vital</string>
+    <string name="vital_sign">Signo vital</string>
     <string name="examination">Examen</string>
-    <string name="add_examination">Agregar Examen</string>
-    <string name="new_patient">Nuevo Miembro</string>
+    <string name="add_examination">Agregar examen</string>
+    <string name="new_patient">Nuevo miembro</string>
     <string name="height">Altura</string>
     <string name="width">Ancho</string>
     <string name="vision">Visión</string>
     <string name="hearing">Audición</string>
     <string name="vitals">Vitales</string>
-    <string name="condition_and_treatment">Condición y Tratamiento</string>
-    <string name="observation">Observación y Notas</string>
+    <string name="condition_and_treatment">Condición y tratamiento</string>
+    <string name="observation">Observación y notas</string>
     <string name="diagnosis">Diagnóstico</string>
     <string name="treatments">Tratamientos</string>
     <string name="medications">Medicamentos</string>
     <string name="immunization">Fechas de Inmunización</string>
     <string name="allergies">Alergias</string>
     <string name="xray">Radiografías</string>
-    <string name="labtest">Pruebas de Laboratorio</string>
+    <string name="labtest">Pruebas de laboratorio</string>
     <string name="referrals">Referencias</string>
     <string name="full_name">Nombre completo</string>
     <string name="weight">Peso</string>
     <string name="no_records">No se encontraron registros</string>
     <string name="chats">Chats</string>
-    <string name="select_health_member">Seleccionar Miembro</string>
+    <string name="select_health_member">Seleccionar miembro</string>
     <string name="notifications">Notificaciones</string>
-    <string name="incorrect_ans">Respuesta incorrecta, por favor intenta nuevamente</string>
-    <string name="diagnosis_note">Nota de Diagnóstico</string>
+    <string name="incorrect_ans">Respuesta incorrecta, por favor inténtalo de nuevo</string>
+    <string name="diagnosis_note">Notas de diagnóstico</string>
     <string name="menu_community">Comunidad</string>
     <string name="library">Biblioteca</string>
     <string name="device_name">Nombre del dispositivo</string>
@@ -407,7 +406,7 @@
     <string name="tasks">Tareas</string>
     <string name="join_requests">Solicitudes de unión</string>
     <string name="add_image">Agregar imagen</string>
-    <string name="addImageToMessage">Beta Agregar imagen al mensaje</string>
+    <string name="addImageToMessage">Beta agregar imagen al mensaje</string>
     <string name="clear_data">Borrar datos</string>
     <string name="reset_app">Restablecer aplicación</string>
     <string name="freeup_space">Liberar espacio en disco</string>
@@ -436,8 +435,8 @@
     </string-array>
 
     <string-array name="sort_by_date">
-        <item>Ordenar por fecha - Desc</item>
         <item>Ordenar por fecha - Asc</item>
+        <item>Ordenar por fecha - Desc</item>
         <item>Ordenar por título</item>
     </string-array>
 
@@ -465,7 +464,7 @@
         <item>11</item>
         <item>12</item>
         <item>Universidad</item>
-        <item>Post-Graduate</item>
+        <item>Posgrado</item>
     </string-array>
 
     <string-array name="subject_level">
@@ -505,35 +504,34 @@
     <string name="more_action">Filtrar</string>
     <string name="my_progress">miProgreso</string>
     <string name="my_activity">miActividad</string>
-    <string name="add_label">Agregar Etiqueta</string>
+    <string name="add_label">Agregar etiqueta</string>
     <string name="share_with_community">Compartir con la comunidad</string>
-    <string name="add_res">Agregar Recurso</string>
+    <string name="add_res">Agregar recurso</string>
     <string name="password">Contraseña</string>
-    <string name="retype_password">Volver a ingresar la contraseña</string>
+    <string name="retype_password">Confirmar contraseña</string>
     <string name="become_a_member">convertirse en miembro</string>
-    <string name="change_member">Cambiar Miembro</string>
+    <string name="change_member">Cambiar miembro</string>
     <string name="use_phone_number_as_password">Usar número de teléfono como contraseña</string>
     <string name="feedback">Comentarios</string>
     <string name="add_member">Agregar miembro</string>
-    <string name="exit">"Potrdite izhod"</string>
     <string name="confirm_exit">¿Estás seguro/a de que quieres abandonar este equipo?</string>
     <string name="update_profile_alert">Por favor, completa tu perfil para disfrutar de todas las funciones</string>
-    <string name="other_notes">Otras Notas</string>
+    <string name="other_notes">Otras notas</string>
     <string name="archive">Archivo</string>
     <string name="Q1">Pregunta: 1/%d</string>
     <string name="no_questions">No hay preguntas disponibles</string>
     <string name="Q">Pregunta: %1$d / %2$d</string>
     <string name="finish">Finalizar</string>
     <string name="submit">Enviar</string>
-    <string name="our_courses">Nuestros Cursos</string>
+    <string name="our_courses">Nuestros cursos</string>
     <string name="file">Archivo: %s</string>
     <string name="recording_audio">Grabando audio…</string>
     <string name="show_replies">"Mostrar respuestas "</string>
     <string name="selected">"Seleccionado: "</string>
     <string name="last_sync">Última sincronización con el servidor: %s</string>
-    <string name="last_syncs">Última Sincronización</string>
-    <string name="login_user">iniciarsesión Nombre de usuario</string>
-    <string name="login_password">Iniciar sesión Usuario Contraseña</string>
+    <string name="last_syncs">Última sincronización</string>
+    <string name="login_user">Nombre de usuario</string>
+    <string name="login_password">Usuario contraseña</string>
     <string name="no_team_available">No hay equipo/empresa disponible</string>
     <string name="last_sync_date">Fecha de última sincronización: %s</string>
     <string name="no_assignee">Sin asignado/a</string>
@@ -546,7 +544,7 @@
     <string name="xrays">radiografías</string>
     <string name="tests">pruebas</string>
     <string name="referral">referencias</string>
-    <string name="other_diagnosis">Otros Diagnósticos</string>
+    <string name="other_diagnosis">Otros diagnósticos</string>
     <string name="close">Cerrar</string>
     <string name="negative_balance">¡El saldo actual es negativo!</string>
     <string name="entMission">¿Cuál es la misión de tu empresa?</string>
@@ -555,9 +553,9 @@
     <string name="entEmptyDescription"><![CDATA[La empresa no tiene una misión y servicios establecidos.]]></string>
     <string name="total_visits">Visitas totales de los últimos 30 días</string>
     <string name="ole_logo">Logo de Open Learning Exchange</string>
-    <string name="open_community">Comunidad Abierta</string>
+    <string name="open_community">Comunidad abierta</string>
     <string name="dash_4">----</string>
-    <string name="add_documents">Agregar\nDocumentos</string>
+    <string name="add_documents">Agregar documentos</string>
     <string name="leave">Salir</string>
     <string name="steps">Pasos</string>
     <string name="csv_filename">Nombre del archivo CSV</string>
@@ -565,12 +563,12 @@
     <string name="image_filename">Nombre del archivo de imagen</string>
     <string name="markdown_filename">Nombre del archivo de Markdown</string>
     <string name="select_login_mode">Selecciona el modo de inicio de sesión:</string>
-    <string name="normal_mode">Modo Normal</string>
-    <string name="select_date">Seleccionar Fecha</string>
+    <string name="normal_mode">Modo normal</string>
+    <string name="select_date">Seleccionar fecha</string>
     <string name="public_public">Público</string>
     <string name="type_asterisk">Tipo*</string>
-    <string name="joined_members_colon">Miembros Unidos:</string>
-    <string name="requested_members_colon">Miembros Solicitados:</string>
+    <string name="joined_members_colon">Miembros unidos:</string>
+    <string name="requested_members_colon">Miembros solicitados:</string>
     <string name="courses_colon">Cursos:</string>
     <string name="title">Título</string>
     <string name="source">Fuente</string>
@@ -579,57 +577,57 @@
     <string name="autosync">Autosincronización</string>
     <string name="autosync_off">¡Autosincronización desactivada!</string>
     <string name="autosync_on">Autosincronización activada</string>
-    <string name="attached_resources">Recursos Adjuntos:</string>
+    <string name="attached_resources">Recursos adjuntos:</string>
     <string name="edit">Editar</string>
     <string name="my_achievements">misLogros</string>
-    <string name="open_resource">Abrir Recurso</string>
+    <string name="open_resource">Abrir recurso</string>
     <string name="zero_total">Total: 0</string>
     <string name="average">Promedio</string>
     <string name="zero_point_zero">0.0</string>
-    <string name="subject_level_colon">Nivel de Asignatura:</string>
-    <string name="grade_level_colon">Nivel de Grado:</string>
+    <string name="subject_level_colon">Nivel de asignatura:</string>
+    <string name="grade_level_colon">Nivel de grado:</string>
     <string name="language_colon">Idioma:</string>
     <string name="gender_colon">Género: %s</string>
     <string name="level_colon">Nivel: %s</string>
     <string name="method">Método:</string>
     <string name="number_of_exams">Número de exámenes:</string>
-    <string name="description_colon">Descripción:&#160;</string>
-    <string name="download_resources">Descargar Recursos</string>
-    <string name="take_test">Realizar Examen [%d]</string>
+    <string name="description_colon">Descripción:</string>
+    <string name="download_resources">Descargar recursos</string>
+    <string name="take_test">Realizar examen [%d]</string>
     <string name="search">Buscar</string>
-    <string name="for_ambulance">Para Ambulancia</string>
-    <string name="for_police">Para Policía</string>
-    <string name="for_emergency">Para Emergencia</string>
-    <string name="submit_feedback">Enviar Comentarios</string>
+    <string name="for_ambulance">Para ambulancia</string>
+    <string name="for_police">Para policía</string>
+    <string name="for_emergency">Para emergencia</string>
+    <string name="submit_feedback">Enviar comentarios</string>
     <string name="media">Medios:</string>
     <string name="filter">Filtrar</string>
-    <string name="grade_level">Nivel de Grado</string>
-    <string name="subject_level">Nivel de Asignatura</string>
-    <string name="order_by_date">Ordenar por Fecha</string>
-    <string name="order_by_title">Ordenar por Título</string>
-    <string name="vital_signs_record">Registro de Signos Vitales</string>
+    <string name="grade_level">Nivel de grado</string>
+    <string name="subject_level">Nivel de asignatura</string>
+    <string name="order_by_date">Ordenar por fecha</string>
+    <string name="order_by_title">Ordenar por título</string>
+    <string name="vital_signs_record">Registro de signos vitales</string>
     <string name="exams">Exámenes</string>
     <string name="survey">Encuesta</string>
     <string name="submitted_by">Enviado por</string>
     <string name="updated_on">Actualizado el</string>
     <string name="name">Nombre</string>
-    <string name="send_survey_to">Enviar Encuesta a:</string>
-    <string name="send_survey">Enviar Encuesta</string>
+    <string name="send_survey_to">Enviar encuesta a:</string>
+    <string name="send_survey">Enviar encuesta</string>
     <string name="previous">Anterior</string>
     <string name="next">Siguiente</string>
-    <string name="submit_answer">Enviar Respuesta</string>
-    <string name="all_task">Todas las Tareas</string>
-    <string name="my_task">misTareas</string>
+    <string name="submit_answer">Enviar respuesta</string>
+    <string name="all_task">Todas las tareas</string>
+    <string name="my_task">Mi tarea</string>
     <string name="completed">Completadas</string>
-    <string name="add_profile_picture">Agregar Foto de Perfil</string>
+    <string name="add_profile_picture">Agregar foto de perfil</string>
     <string name="two_dash">--</string>
     <string name="n_a">N/A</string>
     <string name="request_to_join">Solicitar unirse</string>
-    <string name="filter_labels">Filtrar Etiquetas</string>
+    <string name="filter_labels">Filtrar etiquetas</string>
     <string name="message">Mensaje</string>
     <string name="mistakes">Errores</string>
-    <string name="take_survey">Realizar Encuesta</string>
-    <string name="checkbox">Casilla de Verificación</string>
+    <string name="take_survey">Realizar encuesta</string>
+    <string name="checkbox">Casilla</string>
     <string name="offer">Oferta</string>
     <string name="request_for_advice">Solicitud de consejo</string>
     <string name="no_images_to_download">No hay imágenes para descargar.</string>
@@ -637,11 +635,12 @@
     <string name="unable_to_open_resource">No se puede abrir el recurso.</string>
     <string name="select_resource_to_open">"Selecciona el recurso para abrir: "</string>
     <string name="shared_to_community">Compartido con la comunidad.</string>
-    <string name="no_data_available_please_check_and_try_again">No hay datos disponibles, por favor verifica e intenta nuevamente.</string>
+    <string name="no_data_available_please_check_and_try_again">No hay datos disponibles, por favor verifica e intenta de nuevo.</string>
     <string name="no_course_matched_filter">No hay cursos que coincidan con el filtro</string>
     <string name="added_to_my_library">agregado a myLibrary</string>
     <string name="added_to_my_courses">agregado a myCourses</string>
     <string name="do_you_want_to_stay_online">¿Deseas permanecer en línea?</string>
+    <string name="no_resources_to_download">No hay recursos para descargar.</string>
     <string name="planet_not_available">Planet no disponible.</string>
     <string name="device_not_connected_to_planet">Dispositivo no conectado a Planet.</string>
     <string name="all_files_downloaded_successfully">Todos los archivos se han descargado correctamente.</string>
@@ -688,17 +687,17 @@
     <string name="due_tasks">Tareas pendientes</string>
     <string name="feature_not_available_for_guest_user">Función no disponible para usuarios invitados</string>
     <string name="feature_not_available">Función no disponible</string>
-    <string name="health_record_not_available_sync_health_data">Registro de salud no disponible, ¿sincronizar datos de salud?</string>
+    <string name="health_record_not_available_sync_health_data">Registro de salud no disponible. ¿Sincronizar datos de salud?</string>
     <string name="sync">Sincronizar</string>
     <string name="got_it">ENTENDIDO</string>
     <string name="please_make_sure_your_device_is_horizontal">Por favor, asegúrate de que tu dispositivo esté en posición horizontal</string>
-    <string name="click_on_the_logo_to_get_the_full_menu_of_your_planet_home_mylibrary_mycourses_library_courses_community_enterprises_and_surveys">Haz clic en el logotipo para obtener el menú completo de tu planet: Inicio, miBiblioteca, misCursos, Biblioteca, Cursos, Comunidad, Empresas y Encuestas</string>
-    <string name="navigate_to_the_home_tab_to_access_your_dashboard_with_your_library_courses_and_teams">Ve a la pestaña de Inicio para acceder a tu panel con tu biblioteca, cursos y equipos</string>
-    <string name="navigate_to_the_library_tab_to_access_resources_in_your_community">Ve a la pestaña de Biblioteca para acceder a los recursos de tu comunidad</string>
-    <string name="navigate_to_the_courses_tab_to_access_the_courses_exams_questions_lessons_within_your_community">Ve a la pestaña de Cursos para acceder a los cursos (exámenes, preguntas, lecciones) dentro de tu comunidad</string>
-    <string name="navigate_to_the_teams_tab_to_join_request_and_check_up_on_your_teams">Ve a la pestaña de Equipos para unirte, solicitar y verificar tus equipos</string>
-    <string name="navigate_to_the_enterprises_tab_to_search_through_a_list_of_enterprises_within_your_community">Ve a la pestaña de Empresas para buscar a través de una lista de empresas dentro de tu comunidad</string>
-    <string name="navigate_to_the_community_tab_to_access_the_news_community_leaders_calendar_services_and_finances_involved_within_your_community">Ve a la pestaña de Comunidad para acceder a las noticias, líderes de la comunidad, calendario, servicios y finanzas relacionados con tu comunidad</string>
+    <string name="click_on_the_logo_to_get_the_full_menu_of_your_planet_home_mylibrary_mycourses_library_courses_community_enterprises_and_surveys">Haz clic en el logotipo para obtener el menú completo de tu planet: inicio, miBiblioteca, misCursos, biblioteca, cursos, comunidad, empresas y encuestas</string>
+    <string name="navigate_to_the_home_tab_to_access_your_dashboard_with_your_library_courses_and_teams">Ve a la pestaña de inicio para acceder a tu panel con tu biblioteca, cursos y equipos</string>
+    <string name="navigate_to_the_library_tab_to_access_resources_in_your_community">Ve a la pestaña de biblioteca para acceder a los recursos de tu comunidad</string>
+    <string name="navigate_to_the_courses_tab_to_access_the_courses_exams_questions_lessons_within_your_community">Ve a la pestaña de cursos para acceder a los cursos (exámenes, preguntas, lecciones) dentro de tu comunidad</string>
+    <string name="navigate_to_the_teams_tab_to_join_request_and_check_up_on_your_teams">Ve a la pestaña de equipos para unirte, solicitar y verificar tus equipos</string>
+    <string name="navigate_to_the_enterprises_tab_to_search_through_a_list_of_enterprises_within_your_community">Ve a la pestaña de empresas para buscar a través de una lista de empresas dentro de tu comunidad</string>
+    <string name="navigate_to_the_community_tab_to_access_the_news_community_leaders_calendar_services_and_finances_involved_within_your_community">Ve a la pestaña de comunidad para acceder a las noticias, líderes de la comunidad, calendario, servicios y finanzas relacionados con tu comunidad</string>
     <string name="session_expired">Sesión expirada.</string>
     <string name="downloading_started_please_check_notificati">Descarga iniciada, por favor revisa las notificaciones…</string>
     <string name="dictionary">Diccionario</string>
@@ -707,14 +706,13 @@
     <string name="description_is_required">Se requiere una descripción</string>
     <string name="start_time_is_required">Se requiere la hora de inicio</string>
     <string name="meetup_added">Encuentro agregado</string>
-    <string name="meetup_not_added">Encuentro no agregada</string>
-    <string name="add_transaction">Agregar Transacción</string>
+    <string name="add_transaction">Agregar transacción</string>
     <string name="note_is_required">Se requiere una nota</string>
     <string name="amount_is_required">Se requiere una cantidad</string>
     <string name="date_is_required">Se requiere una fecha</string>
     <string name="transaction_added">Transacción agregada</string>
     <string name="thank_you_for_taking_this">"Gracias por realizar este "</string>
-    <string name="we_wish_you_all_the_best">Te deseamos todo lo mejor.</string>
+    <string name="we_wish_you_all_the_best">. Te deseamos lo mejor</string>
     <string name="thank_you_for_taking_this_survey">Gracias por completar esta encuesta.</string>
     <string name="complete">completa</string>
     <string name="no_questions_available">No hay preguntas disponibles</string>
@@ -723,12 +721,12 @@
     <string name="pending">pendiente</string>
     <string name="user_profile_updated">Perfil de usuario actualizado</string>
     <string name="unable_to_update_user">No se puede actualizar el usuario</string>
-    <string name="date_n_a">Fecha: N/D</string>
-    <string name="please_enter_feedback">Por favor, ingresa tu opinión.</string>
-    <string name="feedback_priority_is_required">Se requiere prioridad de opinión.</string>
-    <string name="feedback_type_is_required">Se requiere tipo de opinión.</string>
-    <string name="thank_you_your_feedback_has_been_submitted">Gracias, se ha enviado tu opinión</string>
-    <string name="feedback_saved">Opinión guardada..</string>
+    <string name="date_n_a">Fecha: N/A</string>
+    <string name="please_enter_feedback">Por favor, ingresa tu comentario.</string>
+    <string name="feedback_priority_is_required">Se requiere prioridad de comentario.</string>
+    <string name="feedback_type_is_required">Se requiere tipo de comentario.</string>
+    <string name="thank_you_your_feedback_has_been_submitted">Gracias, se ha enviado tu comentario</string>
+    <string name="feedback_saved">Comentario guardado..</string>
     <string name="name_colon">"Nombre: "</string>
     <string name="email_colon">"Correo electrónico: "</string>
     <string name="phone_number_colon">"Número de teléfono: "</string>
@@ -736,17 +734,17 @@
     <string name="level_is_required">Se requiere nivel</string>
     <string name="subject_is_required">Se requiere asignatura</string>
     <string name="enter_resource_detail">Ingresa los detalles del recurso</string>
-    <string name="resource_saved_to_my_personal">Recurso guardado en myPersonal</string>
+    <string name="resource_saved_to_my_personal">Recurso guardado en miPersonal</string>
     <string name="invalid_resource_url">URL de recurso no válida</string>
-    <string name="my_library">mylibrary"</string>
+    <string name="my_library">" miBiblioteca"</string>
     <string name="link_not_available">Enlace no disponible</string>
-    <string name="success_you_have_added_these_resources_to_your_mylibrary">¡Éxito! Has agregado estos recursos a tu mi Biblioteca:\n\n</string>
+    <string name="success_you_have_added_these_resources_to_your_mylibrary">¡Éxito! Has agregado estos recursos a tu miBiblioteca:\n\n</string>
     <string name="more_resource_s">" más recurso(s)…\n"</string>
     <string name="return_to_the_home_tab_to_access_mylibrary">\n\nRegresa a la pestaña de Inicio para acceder a miBiblioteca.\n</string>
     <string name="note_you_may_still_need_to_download_the_newly_added_resources">\nNota: Es posible que aún necesites descargar los recursos recién agregados.</string>
     <string name="self_examination">%s\nAutoexamen</string>
     <string name="pending_survey_notification">tienes una encuesta pendiente:</string>
-    <string name="task_notification">%1$s vence el %2$s</string>
+    <string name="task_notification">%1$s vence en %2$s</string>
     <string name="resource_notification">Tienes %1$d recursos no descargados</string>
     <string name="vitals_format">
     Temperatura: %1$s\n
@@ -780,14 +778,14 @@
     <string name="bp_must_be_between_60_40_and_300_200">La presión arterial debe estar entre 60/40 y 300/200</string>
     <string name="systolic_and_diastolic_must_be_numbers">Sistólica y diastólica deben ser números</string>
     <string name="added_successfully">Agregado exitosamente</string>
-    <string name="invalid_input_must_be_between_30_and_40">La temperatura corporal, debe estar entre 30 y 40</string>
-    <string name="invalid_input_must_be_between_40_and_120">frecuencia del pulso, debe estar entre 40 y 120</string>
-    <string name="invalid_input_must_be_between_1_and_250">altura, debe estar entre 1 y 250</string>
-    <string name="invalid_input_must_be_between_1_and_150">Peso, debe estar entre 1 y 150</string>
+    <string name="invalid_input_must_be_between_30_and_40">Entrada inválida, debe estar entre 30 y 40</string>
+    <string name="invalid_input_must_be_between_40_and_120">Entrada inválida, debe estar entre 40 y 120</string>
+    <string name="invalid_input_must_be_between_1_and_250">Entrada inválida, debe estar entre 1 y 250</string>
+    <string name="invalid_input_must_be_between_1_and_150">Entrada inválida, debe estar entre 1 y 150</string>
     <string name="unable_to_add_health_record">No se puede agregar el registro de salud.</string>
-    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">¿Está seguro de que desea cancelar la adición de este recurso? Tus datos se perderán</string>
+    <string name="are_you_sure_you_want_to_exit_your_data_will_be_lost">¿Estás seguro de que quieres salir? Se perderán tus datos.</string>
     <string name="yes_i_want_to_exit">"Sí, quiero salir. "</string>
-    <string name="my_health_saved_successfully">Mi salud guardada correctamente</string>
+    <string name="my_health_saved_successfully">miSalud guardada correctamente</string>
     <string name="health_record_not_available">Registro de salud no disponible.</string>
     <string name="joined_colon">"Unido: %s"</string>
     <string name="is_now_hidden">" ahora está oculto"</string>
@@ -799,15 +797,15 @@
     <string name="label_added">Etiqueta agregada.</string>
     <string name="please_enter_message">Por favor ingresa un mensaje</string>
     <string name="new_not_available">Nuevo no disponible</string>
-    <string name="hide_add_story">Ocultar Agregar Historia</string>
+    <string name="hide_add_story">Ocultar agregar historia</string>
     <string name="no_items">No hay elementos</string>
-    <string name="record_survey">Registrar Encuesta</string>
+    <string name="record_survey">Registrar encuesta</string>
     <string name="survey_sent_to_users">Encuesta enviada a los usuarios</string>
-    <string name="wifi_is_turned_off_saving_battery_power">El wifi está apagado. Ahorrando energía de la batería</string>
-    <string name="turning_on_wifi_please_wait">Encendiendo wifi. Por favor espera…</string>
+    <string name="wifi_is_turned_off_saving_battery_power">El wifi está desactivado. Ahorrando energía de la batería</string>
+    <string name="turning_on_wifi_please_wait">Activando wifi. Por favor espera…</string>
     <string name="unable_to_connect_to_planet_wifi">No se puede conectar al wifi de Planet.</string>
     <string name="you_are_now_connected">"Ahora estás conectado "</string>
-    <string name="press_back_again_to_exit">Presiona ATRÁS nuevamente para salir</string>
+    <string name="press_back_again_to_exit">Presiona ATRÁS de nuevo para salir</string>
     <string name="press_the_sync_button_to_sync_your_planet_account_data_with_your_myplanet_application_data">Presiona el botón de sincronización para sincronizar los datos de tu cuenta de Planet con los datos de tu aplicación myPlanet</string>
     <string name="press_the_settings_button_to_access_your_myplanet_planet_account_server_settings_to_properly_set_up_your_syncing_process">Presiona el botón de configuración para acceder a la configuración de la cuenta de myPlanet/Planet y configurar correctamente el proceso de sincronización</string>
     <string name="it_has_been_more_than">"Han pasado más de "</string>
@@ -820,10 +818,10 @@
     <string name="username_cannot_be_empty">El nombre de usuario no puede estar vacío</string>
     <string name="unable_to_login">No se puede iniciar sesión</string>
     <string name="planet_server_not_reachable">Servidor de Planet no accesible.</string>
-    <string name="select_language">Seleccionar Idioma</string>
+    <string name="select_language">Seleccionar idioma</string>
     <string name="thank_you">¡Gracias!</string>
-    <string name="please_wait">Por favor espera…</string>
-    <string name="update_later">Actualizar Más Tarde</string>
+    <string name="please_wait">Por favor espera....</string>
+    <string name="update_later">Actualizar más tarde</string>
     <string name="checking_version">Verificando versión....</string>
     <string name="please_enter_your_password">Por favor ingresa tu contraseña</string>
     <string name="downloading">"Descargando.... "</string>
@@ -833,21 +831,21 @@
     <string name="uploading_data_to_server_please_wait">Cargando datos al servidor, por favor espera.....</string>
     <string name="uploading_activities_to_server_please_wait">Cargando actividades al servidor, por favor espera…</string>
     <string name="connecting_to_server">Conectando al servidor....</string>
-    <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">Verifica nuevamente la dirección del servidor. A lo que me conecté no fue el servidor de Planet</string>
-    <string name="device_couldn_t_reach_local_server">el dispositivo no pudo alcanzar el servidor. verifique si está conectado a la red Wi-Fi correcta para el servidor local (comunidad).</string>
-    <string name="device_couldn_t_reach_nation_server">el dispositivo no pudo alcanzar el servidor. verifique si está conectado a Internet e inténtelo de nuevo.</string>
+    <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">Verifica de nuevo la dirección del servidor. A lo que me conecté no fue el servidor de Planet</string>
+    <string name="device_couldn_t_reach_local_server">El dispositivo no pudo alcanzar el servidor. Verifique si está conectado a la red Wi-Fi correcta para el servidor local (comunidad).</string>
+    <string name="device_couldn_t_reach_nation_server">El dispositivo no pudo alcanzar el servidor. Verifique si está conectado a Internet e inténtelo de nuevo.</string>
     <string name="server_not_configured_properly_connect_this_device_with_planet_server">El servidor no está configurado correctamente. Conecta este dispositivo con el servidor de Planet</string>
     <string name="syncing_data_please_wait">Sincronizando datos, por favor espera…</string>
     <string name="sync_failed">Sincronización fallida</string>
     <string name="sync_completed">Sincronización completada</string>
     <string name="message_is_required">Se requiere un mensaje</string>
-    <string name="team_leader">Líder de Equipo</string>
-    <string name="select_resource">"Seleccionar Recurso: "</string>
+    <string name="team_leader">Líder de equipo</string>
+    <string name="select_resource">"Seleccionar recurso: "</string>
     <string name="add">Agregar</string>
     <string name="deadline_colon">Fecha límite: %s</string>
     <string name="completed_colon">\n Completado: %s</string>
     <string name="assigned_to_colon">Asignado a: %s</string>
-    <string name="add_task">Agregar Tarea</string>
+    <string name="add_task">Agregar tarea</string>
     <string name="task_title_is_required">Se requiere el título de la tarea</string>
     <string name="deadline_is_required">Se requiere la fecha límite</string>
     <string name="updated">actualizado</string>
@@ -872,8 +870,8 @@
     <string name="password_doesn_t_match">Las contraseñas no coinciden</string>
     <string name="invalid_email">Correo electrónico inválido.</string>
     <string name="username_taken">Nombre de usuario ya existe</string>
-    <string name="add_reference">Agregar Referencia</string>
-    <string name="add_achievement">Agregar Logro</string>
+    <string name="add_reference">Agregar referencia</string>
+    <string name="add_achievement">Agregar logro</string>
     <string name="select_resources">"Seleccionar recursos: "</string>
     <string name="user_not_available_in_our_database">Usuario no disponible en nuestra base de datos</string>
     <string name="date_of_birth">"Fecha de nacimiento: "</string>
@@ -889,7 +887,7 @@
     <string name="are_you_sure_want_to_delete_all_the_files">¿Estás seguro de que quieres eliminar todos los archivos?</string>
     <string name="unable_to_clear_files">No se pueden eliminar los archivos</string>
     <string name="last_synced_never">nunca sincronizado</string>
-    <string name="last_synced_colon">"Última sincronización: "</string>
+    <string name="last_synced_colon">"última sincronización: "</string>
 
     <string name="disclaimer">
     <![CDATA[
@@ -900,45 +898,45 @@
     <p>Las palabras cuya inicial está en mayúscula tienen significados definidos bajo las siguientes condiciones.</p>
     <p>Las siguientes definiciones tendrán el mismo significado independientemente de si aparecen en singular o en plural.</p>
     <h2>Definiciones</h2>
-    <p>A los efectos de esta renuncia de responsabilidad:</p>
+    <p>A los efectos de este descargo de responsabilidad:</p>
     <ul>
         <li><strong>Compañía</strong> (referida como "la Compañía", "Nosotros", "Nuestro" en esta Política de cookies) se refiere a myPlanet.</li>
         <li><strong>Tú</strong> significa la persona que accede al Servicio, o la empresa u otra entidad legal en nombre de la cual esa persona accede o utiliza el Servicio, según corresponda.</li>
         <li><strong>Aplicación</strong> significa el programa de software proporcionado por la Compañía que tú descargas en cualquier dispositivo electrónico llamado myPlanet.</li>
         <li><strong>Servicio</strong> se refiere a la Aplicación.</li>
     </ul>
-    <h1>Renuncia de responsabilidad</h1>
-    <p>La información contenida en el Servicio es solo para fines informativos generales.</p>
+    <h1>Descargo de responsabilidad</h1>
+    <p>La información contenida en el Servicio se suministra únicamente con fines informativos generales.</p>
     <p>La Compañía no asume ninguna responsabilidad por errores u omisiones en el contenido del Servicio.</p>
     <p>En ningún caso la Compañía será responsable por daños especiales, directos, indirectos, consecuentes o incidentales o cualquier otro tipo de daños, ya sea en una acción contractual, negligencia u otro agravio, que surjan o estén relacionados con el uso del Servicio o el contenido del Servicio. La Compañía se reserva el derecho de hacer adiciones, eliminaciones o modificaciones al contenido del Servicio en cualquier momento y sin previo aviso.</p>
     <p>La Compañía no garantiza que el Servicio esté libre de virus u otros componentes dañinos.</p>
-    <h1>Renuncia de responsabilidad de información médica</h1>
+    <h1>Descargo de responsabilidad de información médica</h1>
     <p>La información sobre salud proporcionada por el Servicio no tiene la intención de diagnosticar, tratar, curar o prevenir enfermedades. Los productos, servicios, información y otros contenidos proporcionados por el Servicio, incluida la información que enlace a sitios web de terceros, se proporcionan únicamente con fines informativos.</p>
     <p>La información ofrecida por el Servicio no es exhaustiva y no abarca todas las enfermedades, dolencias, condiciones físicas o su tratamiento.</p>
     <p>Las personas son diferentes y pueden reaccionar de manera diferente a diferentes productos. Los comentarios realizados en el Servicio por empleados u otros usuarios son estrictamente sus propias opiniones personales expresadas en su capacidad personal y no son afirmaciones hechas por la Compañía ni representan la posición o la visión de la Compañía.</p>
     <p>La Compañía no se hace responsable de ninguna información proporcionada por el Servicio con respecto a recomendaciones sobre suplementos para cualquier propósito de salud.</p>
     <p>La Compañía no garantiza ni ofrece garantías con respecto a ningún producto o servicio vendido. La Compañía no es responsable de ningún daño causado por información o servicios proporcionados, incluso si se ha informado de la posibilidad de tales daños.</p>
-    <h1>Renuncia de responsabilidad de enlaces externos</h1>
+    <h1>Descargo de responsabilidad de enlaces externos</h1>
     <p>El Servicio puede contener enlaces a sitios web externos que no son proporcionados ni mantenidos por la Compañía de ninguna manera.</p>
     <p>Ten en cuenta que la Compañía no garantiza la exactitud, pertinencia, puntualidad o integridad de ninguna información en estos sitios web externos.</p>
-    <h1>Renuncia de responsabilidad por errores y omisiones</h1>
+    <h1>Descargo de responsabilidad por errores y omisiones</h1>
     <p>La información proporcionada por el Servicio es solo una guía general sobre temas de interés. Aunque la Compañía toma todas las precauciones para garantizar que el contenido del Servicio sea actual y preciso, pueden producirse errores. Además, debido a la naturaleza cambiante de las leyes, normas y regulaciones, puede haber demoras, omisiones o inexactitudes en la información contenida en el Servicio.</p>
     <p>La Compañía no se hace responsable de ningún error u omisión, ni de los resultados obtenidos del uso de esta información.</p>
-    <h1>Renuncia de responsabilidad de uso justo</h1>
+    <h1>Descargo de responsabilidad de uso justo</h1>
     <p>La Compañía puede utilizar material protegido por derechos de autor que no siempre ha sido autorizado específicamente por el propietario de los derechos de autor. La Compañía pone a disposición dicho material para crítica, comentario, informes de noticias, enseñanza, becas o investigación.</p>
     <p>La Compañía cree que esto constituye un "uso justo" de cualquier material protegido por derechos de autor según lo establecido en la sección 107 de la ley de derechos de autor de Estados Unidos.</p>
     <p>Si deseas utilizar material protegido por derechos de autor del Servicio para tus propios fines que vayan más allá del uso justo, debes obtener permiso del titular de los derechos de autor.</p>
-    <h1>Renuncia de responsabilidad de opiniones expresadas</h1>
+    <h1>Descargo de responsabilidad de opiniones expresadas</h1>
     <p>El Servicio puede contener opiniones y puntos de vista que son de los autores y no reflejan necesariamente la política oficial o la posición de cualquier otro autor, agencia, organización, empleador o empresa, incluida la Compañía.</p>
     <p>Los comentarios publicados por los usuarios son su única responsabilidad y los usuarios asumirán la responsabilidad total, la responsabilidad y la culpa por cualquier difamación o litigio que resulte de algo escrito en un comentario o como resultado directo de algo escrito en un comentario. La Compañía no se hace responsable de ningún comentario publicado por los usuarios y se reserva el derecho de eliminar cualquier comentario por cualquier motivo que sea.</p>
-    <h1>Renuncia de responsabilidad sin responsabilidad</h1>
+    <h1>Descargo de responsabilidad sin responsabilidad</h1>
     <p>La información del Servicio se proporciona con el entendimiento de que la Compañía no se dedica aquí a prestar asesoramiento y servicios legales, contables, fiscales u otros servicios profesionales. Como tal, no debe utilizarse como sustituto de la consulta con asesores profesionales de contabilidad, fiscalidad, legal u otros competentes.</p>
     <p>En ningún caso, la Compañía o sus proveedores serán responsables de ningún daño especial, incidental, indirecto o consecuente que surja de o en relación con tu acceso o uso o incapacidad para acceder o usar el Servicio.</p>
-    <h1>Renuncia de responsabilidad de "Uso bajo tu propio riesgo"</h1>
+    <h1>Descargo de responsabilidad de "Uso bajo tu propio riesgo"</h1>
     <p>Toda la información en el Servicio se proporciona "tal cual", sin garantía de integridad, exactitud, puntualidad o de los resultados obtenidos del uso de esta información, y sin garantía de ningún tipo, expresa o implícita, incluidas, entre otras, las garantías de rendimiento, comerciabilidad y idoneidad para un propósito particular.</p>
     <p>La Compañía no será responsable ante ti ni ante ninguna otra persona por cualquier decisión tomada o acción realizada en confianza en la información proporcionada por el Servicio o por cualquier daño consecuente, especial o similar, incluso si se informa de la posibilidad de tales daños.</p>
     <h2>Contáctanos</h2>
-    <p>Si tienes alguna pregunta sobre esta renuncia de responsabilidad, puedes contactarnos:</p>
+    <p>Si tienes alguna pregunta sobre este descargo de responsabilidad, puedes contactarnos:</p>
     <ul>
         <li>Por correo electrónico: myplanet@ole.org</li>
         <li>Visitando esta página en nuestro sitio web: <a href="https://ole.org/contact">https://ole.org/contact</a></li>
@@ -969,7 +967,7 @@
     ]]>
     </string>
 
-    <string name="is_on_please_turn_of_to_save_battery">" está encendido, por favor apágalo para ahorrar batería"</string>
+    <string name="is_on_please_turn_of_to_save_battery">" está activado, por favor desactívalo para ahorrar batería"</string>
     <string name="go_to_settings">Ir a configuración</string>
     <string name="new_version_of_my_planet_available">Nueva versión de myPlanet disponible</string>
     <string name="download_first_to_continue">Descargar primero para continuar.</string>
@@ -982,7 +980,7 @@
     <string name="beta_function_for_wifi_switch">Función beta para interruptor de WiFi</string>
     <string name="upgrade_application">Actualizar aplicación</string>
     <string name="auto_upgrade">Actualización automática</string>
-    <string name="always_move_to_maximum_version">Mover siempre a la versión máxima</string>
+    <string name="always_move_to_maximum_version">¿Mover siempre a la versión máxima?</string>
     <string name="all_beta_functions">Todas las funciones beta</string>
     <string name="auto_sync_device">Sincronizar automáticamente el dispositivo</string>
     <string name="beta_functionality">Funcionalidad beta</string>
@@ -994,13 +992,13 @@
     <string name="available_space_colon">Espacio disponible: </string>
     <string name="community_leaders">Líderes comunitarios</string>
     <string name="services">Servicios</string>
-    <string name="survey_taken">Encuesta Realizada</string>
+    <string name="survey_taken">Encuesta realizada</string>
     <string name="times">veces</string>
     <string name="time">tiempo</string>
-    <string name="ai_chat">AI Chat</string>
+    <string name="ai_chat">Chat IA</string>
     <string name="kindly_give_a_rating">Por favor, dé una calificación</string>
     <string name="must_start_with_letter_or_number">Debe comenzar con una letra o número</string>
-    <string name="only_letters_numbers_and_are_allowed">Solo se permiten letras de la a a la z, números y "_", ".", y "-"</string>
+    <string name="only_letters_numbers_and_are_allowed">Solo se permiten letras (a–z), números y los caracteres '_', '.', '-'</string>
     <string name="config_not_available">Configuración no disponible.</string>
     <string name="unselect_all">Deseleccionar todo</string>
     <string name="select_all">Seleccionar todo</string>
@@ -1036,7 +1034,7 @@
     <string name="chat_history">historial de chat</string>
     <string name="password_toggle_description">Alternar la visibilidad de la contraseña</string>
     <string name="skill_level">selecciona el nivel de habilidad</string>
-    <string name="go_to_feedback_page">ir a la página de retroalimentación</string>
+    <string name="go_to_feedback_page">ir a la página de comentarios</string>
     <string name="select_date_of_birth">selecciona la fecha de nacimiento</string>
     <string name="confirm_membership">confirma para convertirte en miembro</string>
     <string name="trial_period_ended">¡El período de prueba ha terminado! Por favor, completa el registro para continuar</string>
@@ -1067,16 +1065,16 @@
     <string name="compulsory_phone_number">número de teléfono requerido</string>
     <string name="compulsory_date_of_birth">fecha de nacimiento requerida</string>
     <string name="gender_not_picked">género no seleccionado</string>
-    <string name="title_colon">título:&#160;</string>
-    <string name="date_from_colon">fecha desde:&#160;</string>
-    <string name="date_to_colon">fecha hasta:&#160;</string>
-    <string name="location_colon">ubicación:&#160;</string>
-    <string name="recurring_colon">recurrente:&#160;</string>
-    <string name="created_by_colon">creado por:&#160;</string>
+    <string name="title_colon">título:</string>
+    <string name="date_from_colon">fecha desde:</string>
+    <string name="date_to_colon">fecha hasta:</string>
+    <string name="location_colon">ubicación:</string>
+    <string name="recurring_colon">recurrente:</string>
+    <string name="created_by_colon">creado por:</string>
     <string name="failed_to_get_configuration_id">No se pudo obtener el ID de configuración. Por favor, contacte al administrador</string>
-    <string name="you_want_to_connect_to_a_different_server">Desea conectarse a un servidor diferente. Borre los datos de la aplicación para continuar</string>
+    <string name="you_want_to_connect_to_a_different_server">¿Estás seguro de que deseas cambiar la configuración? Esta acción borrará los datos de la aplicación</string>
     <string name="are_you_sure_you_want_to_clear_data">¿Estás seguro de que deseas borrar todos los datos?</string>
-    <string name="feedback_list">lista de retroalimentación</string>
+    <string name="feedback_list">lista de comentarios</string>
     <string name="enterprise_list">lista de empresas</string>
     <string name="list_of_teams">lista de equipos</string>
     <string name="sign_up_to_chat">Por favor regístrate para acceder al chat de IA</string>
@@ -1084,7 +1082,7 @@
     <string name="shared_chat">chat compartido</string>
     <string name="check_apk_version">verificando versión de la aplicación</string>
     <string name="checking_server">verificando el servidor</string>
-    <string name="below_min_apk">la versión de la aplicación está por debajo de la permitida. Actualice la aplicación a la última versión.</string>
+    <string name="below_min_apk">La versión de la aplicación es inferior a la permitida. Por favor, actualiza la aplicación a la última versión.</string>
     <string name="add_note">Agregar una nota (opcional)</string>
     <string name="no_teams">equipos no disponibles</string>
     <string name="planet_name">%s Planeta</string>
@@ -1094,7 +1092,6 @@
     <string name="message_placeholder">%s</string>
     <string name="reports">informes</string>
     <string name="number_placeholder">%d</string>
-    <string name="float_placeholder">%.1f</string>
     <string name="date_range">%1$s a %2$s</string>
     <string name="string_range">%1$s - %2$s</string>
     <string name="team_financial_report">Informe financiero de %s</string>
@@ -1113,19 +1110,18 @@
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
+    <string name="download_sync_files">descargar archivos de sincronización</string>
     <string name="member_description">%1$s (%2$d visitas)</string>
-    <string name="dark_mode">Modo Oscuro</string>
-    <string name="last_visit">Última visita: %1$s</string>
-    <string name="no_visit">sin visita</string>
-    <string name="dark_mode_off">Apagado</string>
-    <string name="dark_mode_on">Encendido</string>
+    <string name="dark_mode">Modo oscuro</string>
+    <string name="dark_mode_off">Desactivado</string>
+    <string name="dark_mode_on">Activado</string>
     <string name="dark_mode_follow_system">Seguir el sistema</string>
     <string-array name="dark_mode_options">
         <item>@string/dark_mode_off</item>
         <item>@string/dark_mode_on</item>
         <item>@string/dark_mode_follow_system</item>
     </string-array>
-    <string name="are_you_sure_you_want_to_archive_these_courses">¿Está seguro de que desea archivar estos cursos?</string>
+    <string name="are_you_sure_you_want_to_archive_these_courses">¿Estás seguro de que deseas archivar estos cursos?</string>
     <string name="are_you_sure_you_want_to_archive_this_course">¿Estás seguro de que deseas archivar este curso?</string>
     <string name="manual">manual</string>
     <string name="sync_to_server">Sincronizar con el servidor:</string>
@@ -1149,24 +1145,24 @@
     <string name="select_theme_mode">seleccionar el modo de tema</string>
     <string name="beta_resources_auto_download">Descarga automática de recursos beta</string>
     <string name="course_steps">Pasos del curso</string>
-    <string name="to_access_this_feature_become_a_member">actualmente eres un usuario invitado. para acceder a esta función, hazte miembro.</string>
+    <string name="to_access_this_feature_become_a_member">Actualmente eres un usuario invitado. Para acceder a esta función, hazte miembro.</string>
     <string name="sales">Ventas</string>
     <string name="beginning_balance">Saldo inicial</string>
     <string name="other">Otro</string>
-    <string name="total_income">Ingresos Totales</string>
+    <string name="total_income">Ingresos totales</string>
     <string name="personnel">Personal</string>
     <string name="non_personnel">No Personal</string>
-    <string name="total_expenses">Gastos Totales</string>
+    <string name="total_expenses">Gastos totales</string>
     <string name="profit_loss">Ganancia/Pérdida</string>
-    <string name="ending_balance">Saldo Final</string>
-    <string name="reports_summary">Resumen de Informes</string>
+    <string name="ending_balance">Saldo final</string>
+    <string name="reports_summary">Resumen de informes</string>
     <string name="summary">Resumen</string>
     <string name="other_income">Otros ingresos</string>
     <string name="add_reports">Agregar informes</string>
     <string name="export_csv">Exportar CSV</string>
     <string name="add_report">Agregar informe</string>
     <string name="new_chat">Nuevo chat</string>
-    <string name="chat_enter_message">Introducir mensaje</string>
+    <string name="chat_enter_message">introduzca mensaje</string>
     <string name="hour">hora</string>
     <string name="hours">horas</string>
     <string name="material_calendar_monday">L</string>
@@ -1193,9 +1189,9 @@
     <string name="material_calendar_today_button">Hoy</string>
     <string name="material_calendar_positive_button">Aceptar</string>
     <string name="material_calendar_negative_button">Cancelar</string>
-    <string name="switching_off_manual_configuration_to_clear_data">desactivar la configuración manual borrará todos los datos, ¿está seguro de que desea continuar?</string>
-    <string name="switching_on_manual_configuration_to_clear_data">activar la configuración manual borrará todos los datos, ¿está seguro de que desea continuar?</string>
-    <string name="chart_description">Gráfico de Actividad de Inicio de Sesión</string>
+    <string name="switching_off_manual_configuration_to_clear_data">Desactivar la configuración manual borrará todos los datos, ¿Está seguro de que desea continuar?</string>
+    <string name="switching_on_manual_configuration_to_clear_data">Activar la configuración manual borrará todos los datos, ¿Está seguro de que desea continuar?</string>
+    <string name="chart_description">Gráfico de actividad de inicio de sesión</string>
     <string name="chart_label">N.º de inicios de sesión</string>
     <string name="copied_to_clipboard">copiado al portapapeles</string>
     <string name="mark_all_as_read">Marcar todo como leído</string>
@@ -1211,15 +1207,15 @@
     <string name="my_purpose">Mi Propósito</string>
     <string name="my_goals">Mis Metas</string>
     <string name="community_name">Nombre de la Comunidad</string>
-    <string name="last_login">Último Inicio de Sesión : </string>
-    <string name="total_visits_overall">Total de Visitas : </string>
-    <string name="most_opened_resource">Recurso Más Abierto : </string>
-    <string name="number_of_resources_opened">Número de Recursos Abiertos : </string>
-    <string name="number_of_visits">Número de Visitas</string>
+    <string name="last_login">Último inicio de sesión : </string>
+    <string name="total_visits_overall">Total de visitas : </string>
+    <string name="most_opened_resource">Recurso más abierto : </string>
+    <string name="number_of_resources_opened">Número de recursos abiertos : </string>
+    <string name="number_of_visits">Número de visitas</string>
     <string name="kindly_enter_reply_message">Por favor, ingrese el mensaje de respuesta</string>
     <string name="start">iniciar</string>
     <string name="continuation">continuar</string>
-    <string name="please_complete_survey">por favor complete la encuesta para terminar el curso</string>
+    <string name="please_complete_survey">por favor completa la encuesta para terminar el curso</string>
     <string name="export_cancelled">exportación cancelada.</string>
     <string name="failed_to_save_csv_file">error al guardar el archivo CSV.</string>
     <string name="csv_file_saved_successfully">archivo CSV guardado con éxito.</string>
@@ -1230,95 +1226,5 @@
     <string name="local_resource">recurso local</string>
     <string name="no_survey_submissions">no hay envíos de encuestas</string>
     <string name="no_exam_submissions">no hay envíos de exámenes</string>
-    <string name="no_reports">No hay informes disponibles</string>
-    <string name="fetching_ai_providers">Obteniendo proveedores de IA…</string>
-    <string name="adopt_survey">Adoptar encuesta</string>
-    <string name="survey_adopted_successfully">¡Encuesta adoptada con éxito!</string>
-    <string name="beta_fast_sync">sincronización rápida beta</string>
-    <string name="user_verification_in_progress">Verificación de usuario en progreso. Por favor, espere mientras procesamos los datos.</string>
-    <string name="go_to_mylibrary">Ir a Mi Biblioteca</string>
-    <string name="choose_an_option">Elige una opción</string>
-    <string name="welcome_back">Bienvenido de nuevo %1$s</string>
-    <string name="welcome">Bienvenido %1$s</string>
-    <string name="edit_plan">Editar plan</string>
-    <string name="show_additional_fields">Mostrar campos adicionales</string>
-    <string name="hide_additional_fields">Ocultar campos adicionales</string>
-    <string name="age">edad</string>
-    <string name="preparing_download">Preparando la descarga…</string>
-    <string name="downloading_files">Descargando archivos</string>
-    <string name="age_must_be_100_or_below">La edad debe ser 100 o menos</string>
-    <string name="please_enter_a_valid_age">Por favor ingrese una edad válida</string>
-    <string name="member_of_planet">miembro de planet</string>
-    <string name="edit_mission_and_services">editar misión y servicios</string>
-    <string name="this_team_has_no_description_defined">este equipo no tiene descripción definida</string>
-    <string name="contact_preference">contact preference</string>
-    <string name="planet_is_up_to_date">El planeta está actualizado.</string>
-    <string name="new_apk_version_required_but_not_found_on_server">Se requiere una nueva versión de APK, pero no se encontró en el servidor. Contacte al administrador.</string>
-    <string name="version_not_found">Versión no encontrada</string>
-    <string name="connection_failed">¡Conexión fallida!</string>
-    <string name="unable_to_create_user_user_already_exists">No se puede crear el usuario, el usuario ya existe.</string>
-    <string name="not_connect_to_planet_created_user_offline">No conectado al planeta, usuario creado sin conexión.</string>
-    <string name="user_created_successfully">Usuario creado con éxito.</string>
-    <string name="unable_to_save_user_please_sync">No se puede guardar el usuario, por favor sincronice.</string>
-    <string name="server_sync_successfully">Sincronización del servidor exitosa.</string>
-    <string name="server_sync_has_failed">La sincronización del servidor ha fallado.</string>
-    <string name="no_resources_to_download">No hay recursos para descargar</string>
-    <string name="response">Respuesta</string>
-    <string name="full_conversation_response">Respuesta completa de la conversación</string>
-    <string name="add_new_event">+ nuevo evento</string>
-    <string name="none">Ninguno</string>
-    <string name="remind_later">Recordar más tarde</string>
-    <string name="remind_me_later">Recuérdame más tarde</string>
-    <string name="remind_me_in">Recuérdame en:</string>
-    <string name="minutes">Minutos</string>
-    <string name="days">Días</string>
-    <string name="set_reminder">Establecer recordatorio</string>
-    <string name="reminder_set_for">Recordatorio establecido para %1$s a partir de ahora</string>
-    <string name="reminder_surveys_to_complete">Recordatorio: Tienes %1$d %2$s por completar</string>
-
-    <plurals name="minutes">
-        <item quantity="one">%d minuto</item>
-        <item quantity="other">%d minutos</item>
-    </plurals>
-
-    <plurals name="hours">
-        <item quantity="one">%d hora</item>
-        <item quantity="other">%d horas</item>
-    </plurals>
-
-    <plurals name="days">
-        <item quantity="one">%d día</item>
-        <item quantity="other">%d días</item>
-    </plurals>
-
-    <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">Sus datos de salud aparecerán aquí a medida que continúe registrándolos</string>
-    <string name="no_health_records_available">No hay registros de salud disponibles</string>
-    <string name="permission_required">Se requiere permiso</string>
-    <string name="microphone_permission_required">Se requiere permiso del micrófono para grabar audio. Actívalo en la configuración de la aplicación.</string>
-    <string name="confirm_share_community">¿Estás seguro de que quieres compartir este contenido con la comunidad?</string>
-    <string name="camera_permission_required">Se requiere permiso para usar la cámara. Actívalo en la configuración de la aplicación.</string>
-    <string name="clearing_data">Borrando datos…</string>
-    <string name="time_colon">tiempo:&#160;</string>
-    <string name="a_few_seconds_ago">hace unos segundos</string>
-    <string name="no_teams_found">No se encontraron equipos</string>
-    <string name="no_teams_found_for_search">No se encontraron equipos para "%1$s"</string>
-    <string name="no_enterprises_found_for_search">No se encontraron empresas para "%1$s"</string>
-    <string name="no_enterprises_found">No se encontraron empresas</string>
-    <string name="starting_downloads">Iniciando descargas…</string>
-    <string name="downloaded_files">%1$s/%2$s archivos descargados</string>
-    <string name="download_failed">Descarga fallida</string>
-    <string name="downloads_completed">Descargas completadas</string>
-    <string name="download_progress">%1$d de %2$d archivos descargados</string>
-    <string name="download_progress_with_errors">%1$d de %2$d archivos descargados (con algunos errores)</string>
-    <string name="download_in_background">Iniciando descarga en segundo plano…</string>
-    <string name="creating_member_account">Creando cuenta de miembro…</string>
-    <string name="cancel_adding_examination">¿Está seguro de que desea cancelar la adición del examen? Se perderán los datos.</string>
-    <string name="syncing_team_data">Sincronizando datos del equipo…</string>
-    <string name="syncing_chat_history">Sincronizando historial de chat…</string>
-    <string name="syncing_courses_data">Sincronizando datos de los cursos…</string>
-    <string name="syncing_feedback">Sincronizando comentarios…</string>
-    <string name="syncing_health_data">Sincronizando datos de salud…</string>
-    <string name="syncing_resources">Sincronizando recursos…</string>
-    <string name="syncing_achievements">Sincronizando logros…</string>
 
 </resources>
