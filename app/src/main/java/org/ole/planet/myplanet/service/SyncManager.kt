@@ -572,7 +572,6 @@ class SyncManager private constructor(private val context: Context) {
             val realmInstance = backgroundRealm ?: mRealm
             val newIds: MutableList<String?> = ArrayList()
             var totalRows = 0
-
             ApiClient.executeWithRetry {
                 apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?limit=0").execute()
             }?.let { response ->
@@ -632,7 +631,6 @@ class SyncManager private constructor(private val context: Context) {
                             val idsWeAreProcessing = validDocuments.map { it.second }
 
                             val savedIds = mutableListOf<String>()
-
                             for ((_, chunk) in chunks.withIndex()) {
                                 realmInstance.executeTransaction { realm ->
                                     val chunkDocuments = JsonArray()
@@ -678,7 +676,6 @@ class SyncManager private constructor(private val context: Context) {
                     }
 
                     skip += rows.size()
-
                     if (batchCount % 10 == 0) {
                         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                         settings.edit {
@@ -686,7 +683,6 @@ class SyncManager private constructor(private val context: Context) {
                             putInt("ResourceSyncPosition", skip)
                         }
                     }
-
                 } catch (e: Exception) {
                     e.printStackTrace()
                     skip += batchSize
@@ -701,7 +697,6 @@ class SyncManager private constructor(private val context: Context) {
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-
             logger.endProcess("resource_sync", processedItems)
         } catch (e: Exception) {
             e.printStackTrace()
@@ -845,7 +840,6 @@ class SyncManager private constructor(private val context: Context) {
     private suspend fun getShelvesWithDataBatchOptimized(): List<String> {
         val apiInterface = ApiClient.getEnhancedClient()
         val shelvesWithData = mutableListOf<String>()
-
         val cachedShelves = getCachedShelvesWithData()
         if (cachedShelves.isNotEmpty()) {
             return cachedShelves
@@ -899,7 +893,6 @@ class SyncManager private constructor(private val context: Context) {
                 }
             }
         }
-
         return shelvesWithData
     }
 
@@ -925,7 +918,6 @@ class SyncManager private constructor(private val context: Context) {
                 return cachedData.split(",").filter { it.isNotBlank() }
             }
         }
-
         return emptyList()
     }
 
@@ -1080,7 +1072,6 @@ class SyncManager private constructor(private val context: Context) {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-
         return processedCount
     }
 
