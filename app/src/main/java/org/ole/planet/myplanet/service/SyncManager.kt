@@ -433,7 +433,6 @@ class SyncManager private constructor(private val context: Context) {
             initializeSync()
             mainRealm = dbService.realmInstance
             runBlocking {
-                // Phase 1: Critical syncs (sequential)
                 async {
                     syncWithSemaphore("tablet_users") {
                         safeRealmOperation { realm ->
@@ -442,14 +441,12 @@ class SyncManager private constructor(private val context: Context) {
                     }
                 }.await()
 
-                // Phase 2: Major syncs in parallel (this is the key optimization)
                 val majorSyncs = listOf(
                     async(Dispatchers.IO) { fastResourceTransactionSync() },
                     async(Dispatchers.IO) { fastMyLibraryTransactionSync() }
                 )
                 majorSyncs.awaitAll()
 
-                // Phase 3: Remaining syncs in parallel
                 val remainingSyncs = listOf(
                     async { syncWithSemaphore("courses") {
                         safeRealmOperation { realm -> TransactionSyncManager.syncDb(realm, "courses") }
@@ -591,8 +588,7 @@ class SyncManager private constructor(private val context: Context) {
             }
             Log.d("RESOURCE_SYNC","RESOURCE_SYNC: Get total rows took ${System.currentTimeMillis() - totalRowsStartTime}ms (Total: $totalRows)")
 
-            // UPDATED: Smaller batch size for more consistent performance
-            val batchSize = 50 // Reduced from 200 to avoid large transaction bottlenecks
+            val batchSize = 50
             var skip = 0
             var batchCount = 0
             val batchProcessingStartTime = System.currentTimeMillis()
@@ -645,8 +641,7 @@ class SyncManager private constructor(private val context: Context) {
                     if (validDocuments.isNotEmpty()) {
                         val dbSaveStartTime = System.currentTimeMillis()
                         try {
-                            // UPDATED: Chunked processing to avoid large transaction bottlenecks
-                            val chunkSize = 10 // Process 10 documents at a time
+                            val chunkSize = 10
                             val chunks = validDocuments.chunked(chunkSize)
                             val idsWeAreProcessing = validDocuments.map { it.second }
 
@@ -707,8 +702,7 @@ class SyncManager private constructor(private val context: Context) {
 
                     skip += rows.size()
 
-                    // UPDATED: Update preferences less frequently
-                    if (batchCount % 10 == 0) { // Update every 10 batches instead of every batch
+                    if (batchCount % 10 == 0) {
                         val prefsStartTime = System.currentTimeMillis()
                         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                         settings.edit {
@@ -787,12 +781,7 @@ class SyncManager private constructor(private val context: Context) {
                 val batches = (0 until numBatches).map { batchIndex ->
                     async(Dispatchers.IO) {
                         semaphore.withPermit {
-                            processBatchOptimized(
-                                batchIndex * batchSize,
-                                batchSize,
-                                apiInterface,
-                                newIds
-                            )
+                            processBatchOptimized(batchIndex * batchSize, batchSize, apiInterface, newIds)
                         }
                     }
                 }
@@ -886,32 +875,26 @@ class SyncManager private constructor(private val context: Context) {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-
         return processedCount
     }
 
-
-    // OPTIMIZATION 1: Faster pre-filtering with larger batches and caching
     private suspend fun getShelvesWithDataBatchOptimized(): List<String> {
         val apiInterface = ApiClient.getEnhancedClient()
         val shelvesWithData = mutableListOf<String>()
 
-        // Check cache first
         val cachedShelves = getCachedShelvesWithData()
         if (cachedShelves.isNotEmpty()) {
             Log.d("LIBRARY_SYNC", "Using cached shelf data (${cachedShelves.size} shelves)")
             return cachedShelves
         }
 
-        // Get all shelf IDs first
         val allShelves = ApiClient.executeWithRetry {
             apiInterface.getDocuments(Utilities.header, "${Utilities.getUrl()}/shelf/_all_docs").execute()
         }?.body()?.rows ?: return emptyList()
 
-        // Process shelves in larger parallel batches
         runBlocking {
-            val semaphore = Semaphore(8) // Increased from 5
-            val checkJobs = allShelves.chunked(25).map { shelfBatch -> // Increased from 10
+            val semaphore = Semaphore(8)
+            val checkJobs = allShelves.chunked(25).map { shelfBatch ->
                 async(Dispatchers.IO) {
                     semaphore.withPermit {
                         checkShelfBatchForDataOptimized(shelfBatch, apiInterface)
@@ -924,31 +907,19 @@ class SyncManager private constructor(private val context: Context) {
             }
         }
 
-        // Cache the results
         cacheShelvesWithData(shelvesWithData)
-
         return shelvesWithData
     }
 
-    private suspend fun checkShelfBatchForDataOptimized(
-        shelfBatch: List<Rows>,
-        apiInterface: ApiInterface
-    ): List<String> {
+    private suspend fun checkShelfBatchForDataOptimized(shelfBatch: List<Rows>, apiInterface: ApiInterface): List<String> {
         val shelvesWithData = mutableListOf<String>()
-
-        // Get multiple shelf documents in one API call
         val shelfIds = shelfBatch.map { it.id }
         val keysObject = JsonObject().apply {
             add("keys", Gson().fromJson(Gson().toJson(shelfIds), JsonArray::class.java))
         }
 
         val response = ApiClient.executeWithRetry {
-            apiInterface.findDocs(
-                Utilities.header,
-                "application/json",
-                "${Utilities.getUrl()}/shelf/_all_docs?include_docs=true",
-                keysObject
-            ).execute()
+            apiInterface.findDocs(Utilities.header, "application/json", "${Utilities.getUrl()}/shelf/_all_docs?include_docs=true", keysObject).execute()
         }?.body()
 
         response?.let { responseBody ->
@@ -959,7 +930,6 @@ class SyncManager private constructor(private val context: Context) {
                     val doc = getJsonObject("doc", row)
                     val shelfId = getString("_id", doc)
 
-                    // Use even faster data check
                     if (hasShelfDataUltraFast(doc)) {
                         shelvesWithData.add(shelfId)
                     }
@@ -970,9 +940,7 @@ class SyncManager private constructor(private val context: Context) {
         return shelvesWithData
     }
 
-    // OPTIMIZATION 2: Ultra-fast shelf data detection
     private fun hasShelfDataUltraFast(shelfDoc: JsonObject): Boolean {
-        // Check if any of the expected data fields exist and are non-empty arrays
         return listOf("resourceIds", "courseIds", "meetupIds", "teamIds").any { key ->
             shelfDoc.has(key) && shelfDoc.get(key).let { element ->
                 element.isJsonArray && element.asJsonArray.size() > 0
@@ -980,11 +948,10 @@ class SyncManager private constructor(private val context: Context) {
         }
     }
 
-    // OPTIMIZATION 3: Simple caching mechanism
     private fun getCachedShelvesWithData(): List<String> {
         val cacheKey = "shelves_with_data"
         val cacheTimeKey = "shelves_cache_time"
-        val cacheValidityHours = 6 // Cache for 6 hours
+        val cacheValidityHours = 6
 
         val cacheTime = settings.getLong(cacheTimeKey, 0)
         val now = System.currentTimeMillis()
@@ -1009,7 +976,7 @@ class SyncManager private constructor(private val context: Context) {
         }
     }
 
-    private fun myLibraryTransactionSync(backgroundRealm: Realm? = null) {
+    private fun myLibraryTransactionSync() {
         val logger = SyncTimeLogger.getInstance()
         logger.startProcess("library_sync")
         var processedItems = 0
@@ -1017,10 +984,8 @@ class SyncManager private constructor(private val context: Context) {
         try {
             val initStartTime = System.currentTimeMillis()
             val apiInterface = ApiClient.getEnhancedClient()
-            val realmInstance = backgroundRealm ?: mRealm
             Log.d("LIBRARY_SYNC","LIBRARY_SYNC: Initialization took ${System.currentTimeMillis() - initStartTime}ms")
 
-            // Use optimized pre-filtering
             val preFilterStartTime = System.currentTimeMillis()
             val shelvesWithData = runBlocking { getShelvesWithDataBatchOptimized() }
             Log.d("LIBRARY_SYNC","LIBRARY_SYNC: Pre-filtering took ${System.currentTimeMillis() - preFilterStartTime}ms. Found ${shelvesWithData.size} shelves with data")
@@ -1032,13 +997,12 @@ class SyncManager private constructor(private val context: Context) {
 
             val shelvesProcessingStartTime = System.currentTimeMillis()
 
-            // UPDATED: Process shelves in parallel instead of sequentially
             runBlocking {
-                val semaphore = Semaphore(3) // Limit concurrent shelf processing
+                val semaphore = Semaphore(3)
                 val shelfJobs = shelvesWithData.map { shelfId ->
                     async(Dispatchers.IO) {
                         semaphore.withPermit {
-                            processShelfParallel(shelfId, apiInterface, realmInstance)
+                            processShelfParallel(shelfId, apiInterface)
                         }
                     }
                 }
@@ -1061,17 +1025,11 @@ class SyncManager private constructor(private val context: Context) {
         }
     }
 
-    private suspend fun processShelfParallel(
-        shelfId: String,
-        apiInterface: ApiInterface,
-        realmInstance: Realm
-    ): Int {
+    private suspend fun processShelfParallel(shelfId: String, apiInterface: ApiInterface): Int {
         var processedItems = 0
 
         try {
             val shelfStartTime = System.currentTimeMillis()
-
-            // Get shelf document
             var shelfDoc: JsonObject? = null
             ApiClient.executeWithRetry {
                 apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/$shelfId").execute()
@@ -1084,13 +1042,12 @@ class SyncManager private constructor(private val context: Context) {
                 return 0
             }
 
-            // Process shelf data types in parallel
             coroutineScope {
                 val dataJobs = Constants.shelfDataList.mapNotNull { shelfData ->
                     val array = getJsonArray(shelfData.key, shelfDoc)
                     if (array.size() > 0) {
                         async(Dispatchers.IO) {
-                            processShelfDataOptimizedSync(shelfId, shelfData, shelfDoc, apiInterface, realmInstance)
+                            processShelfDataOptimizedSync(shelfId, shelfData, shelfDoc, apiInterface)
                         }
                     } else null
                 }
@@ -1108,13 +1065,7 @@ class SyncManager private constructor(private val context: Context) {
         return processedItems
     }
 
-    private suspend fun processShelfDataOptimizedSync(
-        shelfId: String?,
-        shelfData: Constants.ShelfData,
-        shelfDoc: JsonObject?,
-        apiInterface: ApiInterface,
-        realmInstance: Realm
-    ): Int {
+    private fun processShelfDataOptimizedSync(shelfId: String?, shelfData: Constants.ShelfData, shelfDoc: JsonObject?, apiInterface: ApiInterface): Int {
         var processedCount = 0
 
         try {
@@ -1134,8 +1085,7 @@ class SyncManager private constructor(private val context: Context) {
 
             if (validIds.isEmpty()) return 0
 
-            // Process in smaller batches for better performance
-            val batchSize = 25 // Smaller batches for more consistent performance
+            val batchSize = 25
 
             for (i in 0 until validIds.size step batchSize) {
                 val end = minOf(i + batchSize, validIds.size)
@@ -1146,12 +1096,7 @@ class SyncManager private constructor(private val context: Context) {
 
                 var response: JsonObject? = null
                 ApiClient.executeWithRetry {
-                    apiInterface.findDocs(
-                        Utilities.header,
-                        "application/json",
-                        "${Utilities.getUrl()}/${shelfData.type}/_all_docs?include_docs=true",
-                        keysObject
-                    ).execute()
+                    apiInterface.findDocs(Utilities.header, "application/json", "${Utilities.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject).execute()
                 }?.let {
                     response = it.body()
                 }
@@ -1171,16 +1116,15 @@ class SyncManager private constructor(private val context: Context) {
                 }
 
                 if (documentsToProcess.isNotEmpty()) {
-                    // Use synchronized block to avoid Realm threading issues
-                    synchronized(realmInstance) {
-                        realmInstance.executeTransaction { realm ->
+                    safeRealmOperation { realm ->
+                        realm.executeTransaction { realmTx ->
                             documentsToProcess.forEach { doc ->
                                 try {
                                     when (shelfData.type) {
-                                        "resources" -> insertMyLibrary(shelfId, doc, realm)
-                                        "meetups" -> insert(realm, doc)
-                                        "courses" -> insertMyCourses(shelfId, doc, realm)
-                                        "teams" -> insertMyTeams(doc, realm)
+                                        "resources" -> insertMyLibrary(shelfId, doc, realmTx)
+                                        "meetups" -> insert(realmTx, doc)
+                                        "courses" -> insertMyCourses(shelfId, doc, realmTx)
+                                        "teams" -> insertMyTeams(doc, realmTx)
                                     }
                                     processedCount++
                                 } catch (e: Exception) {
