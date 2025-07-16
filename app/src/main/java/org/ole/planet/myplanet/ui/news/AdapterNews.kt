@@ -289,6 +289,12 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         return null
     }
 
+    fun updateList(newList: List<RealmNews?>) {
+        list.clear()
+        list.addAll(newList)
+        notifyDataSetChanged()
+    }
+
     private fun setMemberClickListeners(holder: ViewHolderNews, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
         if (!fromLogin) {
             holder.rowNewsBinding.imgUser.setOnClickListener {
