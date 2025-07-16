@@ -157,18 +157,27 @@ class DiscussionListFragment : BaseTeamFragment() {
     }
 
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
-        adapterNews = activity?.let {
-            realmNewsList?.let { it1 ->
-                AdapterNews(it, it1.toMutableList(), user, null, getEffectiveTeamName(), teamId)
+        val existingAdapter = fragmentDiscussionListBinding.rvDiscussion.adapter
+        if (existingAdapter == null) {
+            val adapterNews = activity?.let {
+                realmNewsList?.let { list ->
+                    AdapterNews(it, list.toMutableList(), user, null, getEffectiveTeamName(), teamId)
+                }
             }
-        }
-        adapterNews?.setmRealm(mRealm)
-        adapterNews?.setListener(this)
-        if (!isMember()) adapterNews?.setNonTeamMember(true)
-        fragmentDiscussionListBinding.rvDiscussion.adapter = adapterNews
-        adapterNews?.let {
-            showNoData(fragmentDiscussionListBinding.tvNodata, it.itemCount, "discussions")
-            it.notifyDataSetChanged()
+            adapterNews?.setmRealm(mRealm)
+            adapterNews?.setListener(this)
+            if (!isMember()) adapterNews?.setNonTeamMember(true)
+            fragmentDiscussionListBinding.rvDiscussion.adapter = adapterNews
+            adapterNews?.let {
+                showNoData(fragmentDiscussionListBinding.tvNodata, it.itemCount, "discussions")
+            }
+        } else {
+            (existingAdapter as? AdapterNews)?.let { adapter ->
+                realmNewsList?.let {
+                    adapter.updateList(it)
+                    showNoData(fragmentDiscussionListBinding.tvNodata, adapter.itemCount, "discussions")
+                }
+            }
         }
     }
 

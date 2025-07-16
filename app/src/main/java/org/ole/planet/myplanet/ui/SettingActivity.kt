@@ -16,6 +16,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
 import androidx.preference.Preference.OnPreferenceClickListener
@@ -42,6 +44,7 @@ import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.ThemeMode
@@ -57,6 +60,7 @@ class SettingActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportFragmentManager.beginTransaction().replace(android.R.id.content, SettingFragment()).commit()
+        EdgeToEdgeUtil.setupEdgeToEdge(this, findViewById(android.R.id.content))
         title = getString(R.string.action_settings)
     }
 
@@ -102,7 +106,6 @@ class SettingActivity : AppCompatActivity() {
 
             setBetaToggleOn()
             setAutoSyncToggleOn()
-            setDownloadSyncFilesToggle()
             val lp = findPreference<Preference>("app_language")
             lp?.setOnPreferenceClickListener {
                 context?.let { it1 -> languageChanger(it1) }
@@ -225,16 +228,6 @@ class SettingActivity : AppCompatActivity() {
                 lastSyncDate?.setTitle(R.string.last_synced_never)
             } else if (lastSyncDate != null) {
                 lastSyncDate.title = getString(R.string.last_synced_colon) + Utilities.getRelativeTime(lastSynced)
-            }
-        }
-
-        private fun setDownloadSyncFilesToggle() {
-            val downloadSyncFiles = findPreference<SwitchPreference>("download_sync_files")
-            downloadSyncFiles?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
-                val isEnabled = newValue as Boolean
-                val sharedPreferences = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                sharedPreferences.edit { putBoolean("download_sync_files", isEnabled) }
-                true
             }
         }
 
