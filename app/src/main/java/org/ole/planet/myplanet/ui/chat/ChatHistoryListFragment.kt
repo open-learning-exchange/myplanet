@@ -5,11 +5,17 @@ import android.content.SharedPreferences
 import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -17,7 +23,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import com.google.android.material.snackbar.Snackbar
-import io.realm.Realm
 import io.realm.RealmList
 import io.realm.Sort
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +31,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
-import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.callback.EnhancedSyncListener
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.ChatViewModel
@@ -49,6 +54,12 @@ class ChatHistoryListFragment : Fragment() {
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
     lateinit var settings: SharedPreferences
+    private var isDataLoading = false
+    private var dataRefreshHandler: Handler? = null
+    private var loadingIndicator: View? = null
+    private var loadingText: TextView? = null
+    private var dataReadyCounter = 0
+
     private val serverUrlMapper = ServerUrlMapper()
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
@@ -70,6 +81,9 @@ class ChatHistoryListFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupLoadingIndicator(view)
+        setupDataRefreshHandler()
+
         val slidingPaneLayout = fragmentChatHistoryListBinding.slidingPaneLayout
         slidingPaneLayout.lockMode = SlidingPaneLayout.LOCK_MODE_LOCKED
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, ChatHistoryListOnBackPressedCallback(slidingPaneLayout))
@@ -144,6 +158,49 @@ class ChatHistoryListFragment : Fragment() {
         }
     }
 
+    private fun setupLoadingIndicator(view: View) {
+        loadingIndicator = view.findViewById(R.id.loading_indicator)
+        loadingText = view.findViewById(R.id.loading_text)
+
+        if (loadingIndicator == null) {
+            createLoadingViews()
+        }
+    }
+
+    private fun createLoadingViews() {
+        val rootLayout = fragmentChatHistoryListBinding.root as? ViewGroup
+
+        val loadingLayout = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            setPadding(16, 16, 16, 16)
+        }
+
+        val progressBar = ProgressBar(requireContext(), null, android.R.attr.progressBarStyleHorizontal).apply {
+            isIndeterminate = true
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+
+        loadingText = TextView(requireContext()).apply {
+            text = "Loading chat history..."
+            textAlignment = View.TEXT_ALIGNMENT_CENTER
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                topMargin = 16
+            }
+        }
+
+        loadingLayout.addView(progressBar)
+        loadingLayout.addView(loadingText)
+
+        loadingIndicator = loadingLayout
+        rootLayout?.addView(loadingLayout, 1)
+    }
+
+    private fun setupDataRefreshHandler() {
+        dataRefreshHandler = Handler(Looper.getMainLooper())
+    }
+
     private fun startChatHistorySync() {
         val isFastSync = settings.getBoolean("fastSync", false)
         if (isFastSync && !prefManager.isChatHistorySynced()) {
@@ -163,13 +220,42 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     private fun startSyncManager() {
-        SyncManager.instance?.start(object : SyncListener {
+        isDataLoading = true
+        dataReadyCounter = 0
+
+        SyncManager.instance?.start(object : EnhancedSyncListener {
             override fun onSyncStarted() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
                         customProgressDialog?.setText(getString(R.string.syncing_chat_history))
                         customProgressDialog?.show()
+
+                        showLoadingState()
+                        startPeriodicDataRefresh()
+                    }
+                }
+            }
+
+            override fun onProgressUpdate(processName: String, itemsProcessed: Int) {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        loadingText?.text = "Loading $processName: $itemsProcessed items"
+                        customProgressDialog?.setText("$processName: $itemsProcessed items processed")
+                    }
+                }
+            }
+
+            override fun onDataReady(dataType: String) {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        dataReadyCounter++
+                        loadingText?.text = "$dataType data ready"
+                        refreshChatHistoryListSilently()
+                        if (dataReadyCounter == 1) {
+                            customProgressDialog?.dismiss()
+                            customProgressDialog = null
+                        }
                     }
                 }
             }
@@ -179,9 +265,13 @@ class ChatHistoryListFragment : Fragment() {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
-                        prefManager.setChatHistorySynced(true)
 
                         refreshChatHistoryList()
+                        hideLoadingState()
+                        stopPeriodicDataRefresh()
+
+                        prefManager.setChatHistorySynced(true)
+                        isDataLoading = false
                     }
                 }
             }
@@ -191,13 +281,18 @@ class ChatHistoryListFragment : Fragment() {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
+                        hideLoadingState()
+                        stopPeriodicDataRefresh()
+                        isDataLoading = false
+
                         refreshChatHistoryList()
 
                         Snackbar.make(fragmentChatHistoryListBinding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
                             .setAction("Retry") { startChatHistorySync() }.show()
                     }
                 }
-            } }, "full", listOf("chat_history"))
+            }
+        }, "full", listOf("chat_history"))
     }
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
@@ -206,35 +301,95 @@ class ChatHistoryListFragment : Fragment() {
         }
     }
 
-    fun refreshChatHistoryList() {
-        val mRealm = DatabaseService(requireActivity()).realmInstance
-        val list = mRealm.where(RealmChatHistory::class.java).equalTo("user", user?.name)
-            .sort("id", Sort.DESCENDING)
-            .findAll()
+    private fun showLoadingState() {
+        loadingIndicator?.visibility = View.VISIBLE
+        loadingText?.text = "Preparing chat history sync..."
 
-        val adapter = fragmentChatHistoryListBinding.recyclerView.adapter as? ChatHistoryListAdapter
-        if (adapter == null) {
-            val newAdapter = ChatHistoryListAdapter(requireContext(), list, this)
-            newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
-                override fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?, aiProvider: String?) {
-                    conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
-                    sharedViewModel.setSelectedId(id)
-                    rev?.let { sharedViewModel.setSelectedRev(it) }
-                    aiProvider?.let { sharedViewModel.setSelectedAiProvider(it) }
-                    fragmentChatHistoryListBinding.slidingPaneLayout.openPane()
+        fragmentChatHistoryListBinding.noChats.visibility = View.GONE
+    }
+
+    private fun hideLoadingState() {
+        loadingIndicator?.visibility = View.GONE
+    }
+
+    private fun startPeriodicDataRefresh() {
+        val refreshRunnable = object : Runnable {
+            override fun run() {
+                if (isDataLoading && isAdded) {
+                    refreshChatHistoryListSilently()
+                    dataRefreshHandler?.postDelayed(this, 2000)
                 }
-            })
-            fragmentChatHistoryListBinding.recyclerView.adapter = newAdapter
-        } else {
-            adapter.updateChatHistory(list)
-            fragmentChatHistoryListBinding.searchBar.visibility = View.VISIBLE
-            fragmentChatHistoryListBinding.recyclerView.visibility = View.VISIBLE
+            }
         }
+        dataRefreshHandler?.postDelayed(refreshRunnable, 2000)
+    }
 
-        showNoData(fragmentChatHistoryListBinding.noChats, list.size, "chatHistory")
-        if (list.isEmpty()) {
-            fragmentChatHistoryListBinding.searchBar.visibility = View.GONE
-            fragmentChatHistoryListBinding.recyclerView.visibility = View.GONE
+    private fun stopPeriodicDataRefresh() {
+        dataRefreshHandler?.removeCallbacksAndMessages(null)
+    }
+
+    private fun refreshChatHistoryListSilently() {
+        if (!isAdded || requireActivity().isFinishing) return
+
+        try {
+            val mRealm = DatabaseService(requireActivity()).realmInstance
+            val list = mRealm.where(RealmChatHistory::class.java).equalTo("user", user?.name)
+                .sort("id", Sort.DESCENDING)
+                .findAll()
+
+            val adapter = fragmentChatHistoryListBinding.recyclerView.adapter as? ChatHistoryListAdapter
+            if (adapter == null && list.isNotEmpty()) {
+                val newAdapter = ChatHistoryListAdapter(requireContext(), list, this)
+                newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
+                    override fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?, aiProvider: String?) {
+                        conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
+                        sharedViewModel.setSelectedId(id)
+                        rev?.let { sharedViewModel.setSelectedRev(it) }
+                        aiProvider?.let { sharedViewModel.setSelectedAiProvider(it) }
+                        fragmentChatHistoryListBinding.slidingPaneLayout.openPane()
+                    }
+                })
+                fragmentChatHistoryListBinding.recyclerView.adapter = newAdapter
+                fragmentChatHistoryListBinding.searchBar.visibility = View.VISIBLE
+                fragmentChatHistoryListBinding.recyclerView.visibility = View.VISIBLE
+            } else if (adapter != null) {
+                adapter.updateChatHistory(list)
+                if (list.isNotEmpty()) {
+                    fragmentChatHistoryListBinding.searchBar.visibility = View.VISIBLE
+                    fragmentChatHistoryListBinding.recyclerView.visibility = View.VISIBLE
+                }
+            }
+
+            if (!isDataLoading) {
+                showNoData(fragmentChatHistoryListBinding.noChats, list.size, "chatHistory")
+                if (list.isEmpty()) {
+                    fragmentChatHistoryListBinding.searchBar.visibility = View.GONE
+                    fragmentChatHistoryListBinding.recyclerView.visibility = View.GONE
+                }
+            } else {
+                fragmentChatHistoryListBinding.noChats.visibility = View.GONE
+            }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun refreshChatHistoryList() {
+        refreshChatHistoryListSilently()
+        if (!isDataLoading) {
+            val mRealm = DatabaseService(requireActivity()).realmInstance
+            val list = mRealm.where(RealmChatHistory::class.java).equalTo("user", user?.name)
+                .sort("id", Sort.DESCENDING)
+                .findAll()
+            showNoData(fragmentChatHistoryListBinding.noChats, list.size, "chatHistory")
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (!isDataLoading) {
+            refreshChatHistoryListSilently()
         }
     }
 
@@ -242,6 +397,8 @@ class ChatHistoryListFragment : Fragment() {
         super.onDestroy()
         customProgressDialog?.dismiss()
         customProgressDialog = null
+        stopPeriodicDataRefresh()
+        dataRefreshHandler = null
     }
 }
 

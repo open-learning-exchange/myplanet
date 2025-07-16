@@ -4,9 +4,15 @@ import android.content.Context.MODE_PRIVATE
 import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
@@ -20,8 +26,8 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.EnhancedSyncListener
 import org.ole.planet.myplanet.callback.MemberChangeListener
-import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -46,6 +52,12 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
     lateinit var settings: SharedPreferences
+    private var isDataLoading = false
+    private var dataRefreshHandler: Handler? = null
+    private var loadingIndicator: View? = null
+    private var loadingText: TextView? = null
+    private var dataReadyCounter = 0
+
     private val serverUrlMapper = ServerUrlMapper()
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
@@ -63,7 +75,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         directTeamName = requireArguments().getString("teamName")
         directTeamType = requireArguments().getString("teamType")
 
-        val teamId = requireArguments().getString("id" ) ?: ""
+        val teamId = requireArguments().getString("id") ?: ""
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
         val user = UserProfileDbHandler(requireContext()).userModel
         mRealm = DatabaseService(requireActivity()).realmInstance
@@ -85,9 +97,60 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         return fragmentTeamDetailBinding.root
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        setupLoadingIndicator(view)
+        setupDataRefreshHandler()
+
+        createTeamLog()
+    }
+
+    private fun setupLoadingIndicator(view: View) {
+        loadingIndicator = view.findViewById(R.id.loading_indicator)
+        loadingText = view.findViewById(R.id.loading_text)
+
+        if (loadingIndicator == null) {
+            createLoadingViews()
+        }
+    }
+
+    private fun createLoadingViews() {
+        val rootLayout = fragmentTeamDetailBinding.root as? ViewGroup
+
+        val loadingLayout = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            setPadding(16, 16, 16, 16)
+        }
+
+        val progressBar = ProgressBar(requireContext(), null, android.R.attr.progressBarStyleHorizontal).apply {
+            isIndeterminate = true
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+
+        loadingText = TextView(requireContext()).apply {
+            text = "Loading team data..."
+            textAlignment = View.TEXT_ALIGNMENT_CENTER
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                topMargin = 16
+            }
+        }
+
+        loadingLayout.addView(progressBar)
+        loadingLayout.addView(loadingText)
+
+        loadingIndicator = loadingLayout
+        rootLayout?.addView(loadingLayout, 1)
+    }
+
+    private fun setupDataRefreshHandler() {
+        dataRefreshHandler = Handler(Looper.getMainLooper())
+    }
+
     private fun startTeamSync() {
         val isFastSync = settings.getBoolean("fastSync", false)
-        if (isFastSync && prefManager.isTeamsSynced()) {
+        if (isFastSync && !prefManager.isTeamsSynced()) {
             checkServerAndStartSync()
         }
     }
@@ -104,13 +167,43 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     private fun startSyncManager() {
-        SyncManager.instance?.start(object : SyncListener {
+        isDataLoading = true
+        dataReadyCounter = 0
+
+        SyncManager.instance?.start(object : EnhancedSyncListener {
             override fun onSyncStarted() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
                         customProgressDialog?.setText(requireContext().getString(R.string.syncing_team_data))
                         customProgressDialog?.show()
+
+                        showLoadingState()
+                        startPeriodicDataRefresh()
+                    }
+                }
+            }
+
+            override fun onProgressUpdate(processName: String, itemsProcessed: Int) {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        loadingText?.text = "Loading $processName: $itemsProcessed items"
+                        customProgressDialog?.setText("$processName: $itemsProcessed items processed")
+                    }
+                }
+            }
+
+            override fun onDataReady(dataType: String) {
+                activity?.runOnUiThread {
+                    if (isAdded) {
+                        dataReadyCounter++
+                        loadingText?.text = "$dataType data ready"
+                        refreshTeamDataSilently()
+
+                        if (dataReadyCounter == 1) {
+                            customProgressDialog?.dismiss()
+                            customProgressDialog = null
+                        }
                     }
                 }
             }
@@ -120,8 +213,13 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
+
                         refreshTeamData()
+                        hideLoadingState()
+                        stopPeriodicDataRefresh()
+
                         prefManager.setTeamsSynced(true)
+                        isDataLoading = false
                     }
                 }
             }
@@ -131,6 +229,9 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
+                        hideLoadingState()
+                        stopPeriodicDataRefresh()
+                        isDataLoading = false
 
                         Snackbar.make(fragmentTeamDetailBinding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
                             .setAction("Retry") { startTeamSync() }
@@ -144,6 +245,83 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
         serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
             isServerReachable(url)
+        }
+    }
+
+    private fun showLoadingState() {
+        loadingIndicator?.visibility = View.VISIBLE
+        loadingText?.text = "Preparing team sync..."
+        fragmentTeamDetailBinding.tabLayout.visibility = View.GONE
+        fragmentTeamDetailBinding.viewPager2.visibility = View.GONE
+    }
+
+    private fun hideLoadingState() {
+        loadingIndicator?.visibility = View.GONE
+        fragmentTeamDetailBinding.tabLayout.visibility = View.VISIBLE
+        fragmentTeamDetailBinding.viewPager2.visibility = View.VISIBLE
+    }
+
+    private fun startPeriodicDataRefresh() {
+        val refreshRunnable = object : Runnable {
+            override fun run() {
+                if (isDataLoading && isAdded) {
+                    refreshTeamDataSilently()
+                    dataRefreshHandler?.postDelayed(this, 2000)
+                }
+            }
+        }
+        dataRefreshHandler?.postDelayed(refreshRunnable, 2000)
+    }
+
+    private fun stopPeriodicDataRefresh() {
+        dataRefreshHandler?.removeCallbacksAndMessages(null)
+    }
+
+    private fun refreshTeamDataSilently() {
+        if (!isAdded || requireActivity().isFinishing) return
+
+        try {
+            val teamId = requireArguments().getString("id") ?: directTeamId ?: ""
+            val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
+
+            if (teamId.isNotEmpty()) {
+                val updatedTeam = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+                if (updatedTeam != null) {
+                    team = updatedTeam
+
+                    if (!isDataLoading || dataReadyCounter > 0) {
+                        fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, isMyTeam, this)
+                        TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
+                            tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
+                        }.attach()
+
+                        fragmentTeamDetailBinding.title.text = getEffectiveTeamName()
+                        fragmentTeamDetailBinding.subtitle.text = getEffectiveTeamType()
+
+                        if(getJoinedMemberCount(team!!._id.toString(), mRealm) <= 1 && isMyTeam){
+                            fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
+                        } else {
+                            fragmentTeamDetailBinding.btnLeave.visibility = View.VISIBLE
+                        }
+
+                        if (dataReadyCounter > 0) {
+                            fragmentTeamDetailBinding.tabLayout.visibility = View.VISIBLE
+                            fragmentTeamDetailBinding.viewPager2.visibility = View.VISIBLE
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun refreshTeamData() {
+        refreshTeamDataSilently()
+
+        if (!isDataLoading) {
+            fragmentTeamDetailBinding.tabLayout.visibility = View.VISIBLE
+            fragmentTeamDetailBinding.viewPager2.visibility = View.VISIBLE
         }
     }
 
@@ -244,38 +422,6 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         }
     }
 
-    private fun refreshTeamData() {
-        if (!isAdded || requireActivity().isFinishing) return
-
-        try {
-            val teamId = requireArguments().getString("id") ?: directTeamId ?: ""
-            val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
-
-            if (teamId.isNotEmpty()) {
-                val updatedTeam = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-                if (updatedTeam != null) {
-                    team = updatedTeam
-
-                    fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, isMyTeam, this)
-                    TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
-                        tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
-                    }.attach()
-
-                    fragmentTeamDetailBinding.title.text = getEffectiveTeamName()
-                    fragmentTeamDetailBinding.subtitle.text = getEffectiveTeamType()
-
-                    if(getJoinedMemberCount(team!!._id.toString(), mRealm) <= 1 && isMyTeam){
-                        fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
-                    } else {
-                        fragmentTeamDetailBinding.btnLeave.visibility = View.VISIBLE
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
     override fun onMemberChanged() {
         if(getJoinedMemberCount("${team?._id}", mRealm) <= 1){
             fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
@@ -284,9 +430,11 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         }
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        createTeamLog()
+    override fun onResume() {
+        super.onResume()
+        if (!isDataLoading) {
+            refreshTeamDataSilently()
+        }
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
@@ -329,6 +477,8 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         super.onDestroy()
         customProgressDialog?.dismiss()
         customProgressDialog = null
+        stopPeriodicDataRefresh()
+        dataRefreshHandler = null
     }
 
     companion object {
