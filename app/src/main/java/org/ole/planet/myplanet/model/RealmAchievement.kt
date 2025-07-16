@@ -10,8 +10,6 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmAchievement : RealmObject() {
@@ -66,8 +64,6 @@ open class RealmAchievement : RealmObject() {
     }
 
     companion object {
-        private val achievementDataList: MutableList<Array<String>> = mutableListOf()
-
         @JvmStatic
         fun serialize(sub: RealmAchievement): JsonObject {
             val `object` = JsonObject()
@@ -104,34 +100,6 @@ open class RealmAchievement : RealmObject() {
             achievement?.achievementsHeader = JsonUtils.getString("achievementsHeader", act)
             achievement?.setReferences(JsonUtils.getJsonArray("references", act))
             achievement?.setAchievements(JsonUtils.getJsonArray("achievements", act))
-
-            val csvRow = arrayOf(
-                JsonUtils.getString("_id", act),
-                JsonUtils.getString("_rev", act),
-                JsonUtils.getString("purpose", act),
-                JsonUtils.getString("goals", act),
-                JsonUtils.getString("achievementsHeader", act),
-                JsonUtils.getJsonArray("references", act).toString(),
-                JsonUtils.getJsonArray("achievements", act).toString()
-            )
-            achievementDataList.add(csvRow)
-        }
-
-        @JvmStatic
-        fun achievementWriteCsv() {
-            CsvUtils.writeCsv(
-                "${context.getExternalFilesDir(null)}/ole/achievements.csv",
-                arrayOf(
-                    "achievementId",
-                    "achievement_rev",
-                    "purpose",
-                    "goals",
-                    "achievementsHeader",
-                    "references",
-                    "achievements"
-                ),
-                achievementDataList
-            )
         }
     }
 }
