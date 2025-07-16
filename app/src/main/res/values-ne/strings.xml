@@ -1100,7 +1100,7 @@
     <string name="team_financial_report">%s वित्तीय रिपोर्ट</string>
     <string name="report_date_details">%1$s मा बनाइएको रिपोर्ट | %2$s मा अद्यावधिक गरिएको</string>
     <string name="formatted_date">%1$d/%2$d/%3$d</string>
-    <string name="prefix_content">%1$s%2$s</string>
+    <string name="prefix_content">%1$s %2$s</string>
     <string name="rating_count_format">%d कुल</string>
     <string name="step_progress">वर्तमान कदम: %1$d को %2$d</string>
     <string name="percentage">%s%%</string>
