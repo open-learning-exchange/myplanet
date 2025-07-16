@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.wifi.SupplicantState
 import android.net.wifi.WifiManager
-import android.util.Log
 import androidx.core.content.edit
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -569,14 +568,11 @@ class SyncManager private constructor(private val context: Context) {
         var processedItems = 0
 
         try {
-            val initStartTime = System.currentTimeMillis()
             val apiInterface = ApiClient.getEnhancedClient()
             val realmInstance = backgroundRealm ?: mRealm
             val newIds: MutableList<String?> = ArrayList()
-            Log.d("RESOURCE_SYNC","RESOURCE_SYNC: Initialization took ${System.currentTimeMillis() - initStartTime}ms")
-
-            val totalRowsStartTime = System.currentTimeMillis()
             var totalRows = 0
+
             ApiClient.executeWithRetry {
                 apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?limit=0").execute()
             }?.let { response ->
@@ -586,34 +582,27 @@ class SyncManager private constructor(private val context: Context) {
                     }
                 }
             }
-            Log.d("RESOURCE_SYNC","RESOURCE_SYNC: Get total rows took ${System.currentTimeMillis() - totalRowsStartTime}ms (Total: $totalRows)")
 
             val batchSize = 50
             var skip = 0
             var batchCount = 0
-            val batchProcessingStartTime = System.currentTimeMillis()
 
             while (skip < totalRows || (totalRows == 0 && skip == 0)) {
                 batchCount++
-                val batchStartTime = System.currentTimeMillis()
 
                 try {
-                    val apiCallStartTime = System.currentTimeMillis()
                     var response: JsonObject? = null
                     ApiClient.executeWithRetry {
                         apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip").execute()
                     }?.let {
                         response = it.body()
                     }
-                    val apiCallTime = System.currentTimeMillis() - apiCallStartTime
-                    Log.d("RESOURCE_SYNC","RESOURCE_SYNC: Batch $batchCount API call took ${apiCallTime}ms")
 
                     if (response == null) {
                         skip += batchSize
                         continue
                     }
 
-                    val parseStartTime = System.currentTimeMillis()
                     val rows = getJsonArray("rows", response)
 
                     if (rows.size() == 0) {
@@ -635,11 +624,8 @@ class SyncManager private constructor(private val context: Context) {
                             }
                         }
                     }
-                    val parseTime = System.currentTimeMillis() - parseStartTime
-                    Log.d("RESOURCE_SYNC","RESOURCE_SYNC: Batch $batchCount parsing took ${parseTime}ms (${validDocuments.size} valid docs)")
 
                     if (validDocuments.isNotEmpty()) {
-                        val dbSaveStartTime = System.currentTimeMillis()
                         try {
                             val chunkSize = 10
                             val chunks = validDocuments.chunked(chunkSize)
@@ -647,8 +633,7 @@ class SyncManager private constructor(private val context: Context) {
 
                             val savedIds = mutableListOf<String>()
 
-                            for ((chunkIndex, chunk) in chunks.withIndex()) {
-                                val chunkStartTime = System.currentTimeMillis()
+                            for ((_, chunk) in chunks.withIndex()) {
                                 realmInstance.executeTransaction { realm ->
                                     val chunkDocuments = JsonArray()
                                     chunk.forEach { (doc, _) -> chunkDocuments.add(doc) }
@@ -656,8 +641,6 @@ class SyncManager private constructor(private val context: Context) {
                                     val chunkIds = save(chunkDocuments, realm)
                                     savedIds.addAll(chunkIds)
                                 }
-                                val chunkTime = System.currentTimeMillis() - chunkStartTime
-                                Log.d("RESOURCE_SYNC","RESOURCE_SYNC: Batch $batchCount chunk ${chunkIndex + 1} took ${chunkTime}ms")
                             }
 
                             if (savedIds.isNotEmpty()) {
@@ -673,13 +656,9 @@ class SyncManager private constructor(private val context: Context) {
                                 newIds.addAll(idsWeAreProcessing)
                                 processedItems += idsWeAreProcessing.size
                             }
-
-                            val dbSaveTime = System.currentTimeMillis() - dbSaveStartTime
-                            Log.d("RESOURCE_SYNC","RESOURCE_SYNC: Batch $batchCount database save took ${dbSaveTime}ms")
                         } catch (e: Exception) {
                             e.printStackTrace()
 
-                            val fallbackStartTime = System.currentTimeMillis()
                             for ((doc, _) in validDocuments) {
                                 try {
                                     realmInstance.executeTransaction { realm ->
@@ -695,38 +674,25 @@ class SyncManager private constructor(private val context: Context) {
                                     e2.printStackTrace()
                                 }
                             }
-                            val fallbackTime = System.currentTimeMillis() - fallbackStartTime
-                            Log.d("RESOURCE_SYNC","RESOURCE_SYNC: Batch $batchCount individual save fallback took ${fallbackTime}ms")
                         }
                     }
 
                     skip += rows.size()
 
                     if (batchCount % 10 == 0) {
-                        val prefsStartTime = System.currentTimeMillis()
                         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                         settings.edit {
                             putLong("ResourceLastSyncTime", System.currentTimeMillis())
                             putInt("ResourceSyncPosition", skip)
                         }
-                        val prefsTime = System.currentTimeMillis() - prefsStartTime
-                        Log.d("RESOURCE_SYNC","RESOURCE_SYNC: Preferences update took ${prefsTime}ms")
                     }
-
-                    val batchTotalTime = System.currentTimeMillis() - batchStartTime
-                    Log.d("RESOURCE_SYNC","RESOURCE_SYNC: Batch $batchCount completed in ${batchTotalTime}ms (API: ${apiCallTime}ms, Parse: ${parseTime}ms)")
 
                 } catch (e: Exception) {
                     e.printStackTrace()
                     skip += batchSize
-                    Log.d("RESOURCE_SYNC","RESOURCE_SYNC: Batch $batchCount failed with exception")
                 }
             }
 
-            val batchProcessingTime = System.currentTimeMillis() - batchProcessingStartTime
-            Log.d("RESOURCE_SYNC","RESOURCE_SYNC: All batch processing took ${batchProcessingTime}ms ($batchCount batches)")
-
-            val cleanupStartTime = System.currentTimeMillis()
             try {
                 val validNewIds = newIds.filter { !it.isNullOrBlank() }
                 if (validNewIds.isNotEmpty() && validNewIds.size == newIds.size) {
@@ -735,8 +701,6 @@ class SyncManager private constructor(private val context: Context) {
             } catch (e: Exception) {
                 e.printStackTrace()
             }
-            val cleanupTime = System.currentTimeMillis() - cleanupStartTime
-            Log.d("RESOURCE_SYNC", "RESOURCE_SYNC: Cleanup deleted resources took ${cleanupTime}ms")
 
             logger.endProcess("resource_sync", processedItems)
         } catch (e: Exception) {
@@ -884,7 +848,6 @@ class SyncManager private constructor(private val context: Context) {
 
         val cachedShelves = getCachedShelvesWithData()
         if (cachedShelves.isNotEmpty()) {
-            Log.d("LIBRARY_SYNC", "Using cached shelf data (${cachedShelves.size} shelves)")
             return cachedShelves
         }
 
@@ -982,20 +945,12 @@ class SyncManager private constructor(private val context: Context) {
         var processedItems = 0
 
         try {
-            val initStartTime = System.currentTimeMillis()
             val apiInterface = ApiClient.getEnhancedClient()
-            Log.d("LIBRARY_SYNC","LIBRARY_SYNC: Initialization took ${System.currentTimeMillis() - initStartTime}ms")
-
-            val preFilterStartTime = System.currentTimeMillis()
             val shelvesWithData = runBlocking { getShelvesWithDataBatchOptimized() }
-            Log.d("LIBRARY_SYNC","LIBRARY_SYNC: Pre-filtering took ${System.currentTimeMillis() - preFilterStartTime}ms. Found ${shelvesWithData.size} shelves with data")
 
             if (shelvesWithData.isEmpty()) {
-                Log.d("LIBRARY_SYNC","LIBRARY_SYNC: No shelves with data found")
                 return
             }
-
-            val shelvesProcessingStartTime = System.currentTimeMillis()
 
             runBlocking {
                 val semaphore = Semaphore(3)
@@ -1009,15 +964,7 @@ class SyncManager private constructor(private val context: Context) {
 
                 processedItems = shelfJobs.awaitAll().sum()
             }
-
-            val shelvesProcessingTime = System.currentTimeMillis() - shelvesProcessingStartTime
-            Log.d("LIBRARY_SYNC","LIBRARY_SYNC: All shelves processing took ${shelvesProcessingTime}ms (${shelvesWithData.size} shelves with data)")
-
-            val linksStartTime = System.currentTimeMillis()
             saveConcatenatedLinksToPrefs()
-            val linksTime = System.currentTimeMillis() - linksStartTime
-            Log.d("LIBRARY_SYNC","LIBRARY_SYNC: Save concatenated links took ${linksTime}ms")
-
             logger.endProcess("library_sync", processedItems)
         } catch (e: Exception) {
             e.printStackTrace()
@@ -1029,7 +976,6 @@ class SyncManager private constructor(private val context: Context) {
         var processedItems = 0
 
         try {
-            val shelfStartTime = System.currentTimeMillis()
             var shelfDoc: JsonObject? = null
             ApiClient.executeWithRetry {
                 apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/$shelfId").execute()
@@ -1038,7 +984,6 @@ class SyncManager private constructor(private val context: Context) {
             }
 
             if (shelfDoc == null) {
-                Log.d("LIBRARY_SYNC","LIBRARY_SYNC: Shelf ($shelfId) document fetch failed")
                 return 0
             }
 
@@ -1054,10 +999,6 @@ class SyncManager private constructor(private val context: Context) {
 
                 processedItems = dataJobs.awaitAll().sum()
             }
-
-            val shelfTotalTime = System.currentTimeMillis() - shelfStartTime
-            Log.d("LIBRARY_SYNC","LIBRARY_SYNC: Shelf ($shelfId) completed in ${shelfTotalTime}ms")
-
         } catch (e: Exception) {
             e.printStackTrace()
         }
