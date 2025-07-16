@@ -2,19 +2,17 @@ package org.ole.planet.myplanet.ui.news
 
 import android.content.res.Configuration
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
 import com.google.gson.Gson
 import com.google.gson.JsonArray
-import io.realm.Case
-import io.realm.RealmResults
-import io.realm.Sort
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseNewsFragment
+import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.settings
 import org.ole.planet.myplanet.databinding.FragmentNewsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -32,8 +30,7 @@ import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 class NewsFragment : BaseNewsFragment() {
     private lateinit var fragmentNewsBinding: FragmentNewsBinding
     var user: RealmUserModel? = null
-    private var updatedNewsList: RealmResults<RealmNews>? = null
-    private var filteredNewsList: List<RealmNews?> = listOf()
+    private lateinit var newsViewModel: NewsViewModel
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentNewsBinding = FragmentNewsBinding.inflate(inflater, container, false)
@@ -61,46 +58,17 @@ class NewsFragment : BaseNewsFragment() {
             fragmentNewsBinding.llAddNews.visibility = View.GONE
         }
 
-        updatedNewsList = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING)
-            .isEmpty("replyTo").equalTo("docType", "message", Case.INSENSITIVE)
-            .findAllAsync()
-
-        updatedNewsList?.addChangeListener { results ->
-            filteredNewsList = filterNewsList(results)
-            setData(filteredNewsList)
+        newsViewModel = ViewModelProvider(requireActivity())[NewsViewModel::class.java]
+        newsViewModel.newsList.observe(viewLifecycleOwner) { list ->
+            setData(list)
         }
+        newsViewModel.loadNews(mRealm, user, settings!!)
+
         return fragmentNewsBinding.root
-    }
-
-    private fun filterNewsList(results: RealmResults<RealmNews>): List<RealmNews?> {
-        val filteredList: MutableList<RealmNews?> = ArrayList()
-        for (news in results) {
-            if (news.viewableBy.equals("community", ignoreCase = true)) {
-                filteredList.add(news)
-                continue
-            }
-
-            if (!news.viewIn.isNullOrEmpty()) {
-                val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
-                for (e in ar) {
-                    val ob = e.asJsonObject
-                    var userId = "${user?.planetCode}@${user?.parentCode}"
-                    if(userId.isEmpty() || userId=="@"){
-                        userId = settings?.getString("planetCode","")+"@"+settings?.getString("parentCode", "")
-                    }
-                    if (ob != null && ob.has("_id") && ob["_id"].asString.equals(userId, ignoreCase = true)) {
-                        filteredList.add(news)
-                        break
-                    }
-                }
-            }
-        }
-        return filteredList
     }
     
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setData(newsList)
         fragmentNewsBinding.btnSubmit.setOnClickListener {
             val message = fragmentNewsBinding.etMessage.text.toString().trim { it <= ' ' }
             if (message.isEmpty()) {
@@ -118,8 +86,7 @@ class NewsFragment : BaseNewsFragment() {
             val n = user?.let { it1 -> createNews(map, mRealm, it1, imageList) }
             imageList.clear()
             llImage?.removeAllViews()
-            adapterNews?.addItem(n)
-            setData(newsList)
+            newsViewModel.addNews(n)
         }
 
         fragmentNewsBinding.addNewsImage.setOnClickListener {
@@ -128,32 +95,6 @@ class NewsFragment : BaseNewsFragment() {
             openFolderLauncher.launch(openFolderIntent)
         }
         fragmentNewsBinding.addNewsImage.visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, requireActivity())) View.VISIBLE else View.GONE
-    }
-
-    private val newsList: List<RealmNews?> get() {
-        val allNews: List<RealmNews> = mRealm.where(RealmNews::class.java).isEmpty("replyTo")
-            .equalTo("docType", "message", Case.INSENSITIVE).findAll()
-        val list: MutableList<RealmNews?> = ArrayList()
-        for (news in allNews) {
-            if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("community", ignoreCase = true)) {
-                list.add(news)
-                continue
-            }
-            if (!TextUtils.isEmpty(news.viewIn)) {
-                val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
-                for (e in ar) {
-                    val ob = e.asJsonObject
-                    var userId = "${user?.planetCode}@${user?.parentCode}"
-                    if(userId.isEmpty() || userId=="@"){
-                        userId = settings?.getString("planetCode","")+"@"+settings?.getString("parentCode", "")
-                    }
-                    if (ob != null && ob.has("_id") && ob["_id"].asString.equals(userId, ignoreCase = true)) {
-                        list.add(news)
-                    }
-                }
-            }
-        }
-        return list
     }
 
     override fun setData(list: List<RealmNews?>?) {

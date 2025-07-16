@@ -12,10 +12,8 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -26,31 +24,19 @@ import io.realm.RealmList
 import io.realm.Sort
 import java.util.Calendar
 import java.util.Locale
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
-import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
-import org.ole.planet.myplanet.utilities.makeExpandable
-import org.ole.planet.myplanet.utilities.JsonUtils
-import android.app.Dialog
-import android.graphics.Color
-import android.widget.ImageView
-import androidx.core.graphics.drawable.toDrawable
-import com.github.chrisbanes.photoview.PhotoView
-import com.bumptech.glide.Glide
-import java.io.File
-import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
+import org.ole.planet.myplanet.ui.news.ChatHandler
+import org.ole.planet.myplanet.ui.news.NewsPermissionChecker
+import org.ole.planet.myplanet.ui.news.ImageLoader
+import org.ole.planet.myplanet.ui.news.NewsViewBinder
 
 class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
     private lateinit var rowNewsBinding: RowNewsBinding
@@ -63,11 +49,24 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private var recyclerView: RecyclerView? = null
     var user: RealmUserModel? = null
     private var labelManager: NewsLabelManager? = null
+    private lateinit var permissionChecker: NewsPermissionChecker
+    private lateinit var imageLoader: ImageLoader
+    private lateinit var chatHandler: ChatHandler
+    private lateinit var viewBinder: NewsViewBinder
     private val profileDbHandler = UserProfileDbHandler(context)
     lateinit var settings: SharedPreferences
     private val leadersList: List<RealmUserModel> by lazy {
         val raw = settings.getString("communityLeaders", "") ?: ""
         RealmUserModel.parseLeadersJson(raw)
+    }
+
+    private fun updateHelpers() {
+        if (::mRealm.isInitialized) {
+            permissionChecker = NewsPermissionChecker(mRealm, currentUser, user, fromLogin, nonTeamMember, teamId)
+            imageLoader = ImageLoader(context, mRealm)
+            chatHandler = ChatHandler(context, listener, user)
+            viewBinder = NewsViewBinder(mRealm, currentUser, profileDbHandler)
+        }
     }
 
     fun setImageList(imageList: RealmList<String>?) {
@@ -81,20 +80,24 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     fun setFromLogin(fromLogin: Boolean) {
         this.fromLogin = fromLogin
+        updateHelpers()
     }
 
     fun setNonTeamMember(nonTeamMember: Boolean) {
         this.nonTeamMember = nonTeamMember
+        updateHelpers()
     }
 
     fun setListener(listener: OnNewsItemClickListener?) {
         this.listener = listener
+        updateHelpers()
     }
 
     fun setmRealm(mRealm: Realm?) {
         if (mRealm != null) {
             this.mRealm = mRealm
             labelManager = NewsLabelManager(context, this.mRealm, currentUser)
+            updateHelpers()
         }
     }
 
@@ -106,6 +109,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         if (::mRealm.isInitialized) {
             if (labelManager == null) labelManager = NewsLabelManager(context, mRealm, currentUser)
         }
+        updateHelpers()
         return ViewHolderNews(rowNewsBinding)
     }
 
@@ -122,22 +126,23 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
                 resetViews(viewHolder)
 
-                val userModel = configureUser(viewHolder, news)
+                val userModel = viewBinder.configureUser(viewHolder.rowNewsBinding, news)
+                showHideButtons(news, viewHolder)
                 showShareButton(viewHolder, news)
 
-                setMessageAndDate(viewHolder, news, sharedTeamName)
+                viewBinder.setMessageAndDate(viewHolder.rowNewsBinding, news, sharedTeamName, teamName)
 
                 configureEditDeleteButtons(viewHolder, news)
 
-                loadImage(viewHolder.rowNewsBinding, news)
+                imageLoader.loadImage(viewHolder.rowNewsBinding, news)
                 showReplyButton(viewHolder, news, position)
                 labelManager?.setupAddLabelMenu(viewHolder.rowNewsBinding, news)
                 news.let { labelManager?.showChips(viewHolder.rowNewsBinding, it) }
 
-                handleChat(viewHolder, news)
+                chatHandler.handleChat(viewHolder.rowNewsBinding, news)
 
                 val currentLeader = getCurrentLeader(userModel, news)
-                setMemberClickListeners(viewHolder, userModel, currentLeader)
+                viewBinder.setMemberClickListeners(viewHolder.rowNewsBinding, userModel, currentLeader, fromLogin)
             }
         }
     }
@@ -175,51 +180,13 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         }
     }
 
-    private fun configureUser(holder: ViewHolderNews, news: RealmNews): RealmUserModel? {
-        val userModel = mRealm.where(RealmUserModel::class.java)
-            .equalTo("id", news.userId)
-            .findFirst()
-        val userFullName = userModel?.getFullNameWithMiddleName()?.trim()
-        if (userModel != null && currentUser != null) {
-            holder.rowNewsBinding.tvName.text =
-                if (userFullName.isNullOrEmpty()) news.userName else userFullName
-            Utilities.loadImage(userModel.userImage, holder.rowNewsBinding.imgUser)
-            showHideButtons(news, holder)
-        } else {
-            holder.rowNewsBinding.tvName.text = news.userName
-            Utilities.loadImage(null, holder.rowNewsBinding.imgUser)
-        }
-        return userModel
-    }
-
-    private fun setMessageAndDate(holder: ViewHolderNews, news: RealmNews, sharedTeamName: String) {
-        val markdownContentWithLocalPaths = prependBaseUrlToImages(
-            news.message,
-            "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/",
-            600,
-            350
-        )
-        setMarkdownText(holder.rowNewsBinding.tvMessage, markdownContentWithLocalPaths)
-        val fulltext = holder.rowNewsBinding.tvMessage.text
-        holder.rowNewsBinding.tvMessage.makeExpandable(
-            fullText = fulltext,
-            collapsedMaxLines = 6
-        )
-        holder.rowNewsBinding.tvDate.text =
-            if (sharedTeamName.isEmpty() || teamName.isNotEmpty()) {
-                formatDate(news.time)
-            } else {
-                "${formatDate(news.time)} | Shared from $sharedTeamName"
-            }
-        holder.rowNewsBinding.tvEdited.visibility = if (news.isEdited) View.VISIBLE else View.GONE
-    }
 
     private fun configureEditDeleteButtons(holder: ViewHolderNews, news: RealmNews) {
         if (news.sharedBy == currentUser?._id && !fromLogin && !nonTeamMember && teamName.isEmpty()) {
             holder.rowNewsBinding.imgDelete.visibility = View.VISIBLE
         }
 
-        if (news.userId == currentUser?._id || news.sharedBy == currentUser?._id) {
+        if (permissionChecker.canDelete(news)) {
             holder.rowNewsBinding.imgDelete.setOnClickListener {
                 AlertDialog.Builder(context, R.style.AlertDialogTheme)
                     .setMessage(R.string.delete_record)
@@ -232,7 +199,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             }
         }
 
-        if (news.userId == currentUser?._id) {
+        if (permissionChecker.canEdit(news)) {
             holder.rowNewsBinding.imgEdit.setOnClickListener {
                 NewsActions.showEditAlert(context, mRealm, news.id, true, currentUser, imageList, listener)
             }
@@ -240,41 +207,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         } else {
             holder.rowNewsBinding.imgEdit.visibility = View.GONE
             holder.rowNewsBinding.btnAddLabel.visibility = View.GONE
-        }
-    }
-
-    private fun handleChat(holder: ViewHolderNews, news: RealmNews) {
-        if (news.newsId?.isNotEmpty() == true) {
-            val conversations = Gson().fromJson(news.conversations, Array<Conversation>::class.java).toList()
-            val chatAdapter = ChatAdapter(ArrayList(), context, holder.rowNewsBinding.recyclerGchat)
-
-            if (user?.id?.startsWith("guest") == false) {
-                chatAdapter.setOnChatItemClickListener(object : ChatAdapter.OnChatItemClickListener {
-                    override fun onChatItemClick(position: Int, chatItem: String) {
-                        listener?.onNewsItemClick(news)
-                    }
-                })
-            }
-
-            for (conversation in conversations) {
-                val query = conversation.query
-                val response = conversation.response
-                if (query != null) {
-                    chatAdapter.addQuery(query)
-                }
-                chatAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
-                if (response != null) {
-                    chatAdapter.addResponse(response)
-                }
-            }
-
-            holder.rowNewsBinding.recyclerGchat.adapter = chatAdapter
-            holder.rowNewsBinding.recyclerGchat.layoutManager = LinearLayoutManager(context)
-            holder.rowNewsBinding.recyclerGchat.visibility = View.VISIBLE
-            holder.rowNewsBinding.sharedChat.visibility = View.VISIBLE
-        } else {
-            holder.rowNewsBinding.recyclerGchat.visibility = View.GONE
-            holder.rowNewsBinding.sharedChat.visibility = View.GONE
         }
     }
 
@@ -288,50 +220,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         }
         return null
     }
-
-    private fun setMemberClickListeners(holder: ViewHolderNews, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
-        if (!fromLogin) {
-            holder.rowNewsBinding.imgUser.setOnClickListener {
-                val activity = it.context as AppCompatActivity
-                val model = userModel ?: currentLeader
-                NewsActions.showMemberDetails(activity, model, profileDbHandler)
-            }
-            holder.rowNewsBinding.tvName.setOnClickListener {
-                val activity = it.context as AppCompatActivity
-                val model = userModel ?: currentLeader
-                NewsActions.showMemberDetails(activity, model, profileDbHandler)
-            }
-        }
-    }
-
-    private fun isGuestUser() = user?.id?.startsWith("guest") == true
-
-    private fun isOwner(news: RealmNews?): Boolean =
-        news?.userId == currentUser?._id
-
-    private fun isSharedByCurrentUser(news: RealmNews?): Boolean =
-        news?.sharedBy == currentUser?._id
-
-    private fun isAdmin(): Boolean =
-        currentUser?.level.equals("admin", ignoreCase = true)
-
-    private fun isLoggedInAndMember(): Boolean =
-        !fromLogin && !nonTeamMember
-
-    private fun canEdit(news: RealmNews?): Boolean =
-        isLoggedInAndMember() && (isOwner(news) || isAdmin() || isTeamLeader())
-
-    private fun canDelete(news: RealmNews?): Boolean =
-        isLoggedInAndMember() && (isOwner(news) || isSharedByCurrentUser(news) || isAdmin() || isTeamLeader())
-
-    private fun canReply(): Boolean =
-        isLoggedInAndMember() && !isGuestUser()
-
-    private fun canAddLabel(news: RealmNews?): Boolean =
-        isLoggedInAndMember() && (isOwner(news) || isTeamLeader() || isAdmin())
-
-    private fun canShare(news: RealmNews?): Boolean =
-        isLoggedInAndMember() && !news?.isCommunityNews!! && !isGuestUser()
 
     private fun View.setVisibility(condition: Boolean) {
         visibility = if (condition) View.VISIBLE else View.GONE
@@ -355,7 +243,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         with(viewHolder.rowNewsBinding) {
             btnShowReply.text = String.format(Locale.getDefault(),"(%d)", replies.size)
             btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
-            val visible = replies.isNotEmpty() && !(position == 0 && parentNews != null) && canReply()
+            val visible = replies.isNotEmpty() && !(position == 0 && parentNews != null) && permissionChecker.canReply()
             btnShowReply.visibility = if (visible) View.VISIBLE else View.GONE
         }
     }
@@ -379,14 +267,14 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private fun showHideButtons(news: RealmNews?, holder: RecyclerView.ViewHolder) {
         val viewHolder = holder as ViewHolderNews
         with(viewHolder.rowNewsBinding) {
-            imgEdit.setVisibility(canEdit(news))
-            imgDelete.setVisibility(canDelete(news))
-            btnAddLabel.setVisibility(canAddLabel(news))
-            llEditDelete.setVisibility(canEdit(news) || canDelete(news))
+            imgEdit.setVisibility(permissionChecker.canEdit(news))
+            imgDelete.setVisibility(permissionChecker.canDelete(news))
+            btnAddLabel.setVisibility(permissionChecker.canAddLabel(news))
+            llEditDelete.setVisibility(permissionChecker.canEdit(news) || permissionChecker.canDelete(news))
         }
     }
 
-    private fun shouldShowReplyButton(): Boolean = canReply()
+    private fun shouldShowReplyButton(): Boolean = permissionChecker.canReply()
 
     private fun showReplyButton(holder: RecyclerView.ViewHolder, finalNews: RealmNews?, position: Int) {
         val viewHolder = holder as ViewHolderNews
@@ -422,7 +310,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {
         val viewHolder = holder as ViewHolderNews
 
-        viewHolder.rowNewsBinding.btnShare.setVisibility(canShare(news))
+        viewHolder.rowNewsBinding.btnShare.setVisibility(permissionChecker.canShare(news))
 
         viewHolder.rowNewsBinding.btnShare.setOnClickListener {
             AlertDialog.Builder(context, R.style.AlertDialogTheme)
@@ -464,87 +352,6 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         this.recyclerView = null
     }
 
-    private fun loadImage(binding: RowNewsBinding, news: RealmNews?) {
-        val imageUrls = news?.imageUrls
-        if (!imageUrls.isNullOrEmpty()) {
-            try {
-                val imgObject = Gson().fromJson(imageUrls[0], JsonObject::class.java)
-                val path = JsonUtils.getString("imageUrl", imgObject)
-                val request = Glide.with(context)
-                val target = if (path.lowercase(Locale.getDefault()).endsWith(".gif")) {
-                    request.asGif().load(if (File(path).exists()) File(path) else path)
-                } else {
-                    request.load(if (File(path).exists()) File(path) else path)
-                }
-                target.placeholder(R.drawable.ic_loading)
-                    .error(R.drawable.ic_loading)
-                    .into(binding.imgNews)
-                binding.imgNews.visibility = View.VISIBLE
-                binding.imgNews.setOnClickListener {
-                    showZoomableImage(it.context, path)
-                }
-                return
-            } catch (_: Exception) {
-            }
-        }
-
-        news?.imagesArray?.let { imagesArray ->
-            if (imagesArray.size() > 0) {
-                val ob = imagesArray[0]?.asJsonObject
-                val resourceId = JsonUtils.getString("resourceId", ob)
-                val library = mRealm.where(RealmMyLibrary::class.java)
-                    .equalTo("_id", resourceId)
-                    .findFirst()
-
-                val basePath = context.getExternalFilesDir(null)
-                if (library != null && basePath != null) {
-                    val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-                    if (imageFile.exists()) {
-                        val request = Glide.with(context)
-                        val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
-                        val target = if (isGif) {
-                            request.asGif().load(imageFile)
-                        } else {
-                            request.load(imageFile)
-                        }
-                        target.placeholder(R.drawable.ic_loading)
-                            .error(R.drawable.ic_loading)
-                            .into(binding.imgNews)
-                        binding.imgNews.visibility = View.VISIBLE
-                        binding.imgNews.setOnClickListener {
-                            showZoomableImage(it.context, imageFile.toString())
-                        }
-                        return
-                    }
-                }
-            }
-        }
-        binding.imgNews.visibility = View.GONE
-    }
-
-    private fun showZoomableImage(context: Context, imageUrl: String) {
-        val dialog = Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
-        val view = LayoutInflater.from(context).inflate(R.layout.dialog_zoomable_image, null)
-        val photoView = view.findViewById<PhotoView>(R.id.photoView)
-        val closeButton = view.findViewById<ImageView>(R.id.closeButton)
-
-        dialog.setContentView(view)
-        dialog.window?.setBackgroundDrawable(Color.BLACK.toDrawable())
-
-        val request = Glide.with(context)
-        val target = if (imageUrl.lowercase(Locale.getDefault()).endsWith(".gif")) {
-            val file = File(imageUrl)
-            if (file.exists()) request.asGif().load(file) else request.asGif().load(imageUrl)
-        } else {
-            val file = File(imageUrl)
-            if (file.exists()) request.load(file) else request.load(imageUrl)
-        }
-        target.error(R.drawable.ic_loading).into(photoView)
-
-        closeButton.setOnClickListener { dialog.dismiss() }
-
-        dialog.show()
-    }
 
     internal inner class ViewHolderNews(val rowNewsBinding: RowNewsBinding) : RecyclerView.ViewHolder(rowNewsBinding.root) {
         private var adapterPosition = 0
