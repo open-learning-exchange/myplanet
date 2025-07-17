@@ -14,12 +14,12 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import java.text.SimpleDateFormat
+import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import java.text.SimpleDateFormat
-import java.util.*
 
 object NotificationUtil {
     const val CHANNEL_GENERAL = "general_notifications"
