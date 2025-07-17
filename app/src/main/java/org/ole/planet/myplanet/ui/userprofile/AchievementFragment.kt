@@ -22,7 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
+import org.ole.planet.myplanet.repository.NetworkRepository
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -55,6 +55,7 @@ class AchievementFragment : BaseContainerFragment() {
     private val serverUrlMapper = ServerUrlMapper()
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
+    private val networkRepository = NetworkRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -135,7 +136,7 @@ class AchievementFragment : BaseContainerFragment() {
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
         serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
-            isServerReachable(url)
+            networkRepository.isServerReachable(url)
         }
     }
 

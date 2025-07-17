@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.service.UploadManager
+import org.ole.planet.myplanet.repository.NetworkRepository
 
 class SyncTimeLogger private constructor() {
     private val processTimes = ConcurrentHashMap<String, Long>()
@@ -22,6 +23,7 @@ class SyncTimeLogger private constructor() {
     private var endTime: Long = 0
     private var isLogging = false
     private val handler = Handler(Looper.getMainLooper())
+    private val networkRepository = NetworkRepository()
 
     fun startLogging() {
         startTime = System.currentTimeMillis()
@@ -48,9 +50,9 @@ class SyncTimeLogger private constructor() {
             val mapping = serverUrlMapper.processUrl(updateUrl)
 
             CoroutineScope(Dispatchers.IO).launch {
-                val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
+                val primaryAvailable = networkRepository.isServerReachable(mapping.primaryUrl)
                 val alternativeAvailable =
-                    mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
+                    mapping.alternativeUrl?.let { networkRepository.isServerReachable(it) } == true
 
                 if (!primaryAvailable && alternativeAvailable) {
                     mapping.alternativeUrl.let { alternativeUrl ->

@@ -8,12 +8,17 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
+import org.ole.planet.myplanet.repository.NetworkRepository
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 
+data class BellDashboardUiState(
+    val networkStatus: NetworkStatus = NetworkStatus.Disconnected
+)
+
 class BellDashboardViewModel : ViewModel() {
-    private val _networkStatus = MutableStateFlow<NetworkStatus>(NetworkStatus.Disconnected)
-    val networkStatus: StateFlow<NetworkStatus> = _networkStatus.asStateFlow()
+    private val networkRepository = NetworkRepository()
+    private val _uiState = MutableStateFlow(BellDashboardUiState())
+    val uiState: StateFlow<BellDashboardUiState> = _uiState.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -25,16 +30,15 @@ class BellDashboardViewModel : ViewModel() {
 
     private fun updateNetworkStatus(isConnected: Boolean) {
         viewModelScope.launch {
-            _networkStatus.value = when {
-                !isConnected -> NetworkStatus.Disconnected
-                else -> NetworkStatus.Connecting
-            }
+            _uiState.value = _uiState.value.copy(
+                networkStatus = if (!isConnected) NetworkStatus.Disconnected else NetworkStatus.Connecting
+            )
         }
     }
 
     suspend fun checkServerConnection(serverUrl: String): Boolean {
         return withContext(Dispatchers.IO) {
-            isServerReachable(serverUrl)
+            networkRepository.isServerReachable(serverUrl)
         }
     }
 }

@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
+import org.ole.planet.myplanet.repository.NetworkRepository
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
@@ -103,6 +104,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     var syncFailed = false
     lateinit var defaultPref: SharedPreferences
     lateinit var service: Service
+    private val networkRepository = NetworkRepository()
     var currentDialog: MaterialDialog? = null
     var serverConfigAction = ""
     var serverCheck = true
@@ -632,7 +634,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 val serverUrl = settings.getString("serverURL", "")
                 if (!serverUrl.isNullOrEmpty()) {
                     MainApplication.applicationScope.launch(Dispatchers.IO) {
-                        val canReachServer = MainApplication.Companion.isServerReachable(serverUrl)
+                        val canReachServer = networkRepository.isServerReachable(serverUrl)
                         if (canReachServer) {
                             withContext(Dispatchers.Main) {
                                 startUpload("login")

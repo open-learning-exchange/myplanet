@@ -36,7 +36,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
+import org.ole.planet.myplanet.repository.NetworkRepository
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -79,6 +79,7 @@ class ChatDetailFragment : Fragment() {
     private val jsonMediaType = "application/json".toMediaTypeOrNull()
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
+    private val networkRepository = NetworkRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -192,12 +193,12 @@ class ChatDetailFragment : Fragment() {
     private fun observeViewModelData() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    sharedViewModel.selectedChatHistory.collect { conversations ->
-                        mAdapter.clearData()
-                        fragmentChatDetailBinding.editGchatMessage.text.clear()
-                        fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
-                        if (conversations != null && conversations.isValid && conversations.isNotEmpty()) {
+                sharedViewModel.uiState.collect { state ->
+                    mAdapter.clearData()
+                    fragmentChatDetailBinding.editGchatMessage.text.clear()
+                    fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
+                    state.selectedChatHistory?.let { conversations ->
+                        if (conversations.isValid && conversations.isNotEmpty()) {
                             for (conversation in conversations) {
                                 conversation.query?.let { mAdapter.addQuery(it) }
                                 mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
@@ -208,31 +209,21 @@ class ChatDetailFragment : Fragment() {
                             }
                         }
                     }
-                }
-                launch {
-                    sharedViewModel.selectedAiProvider.collect { selectedAiProvider ->
-                        aiName = selectedAiProvider ?: aiName
+                    state.selectedAiProvider?.let { provider ->
+                        aiName = provider
                         if (fragmentChatDetailBinding.aiTableRow.isNotEmpty()) {
                             for (i in 0 until fragmentChatDetailBinding.aiTableRow.childCount) {
                                 val view = fragmentChatDetailBinding.aiTableRow.getChildAt(i)
-                                if (view is Button && view.text.toString().equals(selectedAiProvider, ignoreCase = true)) {
-                                    val modelName = getModelsMap()[selectedAiProvider?.lowercase()] ?: "default-model"
-                                    selectAI(view, "$selectedAiProvider", modelName)
+                                if (view is Button && view.text.toString().equals(provider, ignoreCase = true)) {
+                                    val modelName = getModelsMap()[provider.lowercase()] ?: "default-model"
+                                    selectAI(view, provider, modelName)
                                     break
                                 }
                             }
                         }
                     }
-                }
-                launch {
-                    sharedViewModel.selectedId.collect { selectedId ->
-                        _id = selectedId
-                    }
-                }
-                launch {
-                    sharedViewModel.selectedRev.collect { selectedRev ->
-                        _rev = selectedRev
-                    }
+                    _id = state.selectedId
+                    _rev = state.selectedRev
                 }
             }
         }
@@ -380,7 +371,7 @@ class ChatDetailFragment : Fragment() {
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
         serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
-            isServerReachable(url)
+            networkRepository.isServerReachable(url)
         }
     }
 

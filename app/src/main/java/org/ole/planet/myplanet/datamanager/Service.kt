@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
+import org.ole.planet.myplanet.repository.NetworkRepository
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.callback.SuccessListener
@@ -57,6 +57,7 @@ class Service(private val context: Context) {
     private val retrofitInterface: ApiInterface? = ApiClient.client?.create(ApiInterface::class.java)
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
+    private val networkRepository = NetworkRepository()
     private val configurationManager = ConfigurationManager(context, preferences, retrofitInterface)
 
     fun healthAccess(listener: SuccessListener) {
@@ -162,8 +163,8 @@ class Service(private val context: Context) {
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
         CoroutineScope(Dispatchers.IO).launch {
-            val primaryAvailable = isServerReachable(mapping.primaryUrl)
-            val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
+            val primaryAvailable = networkRepository.isServerReachable(mapping.primaryUrl)
+            val alternativeAvailable = mapping.alternativeUrl?.let { networkRepository.isServerReachable(it) } == true
 
             if (!primaryAvailable && alternativeAvailable) {
                 mapping.alternativeUrl.let { alternativeUrl ->

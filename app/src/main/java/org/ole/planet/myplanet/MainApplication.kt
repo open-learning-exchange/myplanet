@@ -16,8 +16,6 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import io.realm.Realm
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.Date
 import java.util.UUID
 import java.util.concurrent.TimeUnit
@@ -46,10 +44,10 @@ import org.ole.planet.myplanet.utilities.NetworkUtils.initialize
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.ThemeMode
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
+import org.ole.planet.myplanet.repository.NetworkRepository
 
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     companion object {
@@ -65,6 +63,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         var showDownload = false
         var isSyncRunning = false
         var listener: TeamPageListener? = null
+        private val networkRepository = NetworkRepository()
         val androidId: String get() {
             try {
                 return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
@@ -124,40 +123,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             applyThemeMode(themeMode)
         }
 
-        suspend fun isServerReachable(urlString: String): Boolean {
-            val serverUrlMapper = ServerUrlMapper()
-            val mapping = serverUrlMapper.processUrl(urlString)
-            val urlsToTry = mutableListOf(urlString)
-            mapping.alternativeUrl?.let { urlsToTry.add(it) }
-
-            return try {
-                if (urlString.isBlank()) return false
-
-                val formattedUrl = if (!urlString.startsWith("http://") && !urlString.startsWith("https://")) {
-                    "http://$urlString"
-                } else {
-                    urlString
-                }
-
-                val url = URL(formattedUrl)
-                val connection = withContext(Dispatchers.IO) {
-                    url.openConnection()
-                } as HttpURLConnection
-                connection.requestMethod = "GET"
-                connection.connectTimeout = 5000
-                connection.readTimeout = 5000
-                withContext(Dispatchers.IO) {
-                    connection.connect()
-                }
-                val responseCode = connection.responseCode
-                connection.disconnect()
-                responseCode in 200..299
-
-            } catch (e: Exception) {
-                e.printStackTrace()
-                false
-            }
-        }
 
         fun handleUncaughtException(e: Throwable) {
             e.printStackTrace()
@@ -247,7 +212,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 if (!serverUrl.isNullOrEmpty()) {
                     applicationScope.launch {
                         val canReachServer = withContext(Dispatchers.IO) {
-                            isServerReachable(serverUrl)
+                            networkRepository.isServerReachable(serverUrl)
                         }
                         if (canReachServer) {
                             if (defaultPref.getBoolean("beta_auto_download", false)) {

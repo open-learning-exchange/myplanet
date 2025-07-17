@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.repository.NetworkRepository
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -72,6 +73,7 @@ open class RealmMyTeam : RealmObject() {
 
     companion object {
         private val concatenatedLinks = ArrayList<String>()
+        private val networkRepository = NetworkRepository()
 
         @JvmStatic
         fun insertMyTeams(doc: JsonObject, mRealm: Realm) {
@@ -270,9 +272,9 @@ open class RealmMyTeam : RealmObject() {
             val mapping = serverUrlMapper.processUrl(updateUrl)
 
             CoroutineScope(Dispatchers.IO).launch {
-                val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
+                val primaryAvailable = networkRepository.isServerReachable(mapping.primaryUrl)
                 val alternativeAvailable =
-                    mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
+                    mapping.alternativeUrl?.let { networkRepository.isServerReachable(it) } == true
 
                 if (!primaryAvailable && alternativeAvailable) {
                     mapping.alternativeUrl.let { alternativeUrl ->

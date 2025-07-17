@@ -1,6 +1,13 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import io.realm.Case
 import io.realm.Realm
 import java.util.Date
@@ -10,7 +17,15 @@ import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 
+data class DashboardUiState(
+    val unreadCount: Int = 0,
+    val isLoading: Boolean = false,
+    val errorMessage: String? = null
+)
+
 class DashboardViewModel : ViewModel() {
+    private val _uiState = MutableStateFlow(DashboardUiState())
+    val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
     fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
         val earnedDollarsVoice = minOf(voiceCount, 5) * 2
         val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
@@ -91,6 +106,21 @@ class DashboardViewModel : ViewModel() {
             .equalTo("isRead", false)
             .count()
             .toInt()
+    }
+
+    fun refreshNotifications(realm: Realm, userId: String?) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, errorMessage = null)
+            try {
+                withContext(Dispatchers.IO) {
+                    updateResourceNotification(realm, userId)
+                }
+                val count = withContext(Dispatchers.IO) { getUnreadNotificationsSize(realm, userId) }
+                _uiState.value = _uiState.value.copy(unreadCount = count, isLoading = false)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = e.message)
+            }
+        }
     }
 }
 
