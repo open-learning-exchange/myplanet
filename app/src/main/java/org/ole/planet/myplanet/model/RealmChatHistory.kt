@@ -8,8 +8,6 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import java.util.Date
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmChatHistory : RealmObject() {
@@ -25,8 +23,6 @@ open class RealmChatHistory : RealmObject() {
     var lastUsed: Long = 0
     var conversations: RealmList<Conversation>? = null
     companion object {
-        private val chatDataList: MutableList<Array<String>> = mutableListOf()
-
         @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
             val chatHistoryId = JsonUtils.getString("_id", act)
@@ -42,18 +38,6 @@ open class RealmChatHistory : RealmObject() {
             chatHistory.aiProvider = JsonUtils.getString("aiProvider", act)
             chatHistory.conversations = parseConversations(mRealm, JsonUtils.getJsonArray("conversations", act))
             chatHistory.lastUsed = Date().time
-
-            val csvRow = arrayOf(
-                JsonUtils.getString("_id", act),
-                JsonUtils.getString("_rev", act),
-                JsonUtils.getString("title", act),
-                JsonUtils.getString("createdDate", act),
-                JsonUtils.getString("updatedDate", act),
-                JsonUtils.getString("user", act),
-                JsonUtils.getString("aiProvider", act),
-                JsonUtils.getJsonArray("conversations", act).toString()
-            )
-            chatDataList.add(csvRow)
         }
 
         private fun parseConversations(realm: Realm, jsonArray: JsonArray): RealmList<Conversation> {
@@ -90,23 +74,6 @@ open class RealmChatHistory : RealmObject() {
                     e.printStackTrace()
                 }
             }
-        }
-
-        fun chatWriteCsv() {
-            CsvUtils.writeCsv(
-                "${context.getExternalFilesDir(null)}/ole/chatHistory.csv",
-                arrayOf(
-                    "chatHistoryId",
-                    "chatHistory_rev",
-                    "title",
-                    "createdDate",
-                    "updatedDate",
-                    "user",
-                    "aiProvider",
-                    "conversations"
-                ),
-                chatDataList
-            )
         }
     }
 }

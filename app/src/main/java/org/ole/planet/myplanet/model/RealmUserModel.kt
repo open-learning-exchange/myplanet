@@ -19,7 +19,6 @@ import org.apache.commons.lang3.StringUtils
 import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -194,8 +193,6 @@ open class RealmUserModel : RealmObject() {
     }
 
     companion object {
-        private val userDataList: MutableList<Array<String>> = mutableListOf()
-
         @JvmStatic
         fun createGuestUser(username: String?, mRealm: Realm, settings: SharedPreferences): RealmUserModel? {
             val `object` = JsonObject()
@@ -411,29 +408,6 @@ open class RealmUserModel : RealmObject() {
             if (planetCodes.isNotEmpty()) {
                 settings.edit { putString("planetCode", planetCodes) }
             }
-
-            userDataList.add(arrayOf(
-                user.userAdmin.toString(),
-                user._id.toString(),
-                user.name.toString(),
-                user.firstName.toString(),
-                user.lastName.toString(),
-                user.email.toString(),
-                user.phoneNumber.toString(),
-                user.planetCode.toString(),
-                user.parentCode.toString(),
-                user.password_scheme.toString(),
-                user.iterations.toString(),
-                user.derived_key.toString(),
-                user.salt.toString(),
-                user.level.toString(),
-                user.language.toString(),
-                user.gender.toString(),
-                user.dob.toString(),
-                user.birthPlace.toString(),
-                user.userImage.toString(),
-                user.isArchived.toString()
-            ))
         }
 
         @JvmStatic
@@ -441,29 +415,6 @@ open class RealmUserModel : RealmObject() {
             return realm.where(RealmUserModel::class.java)
                 .equalTo("name", name)
                 .not().beginsWith("_id", "guest").count() > 0
-        }
-
-        fun userWriteCsv() {
-            CsvUtils.writeCsv(
-                "${context.getExternalFilesDir(null)}/ole/userData.csv",
-                arrayOf(
-                    "userAdmin",
-                    "_id",
-                    "name",
-                    "firstName",
-                    "lastName",
-                    "email",
-                    "phoneNumber",
-                    "planetCode",
-                    "parentCode",
-                    "password_scheme",
-                    "iterations",
-                    "derived_key",
-                    "salt",
-                    "level"
-                ),
-                userDataList
-            )
         }
 
         fun updateUserDetails(realm: Realm, userId: String?, firstName: String?, lastName: String?,
