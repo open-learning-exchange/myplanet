@@ -169,7 +169,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         )
         adapter.setDropDownViewResource(R.layout.spinner_text)
         spn.adapter = adapter
-        etSearch = binding.etSearch
+        etSearch = binding.layoutSearch.etSearch
         addNewSurvey = binding.fabAddNewSurvey
         rbTeamSurvey = binding.rbTeamSurvey
         rbAdoptSurvey = binding.rbAdoptSurvey

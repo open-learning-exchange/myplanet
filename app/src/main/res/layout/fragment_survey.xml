@@ -69,6 +69,7 @@
                 android:spinnerMode="dialog"
                 android:layout_weight="0.6"/>
             <include
+                android:id="@+id/layoutSearch"
                 layout="@layout/layout_search"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
