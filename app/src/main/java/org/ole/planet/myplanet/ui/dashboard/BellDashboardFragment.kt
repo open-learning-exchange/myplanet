@@ -13,9 +13,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Case
@@ -88,10 +86,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private fun setupNetworkStatusMonitoring() {
         networkStatusJob?.cancel()
         networkStatusJob = viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.uiState.collect { state ->
-                    updateNetworkIndicator(state.networkStatus)
-                }
+            viewModel.uiState.collect { state ->
+                updateNetworkIndicator(state.networkStatus)
             }
         }
     }

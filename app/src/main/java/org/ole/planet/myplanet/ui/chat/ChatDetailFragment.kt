@@ -19,8 +19,6 @@ import androidx.core.view.isNotEmpty
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
-import androidx.lifecycle.Lifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
@@ -192,8 +190,7 @@ class ChatDetailFragment : Fragment() {
 
     private fun observeViewModelData() {
         viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                sharedViewModel.uiState.collect { state ->
+            sharedViewModel.uiState.collect { state ->
                     mAdapter.clearData()
                     fragmentChatDetailBinding.editGchatMessage.text.clear()
                     fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
@@ -227,7 +224,6 @@ class ChatDetailFragment : Fragment() {
                 }
             }
         }
-    }
 
     private fun checkAiProviders() {
         val mapping = serverUrlMapper.processUrl(serverUrl)

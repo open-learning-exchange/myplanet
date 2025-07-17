@@ -388,11 +388,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun observeViewModelState() {
         lifecycleScope.launch {
-            lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                dashboardViewModel.uiState.collect { state ->
-                    updateNotificationBadge(state.unreadCount) {
-                        openNotificationsList(user?.id ?: "")
-                    }
+            dashboardViewModel.uiState.collect { state ->
+                updateNotificationBadge(state.unreadCount) {
+                    openNotificationsList(user?.id ?: "")
                 }
             }
         }
