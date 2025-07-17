@@ -15,6 +15,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
+import org.ole.planet.myplanet.databinding.FragmentSurveyBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -35,6 +36,8 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListener {
+    private var _binding: FragmentSurveyBinding? = null
+    private val binding get() = _binding!!
     private lateinit var addNewSurvey: FloatingActionButton
     private lateinit var spn: CustomSpinner
     private lateinit var etSearch: EditText
@@ -135,7 +138,8 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        initializeViews(view)
+        _binding = FragmentSurveyBinding.bind(view)
+        initializeViews()
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
@@ -158,18 +162,18 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         }
     }
 
-    private fun initializeViews(view: View) {
-        spn = view.findViewById(R.id.spn_sort)
+    private fun initializeViews() {
+        spn = binding.spnSort
         val adapter = ArrayAdapter.createFromResource(
             requireContext(), R.array.sort_by_date, R.layout.spinner_text
         )
         adapter.setDropDownViewResource(R.layout.spinner_text)
         spn.adapter = adapter
-        etSearch = view.findViewById(R.id.et_search)
-        addNewSurvey = view.findViewById(R.id.fab_add_new_survey)
-        rbTeamSurvey = view.findViewById(R.id.rbTeamSurvey)
-        rbAdoptSurvey = view.findViewById(R.id.rbAdoptSurvey)
-        rgSurvey = view.findViewById(R.id.rgSurvey)
+        etSearch = binding.etSearch
+        addNewSurvey = binding.fabAddNewSurvey
+        rbTeamSurvey = binding.rbTeamSurvey
+        rbAdoptSurvey = binding.rbAdoptSurvey
+        rgSurvey = binding.rgSurvey
     }
 
     private fun setupRecyclerView() {
@@ -289,6 +293,11 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
 
     private fun <T> safeCastList(items: List<Any?>, clazz: Class<T>): List<T> {
         return items.mapNotNull { it?.takeIf(clazz::isInstance)?.let(clazz::cast) }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     override fun onDestroy() {
