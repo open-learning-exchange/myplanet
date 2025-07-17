@@ -96,51 +96,47 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
     }
 
+    private fun setNetworkIndicatorColor(colorRes: Int) {
+        if (isAdded && view?.isAttachedToWindow == true) {
+            fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
+                ContextCompat.getColor(requireContext(), colorRes)
+        }
+    }
+
+    private suspend fun isServerReachable(mapping: ServerUrlMapper.UrlMapping): Boolean {
+        val serverCheckPrimary = lifecycleScope.async(Dispatchers.IO) {
+            viewModel.checkServerConnection(mapping.primaryUrl)
+        }
+        val serverCheckAlternative = mapping.alternativeUrl?.let {
+            lifecycleScope.async(Dispatchers.IO) { viewModel.checkServerConnection(it) }
+        }
+
+        val primaryAvailable = serverCheckPrimary.await()
+        val alternativeAvailable = serverCheckAlternative?.await() == true
+        return primaryAvailable || alternativeAvailable
+    }
+
+    private suspend fun handleConnectingState() {
+        setNetworkIndicatorColor(R.color.md_yellow_600)
+        val updateUrl = settings?.getString("serverURL", "") ?: return
+        val mapping = ServerUrlMapper().processUrl(updateUrl)
+        try {
+            val reachable = isServerReachable(mapping)
+            setNetworkIndicatorColor(if (reachable) R.color.green else R.color.md_yellow_600)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            setNetworkIndicatorColor(R.color.md_yellow_600)
+        }
+    }
+
     private suspend fun updateNetworkIndicator(status: NetworkStatus) {
         if (!isAdded) return
-        val context = context ?: return
+        context ?: return
 
         when (status) {
-            is NetworkStatus.Disconnected -> {
-                fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
-                    ContextCompat.getColor(context, R.color.md_red_700)
-            }
-            is NetworkStatus.Connecting -> {
-                fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
-                    ContextCompat.getColor(context, R.color.md_yellow_600)
-
-                val updateUrl = settings?.getString("serverURL", "") ?: return
-                val serverUrlMapper = ServerUrlMapper()
-                val mapping = serverUrlMapper.processUrl(updateUrl)
-
-                val serverCheckPrimary = lifecycleScope.async(Dispatchers.IO) {
-                    viewModel.checkServerConnection(mapping.primaryUrl)
-                }
-                val serverCheckAlternative = mapping.alternativeUrl?.let {
-                    lifecycleScope.async(Dispatchers.IO) { viewModel.checkServerConnection(it) }
-                }
-
-                try {
-                    val primaryAvailable = serverCheckPrimary.await()
-                    val alternativeAvailable = serverCheckAlternative?.await() == true
-
-                    val isServerReachable = primaryAvailable || alternativeAvailable
-
-                    if (isAdded && view?.isAttachedToWindow == true) {
-                        fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
-                            ContextCompat.getColor(context, if (isServerReachable) R.color.green else R.color.md_yellow_600)
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    if (isAdded && view?.isAttachedToWindow == true) {
-                        fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
-                            ContextCompat.getColor(context, R.color.md_yellow_600)
-                    }
-                }
-            }
-            is NetworkStatus.Connected -> {
-                fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = ContextCompat.getColor(context, R.color.green)
-            }
+            is NetworkStatus.Disconnected -> setNetworkIndicatorColor(R.color.md_red_700)
+            is NetworkStatus.Connecting -> handleConnectingState()
+            is NetworkStatus.Connected -> setNetworkIndicatorColor(R.color.green)
         }
     }
 
@@ -156,38 +152,12 @@ class BellDashboardFragment : BaseDashboardFragment() {
             if (preferences.contains("reminder_time_$surveyIds")) {
                 return
             }
-            val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)
-
-            val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
-            val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
-            recyclerView.layoutManager = LinearLayoutManager(requireActivity())
-
-            val alertDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
-                .setTitle(getString(R.string.surveys_to_complete, pendingSurveys.size, if (pendingSurveys.size > 1) "surveys" else "survey"))
-                .setView(dialogView)
-                .setPositiveButton(getString(R.string.ok)) { dialog, _ ->
-                    homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
-                    dialog.dismiss()
-                }
-                .setNeutralButton(getString(R.string.remind_later)) { _, _ ->
-                }
-                .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
-                    dialog.dismiss()
-                }
-                .create()
-
-            val adapter = SurveyAdapter(surveyTitles, { position ->
-                val selectedSurvey = pendingSurveys[position].id
-                AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
-            }, alertDialog)
-
-            recyclerView.adapter = adapter
-            alertDialog.show()
-            alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
-
-            alertDialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
-                showRemindLaterDialog(pendingSurveys, alertDialog)
-            }
+            val title = getString(
+                R.string.surveys_to_complete,
+                pendingSurveys.size,
+                if (pendingSurveys.size > 1) "surveys" else "survey"
+            )
+            showSurveyListDialog(pendingSurveys, title)
         } else {
             checkScheduledReminders()
         }
@@ -319,40 +289,12 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun showPendingSurveysReminder(pendingSurveys: List<RealmSubmission>) {
-        val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)
-
-        val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
-        val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
-        recyclerView.layoutManager = LinearLayoutManager(requireActivity())
-
-        val alertDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
-            .setTitle(getString(R.string.reminder_surveys_to_complete, pendingSurveys.size,
-                if (pendingSurveys.size > 1) "surveys" else "survey"))
-            .setView(dialogView)
-            .setPositiveButton(getString(R.string.ok)) { dialog, _ ->
-                homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
-                dialog.dismiss()
-            }
-            .setNeutralButton(getString(R.string.remind_later)) { _, _ ->
-            }
-            .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
-                dialog.dismiss()
-            }
-            .create()
-
-        val adapter = SurveyAdapter(surveyTitles, { position ->
-            val selectedSurvey = pendingSurveys[position].id
-            AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
-        }, alertDialog)
-
-        recyclerView.adapter = adapter
-        alertDialog.show()
-        alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
-
-        alertDialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
-            showRemindLaterDialog(pendingSurveys, alertDialog)
-            alertDialog.dismiss()
-        }
+        val title = getString(
+            R.string.reminder_surveys_to_complete,
+            pendingSurveys.size,
+            if (pendingSurveys.size > 1) "surveys" else "survey"
+        )
+        showSurveyListDialog(pendingSurveys, title, dismissOnNeutral = true)
     }
 
     private fun getPendingSurveys(userId: String?, realm: Realm): List<RealmSubmission> {
@@ -386,6 +328,43 @@ class BellDashboardFragment : BaseDashboardFragment() {
             exam?.name?.let { titles.add(it) }
         }
         return titles
+    }
+
+    private fun showSurveyListDialog(
+        pendingSurveys: List<RealmSubmission>,
+        title: String,
+        dismissOnNeutral: Boolean = false
+    ) {
+        val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)
+
+        val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
+        val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
+        recyclerView.layoutManager = LinearLayoutManager(requireActivity())
+
+        val alertDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+            .setTitle(title)
+            .setView(dialogView)
+            .setPositiveButton(getString(R.string.ok)) { dialog, _ ->
+                homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
+                dialog.dismiss()
+            }
+            .setNeutralButton(getString(R.string.remind_later)) { _, _ -> }
+            .setNegativeButton(getString(R.string.cancel)) { dialog, _ -> dialog.dismiss() }
+            .create()
+
+        val adapter = SurveyAdapter(surveyTitles, { position ->
+            val selectedSurvey = pendingSurveys[position].id
+            AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
+        }, alertDialog)
+
+        recyclerView.adapter = adapter
+        alertDialog.show()
+        alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
+
+        alertDialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
+            showRemindLaterDialog(pendingSurveys, alertDialog)
+            if (dismissOnNeutral) alertDialog.dismiss()
+        }
     }
 
     private fun showBadges() {
