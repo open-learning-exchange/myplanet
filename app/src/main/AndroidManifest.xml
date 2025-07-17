@@ -148,7 +148,7 @@
                 android:name="androidx.work.WorkManagerInitializer"
                 android:value="androidx.startup" />
         </provider>
-        
+
         <receiver android:name=".utilities.NotificationActionReceiver"
             android:exported="false">
             <intent-filter>
