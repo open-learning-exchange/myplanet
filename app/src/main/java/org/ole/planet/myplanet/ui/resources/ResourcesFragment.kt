@@ -245,6 +245,15 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun setupEventListeners() {
+        setupAddToLibListener()
+        setupDeleteListener()
+        setupSearchTextListener()
+        setupCollectionsButton()
+        setupSelectAllListener()
+        setupAddResourceButtonListener()
+    }
+
+    private fun setupAddToLibListener() {
         tvAddToLib.setOnClickListener {
             if ((selectedItems?.size ?: 0) > 0) {
                 confirmation = createAlertDialog()
@@ -255,7 +264,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 checkList()
             }
         }
+    }
 
+    private fun setupDeleteListener() {
         tvDelete?.setOnClickListener {
             AlertDialog.Builder(this.context, R.style.AlertDialogTheme)
                 .setMessage(R.string.confirm_removal)
@@ -266,7 +277,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
+    }
 
+    private fun setupSearchTextListener() {
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
@@ -281,13 +294,17 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             }
             override fun afterTextChanged(s: Editable) {}
         })
+    }
 
+    private fun setupCollectionsButton() {
         requireView().findViewById<View>(R.id.btn_collections).setOnClickListener {
             val f = CollectionsFragment.getInstance(searchTags, "resources")
             f.setListener(this@ResourcesFragment)
             f.show(childFragmentManager, "")
         }
+    }
 
+    private fun setupSelectAllListener() {
         selectAll.setOnClickListener {
             hideButton()
             val allSelected = selectedItems?.size == adapterLibrary.getLibraryList().size
@@ -300,7 +317,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 selectAll.text = getString(R.string.unselect_all)
             }
         }
+    }
 
+    private fun setupAddResourceButtonListener() {
         addResourceButton.setOnClickListener {
             if (userModel?.id?.startsWith("guest") == false) {
                 AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
@@ -351,19 +370,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     private fun createAlertDialog(): AlertDialog {
         val builder = AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
-        var msg = getString(R.string.success_you_have_added_these_resources_to_your_mylibrary)
-        if ((selectedItems?.size ?: 0) <= 5) {
-            for (i in selectedItems?.indices ?: emptyList()) {
-                msg += " - " + selectedItems!![i]?.title + "\n"
-            }
-        } else {
-            for (i in 0..4) {
-                msg += " - " + selectedItems?.get(i)?.title + "\n"
-            }
-            msg += getString(R.string.and) + ((selectedItems?.size ?: 0) - 5) + getString(R.string.more_resource_s)
-        }
-        msg += getString(R.string.return_to_the_home_tab_to_access_mylibrary) + getString(R.string.note_you_may_still_need_to_download_the_newly_added_resources)
-        builder.setMessage(msg)
+        builder.setMessage(buildAlertMessage())
         builder.setCancelable(true)
             .setPositiveButton(R.string.go_to_mylibrary) { dialog: DialogInterface, _: Int ->
                 if (userModel?.id?.startsWith("guest") == true) {
@@ -387,6 +394,24 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             recreateFragment(newFragment)
         }
         return builder.create()
+    }
+
+    private fun buildAlertMessage(): String {
+        var msg = getString(R.string.success_you_have_added_these_resources_to_your_mylibrary)
+        if ((selectedItems?.size ?: 0) <= 5) {
+            for (i in selectedItems?.indices ?: emptyList()) {
+                msg += " - " + selectedItems!![i]?.title + "\n"
+            }
+        } else {
+            for (i in 0..4) {
+                msg += " - " + selectedItems?.get(i)?.title + "\n"
+            }
+            msg += getString(R.string.and) + ((selectedItems?.size ?: 0) - 5) +
+                getString(R.string.more_resource_s)
+        }
+        msg += getString(R.string.return_to_the_home_tab_to_access_mylibrary) +
+            getString(R.string.note_you_may_still_need_to_download_the_newly_added_resources)
+        return msg
     }
 
     private fun clearTagsButton() {
