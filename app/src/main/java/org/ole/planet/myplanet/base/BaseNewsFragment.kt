@@ -27,6 +27,7 @@ import com.google.gson.JsonObject
 import io.realm.RealmList
 import java.io.File
 import java.io.FileOutputStream
+import org.ole.planet.myplanet.databinding.ImageThumbBinding
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.model.RealmNews
@@ -71,11 +72,12 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
                     llImage?.visibility = View.VISIBLE
                     for (img in imageList) {
                         val ob = Gson().fromJson(img, JsonObject::class.java)
-                            val inflater = LayoutInflater.from(activity).inflate(R.layout.image_thumb, llImage, false)
-                            val imgView = inflater.findViewById<ImageView>(R.id.thumb)
-                            Glide.with(requireActivity()).load(File(getString("imageUrl", ob))).into(imgView)
-                            llImage?.addView(inflater)
-                        }
+                        val imageBinding = ImageThumbBinding.inflate(LayoutInflater.from(activity), llImage, false)
+                        Glide.with(requireActivity())
+                            .load(File(getString("imageUrl", ob)))
+                            .into(imageBinding.thumb)
+                        llImage?.addView(imageBinding.root)
+                    }
                         if (result.resultCode == 102) adapterNews?.setImageList(imageList)
                     } catch (e: Exception) {
                         e.printStackTrace()
