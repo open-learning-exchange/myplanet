@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.datamanager
 import android.app.Activity
 import android.app.ActivityManager
 import android.app.Notification
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
@@ -19,7 +18,6 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
-import io.realm.Realm
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -34,7 +32,7 @@ import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Download
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils.availableExternalMemorySize
 import org.ole.planet.myplanet.utilities.FileUtils.externalMemoryAvailable
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
@@ -63,9 +61,9 @@ class MyDownloadService : Service() {
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
-        initializeNotificationChannels()
+        DownloadUtils.createChannels(this)
 
-        val initialNotification = createInitialNotification()
+        val initialNotification = DownloadUtils.buildInitialNotification(this)
         startForeground(ONGOING_NOTIFICATION_ID, initialNotification)
 
         val urlsKey = intent?.getStringExtra("urls_key") ?: "url_list_key"
@@ -92,39 +90,9 @@ class MyDownloadService : Service() {
         return START_STICKY
     }
 
-    private fun createInitialNotification(): Notification {
-        return NotificationCompat.Builder(this, "DownloadChannel")
-            .setContentTitle(getString(R.string.downloading_files))
-            .setContentText(getString(R.string.preparing_download))
-            .setSmallIcon(R.drawable.ic_download)
-            .setProgress(100, 0, true)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setOngoing(true)
-            .setSilent(true)
-            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
-            .build()
-    }
-
-    private fun initializeNotificationChannels() {
-        val channelId = "DownloadChannel"
-        if (notificationManager?.getNotificationChannel(channelId) == null) {
-            val channel = NotificationChannel(channelId, "Download Service", NotificationManager.IMPORTANCE_HIGH).apply {
-                setSound(null, null)
-                description = "Shows download progress for files"
-            }
-            notificationManager?.createNotificationChannel(channel)
-        }
-
-        val completionChannelId = "DownloadCompletionChannel"
-        if (notificationManager?.getNotificationChannel(completionChannelId) == null) {
-            val channel = NotificationChannel(completionChannelId, "Download Completion", NotificationManager.IMPORTANCE_HIGH).apply {
-                description = "Notifies when downloads are completed"
-            }
-            notificationManager?.createNotificationChannel(channel)
-        }
-    }
 
     private fun updateNotificationForBatchDownload() {
+        DownloadUtils.createChannels(this)
         notificationBuilder = NotificationCompat.Builder(this, "DownloadChannel")
             .setContentTitle(getString(R.string.downloading_files))
             .setContentText("Starting downloads (0/$totalDownloadsCount)")
@@ -287,7 +255,7 @@ class MyDownloadService : Service() {
 
     private fun onDownloadComplete(url: String) {
         if ((outputFile?.length() ?: 0) > 0) {
-            changeOfflineStatus(url)
+            DownloadUtils.updateResourceOfflineStatus(url)
         }
         completedDownloadsCount++
 
@@ -312,38 +280,17 @@ class MyDownloadService : Service() {
     }
 
     private fun showCompletionNotification(hadErrors: Boolean) {
-        val completionChannelId = "DownloadCompletionChannel"
-        val completionNotification = NotificationCompat.Builder(this, completionChannelId)
-            .setContentTitle("Downloads Completed")
-            .setContentText("$completedDownloadsCount of $totalDownloadsCount files downloaded" +
-                    if (hadErrors) " (with some errors)" else "")
-            .setSmallIcon(R.drawable.ic_download)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setAutoCancel(true)
+        val notification = DownloadUtils.buildCompletionNotification(
+            this,
+            completedDownloadsCount,
+            totalDownloadsCount,
+            hadErrors,
+            forWorker = false
+        )
 
-        notificationManager?.notify(COMPLETION_NOTIFICATION_ID, completionNotification.build())
+        notificationManager?.notify(COMPLETION_NOTIFICATION_ID, notification)
     }
 
-    private fun changeOfflineStatus(url: String) {
-        CoroutineScope(Dispatchers.IO).launch {
-            val currentFileName = getFileNameFromUrl(url)
-            try {
-                val backgroundRealm = Realm.getDefaultInstance()
-                backgroundRealm.use { realm ->
-                    realm.executeTransaction {
-                        realm.where(RealmMyLibrary::class.java)
-                            .equalTo("resourceLocalAddress", currentFileName)
-                            .findAll()?.forEach {
-                                it.resourceOffline = true
-                                it.downloadedRev = it._rev
-                            }
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
 
     companion object {
         const val PREFS_NAME = "MyPrefsFile"
