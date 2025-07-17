@@ -23,6 +23,9 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.MenuItemCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowCompat
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
@@ -81,6 +84,7 @@ import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils.totalAvailableMemoryRatio
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
@@ -138,6 +142,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun initViews() {
         activityDashboardBinding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(activityDashboardBinding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityDashboardBinding.root)
         setupUI(activityDashboardBinding.activityDashboardParentLayout, this@DashboardActivity)
         setSupportActionBar(activityDashboardBinding.myToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
@@ -223,7 +228,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         ) {
             result?.openDrawer()
         }
-        result?.stickyFooter?.setPadding(0, 0, 0, 0)
         result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
         dl = result?.drawerLayout
         topbarSetting()
@@ -839,7 +843,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val dimenHolder = DimenHolder.fromDp(headerHeight)
 
         result = headerResult?.let {
-            DrawerBuilder().withActivity(this).withFullscreen(false).withTranslucentStatusBar(false)
+            DrawerBuilder().withActivity(this).withFullscreen(true).withTranslucentStatusBar(true).withTranslucentNavigationBar(true)
                 .withSliderBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary))
                 .withToolbar(activityDashboardBinding.myToolbar)
                 .withAccountHeader(it).withHeaderHeight(dimenHolder)

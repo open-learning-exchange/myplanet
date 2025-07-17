@@ -51,6 +51,7 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
         private val textAiMessageBinding: ItemAiResponseMessageBinding,
         private val copyToClipboard: (String) -> Unit,
         val context: Context,
+        private val recyclerView: RecyclerView,
         private val coroutineScope: CoroutineScope
     ) : RecyclerView.ViewHolder(textAiMessageBinding.root) {
         fun bind(response: String, responseSource: Int,  shouldAnimate: Boolean, markAnimated: () -> Unit) {
@@ -81,6 +82,7 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
             var currentIndex = 0
             while (currentIndex < response.length) {
                 textAiMessageBinding.textGchatMessageOther.text = response.substring(0, currentIndex + 1)
+                recyclerView.scrollToPosition(bindingAdapterPosition)
                 currentIndex++
                 delay(10L)
             }
@@ -133,7 +135,7 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
             }
             viewTypeResponse -> {
                 textAiMessageBinding = ItemAiResponseMessageBinding.inflate(LayoutInflater.from(context), parent, false)
-                ResponseViewHolder(textAiMessageBinding, this::copyToClipboard, context, coroutineScope)
+                ResponseViewHolder(textAiMessageBinding, this::copyToClipboard, context, recyclerView,coroutineScope)
             }
             else -> throw IllegalArgumentException("Invalid view type")
         }
