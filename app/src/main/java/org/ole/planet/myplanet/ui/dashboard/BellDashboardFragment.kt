@@ -77,7 +77,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         setupNetworkStatusMonitoring()
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         showBadges()
-        if((user?.id?.startsWith("guest") != true)) {
+        if((user?.id?.startsWith("guest") != true) && !DashboardActivity.isFromNotificationAction) {
             checkPendingSurveys()
         }
         if (model?.id?.startsWith("guest") == false && TextUtils.isEmpty(model?.key)) {

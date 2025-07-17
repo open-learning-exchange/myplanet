@@ -7,14 +7,12 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.provider.Settings
-import android.text.TextUtils
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -32,8 +30,6 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import io.realm.Realm
-import java.io.File
-import java.io.FileOutputStream
 import java.util.Date
 import java.util.UUID
 import org.ole.planet.myplanet.MainApplication
@@ -46,6 +42,7 @@ import org.ole.planet.myplanet.service.AudioRecorderService
 import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 class AddResourceFragment : BottomSheetDialogFragment() {
@@ -68,19 +65,19 @@ class AddResourceFragment : BottomSheetDialogFragment() {
 
         captureImageLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
             if (isSuccess) {
-                startIntent(photoURI, REQUEST_CAPTURE_PICTURE)
+                handleUri(photoURI, REQUEST_CAPTURE_PICTURE)
             }
         }
 
         captureVideoLauncher = registerForActivityResult(ActivityResultContracts.CaptureVideo()) { isSuccess ->
             if (isSuccess) {
-                startIntent(videoUri, REQUEST_VIDEO_CAPTURE)
+                handleUri(videoUri, REQUEST_VIDEO_CAPTURE)
             }
         }
 
         openFolderLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
             if (uri != null) {
-                startIntent(uri, REQUEST_FILE_SELECTION)
+                handleUri(uri, REQUEST_FILE_SELECTION)
             } else {
                 Utilities.toast(activity, "no file selected")
             }
@@ -179,7 +176,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             override fun onRecordStopped(outputFile: String?) {
                 tvTime?.text = getString(R.string.empty_text)
                 dialog.dismiss()
-                audioStartIntent(outputFile)
+                processResource(outputFile)
                 floatingActionButton?.setImageResource(R.drawable.ic_mic)
             }
 
@@ -229,69 +226,21 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         photoURI?.let { captureImageLauncher.launch(it) }
     }
 
-    private fun startIntent(uri: Uri?, requestCode: Int) {
-        var path: String? = null
-        if (requestCode == REQUEST_CAPTURE_PICTURE || requestCode == REQUEST_VIDEO_CAPTURE) {
-            path = getRealPathFromUri(uri)
-        } else if (requestCode == REQUEST_FILE_SELECTION) {
-            path = getPathFromURI(uri)
+    private fun handleUri(uri: Uri?, requestCode: Int) {
+        val path = when (requestCode) {
+            REQUEST_CAPTURE_PICTURE, REQUEST_VIDEO_CAPTURE ->
+                FileUtils.getRealPathFromURI(requireContext(), uri)
+            REQUEST_FILE_SELECTION -> FileUtils.getPathFromURI(requireContext(), uri)
+            else -> null
         }
+        processResource(path)
+    }
+
+    private fun processResource(path: String?) {
         if (!path.isNullOrEmpty()) {
             addResource(path)
         } else {
             Utilities.toast(activity, getString(R.string.invalid_resource_url))
-        }
-    }
-
-    private fun audioStartIntent(path: String?) {
-        if (!TextUtils.isEmpty(path)) {
-            addResource(path)
-        } else {
-            Utilities.toast(activity, getString(R.string.invalid_resource_url))
-        }
-    }
-
-    private fun getRealPathFromUri(uri: Uri?): String {
-        val projection = arrayOf(MediaStore.Images.Media.DATA)
-        if (uri != null) {
-            requireActivity().contentResolver.query(uri, projection, null, null, null).use { cursor ->
-                if (cursor != null && cursor.moveToFirst()) {
-                    val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
-                    return cursor.getString(columnIndex)
-                }
-            }
-        }
-        return ""
-    }
-
-    private fun getPathFromURI(uri: Uri?): String? {
-        var filePath: String? = null
-        if (uri != null) {
-            val scheme = uri.scheme
-            if (scheme == "content") {
-                val cursor: Cursor? = requireActivity().contentResolver.query(uri, null, null, null, null)
-                cursor?.use {
-                    if (it.moveToFirst()) {
-                        val columnIndex = it.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
-                        val fileName = it.getString(columnIndex)
-                        val cacheDir = requireActivity().cacheDir
-                        val destinationFile = File(cacheDir, fileName)
-                        copyFile(uri, destinationFile)
-                        filePath = destinationFile.absolutePath
-                    }
-                }
-            } else if (scheme == "file") {
-                filePath = uri.path
-            }
-        }
-        return filePath
-    }
-
-    private fun copyFile(sourceUri: Uri, destinationFile: File) {
-        requireActivity().contentResolver.openInputStream(sourceUri)?.use { inputStream ->
-            FileOutputStream(destinationFile).use { outputStream ->
-                inputStream.copyTo(outputStream)
-            }
         }
     }
 

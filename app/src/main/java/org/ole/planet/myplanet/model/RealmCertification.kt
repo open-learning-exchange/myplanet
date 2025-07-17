@@ -6,8 +6,6 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmCertification : RealmObject() {
@@ -22,8 +20,6 @@ open class RealmCertification : RealmObject() {
     }
 
     companion object {
-        private val certificationDataList: MutableList<Array<String>> = mutableListOf()
-
         @JvmStatic
         fun insert(mRealm: Realm, `object`: JsonObject?) {
             val id = JsonUtils.getString("_id", `object`)
@@ -33,12 +29,6 @@ open class RealmCertification : RealmObject() {
             }
             certification?.name = JsonUtils.getString("name", `object`)
             certification?.setCourseIds(JsonUtils.getJsonArray("courseIds", `object`))
-            val csvRow = arrayOf(
-                JsonUtils.getString("_id", `object`),
-                JsonUtils.getString("name", `object`),
-                JsonUtils.getJsonArray("courseIds", `object`).toString()
-            )
-            certificationDataList.add(csvRow)
         }
 
         @JvmStatic
@@ -50,19 +40,6 @@ open class RealmCertification : RealmObject() {
             val c =
                 realm.where(RealmCertification::class.java).contains("courseIds", courseId).count()
             return c > 0
-        }
-
-        @JvmStatic
-        fun certificationWriteCsv() {
-            CsvUtils.writeCsv(
-                "${context.getExternalFilesDir(null)}/ole/certification.csv",
-                arrayOf(
-                    "certificationId",
-                    "name",
-                    "courseIds"
-                ),
-                certificationDataList
-            )
         }
     }
 }
