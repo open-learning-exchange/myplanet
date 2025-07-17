@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.datamanager
 import com.google.gson.GsonBuilder
 import java.io.IOException
 import java.lang.reflect.Modifier
+import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.utilities.RetryUtils
@@ -54,5 +55,46 @@ object ApiClient {
             shouldRetry = { resp -> resp == null || !resp.isSuccessful },
             block = operation,
         )
+    }
+
+    fun <T> executeWithResult(operation: () -> Response<T>?): NetworkResult<T> {
+        var retryCount = 0
+        var lastException: Exception? = null
+
+        while (retryCount < 3) {
+            try {
+                val response = operation()
+                if (response != null) {
+                    if (response.isSuccessful) {
+                        val body = response.body()
+                        if (body != null) {
+                            return NetworkResult.Success(body)
+                        }
+                        return NetworkResult.Error(response.code(), null)
+                    } else if (retryCount < 2) {
+                        retryCount++
+                        Thread.sleep(2000L * (retryCount + 1))
+                        continue
+                    } else {
+                        val errorBody = try { response.errorBody()?.string() } catch (_: Exception) { null }
+                        return NetworkResult.Error(response.code(), errorBody)
+                    }
+                }
+            } catch (e: SocketTimeoutException) {
+                lastException = e
+            } catch (e: IOException) {
+                lastException = e
+            } catch (e: Exception) {
+                lastException = e
+            }
+
+            if (retryCount < 2) {
+                retryCount++
+                Thread.sleep(2000L * (retryCount + 1))
+            } else {
+                break
+            }
+        }
+        return NetworkResult.Exception(lastException ?: Exception("Unknown error"))
     }
 }
