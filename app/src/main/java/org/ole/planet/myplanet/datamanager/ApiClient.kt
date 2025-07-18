@@ -5,7 +5,9 @@ import java.io.IOException
 import java.lang.reflect.Modifier
 import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
+import okhttp3.Cache
 import okhttp3.OkHttpClient
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.RetryUtils
 import retrofit2.Response
 import retrofit2.Retrofit
@@ -13,24 +15,34 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object ApiClient {
     private const val BASE_URL = "https://vi.media.mit.edu/"
-    private var retrofit: Retrofit? = null
+
+    private val httpClient: OkHttpClient by lazy {
+        val cacheSize = 10L * 1024 * 1024
+        OkHttpClient.Builder()
+            .cache(Cache(MainApplication.context.cacheDir, cacheSize))
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(10, TimeUnit.SECONDS)
+            .writeTimeout(10, TimeUnit.SECONDS)
+            .build()
+    }
+
+    private val retrofit: Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(httpClient)
+            .addConverterFactory(
+                GsonConverterFactory.create(
+                    GsonBuilder()
+                        .excludeFieldsWithModifiers(Modifier.FINAL, Modifier.TRANSIENT, Modifier.STATIC)
+                        .serializeNulls()
+                        .create()
+                )
+            ).build()
+    }
+
     @JvmStatic
-    val client: Retrofit?
-        get() {
-            val client = OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(10, TimeUnit.SECONDS).writeTimeout(10, TimeUnit.SECONDS).build()
-            if (retrofit == null) {
-                retrofit = Retrofit.Builder()
-                    .baseUrl(BASE_URL).client(client).addConverterFactory(
-                        GsonConverterFactory.create(
-                            GsonBuilder()
-                                .excludeFieldsWithModifiers(Modifier.FINAL, Modifier.TRANSIENT, Modifier.STATIC)
-                                .serializeNulls().create()
-                        )
-                    ).build()
-            }
-            return retrofit
-        }
+    val client: Retrofit
+        get() = retrofit
 
     fun getEnhancedClient(): ApiInterface {
         val httpClient = OkHttpClient.Builder().connectTimeout(60, TimeUnit.SECONDS).readTimeout(120, TimeUnit.SECONDS).writeTimeout(60, TimeUnit.SECONDS).build()

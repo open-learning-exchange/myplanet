@@ -9,7 +9,11 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import java.io.BufferedInputStream
 import java.io.FileOutputStream
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.R
@@ -33,30 +37,30 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
                 return@withContext Result.failure()
             }
 
-            val urls = urlSet.toTypedArray()
+            val urls = urlSet.toList()
             DownloadUtils.createChannels(context)
 
             showProgressNotification(0, urls.size, context.getString(R.string.starting_downloads))
 
-            var completedCount = 0
-            val results = mutableListOf<Boolean>()
-
-            urls.forEachIndexed { index, url ->
-                try {
-                    val success = downloadFile(url, index, urls.size)
-                    results.add(success)
-                    completedCount++
-
-                    showProgressNotification(completedCount, urls.size, context.getString(R.string.downloaded_files, "$completedCount", "${urls.size}"))
-                    sendDownloadUpdate(url, success, completedCount >= urls.size, fromSync)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    results.add(false)
-                    completedCount++
-                }
+            val completed = AtomicInteger(0)
+            val results = coroutineScope {
+                urls.map { url ->
+                    async {
+                        val success = try {
+                            downloadFile(url)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            false
+                        }
+                        val done = completed.incrementAndGet()
+                        showProgressNotification(done, urls.size, context.getString(R.string.downloaded_files, "$done", "${urls.size}"))
+                        sendDownloadUpdate(url, success, done >= urls.size, fromSync)
+                        success
+                    }
+                }.awaitAll()
             }
 
-            showCompletionNotification(completedCount, urls.size, results.any { !it })
+            showCompletionNotification(completed.get(), urls.size, results.any { !it })
             Result.success()
         } catch (e: Exception) {
             e.printStackTrace()
@@ -64,7 +68,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
         }
     }
 
-    private suspend fun downloadFile(url: String, index: Int, total: Int): Boolean {
+    private suspend fun downloadFile(url: String): Boolean {
         return try {
             val retrofitInterface = ApiClient.client?.create(ApiInterface::class.java)
             val response = retrofitInterface?.downloadFile(Utilities.header, url)?.execute()
@@ -74,7 +78,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
                 response.isSuccessful -> {
                     val responseBody = response.body()
                     responseBody?.let {
-                        downloadFileBody(it, url, index, total)
+                        downloadFileBody(it, url)
                         true
                     } == true
                 }
@@ -88,7 +92,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
         }
     }
 
-    private fun downloadFileBody(body: ResponseBody, url: String, index: Int, total: Int) {
+    private fun downloadFileBody(body: ResponseBody, url: String) {
         val fileSize = body.contentLength()
         val bis = BufferedInputStream(body.byteStream(), 1024 * 8)
         val outputFile = getSDPathFromUrl(url)
@@ -110,7 +114,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
                             (totalBytes * 100 / fileSize).toInt()
                         } else 0
 
-                        showProgressNotification(index, total, "Downloading ${getFileNameFromUrl(url)} ($progress%)")
+                        showProgressNotification(progress, 100, "Downloading ${getFileNameFromUrl(url)} ($progress%)")
                     }
                 }
             }
