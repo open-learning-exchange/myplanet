@@ -10,6 +10,12 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.util.Date
 import org.ole.planet.myplanet.MainApplication
@@ -40,38 +46,58 @@ class UploadToShelfService(context: Context) {
 
     fun uploadUserData(listener: SuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
-        mRealm = dbService.realmInstance
-        mRealm.executeTransactionAsync({ realm: Realm ->
-            val userModels: List<RealmUserModel> = realm.where(RealmUserModel::class.java)
-                .isEmpty("_id").or().equalTo("isUpdated", true)
-                .findAll()
-                .take(100)
-            if (userModels.isEmpty()) {
-                return@executeTransactionAsync
-            }
-            val password = sharedPreferences.getString("loginUserPassword", "")
-            userModels.forEachIndexed { index, model ->
-                try {
-                    val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
-                    val userExists = checkIfUserExists(apiInterface, header, model)
+        val password = sharedPreferences.getString("loginUserPassword", "")
 
-                    if (!userExists) {
-                        uploadNewUser(apiInterface, realm, model)
-                    } else if (model.isUpdated) {
-                        updateExistingUser(apiInterface, header, model)
+        MainApplication.applicationScope.launch(Dispatchers.IO) {
+            val userIds = mutableListOf<String>()
+            val realm = dbService.realmInstance
+            try {
+                val results = realm.where(RealmUserModel::class.java)
+                    .isEmpty("_id").or().equalTo("isUpdated", true)
+                    .findAll()
+                    .take(100)
+                userIds.addAll(results.mapNotNull { it.id })
+            } finally {
+                realm.close()
+            }
+
+            if (userIds.isNotEmpty()) {
+                coroutineScope {
+                    val jobs = userIds.map { id ->
+                        async(Dispatchers.IO) {
+                            var userRealm: Realm? = null
+                            try {
+                                userRealm = dbService.realmInstance
+                                val model = userRealm.where(RealmUserModel::class.java)
+                                    .equalTo("id", id)
+                                    .findFirst()
+                                if (model != null) {
+                                    val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
+                                    val userExists = checkIfUserExists(apiInterface, header, model)
+                                    if (!userExists) {
+                                        uploadNewUser(apiInterface, userRealm, model)
+                                    } else if (model.isUpdated) {
+                                        updateExistingUser(apiInterface, header, model)
+                                    }
+                                }
+                            } catch (e: IOException) {
+                                e.printStackTrace()
+                            } finally {
+                                userRealm?.close()
+                            }
+                        }
                     }
-                } catch (e: IOException) {
-                    e.printStackTrace()
+                    jobs.awaitAll()
                 }
             }
-        }, {
-            uploadToShelf(object : SuccessListener {
-                override fun onSuccess(success: String?) {
-                    listener.onSuccess(success)
-                }
-            })
-        }) { error ->
-            listener.onSuccess("Error during user data sync: ${error.localizedMessage}")
+
+            withContext(Dispatchers.Main) {
+                uploadToShelf(object : SuccessListener {
+                    override fun onSuccess(success: String?) {
+                        listener.onSuccess(success)
+                    }
+                })
+            }
         }
     }
 
