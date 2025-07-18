@@ -255,7 +255,7 @@ class MyDownloadService : Service() {
 
         val fileName = getFileNameFromUrl(url)
         val download = Download().apply {
-            fileName = fileName
+            fileName = this.fileName
             fileUrl = url
             progress = 100
             completeAll = (completedDownloadsCount >= totalDownloadsCount)
