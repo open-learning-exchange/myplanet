@@ -7,6 +7,7 @@ import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import kotlin.io.DEFAULT_BUFFER_SIZE
 import java.io.BufferedInputStream
 import java.io.FileOutputStream
 import kotlinx.coroutines.Dispatchers
@@ -90,34 +91,34 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
 
     private fun downloadFileBody(body: ResponseBody, url: String, index: Int, total: Int) {
         val fileSize = body.contentLength()
-        val bis = BufferedInputStream(body.byteStream(), 1024 * 8)
+        val bis = BufferedInputStream(body.byteStream(), DEFAULT_BUFFER_SIZE)
         val outputFile = getSDPathFromUrl(url)
         val output = FileOutputStream(outputFile)
-        val data = ByteArray(1024 * 4)
+        val data = ByteArray(DEFAULT_BUFFER_SIZE)
+        val fileName = getFileNameFromUrl(url)
         var totalBytes: Long = 0
 
-        try {
-            while (true) {
-                val readCount = bis.read(data)
-                if (readCount == -1) break
+        bis.use { input ->
+            output.use { out ->
+                while (true) {
+                    val readCount = input.read(data)
+                    if (readCount == -1) break
 
-                if (readCount > 0) {
-                    totalBytes += readCount
-                    output.write(data, 0, readCount)
+                    if (readCount > 0) {
+                        totalBytes += readCount
+                        out.write(data, 0, readCount)
 
-                    if (totalBytes % (1024 * 100) == 0L) {
-                        val progress = if (fileSize > 0) {
-                            (totalBytes * 100 / fileSize).toInt()
-                        } else 0
+                        if (totalBytes % (1024 * 100) == 0L) {
+                            val progress = if (fileSize > 0) {
+                                (totalBytes * 100 / fileSize).toInt()
+                            } else 0
 
-                        showProgressNotification(index, total, "Downloading ${getFileNameFromUrl(url)} ($progress%)")
+                            showProgressNotification(index, total, "Downloading $fileName ($progress%)")
+                        }
                     }
                 }
+                out.flush()
             }
-        } finally {
-            output.flush()
-            output.close()
-            bis.close()
         }
         DownloadUtils.updateResourceOfflineStatus(url)
     }

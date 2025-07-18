@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.datamanager
 import com.google.gson.JsonObject
 import java.io.File
 import java.io.IOException
+import java.net.URLConnection
 import okhttp3.MediaType
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
@@ -46,8 +47,7 @@ open class FileUploadService {
     private fun uploadDoc(id: String, rev: String, format: String, f: File, name: String, listener: SuccessListener) {
         val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
         try {
-            val connection = f.toURI().toURL().openConnection()
-            val mimeType = connection.contentType
+            val mimeType = URLConnection.guessContentTypeFromName(f.name) ?: "application/octet-stream"
             val body = FileUtils.fullyReadFileToBytes(f)
                 .toRequestBody("application/octet-stream".toMediaTypeOrNull())
             val url = String.format(format, Utilities.getUrl(), id, name)

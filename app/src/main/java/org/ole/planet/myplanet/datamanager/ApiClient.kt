@@ -14,6 +14,15 @@ import retrofit2.converter.gson.GsonConverterFactory
 object ApiClient {
     private const val BASE_URL = "https://vi.media.mit.edu/"
 
+    private val gsonConverter by lazy {
+        GsonConverterFactory.create(
+            GsonBuilder()
+                .excludeFieldsWithModifiers(Modifier.FINAL, Modifier.TRANSIENT, Modifier.STATIC)
+                .serializeNulls()
+                .create()
+        )
+    }
+
     private val okHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
@@ -21,6 +30,25 @@ object ApiClient {
             .writeTimeout(10, TimeUnit.SECONDS)
             .build()
     }
+
+    private val retrofit: Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(gsonConverter)
+            .build()
+    }
+
+    @JvmStatic
+    val client: Retrofit
+        get() = retrofit
+
+    fun getEnhancedClient(): ApiInterface {
+        val httpClient = OkHttpClient.Builder()
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(120, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .build()
 
     private val retrofit: Retrofit by lazy {
         Retrofit.Builder()
