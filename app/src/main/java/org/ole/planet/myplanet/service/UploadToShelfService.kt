@@ -11,6 +11,8 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -48,17 +50,15 @@ class UploadToShelfService(context: Context) {
         val apiInterface = client?.create(ApiInterface::class.java)
         val password = sharedPreferences.getString("loginUserPassword", "")
 
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
+        // Launch a short-lived scope so this work doesn't outlive the caller
+        CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             val userIds = mutableListOf<String>()
-            val realm = dbService.realmInstance
-            try {
+            dbService.realmInstance.use { realm ->
                 val results = realm.where(RealmUserModel::class.java)
                     .isEmpty("_id").or().equalTo("isUpdated", true)
                     .findAll()
                     .take(100)
                 userIds.addAll(results.mapNotNull { it.id })
-            } finally {
-                realm.close()
             }
 
             if (userIds.isNotEmpty()) {
