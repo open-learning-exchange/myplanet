@@ -1,46 +1,25 @@
 package org.ole.planet.myplanet.utilities
 
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileInputStream
-import java.io.IOException
 import java.security.MessageDigest
 
 class Sha256Utils {
-    fun getCheckSumFromFile(f: File): String {
-        val fis = FileInputStream(f)
-        val bos = ByteArrayOutputStream()
-        val buf = ByteArray(1024)
-        try {
-            var readNum: Int
-            while (fis.read(buf).also { readNum = it } != -1) {
-                bos.write(buf, 0, readNum)
+    fun getCheckSumFromFile(file: File): String {
+        return try {
+            val digest = MessageDigest.getInstance("SHA-512")
+            FileInputStream(file).use { fis ->
+                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                var read: Int
+                while (fis.read(buffer).also { read = it } != -1) {
+                    digest.update(buffer, 0, read)
+                }
             }
-        } catch (ex: IOException) {
-            ex.printStackTrace()
-        }
-        return generateChecksum(bos)
-    }
-
-    private fun generateChecksum(data: ByteArrayOutputStream): String {
-        try {
-            val digest: MessageDigest = MessageDigest.getInstance("SHA-512")
-            val hash: ByteArray = digest.digest(data.toByteArray())
-            return printableHexString(hash)
+            val hash = digest.digest()
+            hash.joinToString(separator = "") { "%02x".format(it) }
         } catch (e: Exception) {
             e.printStackTrace()
+            ""
         }
-        return ""
-    }
-
-    private fun printableHexString(data: ByteArray): String {
-        // Create Hex String
-        val hexString: StringBuilder = StringBuilder()
-        for (aMessageDigest: Byte in data) {
-            var h: String = Integer.toHexString(0xFF and aMessageDigest.toInt())
-            while (h.length < 2) h = "0$h"
-            hexString.append(h)
-        }
-        return hexString.toString()
     }
 }

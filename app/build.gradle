@@ -263,4 +263,5 @@ realm {
 }
 kapt {
     correctErrorTypes = true
+    useBuildCache = true
 }
