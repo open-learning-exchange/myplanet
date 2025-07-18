@@ -7,11 +7,9 @@ import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.provider.MediaStore
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
-import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
@@ -25,8 +23,8 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.RealmList
 import java.io.File
+import org.ole.planet.myplanet.databinding.ImageThumbBinding
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -70,11 +68,12 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
                     llImage?.visibility = View.VISIBLE
                     for (img in imageList) {
                         val ob = Gson().fromJson(img, JsonObject::class.java)
-                            val inflater = LayoutInflater.from(activity).inflate(R.layout.image_thumb, llImage, false)
-                            val imgView = inflater.findViewById<ImageView>(R.id.thumb)
-                            Glide.with(requireActivity()).load(File(getString("imageUrl", ob))).into(imgView)
-                            llImage?.addView(inflater)
-                        }
+                        val imageBinding = ImageThumbBinding.inflate(LayoutInflater.from(activity), llImage, false)
+                        Glide.with(requireActivity())
+                            .load(File(getString("imageUrl", ob)))
+                            .into(imageBinding.thumb)
+                        llImage?.addView(imageBinding.root)
+                    }
                         if (result.resultCode == 102) adapterNews?.setImageList(imageList)
                     } catch (e: Exception) {
                         e.printStackTrace()
