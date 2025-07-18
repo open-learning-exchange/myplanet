@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.content.Context
-import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -11,7 +10,6 @@ import android.widget.CheckBox
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
-import androidx.appcompat.widget.AppCompatRatingBar
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
@@ -20,7 +18,6 @@ import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import io.realm.Realm
 import java.util.Collections
-import java.util.Locale
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
@@ -39,8 +36,11 @@ import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterCourses(private val context: Context, private var courseList: List<RealmMyCourse?>, private val map: HashMap<String?, JsonObject>) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    private lateinit var rowCourseBinding: RowCourseBinding
+class AdapterCourses(
+    private val context: Context,
+    private var courseList: List<RealmMyCourse?>,
+    private val map: HashMap<String?, JsonObject>
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
     private var listener: OnCourseItemSelected? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
@@ -123,8 +123,8 @@ class AdapterCourses(private val context: Context, private var courseList: List<
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        rowCourseBinding = RowCourseBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHoldercourse(rowCourseBinding)
+        val binding = RowCourseBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return ViewHoldercourse(binding)
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
@@ -298,7 +298,7 @@ class AdapterCourses(private val context: Context, private var courseList: List<
 
     private fun showProgressAndRating(position: Int, holder: RecyclerView.ViewHolder) {
         val viewHolder = holder as ViewHoldercourse
-        showProgress(position)
+        showProgress(viewHolder.rowCourseBinding, position)
         if (map.containsKey(courseList[position]!!.courseId)) {
             val `object` = map[courseList[position]!!.courseId]
             CourseRatingUtils.showRating(
@@ -312,25 +312,26 @@ class AdapterCourses(private val context: Context, private var courseList: List<
         }
     }
 
-    private fun showProgress(position: Int) {
+    private fun showProgress(binding: RowCourseBinding, position: Int) {
         if (progressMap?.containsKey(courseList[position]?.courseId) == true) {
             val ob = progressMap!![courseList[position]?.courseId]
-            rowCourseBinding.courseProgress.max = getInt("max", ob)
-            rowCourseBinding.courseProgress.progress = getInt("current", ob)
-            if (getInt("current", ob) < getInt("max", ob))
-                rowCourseBinding.courseProgress.secondaryProgress = getInt("current", ob) + 1
-            rowCourseBinding.courseProgress.visibility = View.VISIBLE
+            binding.courseProgress.max = getInt("max", ob)
+            binding.courseProgress.progress = getInt("current", ob)
+            if (getInt("current", ob) < getInt("max", ob)) {
+                binding.courseProgress.secondaryProgress = getInt("current", ob) + 1
+            }
+            binding.courseProgress.visibility = View.VISIBLE
         } else {
-            rowCourseBinding.courseProgress.visibility = View.GONE
+            binding.courseProgress.visibility = View.GONE
         }
     }
 
-    private fun openCourse(realmMyCourses: RealmMyCourse?, i: Int) {
+    private fun openCourse(realmMyCourses: RealmMyCourse?, step: Int) {
         if (homeItemClickListener != null) {
             val f: Fragment = TakeCourseFragment()
             val b = Bundle()
             b.putString("id", realmMyCourses?.courseId)
-            b.putInt("position", i)
+            b.putInt("position", step)
             f.arguments = b
             homeItemClickListener?.openCallFragment(f)
         }
