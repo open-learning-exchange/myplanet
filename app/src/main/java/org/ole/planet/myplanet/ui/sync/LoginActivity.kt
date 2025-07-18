@@ -149,8 +149,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 }
             }
         })
-        val selectDarkModeButton = findViewById<ImageButton>(R.id.themeToggleButton)
-        selectDarkModeButton?.setOnClickListener{
+        val selectDarkModeButton = activityLoginBinding.themeToggleButton
+        selectDarkModeButton.setOnClickListener {
             SettingActivity.SettingFragment.darkMode(this)
         }
     }
@@ -384,7 +384,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     private fun declareHideKeyboardElements() {
-        val constraintLayout = findViewById<View>(R.id.constraintLayout)
+        val constraintLayout = activityLoginBinding.constraintLayout
         constraintLayout.setOnTouchListener { view: View?, event: MotionEvent? ->
             when (event?.action) {
                 MotionEvent.ACTION_DOWN -> {
