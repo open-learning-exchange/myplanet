@@ -164,31 +164,42 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun refreshCoursesData() {
         if (!isAdded || requireActivity().isFinishing) return
 
-        try {
-            val map = getRatings(mRealm, "course", model?.id)
-            val progressMap = getCourseProgress(mRealm, model?.id)
-            val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>()
-            val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
+            try {
+                val map = getRatings(mRealm, "course", model?.id)
+                val progressMap = getCourseProgress(mRealm, model?.id)
+                val courseList: List<RealmMyCourse?> =
+                    getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>()
+                val sortedCourseList =
+                    courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
 
-            adapterCourses.updateCourseList(sortedCourseList)
-            adapterCourses.setProgressMap(progressMap)
-            adapterCourses.setRatingMap(map)
-            adapterCourses.notifyDataSetChanged()
+                val res = if (isMyCourseLib) {
+                    val courseIds = courseList.mapNotNull { it?.id }
+                    mRealm.where(RealmMyLibrary::class.java)
+                        .`in`("courseId", courseIds.toTypedArray())
+                        .equalTo("resourceOffline", false)
+                        .isNotNull("resourceLocalAddress")
+                        .findAll()
+                } else {
+                    null
+                }
 
-            if (isMyCourseLib) {
-                val courseIds = courseList.mapNotNull { it?.id }
-                resources = mRealm.where(RealmMyLibrary::class.java)
-                    .`in`("courseId", courseIds.toTypedArray())
-                    .equalTo("resourceOffline", false)
-                    .isNotNull("resourceLocalAddress")
-                    .findAll()
+                withContext(Dispatchers.Main) {
+                    adapterCourses.updateCourseList(sortedCourseList)
+                    adapterCourses.setProgressMap(progressMap)
+                    adapterCourses.setRatingMap(map)
+                    adapterCourses.notifyDataSetChanged()
+
+                    if (isMyCourseLib) {
+                        resources = res
+                    }
+
+                    checkList()
+                    showNoData(tvMessage, adapterCourses.itemCount, "courses")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-
-            checkList()
-            showNoData(tvMessage, adapterCourses.itemCount, "courses")
-
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 

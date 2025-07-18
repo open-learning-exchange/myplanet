@@ -207,34 +207,48 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     fun refreshChatHistoryList() {
-        val mRealm = DatabaseService(requireActivity()).realmInstance
-        val list = mRealm.where(RealmChatHistory::class.java).equalTo("user", user?.name)
-            .sort("id", Sort.DESCENDING)
-            .findAll()
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
+            val realm = DatabaseService(requireActivity()).realmInstance
+            val list = realm.where(RealmChatHistory::class.java)
+                .equalTo("user", user?.name)
+                .sort("id", Sort.DESCENDING)
+                .findAll()
 
-        val adapter = fragmentChatHistoryListBinding.recyclerView.adapter as? ChatHistoryListAdapter
-        if (adapter == null) {
-            val newAdapter = ChatHistoryListAdapter(requireContext(), list, this)
-            newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
-                override fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?, aiProvider: String?) {
-                    conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
-                    sharedViewModel.setSelectedId(id)
-                    rev?.let { sharedViewModel.setSelectedRev(it) }
-                    aiProvider?.let { sharedViewModel.setSelectedAiProvider(it) }
-                    fragmentChatHistoryListBinding.slidingPaneLayout.openPane()
+            withContext(Dispatchers.Main) {
+                val adapter =
+                    fragmentChatHistoryListBinding.recyclerView.adapter as? ChatHistoryListAdapter
+                if (adapter == null) {
+                    val newAdapter = ChatHistoryListAdapter(requireContext(), list, this@ChatHistoryListFragment)
+                    newAdapter.setChatHistoryItemClickListener(object :
+                            ChatHistoryListAdapter.ChatHistoryItemClickListener {
+                        override fun onChatHistoryItemClicked(
+                            conversations: RealmList<Conversation>?,
+                            id: String,
+                            rev: String?,
+                            aiProvider: String?
+                        ) {
+                            conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
+                            sharedViewModel.setSelectedId(id)
+                            rev?.let { sharedViewModel.setSelectedRev(it) }
+                            aiProvider?.let { sharedViewModel.setSelectedAiProvider(it) }
+                            fragmentChatHistoryListBinding.slidingPaneLayout.openPane()
+                        }
+                    })
+                    fragmentChatHistoryListBinding.recyclerView.adapter = newAdapter
+                } else {
+                    adapter.updateChatHistory(list)
+                    fragmentChatHistoryListBinding.searchBar.visibility = View.VISIBLE
+                    fragmentChatHistoryListBinding.recyclerView.visibility = View.VISIBLE
                 }
-            })
-            fragmentChatHistoryListBinding.recyclerView.adapter = newAdapter
-        } else {
-            adapter.updateChatHistory(list)
-            fragmentChatHistoryListBinding.searchBar.visibility = View.VISIBLE
-            fragmentChatHistoryListBinding.recyclerView.visibility = View.VISIBLE
-        }
 
-        showNoData(fragmentChatHistoryListBinding.noChats, list.size, "chatHistory")
-        if (list.isEmpty()) {
-            fragmentChatHistoryListBinding.searchBar.visibility = View.GONE
-            fragmentChatHistoryListBinding.recyclerView.visibility = View.GONE
+                showNoData(fragmentChatHistoryListBinding.noChats, list.size, "chatHistory")
+                if (list.isEmpty()) {
+                    fragmentChatHistoryListBinding.searchBar.visibility = View.GONE
+                    fragmentChatHistoryListBinding.recyclerView.visibility = View.GONE
+                }
+            }
+
+            realm.close()
         }
     }
 

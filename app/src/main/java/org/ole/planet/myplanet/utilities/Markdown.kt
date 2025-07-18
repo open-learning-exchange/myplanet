@@ -16,6 +16,8 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.graphics.drawable.toDrawable
+import android.net.Uri
+import java.io.File
 import com.bumptech.glide.Glide
 import com.github.chrisbanes.photoview.PhotoView
 import io.noties.markwon.AbstractMarkwonPlugin
@@ -68,9 +70,23 @@ object Markdown {
     }
 
     fun setMarkdownText(textView: TextView, markdown: String) {
+        val sanitized = sanitizeMissingImages(textView.context, markdown)
         val markwon = create(textView.context)
-        markwon.setMarkdown(textView, markdown)
+        markwon.setMarkdown(textView, sanitized)
         textView.movementMethod = CustomLinkMovementMethod()
+    }
+
+    private fun sanitizeMissingImages(context: Context, markdown: String): String {
+        val regex = Regex("!\\[[^\\]]*]\\((file:[^)]+)\\)")
+        return regex.replace(markdown) { matchResult ->
+            val url = matchResult.groupValues[1]
+            val path = Uri.parse(url).path
+            if (path != null && File(path).exists()) {
+                matchResult.value
+            } else {
+                ""
+            }
+        }
     }
 
     private class CustomImageSpan(private val theme: MarkwonTheme, private val url: String) : ClickableSpan() {

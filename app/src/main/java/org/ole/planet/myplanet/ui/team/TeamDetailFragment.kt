@@ -247,32 +247,41 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     private fun refreshTeamData() {
         if (!isAdded || requireActivity().isFinishing) return
 
-        try {
-            val teamId = requireArguments().getString("id") ?: directTeamId ?: ""
-            val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
+            try {
+                val teamId = requireArguments().getString("id") ?: directTeamId ?: ""
+                val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
 
-            if (teamId.isNotEmpty()) {
-                val updatedTeam = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-                if (updatedTeam != null) {
-                    team = updatedTeam
+                if (teamId.isNotEmpty()) {
+                    val updatedTeam = mRealm.where(RealmMyTeam::class.java)
+                        .equalTo("_id", teamId)
+                        .findFirst()
 
-                    fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, isMyTeam, this)
-                    TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
-                        tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
-                    }.attach()
+                    if (updatedTeam != null) {
+                        val joinedCount = getJoinedMemberCount(updatedTeam._id.toString(), mRealm)
+                        withContext(Dispatchers.Main) {
+                            team = updatedTeam
+                            fragmentTeamDetailBinding.viewPager2.adapter =
+                                TeamPagerAdapter(requireActivity(), team, isMyTeam, this@TeamDetailFragment)
+                            TabLayoutMediator(
+                                fragmentTeamDetailBinding.tabLayout,
+                                fragmentTeamDetailBinding.viewPager2
+                            ) { tab, position ->
+                                tab.text =
+                                    (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
+                            }.attach()
 
-                    fragmentTeamDetailBinding.title.text = getEffectiveTeamName()
-                    fragmentTeamDetailBinding.subtitle.text = getEffectiveTeamType()
+                            fragmentTeamDetailBinding.title.text = getEffectiveTeamName()
+                            fragmentTeamDetailBinding.subtitle.text = getEffectiveTeamType()
 
-                    if(getJoinedMemberCount(team!!._id.toString(), mRealm) <= 1 && isMyTeam){
-                        fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
-                    } else {
-                        fragmentTeamDetailBinding.btnLeave.visibility = View.VISIBLE
+                            fragmentTeamDetailBinding.btnLeave.visibility =
+                                if (joinedCount <= 1 && isMyTeam) View.GONE else View.VISIBLE
+                        }
                     }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 

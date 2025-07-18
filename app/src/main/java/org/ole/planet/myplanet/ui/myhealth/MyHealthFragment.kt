@@ -147,16 +147,18 @@ class MyHealthFragment : Fragment() {
     private fun refreshHealthData() {
         if (!isAdded || requireActivity().isFinishing) return
 
-        try {
-            profileDbHandler = UserProfileDbHandler(requireContext())
-            userId = if (TextUtils.isEmpty(profileDbHandler?.userModel?._id)) {
-                profileDbHandler?.userModel?.id
-            } else {
-                profileDbHandler?.userModel?._id
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
+            try {
+                profileDbHandler = UserProfileDbHandler(requireContext())
+                userId = if (TextUtils.isEmpty(profileDbHandler?.userModel?._id)) {
+                    profileDbHandler?.userModel?.id
+                } else {
+                    profileDbHandler?.userModel?._id
+                }
+                withContext(Dispatchers.Main) { getHealthRecords(userId) }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            getHealthRecords(userId)
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
