@@ -145,25 +145,27 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     private fun refreshFeedbackData() {
         if (!isAdded || requireActivity().isFinishing) return
 
-        try {
-            var list: List<RealmFeedback>? = mRealm.where(RealmFeedback::class.java)
-                .equalTo("owner", userModel?.name).findAll()
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
+            try {
+                var list: List<RealmFeedback>? = mRealm.where(RealmFeedback::class.java)
+                    .equalTo("owner", userModel?.name).findAll()
 
-            if (userModel?.isManager() == true) {
-                list = mRealm.where(RealmFeedback::class.java).findAll()
+                if (userModel?.isManager() == true) {
+                    list = mRealm.where(RealmFeedback::class.java).findAll()
+                }
+
+                val adapterFeedback = AdapterFeedback(requireActivity(), list)
+                val itemCount = list?.size ?: 0
+
+                withContext(Dispatchers.Main) {
+                    fragmentFeedbackListBinding.rvFeedback.adapter = adapterFeedback
+                    showNoData(fragmentFeedbackListBinding.tvMessage, itemCount, "feedback")
+                    updateTextViewsVisibility(itemCount)
+                    setupFeedbackListener()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-
-            val adapterFeedback = AdapterFeedback(requireActivity(), list)
-            fragmentFeedbackListBinding.rvFeedback.adapter = adapterFeedback
-
-            val itemCount = list?.size ?: 0
-            showNoData(fragmentFeedbackListBinding.tvMessage, itemCount, "feedback")
-            updateTextViewsVisibility(itemCount)
-
-            setupFeedbackListener()
-
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
