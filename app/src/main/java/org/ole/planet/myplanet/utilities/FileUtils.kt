@@ -173,6 +173,38 @@ object FileUtils {
     }
 
     @JvmStatic
+    fun copyUriToFile(context: Context, sourceUri: Uri, destinationFile: File) {
+        context.contentResolver.openInputStream(sourceUri)?.use { inputStream ->
+            FileOutputStream(destinationFile).use { outputStream ->
+                inputStream.copyTo(outputStream)
+            }
+        }
+    }
+
+    @JvmStatic
+    fun getPathFromURI(context: Context, uri: Uri?): String? {
+        var filePath: String? = null
+        if (uri != null) {
+            when (uri.scheme) {
+                "content" -> {
+                    context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                        if (cursor.moveToFirst()) {
+                            val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
+                            val fileName = cursor.getString(columnIndex)
+                            val cacheDir = context.cacheDir
+                            val destinationFile = File(cacheDir, fileName)
+                            copyUriToFile(context, uri, destinationFile)
+                            filePath = destinationFile.absolutePath
+                        }
+                    }
+                }
+                "file" -> filePath = uri.path
+            }
+        }
+        return filePath
+    }
+
+    @JvmStatic
     @Throws(Exception::class)
     fun convertStreamToString(`is`: InputStream?): String {
         return `is`?.bufferedReader()?.use { it.readText() } ?: ""
