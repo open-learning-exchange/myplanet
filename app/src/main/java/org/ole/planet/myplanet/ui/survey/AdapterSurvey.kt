@@ -27,12 +27,19 @@ import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment.Companion.settings
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
-class AdapterSurvey(private val context: Context, private val mRealm: Realm, private val userId: String?, private val isTeam: Boolean, val teamId: String?, private val surveyAdoptListener: SurveyAdoptListener) : RecyclerView.Adapter<AdapterSurvey.ViewHolderSurvey>() {
+class AdapterSurvey(
+    private val context: Context,
+    private val mRealm: Realm,
+    private val userId: String?,
+    private val isTeam: Boolean,
+    val teamId: String?,
+    private val surveyAdoptListener: SurveyAdoptListener
+) : RecyclerView.Adapter<AdapterSurvey.ViewHolderSurvey>() {
     private var examList: List<RealmStepExam> = emptyList()
     private var listener: OnHomeItemClickListener? = null
     private val adoptedSurveyIds = mutableSetOf<String>()
     private var isTitleAscending = true
-    private var activeFilter = 0
+    private var sortType = SurveySortType.DATE_DESC
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -49,14 +56,12 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
 
     fun updateDataAfterSearch(newList: List<RealmStepExam>) {
         if(examList.isEmpty()){
-            examList = newList
+            SortSurveyList(false, newList)
         } else{
-            if(activeFilter == 0){
-                SortSurveyList(false, newList)
-            } else if(activeFilter == 1) {
-                SortSurveyList(true, newList)
-            } else{
-                SortSurveyListByName(isTitleAscending, newList)
+            when (sortType){
+                SurveySortType.DATE_DESC -> SortSurveyList(false, newList)
+                SurveySortType.DATE_ASC ->  SortSurveyList(true, newList)
+                SurveySortType.TITLE -> SortSurveyListByName(isTitleAscending, newList)
             }
         }
         notifyDataSetChanged()
@@ -75,7 +80,7 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
     }
 
     fun SortByDate(isAscend: Boolean){
-        activeFilter = if (isAscend) 1 else 0
+        sortType = if (isAscend) SurveySortType.DATE_DESC else SurveySortType.DATE_ASC
         SortSurveyList(isAscend)
         notifyDataSetChanged()
     }
@@ -89,7 +94,7 @@ class AdapterSurvey(private val context: Context, private val mRealm: Realm, pri
     }
 
     fun toggleTitleSortOrder() {
-        activeFilter = 2
+        sortType = SurveySortType.TITLE
         isTitleAscending = !isTitleAscending
         SortSurveyListByName(isTitleAscending)
         notifyDataSetChanged()
@@ -270,4 +275,10 @@ class SurveyDiffCallback(private val oldList: List<RealmStepExam>, private val n
     override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
         return oldList[oldItemPosition] == newList[newItemPosition]
     }
+}
+
+enum class SurveySortType {
+    DATE_DESC,
+    DATE_ASC,
+    TITLE
 }
