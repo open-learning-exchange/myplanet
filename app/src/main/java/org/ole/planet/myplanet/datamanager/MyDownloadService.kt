@@ -187,7 +187,7 @@ class MyDownloadService : Service() {
                         val currentTime = System.currentTimeMillis() - startTime
 
                         val download = Download().apply {
-                            fileName = fileName
+                            fileName = this.fileName
                             totalFileSize = this@MyDownloadService.totalFileSize
                         }
 
