@@ -23,7 +23,7 @@ object ApiClient {
         )
     }
 
-    private val okHttpClient by lazy {
+    private val okHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(10, TimeUnit.SECONDS)
@@ -50,12 +50,49 @@ object ApiClient {
             .writeTimeout(60, TimeUnit.SECONDS)
             .build()
 
-        val enhancedRetrofit = Retrofit.Builder()
+    private val retrofit: Retrofit by lazy {
+        Retrofit.Builder()
             .baseUrl(BASE_URL)
-            .client(httpClient)
-            .addConverterFactory(gsonConverter)
+            .client(okHttpClient)
+            .addConverterFactory(
+                GsonConverterFactory.create(
+                    GsonBuilder()
+                        .excludeFieldsWithModifiers(Modifier.FINAL, Modifier.TRANSIENT, Modifier.STATIC)
+                        .serializeNulls()
+                        .create()
+                )
+            )
             .build()
+    }
 
+    @JvmStatic
+    val client: Retrofit
+        get() = retrofit
+
+    private val enhancedOkHttpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(120, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .build()
+    }
+
+    private val enhancedRetrofit: Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(enhancedOkHttpClient)
+            .addConverterFactory(
+                GsonConverterFactory.create(
+                    GsonBuilder()
+                        .excludeFieldsWithModifiers(Modifier.FINAL, Modifier.TRANSIENT, Modifier.STATIC)
+                        .serializeNulls()
+                        .create(),
+                ),
+            )
+            .build()
+    }
+
+    fun getEnhancedClient(): ApiInterface {
         return enhancedRetrofit.create(ApiInterface::class.java)
     }
 
