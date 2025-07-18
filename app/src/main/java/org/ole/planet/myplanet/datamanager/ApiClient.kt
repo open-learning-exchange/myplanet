@@ -13,37 +13,48 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object ApiClient {
     private const val BASE_URL = "https://vi.media.mit.edu/"
-    private var retrofit: Retrofit? = null
+
+    private val gsonConverter by lazy {
+        GsonConverterFactory.create(
+            GsonBuilder()
+                .excludeFieldsWithModifiers(Modifier.FINAL, Modifier.TRANSIENT, Modifier.STATIC)
+                .serializeNulls()
+                .create()
+        )
+    }
+
+    private val okHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(10, TimeUnit.SECONDS)
+            .writeTimeout(10, TimeUnit.SECONDS)
+            .build()
+    }
+
+    private val retrofit: Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(gsonConverter)
+            .build()
+    }
+
     @JvmStatic
-    val client: Retrofit?
-        get() {
-            val client = OkHttpClient.Builder().connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(10, TimeUnit.SECONDS).writeTimeout(10, TimeUnit.SECONDS).build()
-            if (retrofit == null) {
-                retrofit = Retrofit.Builder()
-                    .baseUrl(BASE_URL).client(client).addConverterFactory(
-                        GsonConverterFactory.create(
-                            GsonBuilder()
-                                .excludeFieldsWithModifiers(Modifier.FINAL, Modifier.TRANSIENT, Modifier.STATIC)
-                                .serializeNulls().create()
-                        )
-                    ).build()
-            }
-            return retrofit
-        }
+    val client: Retrofit
+        get() = retrofit
 
     fun getEnhancedClient(): ApiInterface {
-        val httpClient = OkHttpClient.Builder().connectTimeout(60, TimeUnit.SECONDS).readTimeout(120, TimeUnit.SECONDS).writeTimeout(60, TimeUnit.SECONDS).build()
+        val httpClient = OkHttpClient.Builder()
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .readTimeout(120, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .build()
 
         val enhancedRetrofit = Retrofit.Builder()
             .baseUrl(BASE_URL)
             .client(httpClient)
-            .addConverterFactory(
-                GsonConverterFactory.create(GsonBuilder()
-                    .excludeFieldsWithModifiers(Modifier.FINAL, Modifier.TRANSIENT, Modifier.STATIC)
-                    .serializeNulls().create()
-                )
-            ).build()
+            .addConverterFactory(gsonConverter)
+            .build()
 
         return enhancedRetrofit.create(ApiInterface::class.java)
     }
