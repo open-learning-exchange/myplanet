@@ -171,7 +171,7 @@ class MyDownloadService : Service() {
         var total: Long = 0
         val startTime = System.currentTimeMillis()
         var timeCount = 1
-        val fileName = getFileNameFromUrl(url)
+        val downloadFileName = getFileNameFromUrl(url)
 
         BufferedInputStream(body.byteStream(), DEFAULT_BUFFER_SIZE).use { bis ->
             FileOutputStream(outputFile).use { output ->
@@ -187,7 +187,7 @@ class MyDownloadService : Service() {
                         val currentTime = System.currentTimeMillis() - startTime
 
                         val download = Download().apply {
-                            fileName = this.fileName
+                            fileName = downloadFileName
                             totalFileSize = this@MyDownloadService.totalFileSize
                         }
 
@@ -253,9 +253,9 @@ class MyDownloadService : Service() {
         }
         completedDownloadsCount++
 
-        val fileName = getFileNameFromUrl(url)
+        val completedFileName = getFileNameFromUrl(url)
         val download = Download().apply {
-            fileName = this.fileName
+            fileName = completedFileName
             fileUrl = url
             progress = 100
             completeAll = (completedDownloadsCount >= totalDownloadsCount)
