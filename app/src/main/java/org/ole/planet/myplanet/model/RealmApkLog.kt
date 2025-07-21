@@ -5,8 +5,7 @@ import com.google.gson.JsonObject
 import io.realm.RealmObject
 import io.realm.annotations.Ignore
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.utilities.NetworkUtils
-
+import org.ole.planet.myplanet.MainApplication.Companion.networkUtils
 open class RealmApkLog : RealmObject() {
     @PrimaryKey
     var id: String? = null
@@ -19,7 +18,6 @@ open class RealmApkLog : RealmObject() {
     var version: String? = null
     var createdOn: String? = null
     var time: String? = null
-
     fun setError(e: Throwable) {
         error += "--------- Stack trace ---------\n\n"
         appendReport(e)
@@ -27,12 +25,10 @@ open class RealmApkLog : RealmObject() {
         val cause = e.cause
         appendReport(cause)
     }
-
     private fun appendReport(cause: Throwable?) {
         if (cause != null) {
             error += """
                 $cause
-                
                 
                 """.trimIndent()
             val arr = cause.stackTrace
@@ -42,12 +38,9 @@ open class RealmApkLog : RealmObject() {
             }
         }
         error += "-------------------------------\n\n"
-    }
-
     companion object {
         @Ignore
         const val ERROR_TYPE_CRASH = "crash"
-
         @JvmStatic
         fun serialize(log: RealmApkLog, context: Context): JsonObject {
             val `object` = JsonObject()
@@ -59,12 +52,9 @@ open class RealmApkLog : RealmObject() {
             `object`.addProperty("version", log.version)
             `object`.addProperty("createdOn", log.createdOn)
             `object`.addProperty("androidId", log.createdOn)
-            `object`.addProperty("createdOn", log.createdOn)
-            `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-            `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
-            `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+            `object`.addProperty("androidId", networkUtils.getUniqueIdentifier())
+            `object`.addProperty("deviceName", networkUtils.getDeviceName())
+            `object`.addProperty("customDeviceName", networkUtils.getCustomDeviceName(context))
             `object`.addProperty("parentCode", log.parentCode)
             return `object`
-        }
-    }
 }

@@ -6,8 +6,7 @@ import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import java.util.Date
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils
-
+import org.ole.planet.myplanet.MainApplication.Companion.networkUtils
 open class RealmMyPersonal : RealmObject() {
     @PrimaryKey
     var id: String? = null
@@ -20,7 +19,6 @@ open class RealmMyPersonal : RealmObject() {
     var userId: String? = null
     var userName: String? = null
     var path: String? = null
-
     companion object {
         @JvmStatic
         fun serialize(personal: RealmMyPersonal, context: Context): JsonObject {
@@ -35,9 +33,9 @@ open class RealmMyPersonal : RealmObject() {
             `object`.addProperty("resourceType", "Activities")
             `object`.addProperty("private", true)
             val object1 = JsonObject()
-            `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-            `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
-            `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+            `object`.addProperty("androidId", networkUtils.getUniqueIdentifier())
+            `object`.addProperty("deviceName", networkUtils.getDeviceName())
+            `object`.addProperty("customDeviceName", networkUtils.getCustomDeviceName(context))
             object1.addProperty("users", personal.userId)
             `object`.add("privateFor", object1)
             return `object`

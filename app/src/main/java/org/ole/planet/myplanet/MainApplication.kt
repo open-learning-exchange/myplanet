@@ -42,15 +42,12 @@ import org.ole.planet.myplanet.utilities.ANRWatchdog
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.LocaleHelper
-import org.ole.planet.myplanet.utilities.NetworkUtils.initialize
-import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
-import org.ole.planet.myplanet.utilities.NetworkUtils.startListenNetworkState
+import org.ole.planet.myplanet.MainApplication.Companion.networkUtils
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.ThemeMode
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
-
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
@@ -75,7 +72,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
         val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         lateinit var defaultPref: SharedPreferences
-
+        lateinit var networkUtils: NetworkUtils
         fun createLog(type: String, error: String = "") {
             applicationScope.launch(Dispatchers.IO) {
                 val realm = Realm.getDefaultInstance()
@@ -100,41 +97,28 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 } finally {
                     realm.close()
                 }
-            }
-        }
-
         private fun applyThemeMode(themeMode: String?) {
             when (themeMode) {
                 ThemeMode.LIGHT -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
                 ThemeMode.DARK -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
                 ThemeMode.FOLLOW_SYSTEM -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-            }
-        }
-
         fun setThemeMode(themeMode: String) {
             val sharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             with(sharedPreferences.edit()) {
                 putString("theme_mode", themeMode)
                 commit()
-            }
             applyThemeMode(themeMode)
-        }
-
         suspend fun isServerReachable(urlString: String): Boolean {
             val serverUrlMapper = ServerUrlMapper()
             val mapping = serverUrlMapper.processUrl(urlString)
             val urlsToTry = mutableListOf(urlString)
             mapping.alternativeUrl?.let { urlsToTry.add(it) }
-
             return try {
                 if (urlString.isBlank()) return false
-
                 val formattedUrl = if (!urlString.startsWith("http://") && !urlString.startsWith("https://")) {
                     "http://$urlString"
                 } else {
                     urlString
-                }
-
                 val url = URL(formattedUrl)
                 val connection = withContext(Dispatchers.IO) {
                     url.openConnection()
@@ -144,34 +128,22 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 connection.readTimeout = 5000
                 withContext(Dispatchers.IO) {
                     connection.connect()
-                }
                 val responseCode = connection.responseCode
                 connection.disconnect()
                 responseCode in 200..299
-
-            } catch (e: Exception) {
-                e.printStackTrace()
                 false
-            }
-        }
-
         fun handleUncaughtException(e: Throwable) {
             e.printStackTrace()
             createLog(RealmApkLog.ERROR_TYPE_CRASH, e.stackTraceToString())
-
             val homeIntent = Intent(Intent.ACTION_MAIN).apply {
                 addCategory(Intent.CATEGORY_HOME)
                 flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-            }
             context.startActivity(homeIntent)
-        }
     }
-
     private var activityReferences = 0
     private var isActivityChangingConfigurations = false
     private var isFirstLaunch = true
     private lateinit var anrWatchdog: ANRWatchdog
-
     override fun onCreate() {
         super.onCreate()
         initApp()
@@ -183,180 +155,106 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         setupLifecycleCallbacks()
         configureTheme()
         observeNetworkForDownloads()
-    }
-
     private fun initApp() {
         context = this
-        initialize(applicationScope)
-        startListenNetworkState()
-    }
-
+        networkUtils = NetworkUtils(this, applicationScope)
+        networkUtils.startListenNetworkState()
     private fun setupPreferences() {
         preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         service = DatabaseService(context)
         mRealm = service.realmInstance
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
-    }
-
     private fun setupStrictMode() {
         val builder = VmPolicy.Builder()
         StrictMode.setVmPolicy(builder.build())
         builder.detectFileUriExposure()
-    }
-
     private fun setupAnrWatchdog() {
         anrWatchdog = ANRWatchdog(timeout = 5000L, listener = object : ANRWatchdog.ANRListener {
             override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
                 applicationScope.launch {
                     createLog("anr", "ANR detected! Duration: ${duration}ms\n $message")
-                }
-            }
         })
         anrWatchdog.start()
-    }
-
     private fun scheduleWorkersOnStart() {
         if (preferences?.getBoolean("autoSync", false) == true && preferences?.contains("autoSyncInterval") == true) {
             val syncInterval = preferences?.getInt("autoSyncInterval", 60 * 60)
             scheduleAutoSyncWork(syncInterval)
         } else {
             cancelAutoSyncWork()
-        }
         scheduleStayOnlineWork()
         scheduleTaskNotificationWork()
-    }
-
     private fun registerExceptionHandler() {
         Thread.setDefaultUncaughtExceptionHandler { _: Thread?, e: Throwable ->
             handleUncaughtException(e)
-        }
-    }
-
     private fun setupLifecycleCallbacks() {
         registerActivityLifecycleCallbacks(this)
         onAppStarted()
-    }
-
     private fun configureTheme() {
         val savedThemeMode = getCurrentThemeMode()
         applyThemeMode(savedThemeMode)
-    }
-
     private fun observeNetworkForDownloads() {
-        isNetworkConnectedFlow.onEach { isConnected ->
+        networkUtils.isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
                 val serverUrl = preferences?.getString("serverURL", "")
                 if (!serverUrl.isNullOrEmpty()) {
                     applicationScope.launch {
                         val canReachServer = withContext(Dispatchers.IO) {
                             isServerReachable(serverUrl)
-                        }
                         if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
                             backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
-                        }
-                    }
-                }
-            }
         }.launchIn(applicationScope)
-    }
-
     private fun scheduleAutoSyncWork(syncInterval: Int?) {
         val autoSyncWork: PeriodicWorkRequest? = syncInterval?.let { PeriodicWorkRequest.Builder(AutoSyncWorker::class.java, it.toLong(), TimeUnit.SECONDS).build() }
         val workManager = WorkManager.getInstance(this)
         if (autoSyncWork != null) {
             workManager.enqueueUniquePeriodicWork(AUTO_SYNC_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, autoSyncWork)
-        }
-    }
-
     private fun cancelAutoSyncWork() {
-        val workManager = WorkManager.getInstance(this)
         workManager.cancelUniqueWork(AUTO_SYNC_WORK_TAG)
-    }
-
     private fun scheduleStayOnlineWork() {
         val stayOnlineWork: PeriodicWorkRequest = PeriodicWorkRequest.Builder(StayOnlineWorker::class.java, 900, TimeUnit.SECONDS).build()
-        val workManager = WorkManager.getInstance(this)
         workManager.enqueueUniquePeriodicWork(STAY_ONLINE_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, stayOnlineWork)
-    }
-
     private fun scheduleTaskNotificationWork() {
         val taskNotificationWork: PeriodicWorkRequest = PeriodicWorkRequest.Builder(TaskNotificationWorker::class.java, 900, TimeUnit.SECONDS).build()
-        val workManager = WorkManager.getInstance(this)
         workManager.enqueueUniquePeriodicWork(TASK_NOTIFICATION_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, taskNotificationWork)
-    }
-
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleHelper.onAttach(base))
         Utilities.setContext(base)
-    }
-
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-
         if (getCurrentThemeMode() != ThemeMode.FOLLOW_SYSTEM) return
-
         val isNightMode = (newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
         val themeToApply = if (isNightMode) ThemeMode.DARK else ThemeMode.LIGHT
-
         applyThemeMode(themeToApply)
-    }
-
     private fun getCurrentThemeMode(): String {
         val sharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
-    }
-
     override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
-
     override fun onActivityStarted(activity: Activity) {
         if (++activityReferences == 1 && !isActivityChangingConfigurations) {
             onAppForegrounded()
-        }
-    }
-
     override fun onActivityResumed(activity: Activity) {}
-
     override fun onActivityPaused(activity: Activity) {}
-
     override fun onActivityStopped(activity: Activity) {
         isActivityChangingConfigurations = activity.isChangingConfigurations
         if (--activityReferences == 0 && !isActivityChangingConfigurations) {
             onAppBackgrounded()
-        }
-    }
-
     override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle) {}
-
     override fun onActivityDestroyed(activity: Activity) {
         cancelAll(this)
-    }
-
     private fun onAppForegrounded() {
         if (isFirstLaunch) {
             isFirstLaunch = false
-        } else {
             applicationScope.launch {
                 createLog("foreground", "")
-            }
-        }
-    }
-
     private fun onAppBackgrounded() {}
-
     private fun onAppStarted() {
         applicationScope.launch {
             createLog("new login", "")
-        }
-    }
-
     private fun onAppClosed() {}
-
     override fun onTerminate() {
         if (::anrWatchdog.isInitialized) {
             anrWatchdog.stop()
-        }
         super.onTerminate()
         onAppClosed()
         applicationScope.cancel()
-    }
 }

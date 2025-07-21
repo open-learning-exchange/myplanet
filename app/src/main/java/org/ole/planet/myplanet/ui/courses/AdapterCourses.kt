@@ -52,6 +52,7 @@ class AdapterCourses(
     private var isTitleAscending = false
     private var areAllSelected = false
     var userModel: RealmUserModel?= null
+    private val courseRatingUtils = CourseRatingUtils(context)
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -301,7 +302,7 @@ class AdapterCourses(
         showProgress(viewHolder.rowCourseBinding, position)
         if (map.containsKey(courseList[position]!!.courseId)) {
             val `object` = map[courseList[position]!!.courseId]
-            CourseRatingUtils.showRating(
+            courseRatingUtils.showRating(
                 `object`,
                 viewHolder.rowCourseBinding.rating,
                 viewHolder.rowCourseBinding.timesRated,

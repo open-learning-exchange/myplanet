@@ -13,9 +13,8 @@ import java.util.Calendar
 import java.util.Date
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.NetworkUtils
+import org.ole.planet.myplanet.MainApplication.Companion.networkUtils
 import org.ole.planet.myplanet.utilities.VersionUtils
-
 class MyPlanet : Serializable {
     var planetVersion: String? = null
 //    var latestapk: String? = null
@@ -28,7 +27,6 @@ class MyPlanet : Serializable {
     override fun toString(): String {
         return appname!!
     }
-
     companion object {
         @JvmStatic
         fun getMyPlanetActivities(context: Context, pref: SharedPreferences, model: RealmUserModel): JsonObject {
@@ -36,7 +34,7 @@ class MyPlanet : Serializable {
             val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val planet = Gson().fromJson(preferences.getString("versionDetail", ""), MyPlanet::class.java)
             if (planet != null) postJSON.addProperty("planetVersion", planet.planetVersion)
-            postJSON.addProperty("_id", VersionUtils.getAndroidId(MainApplication.context) + "@" + NetworkUtils.getUniqueIdentifier())
+            postJSON.addProperty("_id", VersionUtils.getAndroidId(MainApplication.context) + "@" + networkUtils.getUniqueIdentifier())
             postJSON.addProperty("last_synced", pref.getLong("LastSync", 0))
             postJSON.addProperty("parentCode", model.parentCode)
             postJSON.addProperty("createdOn", model.planetCode)
@@ -44,28 +42,15 @@ class MyPlanet : Serializable {
             postJSON.add("usages", getTabletUsages(context))
             return postJSON
         }
-
-        @JvmStatic
         fun getNormalMyPlanetActivities(context: Context, pref: SharedPreferences, model: RealmUserModel): JsonObject {
-            val postJSON = JsonObject()
-            val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val planet = Gson().fromJson(preferences.getString("versionDetail", ""), MyPlanet::class.java)
-            if (planet != null) postJSON.addProperty("planetVersion", planet.planetVersion)
-            postJSON.addProperty("last_synced", pref.getLong("LastSync", 0))
-            postJSON.addProperty("parentCode", model.parentCode)
-            postJSON.addProperty("createdOn", model.planetCode)
             postJSON.addProperty("version", VersionUtils.getVersionCode(context))
             postJSON.addProperty("versionName", VersionUtils.getVersionName(context))
-            postJSON.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+            postJSON.addProperty("androidId", networkUtils.getUniqueIdentifier())
             postJSON.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
-            postJSON.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
-            postJSON.addProperty("deviceName", NetworkUtils.getDeviceName())
+            postJSON.addProperty("customDeviceName", networkUtils.getCustomDeviceName(context))
+            postJSON.addProperty("deviceName", networkUtils.getDeviceName())
             postJSON.addProperty("time", Date().time)
             postJSON.addProperty("type", "sync")
-            return postJSON
-        }
-
-        @JvmStatic
         fun getTabletUsages(context: Context): JsonArray {
             val cal = Calendar.getInstance()
             val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -79,8 +64,6 @@ class MyPlanet : Serializable {
                 }
             }
             return arr
-        }
-
         private fun addStats(s: UsageStats, arr: JsonArray, context: Context) {
             if (s.packageName == MainApplication.context.packageName) {
                 val `object` = JsonObject()
@@ -91,12 +74,9 @@ class MyPlanet : Serializable {
                 `object`.addProperty("totalUsed", if (totalUsed > 0) totalUsed else 0)
                 `object`.addProperty("version", VersionUtils.getVersionCode(context))
                 `object`.addProperty("versionName", VersionUtils.getVersionName(context))
-                `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-                `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
-                `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
+                `object`.addProperty("androidId", networkUtils.getUniqueIdentifier())
+                `object`.addProperty("customDeviceName", networkUtils.getCustomDeviceName(context))
+                `object`.addProperty("deviceName", networkUtils.getDeviceName())
                 `object`.addProperty("time", Date().time)
                 arr.add(`object`)
-            }
-        }
-    }
 }

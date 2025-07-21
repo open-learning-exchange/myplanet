@@ -37,9 +37,8 @@ import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
-import org.ole.planet.myplanet.utilities.NetworkUtils.getUniqueIdentifier
+import org.ole.planet.myplanet.MainApplication.Companion.networkUtils
 import org.ole.planet.myplanet.utilities.Utilities
-
 abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var exam: RealmStepExam? = null
     lateinit var db: DatabaseService
@@ -61,7 +60,6 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var submitId = ""
     var isTeam: Boolean = false
     var teamId: String? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         db = DatabaseService(requireActivity())
@@ -76,7 +74,6 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             checkType()
         }
     }
-
     private fun checkId() {
         if (TextUtils.isEmpty(stepId)) {
             id = requireArguments().getString("id")
@@ -88,45 +85,31 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
                     sub?.parentId
                 }
             }
-        }
-    }
-
     private fun checkType() {
         if (requireArguments().containsKey("type")) {
             type = requireArguments().getString("type")
-        }
-    }
-
     fun initExam() {
         exam = if (!TextUtils.isEmpty(stepId)) {
             mRealm.where(RealmStepExam::class.java).equalTo("stepId", stepId).findFirst()
         } else {
             mRealm.where(RealmStepExam::class.java).equalTo("id", id).findFirst()
-        }
-    }
-
     var isLastAnsvalid = false
     fun checkAnsAndContinue(cont: Boolean) {
         if (cont) {
             isLastAnsvalid = true
             currentIndex += 1
             continueExam()
-        } else {
             isLastAnsvalid = false
             val toast = Toast.makeText(activity, getString(R.string.incorrect_ans), Toast.LENGTH_SHORT)
             toast.show()
             Handler(Looper.getMainLooper()).postDelayed({
                 toast.cancel()
             }, 1000)
-        }
-    }
-
     private fun continueExam() {
         if (currentIndex < (questions?.size ?: 0)) {
             startExam(questions?.get(currentIndex))
         } else if (isTeam == true && type?.startsWith("survey") == true) {
             showUserInfoDialog()
-        } else {
             saveCourseProgress()
             val titleView = TextView(requireContext()).apply {
                 text = "${getString(R.string.thank_you_for_taking_this)}$type! ${getString(R.string.we_wish_you_all_the_best)}"
@@ -135,16 +118,11 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
                 setTypeface(null, Typeface.BOLD)
                 gravity = Gravity.CENTER
                 setPadding(20, 25, 20, 0)
-            }
-
             AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                 .setCustomTitle(titleView)
                 .setPositiveButton(getString(R.string.finish)) { _: DialogInterface?, _: Int ->
                     parentFragmentManager.popBackStack()
                 }.setCancelable(false).show()
-        }
-    }
-
     private fun saveCourseProgress() {
         val progress = mRealm.where(RealmCourseProgress::class.java)
             .equalTo("courseId", exam?.courseId)
@@ -153,41 +131,25 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             progress.passed = sub?.status == "graded"
             mRealm.commitTransaction()
-        }
-    }
-
     private fun showUserInfoDialog() {
         if (!isMySurvey && !exam?.isFromNation!!) {
             UserInformationFragment.getInstance(sub?.id, teamId, !isMySurvey && !exam?.isFromNation!!).show(childFragmentManager, "")
-        } else {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
             sub?.status = "complete"
-            mRealm.commitTransaction()
             Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
             navigateToSurveyList(requireActivity())
-        }
-    }
-
     companion object {
         fun navigateToSurveyList(activity: FragmentActivity) {
             val surveyListFragment = SurveyFragment()
             activity.supportFragmentManager.beginTransaction()
                 .replace(R.id.fragment_container, surveyListFragment)
                 .commit()
-        }
-    }
-
     fun addAnswer(compoundButton: CompoundButton) {
         val btnText = compoundButton.text.toString()
         val btnId = compoundButton.tag?.toString() ?: ""
-
         if (compoundButton is RadioButton) {
             ans = btnId
         } else if (compoundButton is CheckBox) {
             listAns?.put(btnText, btnId)
-        }
-    }
-
     abstract fun startExam(question: RealmExamQuestion?)
     private fun insertIntoSubmitPhotos(submitId: String?) {
         mRealm.beginTransaction()
@@ -201,26 +163,19 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         submit.photoLocation = photoPath
         submit.uploaded = false
         mRealm.commitTransaction()
-    }
-
     override fun onImageCapture(fileUri: String?) {
         photoPath = fileUri
         insertIntoSubmitPhotos(submitId)
-    }
-
     fun setMarkdownViewAndShowInput(etAnswer: EditText, type: String, oldAnswer: String?) {
         etAnswer.visibility = View.VISIBLE
         val markwon = Markwon.create(requireActivity())
         val editor = MarkwonEditor.create(markwon)
         if (type.equals("textarea", ignoreCase = true)) {
             etAnswer.addTextChangedListener(MarkwonEditorTextWatcher.withProcess(editor))
-        } else {
             etAnswer.addTextChangedListener(object : TextWatcher {
                 override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
                 override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
                 override fun afterTextChanged(editable: Editable) {}
             })
-        }
         etAnswer.setText(oldAnswer)
-    }
 }

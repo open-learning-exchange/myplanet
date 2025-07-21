@@ -5,9 +5,8 @@ import com.google.gson.JsonObject
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.utilities.NetworkUtils
+import org.ole.planet.myplanet.MainApplication.Companion.networkUtils
 import org.ole.planet.myplanet.utilities.VersionUtils
-
 open class RealmSearchActivity(
     @PrimaryKey
     var id: String = "",
@@ -29,15 +28,14 @@ open class RealmSearchActivity(
         obj.addProperty("user", user)
         obj.addProperty("androidId", VersionUtils.getAndroidId(MainApplication.context))
         obj.addProperty(
-            "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
+            "customDeviceName", networkUtils.getCustomDeviceName(MainApplication.context)
         )
-        obj.addProperty("deviceName", NetworkUtils.getDeviceName())
+        obj.addProperty("deviceName", networkUtils.getDeviceName())
         obj.addProperty("createdOn", createdOn)
         obj.addProperty("parentCode", parentCode)
         obj.add("filter", Gson().fromJson(filter, JsonObject::class.java))
         return obj
     }
-
     companion object {
         @JvmStatic
         fun insert(log: RealmNewsLog): JsonObject {
@@ -45,10 +43,9 @@ open class RealmSearchActivity(
             ob.addProperty("user", log.userId)
             ob.addProperty("type", log.type)
             ob.addProperty("time", log.time)
-            ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-            ob.addProperty("deviceName", NetworkUtils.getDeviceName())
-            ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
+            ob.addProperty("androidId", networkUtils.getUniqueIdentifier())
+            ob.addProperty("deviceName", networkUtils.getDeviceName())
+            ob.addProperty("customDeviceName", networkUtils.getCustomDeviceName(MainApplication.context))
             return ob
         }
-    }
 }

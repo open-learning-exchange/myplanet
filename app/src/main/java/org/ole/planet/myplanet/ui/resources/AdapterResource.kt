@@ -38,6 +38,7 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
     private var isAscending = true
     private var isTitleAscending = false
     var userModel: RealmUserModel ?= null
+    private val courseRatingUtils = CourseRatingUtils(context)
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -103,7 +104,7 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
                 }
             if (ratingMap.containsKey(libraryList[position]?.resourceId)) {
                 val `object` = ratingMap[libraryList[position]?.resourceId]
-                CourseRatingUtils.showRating(
+                courseRatingUtils.showRating(
                     `object`,
                     holder.rowLibraryBinding.rating,
                     holder.rowLibraryBinding.timesRated,

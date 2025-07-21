@@ -52,6 +52,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private var timesRated: TextView? = null
     var rating: TextView? = null
     private var ratingBar: AppCompatRatingBar? = null
+    private lateinit var courseRatingUtils: CourseRatingUtils
     private val installUnknownSourcesRequestCode = 112
     var hasInstallPermission = hasInstallPermission(MainApplication.context)
     private var currentLibrary: RealmMyLibrary? = null
@@ -73,11 +74,12 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
         }
         prefData = SharedPrefManager(requireContext())
+        courseRatingUtils = CourseRatingUtils(requireContext())
     }
 
     fun setRatings(`object`: JsonObject?) {
         if (`object` != null) {
-            CourseRatingUtils.showRating(`object`, rating, timesRated, ratingBar)
+            courseRatingUtils.showRating(`object`, rating, timesRated, ratingBar)
         }
     }
     fun getUrlsAndStartDownload(lib: List<RealmMyLibrary?>, urls: ArrayList<String>) {
