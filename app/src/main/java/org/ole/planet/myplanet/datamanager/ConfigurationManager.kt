@@ -165,6 +165,13 @@ class ConfigurationManager(
                 preferences.edit { putString("ai_models", Gson().toJson(modelsMap)) }
             }
         }
+
+        if (doc.has("planetType")) {
+            val planetType = doc.getAsJsonPrimitive("planetType").asString
+            withContext(Dispatchers.IO) {
+                preferences.edit { putString("planetType", planetType) }
+            }
+        }
     }
 
     private fun buildCouchdbUrl(currentUrl: String, pin: String): String {
