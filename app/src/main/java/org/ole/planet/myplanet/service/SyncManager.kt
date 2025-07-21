@@ -216,7 +216,7 @@ class SyncManager private constructor(private val context: Context) {
             logger.endProcess("admin_sync")
 
             logger.startProcess("resource_sync")
-            resourceTransactionSync()
+            runBlocking { resourceTransactionSync() }
             logger.endProcess("resource_sync")
 
             logger.startProcess("on_synced")
@@ -562,7 +562,7 @@ class SyncManager private constructor(private val context: Context) {
         }
     }
 
-    private fun resourceTransactionSync(backgroundRealm: Realm? = null) {
+    private suspend fun resourceTransactionSync(backgroundRealm: Realm? = null) {
         val logger = SyncTimeLogger.getInstance()
         logger.startProcess("resource_sync")
         var processedItems = 0
@@ -712,7 +712,7 @@ class SyncManager private constructor(private val context: Context) {
         }
     }
 
-    private fun fastResourceTransactionSync() {
+    private suspend fun fastResourceTransactionSync() {
         val logger = SyncTimeLogger.getInstance()
         logger.startProcess("resource_sync")
         var processedItems = 0
@@ -998,7 +998,7 @@ class SyncManager private constructor(private val context: Context) {
         return processedItems
     }
 
-    private fun processShelfDataOptimizedSync(shelfId: String?, shelfData: Constants.ShelfData, shelfDoc: JsonObject?, apiInterface: ApiInterface): Int {
+    private suspend fun processShelfDataOptimizedSync(shelfId: String?, shelfData: Constants.ShelfData, shelfDoc: JsonObject?, apiInterface: ApiInterface): Int {
         var processedCount = 0
 
         try {
@@ -1075,7 +1075,7 @@ class SyncManager private constructor(private val context: Context) {
         return processedCount
     }
 
-    private fun fastMyLibraryTransactionSync() {
+    private suspend fun fastMyLibraryTransactionSync() {
         val logger = SyncTimeLogger.getInstance()
         logger.startProcess("library_sync")
         var processedItems = 0
@@ -1222,8 +1222,15 @@ class SyncManager private constructor(private val context: Context) {
             keysObject.add("keys", Gson().fromJson(Gson().toJson(batch), JsonArray::class.java))
 
             var response: JsonObject? = null
-            ApiClient.executeWithRetry {
-                apiInterface.findDocs(Utilities.header, "application/json", "${Utilities.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject).execute()
+            runBlocking {
+                ApiClient.executeWithRetry {
+                    apiInterface.findDocs(
+                        Utilities.header,
+                        "application/json",
+                        "${Utilities.getUrl()}/${shelfData.type}/_all_docs?include_docs=true",
+                        keysObject
+                    ).execute()
+                }
             }?.let {
                 response = it.body()
             }

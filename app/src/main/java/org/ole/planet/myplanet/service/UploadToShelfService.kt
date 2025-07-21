@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.RetryUtils
+import kotlinx.coroutines.runBlocking
 import retrofit2.Response
 
 class UploadToShelfService(context: Context) {
@@ -218,12 +219,14 @@ class UploadToShelfService(context: Context) {
         val maxAttempts = 3
         val retryDelayMs = 2000L
 
-        val response = RetryUtils.retry(
-            maxAttempts = maxAttempts,
-            delayMs = retryDelayMs,
-            shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
-        ) {
-            apiInterface?.postDoc(header, "application/json", "${Utilities.getUrl()}/$table", ob)?.execute()
+        val response = runBlocking {
+            RetryUtils.retry(
+                maxAttempts = maxAttempts,
+                delayMs = retryDelayMs,
+                shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
+            ) {
+                apiInterface?.postDoc(header, "application/json", "${Utilities.getUrl()}/$table", ob)?.execute()
+            }
         }
 
         if (response?.isSuccessful == true && response.body() != null) {
