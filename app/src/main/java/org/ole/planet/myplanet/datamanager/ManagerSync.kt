@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecry
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.datamanager.ApiInterface
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -24,14 +25,20 @@ import javax.inject.Singleton
 import dagger.hilt.android.qualifiers.ApplicationContext
 
 @Singleton
-class ManagerSync @Inject constructor(@ApplicationContext context: Context, private val dbService: DatabaseService, private val settings: SharedPreferences) {
+class ManagerSync @Inject constructor(
+    @ApplicationContext context: Context,
+    private val dbService: DatabaseService,
+    private val settings: SharedPreferences,
+    private val apiInterface: ApiInterface
+) {
     private val mRealm: Realm = dbService.realmInstance
 
     fun login(userName: String?, password: String?, listener: SyncListener) {
         listener.onSyncStarted()
-        val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
-        apiInterface?.getJsonObject("Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP), String.format("%s/_users/%s", Utilities.getUrl(), "org.couchdb.user:$userName"))
-            ?.enqueue(object : Callback<JsonObject?> {
+        apiInterface.getJsonObject(
+            "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP),
+            String.format("%s/_users/%s", Utilities.getUrl(), "org.couchdb.user:$userName")
+        ).enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                     if (response.isSuccessful && response.body() != null) {
                         val jsonDoc = response.body()
@@ -63,8 +70,12 @@ class ManagerSync @Inject constructor(@ApplicationContext context: Context, priv
         val selector = JsonObject()
         selector.addProperty("isUserAdmin", true)
         `object`.add("selector", selector)
-        val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
-        apiInterface?.findDocs(Utilities.header, "application/json", Utilities.getUrl() + "/_users/_find", `object`)?.enqueue(object : Callback<JsonObject?> {
+        apiInterface.findDocs(
+            Utilities.header,
+            "application/json",
+            Utilities.getUrl() + "/_users/_find",
+            `object`
+        ).enqueue(object : Callback<JsonObject?> {
             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                 if (response.body() != null) {
                     settings.edit { putString("communityLeaders", "${response.body()}") }
