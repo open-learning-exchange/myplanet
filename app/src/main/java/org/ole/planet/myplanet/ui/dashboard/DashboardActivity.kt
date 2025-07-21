@@ -29,6 +29,11 @@ import androidx.core.view.WindowCompat
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
+import dagger.hilt.android.AndroidEntryPoint
+import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import android.content.SharedPreferences
+import javax.inject.Inject
 import com.mikepenz.materialdrawer.AccountHeader
 import com.mikepenz.materialdrawer.AccountHeaderBuilder
 import com.mikepenz.materialdrawer.Drawer
@@ -92,7 +97,16 @@ import org.ole.planet.myplanet.utilities.NotificationUtil
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
+@AndroidEntryPoint
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
+
+    @Inject
+    lateinit var databaseService: DatabaseService
+
+    @Inject
+    @AppPreferences
+    lateinit var appPreferences: SharedPreferences
+
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
     var user: RealmUserModel? = null
@@ -507,7 +521,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
 
             try {
-                Realm.getDefaultInstance().use { backgroundRealm ->
+                databaseService.realmInstance.use { backgroundRealm ->
                     backgroundRealm.executeTransaction { realm ->
                         val createdNotifications = createNotifications(realm, userId)
                         newNotifications.addAll(createdNotifications)
