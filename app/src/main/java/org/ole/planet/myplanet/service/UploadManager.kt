@@ -7,6 +7,7 @@ import com.google.gson.*
 import io.realm.*
 import java.io.*
 import java.util.Date
+import kotlinx.coroutines.runBlocking
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
@@ -61,7 +62,14 @@ class UploadManager(var context: Context) : FileUploadService() {
 
             newsLog.processInBatches { news ->
                     try {
-                        val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/myplanet_activities", RealmNewsLog.serialize(news))?.execute()?.body()
+                        val `object` = runBlocking {
+                            apiInterface?.postDoc(
+                                Utilities.header,
+                                "application/json",
+                                "${Utilities.getUrl()}/myplanet_activities",
+                                RealmNewsLog.serialize(news)
+                            )
+                        }?.body()
 
                         if (`object` != null) {
                             news._id = getString("id", `object`)

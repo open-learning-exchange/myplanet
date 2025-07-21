@@ -572,8 +572,8 @@ class SyncManager private constructor(private val context: Context) {
             val realmInstance = backgroundRealm ?: mRealm
             val newIds: MutableList<String?> = ArrayList()
             var totalRows = 0
-            ApiClient.executeWithRetry {
-                apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?limit=0").execute()
+            ApiClient.executeWithRetrySuspend {
+                apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?limit=0")
             }?.let { response ->
                 response.body()?.let { body ->
                     if (body.has("total_rows")) {
@@ -591,8 +591,8 @@ class SyncManager private constructor(private val context: Context) {
 
                 try {
                     var response: JsonObject? = null
-                    ApiClient.executeWithRetry {
-                        apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip").execute()
+                    ApiClient.executeWithRetrySuspend {
+                        apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip")
                     }?.let {
                         response = it.body()
                     }
@@ -722,8 +722,8 @@ class SyncManager private constructor(private val context: Context) {
             val newIds = ConcurrentHashMap.newKeySet<String>()
 
             var totalRows = 0
-            ApiClient.executeWithRetry {
-                apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?limit=0").execute()
+            ApiClient.executeWithRetrySuspend {
+                apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?limit=0")
             }?.let { response ->
                 response.body()?.let { body ->
                     if (body.has("total_rows")) {
@@ -766,8 +766,8 @@ class SyncManager private constructor(private val context: Context) {
 
         try {
             var response: JsonObject? = null
-            ApiClient.executeWithRetry {
-                apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip").execute()
+            ApiClient.executeWithRetrySuspend {
+                apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip")
             }?.let {
                 response = it.body()
             }

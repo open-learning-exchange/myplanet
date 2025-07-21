@@ -60,48 +60,48 @@ class Service(private val context: Context) {
     private val configurationManager = ConfigurationManager(context, preferences, retrofitInterface)
 
     fun healthAccess(listener: SuccessListener) {
-        retrofitInterface?.healthAccess(Utilities.getHealthAccessUrl(preferences))?.enqueue(object : Callback<ResponseBody> {
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                if (response.code() == 200) {
-                    listener.onSuccess(context.getString(R.string.server_sync_successfully))
-                } else {
-                    listener.onSuccess("")
+        serviceScope.launch(Dispatchers.IO) {
+            try {
+                val response = retrofitInterface?.healthAccess(Utilities.getHealthAccessUrl(preferences))
+                withContext(Dispatchers.Main) {
+                    if (response?.code() == 200) {
+                        listener.onSuccess(context.getString(R.string.server_sync_successfully))
+                    } else {
+                        listener.onSuccess("")
+                    }
                 }
+            } catch (_: Exception) {
+                withContext(Dispatchers.Main) { listener.onSuccess("") }
             }
-
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                listener.onSuccess("")
-            }
-        })
+        }
     }
 
     fun checkCheckSum(callback: ChecksumCallback, path: String?) {
-        retrofitInterface?.getChecksum(Utilities.getChecksumUrl(preferences))?.enqueue(object : Callback<ResponseBody> {
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                if (response.code() == 200) {
+        serviceScope.launch(Dispatchers.IO) {
+            try {
+                val response = retrofitInterface?.getChecksum(Utilities.getChecksumUrl(preferences))
+                val match = if (response?.code() == 200) {
                     try {
                         val checksum = response.body()?.string()
                         if (TextUtils.isEmpty(checksum)) {
                             val f = FileUtils.getSDPathFromUrl(path)
                             if (f.exists()) {
                                 val sha256 = Sha256Utils().getCheckSumFromFile(f)
-                                if (checksum?.contains(sha256) == true) {
-                                    callback.onMatch()
-                                    return
-                                }
-                            }
-                        }
+                                checksum?.contains(sha256) == true
+                            } else false
+                        } else false
                     } catch (e: IOException) {
-                        e.printStackTrace()
+                        false
                     }
-                }
-                callback.onFail()
-            }
+                } else false
 
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                callback.onFail()
+                withContext(Dispatchers.Main) {
+                    if (match) callback.onMatch() else callback.onFail()
+                }
+            } catch (_: Exception) {
+                withContext(Dispatchers.Main) { callback.onFail() }
             }
-        })
+        }
     }
 
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences) {
@@ -174,23 +174,22 @@ class Service(private val context: Context) {
                 }
             }
 
-            withContext(Dispatchers.Main) {
-                retrofitInterface?.isPlanetAvailable(Utilities.getUpdateUrl(preferences))?.enqueue(object : Callback<ResponseBody?> {
-                    override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
-                        val isAvailable = callback != null && response.code() == 200
-                        serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
-                        if (isAvailable) {
-                            callback.isAvailable()
-                        } else {
-                            callback?.notAvailable()
-                        }
-                    }
-
-                    override fun onFailure(call: Call<ResponseBody?>, t: Throwable) {
-                        serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
+            try {
+                val response = retrofitInterface?.isPlanetAvailable(Utilities.getUpdateUrl(preferences))
+                withContext(Dispatchers.Main) {
+                    val isAvailable = callback != null && response?.code() == 200
+                    serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
+                    if (isAvailable) {
+                        callback?.isAvailable()
+                    } else {
                         callback?.notAvailable()
                     }
-                })
+                }
+            } catch (_: Exception) {
+                withContext(Dispatchers.Main) {
+                    serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
+                    callback?.notAvailable()
+                }
             }
         }
     }
@@ -260,7 +259,7 @@ class Service(private val context: Context) {
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         realm.executeTransactionAsync({ realm1: Realm? ->
             try {
-                val res = retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/$id")?.execute()
+                val res = runBlocking { retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/$id") }
                 if (res?.body() != null) {
                     val model = populateUsersTable(res.body(), realm1, settings)
                     if (model != null) {
@@ -361,8 +360,8 @@ class Service(private val context: Context) {
 
     private suspend fun fetchVersionInfo(settings: SharedPreferences): MyPlanet? =
         withContext(Dispatchers.IO) {
-            val result = ApiClient.executeWithResult {
-                retrofitInterface?.checkVersion(Utilities.getUpdateUrl(settings))?.execute()
+            val result = ApiClient.executeWithResultSuspend {
+                retrofitInterface?.checkVersion(Utilities.getUpdateUrl(settings))
             }
             when (result) {
                 is NetworkResult.Success -> result.data
@@ -372,8 +371,8 @@ class Service(private val context: Context) {
 
     private suspend fun fetchApkVersionString(settings: SharedPreferences): String? =
         withContext(Dispatchers.IO) {
-            val result = ApiClient.executeWithResult {
-                retrofitInterface?.getApkVersion(Utilities.getApkVersionUrl(settings))?.execute()
+            val result = ApiClient.executeWithResultSuspend {
+                retrofitInterface?.getApkVersion(Utilities.getApkVersionUrl(settings))
             }
             when (result) {
                 is NetworkResult.Success -> result.data.string()

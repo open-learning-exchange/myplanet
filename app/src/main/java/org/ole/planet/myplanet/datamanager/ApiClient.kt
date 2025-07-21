@@ -117,4 +117,61 @@ object ApiClient {
         }
         return NetworkResult.Exception(lastException ?: Exception("Unknown error"))
     }
+
+    suspend fun <T> executeWithRetrySuspend(operation: suspend () -> Response<T>?): Response<T>? {
+        var attempt = 0
+        var resp: Response<T>? = null
+        while (attempt < 3) {
+            try {
+                resp = operation()
+            } catch (_: Exception) {
+                resp = null
+            }
+            if (resp != null && resp.isSuccessful) break
+            attempt++
+            if (attempt < 3) kotlinx.coroutines.delay(2000L * (attempt + 1))
+        }
+        return resp
+    }
+
+    suspend fun <T> executeWithResultSuspend(operation: suspend () -> Response<T>?): NetworkResult<T> {
+        var retryCount = 0
+        var lastException: Exception? = null
+
+        while (retryCount < 3) {
+            try {
+                val response = operation()
+                if (response != null) {
+                    if (response.isSuccessful) {
+                        val body = response.body()
+                        if (body != null) {
+                            return NetworkResult.Success(body)
+                        }
+                        return NetworkResult.Error(response.code(), null)
+                    } else if (retryCount < 2) {
+                        retryCount++
+                        kotlinx.coroutines.delay(2000L * (retryCount + 1))
+                        continue
+                    } else {
+                        val errorBody = try { response.errorBody()?.string() } catch (_: Exception) { null }
+                        return NetworkResult.Error(response.code(), errorBody)
+                    }
+                }
+            } catch (e: SocketTimeoutException) {
+                lastException = e
+            } catch (e: IOException) {
+                lastException = e
+            } catch (e: Exception) {
+                lastException = e
+            }
+
+            if (retryCount < 2) {
+                retryCount++
+                kotlinx.coroutines.delay(2000L * (retryCount + 1))
+            } else {
+                break
+            }
+        }
+        return NetworkResult.Exception(lastException ?: Exception("Unknown error"))
+    }
 }
