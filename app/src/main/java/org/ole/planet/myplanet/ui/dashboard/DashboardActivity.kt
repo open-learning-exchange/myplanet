@@ -97,15 +97,8 @@ import org.ole.planet.myplanet.utilities.NotificationUtil
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
-@AndroidEntryPoint
+@AndroidEntryPoint  
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
-
-    @Inject
-    lateinit var databaseService: DatabaseService
-
-    @Inject
-    @AppPreferences
-    lateinit var appPreferences: SharedPreferences
 
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null

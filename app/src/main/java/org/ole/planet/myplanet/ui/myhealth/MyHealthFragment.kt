@@ -32,7 +32,9 @@ import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.SyncListener
@@ -54,7 +56,11 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class MyHealthFragment : Fragment() {
+    
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var fragmentVitalSignBinding: FragmentVitalSignBinding
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
     private lateinit var alertHealthListBinding: AlertHealthListBinding
