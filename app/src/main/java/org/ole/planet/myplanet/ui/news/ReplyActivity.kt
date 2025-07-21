@@ -69,7 +69,8 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                 handleImageSelection(url)
             }
         }
-        setResult(Activity.RESULT_OK)
+        val resultIntent = Intent().putExtra("newsId", id)
+        setResult(Activity.RESULT_OK, resultIntent)
     }
 
     private fun showData(id: String?) {
@@ -81,6 +82,19 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
         newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
         activityReplyBinding.rvReply.adapter = newsAdapter
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshData()
+
+    }
+    private fun refreshData() {
+        id?.let { showData(it) }
+    }
+
+    override fun onDataChanged() {
+        refreshData()
     }
 
     override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {

@@ -73,6 +73,77 @@ open class RealmMyTeam : RealmObject() {
     companion object {
         private val concatenatedLinks = ArrayList<String>()
 
+        private fun populateTeamFields(doc: JsonObject, team: RealmMyTeam, includeCourses: Boolean = false) {
+            team.userId = JsonUtils.getString("userId", doc)
+            team.teamId = JsonUtils.getString("teamId", doc)
+            team._rev = JsonUtils.getString("_rev", doc)
+            team.name = JsonUtils.getString("name", doc)
+            team.sourcePlanet = JsonUtils.getString("sourcePlanet", doc)
+            team.title = JsonUtils.getString("title", doc)
+            team.description = JsonUtils.getString("description", doc)
+            team.limit = JsonUtils.getInt("limit", doc)
+            team.status = JsonUtils.getString("status", doc)
+            team.teamPlanetCode = JsonUtils.getString("teamPlanetCode", doc)
+            team.createdDate = JsonUtils.getLong("createdDate", doc)
+            team.resourceId = JsonUtils.getString("resourceId", doc)
+            team.teamType = JsonUtils.getString("teamType", doc)
+            team.route = JsonUtils.getString("route", doc)
+            team.type = JsonUtils.getString("type", doc)
+            team.services = JsonUtils.getString("services", doc)
+            team.rules = JsonUtils.getString("rules", doc)
+            team.parentCode = JsonUtils.getString("parentCode", doc)
+            team.createdBy = JsonUtils.getString("createdBy", doc)
+            team.userPlanetCode = JsonUtils.getString("userPlanetCode", doc)
+            team.isLeader = JsonUtils.getBoolean("isLeader", doc)
+            team.amount = JsonUtils.getInt("amount", doc)
+            team.date = JsonUtils.getLong("date", doc)
+            team.docType = JsonUtils.getString("docType", doc)
+            team.isPublic = JsonUtils.getBoolean("public", doc)
+            team.beginningBalance = JsonUtils.getInt("beginningBalance", doc)
+            team.sales = JsonUtils.getInt("sales", doc)
+            team.otherIncome = JsonUtils.getInt("otherIncome", doc)
+            team.wages = JsonUtils.getInt("wages", doc)
+            team.otherExpenses = JsonUtils.getInt("otherExpenses", doc)
+            team.startDate = JsonUtils.getLong("startDate", doc)
+            team.endDate = JsonUtils.getLong("endDate", doc)
+            team.updatedDate = JsonUtils.getLong("updatedDate", doc)
+            team.updated = JsonUtils.getBoolean("updated", doc)
+
+            if (includeCourses) {
+                val coursesArray = JsonUtils.getJsonArray("courses", doc)
+                team.courses = RealmList()
+                for (e in coursesArray) {
+                    val id = e.asJsonObject["_id"].asString
+                    if (!team.courses!!.contains(id)) {
+                        team.courses!!.add(id)
+                    }
+                }
+            }
+        }
+
+        private fun processDescription(description: String?) {
+            val links = extractLinks(description ?: "")
+            val baseUrl = getUrl()
+            for (link in links) {
+                val concatenatedLink = "$baseUrl/$link"
+                concatenatedLinks.add(concatenatedLink)
+            }
+            openDownloadService(context, concatenatedLinks, true)
+        }
+
+        private fun populateReportFields(doc: JsonObject, team: RealmMyTeam) {
+            team.description = JsonUtils.getString("description", doc)
+            team.beginningBalance = JsonUtils.getInt("beginningBalance", doc)
+            team.sales = JsonUtils.getInt("sales", doc)
+            team.otherIncome = JsonUtils.getInt("otherIncome", doc)
+            team.wages = JsonUtils.getInt("wages", doc)
+            team.otherExpenses = JsonUtils.getInt("otherExpenses", doc)
+            team.startDate = JsonUtils.getLong("startDate", doc)
+            team.endDate = JsonUtils.getLong("endDate", doc)
+            team.updatedDate = JsonUtils.getLong("updatedDate", doc)
+            team.updated = JsonUtils.getBoolean("updated", doc)
+        }
+
         @JvmStatic
         fun insertMyTeams(doc: JsonObject, mRealm: Realm) {
             val teamId = JsonUtils.getString("_id", doc)
@@ -80,55 +151,9 @@ open class RealmMyTeam : RealmObject() {
             if (myTeams == null) {
                 myTeams = mRealm.createObject(RealmMyTeam::class.java, teamId)
             }
-            if (myTeams != null) {
-                myTeams.userId = JsonUtils.getString("userId", doc)
-                myTeams.teamId = JsonUtils.getString("teamId", doc)
-                myTeams._rev = JsonUtils.getString("_rev", doc)
-                myTeams.name = JsonUtils.getString("name", doc)
-                myTeams.sourcePlanet = JsonUtils.getString("sourcePlanet", doc)
-                myTeams.title = JsonUtils.getString("title", doc)
-                myTeams.description = JsonUtils.getString("description", doc)
-                val links = extractLinks(JsonUtils.getString("description", doc))
-                val baseUrl = getUrl()
-                for (link in links) {
-                    val concatenatedLink = "$baseUrl/$link"
-                    concatenatedLinks.add(concatenatedLink)
-                }
-                openDownloadService(context, concatenatedLinks, true)
-                myTeams.limit = JsonUtils.getInt("limit", doc)
-                myTeams.status = JsonUtils.getString("status", doc)
-                myTeams.teamPlanetCode = JsonUtils.getString("teamPlanetCode", doc)
-                myTeams.createdDate = JsonUtils.getLong("createdDate", doc)
-                myTeams.resourceId = JsonUtils.getString("resourceId", doc)
-                myTeams.teamType = JsonUtils.getString("teamType", doc)
-                myTeams.route = JsonUtils.getString("route", doc)
-                myTeams.type = JsonUtils.getString("type", doc)
-                myTeams.services = JsonUtils.getString("services", doc)
-                myTeams.rules = JsonUtils.getString("rules", doc)
-                myTeams.parentCode = JsonUtils.getString("parentCode", doc)
-                myTeams.createdBy = JsonUtils.getString("createdBy", doc)
-                myTeams.userPlanetCode = JsonUtils.getString("userPlanetCode", doc)
-                myTeams.isLeader = JsonUtils.getBoolean("isLeader", doc)
-                myTeams.amount = JsonUtils.getInt("amount", doc)
-                myTeams.date = JsonUtils.getLong("date", doc)
-                myTeams.docType = JsonUtils.getString("docType", doc)
-                myTeams.isPublic = JsonUtils.getBoolean("public", doc)
-                myTeams.beginningBalance = JsonUtils.getInt("beginningBalance", doc)
-                myTeams.sales = JsonUtils.getInt("sales", doc)
-                myTeams.otherIncome = JsonUtils.getInt("otherIncome", doc)
-                myTeams.wages = JsonUtils.getInt("wages", doc)
-                myTeams.otherExpenses = JsonUtils.getInt("otherExpenses", doc)
-                myTeams.startDate = JsonUtils.getLong("startDate", doc)
-                myTeams.endDate = JsonUtils.getLong("endDate", doc)
-                myTeams.updatedDate = JsonUtils.getLong("updatedDate", doc)
-                val coursesArray = JsonUtils.getJsonArray("courses", doc)
-                myTeams.courses = RealmList()
-                for (e in coursesArray) {
-                    val id = e.asJsonObject["_id"].asString
-                    if (!myTeams.courses?.contains(id)!!) {
-                        myTeams.courses?.add(id)
-                    }
-                }
+            myTeams?.let {
+                populateTeamFields(doc, it, true)
+                processDescription(it.description)
             }
         }
 
@@ -142,23 +167,7 @@ open class RealmMyTeam : RealmObject() {
             if (myTeams == null) {
                 myTeams = mRealm.createObject(RealmMyTeam::class.java, teamId)
             }
-            if (myTeams != null) {
-                myTeams.teamId = JsonUtils.getString("teamId", doc)
-                myTeams.description = JsonUtils.getString("description", doc)
-                myTeams.teamPlanetCode = JsonUtils.getString("teamPlanetCode", doc)
-                myTeams.createdDate = JsonUtils.getLong("createdDate", doc)
-                myTeams.teamType = JsonUtils.getString("teamType", doc)
-                myTeams.docType = JsonUtils.getString("docType", doc)
-                myTeams.beginningBalance = JsonUtils.getInt("beginningBalance", doc)
-                myTeams.sales = JsonUtils.getInt("sales", doc)
-                myTeams.otherIncome = JsonUtils.getInt("otherIncome", doc)
-                myTeams.wages = JsonUtils.getInt("wages", doc)
-                myTeams.otherExpenses = JsonUtils.getInt("otherExpenses", doc)
-                myTeams.startDate = JsonUtils.getLong("startDate", doc)
-                myTeams.endDate = JsonUtils.getLong("endDate", doc)
-                myTeams.updatedDate = JsonUtils.getLong("updatedDate", doc)
-                myTeams.updated = JsonUtils.getBoolean("updated", doc)
-            }
+            myTeams?.let { populateTeamFields(doc, it) }
             mRealm.commitTransaction()
         }
 
@@ -167,18 +176,7 @@ open class RealmMyTeam : RealmObject() {
             mRealm.executeTransactionAsync { realm ->
                 val reportId = JsonUtils.getString("_id", doc)
                 val report = realm.where(RealmMyTeam::class.java).equalTo("_id", reportId).findFirst()
-                report?.apply {
-                    description = JsonUtils.getString("description", doc)
-                    beginningBalance = JsonUtils.getInt("beginningBalance", doc)
-                    sales = JsonUtils.getInt("sales", doc)
-                    otherIncome = JsonUtils.getInt("otherIncome", doc)
-                    wages = JsonUtils.getInt("wages", doc)
-                    otherExpenses = JsonUtils.getInt("otherExpenses", doc)
-                    startDate = JsonUtils.getLong("startDate", doc)
-                    endDate = JsonUtils.getLong("endDate", doc)
-                    updatedDate = JsonUtils.getLong("updatedDate", doc)
-                    updated = JsonUtils.getBoolean("updated", doc)
-                }
+                report?.let { populateReportFields(doc, it) }
             }
         }
 
