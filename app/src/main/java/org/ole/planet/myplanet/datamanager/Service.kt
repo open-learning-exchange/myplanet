@@ -362,7 +362,7 @@ class Service(private val context: Context) {
     private suspend fun fetchVersionInfo(settings: SharedPreferences): MyPlanet? =
         withContext(Dispatchers.IO) {
             val result = ApiClient.executeWithResult {
-                retrofitInterface?.checkVersion(Utilities.getUpdateUrl(settings))?.execute()
+                retrofitInterface?.checkVersion(Utilities.getUpdateUrl(settings))
             }
             when (result) {
                 is NetworkResult.Success -> result.data
@@ -373,7 +373,7 @@ class Service(private val context: Context) {
     private suspend fun fetchApkVersionString(settings: SharedPreferences): String? =
         withContext(Dispatchers.IO) {
             val result = ApiClient.executeWithResult {
-                retrofitInterface?.getApkVersion(Utilities.getApkVersionUrl(settings))?.execute()
+                retrofitInterface?.getApkVersion(Utilities.getApkVersionUrl(settings))
             }
             when (result) {
                 is NetworkResult.Success -> result.data.string()
