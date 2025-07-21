@@ -54,6 +54,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     var allowSubmission = true
     private lateinit var config: ChipCloudConfig
     private var examination: RealmMyHealthPojo? = null
+    private val gson = Gson()
     private fun initViews() {
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close)
         activityAddExaminationBinding.btnAddDiag.setOnClickListener {
@@ -82,7 +83,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         }
         user = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
         if (pojo != null && !TextUtils.isEmpty(pojo?.data)) {
-            health = Gson().fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
+            health = gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
         }
         if (health == null) {
             initHealth()
@@ -180,7 +181,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         val arr = resources.getStringArray(R.array.diagnosis_list)
         val mainList = listOf(*arr)
         if (customDiag?.isEmpty() == true && examination != null) {
-            val conditions = Gson().fromJson(examination?.conditions, JsonObject::class.java)
+            val conditions = gson.fromJson(examination?.conditions, JsonObject::class.java)
             for (s in conditions.keySet()) {
                 if (!mainList.contains(s) && getBoolean(s, conditions)) {
                     chipCloud.addChip(s)
@@ -202,7 +203,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             c.setTextColor(ContextCompat.getColor(this, R.color.daynight_textColor))
 
             if (examination != null) {
-                val conditions = Gson().fromJson(examination.conditions, JsonObject::class.java)
+                val conditions = gson.fromJson(examination.conditions, JsonObject::class.java)
                 c.isChecked = getBoolean(s, conditions)
             }
             c.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
@@ -254,7 +255,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         examination?.setWeight(getFloat("${activityAddExaminationBinding.etWeight.text}".trim { it <= ' ' }))
         examination?.height = getFloat("${activityAddExaminationBinding.etHeight.text}".trim { it <= ' ' })
         otherConditions
-        examination?.conditions = Gson().toJson(mapConditions)
+        examination?.conditions = gson.toJson(mapConditions)
         examination?.hearing = "${activityAddExaminationBinding.etHearing.text}".trim { it <= ' ' }
         sign.immunizations = "${activityAddExaminationBinding.etImmunization.text}".trim { it <= ' ' }
         sign.tests = "${activityAddExaminationBinding.etLabtest.text}".trim { it <= ' ' }
@@ -270,7 +271,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         examination?.isHasInfo = hasInfo
         pojo?.isUpdated = true
         try {
-            examination?.data = encrypt(Gson().toJson(sign), user?.key!!, user?.iv!!)
+            examination?.data = encrypt(gson.toJson(sign), user?.key!!, user?.iv!!)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -360,7 +361,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
                 pojo?.userId = user?._id
             }
             health?.lastExamination = Date().time
-            pojo?.data = encrypt(Gson().toJson(health), user?.key, user?.iv)
+            pojo?.data = encrypt(gson.toJson(health), user?.key, user?.iv)
         } catch (e: Exception) {
             e.printStackTrace()
             Utilities.toast(this, getString(R.string.unable_to_add_health_record))

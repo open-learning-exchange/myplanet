@@ -29,6 +29,7 @@ class NewsDetailActivity : BaseActivity() {
     private lateinit var activityNewsDetailBinding: ActivityNewsDetailBinding
     var news: RealmNews? = null
     lateinit var realm: Realm
+    private val gson = Gson()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityNewsDetailBinding = ActivityNewsDetailBinding.inflate(layoutInflater)
@@ -93,12 +94,12 @@ class NewsDetailActivity : BaseActivity() {
     private fun loadLocalImage(): String? {
         var msg: String? = news?.message
         try {
-            val imgObject = Gson().fromJson(news?.imageUrls?.get(0), JsonObject::class.java)
+            val imgObject = gson.fromJson(news?.imageUrls?.get(0), JsonObject::class.java)
             activityNewsDetailBinding.img.visibility = View.VISIBLE
             Glide.with(this@NewsDetailActivity)
                 .load(File(JsonUtils.getString("imageUrl", imgObject))).into(activityNewsDetailBinding.img)
             news?.imageUrls?.forEach {
-                val imageObject = Gson().fromJson(it, JsonObject::class.java)
+                val imageObject = gson.fromJson(it, JsonObject::class.java)
                 msg += "<br/><img width=\"50%\" src=\"file://" + JsonUtils.getString(
                     "imageUrl", imageObject
                 ) + "\"><br/>"

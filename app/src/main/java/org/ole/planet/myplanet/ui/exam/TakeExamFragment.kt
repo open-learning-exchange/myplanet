@@ -47,6 +47,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private lateinit var fragmentTakeExamBinding: FragmentTakeExamBinding
     private var isCertified = false
     var container: NestedScrollView? = null
+    private val gson = Gson()
     override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTakeExamBinding = FragmentTakeExamBinding.inflate(inflater, parent, false)
         listAns = HashMap()
@@ -278,7 +279,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private fun loadSelectSavedAnswer(savedAnswer: RealmAnswer) {
         ans = savedAnswer.valueChoices?.firstOrNull()?.let {
             try {
-                val jsonObject = Gson().fromJson(it, JsonObject::class.java)
+                val jsonObject = gson.fromJson(it, JsonObject::class.java)
                 val id = jsonObject.get("id").asString
                 val text = jsonObject.get("text").asString
 
@@ -300,7 +301,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
         savedAnswer.valueChoices?.forEach { choiceJson ->
             try {
-                val jsonObject = Gson().fromJson(choiceJson, JsonObject::class.java)
+                val jsonObject = gson.fromJson(choiceJson, JsonObject::class.java)
                 val id = jsonObject.get("id").asString
                 val text = jsonObject.get("text").asString
 
@@ -349,7 +350,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         }
 
         if (question?.hasOtherOption == true) {
-            val gson = Gson()
             val otherChoice = gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
 
             addCompoundButton(otherChoice, false, oldAnswer)
@@ -370,7 +370,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
         if (question?.hasOtherOption == true) {
             if (choices.size() > 0 && choices[0].isJsonObject) {
-                val gson = Gson()
                 val otherChoice = gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
 
                 addCompoundButton(otherChoice, isRadio, oldAnswer)
