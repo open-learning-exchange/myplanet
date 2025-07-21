@@ -91,7 +91,6 @@ class SyncManager @Inject constructor(
         cancelBackgroundSync()
         cancel(context, 111)
         isSyncing = false
-        ourInstance = null
         settings.edit { putLong("LastSync", Date().time) }
         listener?.onSyncComplete()
         try {

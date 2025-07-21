@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.utilities.VersionUtils.getAndroidId
 import retrofit2.*
 import javax.inject.Inject
 import javax.inject.Singleton
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 private const val BATCH_SIZE = 50
 
@@ -36,7 +37,7 @@ private inline fun <T> Iterable<T>.processInBatches(action: (T) -> Unit) {
 
 @Singleton
 class UploadManager @Inject constructor(
-    private val context: Context,
+    @ApplicationContext private val context: Context,
     val pref: SharedPreferences,
     private val dbService: DatabaseService,
     private val apiInterface: ApiInterface
@@ -469,7 +470,7 @@ class UploadManager @Inject constructor(
                     e.printStackTrace()
                 }
             }
-            uploadTeamActivities(transactionRealm, apiInterface)
+            uploadTeamActivities(transactionRealm)
         }, {
             realm.close()
             listener.onSuccess("User activities sync completed successfully")
@@ -480,7 +481,7 @@ class UploadManager @Inject constructor(
         }
     }
 
-    fun uploadTeamActivities(realm: Realm, apiInterface: ApiInterface?) {
+    fun uploadTeamActivities(realm: Realm) {
         val logs = realm.where(RealmTeamLog::class.java).isNull("_rev").findAll()
         logs.processInBatches { log ->
                 try {
@@ -607,11 +608,11 @@ class UploadManager @Inject constructor(
 
             if (hasLooper) {
                 realm.executeTransactionAsync { realm: Realm ->
-                    uploadCrashLogData(realm, apiInterface)
+                    uploadCrashLogData(realm)
                 }
             } else {
                 realm.executeTransaction { realm: Realm ->
-                    uploadCrashLogData(realm, apiInterface)
+                    uploadCrashLogData(realm)
                 }
             }
         } catch (e: Exception) {
@@ -619,7 +620,7 @@ class UploadManager @Inject constructor(
         }
     }
 
-    private fun uploadCrashLogData(realm: Realm, apiInterface: ApiInterface?) {
+    private fun uploadCrashLogData(realm: Realm) {
         val logs: RealmResults<RealmApkLog> = realm.where(RealmApkLog::class.java).isNull("_rev").findAll()
 
         logs.processInBatches { act ->

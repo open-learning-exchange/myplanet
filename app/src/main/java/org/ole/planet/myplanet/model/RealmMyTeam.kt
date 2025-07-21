@@ -19,7 +19,6 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.datamanager.ApiClient.client
-import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.di.DiUtils
@@ -295,10 +294,9 @@ open class RealmMyTeam : RealmObject() {
                         entry.uploadManager().uploadTeams()
                     }
                     withContext(Dispatchers.IO) {
-                        val apiInterface = client?.create(ApiInterface::class.java)
                         val realm = DatabaseService(context).realmInstance
                         realm.executeTransaction { transactionRealm ->
-                            entry.uploadManager().uploadTeamActivities(transactionRealm, apiInterface)
+                            entry.uploadManager().uploadTeamActivities(transactionRealm)
                         }
                     }
                 } catch (e: Exception) {

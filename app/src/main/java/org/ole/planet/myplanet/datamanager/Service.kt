@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.isUserExists
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 import org.ole.planet.myplanet.service.UploadToShelfService
+import org.ole.planet.myplanet.di.DiUtils
 import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
@@ -264,7 +265,8 @@ class Service(private val context: Context) {
                 if (res?.body() != null) {
                     val model = populateUsersTable(res.body(), realm1, settings)
                     if (model != null) {
-                        UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
+                        val uploadService = DiUtils.appEntryPoint(MainApplication.context).uploadToShelfService()
+                        uploadService.saveKeyIv(model, obj)
                     }
                 }
             } catch (e: IOException) {

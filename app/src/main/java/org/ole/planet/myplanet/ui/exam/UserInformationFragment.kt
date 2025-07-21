@@ -297,7 +297,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             override fun onSuccess(success: String?) {}
         }
 
-        val newUploadManager = UploadManager(MainApplication.context)
+        val newUploadManager = DiUtils.appEntryPoint(requireContext()).uploadManager()
         newUploadManager.uploadExamResult(successListener)
     }
 
