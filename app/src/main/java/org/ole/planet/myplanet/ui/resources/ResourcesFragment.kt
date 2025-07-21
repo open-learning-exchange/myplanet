@@ -18,6 +18,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.github.clans.fab.FloatingActionButton
+import dagger.hilt.android.AndroidEntryPoint
 import com.google.android.flexbox.FlexboxLayout
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
@@ -57,6 +58,7 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSelected,
     ChipDeletedListener, TagClickListener, OnFilterListener {
     private lateinit var tvAddToLib: TextView
