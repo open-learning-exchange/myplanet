@@ -28,7 +28,7 @@ class AdapterProgressGrid(private val context: Context, private val list: JsonAr
                     holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_yellow_500))
                 }
             } else {
-                holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_red_500))
+                holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.mainColor))
             }
         }
     }
