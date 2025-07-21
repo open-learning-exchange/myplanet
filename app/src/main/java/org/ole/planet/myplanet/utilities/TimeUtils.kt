@@ -19,7 +19,7 @@ object TimeUtils {
     }
 
     private val dateTimeFormatter by lazy {
-        DateTimeFormatter.ofPattern("EEE dd, MMMM yyyy , hh:mm aa", defaultLocale)
+        DateTimeFormatter.ofPattern("EEE dd, MMMM yyyy , hh:mm a", defaultLocale)
             .withZone(ZoneId.systemDefault())
     }
 
