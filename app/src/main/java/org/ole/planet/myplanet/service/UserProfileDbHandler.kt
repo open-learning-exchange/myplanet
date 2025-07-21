@@ -119,15 +119,16 @@ class UserProfileDbHandler(context: Context) {
     }
 
     fun getLastVisit(m: RealmUserModel): String {
-        val realm = Realm.getDefaultInstance()
-        val lastLogoutTimestamp = realm.where(RealmOfflineActivity::class.java)
-            .equalTo("userName", m.name)
-            .max("loginTime") as Long?
-        return if (lastLogoutTimestamp != null) {
-            val date = Date(lastLogoutTimestamp)
-            SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(date)
-        } else {
-            "No logout record found"
+        Realm.getDefaultInstance().use { realm ->
+            val lastLogoutTimestamp = realm.where(RealmOfflineActivity::class.java)
+                .equalTo("userName", m.name)
+                .max("loginTime") as Long?
+            return if (lastLogoutTimestamp != null) {
+                val date = Date(lastLogoutTimestamp)
+                SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(date)
+            } else {
+                "No logout record found"
+            }
         }
     }
 
