@@ -9,6 +9,7 @@ import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.networkUtils
+
 open class RealmCourseActivity : RealmObject() {
     @PrimaryKey
     var id: String? = null
@@ -21,6 +22,7 @@ open class RealmCourseActivity : RealmObject() {
     var parentCode: String? = null
     var type: String? = null
     var user: String? = null
+
     companion object {
         @JvmStatic
         suspend fun createActivity(realm: Realm, userModel: RealmUserModel?, course: RealmMyCourse?) {
@@ -43,6 +45,8 @@ open class RealmCourseActivity : RealmObject() {
                 }
             }
         }
+
+        @JvmStatic
         fun serializeSerialize(realmCourseActivities: RealmCourseActivity): JsonObject {
             val ob = JsonObject()
             ob.addProperty("user", realmCourseActivities.user)
@@ -55,5 +59,6 @@ open class RealmCourseActivity : RealmObject() {
             ob.addProperty("androidId", networkUtils.getUniqueIdentifier())
             ob.addProperty("deviceName", networkUtils.getDeviceName())
             return ob
+        }
     }
 }

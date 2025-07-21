@@ -8,6 +8,7 @@ import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.MainApplication.Companion.networkUtils
+
 open class RealmRating : RealmObject() {
     @PrimaryKey
     var id: String? = null
@@ -25,6 +26,7 @@ open class RealmRating : RealmObject() {
     var planetCode: String? = null
     var type: String? = null
     var user: String? = null
+
     companion object {
         @JvmStatic
         fun getRatings(mRealm: Realm, type: String?, userId: String?): HashMap<String?, JsonObject> {
@@ -36,20 +38,29 @@ open class RealmRating : RealmObject() {
             }
             return map
         }
+
+        @JvmStatic
         fun getRatingsById(mRealm: Realm, type: String?, id: String?, userid: String?): JsonObject? {
             val r = mRealm.where(RealmRating::class.java).equalTo("type", type).equalTo("item", id).findAll()
             if (r.isEmpty()) {
                 return null
+            }
             val `object` = JsonObject()
             var totalRating = 0
+            for (rating in r) {
                 totalRating += rating.rate
+            }
             val ratingObject = mRealm.where(RealmRating::class.java).equalTo("type", type)
                 .equalTo("userId", userid).equalTo("item", id).findFirst()
             if (ratingObject != null) {
                 `object`.addProperty("ratingByUser", ratingObject.rate)
+            }
             `object`.addProperty("averageRating", totalRating.toFloat() / r.size)
             `object`.addProperty("total", r.size)
             return `object`
+        }
+
+        @JvmStatic
         fun serializeRating(realmRating: RealmRating): JsonObject {
             val ob = JsonObject()
             if (realmRating._id != null) ob.addProperty("_id", realmRating._id)
@@ -68,10 +79,14 @@ open class RealmRating : RealmObject() {
             ob.addProperty("deviceName", networkUtils.getDeviceName())
             ob.addProperty("androidId", networkUtils.getUniqueIdentifier())
             return ob
+        }
+
+        @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject) {
             var rating = mRealm.where(RealmRating::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
             if (rating == null) {
                 rating = mRealm.createObject(RealmRating::class.java, JsonUtils.getString("_id", act))
+            }
             if (rating != null) {
                 rating._rev = JsonUtils.getString("_rev", act)
                 rating._id = JsonUtils.getString("_id", act)
@@ -87,5 +102,7 @@ open class RealmRating : RealmObject() {
                 rating.parentCode = JsonUtils.getString("parentCode", act)
                 rating.parentCode = JsonUtils.getString("planetCode", act)
                 rating.createdOn = JsonUtils.getString("createdOn", act)
+            }
+        }
     }
 }

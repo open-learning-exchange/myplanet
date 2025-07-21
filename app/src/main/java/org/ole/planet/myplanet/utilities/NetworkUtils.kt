@@ -49,7 +49,7 @@ class NetworkUtils(private val context: Context, private val coroutineScope: Cor
         connectivityManager.registerDefaultNetworkCallback(networkCallback)
     }
 
-    private class NetworkCallback : ConnectivityManager.NetworkCallback() {
+    private inner class NetworkCallback : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             _currentNetwork.update {
                 it.copy(isAvailable = true)

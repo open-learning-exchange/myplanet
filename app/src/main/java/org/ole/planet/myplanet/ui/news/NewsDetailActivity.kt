@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.MainApplication.Companion.networkUtils
 import org.ole.planet.myplanet.utilities.Utilities
+
 class NewsDetailActivity : BaseActivity() {
     private lateinit var activityNewsDetailBinding: ActivityNewsDetailBinding
     var news: RealmNews? = null
@@ -51,11 +52,14 @@ class NewsDetailActivity : BaseActivity() {
             newsLog.type = "news"
             newsLog.time = Date().time
             newsLog.userId = userId
+        }
         initViews()
     }
+
     private fun initViews() {
         title = news?.userName
         var msg: String? = news?.message
+
         if (news?.imageUrls != null && (news?.imageUrls?.size ?: 0) > 0) {
             msg = loadLocalImage()
         } else {
@@ -71,6 +75,7 @@ class NewsDetailActivity : BaseActivity() {
                 )
             }
             loadImage()
+        }
         msg = msg?.replace(
             "\n",
             "<div/><br/><div style=\" word-wrap: break-word;page-break-after: always;  word-spacing: 2px;\" >"
@@ -82,7 +87,11 @@ class NewsDetailActivity : BaseActivity() {
             "text/html",
             "utf-8",
             null
+        )
+    }
+
     private fun loadLocalImage(): String? {
+        var msg: String? = news?.message
         try {
             val imgObject = Gson().fromJson(news?.imageUrls?.get(0), JsonObject::class.java)
             activityNewsDetailBinding.img.visibility = View.VISIBLE
@@ -93,8 +102,13 @@ class NewsDetailActivity : BaseActivity() {
                 msg += "<br/><img width=\"50%\" src=\"file://" + JsonUtils.getString(
                     "imageUrl", imageObject
                 ) + "\"><br/>"
+            }
         } catch (e: Exception) {
+            loadImage()
+        }
         return msg
+    }
+
     private fun loadImage() {
         if ((news?.imagesArray?.size() ?: 0) > 0) {
             val ob = news?.imagesArray?.get(0)?.asJsonObject
@@ -107,5 +121,8 @@ class NewsDetailActivity : BaseActivity() {
                     .into(activityNewsDetailBinding.img)
                 activityNewsDetailBinding.img.visibility = View.VISIBLE
                 return
+            }
+        }
         activityNewsDetailBinding.img.visibility = View.GONE
+    }
 }

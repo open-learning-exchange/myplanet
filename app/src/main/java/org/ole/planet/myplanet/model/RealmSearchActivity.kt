@@ -7,6 +7,7 @@ import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.networkUtils
 import org.ole.planet.myplanet.utilities.VersionUtils
+
 open class RealmSearchActivity(
     @PrimaryKey
     var id: String = "",
@@ -36,6 +37,7 @@ open class RealmSearchActivity(
         obj.add("filter", Gson().fromJson(filter, JsonObject::class.java))
         return obj
     }
+
     companion object {
         @JvmStatic
         fun insert(log: RealmNewsLog): JsonObject {
@@ -48,4 +50,5 @@ open class RealmSearchActivity(
             ob.addProperty("customDeviceName", networkUtils.getCustomDeviceName(MainApplication.context))
             return ob
         }
+    }
 }

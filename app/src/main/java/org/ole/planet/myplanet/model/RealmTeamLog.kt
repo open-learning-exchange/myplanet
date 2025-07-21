@@ -9,6 +9,7 @@ import io.realm.annotations.PrimaryKey
 import java.util.Calendar
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.MainApplication.Companion.networkUtils
+
 open class RealmTeamLog : RealmObject() {
     @PrimaryKey
     var id: String? = null
@@ -27,16 +28,24 @@ open class RealmTeamLog : RealmObject() {
         fun getVisitCount(realm: Realm, userName: String?, teamId: String?): Long {
             return realm.where(RealmTeamLog::class.java).equalTo("type", "teamVisit").equalTo("user", userName).equalTo("teamId", teamId).count()
         }
+
+        @JvmStatic
         fun getLastVisit(realm: Realm, userName: String?, teamId: String?): Long? {
             return realm.where(RealmTeamLog::class.java)
                 .equalTo("type", "teamVisit")
                 .equalTo("user", userName)
                 .equalTo("teamId", teamId)
                 .max("time")?.toLong()
+        }
+
+        @JvmStatic
         fun getVisitByTeam(realm: Realm, teamId: String?): Long {
             val calendar = Calendar.getInstance()
             calendar.add(Calendar.DAY_OF_YEAR, -30)
             return realm.where(RealmTeamLog::class.java).equalTo("type", "teamVisit").equalTo("teamId", teamId).greaterThan("time", calendar.timeInMillis).count()
+        }
+
+        @JvmStatic
         fun serializeTeamActivities(log: RealmTeamLog, context: Context): JsonObject {
             val ob = JsonObject()
             ob.addProperty("user", log.user)
@@ -54,11 +63,15 @@ open class RealmTeamLog : RealmObject() {
                 ob.addProperty("_id", log._id)
             }
             return ob
+        }
+
+        @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject?) {
             var tag = mRealm.where(RealmTeamLog::class.java)
                 .equalTo("id", JsonUtils.getString("_id", act)).findFirst()
             if (tag == null) {
                 tag = mRealm.createObject(RealmTeamLog::class.java, JsonUtils.getString("_id", act))
+            }
             if (tag != null) {
                 tag._rev = JsonUtils.getString("_rev", act)
                 tag._id = JsonUtils.getString("_id", act)
@@ -69,5 +82,7 @@ open class RealmTeamLog : RealmObject() {
                 tag.time = JsonUtils.getLong("time", act)
                 tag.teamId = JsonUtils.getString("teamId", act)
                 tag.teamType = JsonUtils.getString("teamType", act)
+            }
+        }
     }
 }

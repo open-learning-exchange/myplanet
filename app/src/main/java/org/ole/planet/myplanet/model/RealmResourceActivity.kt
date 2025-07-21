@@ -8,6 +8,7 @@ import io.realm.annotations.PrimaryKey
 import java.util.Date
 import java.util.UUID
 import org.ole.planet.myplanet.MainApplication.Companion.networkUtils
+
 open class RealmResourceActivity : RealmObject() {
     @PrimaryKey
     var id: String? = null
@@ -21,6 +22,7 @@ open class RealmResourceActivity : RealmObject() {
     var type: String? = null
     var user: String? = null
     var androidId: String? = null
+
     companion object {
         @JvmStatic
         fun serializeResourceActivities(realmResourceActivities: RealmResourceActivity): JsonObject {
@@ -36,6 +38,8 @@ open class RealmResourceActivity : RealmObject() {
             ob.addProperty("deviceName", networkUtils.getDeviceName())
             return ob
         }
+
+        @JvmStatic
         fun onSynced(mRealm: Realm, settings: SharedPreferences) {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
@@ -44,6 +48,7 @@ open class RealmResourceActivity : RealmObject() {
                 ?: return
             if (user.id?.startsWith("guest") == true) {
                 return
+            }
             val activities = mRealm.createObject(RealmResourceActivity::class.java, UUID.randomUUID().toString())
             activities.user = user.name
             activities._rev = null
@@ -53,5 +58,6 @@ open class RealmResourceActivity : RealmObject() {
             activities.type = "sync"
             activities.time = Date().time
             mRealm.commitTransaction()
+        }
     }
 }

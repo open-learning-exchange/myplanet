@@ -32,10 +32,13 @@ import org.ole.planet.myplanet.MainApplication.Companion.networkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
 import org.ole.planet.myplanet.utilities.AuthHelper
+
 class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
     var guest: Boolean = false
+
+
     private data class MemberInfo(
         val username: String,
         var password: String,
@@ -50,13 +53,17 @@ class BecomeMemberActivity : BaseActivity() {
         val birthDate: String,
         val gender: String?
     )
+
     private fun usernameValidationError(username: String, realm: Realm? = null): String? {
         return AuthHelper.validateUsername(this, username, realm)
     }
+
     private fun selectedGender(): String? = when {
         activityBecomeMemberBinding.male.isChecked -> "male"
         activityBecomeMemberBinding.female.isChecked -> "female"
         else -> null
+    }
+
     private fun showDatePickerDialog() {
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(
@@ -68,6 +75,8 @@ class BecomeMemberActivity : BaseActivity() {
         dpd.setTitle(getString(R.string.select_date_of_birth))
         dpd.datePicker.maxDate = now.timeInMillis
         dpd.show()
+    }
+
     private fun collectMemberInfo() = MemberInfo(
         activityBecomeMemberBinding.etUsername.text.toString(),
         activityBecomeMemberBinding.etPassword.text.toString(),
@@ -81,11 +90,14 @@ class BecomeMemberActivity : BaseActivity() {
         activityBecomeMemberBinding.etPhone.text.toString(),
         dob,
         selectedGender()
+    )
+
     private fun validateMemberInfo(info: MemberInfo, realm: Realm): Boolean {
         usernameValidationError(info.username, realm)?.let {
             activityBecomeMemberBinding.etUsername.error = it
             return false
         }
+
         return when {
             info.password.isEmpty() -> {
                 activityBecomeMemberBinding.etPassword.error = getString(R.string.please_enter_a_password)
@@ -93,11 +105,20 @@ class BecomeMemberActivity : BaseActivity() {
             }
             info.password != info.rePassword -> {
                 activityBecomeMemberBinding.etRePassword.error = getString(R.string.password_doesn_t_match)
+                false
+            }
             info.email.isNotEmpty() && !Utilities.isValidEmail(info.email) -> {
                 activityBecomeMemberBinding.etEmail.error = getString(R.string.invalid_email)
+                false
+            }
             info.gender == null -> {
                 Utilities.toast(this, getString(R.string.please_select_gender))
+                false
+            }
             else -> true
+        }
+    }
+
     private fun buildMemberJson(info: MemberInfo) = JsonObject().apply {
         addProperty("name", info.username)
         addProperty("firstName", info.fName)
@@ -121,21 +142,29 @@ class BecomeMemberActivity : BaseActivity() {
         addProperty("customDeviceName", networkUtils.getCustomDeviceName(MainApplication.context))
         val roles = JsonArray().apply { add("learner") }
         add("roles", roles)
+    }
+
     private fun addMember(info: MemberInfo, realm: Realm) {
         val obj = buildMemberJson(info)
         val customProgressDialog = CustomProgressDialog(this).apply {
             setText(getString(R.string.creating_member_account))
             show()
+        }
+
         Service(this).becomeMember(realm, obj, object : Service.CreateUserCallback {
             override fun onSuccess(success: String) {
                 runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
+            }
         }, object : SecurityDataCallback {
             override fun onSecurityDataUpdated() {
                 runOnUiThread {
                     customProgressDialog.dismiss()
                     autoLoginNewMember(info.username, info.password)
                 }
+            }
         })
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityBecomeMemberBinding = ActivityBecomeMemberBinding.inflate(layoutInflater)
@@ -149,38 +178,58 @@ class BecomeMemberActivity : BaseActivity() {
         activityBecomeMemberBinding.spnLang.adapter = lnAadapter
         activityBecomeMemberBinding.txtDob.setOnClickListener {
             showDatePickerDialog()
+        }
         val levels = resources.getStringArray(R.array.level)
         val lvAdapter  = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, levels)
         activityBecomeMemberBinding.spnLevel.adapter = lvAdapter
+
         val username = intent.getStringExtra("username") ?: ""
         guest = intent.getBooleanExtra("guest", false)
+
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         setupTextWatchers(mRealm)
+
         if (guest) {
             activityBecomeMemberBinding.etUsername.setText(username)
             activityBecomeMemberBinding.etUsername.isFocusable = false
+        }
+
+
         activityBecomeMemberBinding.btnCancel.setOnClickListener {
             finish()
+        }
+
         activityBecomeMemberBinding.btnSubmit.setOnClickListener {
             val info = collectMemberInfo()
             if (validateMemberInfo(info, mRealm)) {
                 addMember(info, mRealm)
+            }
+        }
+    }
+
     private fun autoLoginNewMember(username: String, password: String) {
         val mRealm = DatabaseService(this).realmInstance
         RealmUserModel.cleanupDuplicateUsers(mRealm)
         mRealm.close()
+
         val intent = Intent(this, LoginActivity::class.java)
         intent.putExtra("username", username)
         intent.putExtra("password", password)
         intent.putExtra("auto_login", true)
+        if (guest) {
             intent.putExtra("guest", guest)
+        }
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
         startActivity(intent)
         finish()
+    }
+
     private fun setupTextWatchers(mRealm: Realm) {
         activityBecomeMemberBinding.etUsername.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+
             override fun afterTextChanged(s: Editable?) {
                 val input = s?.toString() ?: ""
                 val error = usernameValidationError(input, mRealm)
@@ -193,10 +242,20 @@ class BecomeMemberActivity : BaseActivity() {
                         activityBecomeMemberBinding.etUsername.setSelection(lowercase.length)
                     }
                     activityBecomeMemberBinding.etUsername.error = null
+                }
+            }
+        })
+
         activityBecomeMemberBinding.etPassword.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(s: Editable) {
                 if (activityBecomeMemberBinding.etPassword.text.toString().isEmpty()) {
                     activityBecomeMemberBinding.etRePassword.setText("")
+                }
+            }
+
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
+        })
+    }
 }

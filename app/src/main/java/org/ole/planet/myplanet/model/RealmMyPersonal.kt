@@ -7,6 +7,7 @@ import io.realm.annotations.PrimaryKey
 import java.util.Date
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.MainApplication.Companion.networkUtils
+
 open class RealmMyPersonal : RealmObject() {
     @PrimaryKey
     var id: String? = null
@@ -19,6 +20,7 @@ open class RealmMyPersonal : RealmObject() {
     var userId: String? = null
     var userName: String? = null
     var path: String? = null
+
     companion object {
         @JvmStatic
         fun serialize(personal: RealmMyPersonal, context: Context): JsonObject {

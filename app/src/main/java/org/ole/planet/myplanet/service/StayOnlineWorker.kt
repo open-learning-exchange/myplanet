@@ -8,10 +8,11 @@ import androidx.work.WorkerParameters
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.MainApplication.Companion.networkUtils
+
 class StayOnlineWorker(private val context: Context, workerParams: WorkerParameters) : Worker(context, workerParams) {
     override fun doWork(): Result {
         if (showBetaFeature(Constants.KEY_SYNC, context)) {
-            if (isWifiConnected()) {
+            if (networkUtils.isWifiConnected()) {
                 LocalBroadcastManager.getInstance(context).sendBroadcast(Intent("SHOW_WIFI_ALERT"))
             }
         }

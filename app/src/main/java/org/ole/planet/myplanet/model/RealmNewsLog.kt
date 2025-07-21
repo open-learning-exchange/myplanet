@@ -5,6 +5,7 @@ import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.networkUtils
+
 open class RealmNewsLog : RealmObject() {
     @PrimaryKey
     var id: String? = null
@@ -14,6 +15,7 @@ open class RealmNewsLog : RealmObject() {
     var time: Long? = null
     var userId: String? = null
     var androidId: String? = null
+
     companion object {
         @JvmStatic
         fun serialize(log: RealmNewsLog): JsonObject {
