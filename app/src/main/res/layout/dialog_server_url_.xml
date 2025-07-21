@@ -16,7 +16,6 @@
         android:textStyle="bold"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-
     <TextView
         android:id="@+id/syncToServerText"
         android:layout_width="wrap_content"
@@ -28,7 +27,6 @@
         android:visibility="gone"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView2" />
-
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/serverUrls"
         android:layout_width="match_parent"
@@ -44,7 +42,6 @@
         app:layout_constraintHeight_default="wrap"
         app:layout_constraintHeight_max="300dp"
         app:layout_constraintTop_toBottomOf="@+id/syncToServerText" />
-
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/ltAdvanced"
         android:layout_width="match_parent"
@@ -67,7 +64,6 @@
                 android:buttonTint="@color/daynight_textColor"
                 android:text="@string/radio_http"
                 android:textColor="@color/daynight_textColor" />
-
             <RadioButton
                 android:id="@+id/radio_https"
                 android:layout_width="wrap_content"
@@ -88,7 +84,6 @@
             android:visibility="gone"
             app:backgroundTint="@color/daynight_textColor"
             app:layout_constraintTop_toBottomOf="@+id/radio_protocol" />
-
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/input_layout_name"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -138,7 +133,6 @@
             android:text="@string/autosync"
             android:textColor="@color/daynight_textColor"
             app:layout_constraintTop_toBottomOf="@+id/input_layout_password" />
-
         <LinearLayout
             android:id="@+id/ltIntervalLabel"
             android:layout_width="match_parent"
@@ -154,7 +148,6 @@
                 android:layout_weight="1"
                 android:text="@string/interval"
                 android:textColor="@color/daynight_textColor" />
-
             <Spinner
                 android:id="@+id/intervalDropper"
                 android:layout_width="wrap_content"
@@ -217,7 +210,6 @@
             android:text="@string/manual"
             android:textColor="@color/daynight_textColor"
             app:switchPadding="20dp" />
-
         <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/switch_server_url"
             android:layout_width="wrap_content"
@@ -240,7 +232,6 @@
         android:textColor="@color/daynight_textColor"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/linearLayout2" />
-
     <Button
         android:id="@+id/clearData"
         android:layout_width="wrap_content"
