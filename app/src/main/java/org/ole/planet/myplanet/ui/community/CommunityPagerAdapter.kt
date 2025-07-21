@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.community
 
+import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
@@ -10,7 +11,7 @@ import org.ole.planet.myplanet.ui.enterprises.ReportsFragment
 import org.ole.planet.myplanet.ui.news.NewsFragment
 import org.ole.planet.myplanet.ui.team.TeamCalendarFragment
 
-class CommunityPagerAdapter(private val fm: FragmentActivity, private val id: String, private var fromLogin: Boolean) : FragmentStateAdapter(fm) {
+class CommunityPagerAdapter(private val fm: FragmentActivity, private val id: String, private var fromLogin: Boolean, val settings: SharedPreferences) : FragmentStateAdapter(fm) {
     override fun createFragment(position: Int): Fragment {
         val fragment: Fragment = when (position) {
             0 -> {
@@ -45,9 +46,14 @@ class CommunityPagerAdapter(private val fm: FragmentActivity, private val id: St
     }
 
     fun getPageTitle(position: Int): CharSequence {
+        val leaders = if (settings.getString("planetType", "") == "community") {
+            fm.getString(R.string.community_leaders)
+        } else {
+            fm.getString(R.string.nation_leaders)
+        }
         return when (position) {
             0 -> fm.getString(R.string.our_voices)
-            1 -> fm.getString(R.string.community_leaders)
+            1 -> leaders
             2 -> fm.getString(R.string.calendar)
             3 -> if (!fromLogin) fm.getString(R.string.services) else ""
             4 -> if (!fromLogin) fm.getString(R.string.finances) else ""

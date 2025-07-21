@@ -34,6 +34,7 @@ class NewsFragment : BaseNewsFragment() {
     var user: RealmUserModel? = null
     private var updatedNewsList: RealmResults<RealmNews>? = null
     private var filteredNewsList: List<RealmNews?> = listOf()
+    private val gson = Gson()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentNewsBinding = FragmentNewsBinding.inflate(inflater, container, false)
@@ -81,7 +82,7 @@ class NewsFragment : BaseNewsFragment() {
             }
 
             if (!news.viewIn.isNullOrEmpty()) {
-                val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
+                val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
                 for (e in ar) {
                     val ob = e.asJsonObject
                     var userId = "${user?.planetCode}@${user?.parentCode}"
@@ -140,7 +141,7 @@ class NewsFragment : BaseNewsFragment() {
                 continue
             }
             if (!TextUtils.isEmpty(news.viewIn)) {
-                val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
+                val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
                 for (e in ar) {
                     val ob = e.asJsonObject
                     var userId = "${user?.planetCode}@${user?.parentCode}"
@@ -241,7 +242,7 @@ class NewsFragment : BaseNewsFragment() {
         if (news == null) return 0
         try {
             if (!news.viewIn.isNullOrEmpty()) {
-                val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
+                val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
                 for (elem in ar) {
                     val obj = elem.asJsonObject
                     if (obj.has("section") && obj.get("section").asString.equals("community", true) && obj.has("sharedDate")) {

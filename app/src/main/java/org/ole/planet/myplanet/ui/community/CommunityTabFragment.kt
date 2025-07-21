@@ -7,11 +7,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.google.android.material.tabs.TabLayoutMediator
-import java.util.Date
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.TimeUtils
 
 class CommunityTabFragment : Fragment() {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
@@ -25,12 +23,12 @@ class CommunityTabFragment : Fragment() {
         val sParentcode = settings.getString("parentCode", "")
         val communityName = settings.getString("communityName", "")
         val user = UserProfileDbHandler(requireActivity()).userModel
-        fragmentTeamDetailBinding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), user?.planetCode + "@" + sParentcode, false)
+        fragmentTeamDetailBinding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), user?.planetCode + "@" + sParentcode, false, settings)
         TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
             tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
         }.attach()
         fragmentTeamDetailBinding.title.text = if (user?.planetCode == "") communityName else user?.planetCode
-        fragmentTeamDetailBinding.subtitle.text = TimeUtils.getFormatedDateWithTime(Date().time)
+        fragmentTeamDetailBinding.subtitle.text = settings.getString("planetType", "")
         fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
     }
 }
