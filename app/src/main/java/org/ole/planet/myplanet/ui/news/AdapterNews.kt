@@ -63,6 +63,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private var recyclerView: RecyclerView? = null
     var user: RealmUserModel? = null
     private var labelManager: NewsLabelManager? = null
+    private val gson = Gson()
     private val profileDbHandler = userProfileDbHandler
     lateinit var settings: SharedPreferences
     private val leadersList: List<RealmUserModel> by lazy {
@@ -161,7 +162,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun extractSharedTeamName(news: RealmNews): String {
         if (!TextUtils.isEmpty(news.viewIn)) {
-            val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
+            val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
             if (ar.size() > 1) {
                 val ob = ar[0].asJsonObject
                 if (ob.has("name") && !ob.get("name").isJsonNull) {
@@ -276,7 +277,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun handleChat(holder: ViewHolderNews, news: RealmNews) {
         if (news.newsId?.isNotEmpty() == true) {
-            val conversations = Gson().fromJson(news.conversations, Array<Conversation>::class.java).toList()
+            val conversations = gson.fromJson(news.conversations, Array<Conversation>::class.java).toList()
             val chatAdapter = ChatAdapter(ArrayList(), context, holder.rowNewsBinding.recyclerGchat)
 
             if (user?.id?.startsWith("guest") == false) {
@@ -476,7 +477,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 .setTitle(R.string.share_with_community)
                 .setMessage(R.string.confirm_share_community)
                 .setPositiveButton(R.string.yes) { _, _ ->
-                    val array = Gson().fromJson(news?.viewIn, JsonArray::class.java)
+                    val array = gson.fromJson(news?.viewIn, JsonArray::class.java)
                     val firstElement = array.get(0)
                     val obj = firstElement.asJsonObject
                     if(!obj.has("name")){
@@ -491,7 +492,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                         mRealm.beginTransaction()
                     }
                     news?.sharedBy = currentUser?.id
-                    news?.viewIn = Gson().toJson(array)
+                    news?.viewIn = gson.toJson(array)
                     mRealm.commitTransaction()
                     Utilities.toast(context, context.getString(R.string.shared_to_community))
                     viewHolder.rowNewsBinding.btnShare.visibility = View.GONE
@@ -515,7 +516,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         val imageUrls = news?.imageUrls
         if (!imageUrls.isNullOrEmpty()) {
             try {
-                val imgObject = Gson().fromJson(imageUrls[0], JsonObject::class.java)
+                val imgObject = gson.fromJson(imageUrls[0], JsonObject::class.java)
                 val path = JsonUtils.getString("imageUrl", imgObject)
                 val request = Glide.with(context)
                 val target = if (path.lowercase(Locale.getDefault()).endsWith(".gif")) {

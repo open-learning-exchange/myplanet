@@ -441,22 +441,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 var attempt = 0
-                while (true) {
-                    val realm = Realm.getDefaultInstance()
-                    var dataInserted = false
-
-                    try {
+                Realm.getDefaultInstance().use { realm ->
+                    while (true) {
                         realm.refresh()
                         val realmResults = realm.where(RealmUserModel::class.java).findAll()
-                        if (!realmResults.isEmpty()) {
-                            dataInserted = true
+                        if (realmResults.isNotEmpty()) {
                             break
                         }
-                    } finally {
-                        realm.close()
+                        attempt++
+                        delay(1000)
                     }
-                    attempt++
-                    delay(1000)
                 }
 
                 withContext(Dispatchers.Main) {

@@ -50,6 +50,8 @@ class UploadManager @Inject constructor(
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     )
 
+    private val gson = Gson()
+
     companion object {
         @Deprecated("Use dependency injection instead", ReplaceWith("Inject UploadManager"))
         var instance: UploadManager? = null
@@ -576,7 +578,7 @@ class UploadManager @Inject constructor(
                         if (act.imageUrls != null && act.imageUrls?.isNotEmpty() == true) {
                             act.imageUrls?.chunked(5)?.forEach { imageChunk ->
                                 imageChunk.forEach { imageObject ->
-                                    val imgObject = Gson().fromJson(imageObject, JsonObject::class.java)
+                                    val imgObject = gson.fromJson(imageObject, JsonObject::class.java)
                                     val ob = createImage(user, imgObject)
                                     val response = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/resources", ob)?.execute()?.body()
 
@@ -611,7 +613,7 @@ class UploadManager @Inject constructor(
                             }
                         }
 
-                        act.images = Gson().toJson(image)
+                        act.images = gson.toJson(image)
                         `object`.add("images", image)
 
                         val newsUploadResponse: Response<JsonObject>? =
