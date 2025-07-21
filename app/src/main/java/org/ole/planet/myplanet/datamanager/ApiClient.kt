@@ -7,6 +7,7 @@ import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.utilities.RetryUtils
+import kotlinx.coroutines.delay
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -77,7 +78,7 @@ object ApiClient {
         )
     }
 
-    fun <T> executeWithResult(operation: () -> Response<T>?): NetworkResult<T> {
+    suspend fun <T> executeWithResult(operation: suspend () -> Response<T>?): NetworkResult<T> {
         var retryCount = 0
         var lastException: Exception? = null
 
@@ -93,7 +94,7 @@ object ApiClient {
                         return NetworkResult.Error(response.code(), null)
                     } else if (retryCount < 2) {
                         retryCount++
-                        Thread.sleep(2000L * (retryCount + 1))
+                        delay(2000L * (retryCount + 1))
                         continue
                     } else {
                         val errorBody = try { response.errorBody()?.string() } catch (_: Exception) { null }
@@ -110,7 +111,7 @@ object ApiClient {
 
             if (retryCount < 2) {
                 retryCount++
-                Thread.sleep(2000L * (retryCount + 1))
+                delay(2000L * (retryCount + 1))
             } else {
                 break
             }
