@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import com.google.android.material.snackbar.Snackbar
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.Sort
@@ -39,7 +40,9 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class ChatHistoryListFragment : Fragment() {
     private lateinit var fragmentChatHistoryListBinding: FragmentChatHistoryListBinding
     private lateinit var sharedViewModel: ChatViewModel
@@ -50,6 +53,9 @@ class ChatHistoryListFragment : Fragment() {
     lateinit var prefManager: SharedPrefManager
     lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
+    
+    @Inject
+    lateinit var syncManager: SyncManager
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -163,7 +169,7 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     private fun startSyncManager() {
-        SyncManager.instance?.start(object : SyncListener {
+        syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {

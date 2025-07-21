@@ -15,6 +15,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -33,7 +34,9 @@ import org.ole.planet.myplanet.utilities.CustomSpinner
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListener {
     private lateinit var addNewSurvey: FloatingActionButton
     private lateinit var spn: CustomSpinner
@@ -48,6 +51,9 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     lateinit var prefManager: SharedPrefManager
     lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
+    
+    @Inject
+    lateinit var syncManager: SyncManager
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
@@ -86,7 +92,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     }
 
     private fun startSyncManager() {
-        SyncManager.instance?.start(object : SyncListener {
+        syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {

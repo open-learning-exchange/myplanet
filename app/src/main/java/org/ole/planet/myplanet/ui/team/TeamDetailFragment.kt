@@ -46,6 +46,9 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     
+    @Inject
+    lateinit var syncManager: SyncManager
+    
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
     private var directTeamName: String? = null
     private var directTeamType: String? = null
@@ -111,7 +114,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     private fun startSyncManager() {
-        SyncManager.instance?.start(object : SyncListener {
+        syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {

@@ -26,6 +26,7 @@ import androidx.core.net.toUri
 import org.ole.planet.myplanet.BuildConfig
 import com.google.gson.JsonObject
 import java.io.File
+import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity.Companion.hasInstallPermission
@@ -48,12 +49,13 @@ import org.ole.planet.myplanet.utilities.ResourceOpener
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 abstract class BaseContainerFragment : BaseResourceFragment() {
     private var timesRated: TextView? = null
     var rating: TextView? = null
     private var ratingBar: AppCompatRatingBar? = null
     private val installUnknownSourcesRequestCode = 112
-    var hasInstallPermission = hasInstallPermission(MainApplication.context)
+    private var hasInstallPermissionValue = false
     private var currentLibrary: RealmMyLibrary? = null
     private var installApkLauncher: ActivityResultLauncher<Intent>? = null
     lateinit var prefData: SharedPrefManager
@@ -62,6 +64,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         profileDbHandler = UserProfileDbHandler(requireActivity())
+        hasInstallPermissionValue = hasInstallPermission(requireContext())
         if (!BuildConfig.LITE) {
             installApkLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                 if (result.resultCode == Activity.RESULT_OK) {
@@ -254,7 +257,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private fun installApk(items: RealmMyLibrary) {
         if (BuildConfig.LITE) return
         currentLibrary = items
-        val directory = File(MainApplication.context.getExternalFilesDir(null).toString() + "/ole" + "/" + items.id)
+        val directory = File(requireContext().getExternalFilesDir(null).toString() + "/ole" + "/" + items.id)
         if (!directory.exists()) {
             if (!directory.mkdirs()) {
                 throw RuntimeException("Failed to create directory: " + directory.absolutePath)
@@ -268,14 +271,14 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
         }
         val uri = apkFile?.let {
-            FileProvider.getUriForFile(MainApplication.context, "${MainApplication.context.packageName}.fileprovider", it)
+            FileProvider.getUriForFile(requireContext(), "${requireContext().packageName}.fileprovider", it)
         }
         val intent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(uri, "application/vnd.android.package-archive")
             flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
         }
         if (intent.resolveActivity(requireActivity().packageManager) != null) {
-            if (hasInstallPermission(MainApplication.context)) {
+            if (hasInstallPermission(requireContext())) {
                 startActivity(intent)
             } else {
                 requestInstallPermission()
@@ -288,7 +291,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private fun requestInstallPermission() {
         if (BuildConfig.LITE) return
         val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
-        intent.data = ("package:" + MainApplication.context.packageName).toUri()
+        intent.data = ("package:" + requireContext().packageName).toUri()
         installApkLauncher?.launch(intent)
     }
 

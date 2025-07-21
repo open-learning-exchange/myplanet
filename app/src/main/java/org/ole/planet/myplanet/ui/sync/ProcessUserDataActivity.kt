@@ -62,6 +62,9 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     @Inject
     lateinit var databaseService: DatabaseService
     
+    @Inject
+    lateinit var uploadManager: UploadManager
+    
     lateinit var settings: SharedPreferences
     val customProgressDialog: DialogUtils.CustomProgressDialog by lazy {
         DialogUtils.CustomProgressDialog(this)
@@ -209,23 +212,23 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             })
             return
         } else if (source == "login") {
-            UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
+            uploadManager.uploadUserActivities(this@ProcessUserDataActivity)
             return
         }
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        UploadManager.instance?.uploadAchievement()
-        UploadManager.instance?.uploadNews()
-        UploadManager.instance?.uploadResourceActivities("")
-        UploadManager.instance?.uploadCourseActivities()
-        UploadManager.instance?.uploadSearchActivity()
-        UploadManager.instance?.uploadTeams()
-        UploadManager.instance?.uploadRating()
-        UploadManager.instance?.uploadTeamTask()
-        UploadManager.instance?.uploadMeetups()
-        UploadManager.instance?.uploadSubmissions()
-        UploadManager.instance?.uploadCrashLog()
+        uploadManager.uploadAchievement()
+        uploadManager.uploadNews()
+        uploadManager.uploadResourceActivities("")
+        uploadManager.uploadCourseActivities()
+        uploadManager.uploadSearchActivity()
+        uploadManager.uploadTeams()
+        uploadManager.uploadRating()
+        uploadManager.uploadTeamTask()
+        uploadManager.uploadMeetups()
+        uploadManager.uploadSubmissions()
+        uploadManager.uploadCrashLog()
 
         val asyncOperationsCounter = AtomicInteger(0)
         val totalAsyncOperations = 6
@@ -246,37 +249,37 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             checkAllOperationsComplete()
         }
 
-        UploadManager.instance?.uploadUserActivities(object : SuccessListener {
+        uploadManager.uploadUserActivities(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
-        UploadManager.instance?.uploadExamResult(object : SuccessListener {
+        uploadManager.uploadExamResult(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
-        UploadManager.instance?.uploadFeedback(object : SuccessListener {
+        uploadManager.uploadFeedback(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
-        UploadManager.instance?.uploadResource(object : SuccessListener {
+        uploadManager.uploadResource(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
-        UploadManager.instance?.uploadSubmitPhotos(object : SuccessListener {
+        uploadManager.uploadSubmitPhotos(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
-        UploadManager.instance?.uploadActivities(object : SuccessListener {
+        uploadManager.uploadActivities(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }

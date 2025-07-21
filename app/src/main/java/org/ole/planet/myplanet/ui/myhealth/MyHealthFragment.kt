@@ -61,6 +61,9 @@ class MyHealthFragment : Fragment() {
     
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+    
+    @Inject
+    lateinit var syncManager: SyncManager
     private lateinit var fragmentVitalSignBinding: FragmentVitalSignBinding
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
     private lateinit var alertHealthListBinding: AlertHealthListBinding
@@ -110,7 +113,7 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun startSyncManager() {
-        SyncManager.instance?.start(object : SyncListener {
+        syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
