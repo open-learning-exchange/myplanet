@@ -29,6 +29,10 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.di.AppPreferences
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.datamanager.ApiInterface
@@ -54,14 +58,17 @@ import org.ole.planet.myplanet.utilities.NotificationUtil.create
 import org.ole.planet.myplanet.utilities.SyncTimeLogger
 import org.ole.planet.myplanet.utilities.Utilities
 
-class SyncManager private constructor(private val context: Context) {
+@Singleton
+class SyncManager @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val databaseService: DatabaseService,
+    @AppPreferences private val settings: SharedPreferences
+) {
     private var td: Thread? = null
-    private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     lateinit var mRealm: Realm
     private var isSyncing = false
     private val stringArray = arrayOfNulls<String>(4)
     private var listener: SyncListener? = null
-    private val dbService: DatabaseService = DatabaseService(context)
     private var backgroundSync: Job? = null
     private val syncScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val semaphore = Semaphore(5)
@@ -430,7 +437,7 @@ class SyncManager private constructor(private val context: Context) {
             logger.startLogging()
 
             initializeSync()
-            mainRealm = dbService.realmInstance
+            mainRealm = databaseService.realmInstance
             runBlocking {
                 async {
                     syncWithSemaphore("tablet_users") {
@@ -542,7 +549,7 @@ class SyncManager private constructor(private val context: Context) {
         }
         isSyncing = true
         create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")
-        mRealm = dbService.realmInstance
+        mRealm = databaseService.realmInstance
     }
 
     fun cancelBackgroundSync() {
@@ -1271,8 +1278,17 @@ class SyncManager private constructor(private val context: Context) {
         syncScope.cancel()
     }
 
+    // Backward compatibility constructor for code that still uses singleton pattern
+    constructor(context: Context) : this(
+        context,
+        DatabaseService(context),
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    )
+
     companion object {
+        @Deprecated("Use dependency injection instead", ReplaceWith("Inject SyncManager"))
         private var ourInstance: SyncManager? = null
+        @Deprecated("Use dependency injection instead", ReplaceWith("Inject SyncManager"))
         val instance: SyncManager?
             get() {
                 ourInstance = SyncManager(MainApplication.context)

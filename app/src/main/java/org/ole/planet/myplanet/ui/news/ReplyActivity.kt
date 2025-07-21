@@ -18,6 +18,8 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Case
@@ -38,6 +40,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 
+@AndroidEntryPoint
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private lateinit var activityReplyBinding: ActivityReplyBinding
     lateinit var mRealm: Realm
@@ -45,6 +48,9 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private lateinit var newsAdapter: AdapterNews
     private val gson = Gson()
     var user: RealmUserModel? = null
+    
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var imageList: RealmList<String>
     private var llImage: LinearLayout? = null
     private lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
@@ -77,7 +83,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private fun showData(id: String?) {
         val news = mRealm.where(RealmNews::class.java).equalTo("id", id).findFirst()
         val list: List<RealmNews?> = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING).equalTo("replyTo", id, Case.INSENSITIVE).findAll()
-        newsAdapter = AdapterNews(this, list.toMutableList(), user, news)
+        newsAdapter = AdapterNews(this, list.toMutableList(), user, news, "", null, userProfileDbHandler)
         newsAdapter.setListener(this)
         newsAdapter.setmRealm(mRealm)
         newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))

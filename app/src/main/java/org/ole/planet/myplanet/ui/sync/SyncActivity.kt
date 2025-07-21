@@ -19,6 +19,7 @@ import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.*
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.*
 import java.io.File
 import java.util.*
@@ -63,7 +64,9 @@ import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.ServerConfigUtils
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
+import javax.inject.Inject
 
+@AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
     OnUserSelectedListener, ConfigurationIdListener {
     private lateinit var syncDate: TextView
@@ -110,6 +113,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     var serverAddressAdapter: ServerAddressAdapter? = null
     lateinit var serverListAddresses: List<ServerAddressesModel>
     private var isProgressDialogShowing = false
+    
+    @Inject
+    lateinit var syncManager: SyncManager
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -360,7 +366,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun startSync(type: String) {
-        SyncManager.instance?.start(this@SyncActivity, type)
+        syncManager.start(this@SyncActivity, type)
     }
 
     private fun saveConfigAndContinue(
@@ -495,7 +501,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         withContext(Dispatchers.IO) {
                             val downloadRealm = Realm.getDefaultInstance()
                             try {
-                                backgroundDownload(downloadAllFiles(getAllLibraryList(downloadRealm)))
+                                backgroundDownload(downloadAllFiles(getAllLibraryList(downloadRealm)), activityContext)
                             } finally {
                                 downloadRealm.close()
                             }

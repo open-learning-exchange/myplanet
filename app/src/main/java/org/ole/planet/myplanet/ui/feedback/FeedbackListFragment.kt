@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmResults
 import kotlinx.coroutines.Dispatchers
@@ -31,7 +32,9 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     private lateinit var fragmentFeedbackListBinding: FragmentFeedbackListBinding
     private lateinit var mRealm: Realm
@@ -42,6 +45,9 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
+    
+    @Inject
+    lateinit var syncManager: SyncManager
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -90,7 +96,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     private fun startSyncManager() {
-        SyncManager.instance?.start(object : SyncListener {
+        syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {

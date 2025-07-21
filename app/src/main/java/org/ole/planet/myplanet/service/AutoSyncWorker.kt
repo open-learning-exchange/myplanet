@@ -7,6 +7,9 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import java.util.Date
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
@@ -14,12 +17,23 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.CheckVersionCallback
 import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AutoSyncWorker(private val context: Context, workerParams: WorkerParameters) : Worker(context, workerParams), SyncListener, CheckVersionCallback, SuccessListener {
+class AutoSyncWorker @AssistedInject constructor(
+    @Assisted private val context: Context, 
+    @Assisted workerParams: WorkerParameters,
+    private val uploadManager: UploadManager
+) : Worker(context, workerParams), SyncListener, CheckVersionCallback, SuccessListener {
+    
+    @AssistedFactory
+    interface Factory {
+        fun create(context: Context, workerParams: WorkerParameters): AutoSyncWorker
+    }
+    
     private lateinit var preferences: SharedPreferences
     override fun doWork(): Result {
         preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -62,22 +76,22 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
             }
             if (!MainApplication.isSyncRunning) {
                 MainApplication.isSyncRunning = true
-                UploadManager.instance?.uploadExamResult(this)
-                UploadManager.instance?.uploadFeedback(this)
-                UploadManager.instance?.uploadAchievement()
-                UploadManager.instance?.uploadResourceActivities("")
-                UploadManager.instance?.uploadUserActivities(this)
-                UploadManager.instance?.uploadCourseActivities()
-                UploadManager.instance?.uploadSearchActivity()
-                UploadManager.instance?.uploadRating()
-                UploadManager.instance?.uploadResource(this)
-                UploadManager.instance?.uploadNews()
-                UploadManager.instance?.uploadTeams()
-                UploadManager.instance?.uploadTeamTask()
-                UploadManager.instance?.uploadMeetups()
-                UploadManager.instance?.uploadCrashLog()
-                UploadManager.instance?.uploadSubmissions()
-                UploadManager.instance?.uploadActivities { MainApplication.isSyncRunning = false }
+                uploadManager.uploadExamResult(this)
+                uploadManager.uploadFeedback(this)
+                uploadManager.uploadAchievement()
+                uploadManager.uploadResourceActivities("")
+                uploadManager.uploadUserActivities(this)
+                uploadManager.uploadCourseActivities()
+                uploadManager.uploadSearchActivity()
+                uploadManager.uploadRating()
+                uploadManager.uploadResource(this)
+                uploadManager.uploadNews()
+                uploadManager.uploadTeams()
+                uploadManager.uploadTeamTask()
+                uploadManager.uploadMeetups()
+                uploadManager.uploadCrashLog()
+                uploadManager.uploadSubmissions()
+                uploadManager.uploadActivities { MainApplication.isSyncRunning = false }
             }
         }
     }

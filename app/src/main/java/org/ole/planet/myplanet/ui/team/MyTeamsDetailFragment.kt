@@ -17,8 +17,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.RealmResults
 import java.util.Date
+import javax.inject.Inject
 import java.util.UUID
 import org.json.JSONArray
 import org.ole.planet.myplanet.R
@@ -36,6 +38,7 @@ import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamLog.Companion.getVisitCount
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
@@ -44,10 +47,14 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class MyTeamsDetailFragment : BaseNewsFragment() {
     private lateinit var fragmentMyTeamsDetailBinding: FragmentMyTeamsDetailBinding
     lateinit var tvDescription: TextView
     var user: RealmUserModel? = null
+    
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     var teamId: String? = null
     var team: RealmMyTeam? = null
     lateinit var listContent: ListView
@@ -180,7 +187,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
         adapterNews = activity?.let {
             realmNewsList?.let { it1 ->
-                AdapterNews(it, it1.toMutableList(), user, null, team?.name.toString(), teamId)
+                AdapterNews(it, it1.toMutableList(), user, null, team?.name.toString(), teamId, userProfileDbHandler)
             }
         }
         adapterNews?.setmRealm(mRealm)

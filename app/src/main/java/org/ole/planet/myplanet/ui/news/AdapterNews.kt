@@ -52,7 +52,7 @@ import com.bumptech.glide.Glide
 import java.io.File
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 
-class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
+class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
     private lateinit var rowNewsBinding: RowNewsBinding
     private var listener: OnNewsItemClickListener? = null
     private var imageList: RealmList<String>? = null
@@ -64,7 +64,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     var user: RealmUserModel? = null
     private var labelManager: NewsLabelManager? = null
     private val gson = Gson()
-    private val profileDbHandler = UserProfileDbHandler(context)
+    private val profileDbHandler = userProfileDbHandler
     lateinit var settings: SharedPreferences
     private val leadersList: List<RealmUserModel> by lazy {
         val raw = settings.getString("communityLeaders", "") ?: ""
@@ -102,7 +102,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         rowNewsBinding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         sharedPreferences = SharedPrefManager(context)
-        user = UserProfileDbHandler(context).userModel
+        user = userProfileDbHandler.userModel
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         if (::mRealm.isInitialized) {
             if (labelManager == null) labelManager = NewsLabelManager(context, mRealm, currentUser)
@@ -213,7 +213,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private fun setMessageAndDate(holder: ViewHolderNews, news: RealmNews, sharedTeamName: String) {
         val markdownContentWithLocalPaths = prependBaseUrlToImages(
             news.message,
-            "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/",
+            "file://" + context.getExternalFilesDir(null) + "/ole/",
             600,
             350
         )
