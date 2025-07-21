@@ -1,16 +1,19 @@
 package org.ole.planet.myplanet.ui.team.teamMember
 
 import android.content.Context
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.databinding.RowMemberRequestBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterMemberRequest(private val context: Context, private val list: MutableList<RealmUserModel>, private val mRealm: Realm, private val listener: MemberChangeListener) : RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser>() {
     private lateinit var rowMemberRequestBinding: RowMemberRequestBinding
@@ -65,24 +68,34 @@ class AdapterMemberRequest(private val context: Context, private val list: Mutab
     }
 
     private fun acceptReject(userModel: RealmUserModel, isAccept: Boolean, position: Int) {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        val team = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
-            .equalTo("userId", userModel.id).findFirst()
-        if (team != null) {
-            if (isAccept) {
-                team.docType = "membership"
-                team.updated = true
-            } else {
-                team.deleteFromRealm()
-            }
-        }
-        mRealm.commitTransaction()
+        val userId = userModel.id
 
         list.removeAt(position)
         notifyItemRemoved(position)
         notifyItemRangeChanged(position, list.size)
 
-        syncTeamActivities(context)
+        mRealm.executeTransactionAsync({ realm: Realm ->
+            val team = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("userId", userId)
+                .findFirst()
+            if (team != null) {
+                if (isAccept) {
+                    team.docType = "membership"
+                    team.updated = true
+                } else {
+                    team.deleteFromRealm()
+                }
+            }
+        }, {
+            syncTeamActivities(context)
+            listener.onMemberChanged()
+        }, { error ->
+            list.add(position, userModel)
+            notifyItemInserted(position)
+            Utilities.toast(context, context.getString(R.string.request_failed_please_retry))
+            Log.e("AdapterMemberRequest", "Error while updating member", error)
+        })
     }
 
     override fun getItemCount(): Int {
