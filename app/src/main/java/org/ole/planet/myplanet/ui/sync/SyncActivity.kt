@@ -435,12 +435,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     override fun onSyncComplete() {
         val activityContext = this@SyncActivity
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(Dispatchers.Main) {
             try {
                 userInsertRealm = Realm.getDefaultInstance()
                 userInsertResults = userInsertRealm!!.where(RealmUserModel::class.java).findAllAsync()
                 userInsertListener = RealmChangeListener { results ->
-                    if (!results.isEmpty()) {
+                    if (results.isLoaded && !results.isEmpty()) {
                         results.removeChangeListener(userInsertListener!!)
                         userInsertRealm?.close()
                         lifecycleScope.launch(Dispatchers.Main) {
