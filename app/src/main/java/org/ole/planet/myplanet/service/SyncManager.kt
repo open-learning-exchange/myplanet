@@ -216,7 +216,7 @@ class SyncManager private constructor(private val context: Context) {
             logger.endProcess("admin_sync")
 
             logger.startProcess("resource_sync")
-            resourceTransactionSync()
+            runBlocking { resourceTransactionSync() }
             logger.endProcess("resource_sync")
 
             logger.startProcess("on_synced")
@@ -562,7 +562,7 @@ class SyncManager private constructor(private val context: Context) {
         }
     }
 
-    private fun resourceTransactionSync(backgroundRealm: Realm? = null) {
+    private suspend fun resourceTransactionSync(backgroundRealm: Realm? = null) {
         val logger = SyncTimeLogger.getInstance()
         logger.startProcess("resource_sync")
         var processedItems = 0
@@ -712,7 +712,7 @@ class SyncManager private constructor(private val context: Context) {
         }
     }
 
-    private fun fastResourceTransactionSync() {
+    private suspend fun fastResourceTransactionSync() {
         val logger = SyncTimeLogger.getInstance()
         logger.startProcess("resource_sync")
         var processedItems = 0
@@ -998,7 +998,7 @@ class SyncManager private constructor(private val context: Context) {
         return processedItems
     }
 
-    private fun processShelfDataOptimizedSync(shelfId: String?, shelfData: Constants.ShelfData, shelfDoc: JsonObject?, apiInterface: ApiInterface): Int {
+    private suspend fun processShelfDataOptimizedSync(shelfId: String?, shelfData: Constants.ShelfData, shelfDoc: JsonObject?, apiInterface: ApiInterface): Int {
         var processedCount = 0
 
         try {
@@ -1075,7 +1075,7 @@ class SyncManager private constructor(private val context: Context) {
         return processedCount
     }
 
-    private fun fastMyLibraryTransactionSync() {
+    private suspend fun fastMyLibraryTransactionSync() {
         val logger = SyncTimeLogger.getInstance()
         logger.startProcess("library_sync")
         var processedItems = 0
@@ -1179,7 +1179,7 @@ class SyncManager private constructor(private val context: Context) {
             val results = validIds.chunked(batchSize).map { batch ->
                 withContext(Dispatchers.IO) {
                     safeRealmOperation { threadRealm ->
-                        processBatchForShelfData(batch, shelfData, shelfId, apiInterface, threadRealm)
+                        runBlocking { processBatchForShelfData(batch, shelfData, shelfId, apiInterface, threadRealm) }
                     } ?: 0
                 }
             }
@@ -1214,7 +1214,7 @@ class SyncManager private constructor(private val context: Context) {
         }
     }
 
-    private fun processBatchForShelfData(batch: List<String>, shelfData: Constants.ShelfData, shelfId: String?, apiInterface: ApiInterface, realmInstance: Realm): Int {
+    private suspend fun processBatchForShelfData(batch: List<String>, shelfData: Constants.ShelfData, shelfId: String?, apiInterface: ApiInterface, realmInstance: Realm): Int {
         var processedCount = 0
 
         try {

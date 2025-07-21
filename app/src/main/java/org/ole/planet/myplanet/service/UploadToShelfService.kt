@@ -15,6 +15,7 @@ import java.util.Date
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
+import kotlinx.coroutines.runBlocking
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
@@ -146,7 +147,8 @@ class UploadToShelfService(context: Context) {
                 model.salt = getString("salt", fetchDataResponse.body())
                 model.iterations = getString("iterations", fetchDataResponse.body())
 
-                if (saveKeyIv(apiInterface, model, obj)) {
+                val saved = runBlocking { saveKeyIv(apiInterface, model, obj) }
+                if (saved) {
                     updateHealthData(realm, model)
                 }
             }
@@ -200,7 +202,7 @@ class UploadToShelfService(context: Context) {
     }
 
     @Throws(IOException::class)
-    fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject): Boolean {
+    suspend fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject): Boolean {
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
         val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
         val ob = JsonObject()

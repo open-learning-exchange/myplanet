@@ -264,7 +264,9 @@ class Service(private val context: Context) {
                 if (res?.body() != null) {
                     val model = populateUsersTable(res.body(), realm1, settings)
                     if (model != null) {
-                        UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
+                        MainApplication.applicationScope.launch {
+                            UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
+                        }
                     }
                 }
             } catch (e: IOException) {

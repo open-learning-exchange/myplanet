@@ -1,6 +1,11 @@
 package org.ole.planet.myplanet.utilities
 
 import android.os.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class ANRWatchdog(private val timeout: Long = DEFAULT_ANR_TIMEOUT, private val listener: ANRListener? = null) {
     companion object {
@@ -10,6 +15,7 @@ class ANRWatchdog(private val timeout: Long = DEFAULT_ANR_TIMEOUT, private val l
     private val mainHandler = Handler(Looper.getMainLooper())
     private var isWatching = false
     private var tick = 0L
+    private var watchJob: Job? = null
 
     private val ticker = Runnable {
         tick = SystemClock.elapsedRealtime()
@@ -19,7 +25,7 @@ class ANRWatchdog(private val timeout: Long = DEFAULT_ANR_TIMEOUT, private val l
         fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long)
     }
 
-    fun start() {
+    fun start(scope: CoroutineScope) {
         if (isWatching) {
             return
         }
@@ -28,49 +34,44 @@ class ANRWatchdog(private val timeout: Long = DEFAULT_ANR_TIMEOUT, private val l
         tick = SystemClock.elapsedRealtime()
         mainHandler.post(ticker)
 
-        Thread({
+        watchJob = scope.launch(Dispatchers.Default) {
             val threadName = Thread.currentThread().name
             Thread.currentThread().name = "ANRWatchdog"
 
-            while (isWatching) {
-                val lastTick = tick
-                val currentTime = SystemClock.elapsedRealtime()
-                mainHandler.post(ticker)
+            try {
+                while (isWatching) {
+                    val lastTick = tick
+                    val currentTime = SystemClock.elapsedRealtime()
+                    mainHandler.post(ticker)
 
-                try {
-                    Thread.sleep(timeout / 2)
-                } catch (e: InterruptedException) {
-                    e.printStackTrace()
-                }
+                    delay(timeout / 2)
 
-                if (isWatching && lastTick == tick) {
-                    val duration = currentTime - lastTick
-                    val mainThread = Looper.getMainLooper().thread
+                    if (isWatching && lastTick == tick) {
+                        val duration = currentTime - lastTick
+                        val mainThread = Looper.getMainLooper().thread
 
-                    val message = StringBuilder("ANR detected on thread ")
-                        .append(mainThread.name)
-                        .append(" (")
-                        .append(mainThread.id)
-                        .append(")\n")
+                        val message = StringBuilder("ANR detected on thread ")
+                            .append(mainThread.name)
+                            .append(" (")
+                            .append(mainThread.id)
+                            .append(")\n")
 
-                    for (element in mainThread.stackTrace) {
-                        message.append("\tat ").append(element.toString()).append('\n')
-                    }
+                        for (element in mainThread.stackTrace) {
+                            message.append("\tat ").append(element.toString()).append('\n')
+                        }
 
-                    listener?.onAppNotResponding(message.toString(), mainThread, duration)
-                    try {
-                        Thread.sleep(timeout)
-                    } catch (e: InterruptedException) {
-                        e.printStackTrace()
+                        listener?.onAppNotResponding(message.toString(), mainThread, duration)
+                        delay(timeout)
                     }
                 }
+            } finally {
+                Thread.currentThread().name = threadName
             }
-
-            Thread.currentThread().name = threadName
-        }, "ANRWatchdog").start()
+        }
     }
 
     fun stop() {
         isWatching = false
+        watchJob?.cancel()
     }
 }
