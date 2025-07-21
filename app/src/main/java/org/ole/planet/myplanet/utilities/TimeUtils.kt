@@ -125,4 +125,15 @@ object TimeUtils {
             ""
         }
     }
+
+    @JvmStatic
+    fun parseDate(dateString: String): Long? {
+        return try {
+            val localDate = LocalDate.parse(dateString, dateOnlyFormatter)
+            localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
 }
