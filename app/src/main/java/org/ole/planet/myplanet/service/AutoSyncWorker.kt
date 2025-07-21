@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.datamanager.Service.CheckVersionCallback
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.di.DiUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -54,30 +55,32 @@ class AutoSyncWorker(private val context: Context, workerParams: WorkerParameter
     override fun onCheckingVersion() {}
     override fun onError(msg: String, blockSync: Boolean) {
         if (!blockSync) {
-            SyncManager.instance?.start(this, "upload")
-            UploadToShelfService.instance?.uploadUserData {
+            val entry = DiUtils.appEntryPoint(context)
+            entry.syncManager().start(this, "upload")
+            entry.uploadToShelfService().uploadUserData {
                 Service(MainApplication.context).healthAccess {
-                    UploadToShelfService.instance?.uploadHealth()
+                    entry.uploadToShelfService().uploadHealth()
                 }
             }
             if (!MainApplication.isSyncRunning) {
                 MainApplication.isSyncRunning = true
-                UploadManager.instance?.uploadExamResult(this)
-                UploadManager.instance?.uploadFeedback(this)
-                UploadManager.instance?.uploadAchievement()
-                UploadManager.instance?.uploadResourceActivities("")
-                UploadManager.instance?.uploadUserActivities(this)
-                UploadManager.instance?.uploadCourseActivities()
-                UploadManager.instance?.uploadSearchActivity()
-                UploadManager.instance?.uploadRating()
-                UploadManager.instance?.uploadResource(this)
-                UploadManager.instance?.uploadNews()
-                UploadManager.instance?.uploadTeams()
-                UploadManager.instance?.uploadTeamTask()
-                UploadManager.instance?.uploadMeetups()
-                UploadManager.instance?.uploadCrashLog()
-                UploadManager.instance?.uploadSubmissions()
-                UploadManager.instance?.uploadActivities { MainApplication.isSyncRunning = false }
+                val manager = entry.uploadManager()
+                manager.uploadExamResult(this)
+                manager.uploadFeedback(this)
+                manager.uploadAchievement()
+                manager.uploadResourceActivities("")
+                manager.uploadUserActivities(this)
+                manager.uploadCourseActivities()
+                manager.uploadSearchActivity()
+                manager.uploadRating()
+                manager.uploadResource(this)
+                manager.uploadNews()
+                manager.uploadTeams()
+                manager.uploadTeamTask()
+                manager.uploadMeetups()
+                manager.uploadCrashLog()
+                manager.uploadSubmissions()
+                manager.uploadActivities { MainApplication.isSyncRunning = false }
             }
         }
     }

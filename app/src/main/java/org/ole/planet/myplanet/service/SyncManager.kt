@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.ManagerSync
+import org.ole.planet.myplanet.di.DiUtils
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.insertMyCourses
@@ -54,14 +55,21 @@ import org.ole.planet.myplanet.utilities.NotificationUtil.create
 import org.ole.planet.myplanet.utilities.SyncTimeLogger
 import org.ole.planet.myplanet.utilities.Utilities
 
-class SyncManager private constructor(private val context: Context) {
+import javax.inject.Inject
+import javax.inject.Singleton
+import dagger.hilt.android.qualifiers.ApplicationContext
+
+@Singleton
+class SyncManager @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val dbService: DatabaseService,
+    private val settings: SharedPreferences
+) {
     private var td: Thread? = null
-    private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     lateinit var mRealm: Realm
     private var isSyncing = false
     private val stringArray = arrayOfNulls<String>(4)
     private var listener: SyncListener? = null
-    private val dbService: DatabaseService = DatabaseService(context)
     private var backgroundSync: Job? = null
     private val syncScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val semaphore = Semaphore(5)
@@ -212,7 +220,7 @@ class SyncManager private constructor(private val context: Context) {
             }
 
             logger.startProcess("admin_sync")
-            ManagerSync.instance?.syncAdmin()
+            DiUtils.appEntryPoint(context).managerSync().syncAdmin()
             logger.endProcess("admin_sync")
 
             logger.startProcess("resource_sync")
@@ -405,7 +413,7 @@ class SyncManager private constructor(private val context: Context) {
             }
 
             logger.startProcess("admin_sync")
-            ManagerSync.instance?.syncAdmin()
+            DiUtils.appEntryPoint(context).managerSync().syncAdmin()
             logger.endProcess("admin_sync")
 
             logger.startProcess("on_synced")
@@ -503,7 +511,7 @@ class SyncManager private constructor(private val context: Context) {
             }
 
             logger.startProcess("admin_sync")
-            ManagerSync.instance?.syncAdmin()
+            DiUtils.appEntryPoint(context).managerSync().syncAdmin()
             logger.endProcess("admin_sync")
 
             logger.startProcess("on_synced")
@@ -1269,15 +1277,6 @@ class SyncManager private constructor(private val context: Context) {
 
     fun cleanup() {
         syncScope.cancel()
-    }
-
-    companion object {
-        private var ourInstance: SyncManager? = null
-        val instance: SyncManager?
-            get() {
-                ourInstance = SyncManager(MainApplication.context)
-                return ourInstance
-            }
     }
 }
 

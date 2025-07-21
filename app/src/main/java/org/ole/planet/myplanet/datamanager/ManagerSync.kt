@@ -19,10 +19,12 @@ import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import javax.inject.Inject
+import javax.inject.Singleton
+import dagger.hilt.android.qualifiers.ApplicationContext
 
-class ManagerSync private constructor(context: Context) {
-    private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val dbService: DatabaseService = DatabaseService(context)
+@Singleton
+class ManagerSync @Inject constructor(@ApplicationContext context: Context, private val dbService: DatabaseService, private val settings: SharedPreferences) {
     private val mRealm: Realm = dbService.realmInstance
 
     fun login(userName: String?, password: String?, listener: SyncListener) {
@@ -92,15 +94,5 @@ class ManagerSync private constructor(context: Context) {
         val roles = jsonDoc?.get("roles")?.asJsonArray
         val isManager = roles.toString().lowercase(Locale.getDefault()).contains("manager")
         return jsonDoc?.get("isUserAdmin")?.asBoolean == true || isManager
-    }
-
-    companion object {
-        private var ourInstance: ManagerSync? = null
-        @JvmStatic
-        val instance: ManagerSync?
-            get() {
-                ourInstance = ManagerSync(MainApplication.context)
-                return ourInstance
-            }
     }
 }

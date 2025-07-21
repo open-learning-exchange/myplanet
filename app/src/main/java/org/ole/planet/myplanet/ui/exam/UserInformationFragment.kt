@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
+import org.ole.planet.myplanet.di.DiUtils
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.team.TeamPage
@@ -278,7 +279,8 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         MainApplication.applicationScope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    UploadManager.instance?.uploadSubmissions()
+                    val manager = DiUtils.appEntryPoint(requireContext()).uploadManager()
+                    manager.uploadSubmissions()
                 }
 
                 withContext(Dispatchers.Main) {

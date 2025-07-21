@@ -48,6 +48,7 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
 import org.ole.planet.myplanet.utilities.*
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
+import org.ole.planet.myplanet.di.DiUtils
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.autoSynFeature
 import org.ole.planet.myplanet.utilities.DialogUtils.getUpdateDialog
@@ -360,7 +361,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun startSync(type: String) {
-        SyncManager.instance?.start(this@SyncActivity, type)
+        val entry = DiUtils.appEntryPoint(this)
+        entry.syncManager().start(this@SyncActivity, type)
     }
 
     private fun saveConfigAndContinue(

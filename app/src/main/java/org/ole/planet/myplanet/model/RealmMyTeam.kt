@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.service.UploadManager
+import org.ole.planet.myplanet.di.DiUtils
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
@@ -289,14 +290,15 @@ open class RealmMyTeam : RealmObject() {
         private fun uploadTeamActivities(context: Context) {
             MainApplication.applicationScope.launch {
                 try {
+                    val entry = DiUtils.appEntryPoint(context)
                     withContext(Dispatchers.IO) {
-                        UploadManager.instance?.uploadTeams()
+                        entry.uploadManager().uploadTeams()
                     }
                     withContext(Dispatchers.IO) {
                         val apiInterface = client?.create(ApiInterface::class.java)
                         val realm = DatabaseService(context).realmInstance
                         realm.executeTransaction { transactionRealm ->
-                            UploadManager.instance?.uploadTeamActivities(transactionRealm, apiInterface)
+                            entry.uploadManager().uploadTeamActivities(transactionRealm, apiInterface)
                         }
                     }
                 } catch (e: Exception) {

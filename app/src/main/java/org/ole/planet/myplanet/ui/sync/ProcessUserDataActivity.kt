@@ -41,6 +41,7 @@ import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UploadToShelfService
+import org.ole.planet.myplanet.di.DiUtils
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
@@ -182,10 +183,11 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     }
 
     fun startUpload(source: String, userName: String? = null, securityCallback: SecurityDataCallback? = null) {
+        val entry = DiUtils.appEntryPoint(applicationContext)
         if (source == "becomeMember") {
-            UploadToShelfService.instance?.uploadSingleUserData(userName, object : SuccessListener {
+            entry.uploadToShelfService().uploadSingleUserData(userName, object : SuccessListener {
                 override fun onSuccess(success: String?) {
-                    UploadToShelfService.instance?.uploadSingleUserHealth("org.couchdb.user:${userName}", object : SuccessListener {
+                    entry.uploadToShelfService().uploadSingleUserHealth("org.couchdb.user:${userName}", object : SuccessListener {
                         override fun onSuccess(success: String?) {
                             userName?.let { name ->
                                 fetchAndLogUserSecurityData(name, securityCallback)
@@ -198,23 +200,24 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             })
             return
         } else if (source == "login") {
-            UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
+            entry.uploadManager().uploadUserActivities(this@ProcessUserDataActivity)
             return
         }
         customProgressDialog.setText(context.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        UploadManager.instance?.uploadAchievement()
-        UploadManager.instance?.uploadNews()
-        UploadManager.instance?.uploadResourceActivities("")
-        UploadManager.instance?.uploadCourseActivities()
-        UploadManager.instance?.uploadSearchActivity()
-        UploadManager.instance?.uploadTeams()
-        UploadManager.instance?.uploadRating()
-        UploadManager.instance?.uploadTeamTask()
-        UploadManager.instance?.uploadMeetups()
-        UploadManager.instance?.uploadSubmissions()
-        UploadManager.instance?.uploadCrashLog()
+        val manager = entry.uploadManager()
+        manager.uploadAchievement()
+        manager.uploadNews()
+        manager.uploadResourceActivities("")
+        manager.uploadCourseActivities()
+        manager.uploadSearchActivity()
+        manager.uploadTeams()
+        manager.uploadRating()
+        manager.uploadTeamTask()
+        manager.uploadMeetups()
+        manager.uploadSubmissions()
+        manager.uploadCrashLog()
 
         val asyncOperationsCounter = AtomicInteger(0)
         val totalAsyncOperations = 6
@@ -230,42 +233,42 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             }
         }
 
-        UploadToShelfService.instance?.uploadUserData {
-            UploadToShelfService.instance?.uploadHealth()
+        entry.uploadToShelfService().uploadUserData {
+            entry.uploadToShelfService().uploadHealth()
             checkAllOperationsComplete()
         }
 
-        UploadManager.instance?.uploadUserActivities(object : SuccessListener {
+        manager.uploadUserActivities(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
-        UploadManager.instance?.uploadExamResult(object : SuccessListener {
+        manager.uploadExamResult(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
-        UploadManager.instance?.uploadFeedback(object : SuccessListener {
+        manager.uploadFeedback(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
-        UploadManager.instance?.uploadResource(object : SuccessListener {
+        manager.uploadResource(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
-        UploadManager.instance?.uploadSubmitPhotos(object : SuccessListener {
+        manager.uploadSubmitPhotos(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
-        UploadManager.instance?.uploadActivities(object : SuccessListener {
+        manager.uploadActivities(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }

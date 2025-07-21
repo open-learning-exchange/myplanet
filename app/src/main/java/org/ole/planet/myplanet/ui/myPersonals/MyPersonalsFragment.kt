@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.databinding.FragmentMyPersonalsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.service.UploadManager
+import org.ole.planet.myplanet.di.DiUtils
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.utilities.DialogUtils
@@ -88,7 +89,8 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
         pg.setText("Please wait......")
         pg.show()
         if (personal != null) {
-            UploadManager.instance?.uploadMyPersonal(personal) { s: String? ->
+            val manager = DiUtils.appEntryPoint(requireContext()).uploadManager()
+            manager.uploadMyPersonal(personal) { s: String? ->
                 if (s != null) {
                     Utilities.toast(activity, s)
                 }

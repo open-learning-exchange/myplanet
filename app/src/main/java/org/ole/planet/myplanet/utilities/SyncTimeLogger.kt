@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.service.UploadManager
+import org.ole.planet.myplanet.di.DiUtils
 
 class SyncTimeLogger private constructor() {
     private val processTimes = ConcurrentHashMap<String, Long>()
@@ -72,7 +73,8 @@ class SyncTimeLogger private constructor() {
         MainApplication.applicationScope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    UploadManager.instance?.uploadCrashLog()
+                    val entry = DiUtils.appEntryPoint(MainApplication.context)
+                    entry.uploadManager().uploadCrashLog()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

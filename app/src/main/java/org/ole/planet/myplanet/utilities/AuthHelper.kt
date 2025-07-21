@@ -9,6 +9,7 @@ import java.util.regex.Pattern
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.ManagerSync
+import org.ole.planet.myplanet.di.DiUtils
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 
@@ -64,7 +65,7 @@ object AuthHelper {
             return
         }
 
-        ManagerSync.instance?.login(name, password, object : SyncListener {
+        DiUtils.appEntryPoint(activity).managerSync().login(name, password, object : SyncListener {
             override fun onSyncStarted() {
                 activity.customProgressDialog.setText(activity.getString(R.string.please_wait))
                 activity.customProgressDialog.show()
