@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
@@ -61,14 +62,14 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     }
 
     fun filter(query: String) {
-        filteredChatHistory = chatHistory.filter { chat ->
+        val newFilteredList = chatHistory.filter { chat ->
             if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
                 chat.conversations?.get(0)?.query?.contains(query, ignoreCase = true) == true
             } else {
                 chat.title?.contains(query, ignoreCase = true) ==true
             }
         }
-        notifyDataSetChanged()
+        updateFilteredList(newFilteredList)
     }
 
     private fun normalizeText(str: String): String {
@@ -77,12 +78,12 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     }
 
     fun search(s: String, isFullSearch: Boolean, isQuestion: Boolean){
-        if(isFullSearch){
+        val searchResult = if(isFullSearch){
             FullConvoSearch(s, isQuestion)
         } else {
             searchByTitle(s)
         }
-        notifyDataSetChanged()
+        updateFilteredList(searchResult)
     }
 
     private fun FullConvoSearch(s: String, isQuestion: Boolean){

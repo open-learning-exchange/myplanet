@@ -11,6 +11,7 @@ import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.JsonObject
@@ -74,13 +75,31 @@ class AdapterCourses(
     }
 
     fun setOriginalCourseList(courseList: List<RealmMyCourse?>){
+        val diffCallback = CourseDiffCallback()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = this@AdapterCourses.courseList.size
+            override fun getNewListSize(): Int = courseList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(this@AdapterCourses.courseList[oldItemPosition], courseList[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(this@AdapterCourses.courseList[oldItemPosition], courseList[newItemPosition])
+        })
         this.courseList = courseList
-        notifyDataSetChanged()
+        diffResult.dispatchUpdatesTo(this)
     }
 
     fun setCourseList(courseList: List<RealmMyCourse?>) {
+        val diffCallback = CourseDiffCallback()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = this@AdapterCourses.courseList.size
+            override fun getNewListSize(): Int = courseList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(this@AdapterCourses.courseList[oldItemPosition], courseList[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(this@AdapterCourses.courseList[oldItemPosition], courseList[newItemPosition])
+        })
         this.courseList = courseList
-        notifyDataSetChanged()
+        diffResult.dispatchUpdatesTo(this)
     }
 
     private fun sortCourseListByTitle() {
@@ -105,14 +124,34 @@ class AdapterCourses(
 
     fun toggleTitleSortOrder() {
         isTitleAscending = !isTitleAscending
+        val oldList = courseList.toList()
         sortCourseListByTitle()
-        notifyDataSetChanged()
+        val diffCallback = CourseDiffCallback()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = oldList.size
+            override fun getNewListSize(): Int = courseList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(oldList[oldItemPosition], courseList[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(oldList[oldItemPosition], courseList[newItemPosition])
+        })
+        diffResult.dispatchUpdatesTo(this)
     }
 
     fun toggleSortOrder() {
         isAscending = !isAscending
+        val oldList = courseList.toList()
         sortCourseList()
-        notifyDataSetChanged()
+        val diffCallback = CourseDiffCallback()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = oldList.size
+            override fun getNewListSize(): Int = courseList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(oldList[oldItemPosition], courseList[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(oldList[oldItemPosition], courseList[newItemPosition])
+        })
+        diffResult.dispatchUpdatesTo(this)
     }
 
     fun setProgressMap(progressMap: HashMap<String?, JsonObject>?) {
@@ -268,7 +307,13 @@ class AdapterCourses(
                 course != null && !course.isMyCourse
             })
         }
-        notifyDataSetChanged()
+        // Only notify items that need checkbox updates
+        for (i in courseList.indices) {
+            val course = courseList[i]
+            if (course != null && !course.isMyCourse) {
+                notifyItemChanged(i)
+            }
+        }
         listener?.onSelectedListChange(selectedItems)
     }
 
@@ -343,15 +388,34 @@ class AdapterCourses(
     }
 
     fun updateCourseList(newCourseList: List<RealmMyCourse?>) {
+        val diffCallback = CourseDiffCallback()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = this@AdapterCourses.courseList.size
+            override fun getNewListSize(): Int = newCourseList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(this@AdapterCourses.courseList[oldItemPosition], newCourseList[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(this@AdapterCourses.courseList[oldItemPosition], newCourseList[newItemPosition])
+        })
         this.courseList = newCourseList
         selectedItems.clear()
-        notifyDataSetChanged()
+        diffResult.dispatchUpdatesTo(this)
     }
 
     fun setRatingMap(newRatingMap: HashMap<String?, JsonObject>) {
+        val oldMap = HashMap(this.map)
         this.map.clear()
         this.map.putAll(newRatingMap)
-        notifyDataSetChanged()
+        
+        // Only notify items whose ratings actually changed
+        for (i in courseList.indices) {
+            val courseId = courseList[i]?.courseId
+            val oldRating = oldMap[courseId]
+            val newRating = newRatingMap[courseId]
+            if (oldRating != newRating) {
+                notifyItemChanged(i)
+            }
+        }
     }
 
     internal inner class ViewHoldercourse(val rowCourseBinding: RowCourseBinding) :
@@ -386,6 +450,21 @@ class AdapterCourses(
 
         fun bind(position: Int) {
             adapterPosition = position
+        }
+    }
+
+    private class CourseDiffCallback : DiffUtil.ItemCallback<RealmMyCourse?>() {
+        override fun areItemsTheSame(oldItem: RealmMyCourse?, newItem: RealmMyCourse?): Boolean {
+            return oldItem?.courseId == newItem?.courseId
+        }
+
+        override fun areContentsTheSame(oldItem: RealmMyCourse?, newItem: RealmMyCourse?): Boolean {
+            return oldItem?.courseTitle == newItem?.courseTitle &&
+                    oldItem?.description == newItem?.description &&
+                    oldItem?.createdDate == newItem?.createdDate &&
+                    oldItem?.gradeLevel == newItem?.gradeLevel &&
+                    oldItem?.subjectLevel == newItem?.subjectLevel &&
+                    oldItem?.isMyCourse == newItem?.isMyCourse
         }
     }
 

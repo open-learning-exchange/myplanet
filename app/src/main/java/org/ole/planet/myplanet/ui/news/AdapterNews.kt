@@ -15,6 +15,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
@@ -77,7 +78,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     fun addItem(news: RealmNews?) {
         list.add(news)
-        notifyDataSetChanged()
+        notifyItemInserted(list.size - 1)
     }
 
     fun setFromLogin(fromLogin: Boolean) {
@@ -322,9 +323,18 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     }
 
     fun updateList(newList: List<RealmNews?>) {
+        val diffCallback = NewsDiffCallback()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = list.size
+            override fun getNewListSize(): Int = newList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(list[oldItemPosition], newList[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(list[oldItemPosition], newList[newItemPosition])
+        })
         list.clear()
         list.addAll(newList)
-        notifyDataSetChanged()
+        diffResult.dispatchUpdatesTo(this)
     }
 
     private fun setMemberClickListeners(holder: ViewHolderNews, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
@@ -598,6 +608,20 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         private var adapterPosition = 0
         fun bind(position: Int) {
             adapterPosition = position
+        }
+    }
+
+    private class NewsDiffCallback : DiffUtil.ItemCallback<RealmNews?>() {
+        override fun areItemsTheSame(oldItem: RealmNews?, newItem: RealmNews?): Boolean {
+            return oldItem?.id == newItem?.id
+        }
+
+        override fun areContentsTheSame(oldItem: RealmNews?, newItem: RealmNews?): Boolean {
+            return oldItem?.id == newItem?.id &&
+                    oldItem?.message == newItem?.message &&
+                    oldItem?.createdDate == newItem?.createdDate &&
+                    oldItem?.messageType == newItem?.messageType &&
+                    oldItem?.user == newItem?.user
         }
     }
 }

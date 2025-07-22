@@ -7,6 +7,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.JsonObject
@@ -54,8 +55,17 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
     }
 
     fun setLibraryList(libraryList: List<RealmMyLibrary?>) {
+        val diffCallback = ResourceDiffCallback()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = this@AdapterResource.libraryList.size
+            override fun getNewListSize(): Int = libraryList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(this@AdapterResource.libraryList[oldItemPosition], libraryList[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(this@AdapterResource.libraryList[oldItemPosition], libraryList[newItemPosition])
+        })
         this.libraryList = libraryList
-        notifyDataSetChanged()
+        diffResult.dispatchUpdatesTo(this)
     }
 
     fun setListener(listener: OnLibraryItemSelected?) {
@@ -138,7 +148,10 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
         } else {
             selectedItems.clear()
         }
-        notifyDataSetChanged()
+        // Only notify items that need checkbox updates
+        for (i in libraryList.indices) {
+            notifyItemChanged(i)
+        }
         if (listener != null) {
             listener?.onSelectedListChange(selectedItems)
         }
@@ -171,14 +184,34 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
 
     fun toggleTitleSortOrder() {
         isTitleAscending = !isTitleAscending
+        val oldList = libraryList.toList()
         sortLibraryListByTitle()
-        notifyDataSetChanged()
+        val diffCallback = ResourceDiffCallback()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = oldList.size
+            override fun getNewListSize(): Int = libraryList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(oldList[oldItemPosition], libraryList[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(oldList[oldItemPosition], libraryList[newItemPosition])
+        })
+        diffResult.dispatchUpdatesTo(this)
     }
 
     fun toggleSortOrder() {
         isAscending = !isAscending
+        val oldList = libraryList.toList()
         sortLibraryList()
-        notifyDataSetChanged()
+        val diffCallback = ResourceDiffCallback()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = oldList.size
+            override fun getNewListSize(): Int = libraryList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(oldList[oldItemPosition], libraryList[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(oldList[oldItemPosition], libraryList[newItemPosition])
+        })
+        diffResult.dispatchUpdatesTo(this)
     }
 
     private fun sortLibraryListByTitle() {
@@ -202,9 +235,19 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
     }
 
     fun setRatingMap(newRatingMap: HashMap<String?, JsonObject>) {
+        val oldMap = HashMap(this.ratingMap)
         this.ratingMap.clear()
         this.ratingMap.putAll(newRatingMap)
-        notifyDataSetChanged()
+        
+        // Only notify items whose ratings actually changed
+        for (i in libraryList.indices) {
+            val resourceId = libraryList[i]?.resourceId
+            val oldRating = oldMap[resourceId]
+            val newRating = newRatingMap[resourceId]
+            if (oldRating != newRating) {
+                notifyItemChanged(i)
+            }
+        }
     }
 
     internal inner class ViewHolderLibrary(val rowLibraryBinding: RowLibraryBinding) :
@@ -225,5 +268,19 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
             }
 
         fun bind() {}
+    }
+
+    private class ResourceDiffCallback : DiffUtil.ItemCallback<RealmMyLibrary?>() {
+        override fun areItemsTheSame(oldItem: RealmMyLibrary?, newItem: RealmMyLibrary?): Boolean {
+            return oldItem?.resourceId == newItem?.resourceId
+        }
+
+        override fun areContentsTheSame(oldItem: RealmMyLibrary?, newItem: RealmMyLibrary?): Boolean {
+            return oldItem?.resourceId == newItem?.resourceId &&
+                    oldItem?.title == newItem?.title &&
+                    oldItem?.description == newItem?.description &&
+                    oldItem?.createdDate == newItem?.createdDate &&
+                    oldItem?.timesRated == newItem?.timesRated
+        }
     }
 }
