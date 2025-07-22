@@ -26,15 +26,16 @@ class ChatRepositoryImpl @Inject constructor(
 ) : ChatRepository {
 
     override fun getChatHistory(user: String): Flow<List<RealmChatHistory>> = flow {
-        withContext(Dispatchers.IO) {
+        val results = withContext(Dispatchers.IO) {
             databaseService.realmInstance.use { realm ->
-                val results = realm.where(RealmChatHistory::class.java)
+                val query = realm.where(RealmChatHistory::class.java)
                     .equalTo("user", user)
                     .sort("id", Sort.DESCENDING)
                     .findAll()
-                emit(realm.copyFromRealm(results))
+                realm.copyFromRealm(query)
             }
         }
+        emit(results)
     }
 
     override suspend fun getLatestRev(id: String): String? = withContext(Dispatchers.IO) {
