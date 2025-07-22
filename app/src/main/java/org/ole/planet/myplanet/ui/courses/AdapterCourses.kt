@@ -39,7 +39,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 class AdapterCourses(
     private val context: Context,
     private var courseList: List<RealmMyCourse?>,
-    private val map: HashMap<String?, JsonObject>
+    private val map: HashMap<String?, JsonObject>,
+    private val userProfileDbHandler: UserProfileDbHandler
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
     private var listener: OnCourseItemSelected? = null
@@ -152,7 +153,7 @@ class AdapterCourses(
         holder.rowCourseBinding.courseProgress.max = course.getNumberOfSteps()
         displayTagCloud(holder.rowCourseBinding.flexboxDrawable, position)
 
-        userModel = UserProfileDbHandler(context).userModel
+        userModel = userProfileDbHandler.userModel
         val isGuest = userModel?.isGuest() ?: true
         if (!isGuest) setupRatingBar(holder, course)
         setupCheckbox(holder, course, position, isGuest)
@@ -181,7 +182,7 @@ class AdapterCourses(
             text = course.description
             val markdownContentWithLocalPaths = prependBaseUrlToImages(
                 course.description,
-                "file://${MainApplication.context.getExternalFilesDir(null)}/ole/",
+                "file://${context.getExternalFilesDir(null)}/ole/",
                 150,
                 100
             )

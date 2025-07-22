@@ -13,9 +13,8 @@ import org.ole.planet.myplanet.utilities.AuthHelper
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 fun LoginActivity.showGuestLoginDialog() {
-    try {
-        mRealm = Realm.getDefaultInstance()
-        mRealm.refresh()
+    Realm.getDefaultInstance().use { realm ->
+        realm.refresh()
         val binding = AlertGuestLoginBinding.inflate(LayoutInflater.from(this))
         val view: View = binding.root
         binding.etUserName.addTextChangedListener(object : TextWatcher {
@@ -48,38 +47,33 @@ fun LoginActivity.showGuestLoginDialog() {
         val login = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
         val cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
         login.setOnClickListener {
-            if (mRealm.isClosed) {
-                mRealm = Realm.getDefaultInstance()
-            }
-            val username = binding.etUserName.text.toString().trim { it <= ' ' }
-            val error = AuthHelper.validateUsername(this@showGuestLoginDialog, username)
-            if (error == null) {
-                val existingUser = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
-                dialog.dismiss()
-                if (existingUser != null) {
-                    when {
-                        existingUser._id?.contains("guest") == true -> showGuestDialog(username)
-                        existingUser._id?.contains("org.couchdb.user:") == true -> showUserAlreadyMemberDialog(username)
+            Realm.getDefaultInstance().use { loginRealm ->
+                val username = binding.etUserName.text.toString().trim { it <= ' ' }
+                val error = AuthHelper.validateUsername(this@showGuestLoginDialog, username)
+                if (error == null) {
+                    val existingUser = loginRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
+                    dialog.dismiss()
+                    if (existingUser != null) {
+                        when {
+                            existingUser._id?.contains("guest") == true -> showGuestDialog(username)
+                            existingUser._id?.contains("org.couchdb.user:") == true -> showUserAlreadyMemberDialog(username)
+                        }
+                    } else {
+                        val model = RealmUserModel.createGuestUser(username, loginRealm, settings)?.let { loginRealm.copyFromRealm(it) }
+                        if (model == null) {
+                            toast(this, getString(R.string.unable_to_login))
+                        } else {
+                            saveUsers(username, "", "guest")
+                            saveUserInfoPref(settings, "", model)
+                            onLogin()
+                        }
                     }
                 } else {
-                    val model = RealmUserModel.createGuestUser(username, mRealm, settings)?.let { mRealm.copyFromRealm(it) }
-                    if (model == null) {
-                        toast(this, getString(R.string.unable_to_login))
-                    } else {
-                        saveUsers(username, "", "guest")
-                        saveUserInfoPref(settings, "", model)
-                        onLogin()
-                    }
+                    binding.etUserName.error = error
                 }
-            } else {
-                binding.etUserName.error = error
             }
         }
         cancel.setOnClickListener { dialog.dismiss() }
-    } finally {
-        if (!mRealm.isClosed) {
-            mRealm.close()
-        }
     }
 }
 

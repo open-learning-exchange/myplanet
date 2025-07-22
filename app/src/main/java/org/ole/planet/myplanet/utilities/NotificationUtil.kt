@@ -441,7 +441,7 @@ object NotificationUtil {
 
         private fun isTaskUrgent(deadline: String): Boolean {
             return try {
-                val deadlineTime = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(deadline)?.time ?: return false
+                val deadlineTime = TimeUtils.parseDate(deadline) ?: return false
                 val currentTime = System.currentTimeMillis()
                 val timeDiff = deadlineTime - currentTime
                 val daysUntilDeadline = timeDiff / (1000 * 60 * 60 * 24)

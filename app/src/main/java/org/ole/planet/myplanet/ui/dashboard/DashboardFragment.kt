@@ -8,7 +8,6 @@ import androidx.appcompat.app.AppCompatActivity
 import io.realm.Realm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSurveySubmissionByUser
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -18,11 +17,11 @@ import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.TimeUtils.currentDate
+import javax.inject.Inject
 
 class DashboardFragment : BaseDashboardFragment() {
     private lateinit var fragmentHomeBinding: FragmentHomeBinding
     private lateinit var dRealm: Realm
-    private lateinit var databaseService: DatabaseService
     var user: RealmUserModel? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -41,7 +40,6 @@ class DashboardFragment : BaseDashboardFragment() {
         fragmentHomeBinding.cardProfile.tvAchievement.setOnClickListener {
             homeItemClickListener?.openCallFragment(AchievementFragment())
         }
-        databaseService = DatabaseService(requireActivity())
         dRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
         onLoaded(view)

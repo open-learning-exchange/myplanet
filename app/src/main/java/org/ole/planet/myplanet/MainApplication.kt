@@ -15,7 +15,11 @@ import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
+import dagger.hilt.android.HiltAndroidApp
 import io.realm.Realm
+import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.DefaultPreferences
+import javax.inject.Inject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Date
@@ -51,7 +55,20 @@ import org.ole.planet.myplanet.utilities.ThemeMode
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
 
+@HiltAndroidApp
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
+
+    @Inject
+    lateinit var databaseService: DatabaseService
+
+    @Inject
+    @AppPreferences
+    lateinit var appPreferences: SharedPreferences
+
+    @Inject
+    @DefaultPreferences
+    lateinit var defaultPreferences: SharedPreferences
+
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
@@ -192,10 +209,10 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     private fun setupPreferences() {
-        preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        service = DatabaseService(context)
+        preferences = appPreferences
+        service = databaseService
         mRealm = service.realmInstance
-        defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
+        defaultPref = defaultPreferences
     }
 
     private fun setupStrictMode() {
@@ -252,7 +269,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                             isServerReachable(serverUrl)
                         }
                         if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
-                            backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
+                            backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)), applicationContext)
                         }
                     }
                 }

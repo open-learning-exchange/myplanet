@@ -16,6 +16,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmList
 import kotlinx.coroutines.Dispatchers
@@ -42,7 +43,9 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class AchievementFragment : BaseContainerFragment() {
     private lateinit var fragmentAchievementBinding: FragmentAchievementBinding
     private lateinit var aRealm: Realm
@@ -53,6 +56,9 @@ class AchievementFragment : BaseContainerFragment() {
     lateinit var prefManager: SharedPrefManager
     lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
+    
+    @Inject
+    lateinit var syncManager: SyncManager
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -97,7 +103,7 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun startSyncManager() {
-        SyncManager.instance?.start(object : SyncListener {
+        syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
