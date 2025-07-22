@@ -7,6 +7,8 @@ import android.view.ViewGroup
 import android.widget.RadioButton
 import android.widget.Toast
 import androidx.fragment.app.DialogFragment
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -20,10 +22,12 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class FeedbackFragment : DialogFragment(), View.OnClickListener {
     private lateinit var fragmentFeedbackBinding: FragmentFeedbackBinding
     private lateinit var mRealm: Realm
-    private lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var databaseService: DatabaseService
     private var model: RealmUserModel ?= null
     var user: String? = ""
 
@@ -43,7 +47,6 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentFeedbackBinding = FragmentFeedbackBinding.inflate(inflater, container, false)
-        databaseService = DatabaseService(requireActivity())
         mRealm = databaseService.realmInstance
         model = UserProfileDbHandler(requireContext()).userModel
         user = model?.name

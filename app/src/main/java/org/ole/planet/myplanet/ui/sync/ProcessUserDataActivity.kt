@@ -64,6 +64,9 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     
     @Inject
     lateinit var uploadManager: UploadManager
+
+    @Inject
+    lateinit var uploadToShelfService: UploadToShelfService
     
     lateinit var settings: SharedPreferences
     val customProgressDialog: DialogUtils.CustomProgressDialog by lazy {
@@ -197,9 +200,9 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
 
     fun startUpload(source: String, userName: String? = null, securityCallback: SecurityDataCallback? = null) {
         if (source == "becomeMember") {
-            UploadToShelfService.instance?.uploadSingleUserData(userName, object : SuccessListener {
+            uploadToShelfService.uploadSingleUserData(userName, object : SuccessListener {
                 override fun onSuccess(success: String?) {
-                    UploadToShelfService.instance?.uploadSingleUserHealth("org.couchdb.user:${userName}", object : SuccessListener {
+                    uploadToShelfService.uploadSingleUserHealth("org.couchdb.user:${userName}", object : SuccessListener {
                         override fun onSuccess(success: String?) {
                             userName?.let { name ->
                                 fetchAndLogUserSecurityData(name, securityCallback)
@@ -244,8 +247,8 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             }
         }
 
-        UploadToShelfService.instance?.uploadUserData {
-            UploadToShelfService.instance?.uploadHealth()
+        uploadToShelfService.uploadUserData {
+            uploadToShelfService.uploadHealth()
             checkAllOperationsComplete()
         }
 

@@ -16,9 +16,11 @@ import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentManager
 import com.google.gson.JsonObject
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.util.Calendar
 import java.util.Locale
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -40,17 +42,22 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     private lateinit var fragmentUserInformationBinding: FragmentUserInformationBinding
     var dob: String? = ""
+    @Inject
+    lateinit var databaseService: DatabaseService
     lateinit var mRealm: Realm
     private var submissions: RealmSubmission? = null
     var userModel: RealmUserModel? = null
     var shouldHideElements: Boolean? = null
+    @Inject
+    lateinit var uploadManager: UploadManager
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentUserInformationBinding = FragmentUserInformationBinding.inflate(inflater, container, false)
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = databaseService.realmInstance
         userModel = UserProfileDbHandler(requireContext()).userModel
         if (!TextUtils.isEmpty(id)) {
             submissions = mRealm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()
@@ -278,7 +285,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         MainApplication.applicationScope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    UploadManager.instance?.uploadSubmissions()
+                    uploadManager.uploadSubmissions()
                 }
 
                 withContext(Dispatchers.Main) {
@@ -295,8 +302,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             override fun onSuccess(success: String?) {}
         }
 
-        val newUploadManager = UploadManager(MainApplication.context)
-        newUploadManager.uploadExamResult(successListener)
+        uploadManager.uploadExamResult(successListener)
     }
 
     private fun showDatePickerDialog() {
