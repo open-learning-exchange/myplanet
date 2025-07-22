@@ -24,7 +24,9 @@ class SyncViewModel @Inject constructor(
         }
     }
 
-    suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean) =
-        repository.authenticateUser(username, password, isManagerMode)
-    }
+    suspend fun authenticateUser(
+        username: String?,
+        password: String?,
+        isManagerMode: Boolean
+    ) = repository.authenticateUser(username, password, isManagerMode)
 }
