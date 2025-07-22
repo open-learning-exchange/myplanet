@@ -261,7 +261,7 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun syncTeamActivities(context: Context) {
+        fun syncTeamActivities(context: Context, uploadManager: UploadManager) {
             val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val updateUrl = "${settings.getString("serverURL", "")}"
             val serverUrlMapper = ServerUrlMapper()
@@ -281,22 +281,22 @@ open class RealmMyTeam : RealmObject() {
                 }
 
                 withContext(Dispatchers.Main) {
-                    uploadTeamActivities(context)
+                    uploadTeamActivities(context, uploadManager)
                 }
             }
         }
 
-        private fun uploadTeamActivities(context: Context) {
+        private fun uploadTeamActivities(context: Context, uploadManager: UploadManager) {
             MainApplication.applicationScope.launch {
                 try {
                     withContext(Dispatchers.IO) {
-                        UploadManager.instance?.uploadTeams()
+                        uploadManager.uploadTeams()
                     }
                     withContext(Dispatchers.IO) {
                         val apiInterface = client?.create(ApiInterface::class.java)
                         val realm = DatabaseService(context).realmInstance
                         realm.executeTransaction { transactionRealm ->
-                            UploadManager.instance?.uploadTeamActivities(transactionRealm, apiInterface)
+                            uploadManager.uploadTeamActivities(transactionRealm, apiInterface)
                         }
                     }
                 } catch (e: Exception) {

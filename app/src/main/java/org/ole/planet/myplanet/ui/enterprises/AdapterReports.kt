@@ -24,7 +24,6 @@ class AdapterReports(private val context: Context, private var list: RealmResult
     private var startTimeStamp: String? = null
     private var endTimeStamp: String? = null
     lateinit var prefData: SharedPrefManager
-    private var mRealm: Realm = Realm.getDefaultInstance()
     private var nonTeamMember = false
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderReports {
@@ -153,7 +152,9 @@ class AdapterReports(private val context: Context, private var list: RealmResult
                         addProperty("updatedDate", System.currentTimeMillis())
                         addProperty("updated", true)
                     }
-                    RealmMyTeam.updateReports(doc, mRealm)
+                    Realm.getDefaultInstance().use { realm ->
+                        RealmMyTeam.updateReports(doc, realm)
+                    }
                     dialog.dismiss()
                 }
             }
@@ -167,13 +168,15 @@ class AdapterReports(private val context: Context, private var list: RealmResult
                 builder.setTitle("Delete Report")
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _, _ ->
-                        mRealm.executeTransaction { realm ->
-                            realm.where(RealmMyTeam::class.java)
-                                .equalTo("_id", reportId)
-                                .findFirst()?.apply {
-                                    status = "archived"
-                                    updated = true
-                                }
+                        Realm.getDefaultInstance().use { realm ->
+                            realm.executeTransaction { realmTx ->
+                                realmTx.where(RealmMyTeam::class.java)
+                                    .equalTo("_id", reportId)
+                                    .findFirst()?.apply {
+                                        status = "archived"
+                                        updated = true
+                                    }
+                            }
                         }
                         notifyDataSetChanged()
                     }

@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.CheckVersionCallback
 import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UploadToShelfService
 import org.ole.planet.myplanet.ui.sync.LoginActivity
@@ -27,6 +28,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 class AutoSyncWorker @AssistedInject constructor(
     @Assisted private val context: Context,
     @Assisted workerParams: WorkerParameters,
+    private val syncManager: SyncManager,
     private val uploadManager: UploadManager,
     private val uploadToShelfService: UploadToShelfService
 ) : Worker(context, workerParams), SyncListener, CheckVersionCallback, SuccessListener {
@@ -70,7 +72,7 @@ class AutoSyncWorker @AssistedInject constructor(
     override fun onCheckingVersion() {}
     override fun onError(msg: String, blockSync: Boolean) {
         if (!blockSync) {
-            SyncManager.instance?.start(this, "upload")
+            syncManager.start(this, "upload")
             uploadToShelfService.uploadUserData {
                 Service(MainApplication.context).healthAccess {
                     uploadToShelfService.uploadHealth()
