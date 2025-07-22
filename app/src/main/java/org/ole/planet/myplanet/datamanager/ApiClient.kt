@@ -7,6 +7,7 @@ import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.utilities.RetryUtils
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import retrofit2.Response
 import retrofit2.Retrofit
@@ -69,8 +70,12 @@ object ApiClient {
         return enhancedRetrofit.create(ApiInterface::class.java)
     }
 
-    fun <T> executeWithRetry(operation: () -> Response<T>?): Response<T>? {
+    suspend fun <T> executeWithRetry(
+        scope: CoroutineScope,
+        operation: suspend () -> Response<T>?,
+    ): Response<T>? {
         return RetryUtils.retry(
+            scope = scope,
             maxAttempts = 3,
             delayMs = 2000L,
             shouldRetry = { resp -> resp == null || !resp.isSuccessful },

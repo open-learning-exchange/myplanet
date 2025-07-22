@@ -12,6 +12,8 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import java.io.IOException
 import java.util.Date
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.coroutineScope
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
@@ -146,8 +148,10 @@ class UploadToShelfService(context: Context) {
                 model.salt = getString("salt", fetchDataResponse.body())
                 model.iterations = getString("iterations", fetchDataResponse.body())
 
-                if (saveKeyIv(apiInterface, model, obj)) {
-                    updateHealthData(realm, model)
+                runBlocking {
+                    if (saveKeyIv(apiInterface, model, obj)) {
+                        updateHealthData(realm, model)
+                    }
                 }
             }
         } catch (e: IOException) {
@@ -200,7 +204,7 @@ class UploadToShelfService(context: Context) {
     }
 
     @Throws(IOException::class)
-    fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject): Boolean {
+    suspend fun saveKeyIv(apiInterface: ApiInterface?, model: RealmUserModel, obj: JsonObject): Boolean {
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
         val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
         val ob = JsonObject()
@@ -218,12 +222,15 @@ class UploadToShelfService(context: Context) {
         val maxAttempts = 3
         val retryDelayMs = 2000L
 
-        val response = RetryUtils.retry(
-            maxAttempts = maxAttempts,
-            delayMs = retryDelayMs,
-            shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
-        ) {
-            apiInterface?.postDoc(header, "application/json", "${Utilities.getUrl()}/$table", ob)?.execute()
+        val response = coroutineScope {
+            RetryUtils.retry(
+                scope = this,
+                maxAttempts = maxAttempts,
+                delayMs = retryDelayMs,
+                shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
+            ) {
+                apiInterface?.postDoc(header, "application/json", "${Utilities.getUrl()}/$table", ob)?.execute()
+            }
         }
 
         if (response?.isSuccessful == true && response.body() != null) {

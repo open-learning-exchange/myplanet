@@ -229,7 +229,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 }
             }
         })
-        anrWatchdog.start()
+        anrWatchdog.start(applicationScope)
     }
 
     private fun scheduleWorkersOnStart() {

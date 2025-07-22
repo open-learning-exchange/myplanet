@@ -18,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runBlocking
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -264,7 +265,9 @@ class Service(private val context: Context) {
                 if (res?.body() != null) {
                     val model = populateUsersTable(res.body(), realm1, settings)
                     if (model != null) {
-                        UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
+                        runBlocking {
+                            UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
+                        }
                     }
                 }
             } catch (e: IOException) {

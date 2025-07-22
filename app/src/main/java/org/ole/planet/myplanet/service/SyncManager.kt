@@ -223,7 +223,7 @@ class SyncManager @Inject constructor(
             logger.endProcess("admin_sync")
 
             logger.startProcess("resource_sync")
-            resourceTransactionSync()
+            runBlocking { resourceTransactionSync() }
             logger.endProcess("resource_sync")
 
             logger.startProcess("on_synced")
@@ -569,7 +569,7 @@ class SyncManager @Inject constructor(
         }
     }
 
-    private fun resourceTransactionSync(backgroundRealm: Realm? = null) {
+    private suspend fun resourceTransactionSync(backgroundRealm: Realm? = null) {
         val logger = SyncTimeLogger.getInstance()
         logger.startProcess("resource_sync")
         var processedItems = 0
@@ -579,7 +579,7 @@ class SyncManager @Inject constructor(
             val realmInstance = backgroundRealm ?: mRealm
             val newIds: MutableList<String?> = ArrayList()
             var totalRows = 0
-            ApiClient.executeWithRetry {
+            ApiClient.executeWithRetry(this) {
                 apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?limit=0").execute()
             }?.let { response ->
                 response.body()?.let { body ->
@@ -598,7 +598,7 @@ class SyncManager @Inject constructor(
 
                 try {
                     var response: JsonObject? = null
-                    ApiClient.executeWithRetry {
+                    ApiClient.executeWithRetry(this) {
                         apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip").execute()
                     }?.let {
                         response = it.body()
@@ -729,7 +729,7 @@ class SyncManager @Inject constructor(
             val newIds = ConcurrentHashMap.newKeySet<String>()
 
             var totalRows = 0
-            ApiClient.executeWithRetry {
+            ApiClient.executeWithRetry(this) {
                 apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?limit=0").execute()
             }?.let { response ->
                 response.body()?.let { body ->
@@ -773,7 +773,7 @@ class SyncManager @Inject constructor(
 
         try {
             var response: JsonObject? = null
-            ApiClient.executeWithRetry {
+            ApiClient.executeWithRetry(this) {
                 apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip").execute()
             }?.let {
                 response = it.body()
@@ -852,7 +852,7 @@ class SyncManager @Inject constructor(
             return cachedShelves
         }
 
-        val allShelves = ApiClient.executeWithRetry {
+        val allShelves = ApiClient.executeWithRetry(this) {
             apiInterface.getDocuments(Utilities.header, "${Utilities.getUrl()}/shelf/_all_docs").execute()
         }?.body()?.rows ?: return emptyList()
 
@@ -882,7 +882,7 @@ class SyncManager @Inject constructor(
             add("keys", Gson().fromJson(Gson().toJson(shelfIds), JsonArray::class.java))
         }
 
-        val response = ApiClient.executeWithRetry {
+        val response = ApiClient.executeWithRetry(this) {
             apiInterface.findDocs(Utilities.header, "application/json", "${Utilities.getUrl()}/shelf/_all_docs?include_docs=true", keysObject).execute()
         }?.body()
 
@@ -976,7 +976,7 @@ class SyncManager @Inject constructor(
 
         try {
             var shelfDoc: JsonObject? = null
-            ApiClient.executeWithRetry {
+            ApiClient.executeWithRetry(this) {
                 apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/$shelfId").execute()
             }?.let {
                 shelfDoc = it.body()
@@ -1035,7 +1035,7 @@ class SyncManager @Inject constructor(
                 keysObject.add("keys", Gson().fromJson(Gson().toJson(batch), JsonArray::class.java))
 
                 var response: JsonObject? = null
-                ApiClient.executeWithRetry {
+                ApiClient.executeWithRetry(this) {
                     apiInterface.findDocs(Utilities.header, "application/json", "${Utilities.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject).execute()
                 }?.let {
                     response = it.body()
@@ -1091,7 +1091,7 @@ class SyncManager @Inject constructor(
             val apiInterface = ApiClient.getEnhancedClient()
 
             var shelfResponse: DocumentResponse? = null
-            ApiClient.executeWithRetry {
+            ApiClient.executeWithRetry(this) {
                 apiInterface.getDocuments(Utilities.header, "${Utilities.getUrl()}/shelf/_all_docs?include_docs=true").execute()
             }?.let {
                 shelfResponse = it.body()
@@ -1130,7 +1130,7 @@ class SyncManager @Inject constructor(
 
         try {
             var shelfDoc: JsonObject? = null
-            ApiClient.executeWithRetry {
+            ApiClient.executeWithRetry(this) {
                 apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/$shelfId").execute()
             }?.let {
                 shelfDoc = it.body()
@@ -1229,7 +1229,7 @@ class SyncManager @Inject constructor(
             keysObject.add("keys", Gson().fromJson(Gson().toJson(batch), JsonArray::class.java))
 
             var response: JsonObject? = null
-            ApiClient.executeWithRetry {
+            ApiClient.executeWithRetry(this) {
                 apiInterface.findDocs(Utilities.header, "application/json", "${Utilities.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject).execute()
             }?.let {
                 response = it.body()
