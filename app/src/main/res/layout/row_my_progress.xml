@@ -82,7 +82,6 @@
                 android:textColor="@color/daynight_textColor"
                 android:textStyle="bold"
                 android:gravity="center" />
-
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -91,8 +90,8 @@
                 android:textColor="@color/daynight_textColor"
                 android:textStyle="bold"
                 android:gravity="center" />
-
         </LinearLayout>
+
         <LinearLayout
             android:id="@+id/ll_progress"
             android:layout_width="match_parent"
