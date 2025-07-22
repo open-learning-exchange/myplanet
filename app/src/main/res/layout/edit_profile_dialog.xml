@@ -185,7 +185,6 @@
                 android:paddingEnd="8dp"
                 android:textColor="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>
-
     </LinearLayout>
 
     <LinearLayout
@@ -206,7 +205,6 @@
             android:text="@string/birth_date"
             android:textColor="@color/hint_color"
             android:textSize="12sp" />
-
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/ltInputName"
             android:layout_width="match_parent"
