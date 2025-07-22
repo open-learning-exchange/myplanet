@@ -1100,7 +1100,7 @@
     <string name="team_financial_report">Warbixin lacagta ee %s</string>
     <string name="report_date_details">Warbixin lagu sameeyay: %1$s | La cusbooneysiiyay: %2$s</string>
     <string name="formatted_date">%1$d/%2$d/%3$d</string>
-    <string name="prefix_content">%1$s%2$s</string>
+    <string name="prefix_content">%1$s %2$s</string>
     <string name="rating_count_format">%d guud</string>
     <string name="step_progress">Gaadhi hadda: %1$d ka %2$d</string>
     <string name="percentage">%s%%</string>
@@ -1320,5 +1320,6 @@
     <string name="syncing_health_data">Waxaa la daabacayaa xogta caafimaadka…</string>
     <string name="syncing_resources">Waxaa la daabacayaa agabka…</string>
     <string name="syncing_achievements">Waxaa la daabacayaa guulaha…</string>
+    <string name="nation_leaders">hoggaamiyeyaasha qaranka</string>
 
 </resources>

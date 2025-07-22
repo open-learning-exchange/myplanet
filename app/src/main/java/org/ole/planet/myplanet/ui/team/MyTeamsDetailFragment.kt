@@ -17,15 +17,16 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.RealmResults
 import java.util.Date
+import javax.inject.Inject
 import java.util.UUID
 import org.json.JSONArray
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.databinding.AlertInputBinding
 import org.ole.planet.myplanet.databinding.FragmentMyTeamsDetailBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -36,6 +37,7 @@ import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamLog.Companion.getVisitCount
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
@@ -44,15 +46,18 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class MyTeamsDetailFragment : BaseNewsFragment() {
     private lateinit var fragmentMyTeamsDetailBinding: FragmentMyTeamsDetailBinding
     lateinit var tvDescription: TextView
     var user: RealmUserModel? = null
+    
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     var teamId: String? = null
     var team: RealmMyTeam? = null
     lateinit var listContent: ListView
     private lateinit var tabLayout: TabLayout
-    lateinit var dbService: DatabaseService
     private lateinit var rvDiscussion: RecyclerView
     lateinit var llRv: LinearLayout
     private var isMyTeam = false
@@ -70,8 +75,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         fragmentMyTeamsDetailBinding = FragmentMyTeamsDetailBinding.inflate(inflater, container, false)
         val v: View = fragmentMyTeamsDetailBinding.root
         initializeViews(v)
-        dbService = DatabaseService(requireActivity())
-        mRealm = dbService.realmInstance
+        mRealm = databaseService.realmInstance
         user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
         team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
         return fragmentMyTeamsDetailBinding.root
@@ -178,9 +182,9 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
     }
 
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
-        val adapterNews = activity?.let {
+        adapterNews = activity?.let {
             realmNewsList?.let { it1 ->
-                AdapterNews(it, it1.toMutableList(), user, null, team?.name.toString(), teamId)
+                AdapterNews(it, it1.toMutableList(), user, null, team?.name.toString(), teamId, userProfileDbHandler)
             }
         }
         adapterNews?.setmRealm(mRealm)

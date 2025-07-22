@@ -1100,7 +1100,7 @@
     <string name="team_financial_report">Rapport financier de %s</string>
     <string name="report_date_details">Rapport créé le : %1$s | Mis à jour le : %2$s</string>
     <string name="formatted_date">%1$d/%2$d/%3$d</string>
-    <string name="prefix_content">%1$s%2$s</string>
+    <string name="prefix_content">%1$s %2$s</string>
     <string name="rating_count_format">%d total</string>
     <string name="step_progress">Étape actuelle : %1$d sur %2$d</string>
     <string name="percentage">%s%%</string>
@@ -1320,5 +1320,6 @@
     <string name="syncing_health_data">Synchronisation des données de santé…</string>
     <string name="syncing_resources">Synchronisation des ressources…</string>
     <string name="syncing_achievements">Synchronisation des réalisations…</string>
+    <string name="nation_leaders">dirigeants nationaux</string>
 
 </resources>

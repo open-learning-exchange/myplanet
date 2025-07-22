@@ -11,6 +11,10 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
+import org.ole.planet.myplanet.di.AppPreferences
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 import org.ole.planet.myplanet.datamanager.*
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.model.*
@@ -32,23 +36,24 @@ private inline fun <T> Iterable<T>.processInBatches(action: (T) -> Unit) {
     }
 }
 
-class UploadManager(var context: Context) : FileUploadService() {
-    var pref: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val dbService: DatabaseService = DatabaseService(context)
+@Singleton
+class UploadManager @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val databaseService: DatabaseService,
+    @AppPreferences private val pref: SharedPreferences
+) : FileUploadService() {
 
-    companion object {
-        var instance: UploadManager? = null
-            get() {
-                if (field == null) {
-                    field = UploadManager(MainApplication.context)
-                }
-                return field
-            }
-            private set
-    }
+    // Backward compatibility constructor for code that still uses singleton pattern
+    constructor(context: Context) : this(
+        context,
+        DatabaseService(context),
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    )
+
+    private val gson = Gson()
 
     private fun getRealm(): Realm {
-        return dbService.realmInstance
+        return databaseService.realmInstance
     }
 
     private fun uploadNewsActivities() {
@@ -561,7 +566,7 @@ class UploadManager(var context: Context) : FileUploadService() {
                         if (act.imageUrls != null && act.imageUrls?.isNotEmpty() == true) {
                             act.imageUrls?.chunked(5)?.forEach { imageChunk ->
                                 imageChunk.forEach { imageObject ->
-                                    val imgObject = Gson().fromJson(imageObject, JsonObject::class.java)
+                                    val imgObject = gson.fromJson(imageObject, JsonObject::class.java)
                                     val ob = createImage(user, imgObject)
                                     val response = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/resources", ob)?.execute()?.body()
 
@@ -596,7 +601,7 @@ class UploadManager(var context: Context) : FileUploadService() {
                             }
                         }
 
-                        act.images = Gson().toJson(image)
+                        act.images = gson.toJson(image)
                         `object`.add("images", image)
 
                         val newsUploadResponse: Response<JsonObject>? =

@@ -15,7 +15,11 @@ import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
+import dagger.hilt.android.HiltAndroidApp
 import io.realm.Realm
+import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.DefaultPreferences
+import javax.inject.Inject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Date
@@ -51,7 +55,20 @@ import org.ole.planet.myplanet.utilities.ThemeMode
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
 
+@HiltAndroidApp
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
+
+    @Inject
+    lateinit var databaseService: DatabaseService
+
+    @Inject
+    @AppPreferences
+    lateinit var appPreferences: SharedPreferences
+
+    @Inject
+    @DefaultPreferences
+    lateinit var defaultPreferences: SharedPreferences
+
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
@@ -76,7 +93,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         lateinit var defaultPref: SharedPreferences
 
-        fun createLog(type: String, error: String) {
+        fun createLog(type: String, error: String = "") {
             applicationScope.launch(Dispatchers.IO) {
                 val realm = Realm.getDefaultInstance()
                 val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -86,17 +103,13 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                         val model = UserProfileDbHandler(context).userModel
                         log.parentCode = settings.getString("parentCode", "")
                         log.createdOn = settings.getString("planetCode", "")
-                        if (model != null) {
-                            log.userId = model.id
-                        }
+                        model?.let { log.userId = it.id }
                         log.time = "${Date().time}"
                         log.page = ""
                         log.version = getVersionName(context)
-                        if (type == "File Not Found" || type == "anr" || type == "sync summary") {
-                            log.type = type
+                        log.type = type
+                        if (error.isNotEmpty()) {
                             log.error = error
-                        } else {
-                            log.type = type
                         }
                     }
                 } catch (e: Exception) {
@@ -161,35 +174,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
         fun handleUncaughtException(e: Throwable) {
             e.printStackTrace()
-            applicationScope.launch(Dispatchers.IO) {
-                try {
-                    val realm = Realm.getDefaultInstance()
-                    try {
-                        realm.executeTransaction { r ->
-                            val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
-                            val model = UserProfileDbHandler(context).userModel
-                            if (model != null) {
-                                log.parentCode = model.parentCode
-                                log.createdOn = model.planetCode
-                                log.userId = model.id
-                            }
-                            log.time = "${Date().time}"
-                            log.page = ""
-                            log.version = getVersionName(context)
-                            log.type = RealmApkLog.ERROR_TYPE_CRASH
-                            log.setError(e)
-                        }
-                    } finally {
-                        realm.close()
-                    }
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
-                }
-            }
+            createLog(RealmApkLog.ERROR_TYPE_CRASH, e.stackTraceToString())
 
-            val homeIntent = Intent(Intent.ACTION_MAIN)
-            homeIntent.addCategory(Intent.CATEGORY_HOME)
-            homeIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+            val homeIntent = Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_HOME)
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+            }
             context.startActivity(homeIntent)
         }
     }
@@ -201,19 +191,37 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onCreate() {
         super.onCreate()
+        initApp()
+        setupPreferences()
+        setupStrictMode()
+        setupAnrWatchdog()
+        scheduleWorkersOnStart()
+        registerExceptionHandler()
+        setupLifecycleCallbacks()
+        configureTheme()
+        observeNetworkForDownloads()
+    }
+
+    private fun initApp() {
         context = this
         initialize(applicationScope)
         startListenNetworkState()
+    }
 
-        preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        service = DatabaseService(context)
+    private fun setupPreferences() {
+        preferences = appPreferences
+        service = databaseService
         mRealm = service.realmInstance
-        defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
+        defaultPref = defaultPreferences
+    }
 
+    private fun setupStrictMode() {
         val builder = VmPolicy.Builder()
         StrictMode.setVmPolicy(builder.build())
         builder.detectFileUriExposure()
+    }
 
+    private fun setupAnrWatchdog() {
         anrWatchdog = ANRWatchdog(timeout = 5000L, listener = object : ANRWatchdog.ANRListener {
             override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
                 applicationScope.launch {
@@ -222,7 +230,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             }
         })
         anrWatchdog.start()
+    }
 
+    private fun scheduleWorkersOnStart() {
         if (preferences?.getBoolean("autoSync", false) == true && preferences?.contains("autoSyncInterval") == true) {
             val syncInterval = preferences?.getInt("autoSyncInterval", 60 * 60)
             scheduleAutoSyncWork(syncInterval)
@@ -231,16 +241,25 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
         scheduleStayOnlineWork()
         scheduleTaskNotificationWork()
+    }
 
+    private fun registerExceptionHandler() {
         Thread.setDefaultUncaughtExceptionHandler { _: Thread?, e: Throwable ->
             handleUncaughtException(e)
         }
+    }
+
+    private fun setupLifecycleCallbacks() {
         registerActivityLifecycleCallbacks(this)
         onAppStarted()
+    }
 
+    private fun configureTheme() {
         val savedThemeMode = getCurrentThemeMode()
         applyThemeMode(savedThemeMode)
+    }
 
+    private fun observeNetworkForDownloads() {
         isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
                 val serverUrl = preferences?.getString("serverURL", "")
@@ -249,10 +268,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                         val canReachServer = withContext(Dispatchers.IO) {
                             isServerReachable(serverUrl)
                         }
-                        if (canReachServer) {
-                            if (defaultPref.getBoolean("beta_auto_download", false)) {
-                                backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
-                            }
+                        if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
+                            backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)), applicationContext)
                         }
                     }
                 }

@@ -18,6 +18,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.github.clans.fab.FloatingActionButton
+import dagger.hilt.android.AndroidEntryPoint
 import com.google.android.flexbox.FlexboxLayout
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
@@ -49,6 +50,7 @@ import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import javax.inject.Inject
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
@@ -57,6 +59,7 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSelected,
     ChipDeletedListener, TagClickListener, OnFilterListener {
     private lateinit var tvAddToLib: TextView
@@ -78,6 +81,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private var confirmation: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
+    
+    @Inject
+    lateinit var syncManager: SyncManager
 
     private val serverUrlMapper = ServerUrlMapper()
     private val serverUrl: String
@@ -113,7 +119,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun startSyncManager() {
-        SyncManager.instance?.start(object : SyncListener {
+        syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
@@ -245,6 +251,15 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun setupEventListeners() {
+        setupAddToLibListener()
+        setupDeleteListener()
+        setupSearchTextListener()
+        setupCollectionsButton()
+        setupSelectAllListener()
+        setupAddResourceButtonListener()
+    }
+
+    private fun setupAddToLibListener() {
         tvAddToLib.setOnClickListener {
             if ((selectedItems?.size ?: 0) > 0) {
                 confirmation = createAlertDialog()
@@ -255,7 +270,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 checkList()
             }
         }
+    }
 
+    private fun setupDeleteListener() {
         tvDelete?.setOnClickListener {
             AlertDialog.Builder(this.context, R.style.AlertDialogTheme)
                 .setMessage(R.string.confirm_removal)
@@ -266,7 +283,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
+    }
 
+    private fun setupSearchTextListener() {
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
@@ -281,13 +300,17 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             }
             override fun afterTextChanged(s: Editable) {}
         })
+    }
 
+    private fun setupCollectionsButton() {
         requireView().findViewById<View>(R.id.btn_collections).setOnClickListener {
             val f = CollectionsFragment.getInstance(searchTags, "resources")
             f.setListener(this@ResourcesFragment)
             f.show(childFragmentManager, "")
         }
+    }
 
+    private fun setupSelectAllListener() {
         selectAll.setOnClickListener {
             hideButton()
             val allSelected = selectedItems?.size == adapterLibrary.getLibraryList().size
@@ -300,7 +323,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 selectAll.text = getString(R.string.unselect_all)
             }
         }
+    }
 
+    private fun setupAddResourceButtonListener() {
         addResourceButton.setOnClickListener {
             if (userModel?.id?.startsWith("guest") == false) {
                 AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
@@ -351,19 +376,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     private fun createAlertDialog(): AlertDialog {
         val builder = AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
-        var msg = getString(R.string.success_you_have_added_these_resources_to_your_mylibrary)
-        if ((selectedItems?.size ?: 0) <= 5) {
-            for (i in selectedItems?.indices ?: emptyList()) {
-                msg += " - " + selectedItems!![i]?.title + "\n"
-            }
-        } else {
-            for (i in 0..4) {
-                msg += " - " + selectedItems?.get(i)?.title + "\n"
-            }
-            msg += getString(R.string.and) + ((selectedItems?.size ?: 0) - 5) + getString(R.string.more_resource_s)
-        }
-        msg += getString(R.string.return_to_the_home_tab_to_access_mylibrary) + getString(R.string.note_you_may_still_need_to_download_the_newly_added_resources)
-        builder.setMessage(msg)
+        builder.setMessage(buildAlertMessage())
         builder.setCancelable(true)
             .setPositiveButton(R.string.go_to_mylibrary) { dialog: DialogInterface, _: Int ->
                 if (userModel?.id?.startsWith("guest") == true) {
@@ -387,6 +400,24 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             recreateFragment(newFragment)
         }
         return builder.create()
+    }
+
+    private fun buildAlertMessage(): String {
+        var msg = getString(R.string.success_you_have_added_these_resources_to_your_mylibrary)
+        if ((selectedItems?.size ?: 0) <= 5) {
+            for (i in selectedItems?.indices ?: emptyList()) {
+                msg += " - " + selectedItems!![i]?.title + "\n"
+            }
+        } else {
+            for (i in 0..4) {
+                msg += " - " + selectedItems?.get(i)?.title + "\n"
+            }
+            msg += getString(R.string.and) + ((selectedItems?.size ?: 0) - 5) +
+                getString(R.string.more_resource_s)
+        }
+        msg += getString(R.string.return_to_the_home_tab_to_access_mylibrary) +
+            getString(R.string.note_you_may_still_need_to_download_the_newly_added_resources)
+        return msg
     }
 
     private fun clearTagsButton() {

@@ -59,7 +59,10 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class ChatDetailFragment : Fragment() {
     lateinit var fragmentChatDetailBinding: FragmentChatDetailBinding
     private lateinit var mAdapter: ChatAdapter
@@ -74,6 +77,8 @@ class ChatDetailFragment : Fragment() {
     private var newsId: String? = null
     lateinit var settings: SharedPreferences
     lateinit var customProgressDialog: DialogUtils.CustomProgressDialog
+    @Inject
+    lateinit var databaseService: DatabaseService
     private val gson = Gson()
     private val serverUrlMapper = ServerUrlMapper()
     private val jsonMediaType = "application/json".toMediaTypeOrNull()
@@ -109,7 +114,7 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun initChatComponents() {
-        mRealm = DatabaseService(requireContext()).realmInstance
+        mRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
         mAdapter = ChatAdapter(ArrayList(), requireContext(), fragmentChatDetailBinding.recyclerGchat)
         fragmentChatDetailBinding.recyclerGchat.apply {

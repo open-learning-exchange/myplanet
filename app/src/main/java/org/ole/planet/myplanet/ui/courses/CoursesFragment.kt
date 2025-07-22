@@ -24,6 +24,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
@@ -52,7 +53,9 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener {
 
     companion object {
@@ -84,6 +87,12 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     lateinit var prefManager: SharedPrefManager
 //    lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
+    
+    @Inject
+    lateinit var syncManager: SyncManager
+    
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -117,7 +126,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun startSyncManager() {
-        SyncManager.instance?.start(object : SyncListener {
+        syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
@@ -197,7 +206,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         val progressMap = getCourseProgress(mRealm, model?.id)
         val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>()
         val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
-        adapterCourses = AdapterCourses(requireActivity(), sortedCourseList, map)
+        adapterCourses = AdapterCourses(requireActivity(), sortedCourseList, map, userProfileDbHandler)
         adapterCourses.setProgressMap(progressMap)
         adapterCourses.setmRealm(mRealm)
         adapterCourses.setListener(this)

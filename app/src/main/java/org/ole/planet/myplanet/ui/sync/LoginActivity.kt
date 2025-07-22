@@ -149,9 +149,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 }
             }
         })
-        val selectDarkModeButton = findViewById<ImageButton>(R.id.themeToggleButton)
-        selectDarkModeButton?.setOnClickListener{
-            SettingActivity.SettingFragment.darkMode(this)
+        val selectDarkModeButton = activityLoginBinding.themeToggleButton
+        selectDarkModeButton.setOnClickListener {
+            ThemeManager.showThemeDialog(this)
         }
     }
 
@@ -166,9 +166,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             } else if (TextUtils.isEmpty(activityLoginBinding.inputPassword.text.toString())) {
                 activityLoginBinding.inputPassword.error = getString(R.string.err_msg_password)
             } else {
-                if (mRealm.isClosed) {
-                    mRealm = Realm.getDefaultInstance()
-                }
                 val enterUserName = activityLoginBinding.inputName.text.toString().trimEnd()
                 val user = mRealm.where(RealmUserModel::class.java).equalTo("name", enterUserName).findFirst()
                 if (user == null || !user.isArchived) {
@@ -213,7 +210,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
     private fun declareMoreElements() {
         try {
-            mRealm = Realm.getDefaultInstance()
             syncIcon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.login_file_upload_animation))
             syncIcon.scaleType
             syncIconDrawable = syncIcon.drawable as AnimationDrawable
@@ -277,9 +273,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     fun updateTeamDropdown() {
-        if (mRealm.isClosed) {
-            mRealm = Realm.getDefaultInstance()
-        }
         val teams: List<RealmMyTeam>? = mRealm.where(RealmMyTeam::class.java)
             ?.isEmpty("teamId")?.equalTo("status", "active")?.findAll()
 
@@ -384,11 +377,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     private fun declareHideKeyboardElements() {
-        val constraintLayout = findViewById<View>(R.id.constraintLayout)
-        constraintLayout.setOnTouchListener { view: View?, event: MotionEvent? ->
+        activityLoginBinding.constraintLayout.setOnTouchListener { view, event ->
             when (event?.action) {
-                MotionEvent.ACTION_DOWN -> {
-                }
                 MotionEvent.ACTION_UP -> {
                     view?.let {
                         hideKeyboard(it)

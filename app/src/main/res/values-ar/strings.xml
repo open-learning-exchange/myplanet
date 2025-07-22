@@ -1100,7 +1100,7 @@
     <string name="team_financial_report">%s تقرير مالي لـ</string>
     <string name="report_date_details">"تم إنشاء التقرير في: %1$s | تم تحديثه في: %2$s "</string>
     <string name="formatted_date">%1$d/%2$d/%3$d</string>
-    <string name="prefix_content">%1$s%2$s</string>
+    <string name="prefix_content">%1$s %2$s</string>
     <string name="rating_count_format">%d الإجمالي</string>
     <string name="step_progress">الخطوة الحالية: %1$d من %2$d</string>
     <string name="percentage">%s%%</string>
@@ -1320,5 +1320,6 @@
     <string name="syncing_health_data">جارٍ مزامنة بيانات الصحة…</string>
     <string name="syncing_resources">جارٍ مزامنة الموارد…</string>
     <string name="syncing_achievements">جارٍ مزامنة الإنجازات…</string>
+    <string name="nation_leaders">قادة الأمة</string>
 
 </resources>

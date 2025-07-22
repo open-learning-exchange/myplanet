@@ -52,7 +52,7 @@ import com.bumptech.glide.Glide
 import java.io.File
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 
-class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
+class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
     private lateinit var rowNewsBinding: RowNewsBinding
     private var listener: OnNewsItemClickListener? = null
     private var imageList: RealmList<String>? = null
@@ -63,7 +63,8 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private var recyclerView: RecyclerView? = null
     var user: RealmUserModel? = null
     private var labelManager: NewsLabelManager? = null
-    private val profileDbHandler = UserProfileDbHandler(context)
+    private val gson = Gson()
+    private val profileDbHandler = userProfileDbHandler
     lateinit var settings: SharedPreferences
     private val leadersList: List<RealmUserModel> by lazy {
         val raw = settings.getString("communityLeaders", "") ?: ""
@@ -101,7 +102,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         rowNewsBinding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         sharedPreferences = SharedPrefManager(context)
-        user = UserProfileDbHandler(context).userModel
+        user = userProfileDbHandler.userModel
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         if (::mRealm.isInitialized) {
             if (labelManager == null) labelManager = NewsLabelManager(context, mRealm, currentUser)
@@ -121,6 +122,8 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 val sharedTeamName = extractSharedTeamName(news)
 
                 resetViews(viewHolder)
+
+                updateReplyCount(viewHolder = viewHolder, getReplies(news), position)
 
                 val userModel = configureUser(viewHolder, news)
                 showShareButton(viewHolder, news)
@@ -142,9 +145,24 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         }
     }
 
+    fun updateReplyBadge(newsId: String?) {
+        if (newsId.isNullOrEmpty()) return
+        val index = if (parentNews != null) {
+            when {
+                parentNews.id == newsId -> 0
+                else -> list.indexOfFirst { it?.id == newsId }.let { if (it != -1) it + 1 else -1 }
+            }
+        } else {
+            list.indexOfFirst { it?.id == newsId }
+        }
+        if (index >= 0) {
+            notifyItemChanged(index)
+        }
+    }
+
     private fun extractSharedTeamName(news: RealmNews): String {
         if (!TextUtils.isEmpty(news.viewIn)) {
-            val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
+            val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
             if (ar.size() > 1) {
                 val ob = ar[0].asJsonObject
                 if (ob.has("name") && !ob.get("name").isJsonNull) {
@@ -195,7 +213,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private fun setMessageAndDate(holder: ViewHolderNews, news: RealmNews, sharedTeamName: String) {
         val markdownContentWithLocalPaths = prependBaseUrlToImages(
             news.message,
-            "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/",
+            "file://" + context.getExternalFilesDir(null) + "/ole/",
             600,
             350
         )
@@ -224,8 +242,10 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 AlertDialog.Builder(context, R.style.AlertDialogTheme)
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                        NewsActions.deletePost(context, mRealm, news, list, teamName)
-                        notifyDataSetChanged()
+                        NewsActions.deletePost(context, mRealm, news, list, teamName,listener)
+                        val pos = holder.adapterPosition
+                        notifyItemRemoved(pos)
+                        notifyItemRangeChanged(pos, list.size)
                     }
                     .setNegativeButton(R.string.cancel, null)
                     .show()
@@ -234,7 +254,19 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
         if (news.userId == currentUser?._id) {
             holder.rowNewsBinding.imgEdit.setOnClickListener {
-                NewsActions.showEditAlert(context, mRealm, news.id, true, currentUser, imageList, listener)
+                NewsActions.showEditAlert(
+                    context,
+                    mRealm,
+                    news.id,
+                    true,
+                    currentUser,
+                    imageList,
+                    listener,
+                    holder,
+                ) { holder, updatedNews, position ->
+                    showReplyButton(holder, updatedNews, position)
+                    notifyItemChanged(position)
+                }
             }
             holder.rowNewsBinding.btnAddLabel.visibility = if (fromLogin || nonTeamMember) View.GONE else View.VISIBLE
         } else {
@@ -245,7 +277,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     private fun handleChat(holder: ViewHolderNews, news: RealmNews) {
         if (news.newsId?.isNotEmpty() == true) {
-            val conversations = Gson().fromJson(news.conversations, Array<Conversation>::class.java).toList()
+            val conversations = gson.fromJson(news.conversations, Array<Conversation>::class.java).toList()
             val chatAdapter = ChatAdapter(ArrayList(), context, holder.rowNewsBinding.recyclerGchat)
 
             if (user?.id?.startsWith("guest") == false) {
@@ -399,7 +431,16 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         if (shouldShowReplyButton()) {
             viewHolder.rowNewsBinding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
             viewHolder.rowNewsBinding.btnReply.setOnClickListener {
-                NewsActions.showEditAlert(context, mRealm, finalNews?.id, false, currentUser, imageList, listener)
+                NewsActions.showEditAlert(
+                    context,
+                    mRealm,
+                    finalNews?.id,
+                    false,
+                    currentUser,
+                    imageList,
+                    listener,
+                     viewHolder,
+                ) { holder, news, i -> showReplyButton(holder, news, i) }
             }
         } else {
             viewHolder.rowNewsBinding.btnReply.visibility = View.GONE
@@ -423,6 +464,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         fun addImage(llImage: LinearLayout?)
         fun onNewsItemClick(news: RealmNews?)
         fun clearImages()
+        fun onDataChanged()
     }
 
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {
@@ -435,7 +477,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 .setTitle(R.string.share_with_community)
                 .setMessage(R.string.confirm_share_community)
                 .setPositiveButton(R.string.yes) { _, _ ->
-                    val array = Gson().fromJson(news?.viewIn, JsonArray::class.java)
+                    val array = gson.fromJson(news?.viewIn, JsonArray::class.java)
                     val firstElement = array.get(0)
                     val obj = firstElement.asJsonObject
                     if(!obj.has("name")){
@@ -450,7 +492,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                         mRealm.beginTransaction()
                     }
                     news?.sharedBy = currentUser?.id
-                    news?.viewIn = Gson().toJson(array)
+                    news?.viewIn = gson.toJson(array)
                     mRealm.commitTransaction()
                     Utilities.toast(context, context.getString(R.string.shared_to_community))
                     viewHolder.rowNewsBinding.btnShare.visibility = View.GONE
@@ -474,7 +516,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         val imageUrls = news?.imageUrls
         if (!imageUrls.isNullOrEmpty()) {
             try {
-                val imgObject = Gson().fromJson(imageUrls[0], JsonObject::class.java)
+                val imgObject = gson.fromJson(imageUrls[0], JsonObject::class.java)
                 val path = JsonUtils.getString("imageUrl", imgObject)
                 val request = Glide.with(context)
                 val target = if (path.lowercase(Locale.getDefault()).endsWith(".gif")) {
