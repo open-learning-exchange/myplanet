@@ -20,7 +20,11 @@ class DatabaseService(context: Context) {
     }
 
     val realmInstance: Realm
-        get() {
-            return Realm.getDefaultInstance()
+        get() = Realm.getDefaultInstance()
+    
+    fun <T> withRealm(operation: (Realm) -> T): T {
+        return Realm.getDefaultInstance().use { realm ->
+            operation(realm)
         }
+    }
 }
