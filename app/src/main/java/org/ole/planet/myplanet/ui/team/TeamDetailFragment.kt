@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMemberCount
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
@@ -76,7 +75,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         val teamId = requireArguments().getString("id" ) ?: ""
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
         val user = UserProfileDbHandler(requireContext()).userModel
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = databaseService.realmInstance
 
         if (shouldQueryRealm(teamId)) {
             if (teamId.isNotEmpty()) {
@@ -314,7 +313,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         val teamType = getEffectiveTeamType()
 
         CoroutineScope(Dispatchers.IO).launch {
-            val realm = DatabaseService(requireActivity()).realmInstance
+            val realm = databaseService.realmInstance
 
             realm.executeTransaction { r ->
                 val log = r.createObject(RealmTeamLog::class.java, "${UUID.randomUUID()}")

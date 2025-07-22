@@ -8,6 +8,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.fragment.app.DialogFragment
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import io.realm.Realm
 import java.util.Locale
 import kotlin.collections.ArrayList
@@ -21,8 +23,11 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.utilities.KeyboardUtils
 
+@AndroidEntryPoint
 class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagItem, CompoundButton.OnCheckedChangeListener {
     private lateinit var fragmentCollectionsBinding: FragmentCollectionsBinding
+    @Inject
+    lateinit var databaseService: DatabaseService
     private lateinit var mRealm: Realm
     private lateinit var list: List<RealmTag>
     private var filteredList: ArrayList<RealmTag> = ArrayList()
@@ -39,7 +44,7 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentCollectionsBinding = FragmentCollectionsBinding.inflate(inflater, container, false)
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = databaseService.realmInstance
         KeyboardUtils.hideSoftKeyboard(requireActivity())
         return fragmentCollectionsBinding.root
     }

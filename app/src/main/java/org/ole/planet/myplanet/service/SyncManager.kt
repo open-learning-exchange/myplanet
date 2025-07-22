@@ -1200,23 +1200,13 @@ class SyncManager @Inject constructor(
     }
 
     private fun <T> safeRealmOperation(operation: (Realm) -> T): T? {
-        var realm: Realm? = null
         return try {
-            realm = Realm.getDefaultInstance()
-            operation(realm)
+            Realm.getDefaultInstance().use { realm ->
+                operation(realm)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             null
-        } finally {
-            realm?.let { r ->
-                try {
-                    if (!r.isClosed) {
-                        r.close()
-                    }
-                } catch (e: IllegalStateException) {
-                    e.printStackTrace()
-                }
-            }
         }
     }
 

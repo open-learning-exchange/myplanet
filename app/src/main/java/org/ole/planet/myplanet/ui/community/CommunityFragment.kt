@@ -16,7 +16,6 @@ import io.realm.RealmResults
 import io.realm.Sort
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCommunityBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -58,7 +57,7 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
         fragmentCommunityBinding.btnLibrary.setOnClickListener {
             homeItemClickListener?.openCallFragment(ResourcesFragment())

@@ -21,6 +21,8 @@ import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getMyTeamsByUserId
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -29,10 +31,13 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private lateinit var fragmentTeamBinding: FragmentTeamBinding
     private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
     private lateinit var mRealm: Realm
+    @Inject
+    lateinit var databaseService: DatabaseService
     var type: String? = null
     private var fromDashboard: Boolean = false
     var user: RealmUserModel? = null
@@ -56,7 +61,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTeamBinding = FragmentTeamBinding.inflate(inflater, container, false)
-        mRealm = DatabaseService(requireContext()).realmInstance
+        mRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
 
         if (user?.isGuest() == true) {

@@ -12,20 +12,19 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRating.Companion.getRatingsById
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.getNoOfExam
 import org.ole.planet.myplanet.model.RealmUserModel
+import javax.inject.Inject
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 
 class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private lateinit var fragmentCourseDetailBinding: FragmentCourseDetailBinding
-    lateinit var dbService: DatabaseService
     private lateinit var cRealm: Realm
     var courses: RealmMyCourse? = null
     var user: RealmUserModel? = null
@@ -39,8 +38,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentCourseDetailBinding = FragmentCourseDetailBinding.inflate(inflater, container, false)
-        dbService = DatabaseService(requireActivity())
-        cRealm = dbService.realmInstance
+        cRealm = databaseService.realmInstance
         courses = cRealm.where(RealmMyCourse::class.java).equalTo("courseId", id).findFirst()
         user = UserProfileDbHandler(requireContext()).userModel
         return fragmentCourseDetailBinding.root

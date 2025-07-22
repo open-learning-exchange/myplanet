@@ -123,7 +123,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         editor = settings.edit()
         mRealm = DatabaseService(this).realmInstance
-        mRealm = Realm.getDefaultInstance()
         requestAllPermissions()
         prefData = SharedPrefManager(this)
         profileDbHandler = UserProfileDbHandler(this)
@@ -723,7 +722,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
-        mRealm = Realm.getDefaultInstance()
         val builder = getUpdateDialog(this, info, customProgressDialog)
         if (cancelable || getCustomDeviceName(this).endsWith("###")) {
             builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
@@ -777,7 +775,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
 
     override fun onSelectedUser(userModel: RealmUserModel) {
-        mRealm = Realm.getDefaultInstance()
         val layoutChildLoginBinding = LayoutChildLoginBinding.inflate(layoutInflater)
         AlertDialog.Builder(this).setView(layoutChildLoginBinding.root)
             .setTitle(R.string.please_enter_your_password)
