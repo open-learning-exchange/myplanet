@@ -90,7 +90,6 @@ class SyncManager @Inject constructor(
         cancelBackgroundSync()
         cancel(context, 111)
         isSyncing = false
-        ourInstance = null
         settings.edit { putLong("LastSync", Date().time) }
         listener?.onSyncComplete()
         try {
@@ -1201,23 +1200,13 @@ class SyncManager @Inject constructor(
     }
 
     private fun <T> safeRealmOperation(operation: (Realm) -> T): T? {
-        var realm: Realm? = null
         return try {
-            realm = Realm.getDefaultInstance()
-            operation(realm)
+            Realm.getDefaultInstance().use { realm ->
+                operation(realm)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             null
-        } finally {
-            realm?.let { r ->
-                try {
-                    if (!r.isClosed) {
-                        r.close()
-                    }
-                } catch (e: IllegalStateException) {
-                    e.printStackTrace()
-                }
-            }
         }
     }
 
@@ -1285,15 +1274,5 @@ class SyncManager @Inject constructor(
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     )
 
-    companion object {
-        @Deprecated("Use dependency injection instead", ReplaceWith("Inject SyncManager"))
-        private var ourInstance: SyncManager? = null
-        @Deprecated("Use dependency injection instead", ReplaceWith("Inject SyncManager"))
-        val instance: SyncManager?
-            get() {
-                ourInstance = SyncManager(MainApplication.context)
-                return ourInstance
-            }
-    }
 }
 

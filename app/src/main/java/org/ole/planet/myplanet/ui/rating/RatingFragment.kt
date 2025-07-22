@@ -9,6 +9,8 @@ import android.view.ViewGroup
 import android.widget.RatingBar
 import android.widget.RatingBar.OnRatingBarChangeListener
 import androidx.fragment.app.DialogFragment
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import com.google.gson.Gson
 import io.realm.Realm
 import java.util.Date
@@ -22,9 +24,11 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class RatingFragment : DialogFragment() {
     private lateinit var fragmentRatingBinding: FragmentRatingBinding
-    private lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var databaseService: DatabaseService
     lateinit var mRealm: Realm
     var model: RealmUserModel? = null
     var id: String? = ""
@@ -49,7 +53,6 @@ class RatingFragment : DialogFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentRatingBinding = FragmentRatingBinding.inflate(inflater, container, false)
-        databaseService = DatabaseService(requireActivity())
         mRealm = databaseService.realmInstance
         settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return fragmentRatingBinding.root
