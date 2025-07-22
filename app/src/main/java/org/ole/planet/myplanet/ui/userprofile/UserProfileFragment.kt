@@ -107,6 +107,7 @@ class UserProfileFragment : Fragment() {
         captureImageLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
             if (isSuccess) {
                 startIntent(photoURI)
+                fragmentUserProfileBinding.image.setImageURI(photoURI)
             }
         }
 
