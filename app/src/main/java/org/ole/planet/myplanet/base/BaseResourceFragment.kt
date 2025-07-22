@@ -42,6 +42,7 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import javax.inject.Inject
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.utilities.CheckboxListView
@@ -59,6 +60,8 @@ abstract class BaseResourceFragment : Fragment() {
     var model: RealmUserModel? = null
     lateinit var mRealm: Realm
     lateinit var profileDbHandler: UserProfileDbHandler
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     var editor: SharedPreferences.Editor? = null
     var lv: CheckboxListView? = null
     var convertView: View? = null
@@ -165,7 +168,7 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun showPendingSurveyDialog() {
-        model = UserProfileDbHandler(requireContext()).userModel
+        model = userProfileDbHandler.userModel
         val list: List<RealmSubmission> = mRealm.where(RealmSubmission::class.java)
             .equalTo("userId", model?.id)
             .equalTo("status", "pending").equalTo("type", "survey")
@@ -313,6 +316,7 @@ abstract class BaseResourceFragment : Fragment() {
         prgDialog = getProgressDialog(requireActivity())
         settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         editor = settings?.edit()
+        profileDbHandler = userProfileDbHandler
     }
 
     override fun onPause() {

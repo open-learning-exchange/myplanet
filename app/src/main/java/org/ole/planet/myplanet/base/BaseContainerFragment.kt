@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_DOWNLOAD
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_OPEN
+import javax.inject.Inject
 import org.ole.planet.myplanet.ui.courses.AdapterCourses
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity
@@ -61,9 +62,12 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     lateinit var prefData: SharedPrefManager
     private var pendingAutoOpenLibrary: RealmMyLibrary? = null
     private var shouldAutoOpenAfterDownload = false
+
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        profileDbHandler = UserProfileDbHandler(requireActivity())
+        profileDbHandler = userProfileDbHandler
         hasInstallPermissionValue = hasInstallPermission(requireContext())
         if (!BuildConfig.LITE) {
             installApkLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -123,7 +127,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 }
                 true
             }
-            val userModel = UserProfileDbHandler(context).userModel
+            val userModel = userProfileDbHandler.userModel
             if (!userModel?.isGuest()!!) {
                 setOnClickListener {
                     homeItemClickListener?.showRatingDialog(type, id, title, listener)

@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import javax.inject.Inject
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
@@ -57,6 +58,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var list: MutableList<LI>? = null
     var resources: List<RealmMyLibrary>? = null
     var courseLib: String? = null
+
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
 
     abstract fun getLayout(): Int
 
@@ -92,8 +96,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         list = mutableListOf()
         realmService = DatabaseService(requireActivity())
         mRealm = realmService.realmInstance
-        profileDbHandler = UserProfileDbHandler(requireActivity())
-        model = profileDbHandler.userModel!!
+        profileDbHandler = userProfileDbHandler
+        model = userProfileDbHandler.userModel!!
         val adapter = getAdapter()
         recyclerView.adapter = adapter
         if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {

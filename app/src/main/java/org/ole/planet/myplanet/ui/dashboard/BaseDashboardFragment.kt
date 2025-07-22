@@ -70,8 +70,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
     private lateinit var offlineActivitiesResults: RealmResults<RealmOfflineActivity>
     fun onLoaded(v: View) {
-        profileDbHandler = UserProfileDbHandler(requireContext())
-        model = profileDbHandler.userModel
+        profileDbHandler = userProfileDbHandler
+        model = userProfileDbHandler.userModel
         fullName = profileDbHandler.userModel?.getFullName()
         if (fullName?.trim().isNullOrBlank()) {
             fullName = profileDbHandler.userModel?.name
@@ -210,7 +210,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     private fun myTeamInit(flexboxLayout: FlexboxLayout): Int {
         val dbMyTeam = RealmMyTeam.getMyTeamsByUserId(mRealm, settings)
-        val userId = UserProfileDbHandler(requireContext()).userModel?.id
+        val userId = userProfileDbHandler.userModel?.id
         for ((count, ob) in dbMyTeam.withIndex()) {
             val v = LayoutInflater.from(activity).inflate(R.layout.item_home_my_team, flexboxLayout, false)
             val name = v.findViewById<TextView>(R.id.tv_name)

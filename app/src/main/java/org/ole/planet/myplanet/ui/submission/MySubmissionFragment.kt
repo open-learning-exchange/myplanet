@@ -9,6 +9,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.fragment.app.Fragment
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import io.realm.Case
@@ -24,7 +26,10 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     private lateinit var fragmentMySubmissionBinding: FragmentMySubmissionBinding
     lateinit var mRealm: Realm
@@ -32,6 +37,9 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     var exams: HashMap<String?, RealmStepExam>? = null
     private var submissions: List<RealmSubmission>? = null
     var user: RealmUserModel? = null
+
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,7 +49,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentMySubmissionBinding = FragmentMySubmissionBinding.inflate(inflater, container, false)
         exams = HashMap()
-        user = UserProfileDbHandler(requireContext()).userModel
+        user = userProfileDbHandler.userModel
         return fragmentMySubmissionBinding.root
     }
 

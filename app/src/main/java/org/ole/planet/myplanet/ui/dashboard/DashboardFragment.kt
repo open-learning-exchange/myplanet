@@ -43,7 +43,7 @@ class DashboardFragment : BaseDashboardFragment() {
         }
         databaseService = DatabaseService(requireActivity())
         dRealm = databaseService.realmInstance
-        user = UserProfileDbHandler(requireContext()).userModel
+        user = userProfileDbHandler.userModel
         onLoaded(view)
         initView(view)
         (activity as AppCompatActivity?)?.supportActionBar?.subtitle = currentDate()
