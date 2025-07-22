@@ -16,9 +16,11 @@ import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentManager
 import com.google.gson.JsonObject
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.util.Calendar
 import java.util.Locale
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -39,8 +41,6 @@ import org.ole.planet.myplanet.ui.team.TeamPage
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Utilities
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
@@ -52,6 +52,8 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     private var submissions: RealmSubmission? = null
     var userModel: RealmUserModel? = null
     var shouldHideElements: Boolean? = null
+    @Inject
+    lateinit var uploadManager: UploadManager
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentUserInformationBinding = FragmentUserInformationBinding.inflate(inflater, container, false)
@@ -283,7 +285,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         MainApplication.applicationScope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    UploadManager.instance?.uploadSubmissions()
+                    uploadManager.uploadSubmissions()
                 }
 
                 withContext(Dispatchers.Main) {
@@ -300,8 +302,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             override fun onSuccess(success: String?) {}
         }
 
-        val newUploadManager = UploadManager(MainApplication.context)
-        newUploadManager.uploadExamResult(successListener)
+        uploadManager.uploadExamResult(successListener)
     }
 
     private fun showDatePickerDialog() {
