@@ -18,14 +18,20 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class FeedbackFragment : DialogFragment(), View.OnClickListener {
     private lateinit var fragmentFeedbackBinding: FragmentFeedbackBinding
     private lateinit var mRealm: Realm
     private lateinit var databaseService: DatabaseService
     private var model: RealmUserModel ?= null
     var user: String? = ""
+
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
 
     interface OnFeedbackSubmittedListener {
         fun onFeedbackSubmitted()
@@ -45,7 +51,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
         fragmentFeedbackBinding = FragmentFeedbackBinding.inflate(inflater, container, false)
         databaseService = DatabaseService(requireActivity())
         mRealm = databaseService.realmInstance
-        model = UserProfileDbHandler(requireContext()).userModel
+        model = userProfileDbHandler.userModel
         user = model?.name
         fragmentFeedbackBinding.btnSubmit.setOnClickListener(this)
         fragmentFeedbackBinding.btnCancel.setOnClickListener(this)

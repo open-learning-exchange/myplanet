@@ -24,7 +24,6 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmTeamNotification
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment.Companion.userModel
 import org.ole.planet.myplanet.ui.news.AdapterNews
@@ -38,9 +37,6 @@ import org.ole.planet.myplanet.utilities.Utilities
 class DiscussionListFragment : BaseTeamFragment() {
     private lateinit var fragmentDiscussionListBinding: FragmentDiscussionListBinding
     private var updatedNewsList: RealmResults<RealmNews>? = null
-    
-    @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
     private var filteredNewsList: List<RealmNews?> = listOf()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {

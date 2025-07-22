@@ -52,6 +52,8 @@ import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DialogUtils
@@ -60,6 +62,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
+@AndroidEntryPoint
 class ChatDetailFragment : Fragment() {
     lateinit var fragmentChatDetailBinding: FragmentChatDetailBinding
     private lateinit var mAdapter: ChatAdapter
@@ -79,6 +82,9 @@ class ChatDetailFragment : Fragment() {
     private val jsonMediaType = "application/json".toMediaTypeOrNull()
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
+
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -110,7 +116,7 @@ class ChatDetailFragment : Fragment() {
 
     private fun initChatComponents() {
         mRealm = DatabaseService(requireContext()).realmInstance
-        user = UserProfileDbHandler(requireContext()).userModel
+        user = userProfileDbHandler.userModel
         mAdapter = ChatAdapter(ArrayList(), requireContext(), fragmentChatDetailBinding.recyclerGchat)
         fragmentChatDetailBinding.recyclerGchat.apply {
             adapter = mAdapter

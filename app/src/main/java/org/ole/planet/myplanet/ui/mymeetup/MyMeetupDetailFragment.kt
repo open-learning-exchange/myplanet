@@ -17,9 +17,12 @@ import org.ole.planet.myplanet.model.RealmMeetup.Companion.getHashMap
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getJoinedUserIds
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 
+@AndroidEntryPoint
 class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     private lateinit var fragmentMyMeetupDetailBinding: FragmentMyMeetupDetailBinding
     private var meetups: RealmMeetup? = null
@@ -27,6 +30,8 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     private var meetUpId: String? = null
     var profileDbHandler: UserProfileDbHandler? = null
     var user: RealmUserModel? = null
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     private var listUsers: ListView? = null
     private var listDesc: ListView? = null
     private var tvJoined: TextView? = null
@@ -46,7 +51,7 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
         fragmentMyMeetupDetailBinding.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
         fragmentMyMeetupDetailBinding.btnLeave.setOnClickListener(this)
         mRealm = DatabaseService(requireActivity()).realmInstance
-        profileDbHandler = UserProfileDbHandler(requireContext())
+        profileDbHandler = userProfileDbHandler
         user = profileDbHandler?.userModel?.let { mRealm.copyFromRealm(it) }
         return fragmentMyMeetupDetailBinding.root
     }

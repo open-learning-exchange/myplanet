@@ -59,9 +59,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var resources: List<RealmMyLibrary>? = null
     var courseLib: String? = null
 
-    @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
-
     abstract fun getLayout(): Int
 
     abstract fun getAdapter(): RecyclerView.Adapter<*>

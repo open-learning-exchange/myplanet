@@ -49,7 +49,6 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import javax.inject.Inject
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
@@ -84,9 +83,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     
     @Inject
     lateinit var syncManager: SyncManager
-
-    @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
 
     private val serverUrlMapper = ServerUrlMapper()
     private val serverUrl: String

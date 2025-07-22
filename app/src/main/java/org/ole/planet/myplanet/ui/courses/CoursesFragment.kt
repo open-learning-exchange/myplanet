@@ -46,7 +46,6 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
@@ -90,9 +89,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     
     @Inject
     lateinit var syncManager: SyncManager
-    
-    @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -226,7 +222,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        userModel = UserProfileDbHandler(requireContext()).userModel
+        userModel = userProfileDbHandler.userModel
         searchTags = ArrayList()
         initializeView()
         updateCheckBoxState(false)

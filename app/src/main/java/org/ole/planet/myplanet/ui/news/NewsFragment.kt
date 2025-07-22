@@ -23,7 +23,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
@@ -36,8 +35,6 @@ class NewsFragment : BaseNewsFragment() {
     private lateinit var fragmentNewsBinding: FragmentNewsBinding
     var user: RealmUserModel? = null
     
-    @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
     private var updatedNewsList: RealmResults<RealmNews>? = null
     private var filteredNewsList: List<RealmNews?> = listOf()
     private val gson = Gson()

@@ -47,9 +47,6 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
     lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
     private lateinit var replyActivityLauncher: ActivityResultLauncher<Intent>
 
-    @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         imageList = RealmList()

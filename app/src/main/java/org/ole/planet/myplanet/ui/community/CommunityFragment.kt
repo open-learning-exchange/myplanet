@@ -19,7 +19,6 @@ import org.ole.planet.myplanet.databinding.FragmentCommunityBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.news.ReplyActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
@@ -28,9 +27,6 @@ import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickListener {
     private lateinit var fragmentCommunityBinding: FragmentCommunityBinding
     private var newList: RealmResults<RealmNews>? = null
-    
-    @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
     override fun addImage(llImage: LinearLayout?) {}
     override fun onNewsItemClick(news: RealmNews?) {}
     override fun clearImages() {}
@@ -59,7 +55,7 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         mRealm = DatabaseService(requireActivity()).realmInstance
-        user = UserProfileDbHandler(requireActivity()).userModel
+        user = userProfileDbHandler.userModel
         fragmentCommunityBinding.btnLibrary.setOnClickListener {
             homeItemClickListener?.openCallFragment(ResourcesFragment())
         }

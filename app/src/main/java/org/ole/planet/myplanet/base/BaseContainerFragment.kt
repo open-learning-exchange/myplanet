@@ -63,8 +63,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private var pendingAutoOpenLibrary: RealmMyLibrary? = null
     private var shouldAutoOpenAfterDownload = false
 
-    @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         profileDbHandler = userProfileDbHandler

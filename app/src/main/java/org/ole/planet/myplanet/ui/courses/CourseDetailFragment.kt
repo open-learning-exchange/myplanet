@@ -19,10 +19,11 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRating.Companion.getRatingsById
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.getNoOfExam
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 
+@AndroidEntryPoint
 class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private lateinit var fragmentCourseDetailBinding: FragmentCourseDetailBinding
     lateinit var dbService: DatabaseService
@@ -30,6 +31,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     var courses: RealmMyCourse? = null
     var user: RealmUserModel? = null
     var id: String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -42,7 +44,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         dbService = DatabaseService(requireActivity())
         cRealm = dbService.realmInstance
         courses = cRealm.where(RealmMyCourse::class.java).equalTo("courseId", id).findFirst()
-        user = UserProfileDbHandler(requireContext()).userModel
+        user = userProfileDbHandler.userModel
         return fragmentCourseDetailBinding.root
     }
 

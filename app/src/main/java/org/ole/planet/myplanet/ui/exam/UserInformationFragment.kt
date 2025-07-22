@@ -34,12 +34,15 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.team.TeamPage
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     private lateinit var fragmentUserInformationBinding: FragmentUserInformationBinding
     var dob: String? = ""
@@ -48,10 +51,13 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     var userModel: RealmUserModel? = null
     var shouldHideElements: Boolean? = null
 
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentUserInformationBinding = FragmentUserInformationBinding.inflate(inflater, container, false)
         mRealm = DatabaseService(requireActivity()).realmInstance
-        userModel = UserProfileDbHandler(requireContext()).userModel
+        userModel = userProfileDbHandler.userModel
         if (!TextUtils.isEmpty(id)) {
             submissions = mRealm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()
         }

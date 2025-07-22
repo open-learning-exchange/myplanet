@@ -56,14 +56,19 @@ import org.ole.planet.myplanet.databinding.RowStatBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class UserProfileFragment : Fragment() {
     private lateinit var fragmentUserProfileBinding: FragmentUserProfileBinding
     private lateinit var rowStatBinding: RowStatBinding
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var handler: UserProfileDbHandler
     private lateinit var settings: SharedPreferences
     private lateinit var realmService: DatabaseService
@@ -150,7 +155,7 @@ class UserProfileFragment : Fragment() {
 
     private fun initializeDependencies() {
         settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        handler = UserProfileDbHandler(requireContext())
+        handler = userProfileDbHandler
         realmService = DatabaseService(requireContext())
         mRealm = realmService.realmInstance
         fragmentUserProfileBinding.rvStat.layoutManager = LinearLayoutManager(activity)

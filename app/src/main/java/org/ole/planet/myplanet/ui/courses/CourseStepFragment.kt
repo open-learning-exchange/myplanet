@@ -24,7 +24,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.utilities.CustomClickableSpan
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 
+@AndroidEntryPoint
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
@@ -44,6 +45,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var stepSurvey: List<RealmStepExam>
     var user: RealmUserModel? = null
     private var stepNumber = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -56,7 +58,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         fragmentCourseStepBinding = FragmentCourseStepBinding.inflate(inflater, container, false)
         dbService = DatabaseService(requireActivity())
         cRealm = dbService.realmInstance
-        user = UserProfileDbHandler(requireContext()).userModel
+        user = userProfileDbHandler.userModel
         fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
         fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
         return fragmentCourseStepBinding.root

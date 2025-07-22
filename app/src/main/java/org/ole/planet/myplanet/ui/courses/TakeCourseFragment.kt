@@ -36,9 +36,12 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.isStepCompleted
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnClickListener {
     private lateinit var fragmentTakeCourseBinding: FragmentTakeCourseBinding
     lateinit var dbService: DatabaseService
@@ -47,6 +50,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var steps: List<RealmCourseStep?>
     var position = 0
     private var currentStep = 0
+
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,7 +68,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         fragmentTakeCourseBinding = FragmentTakeCourseBinding.inflate(inflater, container, false)
         dbService = DatabaseService(requireActivity())
         mRealm = dbService.realmInstance
-        userModel = UserProfileDbHandler(requireContext()).userModel
+        userModel = userProfileDbHandler.userModel
         currentCourse = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
         return fragmentTakeCourseBinding.root
     }
@@ -267,7 +273,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     private fun getCourseProgress(): Int {
         val realm = DatabaseService(requireActivity()).realmInstance
-        val user = UserProfileDbHandler(requireActivity()).userModel
+        val user = userProfileDbHandler.userModel
         val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
         val courseProgress = courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt
         return courseProgress ?: 0

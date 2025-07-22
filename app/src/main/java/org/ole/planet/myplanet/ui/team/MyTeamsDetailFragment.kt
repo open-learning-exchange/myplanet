@@ -38,7 +38,6 @@ import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamLog.Companion.getVisitCount
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
@@ -52,9 +51,6 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
     private lateinit var fragmentMyTeamsDetailBinding: FragmentMyTeamsDetailBinding
     lateinit var tvDescription: TextView
     var user: RealmUserModel? = null
-    
-    @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
     var teamId: String? = null
     var team: RealmMyTeam? = null
     lateinit var listContent: ListView

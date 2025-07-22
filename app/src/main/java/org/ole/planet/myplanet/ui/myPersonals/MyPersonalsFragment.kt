@@ -29,6 +29,9 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     
     @Inject
     lateinit var uploadManager: UploadManager
+
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     fun refreshFragment() {
         if (isAdded) {
             setAdapter()
@@ -60,7 +63,7 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     }
 
     private fun setAdapter() {
-        val model = UserProfileDbHandler(requireContext()).userModel
+        val model = userProfileDbHandler.userModel
         val realmMyPersonals: List<RealmMyPersonal> = mRealm.where(RealmMyPersonal::class.java)
             .equalTo("userId", model?.id).findAll()
         val personalAdapter = AdapterMyPersonal(requireActivity(), realmMyPersonals)

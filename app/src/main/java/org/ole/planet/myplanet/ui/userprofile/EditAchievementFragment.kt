@@ -42,12 +42,13 @@ import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmAchievement.Companion.createReference
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDateSetListener {
     private lateinit var fragmentEditAchievementBinding: FragmentEditAchievementBinding
     private lateinit var editAttachmentBinding: EditAttachementBinding
@@ -62,10 +63,11 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private var achievementArray: JsonArray? = null
     private var resourceArray: JsonArray? = null
 
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentEditAchievementBinding = FragmentEditAchievementBinding.inflate(inflater, container, false)
         aRealm = DatabaseService(requireActivity()).realmInstance
-        user = UserProfileDbHandler(requireContext()).userModel
+        user = userProfileDbHandler.userModel
         achievementArray = JsonArray()
         achievement = aRealm.where(RealmAchievement::class.java).equalTo("_id", user?.id + "@" + user?.planetCode).findFirst()
         initializeData()

@@ -157,7 +157,7 @@ class MyHealthFragment : Fragment() {
         if (!isAdded || requireActivity().isFinishing) return
 
         try {
-            profileDbHandler = UserProfileDbHandler(requireContext())
+            profileDbHandler = userProfileDbHandler
             userId = if (TextUtils.isEmpty(profileDbHandler?.userModel?._id)) {
                 profileDbHandler?.userModel?.id
             } else {
@@ -197,7 +197,7 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun setupInitialData() {
-        profileDbHandler = UserProfileDbHandler(alertMyPersonalBinding.root.context)
+        profileDbHandler = userProfileDbHandler
         userId = if (TextUtils.isEmpty(profileDbHandler?.userModel?._id)) profileDbHandler?.userModel?.id else profileDbHandler?.userModel?._id
         getHealthRecords(userId)
     }

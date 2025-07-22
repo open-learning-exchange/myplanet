@@ -33,7 +33,6 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
@@ -42,9 +41,6 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
-    
-    @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
     
     @Inject
     lateinit var syncManager: SyncManager

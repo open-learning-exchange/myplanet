@@ -12,6 +12,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import androidx.recyclerview.widget.LinearLayoutManager
 import io.realm.Case
 import io.realm.Realm
@@ -26,7 +27,6 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getMyTeamsByUserId
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
@@ -39,15 +39,14 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     var type: String? = null
     private var fromDashboard: Boolean = false
     var user: RealmUserModel? = null
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     private var teamList: RealmResults<RealmMyTeam>? = null
     private lateinit var adapterTeamList: AdapterTeamList
     private var conditionApplied: Boolean = false
     private val settings by lazy {
         requireActivity().getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     }
-
-    @Inject
-    lateinit var userProfileDbHandler: UserProfileDbHandler
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
