@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.team.teamMember
 
 import android.content.Context
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -94,7 +93,6 @@ class AdapterMemberRequest(private val context: Context, private val list: Mutab
             list.add(position, userModel)
             notifyItemInserted(position)
             Utilities.toast(context, context.getString(R.string.request_failed_please_retry))
-            Log.e("AdapterMemberRequest", "Error while updating member", error)
         })
     }
 
