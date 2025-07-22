@@ -52,8 +52,6 @@ class UploadManager @Inject constructor(
 
     private val gson = Gson()
 
-
-
     private fun getRealm(): Realm {
         return databaseService.realmInstance
     }

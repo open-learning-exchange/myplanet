@@ -255,11 +255,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                     }.thenBy { it.name })
 
                     val adapterTeamList = AdapterTeamList(
-                        activity as Context,
-                        sortedList,
-                        mRealm,
-                        childFragmentManager,
-                        uploadManager
+                        activity as Context, sortedList, mRealm, childFragmentManager, uploadManager
                     )
                     adapterTeamList.setTeamListener(this@TeamFragment)
                     fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
