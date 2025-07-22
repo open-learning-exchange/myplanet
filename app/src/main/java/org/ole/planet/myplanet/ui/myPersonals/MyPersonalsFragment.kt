@@ -29,6 +29,8 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     
     @Inject
     lateinit var uploadManager: UploadManager
+    @Inject
+    lateinit var databaseService: DatabaseService
     fun refreshFragment() {
         if (isAdded) {
             setAdapter()
@@ -41,7 +43,7 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentMyPersonalsBinding = FragmentMyPersonalsBinding.inflate(inflater, container, false)
         pg = DialogUtils.getCustomProgressDialog(requireContext())
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = databaseService.realmInstance
         fragmentMyPersonalsBinding.rvMypersonal.layoutManager = LinearLayoutManager(activity)
         fragmentMyPersonalsBinding.addMyPersonal.setOnClickListener {
             addResourceFragment = AddResourceFragment()

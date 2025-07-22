@@ -41,11 +41,15 @@ import org.ole.planet.myplanet.ui.team.TeamPage
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Utilities
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     private lateinit var fragmentUserInformationBinding: FragmentUserInformationBinding
     var dob: String? = ""
+    @Inject
+    lateinit var databaseService: DatabaseService
     lateinit var mRealm: Realm
     private var submissions: RealmSubmission? = null
     var userModel: RealmUserModel? = null
@@ -55,7 +59,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentUserInformationBinding = FragmentUserInformationBinding.inflate(inflater, container, false)
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = databaseService.realmInstance
         userModel = UserProfileDbHandler(requireContext()).userModel
         if (!TextUtils.isEmpty(id)) {
             submissions = mRealm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()

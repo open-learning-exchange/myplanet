@@ -18,7 +18,6 @@ import io.realm.Sort
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.databinding.FragmentNewsBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
@@ -45,7 +44,7 @@ class NewsFragment : BaseNewsFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentNewsBinding = FragmentNewsBinding.inflate(inflater, container, false)
         llImage = fragmentNewsBinding.llImages
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
         setupUI(fragmentNewsBinding.newsFragmentParentLayout, requireActivity())
         if (user?.id?.startsWith("guest") == true) {
