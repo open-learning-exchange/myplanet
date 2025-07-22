@@ -62,6 +62,37 @@
             app:layout_constraintStart_toEndOf="@+id/mistakes"
             app:layout_constraintTop_toBottomOf="@+id/tv_title" />
         <LinearLayout
+            android:id="@+id/ll_header"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp"
+            android:background="@color/card_bg"
+            android:padding="4dp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/mistakes">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/step"
+                android:textColor="@color/daynight_textColor"
+                android:textStyle="bold"
+                android:gravity="center" />
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/mistakes"
+                android:textColor="@color/daynight_textColor"
+                android:textStyle="bold"
+                android:gravity="center" />
+        </LinearLayout>
+
+        <LinearLayout
             android:id="@+id/ll_progress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -71,6 +102,6 @@
             android:orientation="vertical"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/mistakes" />
+            app:layout_constraintTop_toBottomOf="@+id/ll_header" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>
