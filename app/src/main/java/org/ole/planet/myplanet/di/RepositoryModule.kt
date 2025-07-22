@@ -13,8 +13,8 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.chat.ChatRepository
-import org.ole.planet.myplanet.chat.ChatRepositoryImpl
+import org.ole.planet.myplanet.data.ChatRepository
+import org.ole.planet.myplanet.data.ChatRepositoryImpl
 import javax.inject.Singleton
 
 @Module

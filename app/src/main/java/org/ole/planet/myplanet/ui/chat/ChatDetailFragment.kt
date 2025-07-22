@@ -38,7 +38,7 @@ import okhttp3.RequestBody
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
-import org.ole.planet.myplanet.chat.ChatRepository
+import org.ole.planet.myplanet.data.ChatRepository
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatModel
 import org.ole.planet.myplanet.model.ChatRequestModel

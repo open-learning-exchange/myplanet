@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import io.realm.RealmList
-import org.ole.planet.myplanet.chat.ChatRepository
+import org.ole.planet.myplanet.data.ChatRepository
 import org.ole.planet.myplanet.model.RealmChatHistory
 
 @HiltViewModel

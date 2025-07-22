@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.chat
+package org.ole.planet.myplanet.data
 
 import com.google.gson.JsonObject
 import io.realm.Realm
