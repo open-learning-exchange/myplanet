@@ -20,9 +20,14 @@ import org.ole.planet.myplanet.databinding.FragmentMyActivityBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class MyActivityFragment : Fragment() {
     private lateinit var fragmentMyActivityBinding : FragmentMyActivityBinding
+    @Inject
+    lateinit var databaseService: DatabaseService
     lateinit var realm: Realm
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentMyActivityBinding = FragmentMyActivityBinding.inflate(inflater, container, false)
@@ -32,7 +37,7 @@ class MyActivityFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val userModel = UserProfileDbHandler(requireActivity()).userModel
-        realm = DatabaseService(requireActivity()).realmInstance
+        realm = databaseService.realmInstance
         val calendar = Calendar.getInstance()
         val daynight_textColor = ResourcesCompat.getColor(getResources(), R.color.daynight_textColor, null);
 

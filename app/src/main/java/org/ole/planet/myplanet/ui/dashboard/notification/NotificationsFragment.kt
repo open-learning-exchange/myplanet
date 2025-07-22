@@ -29,10 +29,14 @@ import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.team.TeamPage
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class NotificationsFragment : Fragment() {
     private lateinit var fragmentNotificationsBinding: FragmentNotificationsBinding
-    private lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var databaseService: DatabaseService
     private lateinit var mRealm: Realm
     private lateinit var adapter: AdapterNotification
     private lateinit var userId: String
@@ -52,7 +56,6 @@ class NotificationsFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentNotificationsBinding = FragmentNotificationsBinding.inflate(inflater, container, false)
-        databaseService = DatabaseService(requireActivity())
         mRealm = databaseService.realmInstance
         userId = arguments?.getString("userId") ?: ""
 

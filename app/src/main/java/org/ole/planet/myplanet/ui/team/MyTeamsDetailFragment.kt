@@ -59,7 +59,8 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
     var team: RealmMyTeam? = null
     lateinit var listContent: ListView
     private lateinit var tabLayout: TabLayout
-    lateinit var dbService: DatabaseService
+    @Inject
+    lateinit var databaseService: DatabaseService
     private lateinit var rvDiscussion: RecyclerView
     lateinit var llRv: LinearLayout
     private var isMyTeam = false
@@ -77,8 +78,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         fragmentMyTeamsDetailBinding = FragmentMyTeamsDetailBinding.inflate(inflater, container, false)
         val v: View = fragmentMyTeamsDetailBinding.root
         initializeViews(v)
-        dbService = DatabaseService(requireActivity())
-        mRealm = dbService.realmInstance
+        mRealm = databaseService.realmInstance
         user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
         team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
         return fragmentMyTeamsDetailBinding.root

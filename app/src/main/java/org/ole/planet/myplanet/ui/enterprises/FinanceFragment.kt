@@ -25,10 +25,13 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
+import javax.inject.Inject
 
 class FinanceFragment : BaseTeamFragment() {
     private lateinit var fragmentFinanceBinding: FragmentFinanceBinding
     private lateinit var addTransactionBinding: AddTransactionBinding
+    @Inject
+    lateinit var databaseService: DatabaseService
     private lateinit var fRealm: Realm
     private var adapterFinance: AdapterFinance? = null
     var date: Calendar? = null
@@ -48,7 +51,7 @@ class FinanceFragment : BaseTeamFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentFinanceBinding = FragmentFinanceBinding.inflate(inflater, container, false)
-        fRealm = DatabaseService(requireActivity()).realmInstance
+        fRealm = databaseService.realmInstance
         date = Calendar.getInstance()
         fragmentFinanceBinding.tvFromDateCalendar.setOnClickListener {
             showDatePickerDialog(isFromDate = true)

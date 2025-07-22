@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentServicesBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import javax.inject.Inject
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -24,6 +25,8 @@ import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
 class ServicesFragment : BaseTeamFragment() {
     private lateinit var fragmentServicesBinding: FragmentServicesBinding
+    @Inject
+    lateinit var databaseService: DatabaseService
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentServicesBinding = FragmentServicesBinding.inflate(inflater, container, false)
@@ -33,7 +36,7 @@ class ServicesFragment : BaseTeamFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
         super.onViewCreated(view, savedInstanceState)
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
 
         val links = mRealm.where(RealmMyTeam::class.java)?.equalTo("docType", "link")?.findAll()

@@ -23,6 +23,7 @@ import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import javax.inject.Inject
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.createMyCourse
@@ -49,7 +50,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var selectedItems: MutableList<LI>? = null
     var gradeLevel = ""
     var subjectLevel = ""
-    private lateinit var realmService: DatabaseService
+    @Inject
+    lateinit var databaseService: DatabaseService
     lateinit var recyclerView: RecyclerView
     lateinit var tvMessage: TextView
     lateinit var tvFragmentInfo: TextView
@@ -90,8 +92,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         tvMessage = v.findViewById(R.id.tv_message)
         selectedItems = mutableListOf()
         list = mutableListOf()
-        realmService = DatabaseService(requireActivity())
-        mRealm = realmService.realmInstance
+        mRealm = databaseService.realmInstance
         profileDbHandler = UserProfileDbHandler(requireActivity())
         model = profileDbHandler.userModel!!
         val adapter = getAdapter()

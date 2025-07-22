@@ -5,6 +5,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -22,8 +24,11 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
+@AndroidEntryPoint
 class MyProgressFragment : Fragment() {
     private lateinit var fragmentMyProgressBinding: FragmentMyProgressBinding
+    @Inject
+    lateinit var databaseService: DatabaseService
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentMyProgressBinding = FragmentMyProgressBinding.inflate(inflater, container, false)
@@ -36,7 +41,7 @@ class MyProgressFragment : Fragment() {
     }
 
     private fun initializeData() {
-        val realm = DatabaseService(requireActivity()).realmInstance
+        val realm = databaseService.realmInstance
         val user = UserProfileDbHandler(requireActivity()).userModel
         val courseData = fetchCourseData(realm, user?.id)
         fragmentMyProgressBinding.rvMyprogress.layoutManager = LinearLayoutManager(requireActivity())

@@ -48,6 +48,8 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     
     @Inject
     lateinit var syncManager: SyncManager
+    @Inject
+    lateinit var databaseService: DatabaseService
     
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
     private var directTeamName: String? = null
@@ -76,7 +78,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         val teamId = requireArguments().getString("id" ) ?: ""
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
         val user = UserProfileDbHandler(requireContext()).userModel
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = databaseService.realmInstance
 
         if (shouldQueryRealm(teamId)) {
             if (teamId.isNotEmpty()) {
@@ -314,7 +316,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         val teamType = getEffectiveTeamType()
 
         CoroutineScope(Dispatchers.IO).launch {
-            val realm = DatabaseService(requireActivity()).realmInstance
+            val realm = databaseService.realmInstance
 
             realm.executeTransaction { r ->
                 val log = r.createObject(RealmTeamLog::class.java, "${UUID.randomUUID()}")

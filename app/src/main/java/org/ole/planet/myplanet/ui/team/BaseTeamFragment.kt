@@ -5,13 +5,15 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import javax.inject.Inject
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
 abstract class BaseTeamFragment : BaseNewsFragment() {
-    lateinit var dbService: DatabaseService
+    @Inject
+    lateinit var databaseService: DatabaseService
     var user: RealmUserModel? = null
     lateinit var teamId: String
     var team: RealmMyTeam? = null
@@ -22,8 +24,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         val sParentCode = settings?.getString("parentCode", "")
         val communityName = settings?.getString("communityName", "")
         teamId = requireArguments().getString("id", "") ?: "$communityName@$sParentCode"
-        dbService = DatabaseService(requireActivity())
-        mRealm = dbService.realmInstance
+        mRealm = databaseService.realmInstance
         user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
 
         if (shouldQueryTeamFromRealm()) {

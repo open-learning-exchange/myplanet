@@ -38,11 +38,15 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.NetworkUtils.getUniqueIdentifier
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var exam: RealmStepExam? = null
-    lateinit var db: DatabaseService
+    @Inject
+    lateinit var databaseService: DatabaseService
     lateinit var mRealm: Realm
     var stepId: String? = null
     var id: String? = ""
@@ -64,8 +68,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        db = DatabaseService(requireActivity())
-        mRealm = db.realmInstance
+        mRealm = databaseService.realmInstance
         if (arguments != null) {
             stepId = requireArguments().getString("stepId")
             stepNumber = requireArguments().getInt("stepNum")

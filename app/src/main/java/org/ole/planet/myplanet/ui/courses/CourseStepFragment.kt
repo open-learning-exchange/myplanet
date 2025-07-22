@@ -32,11 +32,13 @@ import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.CustomClickableSpan
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
+import javax.inject.Inject
 
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
-    private lateinit var dbService: DatabaseService
+    @Inject
+    lateinit var databaseService: DatabaseService
     private lateinit var cRealm: Realm
     private lateinit var step: RealmCourseStep
     private lateinit var resources: List<RealmMyLibrary>
@@ -54,8 +56,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentCourseStepBinding = FragmentCourseStepBinding.inflate(inflater, container, false)
-        dbService = DatabaseService(requireActivity())
-        cRealm = dbService.realmInstance
+        cRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
         fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
         fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE

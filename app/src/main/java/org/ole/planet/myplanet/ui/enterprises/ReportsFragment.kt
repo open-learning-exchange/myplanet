@@ -31,9 +31,12 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
+import javax.inject.Inject
 
 class ReportsFragment : BaseTeamFragment() {
     private lateinit var fragmentReportsBinding: FragmentReportsBinding
+    @Inject
+    lateinit var databaseService: DatabaseService
     var list: RealmResults<RealmMyTeam>? = null
     private lateinit var adapterReports: AdapterReports
     private var startTimeStamp: String? = null
@@ -43,7 +46,7 @@ class ReportsFragment : BaseTeamFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentReportsBinding = FragmentReportsBinding.inflate(inflater, container, false)
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = databaseService.realmInstance
         prefData = SharedPrefManager(requireContext())
         if (!isMember()) {
             fragmentReportsBinding.addReports.visibility = View.GONE

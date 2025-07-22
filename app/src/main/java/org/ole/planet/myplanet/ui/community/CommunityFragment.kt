@@ -31,6 +31,8 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
     
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+    @Inject
+    lateinit var databaseService: DatabaseService
     override fun addImage(llImage: LinearLayout?) {}
     override fun onNewsItemClick(news: RealmNews?) {}
     override fun clearImages() {}
@@ -58,7 +60,7 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
         fragmentCommunityBinding.btnLibrary.setOnClickListener {
             homeItemClickListener?.openCallFragment(ResourcesFragment())
