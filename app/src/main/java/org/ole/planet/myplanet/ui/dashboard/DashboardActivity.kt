@@ -51,6 +51,7 @@ import kotlin.math.ceil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runBlocking
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
 import org.json.JSONObject
@@ -558,7 +559,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun createSurveyNotifications(realm: Realm, userId: String?): List<NotificationUtil.NotificationConfig> {
         val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
-        val surveyTitles = lifecycleScope.async { dashboardViewModel.getPendingSurveyTitles(userId) }.await()
+        val surveyTitles = runBlocking { dashboardViewModel.getPendingSurveyTitles(userId) }
 
         surveyTitles.forEach { title ->
             val notificationKey = "survey-$title"
