@@ -16,7 +16,6 @@ import io.realm.RealmResults
 import io.realm.Sort
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCommunityBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -31,8 +30,6 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
     
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
-    @Inject
-    lateinit var databaseService: DatabaseService
     override fun addImage(llImage: LinearLayout?) {}
     override fun onNewsItemClick(news: RealmNews?) {}
     override fun clearImages() {}

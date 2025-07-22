@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentLibraryDetailBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import javax.inject.Inject
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.listToString
@@ -33,8 +32,6 @@ import org.ole.planet.myplanet.utilities.Utilities
 class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private lateinit var fragmentLibraryDetailBinding: FragmentLibraryDetailBinding
     private var libraryId: String? = null
-    @Inject
-    lateinit var databaseService: DatabaseService
     private lateinit var lRealm: Realm
     private lateinit var library: RealmMyLibrary
     var userModel: RealmUserModel? = null

@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMemberCount
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
@@ -48,8 +47,6 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     
     @Inject
     lateinit var syncManager: SyncManager
-    @Inject
-    lateinit var databaseService: DatabaseService
     
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
     private var directTeamName: String? = null

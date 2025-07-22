@@ -27,7 +27,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.databinding.AlertInputBinding
 import org.ole.planet.myplanet.databinding.FragmentMyTeamsDetailBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -59,8 +58,6 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
     var team: RealmMyTeam? = null
     lateinit var listContent: ListView
     private lateinit var tabLayout: TabLayout
-    @Inject
-    lateinit var databaseService: DatabaseService
     private lateinit var rvDiscussion: RecyclerView
     lateinit var llRv: LinearLayout
     private var isMyTeam = false

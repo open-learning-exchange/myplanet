@@ -19,7 +19,6 @@ import java.util.UUID
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddTransactionBinding
 import org.ole.planet.myplanet.databinding.FragmentFinanceBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
@@ -30,8 +29,6 @@ import javax.inject.Inject
 class FinanceFragment : BaseTeamFragment() {
     private lateinit var fragmentFinanceBinding: FragmentFinanceBinding
     private lateinit var addTransactionBinding: AddTransactionBinding
-    @Inject
-    lateinit var databaseService: DatabaseService
     private lateinit var fRealm: Realm
     private var adapterFinance: AdapterFinance? = null
     var date: Calendar? = null

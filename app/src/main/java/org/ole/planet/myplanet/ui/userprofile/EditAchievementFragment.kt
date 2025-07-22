@@ -37,7 +37,6 @@ import org.ole.planet.myplanet.databinding.EditOtherInfoBinding
 import org.ole.planet.myplanet.databinding.FragmentEditAchievementBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.databinding.RowlayoutBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import javax.inject.Inject
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmAchievement.Companion.createReference
@@ -56,8 +55,6 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private lateinit var alertReferenceBinding: AlertReferenceBinding
     private lateinit var alertAddAttachmentBinding: AlertAddAttachmentBinding
     private lateinit var myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding
-    @Inject
-    lateinit var databaseService: DatabaseService
     private lateinit var aRealm: Realm
     var user: RealmUserModel? = null
     private var achievement: RealmAchievement? = null

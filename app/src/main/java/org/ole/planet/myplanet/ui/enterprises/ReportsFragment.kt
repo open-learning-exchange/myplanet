@@ -24,7 +24,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.FragmentReportsBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertReports
 import org.ole.planet.myplanet.model.RealmNews
@@ -35,8 +34,6 @@ import javax.inject.Inject
 
 class ReportsFragment : BaseTeamFragment() {
     private lateinit var fragmentReportsBinding: FragmentReportsBinding
-    @Inject
-    lateinit var databaseService: DatabaseService
     var list: RealmResults<RealmMyTeam>? = null
     private lateinit var adapterReports: AdapterReports
     private var startTimeStamp: String? = null
