@@ -27,7 +27,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.databinding.AlertInputBinding
 import org.ole.planet.myplanet.databinding.FragmentMyTeamsDetailBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -59,7 +58,6 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
     var team: RealmMyTeam? = null
     lateinit var listContent: ListView
     private lateinit var tabLayout: TabLayout
-    lateinit var dbService: DatabaseService
     private lateinit var rvDiscussion: RecyclerView
     lateinit var llRv: LinearLayout
     private var isMyTeam = false
@@ -77,8 +75,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         fragmentMyTeamsDetailBinding = FragmentMyTeamsDetailBinding.inflate(inflater, container, false)
         val v: View = fragmentMyTeamsDetailBinding.root
         initializeViews(v)
-        dbService = DatabaseService(requireActivity())
-        mRealm = dbService.realmInstance
+        mRealm = databaseService.realmInstance
         user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
         team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
         return fragmentMyTeamsDetailBinding.root

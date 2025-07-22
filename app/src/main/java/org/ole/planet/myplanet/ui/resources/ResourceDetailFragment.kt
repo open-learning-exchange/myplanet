@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentLibraryDetailBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import javax.inject.Inject
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.listToString
 import org.ole.planet.myplanet.model.RealmRating.Companion.getRatingsById
@@ -32,7 +32,6 @@ import org.ole.planet.myplanet.utilities.Utilities
 class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private lateinit var fragmentLibraryDetailBinding: FragmentLibraryDetailBinding
     private var libraryId: String? = null
-    private lateinit var dbService: DatabaseService
     private lateinit var lRealm: Realm
     private lateinit var library: RealmMyLibrary
     var userModel: RealmUserModel? = null
@@ -80,8 +79,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         super.onCreateView(inflater, container, savedInstanceState)
         fragmentLibraryDetailBinding = FragmentLibraryDetailBinding.inflate(inflater, container, false)
-        dbService = DatabaseService(requireActivity())
-        lRealm = dbService.realmInstance
+        lRealm = databaseService.realmInstance
         userModel = UserProfileDbHandler(requireContext()).userModel!!
         library = lRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", libraryId).findFirst()!!
         return fragmentLibraryDetailBinding.root

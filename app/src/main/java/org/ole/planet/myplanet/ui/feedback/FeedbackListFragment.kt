@@ -44,6 +44,8 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     lateinit var prefManager: SharedPrefManager
 
     lateinit var settings: SharedPreferences
+    @Inject
+    lateinit var databaseService: DatabaseService
     private val serverUrlMapper = ServerUrlMapper()
     
     @Inject
@@ -61,7 +63,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentFeedbackListBinding = FragmentFeedbackListBinding.inflate(inflater, container, false)
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = databaseService.realmInstance
         userModel = UserProfileDbHandler(requireContext()).userModel
 
         fragmentFeedbackListBinding.fab.setOnClickListener {
