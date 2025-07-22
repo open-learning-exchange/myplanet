@@ -11,6 +11,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UploadManager
+import org.ole.planet.myplanet.service.UploadToShelfService
 import javax.inject.Singleton
 
 @Module
@@ -35,5 +36,13 @@ object ServiceModule {
         @AppPreferences preferences: SharedPreferences
     ): UploadManager {
         return UploadManager(context, databaseService, preferences)
+    }
+
+    @Provides
+    @Singleton
+    fun provideUploadToShelfService(
+        @ApplicationContext context: Context
+    ): UploadToShelfService {
+        return UploadToShelfService(context)
     }
 }
