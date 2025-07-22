@@ -477,26 +477,72 @@
     </string-array>
 
     <string-array name="diagnosis_list">
+        <item>Otitis Media Aguda</item>
+        <item>Infección Respiratoria Aguda</item>
+        <item>Amibiasis</item>
+        <item>Brucelosis</item>
         <item>Cáncer</item>
         <item>Trastornos cardiovasculares</item>
+        <item>Enfermedad de Chagas</item>
+        <item>Chancroide</item>
+        <item>Chikungunya</item>
+        <item>Clamidia</item>
+        <item>Enfermedad Renal Crónica</item>
         <item>Cirrosis hepática</item>
+        <item>Conjuntivitis</item>
         <item>COVID-19</item>
+        <item>Criptosporidiosis</item>
+        <item>Caries dental</item>
+        <item>Dengue</item>
         <item>Diabetes</item>
         <item>Enfermedades diarreicas</item>
-        <item>Ebola</item>
+        <item>Ébola</item>
+        <item>Enfisema</item>
         <item>Epilepsia</item>
-        <item>FGM</item>
+        <item>Mutilación genital femenina</item>
+        <item>Infección fúngica</item>
+        <item>Giardiasis</item>
+        <item>Gonorrea</item>
+        <item>Golpe de calor</item>
+        <item>Hepatitis A</item>
+        <item>Hepatitis B</item>
+        <item>Hepatitis C</item>
+        <item>Virus del herpes simple</item>
+        <item>VIH/SIDA</item>
+        <item>Virus del papiloma humano</item>
+        <item>Hipertensión</item>
         <item>Gripe</item>
+        <item>Anemia por deficiencia de hierro</item>
         <item>Enfermedad cardíaca isquémica</item>
+        <item>Deficiencia de yodo</item>
+        <item>Leishmaniasis</item>
+        <item>Leptospirosis</item>
+        <item>Bajo peso al nacer</item>
+        <item>Linfogranuloma venéreo</item>
         <item>Malaria</item>
         <item>Desnutrición</item>
+        <item>Hemorragia materna</item>
+        <item>Sarampión</item>
         <item>Meningitis</item>
-        <item>Sepsis neonatal e infecciones</item>
-        <item>VIH/SIDA</item>
+        <item>Mycoplasma genitalium</item>
+        <item>Sepsis e infecciones neonatales</item>
+        <item>Obesidad</item>
         <item>Neumonía</item>
+        <item>Preeclampsia/Eclampsia</item>
+        <item>Complicaciones del parto prematuro</item>
+        <item>Rabia</item>
+        <item>Rotavirus</item>
+        <item>Sarna</item>
+        <item>Esquistosomiasis</item>
+        <item>Helmintos transmitidos por el suelo</item>
         <item>Accidente cerebrovascular</item>
-        <item>Tuberculosis</item>
+        <item>Sífilis</item>
         <item>Trauma</item>
+        <item>Tricomoniasis</item>
+        <item>Tuberculosis</item>
+        <item>Fiebre tifoidea</item>
+        <item>Deficiencia de vitamina A</item>
+        <item>Zika</item>
     </string-array>
 
     <string name="title_activity_news_detail">Actividad de detalle de noticias</string>

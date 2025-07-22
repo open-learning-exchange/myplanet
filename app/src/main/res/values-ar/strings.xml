@@ -477,26 +477,72 @@
     </string-array>
 
     <string-array name="diagnosis_list">
-        <item>السرطان</item>
-        <item>اضطرابات الجهاز القلبي الوعائي</item>
+        <item>التهاب الأذن الوسطى الحاد</item>
+        <item>عدوى الجهاز التنفسي الحادة</item>
+        <item>داء الأميبات</item>
+        <item>داء البروسيلا</item>
+        <item>سرطان</item>
+        <item>اضطرابات القلب والأوعية الدموية</item>
+        <item>داء شاغاس</item>
+        <item>القرحة الرخوة</item>
+        <item>شيكونغونيا</item>
+        <item>الكلاميديا</item>
+        <item>مرض الكلى المزمن</item>
         <item>تليف الكبد</item>
+        <item>التهاب الملتحمة</item>
         <item>كوفيد-19</item>
-        <item>السكري</item>
-        <item>أمراض الإسهال</item>
+        <item>داء الكريبتوسبوريديوس</item>
+        <item>تسوس الأسنان</item>
+        <item>حمى الضنك</item>
+        <item>داء السكري</item>
+        <item>الأمراض الإسهالية</item>
         <item>إيبولا</item>
+        <item>انتفاخ الرئة</item>
         <item>الصرع</item>
-        <item>تجريح الإناث</item>
-        <item>الأنفلونزا</item>
-        <item>أمراض القلب الشريانية الإقفارية</item>
+        <item>ختان الإناث</item>
+        <item>عدوى فطرية</item>
+        <item>داء الجيارديا</item>
+        <item>السيلان</item>
+        <item>ضربة الشمس</item>
+        <item>التهاب الكبد A</item>
+        <item>التهاب الكبد B</item>
+        <item>التهاب الكبد C</item>
+        <item>فيروس الهربس البسيط</item>
+        <item>فيروس نقص المناعة البشرية/الإيدز</item>
+        <item>فيروس الورم الحليمي البشري</item>
+        <item>ارتفاع ضغط الدم</item>
+        <item>الإنفلونزا</item>
+        <item>فقر الدم بسبب نقص الحديد</item>
+        <item>مرض القلب الإقفاري</item>
+        <item>نقص اليود</item>
+        <item>داء اللشمانيا</item>
+        <item>داء اللولبية النحيفة</item>
+        <item>انخفاض وزن الولادة</item>
+        <item>داء الورم الحبيبي اللمفي التناسلي</item>
         <item>الملاريا</item>
         <item>سوء التغذية</item>
+        <item>نزيف الأم</item>
+        <item>الحصبة</item>
         <item>التهاب السحايا</item>
-        <item>عدوى الأطفال الحديثين والعدوى</item>
-        <item>الإيدز</item>
-        <item>التهاب الرئة</item>
+        <item>الميكوبلازما التناسلية</item>
+        <item>إنتان حديثي الولادة والعدوى</item>
+        <item>السمنة</item>
+        <item>الالتهاب الرئوي</item>
+        <item>ما قبل تسمم الحمل/تسمم الحمل</item>
+        <item>مضاعفات الولادة المبكرة</item>
+        <item>داء الكلب</item>
+        <item>فيروس الروتا</item>
+        <item>الجرب</item>
+        <item>داء البلهارسيات</item>
+        <item>الديدان المنقولة عن طريق التربة</item>
         <item>السكتة الدماغية</item>
+        <item>الزهري</item>
+        <item>الصدمة/الإصابة</item>
+        <item>داء المشعرات</item>
         <item>السل</item>
-        <item>الإصابات</item>
+        <item>حمى التيفوئيد</item>
+        <item>نقص فيتامين A</item>
+        <item>زيكا</item>
     </string-array>
 
     <string name="title_activity_news_detail">تفاصيل الأخبار</string>
