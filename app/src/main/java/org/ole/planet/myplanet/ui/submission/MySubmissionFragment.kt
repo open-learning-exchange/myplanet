@@ -18,6 +18,8 @@ import io.realm.Sort
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.getIds
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -25,9 +27,12 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
+@AndroidEntryPoint
 class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     private lateinit var fragmentMySubmissionBinding: FragmentMySubmissionBinding
     lateinit var mRealm: Realm
+    @Inject
+    lateinit var databaseService: DatabaseService
     var type: String? = ""
     var exams: HashMap<String?, RealmStepExam>? = null
     private var submissions: List<RealmSubmission>? = null
@@ -47,7 +52,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = databaseService.realmInstance
         fragmentMySubmissionBinding.rvMysurvey.layoutManager = LinearLayoutManager(activity)
         fragmentMySubmissionBinding.rvMysurvey.addItemDecoration(
             DividerItemDecoration(activity, DividerItemDecoration.VERTICAL)

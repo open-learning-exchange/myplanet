@@ -127,7 +127,6 @@
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/_10dp"
         android:orientation="horizontal"
-        android:weightSum="3"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/lt1">
@@ -136,7 +135,6 @@
             android:id="@+id/ltEmail"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
             android:layout_weight="1.2"
             android:layout_marginEnd="4dp"
             android:textColorHint="@color/hint_color"
@@ -165,9 +163,7 @@
             android:id="@+id/ltPhoneNumber"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
             android:layout_weight="1"
-            android:layout_marginHorizontal="4dp"
             android:textColorHint="@color/hint_color"
             app:boxBackgroundColor="@color/md_white_1000"
             app:boxStrokeColor="@color/md_white_1000"
@@ -181,52 +177,55 @@
                 android:layout_centerHorizontal="true"
                 android:layout_centerVertical="true"
                 android:autofillHints=""
+                android:backgroundTint="@color/daynight_textColor"
                 android:drawablePadding="12dp"
                 android:hint="@string/phone_number"
                 android:inputType="phone"
                 android:paddingStart="10dp"
                 android:paddingEnd="8dp"
-                android:textColor="@color/daynight_textColor"
-                android:backgroundTint="@color/daynight_textColor" />
+                android:textColor="@color/daynight_textColor" />
         </com.google.android.material.textfield.TextInputLayout>
+    </LinearLayout>
 
-        <LinearLayout
-            android:layout_width="0dp"
+    <LinearLayout
+        android:id="@+id/ltDob"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/_10dp"
+        android:orientation="vertical"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/lt2">
+
+        <TextView
+            android:id="@+id/tvBirthTitle"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="0.8"
-            android:layout_marginTop="9dp"
-            android:layout_marginStart="4dp"
-            android:orientation="vertical">
+            android:layout_marginBottom="4dp"
+            android:text="@string/birth_date"
+            android:textColor="@color/hint_color"
+            android:textSize="12sp" />
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/ltInputName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:boxBackgroundColor="@color/md_white_1000"
+            app:boxStrokeColor="@color/md_white_1000"
+            app:boxStrokeWidth="0dp"
+            app:boxStrokeWidthFocused="0dp">
 
             <TextView
-                android:id="@+id/tvBirthTitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/birth_date"
-                android:textColor="@color/hint_color"
-                android:textSize="12sp"
-                android:layout_marginBottom="4dp" />
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/ltInputName"
+                android:id="@+id/dateOfBirth"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:boxBackgroundColor="@color/md_white_1000"
-                app:boxStrokeColor="@color/md_white_1000"
-                app:boxStrokeWidth="0dp"
-                app:boxStrokeWidthFocused="0dp">
-
-                <TextView
-                    android:id="@+id/dateOfBirth"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="right"
-                    android:hint="@string/birth_date"
-                    android:textColor="@color/daynight_textColor"
-                    android:textSize="16sp"
-                    app:drawableRightCompat="@drawable/ic_date"
-                    app:drawableTint="@color/daynight_textColor" />
-            </com.google.android.material.textfield.TextInputLayout>
-        </LinearLayout>
+                android:layout_gravity="center"
+                android:gravity="center_vertical"
+                android:hint="@string/birth_date"
+                android:textColor="@color/daynight_textColor"
+                android:textSize="16sp"
+                app:drawableRightCompat="@drawable/ic_date"
+                app:drawableTint="@color/daynight_textColor" />
+        </com.google.android.material.textfield.TextInputLayout>
     </LinearLayout>
 
     <TextView
@@ -239,7 +238,7 @@
         android:textColor="@color/hint_color"
         android:textSize="12sp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/lt2" />
+        app:layout_constraintTop_toBottomOf="@id/ltDob" />
     <RadioGroup
         android:id="@+id/rdGender"
         android:layout_width="match_parent"

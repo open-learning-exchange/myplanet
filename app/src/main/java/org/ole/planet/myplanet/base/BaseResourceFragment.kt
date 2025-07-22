@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
@@ -63,6 +64,8 @@ abstract class BaseResourceFragment : Fragment() {
     var lv: CheckboxListView? = null
     var convertView: View? = null
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
+    @Inject
+    lateinit var databaseService: DatabaseService
     private var resourceNotFoundDialog: AlertDialog? = null
 
     private fun isFragmentActive(): Boolean {
@@ -309,7 +312,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = databaseService.realmInstance
         prgDialog = getProgressDialog(requireActivity())
         settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         editor = settings?.edit()
