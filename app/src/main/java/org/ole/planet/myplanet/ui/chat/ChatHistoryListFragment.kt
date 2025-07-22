@@ -18,20 +18,17 @@ import androidx.lifecycle.lifecycleScope
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
-import io.realm.RealmList
-import io.realm.Sort
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.collectLatest
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.chat.ChatRepository
 import org.ole.planet.myplanet.model.ChatViewModel
-import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
@@ -53,6 +50,9 @@ class ChatHistoryListFragment : Fragment() {
     lateinit var prefManager: SharedPrefManager
     lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
+
+    @Inject
+    lateinit var chatRepository: ChatRepository
     
     @Inject
     lateinit var syncManager: SyncManager
@@ -99,7 +99,12 @@ class ChatHistoryListFragment : Fragment() {
             }
         }
 
-        refreshChatHistoryList()
+        sharedViewModel.loadChatHistory(user?.name ?: "")
+        viewLifecycleOwner.lifecycleScope.launch {
+            sharedViewModel.chatHistory.collectLatest { list ->
+                refreshChatHistoryList(list)
+            }
+        }
 
         fragmentChatHistoryListBinding.searchBar.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -186,8 +191,7 @@ class ChatHistoryListFragment : Fragment() {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
                         prefManager.setChatHistorySynced(true)
-
-                        refreshChatHistoryList()
+                        sharedViewModel.loadChatHistory(user?.name ?: "")
                     }
                 }
             }
@@ -197,7 +201,7 @@ class ChatHistoryListFragment : Fragment() {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
-                        refreshChatHistoryList()
+                        sharedViewModel.loadChatHistory(user?.name ?: "")
 
                         Snackbar.make(fragmentChatHistoryListBinding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
                             .setAction("Retry") { startChatHistorySync() }.show()
@@ -212,15 +216,10 @@ class ChatHistoryListFragment : Fragment() {
         }
     }
 
-    fun refreshChatHistoryList() {
-        val mRealm = DatabaseService(requireActivity()).realmInstance
-        val list = mRealm.where(RealmChatHistory::class.java).equalTo("user", user?.name)
-            .sort("id", Sort.DESCENDING)
-            .findAll()
-
+    fun refreshChatHistoryList(list: List<RealmChatHistory> = emptyList()) {
         val adapter = fragmentChatHistoryListBinding.recyclerView.adapter as? ChatHistoryListAdapter
         if (adapter == null) {
-            val newAdapter = ChatHistoryListAdapter(requireContext(), list, this)
+            val newAdapter = ChatHistoryListAdapter(requireContext(), list, this, chatRepository, settings)
             newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
                 override fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?, aiProvider: String?) {
                     conversations?.let { sharedViewModel.setSelectedChatHistory(it) }

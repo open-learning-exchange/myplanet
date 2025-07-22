@@ -13,6 +13,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TableRow
+import dagger.hilt.android.AndroidEntryPoint
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.view.isNotEmpty
@@ -27,7 +28,6 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
-import io.realm.Realm
 import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
@@ -39,7 +39,7 @@ import okhttp3.RequestBody
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.chat.ChatRepository
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatModel
 import org.ole.planet.myplanet.model.ChatRequestModel
@@ -49,7 +49,6 @@ import org.ole.planet.myplanet.model.ContinueChatModel
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.RealmChatHistory
-import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -60,6 +59,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
+@AndroidEntryPoint
 class ChatDetailFragment : Fragment() {
     lateinit var fragmentChatDetailBinding: FragmentChatDetailBinding
     private lateinit var mAdapter: ChatAdapter
@@ -69,7 +69,6 @@ class ChatDetailFragment : Fragment() {
     private var currentID: String = ""
     private var aiName: String = ""
     private var aiModel: String = ""
-    private lateinit var mRealm: Realm
     var user: RealmUserModel? = null
     private var newsId: String? = null
     lateinit var settings: SharedPreferences
@@ -79,6 +78,9 @@ class ChatDetailFragment : Fragment() {
     private val jsonMediaType = "application/json".toMediaTypeOrNull()
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
+
+    @Inject
+    lateinit var chatRepository: ChatRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -109,7 +111,6 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun initChatComponents() {
-        mRealm = DatabaseService(requireContext()).realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
         mAdapter = ChatAdapter(ArrayList(), requireContext(), fragmentChatDetailBinding.recyclerGchat)
         fragmentChatDetailBinding.recyclerGchat.apply {
@@ -137,9 +138,11 @@ class ChatDetailFragment : Fragment() {
                 mAdapter.addQuery(message)
                 when {
                     _id.isNotEmpty() -> {
-                        val newRev = getLatestRev(_id) ?: _rev
-                        val requestBody = createContinueChatRequest(message, aiProvider, _id, newRev)
-                        launchRequest(requestBody, message, _id)
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            val newRev = getLatestRev(_id) ?: _rev
+                            val requestBody = createContinueChatRequest(message, aiProvider, _id, newRev)
+                            launchRequest(requestBody, message, _id)
+                        }
                     }
                     currentID.isNotEmpty() -> {
                         val requestBody = createContinueChatRequest(message, aiProvider, currentID, _rev)
@@ -408,20 +411,8 @@ class ChatDetailFragment : Fragment() {
         return jsonRequestBody(jsonContent)
     }
 
-    private fun getLatestRev(id: String): String? {
-        return try {
-            mRealm.refresh()
-            val realmChatHistory = mRealm.where(RealmChatHistory::class.java)
-                .equalTo("_id", id)
-                .findAll()
-                .maxByOrNull { rev -> rev._rev!!.split("-")[0].toIntOrNull() ?: 0 }
-
-            val rev = realmChatHistory?._rev
-            rev
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
+    private suspend fun getLatestRev(id: String): String? {
+        return chatRepository.getLatestRev(id)
     }
 
     private fun sendChatRequest(content: RequestBody, query: String, id: String?, newChat: Boolean) {
@@ -476,8 +467,8 @@ class ChatDetailFragment : Fragment() {
     private fun saveNewChat(query: String, chatResponse: String, responseBody: ChatModel) {
         val jsonObject = buildChatHistoryObject(query, chatResponse, responseBody)
 
-        mRealm.executeTransaction { realm ->
-            RealmChatHistory.insert(realm, jsonObject)
+        viewLifecycleOwner.lifecycleScope.launch {
+            chatRepository.insertChatHistory(jsonObject)
         }
         (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
     }
@@ -510,16 +501,11 @@ class ChatDetailFragment : Fragment() {
         }
 
     private fun continueConversationRealm(id:String, query:String, chatResponse:String) {
-        try {
-            addConversationToChatHistory(mRealm, id, query, chatResponse, _rev)
-            mRealm.commitTransaction()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            if (mRealm.isInTransaction) {
-                mRealm.cancelTransaction()
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                chatRepository.addConversation(id, query, chatResponse, _rev)
+            } catch (_: Exception) {
             }
-        } finally {
-            mRealm.close()
         }
     }
 

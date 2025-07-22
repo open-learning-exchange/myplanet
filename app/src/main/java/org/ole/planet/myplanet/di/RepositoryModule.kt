@@ -13,6 +13,8 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.chat.ChatRepository
+import org.ole.planet.myplanet.chat.ChatRepositoryImpl
 import javax.inject.Singleton
 
 @Module
@@ -45,6 +47,14 @@ object RepositoryModule {
         apiInterface: ApiInterface
     ): CourseRepository {
         return CourseRepositoryImpl(databaseService, apiInterface)
+    }
+
+    @Provides
+    @Singleton
+    fun provideChatRepository(
+        databaseService: DatabaseService
+    ): ChatRepository {
+        return ChatRepositoryImpl(databaseService)
     }
 }
 
