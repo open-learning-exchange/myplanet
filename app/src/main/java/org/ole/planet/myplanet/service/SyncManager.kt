@@ -1005,7 +1005,12 @@ class SyncManager @Inject constructor(
         return processedItems
     }
 
-    private fun processShelfDataOptimizedSync(shelfId: String?, shelfData: Constants.ShelfData, shelfDoc: JsonObject?, apiInterface: ApiInterface): Int {
+    private suspend fun processShelfDataOptimizedSync(
+        shelfId: String?,
+        shelfData: Constants.ShelfData,
+        shelfDoc: JsonObject?,
+        apiInterface: ApiInterface,
+    ): Int {
         var processedCount = 0
 
         try {
@@ -1200,7 +1205,7 @@ class SyncManager @Inject constructor(
         return processedCount
     }
 
-    private fun <T> safeRealmOperation(operation: (Realm) -> T): T? {
+    private suspend fun <T> safeRealmOperation(operation: suspend (Realm) -> T): T? {
         var realm: Realm? = null
         return try {
             realm = Realm.getDefaultInstance()
