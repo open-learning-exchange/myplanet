@@ -13,7 +13,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TableRow
-import dagger.hilt.android.AndroidEntryPoint
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.view.isNotEmpty
@@ -58,6 +57,8 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class ChatDetailFragment : Fragment() {
