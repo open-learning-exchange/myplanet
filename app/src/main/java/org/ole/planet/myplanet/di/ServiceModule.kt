@@ -9,6 +9,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.datamanager.ManagerSync
+import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UploadManager
 import javax.inject.Singleton
@@ -35,5 +37,21 @@ object ServiceModule {
         @AppPreferences preferences: SharedPreferences
     ): UploadManager {
         return UploadManager(context, databaseService, preferences)
+    }
+
+    @Provides
+    @Singleton
+    fun provideService(
+        @ApplicationContext context: Context
+    ): Service {
+        return Service(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideManagerSync(
+        @ApplicationContext context: Context
+    ): ManagerSync {
+        return ManagerSync(context)
     }
 }

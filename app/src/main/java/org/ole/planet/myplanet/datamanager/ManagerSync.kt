@@ -20,7 +20,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class ManagerSync private constructor(context: Context) {
+class ManagerSync constructor(context: Context) {
     private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val dbService: DatabaseService = DatabaseService(context)
     private val mRealm: Realm = dbService.realmInstance
@@ -95,12 +95,14 @@ class ManagerSync private constructor(context: Context) {
     }
 
     companion object {
-        private var ourInstance: ManagerSync? = null
-        @JvmStatic
-        val instance: ManagerSync?
+        @Deprecated("Use dependency injection instead", ReplaceWith("Inject ManagerSync"))
+        var instance: ManagerSync? = null
             get() {
-                ourInstance = ManagerSync(MainApplication.context)
-                return ourInstance
+                if (field == null) {
+                    field = ManagerSync(MainApplication.context)
+                }
+                return field
             }
+            private set
     }
 }

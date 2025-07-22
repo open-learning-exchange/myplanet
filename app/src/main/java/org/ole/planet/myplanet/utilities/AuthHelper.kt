@@ -47,7 +47,7 @@ object AuthHelper {
         }
     }
 
-    fun login(activity: LoginActivity, name: String?, password: String?) {
+    fun login(activity: LoginActivity, name: String?, password: String?, managerSync: ManagerSync) {
         if (activity.forceSyncTrigger()) return
 
         val settings = activity.settings
@@ -64,7 +64,7 @@ object AuthHelper {
             return
         }
 
-        ManagerSync.instance?.login(name, password, object : SyncListener {
+        managerSync.login(name, password, object : SyncListener {
             override fun onSyncStarted() {
                 activity.customProgressDialog.setText(activity.getString(R.string.please_wait))
                 activity.customProgressDialog.show()

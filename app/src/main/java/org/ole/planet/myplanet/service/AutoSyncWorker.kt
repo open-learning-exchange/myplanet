@@ -24,9 +24,10 @@ import org.ole.planet.myplanet.utilities.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utilities.Utilities
 
 class AutoSyncWorker @AssistedInject constructor(
-    @Assisted private val context: Context, 
+    @Assisted private val context: Context,
     @Assisted workerParams: WorkerParameters,
-    private val uploadManager: UploadManager
+    private val uploadManager: UploadManager,
+    private val service: Service
 ) : Worker(context, workerParams), SyncListener, CheckVersionCallback, SuccessListener {
     
     @AssistedFactory
@@ -44,7 +45,7 @@ class AutoSyncWorker @AssistedInject constructor(
             if (isAppInForeground(context)) {
                 Utilities.toast(context, "Syncing started...")
             }
-            Service(context).checkVersion(this, preferences)
+            service.checkVersion(this, preferences)
         }
         return Result.success()
     }
@@ -70,7 +71,7 @@ class AutoSyncWorker @AssistedInject constructor(
         if (!blockSync) {
             SyncManager.instance?.start(this, "upload")
             UploadToShelfService.instance?.uploadUserData {
-                Service(MainApplication.context).healthAccess {
+                service.healthAccess {
                     UploadToShelfService.instance?.uploadHealth()
                 }
             }
