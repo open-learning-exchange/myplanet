@@ -67,7 +67,7 @@ class AdapterMyProgress(private val context: Context, private val list: JsonArra
     internal inner class ViewHolderMyProgress(rowMyProgressBinding: RowMyProgressBinding) : RecyclerView.ViewHolder(rowMyProgressBinding.root) {
         var tvTitle = rowMyProgressBinding.tvTitle
         var tvTotal = rowMyProgressBinding.tvTotal
-        //        var llProgress = rowMyProgressBinding.llProgress
+        //var llProgress = rowMyProgressBinding.llProgress
         var tvDescription = rowMyProgressBinding.tvDescription
     }
 }
