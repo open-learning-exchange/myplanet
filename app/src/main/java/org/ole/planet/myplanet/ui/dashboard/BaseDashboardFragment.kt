@@ -53,11 +53,15 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import kotlinx.coroutines.runBlocking
+import androidx.fragment.app.viewModels
+import org.ole.planet.myplanet.ui.dashboard.DashboardViewModel
 
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
     SyncListener {
     private var fullName: String? = null
     lateinit var dbService: DatabaseService
+    private val dashboardViewModel: DashboardViewModel by viewModels()
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
     private lateinit var myCoursesResults: RealmResults<RealmMyCourse>
@@ -142,7 +146,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     private fun myLibraryDiv(view: View) {
         view.findViewById<FlexboxLayout>(R.id.flexboxLayout).flexDirection = FlexDirection.ROW
-        val dbMylibrary = RealmMyLibrary.getMyLibraryByUserId(mRealm, settings)
+        val dbMylibrary = runBlocking { dashboardViewModel.getMyLibraryByUser() }
         if (dbMylibrary.isEmpty()) {
             view.findViewById<TextView>(R.id.count_library).visibility = View.GONE
         } else {

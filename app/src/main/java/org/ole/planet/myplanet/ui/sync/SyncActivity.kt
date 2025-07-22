@@ -66,6 +66,9 @@ import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
 import javax.inject.Inject
 
+import androidx.activity.viewModels
+import org.ole.planet.myplanet.ui.sync.SyncViewModel
+
 @AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
     OnUserSelectedListener, ConfigurationIdListener {
@@ -117,6 +120,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     @Inject
     lateinit var syncManager: SyncManager
 
+    private val syncViewModel: SyncViewModel by viewModels()
+
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -129,6 +134,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         profileDbHandler = UserProfileDbHandler(this)
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
         processedUrl = Utilities.getUrl()
+        syncViewModel.loadAutoSyncSettings()
     }
 
     override fun onConfigurationIdReceived(id: String, code: String, url: String, defaultUrl: String, isAlternativeUrl: Boolean, callerActivity: String) {
@@ -222,7 +228,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         syncSwitch.setOnCheckedChangeListener { _: CompoundButton?, isChecked: Boolean ->
             setSpinnerVisibility(isChecked)
         }
-        syncSwitch.isChecked = settings.getBoolean("autoSync", true)
+        syncSwitch.isChecked = syncViewModel.autoSyncEnabled.value
         dateCheck(dialog)
     }
 
@@ -325,44 +331,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun authenticateUser(settings: SharedPreferences?, username: String?, password: String?, isManagerMode: Boolean): Boolean {
-        return try {
-            if (settings != null) {
-                this.settings = settings
-            }
-            if (mRealm.isEmpty) {
-                alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
-                false
-            } else {
-                checkName(username, password, isManagerMode)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
+        if (settings != null) {
+            this.settings = settings
         }
-    }
-
-    private fun checkName(username: String?, password: String?, isManagerMode: Boolean): Boolean {
-        try {
-            val user = mRealm.where(RealmUserModel::class.java).equalTo("name", username).findFirst()
-            user?.let {
-                if (it._id?.isEmpty() == true) {
-                    if (username == it.name && password == it.password) {
-                        saveUserInfoPref(settings, password, it)
-                        return true
-                    }
-                } else {
-                    if (androidDecrypter(username, password, it.derived_key, it.salt)) {
-                        if (isManagerMode && !it.isManager()) return false
-                        saveUserInfoPref(settings, password, it)
-                        return true
-                    }
-                }
-            }
-        } catch (err: Exception) {
-            err.printStackTrace()
-            return false
+        val user = kotlinx.coroutines.runBlocking {
+            syncViewModel.authenticateUser(username, password, isManagerMode)
         }
-        return false
+        return if (user != null) {
+            saveUserInfoPref(this.settings, password, user)
+            true
+        } else false
     }
 
     fun startSync(type: String) {
@@ -783,11 +761,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             .setTitle(R.string.please_enter_your_password)
             .setPositiveButton(R.string.login) { _: DialogInterface?, _: Int ->
                 val password = "${layoutChildLoginBinding.etChildPassword.text}"
-                if (authenticateUser(settings, userModel.name, password, false)) {
-                    Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
-                    onLogin()
-                } else {
-                    alertDialogOkay(getString(R.string.err_msg_login))
+                lifecycleScope.launch {
+                    val success = authenticateUser(settings, userModel.name, password, false)
+                    if (success) {
+                        Toast.makeText(applicationContext, getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
+                        onLogin()
+                    } else {
+                        alertDialogOkay(getString(R.string.err_msg_login))
+                    }
                 }
             }.setNegativeButton(R.string.cancel, null).show()
     }

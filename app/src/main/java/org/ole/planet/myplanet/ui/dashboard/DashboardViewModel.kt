@@ -2,26 +2,12 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.realm.Case
-import io.realm.Realm
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.di.UserRepository
-import org.ole.planet.myplanet.di.LibraryRepository
-import org.ole.planet.myplanet.di.CourseRepository
 import javax.inject.Inject
-import java.util.Date
-import java.util.UUID
-import org.ole.planet.myplanet.base.BaseResourceFragment
-import org.ole.planet.myplanet.model.RealmNotification
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.di.DashboardRepository
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
-    private val databaseService: DatabaseService,
-    private val userRepository: UserRepository,
-    private val libraryRepository: LibraryRepository,
-    private val courseRepository: CourseRepository
+    private val repository: DashboardRepository
 ) : ViewModel() {
     fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
         val earnedDollarsVoice = minOf(voiceCount, 5) * 2
@@ -37,72 +23,22 @@ class DashboardViewModel @Inject constructor(
         return total.coerceAtMost(11)
     }
 
-    fun updateResourceNotification(realm: Realm, userId: String?) {
-        val resourceCount = BaseResourceFragment.getLibraryList(realm, userId).size
-        if (resourceCount > 0) {
-            val existingNotification = realm.where(RealmNotification::class.java)
-                .equalTo("userId", userId)
-                .equalTo("type", "resource")
-                .findFirst()
-
-            if (existingNotification != null) {
-                existingNotification.message = "$resourceCount"
-                existingNotification.relatedId = "$resourceCount"
-            } else {
-                createNotificationIfNotExists(realm, "resource", "$resourceCount", "$resourceCount", userId)
-            }
-        } else {
-            realm.where(RealmNotification::class.java)
-                .equalTo("userId", userId)
-                .equalTo("type", "resource")
-                .findFirst()?.deleteFromRealm()
-        }
+    suspend fun updateResourceNotification(userId: String?) {
+        repository.updateResourceNotification(userId)
     }
 
-    fun createNotificationIfNotExists(realm: Realm, type: String, message: String, relatedId: String?, userId: String?) {
-        val existingNotification = realm.where(RealmNotification::class.java)
-            .equalTo("userId", userId)
-            .equalTo("type", type)
-            .equalTo("relatedId", relatedId)
-            .findFirst()
-
-        if (existingNotification == null) {
-            realm.createObject(RealmNotification::class.java, "${UUID.randomUUID()}").apply {
-                this.userId = userId ?: ""
-                this.type = type
-                this.message = message
-                this.relatedId = relatedId
-                this.createdAt = Date()
-            }
-        }
+    suspend fun getPendingSurveyTitles(userId: String?): List<String> {
+        return repository.getPendingSurveyTitles(userId)
     }
 
-    fun getPendingSurveys(realm: Realm, userId: String?): List<RealmSubmission> {
-        return realm.where(RealmSubmission::class.java)
-            .equalTo("userId", userId)
-            .equalTo("type", "survey")
-            .equalTo("status", "pending", Case.INSENSITIVE)
-            .findAll()
+    suspend fun getUnreadNotificationsSize(userId: String?): Int {
+        return repository.getUnreadNotificationsSize(userId)
     }
 
-    fun getSurveyTitlesFromSubmissions(realm: Realm, submissions: List<RealmSubmission>): List<String> {
-        val titles = mutableListOf<String>()
-        submissions.forEach { submission ->
-            val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
-            val exam = realm.where(RealmStepExam::class.java)
-                .equalTo("id", examId)
-                .findFirst()
-            exam?.name?.let { titles.add(it) }
-        }
-        return titles
+    suspend fun createNotificationIfNotExists(type: String, message: String, relatedId: String?, userId: String?) {
+        repository.createNotificationIfNotExists(type, message, relatedId, userId)
     }
 
-    fun getUnreadNotificationsSize(realm: Realm, userId: String?): Int {
-        return realm.where(RealmNotification::class.java)
-            .equalTo("userId", userId)
-            .equalTo("isRead", false)
-            .count()
-            .toInt()
-    }
+    suspend fun getMyLibraryByUser() = repository.getMyLibraryByUser()
 }
 

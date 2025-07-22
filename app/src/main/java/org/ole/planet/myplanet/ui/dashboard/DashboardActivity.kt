@@ -520,7 +520,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         newNotifications.addAll(createdNotifications)
                     }
 
-                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(backgroundRealm, userId)
+                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -546,7 +546,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun createNotifications(realm: Realm, userId: String?): List<NotificationUtil.NotificationConfig> {
         val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
 
-        dashboardViewModel.updateResourceNotification(realm, userId)
+        lifecycleScope.launch { dashboardViewModel.updateResourceNotification(userId) }
 
         newNotifications.addAll(createSurveyNotifications(realm, userId))
         newNotifications.addAll(createTaskNotifications(realm, userId))
@@ -558,14 +558,15 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun createSurveyNotifications(realm: Realm, userId: String?): List<NotificationUtil.NotificationConfig> {
         val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
-        val pendingSurveys = dashboardViewModel.getPendingSurveys(realm, userId)
-        val surveyTitles = dashboardViewModel.getSurveyTitlesFromSubmissions(realm, pendingSurveys)
+        val surveyTitles = lifecycleScope.async { dashboardViewModel.getPendingSurveyTitles(userId) }.await()
 
         surveyTitles.forEach { title ->
             val notificationKey = "survey-$title"
 
             if (!notificationManager.hasNotificationBeenShown(notificationKey)) {
-                dashboardViewModel.createNotificationIfNotExists(realm, "survey", title, title, userId)
+                lifecycleScope.launch {
+                    dashboardViewModel.createNotificationIfNotExists("survey", title, title, userId)
+                }
 
                 val config = notificationManager.createSurveyNotification(title, title)
                 newNotifications.add(config)
@@ -586,13 +587,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val notificationKey = "task-${task.id}"
 
             if (!notificationManager.hasNotificationBeenShown(notificationKey)) {
-                dashboardViewModel.createNotificationIfNotExists(
-                    realm,
-                    "task",
-                    "${task.title} ${formatDate(task.deadline)}",
-                    task.id,
-                    userId
-                )
+                lifecycleScope.launch {
+                    dashboardViewModel.createNotificationIfNotExists(
+                        "task",
+                        "${task.title} ${formatDate(task.deadline)}",
+                        task.id,
+                        userId
+                    )
+                }
 
                 val config = notificationManager.createTaskNotification(
                     task.id ?: "task",
@@ -611,7 +613,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val notificationKey = "storage-critical"
 
         if (storageRatio > 85 && !notificationManager.hasNotificationBeenShown(notificationKey)) {
-            dashboardViewModel.createNotificationIfNotExists(realm, "storage", "$storageRatio%", "storage", userId)
+            lifecycleScope.launch {
+                dashboardViewModel.createNotificationIfNotExists("storage", "$storageRatio%", "storage", userId)
+            }
 
             val config = notificationManager.createStorageWarningNotification(storageRatio.toInt())
             newNotifications.add(config)
@@ -649,13 +653,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     val teamName = team?.name ?: "Unknown Team"
                     val message = "$requesterName has requested to join $teamName"
 
-                    dashboardViewModel.createNotificationIfNotExists(
-                        realm,
-                        "join_request",
-                        message,
-                        joinRequest._id,
-                        userId
-                    )
+                    lifecycleScope.launch {
+                        dashboardViewModel.createNotificationIfNotExists(
+                            "join_request",
+                            message,
+                            joinRequest._id,
+                            userId
+                        )
+                    }
 
                     val config = notificationManager.createJoinRequestNotification(
                         joinRequest._id!!,
