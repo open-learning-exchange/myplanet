@@ -179,21 +179,22 @@ class SyncRepositoryImpl(
         isManagerMode: Boolean
     ): RealmUserModel? = withContext(Dispatchers.IO) {
         val realm = databaseService.realmInstance
-        val user = realm.where(RealmUserModel::class.java)
-            .equalTo("name", username)
-            .findFirst()
-        user?.let {
-            if (it._id?.isEmpty() == true) {
-                if (username == it.name && password == it.password) it else null
-            } else {
-                if (org.ole.planet.myplanet.utilities.AndroidDecrypter.androidDecrypter(
-                    username,
-                    password,
-                    it.derived_key,
-                    it.salt
-                ) && (!isManagerMode || it.isManager())) {
-                    it
-                } else null
+        realm.use { r ->
+            val user = r.where(RealmUserModel::class.java)
+                .equalTo("name", username)
+                .findFirst()
+            user?.let {
+                val isValid = if (it._id?.isEmpty() == true) {
+                    username == it.name && password == it.password
+                } else {
+                    org.ole.planet.myplanet.utilities.AndroidDecrypter.androidDecrypter(
+                        username,
+                        password,
+                        it.derived_key,
+                        it.salt
+                    ) && (!isManagerMode || it.isManager())
+                }
+                if (isValid) r.copyFromRealm(it) else null
             }
         }
     }
@@ -295,7 +296,9 @@ class DashboardRepositoryImpl(
 
     override suspend fun getMyLibraryByUser(): List<RealmMyLibrary> = withContext(Dispatchers.IO) {
         val realm = databaseService.realmInstance
-        RealmMyLibrary.getMyLibraryByUserId(realm, settings)
+        realm.use { r ->
+            r.copyFromRealm(RealmMyLibrary.getMyLibraryByUserId(r, settings))
+        }
     }
 
     override suspend fun createNotificationIfNotExists(type: String, message: String, relatedId: String?, userId: String?) {
