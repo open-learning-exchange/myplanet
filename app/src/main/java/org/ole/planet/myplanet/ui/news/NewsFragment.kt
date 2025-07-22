@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.news
 
 import android.content.res.Configuration
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,7 +9,10 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.runBlocking
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import io.realm.Case
@@ -46,7 +48,6 @@ class NewsFragment : BaseNewsFragment() {
     @Inject
     lateinit var newsRepository: NewsRepository
     private var updatedNewsList: RealmResults<RealmNews>? = null
-    private var filteredNewsList: List<RealmNews?> = listOf()
     private val gson = Gson()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -80,36 +81,9 @@ class NewsFragment : BaseNewsFragment() {
             .findAllAsync()
 
         updatedNewsList?.addChangeListener { results ->
-            filteredNewsList = filterNewsList(results)
-            setData(filteredNewsList)
+            setData(results)
         }
         return fragmentNewsBinding.root
-    }
-
-    private fun filterNewsList(results: RealmResults<RealmNews>): List<RealmNews?> {
-        val filteredList: MutableList<RealmNews?> = ArrayList()
-        for (news in results) {
-            if (news.viewableBy.equals("community", ignoreCase = true)) {
-                filteredList.add(news)
-                continue
-            }
-
-            if (!news.viewIn.isNullOrEmpty()) {
-                val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
-                for (e in ar) {
-                    val ob = e.asJsonObject
-                    var userId = "${user?.planetCode}@${user?.parentCode}"
-                    if(userId.isEmpty() || userId=="@"){
-                        userId = settings?.getString("planetCode","")+"@"+settings?.getString("parentCode", "")
-                    }
-                    if (ob != null && ob.has("_id") && ob["_id"].asString.equals(userId, ignoreCase = true)) {
-                        filteredList.add(news)
-                        break
-                    }
-                }
-            }
-        }
-        return filteredList
     }
     
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -129,15 +103,18 @@ class NewsFragment : BaseNewsFragment() {
             map["messageType"] = "sync"
             map["messagePlanetCode"] = user?.planetCode ?: ""
 
-            val n = user?.let { it1 ->
-                runBlocking {
-                    newsRepository.createNews(map, it1, imageList)
+            var n: RealmNews? = null
+            user?.let { currentUser ->
+                viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                    n = newsRepository.createNews(map, currentUser, imageList)
+                    withContext(Dispatchers.Main) {
+                        adapterNews?.addItem(n)
+                        imageList.clear()
+                        llImage?.removeAllViews()
+                        setData(newsList)
+                    }
                 }
             }
-            imageList.clear()
-            llImage?.removeAllViews()
-            adapterNews?.addItem(n)
-            setData(newsList)
         }
 
         fragmentNewsBinding.addNewsImage.setOnClickListener {
@@ -148,31 +125,11 @@ class NewsFragment : BaseNewsFragment() {
         fragmentNewsBinding.addNewsImage.visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, requireActivity())) View.VISIBLE else View.GONE
     }
 
-    private val newsList: List<RealmNews?> get() {
-        val allNews: List<RealmNews> = mRealm.where(RealmNews::class.java).isEmpty("replyTo")
-            .equalTo("docType", "message", Case.INSENSITIVE).findAll()
-        val list: MutableList<RealmNews?> = ArrayList()
-        for (news in allNews) {
-            if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("community", ignoreCase = true)) {
-                list.add(news)
-                continue
-            }
-            if (!TextUtils.isEmpty(news.viewIn)) {
-                val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
-                for (e in ar) {
-                    val ob = e.asJsonObject
-                    var userId = "${user?.planetCode}@${user?.parentCode}"
-                    if(userId.isEmpty() || userId=="@"){
-                        userId = settings?.getString("planetCode","")+"@"+settings?.getString("parentCode", "")
-                    }
-                    if (ob != null && ob.has("_id") && ob["_id"].asString.equals(userId, ignoreCase = true)) {
-                        list.add(news)
-                    }
-                }
-            }
-        }
-        return list
-    }
+    private val newsList: List<RealmNews?>
+        get() = mRealm.where(RealmNews::class.java)
+            .isEmpty("replyTo")
+            .equalTo("docType", "message", Case.INSENSITIVE)
+            .findAll()
 
     override fun setData(list: List<RealmNews?>?) {
         if (!isAdded || list == null) return
