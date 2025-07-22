@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
+import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
@@ -48,6 +49,9 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     
     @Inject
     lateinit var syncManager: SyncManager
+
+    @Inject
+    lateinit var uploadManager: UploadManager
     
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
     private var directTeamName: String? = null
@@ -217,7 +221,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                     RealmMyTeam.requestToJoin(currentTeam._id!!, user, mRealm, team?.teamType)
                     fragmentTeamDetailBinding.btnLeave.text = getString(R.string.requested)
                     fragmentTeamDetailBinding.btnLeave.isEnabled = false
-                    syncTeamActivities(requireContext())
+                    syncTeamActivities(requireContext(), uploadManager)
                 }
             }
         } else {

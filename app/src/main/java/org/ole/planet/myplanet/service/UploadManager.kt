@@ -52,17 +52,7 @@ class UploadManager @Inject constructor(
 
     private val gson = Gson()
 
-    companion object {
-        @Deprecated("Use dependency injection instead", ReplaceWith("Inject UploadManager"))
-        var instance: UploadManager? = null
-            get() {
-                if (field == null) {
-                    field = UploadManager(MainApplication.context)
-                }
-                return field
-            }
-            private set
-    }
+
 
     private fun getRealm(): Realm {
         return databaseService.realmInstance
