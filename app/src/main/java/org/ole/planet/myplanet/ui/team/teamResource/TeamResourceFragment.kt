@@ -11,19 +11,20 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.GridLayoutManager
+import dagger.hilt.android.AndroidEntryPoint
 import java.util.UUID
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.TeamPageListener
 import org.ole.planet.myplanet.databinding.FragmentTeamResourceBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
+import org.ole.planet.myplanet.di.TeamRepository
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.di.TeamRepository
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.teamResource.ResourceUpdateListner
 import org.ole.planet.myplanet.utilities.CheckboxListView
-import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdateListner  {

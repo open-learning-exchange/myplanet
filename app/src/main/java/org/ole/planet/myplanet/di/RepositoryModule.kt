@@ -7,15 +7,15 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import io.realm.Realm
 import io.realm.RealmResults
+import javax.inject.Singleton
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
