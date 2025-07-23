@@ -8,10 +8,12 @@ import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import dagger.hilt.android.EntryPointAccessors
 import io.realm.Realm
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
+import javax.inject.Inject
 import kotlin.math.min
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -24,8 +26,10 @@ import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.callback.SuccessListener
+import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.ConfigurationManager
 import org.ole.planet.myplanet.datamanager.NetworkResult
+import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.isUserExists
@@ -51,10 +55,6 @@ import org.ole.planet.myplanet.utilities.VersionUtils
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import dagger.hilt.android.EntryPointAccessors
-import javax.inject.Inject
-import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
-import org.ole.planet.myplanet.datamanager.ApiInterface
 
 class Service @Inject constructor(
     private val context: Context,

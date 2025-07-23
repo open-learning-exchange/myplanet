@@ -8,14 +8,14 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dagger.hilt.android.EntryPointAccessors
-import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
-import org.ole.planet.myplanet.datamanager.ApiInterface
 import java.io.BufferedInputStream
 import java.io.FileOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.datamanager.ApiInterface
+import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
