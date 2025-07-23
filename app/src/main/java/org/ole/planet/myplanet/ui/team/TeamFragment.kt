@@ -24,7 +24,7 @@ import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getMyTeamsByUserId
+import org.ole.planet.myplanet.di.TeamRepository
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.UploadManager
@@ -47,6 +47,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private var conditionApplied: Boolean = false
     @Inject
     lateinit var uploadManager: UploadManager
+    @Inject
+    lateinit var teamRepository: TeamRepository
     private val settings by lazy {
         requireActivity().getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     }
@@ -80,7 +82,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             getString(R.string.team)
         }
         if (fromDashboard) {
-            teamList = getMyTeamsByUserId(mRealm, settings)
+            teamList = teamRepository.getMyTeamsByUserId(mRealm, settings)
         } else {
             val query = mRealm.where(RealmMyTeam::class.java)
                 .isEmpty("teamId")

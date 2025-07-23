@@ -18,15 +18,19 @@ import org.ole.planet.myplanet.databinding.FragmentTeamResourceBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getResourceIds
+import org.ole.planet.myplanet.di.TeamRepository
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.teamResource.ResourceUpdateListner
 import org.ole.planet.myplanet.utilities.CheckboxListView
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdateListner  {
     private lateinit var fragmentTeamResourceBinding: FragmentTeamResourceBinding
     private lateinit var adapterLibrary: AdapterTeamResource
+    @Inject
+    lateinit var teamRepository: TeamRepository
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTeamResourceBinding = FragmentTeamResourceBinding.inflate(inflater, container, false)
@@ -52,7 +56,7 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
         if (!isAdded || activity == null) return
         val safeActivity = activity ?: return
 
-        val resourceIds = getResourceIds(teamId, mRealm)
+        val resourceIds = teamRepository.getResourceIds(teamId, mRealm)
         val libraries: MutableList<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java)
             .`in`("id", resourceIds.toTypedArray())
             .findAll()
@@ -83,7 +87,7 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
             .setCustomTitle(titleView)
 
         val availableLibraries: List<RealmMyLibrary> = mRealm.where(RealmMyLibrary::class.java)
-            .not().`in`("_id", getResourceIds(teamId, mRealm).toTypedArray())
+            .not().`in`("_id", teamRepository.getResourceIds(teamId, mRealm).toTypedArray())
             .findAll()
 
         alertDialogBuilder.setView(myLibraryAlertdialogBinding.root)

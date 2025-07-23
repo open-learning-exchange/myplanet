@@ -30,8 +30,7 @@ import org.ole.planet.myplanet.databinding.FragmentMyTeamsDetailBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getResourceIds
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getUsers
+import org.ole.planet.myplanet.di.TeamRepository
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmTeamLog
@@ -54,6 +53,8 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
     
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+    @Inject
+    lateinit var teamRepository: TeamRepository
     var teamId: String? = null
     var team: RealmMyTeam? = null
     lateinit var listContent: ListView
@@ -139,7 +140,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
     }
 
     private fun setTeamList() {
-        val users: List<RealmUserModel> = getUsers(teamId, mRealm, "")
+        val users: List<RealmUserModel> = RealmMyTeam.getUsers(teamId, mRealm, "")
         createTeamLog()
         val reqUsers = getRequestedTeamList(team?.requests)
         val realmNewsList: List<RealmNews> = mRealm.where(RealmNews::class.java)
@@ -149,7 +150,9 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         showRecyclerView(realmNewsList)
         listContent.visibility = View.GONE
         val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
-        libraries = mRealm.where(RealmMyLibrary::class.java).`in`("id", getResourceIds(teamId, mRealm).toTypedArray<String>()).findAll()
+        libraries = mRealm.where(RealmMyLibrary::class.java)
+            .`in`("id", teamRepository.getResourceIds(teamId, mRealm).toTypedArray<String>())
+            .findAll()
         tabLayout.getTabAt(1)?.setText(String.format(getString(R.string.joined_members_colon) + " (%s)", users.size))
         tabLayout.getTabAt(3)?.setText(String.format(getString(R.string.courses_colon) + " (%s)", courses.size))
         tabLayout.getTabAt(2)?.setText(String.format(getString(R.string.requested_members_colon) + " (%s)", reqUsers.size))
