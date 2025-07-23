@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.common.reflect.TypeToken
 import com.google.gson.Gson
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.RealmList
 import io.realm.RealmModel
 import io.realm.RealmObject
@@ -22,6 +23,7 @@ import java.text.Normalizer
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.createMyCourse
@@ -38,8 +40,6 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.di.AppPreferences
-import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 @AndroidEntryPoint

@@ -9,13 +9,13 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.text.HtmlCompat
 import androidx.fragment.app.Fragment
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import org.ole.planet.myplanet.di.AppPreferences
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser.parseString
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHelpWantedBinding
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 

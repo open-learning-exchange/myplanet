@@ -1,9 +1,6 @@
 package org.ole.planet.myplanet.ui.community
 
 import android.content.Context.MODE_PRIVATE
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
-import org.ole.planet.myplanet.di.AppPreferences
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -14,9 +11,12 @@ import androidx.lifecycle.Lifecycle
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.tabs.TabLayoutMediator
+import dagger.hilt.android.AndroidEntryPoint
 import java.util.Date
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.TimeUtils
 
