@@ -38,8 +38,6 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
     lateinit var databaseService: DatabaseService
     private lateinit var library: RealmMyLibrary
     private lateinit var mRealm: Realm
-    @Inject
-    lateinit var databaseService: DatabaseService
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityPdfReaderBinding = ActivityPdfreaderBinding.inflate(layoutInflater)
