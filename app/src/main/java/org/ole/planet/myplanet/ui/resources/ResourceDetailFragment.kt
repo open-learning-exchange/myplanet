@@ -18,14 +18,12 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentLibraryDetailBinding
-import javax.inject.Inject
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.listToString
 import org.ole.planet.myplanet.model.RealmRating.Companion.getRatingsById
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.FileUtils.getFileExtension
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -36,8 +34,6 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private lateinit var library: RealmMyLibrary
     var userModel: RealmUserModel? = null
     private val fragmentScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    @Inject
-    lateinit var profileDbHandler: UserProfileDbHandler
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {

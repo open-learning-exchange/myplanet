@@ -10,6 +10,7 @@ import com.google.android.material.tabs.TabLayoutMediator
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
 @AndroidEntryPoint

@@ -31,15 +31,12 @@ import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.CustomClickableSpan
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
-import javax.inject.Inject
 
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
     private lateinit var cRealm: Realm
     private lateinit var step: RealmCourseStep
-    @Inject
-    lateinit var profileDbHandler: UserProfileDbHandler
     private lateinit var resources: List<RealmMyLibrary>
     private lateinit var stepExams: List<RealmStepExam>
     private lateinit var stepSurvey: List<RealmStepExam>

@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 
@@ -30,8 +29,6 @@ class CourseProgressActivity : BaseActivity() {
     lateinit var realm: Realm
     var user: RealmUserModel? = null
     lateinit var courseId: String
-    @Inject
-    lateinit var profileDbHandler: UserProfileDbHandler
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityCourseProgressBinding = ActivityCourseProgressBinding.inflate(layoutInflater)

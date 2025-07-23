@@ -36,7 +36,6 @@ import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
@@ -59,8 +58,6 @@ class AchievementFragment : BaseContainerFragment() {
     
     @Inject
     lateinit var syncManager: SyncManager
-    @Inject
-    lateinit var profileDbHandler: UserProfileDbHandler
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 

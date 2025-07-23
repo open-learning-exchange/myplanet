@@ -13,7 +13,6 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getRequestedMember
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 @AndroidEntryPoint
 class MembersFragment : BaseMemberFragment() {
@@ -23,8 +22,6 @@ class MembersFragment : BaseMemberFragment() {
 
     @Inject
     lateinit var uploadManager: UploadManager
-    @Inject
-    lateinit var profileDbHandler: UserProfileDbHandler
 
     fun setMemberChangeListener(listener: MemberChangeListener) {
         this.memberChangeListener = listener

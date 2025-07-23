@@ -10,21 +10,17 @@ import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentActivity
 import io.realm.Realm
-import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
 class PlanFragment : BaseTeamFragment() {
     private lateinit var fragmentPlanBinding: FragmentPlanBinding
     private var isEnterprise: Boolean = false
-    @Inject
-    lateinit var profileDbHandler: UserProfileDbHandler
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentPlanBinding = FragmentPlanBinding.inflate(inflater, container, false)

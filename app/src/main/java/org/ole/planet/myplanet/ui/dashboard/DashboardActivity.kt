@@ -46,7 +46,6 @@ import io.realm.Realm
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmResults
-import javax.inject.Inject
 import kotlin.math.ceil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -103,10 +102,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private lateinit var activityDashboardBinding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
     var user: RealmUserModel? = null
-    @Inject
-    lateinit var profileDbHandler: UserProfileDbHandler
-    @Inject
-    lateinit var databaseService: DatabaseService
+
     var result: Drawer? = null
     private var menul: TabLayout.Tab? = null
     private var menuh: TabLayout.Tab? = null

@@ -20,6 +20,7 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmQuery
 import io.realm.Sort
+import javax.inject.Inject
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
