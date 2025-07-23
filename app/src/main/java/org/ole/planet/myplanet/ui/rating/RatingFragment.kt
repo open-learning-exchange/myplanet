@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.databinding.FragmentRatingBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities
 

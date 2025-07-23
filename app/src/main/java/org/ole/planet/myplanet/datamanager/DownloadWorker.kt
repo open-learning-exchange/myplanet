@@ -4,33 +4,33 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import dagger.hilt.android.EntryPointAccessors
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedInject
-import dagger.hilt.android.qualifiers.ApplicationContext
-import dagger.hilt.android.work.HiltWorker
 import java.io.BufferedInputStream
 import java.io.FileOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.PreferencesEntryPoint
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getSDPathFromUrl
 import org.ole.planet.myplanet.utilities.Utilities
 
-@HiltWorker
-class DownloadWorker @AssistedInject constructor(
-    @Assisted @ApplicationContext val context: Context,
-    @Assisted workerParams: WorkerParameters,
-    @AppPreferences private val preferences: SharedPreferences
+class DownloadWorker(
+    val context: Context,
+    workerParams: WorkerParameters
 ) : CoroutineWorker(context, workerParams) {
+    private val preferences: SharedPreferences =
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            PreferencesEntryPoint::class.java
+        ).appPreferences()
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {

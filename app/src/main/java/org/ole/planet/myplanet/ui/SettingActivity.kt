@@ -236,7 +236,7 @@ class SettingActivity : AppCompatActivity() {
             }
             autoForceSync(autoSync, autoForceWeeklySync!!, autoForceMonthlySync!!)
             autoForceSync(autoSync, autoForceMonthlySync, autoForceWeeklySync)
-            val lastSynced = appPreferences.getLong("LastSync", 0)
+            val lastSynced = settings.getLong("LastSync", 0)
             if (lastSynced == 0L) {
                 lastSyncDate?.setTitle(R.string.last_synced_never)
             } else if (lastSyncDate != null) {

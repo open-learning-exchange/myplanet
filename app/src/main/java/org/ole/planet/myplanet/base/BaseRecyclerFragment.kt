@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.base
 
-import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
@@ -14,7 +13,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.common.reflect.TypeToken
 import com.google.gson.Gson
-import dagger.hilt.android.AndroidEntryPoint
 import io.realm.RealmList
 import io.realm.RealmModel
 import io.realm.RealmObject
@@ -23,7 +21,6 @@ import java.text.Normalizer
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.createMyCourse
@@ -39,10 +36,8 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
-@AndroidEntryPoint
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
     var subjects: MutableSet<String> = mutableSetOf()
     var languages: MutableSet<String> = mutableSetOf()
@@ -59,9 +54,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var resources: List<RealmMyLibrary>? = null
     var courseLib: String? = null
 
-    @Inject
-    @AppPreferences
-    lateinit var appPreferences: SharedPreferences
 
     abstract fun getLayout(): Int
 
@@ -84,7 +76,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val v = inflater.inflate(getLayout(), container, false)
-        settings = appPreferences
+        settings = BaseResourceFragment.settings!!
         recyclerView = v.findViewById(R.id.recycler)
         recyclerView.layoutManager = LinearLayoutManager(activity)
         if (isMyCourseLib) {

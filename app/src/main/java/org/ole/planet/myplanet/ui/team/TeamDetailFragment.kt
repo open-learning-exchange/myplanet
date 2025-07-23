@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.base.BaseResourceFragment
 
 @AndroidEntryPoint
 class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
