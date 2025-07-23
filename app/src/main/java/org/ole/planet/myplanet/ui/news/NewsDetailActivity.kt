@@ -5,6 +5,8 @@ import android.view.View
 import android.webkit.WebSettings
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -25,7 +27,12 @@ import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class NewsDetailActivity : BaseActivity() {
+    @Inject
+    lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var activityNewsDetailBinding: ActivityNewsDetailBinding
     var news: RealmNews? = null
     lateinit var realm: Realm
@@ -37,7 +44,7 @@ class NewsDetailActivity : BaseActivity() {
         EdgeToEdgeUtil.setupEdgeToEdge(this, activityNewsDetailBinding.root)
         setSupportActionBar(activityNewsDetailBinding.toolbar)
         initActionBar()
-        realm = DatabaseService(this).realmInstance
+        realm = databaseService.realmInstance
         val id = intent.getStringExtra("newsId")
         news = realm.where(RealmNews::class.java).equalTo("id", id).findFirst()
         if (news == null) {
@@ -45,7 +52,7 @@ class NewsDetailActivity : BaseActivity() {
             finish()
             return
         }
-        val user = UserProfileDbHandler(this).userModel!!
+        val user = userProfileDbHandler.userModel!!
         val userId = user.id
         realm.executeTransactionAsync {
             val newsLog: RealmNewsLog = it.createObject(RealmNewsLog::class.java, UUID.randomUUID().toString())

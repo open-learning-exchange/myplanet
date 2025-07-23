@@ -10,6 +10,8 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
@@ -29,11 +31,14 @@ import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDateWithTime
 
+@AndroidEntryPoint
 class FeedbackDetailActivity : AppCompatActivity() {
     private lateinit var activityFeedbackDetailBinding: ActivityFeedbackDetailBinding
     private var mAdapter: RecyclerView.Adapter<*>? = null
     private var layoutManager: RecyclerView.LayoutManager? = null
     private lateinit var feedback: RealmFeedback
+    @Inject
+    lateinit var databaseService: DatabaseService
     lateinit var realm: Realm
     private lateinit var rowFeedbackReplyBinding: RowFeedbackReplyBinding
 
@@ -49,7 +54,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         setTitle(R.string.feedback)
-        realm = DatabaseService(this).realmInstance
+        realm = databaseService.realmInstance
         feedback = realm.where(RealmFeedback::class.java).equalTo("id", intent.getStringExtra("id")).findFirst()!!
         activityFeedbackDetailBinding.tvDate.text = getFormatedDateWithTime(feedback.openTime)
         activityFeedbackDetailBinding.tvMessage.text = if (TextUtils.isEmpty(feedback.message))

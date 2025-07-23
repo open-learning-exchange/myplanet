@@ -7,6 +7,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import com.github.barteksc.pdfviewer.listener.OnLoadCompleteListener
 import com.github.barteksc.pdfviewer.listener.OnPageChangeListener
 import com.github.barteksc.pdfviewer.listener.OnPageErrorListener
@@ -27,10 +29,11 @@ import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.NotificationUtil.create
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompleteListener, OnPageErrorListener, AudioRecordListener {
-    private lateinit var activityPdfReaderBinding: ActivityPdfreaderBinding
     private var fileName: String? = null
-    private lateinit var audioRecorderService: AudioRecorderService
+    @Inject
+    lateinit var databaseService: DatabaseService
     private lateinit var library: RealmMyLibrary
     private lateinit var mRealm: Realm
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,7 +43,7 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         EdgeToEdgeUtil.setupEdgeToEdge(this, activityPdfReaderBinding.root)
         audioRecorderService = AudioRecorderService().setAudioRecordListener(this)
         audioRecorderService.setCaller(this, this)
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = databaseService.realmInstance
         if (intent.hasExtra("resourceId")) {
             val resourceID = intent.getStringExtra("resourceId")
             library = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceID).findFirst()!!

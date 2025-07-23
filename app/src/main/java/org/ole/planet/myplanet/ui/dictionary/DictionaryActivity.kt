@@ -4,6 +4,8 @@ import android.os.Bundle
 import androidx.core.text.HtmlCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import io.realm.Case
@@ -20,7 +22,10 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class DictionaryActivity : BaseActivity() {
+    @Inject
+    lateinit var databaseService: DatabaseService
     private lateinit var fragmentDictionaryBinding: FragmentDictionaryBinding
     var list: RealmResults<RealmDictionary>? = null
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,7 +35,7 @@ class DictionaryActivity : BaseActivity() {
         EdgeToEdgeUtil.setupEdgeToEdge(this, fragmentDictionaryBinding.root)
         initActionBar()
         title = getString(R.string.dictionary)
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = databaseService.realmInstance
         list = mRealm.where(RealmDictionary::class.java)?.findAll()
         fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, list?.size)
         if (FileUtils.checkFileExist(Constants.DICTIONARY_URL)) {

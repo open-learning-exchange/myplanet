@@ -14,6 +14,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
@@ -41,7 +43,12 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.getAge
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
+    @Inject
+    lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var activityAddExaminationBinding: ActivityAddExaminationBinding
     lateinit var mRealm: Realm
     var userId: String? = null
@@ -73,9 +80,9 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         customDiag = HashSet()
         initViews()
-        currentUser = UserProfileDbHandler(this).userModel
+        currentUser = userProfileDbHandler.userModel
         mapConditions = HashMap()
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = databaseService.realmInstance
         userId = intent.getStringExtra("userId")
         pojo = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
         if (pojo == null) {
