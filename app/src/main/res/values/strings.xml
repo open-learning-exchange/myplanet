@@ -477,26 +477,72 @@
     </string-array>
 
     <string-array name="diagnosis_list">
+        <item>Acute Otitis Media</item>
+        <item>Acute Respiratory Infection</item>
+        <item>Amebiasis</item>
+        <item>Brucellosis</item>
         <item>Cancer</item>
         <item>Cardiovascular disorders</item>
+        <item>Chagas Disease</item>
+        <item>Chancroid</item>
+        <item>Chikungunya</item>
+        <item>Chlamydia</item>
+        <item>Chronic Kidney Disease</item>
         <item>Cirrhosis of the liver</item>
+        <item>Conjunctivitis</item>
         <item>COVID-19</item>
+        <item>Cryptosporidiosis</item>
+        <item>Dental Caries</item>
+        <item>Dengue</item>
         <item>Diabetes</item>
         <item>Diarrhoea diseases</item>
         <item>Ebola</item>
+        <item>Emphysema</item>
         <item>Epilepsy</item>
         <item>FGM</item>
+        <item>Fungal Infection</item>
+        <item>Giardiasis</item>
+        <item>Gonorrhea</item>
+        <item>Heatstroke</item>
+        <item>Hepatitis A</item>
+        <item>Hepatitis B</item>
+        <item>Hepatitis C</item>
+        <item>Herpes Simplex Virus</item>
+        <item>HIV/AIDS</item>
+        <item>Human Papillomavirus</item>
+        <item>Hypertension</item>
         <item>Influenza</item>
-        <item>Ischaemic heat disease</item>
+        <item>Iron-Deficiency Anemia</item>
+        <item>Ischaemic heart disease</item>
+        <item>Iodine Deficiency</item>
+        <item>Leishmaniasis</item>
+        <item>Leptospirosis</item>
+        <item>Low Birth Weight</item>
+        <item>Lymphogranuloma Venereum</item>
         <item>Malaria</item>
         <item>Malnutrition</item>
+        <item>Maternal Hemorrhage</item>
+        <item>Measles</item>
         <item>Meningitis</item>
+        <item>Mycoplasma genitalium</item>
         <item>Neonatal sepsis and infections</item>
-        <item>HIV/AIDS</item>
+        <item>Obesity</item>
         <item>Pneumonia</item>
+        <item>Preeclampsia/Eclampsia</item>
+        <item>Preterm Birth Complications</item>
+        <item>Rabies</item>
+        <item>Rotavirus</item>
+        <item>Scabies</item>
+        <item>Schistosomiasis</item>
+        <item>Soil-Transmitted Helminths</item>
         <item>Stroke</item>
-        <item>Tuberculosis</item>
+        <item>Syphilis</item>
         <item>Trauma</item>
+        <item>Trichomoniasis</item>
+        <item>Tuberculosis</item>
+        <item>Typhoid Fever</item>
+        <item>Vitamin A Deficiency</item>
+        <item>Zika</item>
     </string-array>
 
     <string name="title_activity_news_detail">NewsDetailActivity</string>
@@ -1320,5 +1366,6 @@
     <string name="syncing_health_data">Syncing health data…</string>
     <string name="syncing_resources">Syncing resources…</string>
     <string name="syncing_achievements">Syncing achievements…</string>
+    <string name="nation_leaders">nation leaders</string>
 
 </resources>

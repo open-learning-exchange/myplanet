@@ -18,6 +18,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.github.clans.fab.FloatingActionButton
+import dagger.hilt.android.AndroidEntryPoint
 import com.google.android.flexbox.FlexboxLayout
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
@@ -49,6 +50,7 @@ import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import javax.inject.Inject
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
@@ -57,6 +59,7 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSelected,
     ChipDeletedListener, TagClickListener, OnFilterListener {
     private lateinit var tvAddToLib: TextView
@@ -78,6 +81,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private var confirmation: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
+    
+    @Inject
+    lateinit var syncManager: SyncManager
 
     private val serverUrlMapper = ServerUrlMapper()
     private val serverUrl: String
@@ -113,7 +119,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun startSyncManager() {
-        SyncManager.instance?.start(object : SyncListener {
+        syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {

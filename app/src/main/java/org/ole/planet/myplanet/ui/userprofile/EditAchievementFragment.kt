@@ -37,7 +37,7 @@ import org.ole.planet.myplanet.databinding.EditOtherInfoBinding
 import org.ole.planet.myplanet.databinding.FragmentEditAchievementBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.databinding.RowlayoutBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import javax.inject.Inject
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmAchievement.Companion.createReference
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -64,7 +64,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentEditAchievementBinding = FragmentEditAchievementBinding.inflate(inflater, container, false)
-        aRealm = DatabaseService(requireActivity()).realmInstance
+        aRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
         achievementArray = JsonArray()
         achievement = aRealm.where(RealmAchievement::class.java).equalTo("_id", user?.id + "@" + user?.planetCode).findFirst()

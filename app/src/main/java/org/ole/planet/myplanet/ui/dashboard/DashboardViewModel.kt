@@ -1,8 +1,14 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import androidx.lifecycle.ViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
 import io.realm.Case
 import io.realm.Realm
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.UserRepository
+import org.ole.planet.myplanet.di.LibraryRepository
+import org.ole.planet.myplanet.di.CourseRepository
+import javax.inject.Inject
 import java.util.Date
 import java.util.UUID
 import org.ole.planet.myplanet.base.BaseResourceFragment
@@ -10,7 +16,13 @@ import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 
-class DashboardViewModel : ViewModel() {
+@HiltViewModel
+class DashboardViewModel @Inject constructor(
+    private val databaseService: DatabaseService,
+    private val userRepository: UserRepository,
+    private val libraryRepository: LibraryRepository,
+    private val courseRepository: CourseRepository
+) : ViewModel() {
     fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
         val earnedDollarsVoice = minOf(voiceCount, 5) * 2
         val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0

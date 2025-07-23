@@ -294,28 +294,27 @@ class Service(private val context: Context) {
                     val arr = JsonUtils.getJsonArray("rows", response.body())
 
                     Executors.newSingleThreadExecutor().execute {
-                        val backgroundRealm = Realm.getDefaultInstance()
-                        try {
-                            backgroundRealm.executeTransaction { realm1 ->
-                                realm1.delete(RealmCommunity::class.java)
-                                for (j in arr) {
-                                    var jsonDoc = j.asJsonObject
-                                    jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-                                    val id = JsonUtils.getString("_id", jsonDoc)
-                                    val community = realm1.createObject(RealmCommunity::class.java, id)
-                                    if (JsonUtils.getString("name", jsonDoc) == "learning") {
-                                        community.weight = 0
+                        Realm.getDefaultInstance().use { backgroundRealm ->
+                            try {
+                                backgroundRealm.executeTransaction { realm1 ->
+                                    realm1.delete(RealmCommunity::class.java)
+                                    for (j in arr) {
+                                        var jsonDoc = j.asJsonObject
+                                        jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+                                        val id = JsonUtils.getString("_id", jsonDoc)
+                                        val community = realm1.createObject(RealmCommunity::class.java, id)
+                                        if (JsonUtils.getString("name", jsonDoc) == "learning") {
+                                            community.weight = 0
+                                        }
+                                        community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
+                                        community.name = JsonUtils.getString("name", jsonDoc)
+                                        community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
+                                        community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
                                     }
-                                    community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
-                                    community.name = JsonUtils.getString("name", jsonDoc)
-                                    community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
-                                    community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
                                 }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
                             }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        } finally {
-                            backgroundRealm.close()
                         }
                     }
                 }
@@ -362,7 +361,7 @@ class Service(private val context: Context) {
     private suspend fun fetchVersionInfo(settings: SharedPreferences): MyPlanet? =
         withContext(Dispatchers.IO) {
             val result = ApiClient.executeWithResult {
-                retrofitInterface?.checkVersion(Utilities.getUpdateUrl(settings))?.execute()
+                retrofitInterface?.checkVersion(Utilities.getUpdateUrl(settings))
             }
             when (result) {
                 is NetworkResult.Success -> result.data
@@ -373,7 +372,7 @@ class Service(private val context: Context) {
     private suspend fun fetchApkVersionString(settings: SharedPreferences): String? =
         withContext(Dispatchers.IO) {
             val result = ApiClient.executeWithResult {
-                retrofitInterface?.getApkVersion(Utilities.getApkVersionUrl(settings))?.execute()
+                retrofitInterface?.getApkVersion(Utilities.getApkVersionUrl(settings))
             }
             when (result) {
                 is NetworkResult.Success -> result.data.string()

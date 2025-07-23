@@ -23,16 +23,19 @@ import androidx.preference.Preference.OnPreferenceClickListener
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
 import androidx.preference.SwitchPreference
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
+import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.DefaultPreferences
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import javax.inject.Inject
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication.Companion.mRealm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -49,7 +52,19 @@ import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.ThemeManager
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class SettingActivity : AppCompatActivity() {
+
+    @Inject
+    lateinit var databaseService: DatabaseService
+
+    @Inject
+    @AppPreferences
+    lateinit var appPreferences: SharedPreferences
+
+    @Inject
+    @DefaultPreferences 
+    lateinit var defaultPreferences: SharedPreferences
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleHelper.onAttach(base))
@@ -100,8 +115,8 @@ class SettingActivity : AppCompatActivity() {
             profileDbHandler = UserProfileDbHandler(requireActivity())
             user = profileDbHandler.userModel
             dialog = DialogUtils.getCustomProgressDialog(requireActivity())
-            defaultPref = PreferenceManager.getDefaultSharedPreferences(requireActivity())
-            settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            defaultPref = (requireActivity() as SettingActivity).defaultPreferences
+            settings = (requireActivity() as SettingActivity).appPreferences
 
             setBetaToggleOn()
             setAutoSyncToggleOn()
@@ -127,7 +142,7 @@ class SettingActivity : AppCompatActivity() {
             autoDownload?.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
                 if (autoDownload.isChecked == true) {
                     defaultPref.edit { putBoolean("beta_auto_download", true) }
-                    backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
+                    backgroundDownload(downloadAllFiles(getAllLibraryList((requireActivity() as SettingActivity).databaseService.realmInstance)), requireContext())
                 } else {
                     defaultPref.edit { putBoolean("beta_auto_download", false) }
                 }
@@ -147,7 +162,7 @@ class SettingActivity : AppCompatActivity() {
         }
 
         private fun clearDataButtonInit() {
-            val mRealm = DatabaseService(requireActivity()).realmInstance
+            val mRealm = (requireActivity() as SettingActivity).databaseService.realmInstance
             val preference = findPreference<Preference>("reset_app")
             if (preference != null) {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {
