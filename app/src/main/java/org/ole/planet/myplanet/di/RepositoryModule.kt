@@ -189,28 +189,30 @@ class DashboardRepositoryImpl(
 
     override fun updateResourceNotification(userId: String?) {
         databaseService.withRealm { realm ->
-            val resourceCount = BaseResourceFragment.getLibraryList(realm, userId).size
-            if (resourceCount > 0) {
-                val existingNotification = realm.where(RealmNotification::class.java)
-                    .equalTo("userId", userId)
-                    .equalTo("type", "resource")
-                    .findFirst()
-                if (existingNotification != null) {
-                    existingNotification.message = "$resourceCount"
-                    existingNotification.relatedId = "$resourceCount"
+            realm.executeTransaction { txRealm ->
+                val resourceCount = BaseResourceFragment.getLibraryList(txRealm, userId).size
+                if (resourceCount > 0) {
+                    val existingNotification = txRealm.where(RealmNotification::class.java)
+                        .equalTo("userId", userId)
+                        .equalTo("type", "resource")
+                        .findFirst()
+                    if (existingNotification != null) {
+                        existingNotification.message = "$resourceCount"
+                        existingNotification.relatedId = "$resourceCount"
+                    } else {
+                        createNotificationIfNotExistsTx(txRealm, "resource", "$resourceCount", "$resourceCount", userId)
+                    }
                 } else {
-                    createNotificationIfNotExists(realm, "resource", "$resourceCount", "$resourceCount", userId)
+                    txRealm.where(RealmNotification::class.java)
+                        .equalTo("userId", userId)
+                        .equalTo("type", "resource")
+                        .findFirst()?.deleteFromRealm()
                 }
-            } else {
-                realm.where(RealmNotification::class.java)
-                    .equalTo("userId", userId)
-                    .equalTo("type", "resource")
-                    .findFirst()?.deleteFromRealm()
             }
         }
     }
 
-    private fun createNotificationIfNotExists(
+    private fun createNotificationIfNotExistsTx(
         realm: Realm,
         type: String,
         message: String,
@@ -236,7 +238,9 @@ class DashboardRepositoryImpl(
 
     override fun createNotificationIfNotExists(type: String, message: String, relatedId: String?, userId: String?) {
         databaseService.withRealm { realm ->
-            createNotificationIfNotExists(realm, type, message, relatedId, userId)
+            realm.executeTransaction { txRealm ->
+                createNotificationIfNotExistsTx(txRealm, type, message, relatedId, userId)
+            }
         }
     }
 
