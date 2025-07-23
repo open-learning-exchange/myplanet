@@ -22,7 +22,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -38,8 +37,6 @@ import org.ole.planet.myplanet.utilities.VersionUtils
 @AndroidEntryPoint
 class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
-    @Inject
-    lateinit var databaseService: DatabaseService
     var dob: String = ""
     var guest: Boolean = false
 

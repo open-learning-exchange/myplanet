@@ -31,6 +31,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompleteListener, OnPageErrorListener, AudioRecordListener {
+    private lateinit var activityPdfReaderBinding: ActivityPdfreaderBinding
+    private lateinit var audioRecorderService: AudioRecorderService
     private var fileName: String? = null
     @Inject
     lateinit var databaseService: DatabaseService

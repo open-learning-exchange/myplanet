@@ -14,7 +14,6 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.FragmentDictionaryBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmDictionary
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
@@ -24,8 +23,6 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class DictionaryActivity : BaseActivity() {
-    @Inject
-    lateinit var databaseService: DatabaseService
     private lateinit var fragmentDictionaryBinding: FragmentDictionaryBinding
     var list: RealmResults<RealmDictionary>? = null
     override fun onCreate(savedInstanceState: Bundle?) {

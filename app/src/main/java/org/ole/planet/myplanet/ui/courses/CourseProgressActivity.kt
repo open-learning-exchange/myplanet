@@ -13,7 +13,6 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityCourseProgressBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
@@ -28,8 +27,6 @@ import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 @AndroidEntryPoint
 class CourseProgressActivity : BaseActivity() {
     private lateinit var activityCourseProgressBinding: ActivityCourseProgressBinding
-    @Inject
-    lateinit var databaseService: DatabaseService
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     lateinit var realm: Realm

@@ -17,7 +17,6 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityNewsDetailBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNewsLog
@@ -29,8 +28,6 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class NewsDetailActivity : BaseActivity() {
-    @Inject
-    lateinit var databaseService: DatabaseService
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var activityNewsDetailBinding: ActivityNewsDetailBinding
