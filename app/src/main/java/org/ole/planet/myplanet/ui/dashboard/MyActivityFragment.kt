@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.dashboard
 
-
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -23,6 +22,7 @@ import org.ole.planet.myplanet.databinding.FragmentMyActivityBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+
 @AndroidEntryPoint
 class MyActivityFragment : Fragment() {
     private lateinit var fragmentMyActivityBinding : FragmentMyActivityBinding

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.myhealth
 
-
 import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Editable
@@ -43,6 +42,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getBoolean
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.getAge
 import org.ole.planet.myplanet.utilities.Utilities
+
 @AndroidEntryPoint
 class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
     private lateinit var activityAddExaminationBinding: ActivityAddExaminationBinding

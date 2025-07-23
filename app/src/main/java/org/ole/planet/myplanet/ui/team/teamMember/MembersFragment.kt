@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.team.teamMember
 
-
 import android.content.Context
 import android.content.res.Configuration
 import androidx.recyclerview.widget.GridLayoutManager
@@ -14,6 +13,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getRequestedMember
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
+
 @AndroidEntryPoint
 class MembersFragment : BaseMemberFragment() {
 

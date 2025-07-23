@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.community
 
-
 import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -13,6 +12,7 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+
 @AndroidEntryPoint
 class CommunityTabFragment : Fragment() {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding

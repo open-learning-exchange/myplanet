@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.submission
 
-
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
@@ -27,6 +26,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+
 @AndroidEntryPoint
 class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     private lateinit var fragmentMySubmissionBinding: FragmentMySubmissionBinding

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.myhealth
 
-
 import android.app.DatePickerDialog
 import android.content.Context.MODE_PRIVATE
 import android.content.Intent
@@ -56,6 +55,7 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
 import org.ole.planet.myplanet.utilities.Utilities
+
 @AndroidEntryPoint
 class MyHealthFragment : Fragment() {
     

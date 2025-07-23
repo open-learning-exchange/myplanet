@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.team
 
-
 import android.content.Context
 import android.os.Bundle
 import android.text.Editable
@@ -32,6 +31,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
+
 @AndroidEntryPoint
 class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private lateinit var fragmentTeamBinding: FragmentTeamBinding

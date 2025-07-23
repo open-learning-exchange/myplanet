@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.exam
 
-
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
@@ -44,6 +43,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.hideSoftKeyboard
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.Utilities.toast
+
 class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {
     private lateinit var fragmentTakeExamBinding: FragmentTakeExamBinding
     private var isCertified = false

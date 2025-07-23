@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.community
 
-
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
@@ -23,6 +22,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.news.ReplyActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
+
 @AndroidEntryPoint
 class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickListener {
     private lateinit var fragmentCommunityBinding: FragmentCommunityBinding

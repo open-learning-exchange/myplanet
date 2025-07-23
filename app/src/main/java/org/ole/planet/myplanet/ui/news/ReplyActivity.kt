@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.news
 
-
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -40,6 +39,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
+
 @AndroidEntryPoint
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private lateinit var activityReplyBinding: ActivityReplyBinding

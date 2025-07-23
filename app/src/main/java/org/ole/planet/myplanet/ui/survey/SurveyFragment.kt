@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.survey
 
-
 import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -36,6 +35,7 @@ import org.ole.planet.myplanet.utilities.CustomSpinner
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+
 @AndroidEntryPoint
 class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListener {
     private lateinit var addNewSurvey: FloatingActionButton

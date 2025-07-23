@@ -53,6 +53,7 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
+
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
     SyncListener {
     private var fullName: String? = null

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.dashboard
 
-
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -19,6 +18,7 @@ import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.TimeUtils.currentDate
+
 class DashboardFragment : BaseDashboardFragment() {
     private lateinit var fragmentHomeBinding: FragmentHomeBinding
     private lateinit var dRealm: Realm

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.survey
 
-
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
@@ -27,6 +26,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment.Companion.settings
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+
 class AdapterSurvey(
     private val context: Context,
     private val mRealm: Realm,

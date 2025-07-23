@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.courses
 
-
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -24,6 +23,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+
 @AndroidEntryPoint
 class MyProgressFragment : Fragment() {
     private lateinit var fragmentMyProgressBinding: FragmentMyProgressBinding

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.resources
 
-
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -27,6 +26,7 @@ import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.FileUtils.getFileExtension
 import org.ole.planet.myplanet.utilities.Utilities
+
 class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private lateinit var fragmentLibraryDetailBinding: FragmentLibraryDetailBinding
     private var libraryId: String? = null

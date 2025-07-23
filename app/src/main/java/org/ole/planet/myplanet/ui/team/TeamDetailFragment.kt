@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.team
 
-
 import android.content.Context.MODE_PRIVATE
 import android.content.DialogInterface
 import android.content.SharedPreferences
@@ -40,6 +39,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
+
 @AndroidEntryPoint
 class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     

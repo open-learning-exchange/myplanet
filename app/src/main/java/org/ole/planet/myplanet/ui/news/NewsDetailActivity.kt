@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.news
 
-
 import android.os.Bundle
 import android.view.View
 import android.webkit.WebSettings
@@ -14,7 +13,6 @@ import io.realm.Realm
 import java.io.File
 import java.util.Date
 import java.util.UUID
-import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityNewsDetailBinding
@@ -22,19 +20,17 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNewsLog
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
+
 @AndroidEntryPoint
 class NewsDetailActivity : BaseActivity() {
     private lateinit var activityNewsDetailBinding: ActivityNewsDetailBinding
     var news: RealmNews? = null
     lateinit var realm: Realm
     private val gson = Gson()
-    @Inject
-    lateinit var profileDbHandler: UserProfileDbHandler
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityNewsDetailBinding = ActivityNewsDetailBinding.inflate(layoutInflater)

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.base
 
-
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
@@ -54,6 +53,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadFiles
 import org.ole.planet.myplanet.utilities.Utilities
+
 @AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null

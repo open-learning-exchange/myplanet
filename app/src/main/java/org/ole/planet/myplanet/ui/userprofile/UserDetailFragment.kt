@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.userprofile
 
-
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -18,6 +17,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
 import org.ole.planet.myplanet.utilities.Utilities
+
 @AndroidEntryPoint
 class UserDetailFragment : Fragment() {
     private lateinit var fragmentUserDetailBinding: FragmentUserDetailBinding

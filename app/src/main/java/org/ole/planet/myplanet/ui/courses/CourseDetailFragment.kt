@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.courses
 
-
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -23,6 +22,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+
 class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private lateinit var fragmentCourseDetailBinding: FragmentCourseDetailBinding
     private lateinit var cRealm: Realm

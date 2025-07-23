@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.mymeetup
 
-
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -22,6 +21,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
+
 @AndroidEntryPoint
 class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     private lateinit var fragmentMyMeetupDetailBinding: FragmentMyMeetupDetailBinding

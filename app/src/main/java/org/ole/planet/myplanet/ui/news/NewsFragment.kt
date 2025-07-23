@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.news
 
-
 import android.content.res.Configuration
 import android.os.Bundle
 import android.text.TextUtils
@@ -30,6 +29,7 @@ import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
+
 @AndroidEntryPoint
 class NewsFragment : BaseNewsFragment() {
     private lateinit var fragmentNewsBinding: FragmentNewsBinding

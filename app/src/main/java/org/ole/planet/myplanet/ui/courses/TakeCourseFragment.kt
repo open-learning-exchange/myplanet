@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.courses
 
-
 import android.content.DialogInterface
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -41,6 +40,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
 import org.ole.planet.myplanet.utilities.Utilities
+
 @AndroidEntryPoint
 class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnClickListener {
     private lateinit var fragmentTakeCourseBinding: FragmentTakeCourseBinding

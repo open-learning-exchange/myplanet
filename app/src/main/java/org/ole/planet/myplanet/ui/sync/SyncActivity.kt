@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.sync
 
-
 import android.Manifest
 import android.content.*
 import android.graphics.drawable.AnimationDrawable
@@ -66,6 +65,7 @@ import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.ServerConfigUtils
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
+
 @AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
     OnUserSelectedListener, ConfigurationIdListener {

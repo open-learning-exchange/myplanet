@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui
 
-
 import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
@@ -52,6 +51,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryForma
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.ThemeManager
 import org.ole.planet.myplanet.utilities.Utilities
+
 @AndroidEntryPoint
 class SettingActivity : AppCompatActivity() {
 

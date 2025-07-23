@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.courses
 
-
 import android.os.Bundle
 import android.text.Spannable
 import android.text.method.LinkMovementMethod
@@ -32,6 +31,7 @@ import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.CustomClickableSpan
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null

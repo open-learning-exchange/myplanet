@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.feedback
 
-
 import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -34,6 +33,7 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+
 @AndroidEntryPoint
 class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     private lateinit var fragmentFeedbackListBinding: FragmentFeedbackListBinding

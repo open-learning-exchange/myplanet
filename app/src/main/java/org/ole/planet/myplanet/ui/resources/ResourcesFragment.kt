@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.resources
 
-
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
@@ -58,6 +57,7 @@ import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
+
 @AndroidEntryPoint
 class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSelected,
     ChipDeletedListener, TagClickListener, OnFilterListener {

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.base
 
-
 import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
@@ -49,6 +48,7 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.ResourceOpener
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
+
 @AndroidEntryPoint
 abstract class BaseContainerFragment : BaseResourceFragment() {
     private var timesRated: TextView? = null

@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.chat
 
-
 import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Typeface
@@ -62,6 +61,7 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+
 @AndroidEntryPoint
 class ChatDetailFragment : Fragment() {
     lateinit var fragmentChatDetailBinding: FragmentChatDetailBinding

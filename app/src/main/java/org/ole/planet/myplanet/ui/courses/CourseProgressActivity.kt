@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.courses
 
-
 import android.os.Bundle
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -23,6 +22,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
+
 @AndroidEntryPoint
 class CourseProgressActivity : BaseActivity() {
     private lateinit var activityCourseProgressBinding: ActivityCourseProgressBinding

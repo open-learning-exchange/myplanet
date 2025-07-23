@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.base
 
-
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -36,6 +35,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
+
 @RequiresApi(api = Build.VERSION_CODES.O)
 abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListener {
     lateinit var imageList: RealmList<String>

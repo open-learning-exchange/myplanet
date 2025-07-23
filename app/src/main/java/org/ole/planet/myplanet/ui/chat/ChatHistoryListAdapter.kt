@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.chat
 
-
 import android.app.AlertDialog
 import android.content.Context
 import android.graphics.drawable.ColorDrawable
@@ -35,6 +34,7 @@ import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
 import org.ole.planet.myplanet.ui.news.GrandChildAdapter
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment.Companion.settings
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+
 class ChatHistoryListAdapter(
     private val context: Context,
     private var chatHistory: List<RealmChatHistory>,
