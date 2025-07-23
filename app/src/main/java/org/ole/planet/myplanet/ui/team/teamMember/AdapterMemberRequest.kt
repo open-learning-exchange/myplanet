@@ -10,15 +10,10 @@ import org.ole.planet.myplanet.databinding.RowMemberRequestBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
+import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.model.RealmUserModel
 
-class AdapterMemberRequest(
-    private val context: Context,
-    private val list: MutableList<RealmUserModel>,
-    private val mRealm: Realm,
-    private val currentUser: RealmUserModel,
-    private val listener: MemberChangeListener
-) : RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser>() {
+class AdapterMemberRequest(private val context: Context, private val list: MutableList<RealmUserModel>, private val mRealm: Realm, private val currentUser: RealmUserModel, private val listener: MemberChangeListener, private val uploadManager: UploadManager) : RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser>() {
     private lateinit var rowMemberRequestBinding: RowMemberRequestBinding
     private var teamId: String? = null
     private lateinit var team: RealmMyTeam
@@ -100,7 +95,7 @@ class AdapterMemberRequest(
         notifyItemRemoved(position)
         notifyItemRangeChanged(position, list.size)
 
-        syncTeamActivities(context)
+        syncTeamActivities(context, uploadManager)
     }
 
     override fun getItemCount(): Int {

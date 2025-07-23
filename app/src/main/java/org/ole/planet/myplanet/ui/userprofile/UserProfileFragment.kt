@@ -30,6 +30,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -61,12 +63,14 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class UserProfileFragment : Fragment() {
     private lateinit var fragmentUserProfileBinding: FragmentUserProfileBinding
     private lateinit var rowStatBinding: RowStatBinding
     private lateinit var handler: UserProfileDbHandler
     private lateinit var settings: SharedPreferences
-    private lateinit var realmService: DatabaseService
+    @Inject
+    lateinit var databaseService: DatabaseService
     private lateinit var mRealm: Realm
     private var model: RealmUserModel? = null
     private var imageUrl = ""
@@ -103,6 +107,7 @@ class UserProfileFragment : Fragment() {
         captureImageLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
             if (isSuccess) {
                 startIntent(photoURI)
+                fragmentUserProfileBinding.image.setImageURI(photoURI)
             }
         }
 
@@ -151,8 +156,7 @@ class UserProfileFragment : Fragment() {
     private fun initializeDependencies() {
         settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         handler = UserProfileDbHandler(requireContext())
-        realmService = DatabaseService(requireContext())
-        mRealm = realmService.realmInstance
+        mRealm = databaseService.realmInstance
         fragmentUserProfileBinding.rvStat.layoutManager = LinearLayoutManager(activity)
         fragmentUserProfileBinding.rvStat.isNestedScrollingEnabled = false
     }

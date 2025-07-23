@@ -477,26 +477,72 @@
     </string-array>
 
     <string-array name="diagnosis_list">
+        <item>तीव्र ओटाइटिस मिडिया</item>
+        <item>तीव्र श्वासप्रश्वास संक्रमण</item>
+        <item>एमिबियासिस</item>
+        <item>ब्रुसेलोसिस</item>
         <item>क्यान्सर</item>
-        <item>हृदय सम्बन्धी विकारहरू</item>
-        <item>यकृतको सिरोजिस</item>
+        <item>मध्य रक्तसञ्चार विकारहरू</item>
+        <item>चागास रोग</item>
+        <item>चान्क्रोइड</item>
+        <item>चिकुङ्गुन्या</item>
+        <item>क्लामाइडिया</item>
+        <item>दीर्घकालीन मिर्गौला रोग</item>
+        <item>कलेजोको सिरोसिस</item>
+        <item>आँखा रातो हुने (कन्जंक्टिभाइटिस)</item>
         <item>कोभिड-१९</item>
+        <item>क्रिप्टोस्पोरिडियोसिस</item>
+        <item>दाँतको किराले खाने (डेन्टल क्यारीज)</item>
+        <item>डेङ्गी</item>
         <item>मधुमेह</item>
-        <item>पखालाई रोगहरू</item>
+        <item>पेटको पातलो रोगहरू</item>
         <item>इबोला</item>
-        <item>मिर्गालासी</item>
-        <item>एफजीएम</item>
-        <item>इन्फ्लुएन्जा</item>
-        <item>इश्केमिक हृदय रोग</item>
-        <item>मलेरिया</item>
-        <item>कुपोषण</item>
-        <item>मेनिंगाइटिस</item>
-        <item>नवजात शिशु सेप्सिस र संक्रमण</item>
+        <item>एम्फिसिमा</item>
+        <item>मिर्गी</item>
+        <item>महिला यौन अङ्ग काट्ने (FGM)</item>
+        <item>फंगल संक्रमण</item>
+        <item>जियार्डियासिस</item>
+        <item>गोनोरिया</item>
+        <item>घामले हानेको (हीटस्ट्रोक)</item>
+        <item>हेपाटाइटिस A</item>
+        <item>हेपाटाइटिस B</item>
+        <item>हेपाटाइटिस C</item>
+        <item>हरपिस भाइरस</item>
         <item>एचआइभी/एड्स</item>
+        <item>मानव पेपिलोमाभाइरस</item>
+        <item>रक्तचाप उच्च हुनु</item>
+        <item>इन्फ्लुएन्जा</item>
+        <item>फलामको कमी भएको एनेमिया</item>
+        <item>इस्चेमिक मुटु रोग</item>
+        <item>आयोडिनको कमी</item>
+        <item>लेइशमानियासिस</item>
+        <item>लेप्टोस्पाइरोसिस</item>
+        <item>कम तौलको जन्म</item>
+        <item>लिम्फोग्रानुलोमा भेनेरियम</item>
+        <item>मलेरिया</item>
+        <item>पोषण कमी</item>
+        <item>आमा रक्तश्राव</item>
+        <item>खोपडी</item>
+        <item>मेनिन्जाइटिस</item>
+        <item>माइकोप्लाज्मा जेनिटालियम</item>
+        <item>नवजात शिशुको सेप्सिस र संक्रमण</item>
+        <item>मोटोपना</item>
         <item>न्यूमोनिया</item>
-        <item>स्ट्रोक</item>
-        <item>तपेदिक</item>
-        <item>घायली</item>
+        <item>प्रीएक्लाम्पसिया/एक्लाम्पसिया</item>
+        <item>अकाल जन्म सम्बन्धी समस्या</item>
+        <item>रेबीज</item>
+        <item>रोटाभाइरस</item>
+        <item>स्केबीज</item>
+        <item>सिस्टोसोमियासिस</item>
+        <item>माटोबाट सर्ने किरा</item>
+        <item>पक्षघात (स्ट्रोक)</item>
+        <item>सिफिलिस</item>
+        <item>आघात</item>
+        <item>ट्राइकोमोनियासिस</item>
+        <item>क्षयरोग</item>
+        <item>टाइफाइड ज्वरो</item>
+        <item>भिटामिन A को कमी</item>
+        <item>जिका</item>
     </string-array>
 
     <string name="title_activity_news_detail">समाचार विवरण गतिविधि</string>

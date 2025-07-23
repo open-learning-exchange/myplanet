@@ -12,7 +12,6 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import java.io.IOException
 import java.util.Date
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
@@ -399,15 +398,6 @@ class UploadToShelfService(context: Context) {
     }
 
     companion object {
-        var instance: UploadToShelfService? = null
-            get() {
-                if (field == null) {
-                    field = UploadToShelfService(MainApplication.context)
-                }
-                return field
-            }
-            private set
-
         private fun changeUserSecurity(model: RealmUserModel, obj: JsonObject) {
             val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
             val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"

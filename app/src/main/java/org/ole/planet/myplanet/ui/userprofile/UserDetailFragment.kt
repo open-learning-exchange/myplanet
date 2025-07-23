@@ -5,6 +5,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
@@ -16,11 +18,14 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class UserDetailFragment : Fragment() {
     private lateinit var fragmentUserDetailBinding: FragmentUserDetailBinding
     lateinit var itemTitleDescBinding: ItemTitleDescBinding
     private var userId: String? = null
     private var user: RealmUserModel? = null
+    @Inject
+    lateinit var databaseService: DatabaseService
     private lateinit var db: UserProfileDbHandler
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,7 +38,7 @@ class UserDetailFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentUserDetailBinding = FragmentUserDetailBinding.inflate(inflater, container, false)
         fragmentUserDetailBinding.rvUserDetail.layoutManager = GridLayoutManager(activity, 2)
-        val mRealm = DatabaseService(requireActivity()).realmInstance
+        val mRealm = databaseService.realmInstance
         db = UserProfileDbHandler(requireActivity())
         user = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
         return fragmentUserDetailBinding.root

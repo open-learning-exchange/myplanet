@@ -56,6 +56,8 @@ class ChatHistoryListFragment : Fragment() {
     
     @Inject
     lateinit var syncManager: SyncManager
+    @Inject
+    lateinit var databaseService: DatabaseService
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -213,7 +215,7 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     fun refreshChatHistoryList() {
-        val mRealm = DatabaseService(requireActivity()).realmInstance
+        val mRealm = databaseService.realmInstance
         val list = mRealm.where(RealmChatHistory::class.java).equalTo("user", user?.name)
             .sort("id", Sort.DESCENDING)
             .findAll()
