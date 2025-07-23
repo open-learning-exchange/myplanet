@@ -1,6 +1,10 @@
 package org.ole.planet.myplanet.ui.community
 
 import android.content.Context.MODE_PRIVATE
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import org.ole.planet.myplanet.di.AppPreferences
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -16,9 +20,13 @@ import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.TimeUtils
 
+@AndroidEntryPoint
 class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
     private var bottomSheetBehavior: BottomSheetBehavior<View>? = null
+    @Inject
+    @AppPreferences
+    lateinit var appPreferences: SharedPreferences
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTeamDetailBinding = FragmentTeamDetailBinding.inflate(inflater, container, false)
@@ -78,7 +86,7 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
 
     private fun initCommunityTab() {
         fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
-        val settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val settings = appPreferences
         val sParentcode = settings.getString("parentCode", "")
         val communityName = settings.getString("communityName", "")
         fragmentTeamDetailBinding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "$communityName@$sParentcode", true, settings)

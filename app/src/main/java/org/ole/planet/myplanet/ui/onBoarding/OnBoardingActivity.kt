@@ -6,6 +6,10 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import android.content.SharedPreferences
+import org.ole.planet.myplanet.di.AppPreferences
 import androidx.core.content.ContextCompat
 import androidx.viewpager.widget.ViewPager
 import androidx.core.view.ViewCompat
@@ -20,6 +24,7 @@ import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils.copyAssets
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
+@AndroidEntryPoint
 class OnBoardingActivity : AppCompatActivity() {
     private lateinit var binding: ActivityOnBoardingBinding
     private lateinit var mAdapter: OnBoardingAdapter
@@ -27,6 +32,9 @@ class OnBoardingActivity : AppCompatActivity() {
     private var dotsCount = 0
     private lateinit var dots: Array<ImageView?>
     lateinit var prefData: SharedPrefManager
+    @Inject
+    @AppPreferences
+    lateinit var appPreferences: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,7 +44,7 @@ class OnBoardingActivity : AppCompatActivity() {
         EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
 
         copyAssets(this)
-        val settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val settings = appPreferences
         if (settings.getBoolean(Constants.KEY_LOGIN, false) && !Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext)) {
             val dashboard = Intent(applicationContext, DashboardActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)

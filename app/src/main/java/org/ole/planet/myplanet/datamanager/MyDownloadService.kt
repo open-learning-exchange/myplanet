@@ -18,6 +18,9 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import org.ole.planet.myplanet.di.AppPreferences
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -40,13 +43,16 @@ import org.ole.planet.myplanet.utilities.FileUtils.getSDPathFromUrl
 import org.ole.planet.myplanet.utilities.Utilities.header
 import retrofit2.Call
 
+@AndroidEntryPoint
 class MyDownloadService : Service() {
     private var data = ByteArray(1024 * 4)
     private var outputFile: File? = null
     private var notificationBuilder: NotificationCompat.Builder? = null
     private var notificationManager: NotificationManager? = null
     private var totalFileSize = 0
-    private lateinit var preferences: SharedPreferences
+    @Inject
+    @AppPreferences
+    lateinit var preferences: SharedPreferences
     private lateinit var urls: Array<String>
     private var currentIndex = 0
     private var request: Call<ResponseBody>? = null
@@ -58,7 +64,6 @@ class MyDownloadService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
         DownloadUtils.createChannels(this)

@@ -32,10 +32,14 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
 import org.ole.planet.myplanet.ui.news.GrandChildAdapter
-import org.ole.planet.myplanet.ui.team.BaseTeamFragment.Companion.settings
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import android.content.SharedPreferences
 
-class ChatHistoryListAdapter(var context: Context, private var chatHistory: List<RealmChatHistory>, private val fragment: ChatHistoryListFragment) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class ChatHistoryListAdapter(
+    var context: Context,
+    private var chatHistory: List<RealmChatHistory>,
+    private val fragment: ChatHistoryListFragment,
+    private val preferences: SharedPreferences
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
     private var chatHistoryItemClickListener: ChatHistoryItemClickListener? = null
     private var filteredChatHistory: List<RealmChatHistory> = chatHistory
@@ -217,9 +221,8 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
                             showGrandChildRecyclerView(enterpriseList, context.getString(R.string.enterprises), filteredChatHistory[position])
                         }
                     } else {
-                        settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                        val sParentcode = settings?.getString("parentCode", "")
-                        val communityName = settings?.getString("communityName", "")
+                        val sParentcode = preferences.getString("parentCode", "")
+                        val communityName = preferences.getString("communityName", "")
                         val teamId = "$communityName@$sParentcode"
                         val community = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
                         showEditTextAndShareButton(community, context.getString(R.string.community), filteredChatHistory[position])

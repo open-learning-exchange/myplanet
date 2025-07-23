@@ -68,7 +68,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         val userProfileModel = profileDbHandler.userModel
         adapter = AdapterSurvey(requireActivity(), mRealm, userProfileModel?.id, isTeam, teamId, this)
         prefManager = SharedPrefManager(requireContext())
-        settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        settings = BaseRecyclerFragment.settings
 
         startExamSync()
     }

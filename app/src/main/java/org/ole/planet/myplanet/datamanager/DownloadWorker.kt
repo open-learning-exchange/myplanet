@@ -7,6 +7,12 @@ import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.android.work.HiltWorker
+import org.ole.planet.myplanet.di.AppPreferences
+import android.content.SharedPreferences
 import java.io.BufferedInputStream
 import java.io.FileOutputStream
 import kotlinx.coroutines.Dispatchers
@@ -19,9 +25,13 @@ import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getSDPathFromUrl
 import org.ole.planet.myplanet.utilities.Utilities
 
-class DownloadWorker(val context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
+@HiltWorker
+class DownloadWorker @AssistedInject constructor(
+    @Assisted @ApplicationContext val context: Context,
+    @Assisted workerParams: WorkerParameters,
+    @AppPreferences private val preferences: SharedPreferences
+) : CoroutineWorker(context, workerParams) {
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    private val preferences = context.getSharedPreferences(MyDownloadService.PREFS_NAME, Context.MODE_PRIVATE)
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {

@@ -11,6 +11,9 @@ import android.os.Bundle
 import androidx.activity.OnBackPressedCallback
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import org.ole.planet.myplanet.di.AppPreferences
 import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -34,12 +37,15 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback {
     private lateinit var binding: ActivityExoPlayerVideoBinding
     private var exoPlayer: ExoPlayer? = null
     private var auth: String = ""
     private var videoURL: String = ""
-    private lateinit var settings: SharedPreferences
+    @Inject
+    @AppPreferences
+    lateinit var settings: SharedPreferences
     private var playWhenReady = true
     private var currentPosition = 0L
     private var isActivityVisible = false
@@ -58,7 +64,6 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         binding = ActivityExoPlayerVideoBinding.inflate(layoutInflater)
         setContentView(binding.root)
         EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
-        settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
 
         val extras = intent.extras
         val videoType = extras?.getString("videoType")

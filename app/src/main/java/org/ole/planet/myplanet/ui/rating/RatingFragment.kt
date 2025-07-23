@@ -54,7 +54,7 @@ class RatingFragment : DialogFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentRatingBinding = FragmentRatingBinding.inflate(inflater, container, false)
         mRealm = databaseService.realmInstance
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        settings = BaseRecyclerFragment.settings
         return fragmentRatingBinding.root
     }
 

@@ -6,20 +6,28 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import org.ole.planet.myplanet.di.AppPreferences
+import android.content.SharedPreferences
 import com.google.android.material.tabs.TabLayoutMediator
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
+@AndroidEntryPoint
 class CommunityTabFragment : Fragment() {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
+    @Inject
+    @AppPreferences
+    lateinit var appPreferences: SharedPreferences
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTeamDetailBinding = FragmentTeamDetailBinding.inflate(inflater, container, false)
         return fragmentTeamDetailBinding.root
     }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val settings = appPreferences
         val sParentcode = settings.getString("parentCode", "")
         val communityName = settings.getString("communityName", "")
         val user = UserProfileDbHandler(requireActivity()).userModel

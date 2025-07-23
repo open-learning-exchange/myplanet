@@ -56,7 +56,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefManager = SharedPrefManager(requireContext())
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        settings = BaseRecyclerFragment.settings
 
         startFeedbackSync()
     }

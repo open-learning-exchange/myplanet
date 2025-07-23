@@ -65,7 +65,7 @@ class ChatHistoryListFragment : Fragment() {
         super.onCreate(savedInstanceState)
         sharedViewModel = ViewModelProvider(requireActivity())[ChatViewModel::class.java]
         prefManager = SharedPrefManager(requireContext())
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        settings = BaseRecyclerFragment.settings
         startChatHistorySync()
     }
 
@@ -222,7 +222,7 @@ class ChatHistoryListFragment : Fragment() {
 
         val adapter = fragmentChatHistoryListBinding.recyclerView.adapter as? ChatHistoryListAdapter
         if (adapter == null) {
-            val newAdapter = ChatHistoryListAdapter(requireContext(), list, this)
+            val newAdapter = ChatHistoryListAdapter(requireContext(), list, this, settings)
             newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
                 override fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?, aiProvider: String?) {
                     conversations?.let { sharedViewModel.setSelectedChatHistory(it) }

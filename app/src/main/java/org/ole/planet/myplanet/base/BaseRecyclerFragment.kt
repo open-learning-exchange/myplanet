@@ -38,8 +38,11 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.di.AppPreferences
+import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
+@AndroidEntryPoint
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
     var subjects: MutableSet<String> = mutableSetOf()
     var languages: MutableSet<String> = mutableSetOf()
@@ -55,6 +58,10 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var list: MutableList<LI>? = null
     var resources: List<RealmMyLibrary>? = null
     var courseLib: String? = null
+
+    @Inject
+    @AppPreferences
+    lateinit var appPreferences: SharedPreferences
 
     abstract fun getLayout(): Int
 
@@ -77,7 +84,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val v = inflater.inflate(getLayout(), container, false)
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        settings = appPreferences
         recyclerView = v.findViewById(R.id.recycler)
         recyclerView.layoutManager = LinearLayoutManager(activity)
         if (isMyCourseLib) {

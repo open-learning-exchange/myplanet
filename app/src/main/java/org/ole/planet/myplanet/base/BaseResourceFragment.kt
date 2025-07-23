@@ -47,6 +47,7 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.getProgressDialog
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
@@ -66,6 +67,9 @@ abstract class BaseResourceFragment : Fragment() {
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    @AppPreferences
+    lateinit var appPreferences: SharedPreferences
     private var resourceNotFoundDialog: AlertDialog? = null
 
     private fun isFragmentActive(): Boolean {
@@ -314,7 +318,7 @@ abstract class BaseResourceFragment : Fragment() {
         super.onCreate(savedInstanceState)
         mRealm = databaseService.realmInstance
         prgDialog = getProgressDialog(requireActivity())
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        settings = appPreferences
         editor = settings?.edit()
     }
 

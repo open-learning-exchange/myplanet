@@ -66,7 +66,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefManager = SharedPrefManager(requireContext())
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        settings = BaseResourceFragment.settings ?: requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         startTeamSync()
     }
 
