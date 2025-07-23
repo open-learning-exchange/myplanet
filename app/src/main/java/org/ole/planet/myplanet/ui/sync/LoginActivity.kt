@@ -7,9 +7,6 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -30,11 +27,16 @@ import androidx.core.content.edit
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.util.Locale
+import javax.inject.Inject
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.*
 import org.ole.planet.myplanet.databinding.*
 import org.ole.planet.myplanet.datamanager.*
@@ -47,8 +49,6 @@ import org.ole.planet.myplanet.utilities.*
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
