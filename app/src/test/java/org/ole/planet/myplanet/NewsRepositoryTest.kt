@@ -5,11 +5,11 @@ import io.realm.RealmList
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.di.NewsRepository
 import org.ole.planet.myplanet.di.NewsRepositoryImpl
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.datamanager.ApiInterface
 
 class DummyApi : ApiInterface {
     override fun downloadFile(header: String?, fileUrl: String?) = throw NotImplementedError()
@@ -19,8 +19,8 @@ class DummyApi : ApiInterface {
     override fun postDoc(header: String?, c: String?, url: String?, s: com.google.gson.JsonObject?) = throw NotImplementedError()
     override fun uploadResource(headerMap: Map<String, String>, url: String?, body: okhttp3.RequestBody?) = throw NotImplementedError()
     override fun putDoc(header: String?, c: String?, url: String?, s: com.google.gson.JsonObject?) = throw NotImplementedError()
-    override fun checkVersion(serverUrl: String?) = throw NotImplementedError()
-    override fun getApkVersion(url: String?) = throw NotImplementedError()
+    override suspend fun checkVersion(serverUrl: String?) = throw NotImplementedError()
+    override suspend fun getApkVersion(url: String?) = throw NotImplementedError()
     override fun healthAccess(url: String?) = throw NotImplementedError()
     override fun getChecksum(url: String?) = throw NotImplementedError()
     override fun isPlanetAvailable(serverUrl: String?) = throw NotImplementedError()
