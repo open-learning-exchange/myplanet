@@ -148,7 +148,7 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
         } else {
             selectedItems.clear()
         }
-        // Only notify items that need checkbox updates
+
         for (i in libraryList.indices) {
             notifyItemChanged(i)
         }
@@ -239,7 +239,6 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
         this.ratingMap.clear()
         this.ratingMap.putAll(newRatingMap)
         
-        // Only notify items whose ratings actually changed
         for (i in libraryList.indices) {
             val resourceId = libraryList[i]?.resourceId
             val oldRating = oldMap[resourceId]

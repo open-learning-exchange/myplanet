@@ -184,7 +184,6 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
 
     private class ChatDiffCallback {
         fun areItemsTheSame(oldItem: String, newItem: String, oldPosition: Int, newPosition: Int): Boolean {
-            // For chat, we consider items the same if they have the same content and position type (query/response)
             return oldItem == newItem && (oldPosition % 2 == newPosition % 2)
         }
 

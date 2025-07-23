@@ -307,7 +307,7 @@ class AdapterCourses(
                 course != null && !course.isMyCourse
             })
         }
-        // Only notify items that need checkbox updates
+
         for (i in courseList.indices) {
             val course = courseList[i]
             if (course != null && !course.isMyCourse) {
@@ -406,8 +406,7 @@ class AdapterCourses(
         val oldMap = HashMap(this.map)
         this.map.clear()
         this.map.putAll(newRatingMap)
-        
-        // Only notify items whose ratings actually changed
+
         for (i in courseList.indices) {
             val courseId = courseList[i]?.courseId
             val oldRating = oldMap[courseId]
