@@ -87,7 +87,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         val list: List<RealmNews?> = newsRepository.getReplies(id)
         newsAdapter = AdapterNews(this, list.toMutableList(), user, news, "", null, userProfileDbHandler)
         newsAdapter.setListener(this)
-        newsAdapter.setNewsRepository(newsRepository)
+        newsAdapter.initNewsRepository(newsRepository)
         newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
         newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
         activityReplyBinding.rvReply.adapter = newsAdapter

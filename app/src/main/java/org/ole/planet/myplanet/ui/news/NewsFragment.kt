@@ -187,7 +187,7 @@ class NewsFragment : BaseNewsFragment() {
             })
             adapterNews = AdapterNews(requireActivity(), sortedList.toMutableList(), user, null, "", null, userProfileDbHandler)
 
-            adapterNews?.setNewsRepository(newsRepository)
+            adapterNews?.initNewsRepository(newsRepository)
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
             adapterNews?.setListener(this)
             adapterNews?.registerAdapterDataObserver(observer)

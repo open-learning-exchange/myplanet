@@ -26,7 +26,6 @@ import com.github.chrisbanes.photoview.PhotoView
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
@@ -36,12 +35,11 @@ import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
 import okhttp3.RequestBody
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.di.NewsRepository
 import org.ole.planet.myplanet.di.NewsRepositoryImpl
-import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -99,7 +97,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         this.listener = listener
     }
 
-    fun setNewsRepository(repository: NewsRepository?) {
+    fun initNewsRepository(repository: NewsRepository?) {
         if (repository != null) {
             this.newsRepository = repository
             this.mRealm = repository.getRealm()
