@@ -15,12 +15,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 
-class AdapterNotification(
-    var notificationList: List<RealmNotification>,
-    private val onMarkAsReadClick: (Int) -> Unit,
-    private val onNotificationClick: (RealmNotification) -> Unit
-) : RecyclerView.Adapter<AdapterNotification.ViewHolderNotifications>() {
-
+class AdapterNotification(var notificationList: List<RealmNotification>, private val onMarkAsReadClick: (Int) -> Unit, private val onNotificationClick: (RealmNotification) -> Unit) : RecyclerView.Adapter<AdapterNotification.ViewHolderNotifications>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderNotifications {
         val rowNotificationsBinding = RowNotificationsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolderNotifications(rowNotificationsBinding)
@@ -62,28 +57,28 @@ class AdapterNotification(
         }
 
         private fun formatNotificationMessage(notification: RealmNotification, context: Context): String {
-            return when (notification.type?.lowercase()) {
+            return when (notification.type.lowercase()) {
                 "survey" -> context.getString(R.string.pending_survey_notification) + " ${notification.message}"
                 "task" -> {
                     val datePattern = Pattern.compile("\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s\\d{1,2},\\s\\w+\\s\\d{4}\\b")
-                    val matcher = datePattern.matcher(notification.message ?: "")
+                    val matcher = datePattern.matcher(notification.message)
 
                     if (matcher.find()) {
-                        val taskTitle = notification.message?.substring(0, matcher.start())?.trim() ?: ""
-                        val dateValue = notification.message?.substring(matcher.start())?.trim() ?: ""
+                        val taskTitle = notification.message.substring(0, matcher.start()).trim()
+                        val dateValue = notification.message.substring(matcher.start()).trim()
                         return formatTaskNotification(taskTitle, dateValue)
                     } else {
                         "INVALID"
                     }
                 }
                 "resource" -> {
-                    val resourceCount = notification.message?.toIntOrNull()
+                    val resourceCount = notification.message.toIntOrNull()
                     resourceCount?.let {
                         context.getString(R.string.resource_notification, it)
                     } ?: "INVALID"
                 }
                 "storage" -> {
-                    val storageValue = notification.message?.toIntOrNull()
+                    val storageValue = notification.message.toIntOrNull()
                     storageValue?.let {
                         when {
                             it <= 10 -> context.getString(R.string.storage_running_low) + " ${it}%"
@@ -98,14 +93,14 @@ class AdapterNotification(
                         .equalTo("_id", teamId)
                         .findFirst()
                     val teamName = team?.name ?: "Unknown Team"
-                    val message = notification.message ?: ""
+                    val message = notification.message
                     if (message.isNotEmpty()) {
                         "<b>Join Request:</b> $message"
                     } else {
                         "<b>Join Request:</b> New request to join $teamName"
                     }
                 }
-                else -> notification.message ?: "INVALID"
+                else -> notification.message
             }
         }
 

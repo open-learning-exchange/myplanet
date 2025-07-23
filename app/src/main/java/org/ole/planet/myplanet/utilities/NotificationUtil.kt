@@ -103,6 +103,7 @@ object NotificationUtil {
         private val notificationManager = NotificationManagerCompat.from(context)
         private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         private val activeNotifications = mutableSetOf<String>()
+        private val currentSessionNotifications = mutableSetOf<String>() // In-memory only, not persisted
 
         init {
             loadActiveNotifications()
@@ -161,6 +162,7 @@ object NotificationUtil {
                 val notification = buildNotification(config)
                 val notificationId = config.id.hashCode()
 
+                // Always show the notification - Android system handles duplicates by replacing existing ones
                 notificationManager.notify(notificationId, notification)
                 markNotificationAsShown(config.id)
                 return true
@@ -303,21 +305,27 @@ object NotificationUtil {
         }
 
         private fun canShowNotification(type: String): Boolean {
-            if (!notificationManager.areNotificationsEnabled()) {
+            val notificationsEnabled = notificationManager.areNotificationsEnabled()
+            
+            if (!notificationsEnabled) {
                 return false
             }
 
-            if (!preferences.getBoolean(KEY_ENABLED, true)) {
+            val globalEnabled = preferences.getBoolean(KEY_ENABLED, true)
+            
+            if (!globalEnabled) {
                 return false
             }
 
-            return when (type) {
+            val typeEnabled = when (type) {
                 TYPE_SURVEY -> preferences.getBoolean(KEY_SURVEY_ENABLED, true)
                 TYPE_TASK -> preferences.getBoolean(KEY_TASK_ENABLED, true)
                 TYPE_STORAGE, TYPE_RESOURCE, TYPE_COURSE -> preferences.getBoolean(KEY_SYSTEM_ENABLED, true)
                 TYPE_JOIN_REQUEST -> preferences.getBoolean(KEY_TEAM_ENABLED, true)
                 else -> true
             }
+            
+            return typeEnabled
         }
 
         private fun getChannelForType(type: String): String {
@@ -343,12 +351,33 @@ object NotificationUtil {
         }
 
         private fun markNotificationAsShown(notificationId: String) {
+            currentSessionNotifications.add(notificationId)
             activeNotifications.add(notificationId)
             saveActiveNotifications()
         }
 
         fun hasNotificationBeenShown(notificationId: String): Boolean {
+            return activeNotifications.contains(notificationId) || isNotificationReadInDatabase(notificationId)
+        }
+
+        fun hasNotificationBeenShownInSession(notificationId: String): Boolean {
             return activeNotifications.contains(notificationId)
+        }
+
+        fun isNotificationActiveInCurrentSession(notificationId: String): Boolean {
+            return currentSessionNotifications.contains(notificationId)
+        }
+
+        private fun isNotificationReadInDatabase(notificationId: String): Boolean {
+            return try {
+                val realm = org.ole.planet.myplanet.MainApplication.mRealm
+                val notification = realm.where(org.ole.planet.myplanet.model.RealmNotification::class.java)
+                    .equalTo("id", notificationId)
+                    .findFirst()
+                notification?.isRead == true
+            } catch (e: Exception) {
+                false
+            }
         }
 
         fun clearNotification(notificationId: String) {
@@ -374,7 +403,7 @@ object NotificationUtil {
 
         fun createSurveyNotification(surveyId: String, surveyTitle: String): NotificationConfig {
             return NotificationConfig(
-                id = "survey_$surveyId",
+                id = surveyId, // Use database ID directly
                 type = TYPE_SURVEY,
                 title = "📋 New Survey Available",
                 message = surveyTitle,
@@ -394,7 +423,7 @@ object NotificationUtil {
             }
 
             return NotificationConfig(
-                id = "task_$taskId",
+                id = taskId, // Use database ID directly
                 type = TYPE_TASK,
                 title = "✅ New Task Assigned",
                 message = "$taskTitle\nDue: $deadline",
@@ -408,7 +437,7 @@ object NotificationUtil {
 
         fun createJoinRequestNotification(requestId: String, requesterName: String, teamName: String): NotificationConfig {
             return NotificationConfig(
-                id = "join_request_$requestId",
+                id = requestId, // Use database ID directly
                 type = TYPE_JOIN_REQUEST,
                 title = "👥 Team Join Request",
                 message = "$requesterName wants to join $teamName",
@@ -421,6 +450,10 @@ object NotificationUtil {
         }
 
         fun createStorageWarningNotification(storagePercentage: Int): NotificationConfig {
+            return createStorageWarningNotification(storagePercentage, "storage_warning")
+        }
+
+        fun createStorageWarningNotification(storagePercentage: Int, customId: String): NotificationConfig {
             val priority = if (storagePercentage > 95) {
                 NotificationCompat.PRIORITY_HIGH
             } else {
@@ -428,7 +461,7 @@ object NotificationUtil {
             }
 
             return NotificationConfig(
-                id = "storage_warning",
+                id = customId, // Use provided ID (database ID when called from createNotificationConfigFromDatabase)
                 type = TYPE_STORAGE,
                 title = "⚠️ Storage Warning",
                 message = "Device storage is at $storagePercentage%. Consider freeing up space.",
@@ -436,6 +469,20 @@ object NotificationUtil {
                 category = NotificationCompat.CATEGORY_STATUS,
                 actionable = true,
                 relatedId = "storage"
+            )
+        }
+
+        fun createResourceNotification(notificationId: String, resourceCount: Int): NotificationConfig {
+            return NotificationConfig(
+                id = notificationId, // Use database ID directly
+                type = TYPE_RESOURCE,
+                title = "📚 New Resources Available",
+                message = "$resourceCount new resources have been added",
+                priority = NotificationCompat.PRIORITY_DEFAULT,
+                category = NotificationCompat.CATEGORY_RECOMMENDATION,
+                actionable = true,
+                extras = mapOf("resourceCount" to resourceCount.toString()),
+                relatedId = notificationId
             )
         }
 
@@ -499,18 +546,21 @@ class NotificationActionReceiver : BroadcastReceiver() {
         if (notificationId == null) return
         
         try {
-            val databaseService = DatabaseService(context)
-            val realm = databaseService.realmInstance
+            val realm = org.ole.planet.myplanet.MainApplication.mRealm
             
             realm.executeTransaction { r ->
                 val notification = r.where(RealmNotification::class.java)
-                    .contains("id", notificationId)
+                    .equalTo("id", notificationId)
                     .findFirst()
                 
                 notification?.isRead = true
             }
             
-            realm.close()
+            // Broadcast that a notification was marked as read from system tray
+            val broadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
+            broadcastIntent.putExtra("notification_id", notificationId)
+            context.sendBroadcast(broadcastIntent)
+            
         } catch (e: Exception) {
             e.printStackTrace()
         }

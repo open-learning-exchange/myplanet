@@ -234,6 +234,23 @@ class NotificationsFragment : Fragment() {
         notificationUpdateListener?.onNotificationCountUpdated(unreadCount)
     }
 
+    fun refreshNotificationsList() {
+        if (::adapter.isInitialized && ::fragmentNotificationsBinding.isInitialized) {
+            val selectedFilter = fragmentNotificationsBinding.status.selectedItem.toString().lowercase()
+            val notifications = loadNotifications(userId, selectedFilter)
+            adapter.updateNotifications(notifications)
+            updateMarkAllAsReadButtonVisibility()
+            updateUnreadCount()
+            
+            // Update empty state visibility
+            if (notifications.isEmpty()) {
+                fragmentNotificationsBinding.emptyData.visibility = View.VISIBLE
+            } else {
+                fragmentNotificationsBinding.emptyData.visibility = View.GONE
+            }
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         if (::mRealm.isInitialized) {
