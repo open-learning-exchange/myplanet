@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.*
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.*
+import io.realm.RealmChangeListener
 import java.io.File
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -437,85 +438,85 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     override fun onSyncComplete() {
         val activityContext = this@SyncActivity
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(Dispatchers.Main) {
             try {
-                var attempt = 0
-                Realm.getDefaultInstance().use { realm ->
-                    while (true) {
-                        realm.refresh()
-                        val realmResults = realm.where(RealmUserModel::class.java).findAll()
-                        if (realmResults.isNotEmpty()) {
-                            break
+                val realm = Realm.getDefaultInstance()
+                val results = realm.where(RealmUserModel::class.java).findAllAsync()
+                val listener = object : RealmChangeListener<RealmResults<RealmUserModel>> {
+                    override fun onChange(t: RealmResults<RealmUserModel>) {
+                        if (t.isNotEmpty()) {
+                            results.removeChangeListener(this)
+                            realm.close()
+                            handleSyncCompletion(activityContext)
                         }
-                        attempt++
-                        delay(1000)
                     }
                 }
-
-                withContext(Dispatchers.Main) {
-                    forceSyncTrigger()
-                    val syncedUrl = settings.getString("serverURL", null)?.let { ServerConfigUtils.removeProtocol(it) }
-                    if (syncedUrl != null && serverListAddresses.any { it.url.replace(Regex("^https?://"), "") == syncedUrl }) {
-                        editor.putString("pinnedServerUrl", syncedUrl).apply()
-                    }
-
-                    customProgressDialog.dismiss()
-
-                    if (::syncIconDrawable.isInitialized) {
-                        syncIconDrawable = syncIcon.drawable as AnimationDrawable
-                        syncIconDrawable.stop()
-                        syncIconDrawable.selectDrawable(0)
-                        syncIcon.invalidateDrawable(syncIconDrawable)
-                    }
-
-                    lifecycleScope.launch {
-                        createLog("synced successfully", "")
-                    }
-
-                    lifecycleScope.launch(Dispatchers.IO) {
-                        val pendingLanguage = settings.getString("pendingLanguageChange", null)
-                        if (pendingLanguage != null) {
-                            withContext(Dispatchers.Main) {
-                                editor.remove("pendingLanguageChange").apply()
-
-                                LocaleHelper.setLocale(this@SyncActivity, pendingLanguage)
-                                updateUIWithNewLanguage()
-                            }
-                        }
-                    }
-
-                    showSnack(activityContext.findViewById(android.R.id.content), getString(R.string.sync_completed))
-
-                    if (settings.getBoolean("isAlternativeUrl", false)) {
-                        editor.putString("alternativeUrl", "")
-                        editor.putString("processedAlternativeUrl", "")
-                        editor.putBoolean("isAlternativeUrl", false)
-                        editor.apply()
-                    }
-
-                    downloadAdditionalResources()
-
-                    val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
-                    if (betaAutoDownload) {
-                        withContext(Dispatchers.IO) {
-                            val downloadRealm = Realm.getDefaultInstance()
-                            try {
-                                backgroundDownload(downloadAllFiles(getAllLibraryList(downloadRealm)), activityContext)
-                            } finally {
-                                downloadRealm.close()
-                            }
-                        }
-                    }
-
-                    cancelAll(activityContext)
-
-                    if (activityContext is LoginActivity) {
-                        activityContext.updateTeamDropdown()
-                    }
-                }
+                results.addChangeListener(listener)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
+    }
+
+    private fun handleSyncCompletion(activityContext: SyncActivity) {
+        forceSyncTrigger()
+        val syncedUrl = settings.getString("serverURL", null)?.let { ServerConfigUtils.removeProtocol(it) }
+        if (syncedUrl != null && serverListAddresses.any { it.url.replace(Regex("^https?://"), "") == syncedUrl }) {
+            editor.putString("pinnedServerUrl", syncedUrl).apply()
+        }
+
+        customProgressDialog.dismiss()
+
+        if (::syncIconDrawable.isInitialized) {
+            syncIconDrawable = syncIcon.drawable as AnimationDrawable
+            syncIconDrawable.stop()
+            syncIconDrawable.selectDrawable(0)
+            syncIcon.invalidateDrawable(syncIconDrawable)
+        }
+
+        lifecycleScope.launch {
+            createLog("synced successfully", "")
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            val pendingLanguage = settings.getString("pendingLanguageChange", null)
+            if (pendingLanguage != null) {
+                withContext(Dispatchers.Main) {
+                    editor.remove("pendingLanguageChange").apply()
+
+                    LocaleHelper.setLocale(this@SyncActivity, pendingLanguage)
+                    updateUIWithNewLanguage()
+                }
+            }
+        }
+
+        showSnack(activityContext.findViewById(android.R.id.content), getString(R.string.sync_completed))
+
+        if (settings.getBoolean("isAlternativeUrl", false)) {
+            editor.putString("alternativeUrl", "")
+            editor.putString("processedAlternativeUrl", "")
+            editor.putBoolean("isAlternativeUrl", false)
+            editor.apply()
+        }
+
+        downloadAdditionalResources()
+
+        val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
+        if (betaAutoDownload) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                val downloadRealm = Realm.getDefaultInstance()
+                try {
+                    backgroundDownload(downloadAllFiles(getAllLibraryList(downloadRealm)), activityContext)
+                } finally {
+                    downloadRealm.close()
+                }
+            }
+        }
+
+        cancelAll(activityContext)
+
+        if (activityContext is LoginActivity) {
+            activityContext.updateTeamDropdown()
         }
     }
 
