@@ -34,9 +34,9 @@ import org.ole.planet.myplanet.utilities.Utilities
 @AndroidEntryPoint
 class AddMyHealthActivity : AppCompatActivity() {
     private lateinit var activityAddMyHealthBinding: ActivityAddMyHealthBinding
-    lateinit var realm: Realm
     @Inject
     lateinit var databaseService: DatabaseService
+    lateinit var realm: Realm
     private var healthPojo: RealmMyHealthPojo? = null
     private var userModelB: RealmUserModel? = null
     var userId: String? = null

@@ -16,6 +16,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.util.Calendar
 import java.util.Locale
+import javax.inject.Inject
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity

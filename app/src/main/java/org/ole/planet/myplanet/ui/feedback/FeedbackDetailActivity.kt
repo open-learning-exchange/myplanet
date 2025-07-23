@@ -37,9 +37,9 @@ class FeedbackDetailActivity : AppCompatActivity() {
     private var mAdapter: RecyclerView.Adapter<*>? = null
     private var layoutManager: RecyclerView.LayoutManager? = null
     private lateinit var feedback: RealmFeedback
-    lateinit var realm: Realm
     @Inject
     lateinit var databaseService: DatabaseService
+    lateinit var realm: Realm
     private lateinit var rowFeedbackReplyBinding: RowFeedbackReplyBinding
 
     override fun attachBaseContext(base: Context) {

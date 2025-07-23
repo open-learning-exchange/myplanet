@@ -10,6 +10,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Case
 import io.realm.RealmResults
 import java.util.UUID
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.FragmentDictionaryBinding

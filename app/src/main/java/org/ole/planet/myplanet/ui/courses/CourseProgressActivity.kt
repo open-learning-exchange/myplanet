@@ -9,6 +9,7 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmResults
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityCourseProgressBinding
@@ -26,6 +27,8 @@ import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 @AndroidEntryPoint
 class CourseProgressActivity : BaseActivity() {
     private lateinit var activityCourseProgressBinding: ActivityCourseProgressBinding
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     lateinit var realm: Realm
     var user: RealmUserModel? = null
     lateinit var courseId: String
@@ -37,7 +40,7 @@ class CourseProgressActivity : BaseActivity() {
         initActionBar()
         courseId = intent.getStringExtra("courseId").toString()
         realm = databaseService.realmInstance
-        user = UserProfileDbHandler(this).userModel
+        user = userProfileDbHandler.userModel
         val courseProgress = RealmCourseProgress.getCourseProgress(realm, user?.id)
         val progress = courseProgress[courseId]
         val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()

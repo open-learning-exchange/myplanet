@@ -45,10 +45,12 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
-    private lateinit var activityAddExaminationBinding: ActivityAddExaminationBinding
-    lateinit var mRealm: Realm
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
+    private lateinit var activityAddExaminationBinding: ActivityAddExaminationBinding
+    lateinit var mRealm: Realm
     var userId: String? = null
     var user: RealmUserModel? = null
     private var currentUser: RealmUserModel? = null
@@ -78,7 +80,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         customDiag = HashSet()
         initViews()
-        currentUser = UserProfileDbHandler(this).userModel
+        currentUser = userProfileDbHandler.userModel
         mapConditions = HashMap()
         mRealm = databaseService.realmInstance
         userId = intent.getStringExtra("userId")

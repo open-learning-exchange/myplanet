@@ -13,6 +13,7 @@ import io.realm.Realm
 import java.io.File
 import java.util.Date
 import java.util.UUID
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityNewsDetailBinding
@@ -27,6 +28,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class NewsDetailActivity : BaseActivity() {
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var activityNewsDetailBinding: ActivityNewsDetailBinding
     var news: RealmNews? = null
     lateinit var realm: Realm
@@ -46,7 +49,7 @@ class NewsDetailActivity : BaseActivity() {
             finish()
             return
         }
-        val user = UserProfileDbHandler(this).userModel!!
+        val user = userProfileDbHandler.userModel!!
         val userId = user.id
         realm.executeTransactionAsync {
             val newsLog: RealmNewsLog = it.createObject(RealmNewsLog::class.java, UUID.randomUUID().toString())

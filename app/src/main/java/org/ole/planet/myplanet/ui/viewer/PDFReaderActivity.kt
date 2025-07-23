@@ -32,12 +32,12 @@ import org.ole.planet.myplanet.utilities.Utilities
 @AndroidEntryPoint
 class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompleteListener, OnPageErrorListener, AudioRecordListener {
     private lateinit var activityPdfReaderBinding: ActivityPdfreaderBinding
-    private var fileName: String? = null
     private lateinit var audioRecorderService: AudioRecorderService
-    private lateinit var library: RealmMyLibrary
-    private lateinit var mRealm: Realm
+    private var fileName: String? = null
     @Inject
     lateinit var databaseService: DatabaseService
+    private lateinit var library: RealmMyLibrary
+    private lateinit var mRealm: Realm
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityPdfReaderBinding = ActivityPdfreaderBinding.inflate(layoutInflater)
