@@ -116,8 +116,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     
     @Inject
     lateinit var syncManager: SyncManager
-    @Inject
-    lateinit var databaseService: DatabaseService
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -9,11 +9,9 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmResults
-import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityCourseProgressBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
@@ -29,8 +27,6 @@ import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 class CourseProgressActivity : BaseActivity() {
     private lateinit var activityCourseProgressBinding: ActivityCourseProgressBinding
     lateinit var realm: Realm
-    @Inject
-    lateinit var databaseService: DatabaseService
     var user: RealmUserModel? = null
     lateinit var courseId: String
     override fun onCreate(savedInstanceState: Bundle?) {
