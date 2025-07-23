@@ -116,13 +116,15 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     
     @Inject
     lateinit var syncManager: SyncManager
+    @Inject
+    lateinit var databaseService: DatabaseService
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         editor = settings.edit()
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = databaseService.realmInstance
         requestAllPermissions()
         prefData = SharedPrefManager(this)
         profileDbHandler = UserProfileDbHandler(this)

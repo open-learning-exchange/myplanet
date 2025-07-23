@@ -21,6 +21,8 @@ import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
@@ -33,10 +35,13 @@ import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
 import org.ole.planet.myplanet.utilities.AuthHelper
 
+@AndroidEntryPoint
 class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
     var guest: Boolean = false
+    @Inject
+    lateinit var databaseService: DatabaseService
 
 
     private data class MemberInfo(
@@ -172,7 +177,7 @@ class BecomeMemberActivity : BaseActivity() {
         EdgeToEdgeUtil.setupEdgeToEdge(this, activityBecomeMemberBinding.root)
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        val mRealm: Realm = DatabaseService(this).realmInstance
+        val mRealm: Realm = databaseService.realmInstance
         val languages = resources.getStringArray(R.array.language)
         val lnAadapter = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, languages)
         activityBecomeMemberBinding.spnLang.adapter = lnAadapter
@@ -208,7 +213,7 @@ class BecomeMemberActivity : BaseActivity() {
     }
 
     private fun autoLoginNewMember(username: String, password: String) {
-        val mRealm = DatabaseService(this).realmInstance
+        val mRealm = databaseService.realmInstance
         RealmUserModel.cleanupDuplicateUsers(mRealm)
         mRealm.close()
 

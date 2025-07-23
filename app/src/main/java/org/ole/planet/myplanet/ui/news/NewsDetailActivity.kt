@@ -16,6 +16,8 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityNewsDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNewsLog
@@ -25,10 +27,13 @@ import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class NewsDetailActivity : BaseActivity() {
     private lateinit var activityNewsDetailBinding: ActivityNewsDetailBinding
     var news: RealmNews? = null
     lateinit var realm: Realm
+    @Inject
+    lateinit var databaseService: DatabaseService
     private val gson = Gson()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,7 +42,7 @@ class NewsDetailActivity : BaseActivity() {
         EdgeToEdgeUtil.setupEdgeToEdge(this, activityNewsDetailBinding.root)
         setSupportActionBar(activityNewsDetailBinding.toolbar)
         initActionBar()
-        realm = DatabaseService(this).realmInstance
+        realm = databaseService.realmInstance
         val id = intent.getStringExtra("newsId")
         news = realm.where(RealmNews::class.java).equalTo("id", id).findFirst()
         if (news == null) {

@@ -44,6 +44,8 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private lateinit var activityReplyBinding: ActivityReplyBinding
     lateinit var mRealm: Realm
+    @Inject
+    lateinit var databaseService: DatabaseService
     var id: String? = null
     private lateinit var newsAdapter: AdapterNews
     private val gson = Gson()
@@ -62,7 +64,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         EdgeToEdgeUtil.setupEdgeToEdge(this, activityReplyBinding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = databaseService.realmInstance
         title = "Reply"
         imageList = RealmList()
         id = intent.getStringExtra("id")

@@ -37,6 +37,8 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertSoundRecorderBinding
 import org.ole.planet.myplanet.databinding.FragmentAddResourceBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.service.AudioRecorderService
 import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
@@ -45,6 +47,7 @@ import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class AddResourceFragment : BottomSheetDialogFragment() {
     private lateinit var fragmentAddResourceBinding: FragmentAddResourceBinding
     var tvTime: TextView? = null
@@ -57,6 +60,8 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     private lateinit var captureVideoLauncher: ActivityResultLauncher<Uri>
     private lateinit var openFolderLauncher: ActivityResultLauncher<String>
     private lateinit var requestCameraLauncher: ActivityResultLauncher<String>
+    @Inject
+    lateinit var databaseService: DatabaseService
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -249,7 +254,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         if (type == 0) {
             startActivity(Intent(activity, AddResourceActivity::class.java).putExtra("resource_local_url", path))
         } else {
-            showAlert(requireContext(), path)
+            showAlert(requireContext(), path, databaseService)
         }
     }
 
@@ -263,7 +268,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         const val REQUEST_FILE_SELECTION = 3
         var type = 0
         private val myPersonalsFragment: MyPersonalsFragment? = null
-        fun showAlert(context: Context, path: String?) {
+        fun showAlert(context: Context, path: String?, databaseService: DatabaseService) {
             val v = LayoutInflater.from(context).inflate(R.layout.alert_my_personal, null)
             val etTitle = v.findViewById<EditText>(R.id.et_title)
             val etDesc = v.findViewById<EditText>(R.id.et_description)
@@ -280,7 +285,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                         return@setPositiveButton
                     }
                     val desc = etDesc.text.toString().trim { it <= ' ' }
-                    val realm = DatabaseService(context).realmInstance
+                    val realm = databaseService.realmInstance
                     realm.executeTransactionAsync(
                         Realm.Transaction { realm1: Realm -> val myPersonal = realm1.createObject(RealmMyPersonal::class.java, UUID.randomUUID().toString())
                             myPersonal.title = title

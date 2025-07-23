@@ -90,7 +90,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            showDownloadDialog(getLibraryList(DatabaseService(context).realmInstance))
+            showDownloadDialog(getLibraryList(databaseService.realmInstance))
         }
     }
 

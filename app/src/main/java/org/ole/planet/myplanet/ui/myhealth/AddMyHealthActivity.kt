@@ -10,6 +10,8 @@ import android.widget.ImageView
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.gson.Gson
@@ -29,9 +31,12 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class AddMyHealthActivity : AppCompatActivity() {
     private lateinit var activityAddMyHealthBinding: ActivityAddMyHealthBinding
     lateinit var realm: Realm
+    @Inject
+    lateinit var databaseService: DatabaseService
     private var healthPojo: RealmMyHealthPojo? = null
     private var userModelB: RealmUserModel? = null
     var userId: String? = null
@@ -46,7 +51,7 @@ class AddMyHealthActivity : AppCompatActivity() {
         EdgeToEdgeUtil.setupEdgeToEdge(this, activityAddMyHealthBinding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
-        realm = DatabaseService(this).realmInstance
+        realm = databaseService.realmInstance
         userId = intent.getStringExtra("userId")
         healthPojo = realm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
         if (healthPojo == null) {

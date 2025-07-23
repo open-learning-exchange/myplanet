@@ -14,6 +14,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import java.text.SimpleDateFormat
 import java.util.Locale
 import org.ole.planet.myplanet.R
@@ -454,7 +456,10 @@ object NotificationUtil {
     }
 }
 
+@AndroidEntryPoint
 class NotificationActionReceiver : BroadcastReceiver() {
+    @Inject
+    lateinit var databaseService: DatabaseService
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
         val notificationId = intent.getStringExtra(NotificationUtil.EXTRA_NOTIFICATION_ID)
@@ -497,9 +502,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
     
     private fun markNotificationAsRead(context: Context, notificationId: String?) {
         if (notificationId == null) return
-        
+
         try {
-            val databaseService = DatabaseService(context)
             val realm = databaseService.realmInstance
             
             realm.executeTransaction { r ->

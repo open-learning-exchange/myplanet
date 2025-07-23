@@ -11,6 +11,8 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import io.realm.Realm
@@ -31,9 +33,12 @@ import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
+@AndroidEntryPoint
 class AddResourceActivity : AppCompatActivity() {
     private lateinit var activityAddResourceBinding: ActivityAddResourceBinding
     private lateinit var mRealm: Realm
+    @Inject
+    lateinit var databaseService: DatabaseService
     var userModel: RealmUserModel? = null
     var subjects: RealmList<String>? = null
     var levels: RealmList<String>? = null
@@ -57,7 +62,7 @@ class AddResourceActivity : AppCompatActivity() {
         levels = RealmList()
         subjects = RealmList()
         resourceFor = RealmList()
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = databaseService.realmInstance
         initializeViews()
     }
 
