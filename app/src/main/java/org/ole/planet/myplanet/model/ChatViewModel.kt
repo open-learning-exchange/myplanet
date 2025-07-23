@@ -2,11 +2,11 @@ package org.ole.planet.myplanet.model
 
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.realm.RealmList
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import io.realm.RealmList
-import javax.inject.Inject
 
 @HiltViewModel
 class ChatViewModel @Inject constructor() : ViewModel() {
