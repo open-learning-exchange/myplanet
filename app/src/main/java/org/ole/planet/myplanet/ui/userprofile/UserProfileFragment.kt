@@ -62,6 +62,7 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import java.text.SimpleDateFormat
 
 @AndroidEntryPoint
 class UserProfileFragment : Fragment() {
@@ -279,9 +280,13 @@ class UserProfileFragment : Fragment() {
             val dpd = DatePickerDialog(
                 requireContext(),
                 { _, year, monthOfYear, dayOfMonth ->
-                    val dob2 = format(Locale.US, "%04d-%02d-%02d", year, monthOfYear + 1, dayOfMonth)
+                    val calendar = Calendar.getInstance()
+                    calendar.set(year, monthOfYear, dayOfMonth)
+                    val sdf = SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.US)
+                    val dobFormatted = sdf.format(calendar.time)
+
                     date = format(Locale.US, "%04d-%02d-%02dT00:00:00.000Z", year, monthOfYear + 1, dayOfMonth)
-                    binding.dateOfBirth.text = dob2
+                    binding.dateOfBirth.text = dobFormatted
                 },
                 now.get(Calendar.YEAR),
                 now.get(Calendar.MONTH),
