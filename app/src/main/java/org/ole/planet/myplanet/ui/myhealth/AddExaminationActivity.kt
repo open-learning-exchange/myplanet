@@ -16,14 +16,16 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import io.realm.Realm
 import java.util.Date
 import java.util.Locale
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.ActivityAddExaminationBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.databinding.ActivityAddExaminationBinding
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
@@ -41,11 +43,16 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.getAge
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
     private lateinit var activityAddExaminationBinding: ActivityAddExaminationBinding
     lateinit var mRealm: Realm
     var userId: String? = null
     var user: RealmUserModel? = null
+    @Inject
+    lateinit var profileDbHandler: UserProfileDbHandler
+    @Inject
+    lateinit var databaseService: DatabaseService
     private var currentUser: RealmUserModel? = null
     private var pojo: RealmMyHealthPojo? = null
     var health: RealmMyHealth? = null
@@ -73,9 +80,9 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         customDiag = HashSet()
         initViews()
-        currentUser = UserProfileDbHandler(this).userModel
+        currentUser = profileDbHandler.userModel
         mapConditions = HashMap()
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = databaseService.realmInstance
         userId = intent.getStringExtra("userId")
         pojo = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
         if (pojo == null) {

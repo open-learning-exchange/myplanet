@@ -4,16 +4,16 @@ import android.content.Context
 import android.content.res.Configuration
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.base.BaseMemberFragment
 import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getRequestedMember
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.UploadManager
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 @AndroidEntryPoint
 class MembersFragment : BaseMemberFragment() {
@@ -23,6 +23,8 @@ class MembersFragment : BaseMemberFragment() {
 
     @Inject
     lateinit var uploadManager: UploadManager
+    @Inject
+    lateinit var profileDbHandler: UserProfileDbHandler
 
     fun setMemberChangeListener(listener: MemberChangeListener) {
         this.memberChangeListener = listener
@@ -30,7 +32,7 @@ class MembersFragment : BaseMemberFragment() {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        currentUser = UserProfileDbHandler(context).userModel!!
+        currentUser = profileDbHandler.userModel!!
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}

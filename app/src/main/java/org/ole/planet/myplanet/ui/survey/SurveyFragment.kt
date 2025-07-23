@@ -65,7 +65,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
         val userProfileModel = profileDbHandler.userModel
-        adapter = AdapterSurvey(requireActivity(), mRealm, userProfileModel?.id, isTeam, teamId, this)
+        adapter = AdapterSurvey(requireActivity(), mRealm, userProfileModel?.id, isTeam, teamId, this, profileDbHandler)
         prefManager = SharedPrefManager(requireContext())
         settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
 

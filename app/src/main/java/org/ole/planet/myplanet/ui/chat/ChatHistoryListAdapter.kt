@@ -18,11 +18,11 @@ import java.text.Normalizer
 import java.util.Date
 import java.util.Locale
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.databinding.AddNoteDialogBinding
 import org.ole.planet.myplanet.databinding.ChatShareDialogBinding
 import org.ole.planet.myplanet.databinding.GrandChildRecyclerviewDialogBinding
 import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -35,7 +35,13 @@ import org.ole.planet.myplanet.ui.news.GrandChildAdapter
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment.Companion.settings
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
-class ChatHistoryListAdapter(var context: Context, private var chatHistory: List<RealmChatHistory>, private val fragment: ChatHistoryListFragment) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class ChatHistoryListAdapter(
+    private val context: Context,
+    private var chatHistory: List<RealmChatHistory>,
+    private val fragment: ChatHistoryListFragment,
+    private val databaseService: DatabaseService,
+    private val profileDbHandler: UserProfileDbHandler
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
     private var chatHistoryItemClickListener: ChatHistoryItemClickListener? = null
     private var filteredChatHistory: List<RealmChatHistory> = chatHistory
@@ -143,8 +149,8 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         rowChatHistoryBinding = RowChatHistoryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        mRealm = DatabaseService(context).realmInstance
-        user = UserProfileDbHandler(context).userModel
+        mRealm = databaseService.realmInstance
+        user = profileDbHandler.userModel
         newsList = mRealm.where(RealmNews::class.java)
             .equalTo("docType", "message", Case.INSENSITIVE)
             .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE)

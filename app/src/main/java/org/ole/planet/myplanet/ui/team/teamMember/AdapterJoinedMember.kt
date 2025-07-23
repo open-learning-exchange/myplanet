@@ -33,11 +33,11 @@ class AdapterJoinedMember(
     private val list: MutableList<RealmUserModel>,
     private val mRealm: Realm,
     private val teamId: String,
-    private val Listener: MemberChangeListener
+    private val Listener: MemberChangeListener,
+    private val profileDbHandler: UserProfileDbHandler
 ) : RecyclerView.Adapter<AdapterJoinedMember.ViewHolderUser>() {
 
-    private val currentUser: RealmUserModel = UserProfileDbHandler(context).userModel!!
-    private val profileDbHandler = UserProfileDbHandler(context)
+    private val currentUser: RealmUserModel = profileDbHandler.userModel!!
     private var teamLeaderId: String? = mRealm.where(RealmMyTeam::class.java)
         .equalTo("teamId", teamId)
         .equalTo("isLeader", true)
