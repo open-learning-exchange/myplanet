@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.ui.chat.ChatApiHelper
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatModel
 import org.ole.planet.myplanet.model.ChatRequestModel
@@ -79,6 +80,8 @@ class ChatDetailFragment : Fragment() {
     lateinit var customProgressDialog: DialogUtils.CustomProgressDialog
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var chatApiHelper: ChatApiHelper
     private val gson = Gson()
     private val serverUrlMapper = ServerUrlMapper()
     private val jsonMediaType = "application/json".toMediaTypeOrNull()
@@ -251,7 +254,7 @@ class ChatDetailFragment : Fragment() {
             withContext(Dispatchers.Main) {
                 customProgressDialog.setText("${context?.getString(R.string.fetching_ai_providers)}")
                 customProgressDialog.show()
-                ChatApiHelper.fetchAiProviders { providers ->
+                chatApiHelper.fetchAiProviders { providers ->
                     customProgressDialog.dismiss()
                     if (providers == null || providers.values.all { !it }) {
                         onFailError()
@@ -431,7 +434,7 @@ class ChatDetailFragment : Fragment() {
 
     private fun sendChatRequest(content: RequestBody, query: String, id: String?, newChat: Boolean) {
         viewLifecycleOwner.lifecycleScope.launch {
-            ChatApiHelper.sendChatRequest(content, object : Callback<ChatModel> {
+            chatApiHelper.sendChatRequest(content, object : Callback<ChatModel> {
                 override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
                     handleResponse(response, query, id)
                 }

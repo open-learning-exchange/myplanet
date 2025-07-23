@@ -62,7 +62,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 class SyncManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val databaseService: DatabaseService,
-    @AppPreferences private val settings: SharedPreferences
+    @AppPreferences private val settings: SharedPreferences,
+    private val apiInterface: ApiInterface
 ) {
     private var td: Thread? = null
     lateinit var mRealm: Realm
@@ -574,7 +575,6 @@ class SyncManager @Inject constructor(
         var processedItems = 0
 
         try {
-            val apiInterface = ApiClient.getEnhancedClient()
             val realmInstance = backgroundRealm ?: mRealm
             val newIds: MutableList<String?> = ArrayList()
             var totalRows = 0
@@ -724,7 +724,6 @@ class SyncManager @Inject constructor(
         var processedItems = 0
 
         try {
-            val apiInterface = ApiClient.getEnhancedClient()
             val newIds = ConcurrentHashMap.newKeySet<String>()
 
             var totalRows = 0
@@ -844,7 +843,6 @@ class SyncManager @Inject constructor(
     }
 
     private suspend fun getShelvesWithDataBatchOptimized(): List<String> {
-        val apiInterface = ApiClient.getEnhancedClient()
         val shelvesWithData = mutableListOf<String>()
         val cachedShelves = getCachedShelvesWithData()
         if (cachedShelves.isNotEmpty()) {
@@ -943,7 +941,6 @@ class SyncManager @Inject constructor(
         var processedItems = 0
 
         try {
-            val apiInterface = ApiClient.getEnhancedClient()
             val shelvesWithData = runBlocking { getShelvesWithDataBatchOptimized() }
 
             if (shelvesWithData.isEmpty()) {
@@ -1087,7 +1084,6 @@ class SyncManager @Inject constructor(
         var processedItems = 0
 
         try {
-            val apiInterface = ApiClient.getEnhancedClient()
 
             var shelfResponse: DocumentResponse? = null
             ApiClient.executeWithRetry {
