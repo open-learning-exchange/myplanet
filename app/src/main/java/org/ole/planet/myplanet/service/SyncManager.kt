@@ -62,7 +62,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 class SyncManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val databaseService: DatabaseService,
-    @AppPreferences private val settings: SharedPreferences
+    @AppPreferences private val settings: SharedPreferences,
+    private val managerSync: ManagerSync
 ) {
     private var td: Thread? = null
     lateinit var mRealm: Realm
@@ -218,7 +219,7 @@ class SyncManager @Inject constructor(
             }
 
             logger.startProcess("admin_sync")
-            ManagerSync.instance?.syncAdmin()
+            managerSync.syncAdmin()
             logger.endProcess("admin_sync")
 
             logger.startProcess("resource_sync")
@@ -411,7 +412,7 @@ class SyncManager @Inject constructor(
             }
 
             logger.startProcess("admin_sync")
-            ManagerSync.instance?.syncAdmin()
+            managerSync.syncAdmin()
             logger.endProcess("admin_sync")
 
             logger.startProcess("on_synced")
@@ -509,7 +510,7 @@ class SyncManager @Inject constructor(
             }
 
             logger.startProcess("admin_sync")
-            ManagerSync.instance?.syncAdmin()
+            managerSync.syncAdmin()
             logger.endProcess("admin_sync")
 
             logger.startProcess("on_synced")

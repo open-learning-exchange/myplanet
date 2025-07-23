@@ -6,11 +6,15 @@ import android.util.Base64
 import androidx.core.content.edit
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
 import java.util.Locale
+import javax.inject.Inject
+import javax.inject.Singleton
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -20,9 +24,19 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class ManagerSync private constructor(context: Context) {
-    private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val dbService: DatabaseService = DatabaseService(context)
+@Singleton
+class ManagerSync @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val dbService: DatabaseService,
+    @AppPreferences private val settings: SharedPreferences
+) {
+    // Backward compatibility constructor for code not yet migrated to DI
+    constructor(context: Context) : this(
+        context,
+        DatabaseService(context),
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    )
+
     private val mRealm: Realm = dbService.realmInstance
 
     fun login(userName: String?, password: String?, listener: SyncListener) {
@@ -94,13 +108,4 @@ class ManagerSync private constructor(context: Context) {
         return jsonDoc?.get("isUserAdmin")?.asBoolean == true || isManager
     }
 
-    companion object {
-        private var ourInstance: ManagerSync? = null
-        @JvmStatic
-        val instance: ManagerSync?
-            get() {
-                ourInstance = ManagerSync(MainApplication.context)
-                return ourInstance
-            }
-    }
 }

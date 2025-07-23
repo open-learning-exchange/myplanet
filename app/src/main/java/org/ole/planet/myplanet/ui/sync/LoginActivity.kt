@@ -47,7 +47,10 @@ import org.ole.planet.myplanet.utilities.*
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private lateinit var activityLoginBinding: ActivityLoginBinding
     private var guest = false
@@ -57,6 +60,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private val backPressedInterval: Long = 2000
     private var teamList = java.util.ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
+
+    @Inject
+    lateinit var managerSync: ManagerSync
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -448,7 +454,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     private fun submitForm(name: String?, password: String?) {
-        AuthHelper.login(this, name, password)
+        AuthHelper.login(this, name, password, managerSync)
     }
 
     internal fun showGuestDialog(username: String) {

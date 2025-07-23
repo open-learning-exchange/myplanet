@@ -8,6 +8,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.ManagerSync
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UploadManager
@@ -23,9 +24,10 @@ object ServiceModule {
     fun provideSyncManager(
         @ApplicationContext context: Context,
         databaseService: DatabaseService,
-        @AppPreferences preferences: SharedPreferences
+        @AppPreferences preferences: SharedPreferences,
+        managerSync: ManagerSync
     ): SyncManager {
-        return SyncManager(context, databaseService, preferences)
+        return SyncManager(context, databaseService, preferences, managerSync)
     }
 
     @Provides
