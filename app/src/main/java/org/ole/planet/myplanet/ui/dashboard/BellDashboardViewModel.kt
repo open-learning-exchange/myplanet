@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import androidx.lifecycle.ViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,8 +11,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
+import javax.inject.Inject
 
-class BellDashboardViewModel : ViewModel() {
+@HiltViewModel
+class BellDashboardViewModel @Inject constructor() : ViewModel() {
     private val _networkStatus = MutableStateFlow<NetworkStatus>(NetworkStatus.Disconnected)
     val networkStatus: StateFlow<NetworkStatus> = _networkStatus.asStateFlow()
 
