@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.resources
 
+
 import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
@@ -21,8 +22,8 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlin.toString
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createFromResource
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
@@ -32,7 +33,6 @@ import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities.toast
-
 @AndroidEntryPoint
 class AddResourceActivity : AppCompatActivity() {
     private lateinit var activityAddResourceBinding: ActivityAddResourceBinding

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.userprofile
 
+
 import android.app.DatePickerDialog
 import android.content.DialogInterface
 import android.os.Bundle
@@ -23,6 +24,7 @@ import fisk.chipcloud.ChipCloud
 import io.realm.Realm
 import java.util.Calendar
 import java.util.Locale
+import javax.inject.Inject
 import kotlin.Array
 import kotlin.Int
 import kotlin.String
@@ -37,7 +39,6 @@ import org.ole.planet.myplanet.databinding.EditOtherInfoBinding
 import org.ole.planet.myplanet.databinding.FragmentEditAchievementBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.databinding.RowlayoutBinding
-import javax.inject.Inject
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmAchievement.Companion.createReference
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -47,7 +48,6 @@ import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
 import org.ole.planet.myplanet.utilities.Utilities
-
 class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDateSetListener {
     private lateinit var fragmentEditAchievementBinding: FragmentEditAchievementBinding
     private lateinit var editAttachmentBinding: EditAttachementBinding

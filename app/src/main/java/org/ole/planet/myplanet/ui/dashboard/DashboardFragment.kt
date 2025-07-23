@@ -1,11 +1,13 @@
 package org.ole.planet.myplanet.ui.dashboard
 
+
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import io.realm.Realm
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBinding
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSurveySubmissionByUser
@@ -17,8 +19,6 @@ import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.TimeUtils.currentDate
-import javax.inject.Inject
-
 class DashboardFragment : BaseDashboardFragment() {
     private lateinit var fragmentHomeBinding: FragmentHomeBinding
     private lateinit var dRealm: Realm

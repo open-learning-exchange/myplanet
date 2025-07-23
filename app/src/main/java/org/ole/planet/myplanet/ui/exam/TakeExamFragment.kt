@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.exam
 
+
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
@@ -20,10 +21,10 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmQuery
 import io.realm.Sort
-import javax.inject.Inject
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import javax.inject.Inject
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeExamBinding
@@ -43,7 +44,6 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.hideSoftKeyboard
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.Utilities.toast
-
 class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {
     private lateinit var fragmentTakeExamBinding: FragmentTakeExamBinding
     private var isCertified = false

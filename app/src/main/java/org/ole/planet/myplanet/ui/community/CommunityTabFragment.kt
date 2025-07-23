@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.community
 
+
 import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -7,12 +8,11 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.google.android.material.tabs.TabLayoutMediator
-import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-
 @AndroidEntryPoint
 class CommunityTabFragment : Fragment() {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding

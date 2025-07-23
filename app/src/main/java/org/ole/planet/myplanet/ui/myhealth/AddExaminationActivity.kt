@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.myhealth
 
+
 import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Editable
@@ -24,8 +25,8 @@ import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.databinding.ActivityAddExaminationBinding
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
@@ -42,7 +43,6 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getBoolean
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.getAge
 import org.ole.planet.myplanet.utilities.Utilities
-
 @AndroidEntryPoint
 class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
     private lateinit var activityAddExaminationBinding: ActivityAddExaminationBinding

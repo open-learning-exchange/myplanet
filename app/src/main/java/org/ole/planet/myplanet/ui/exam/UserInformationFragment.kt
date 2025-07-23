@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.exam
 
+
 import android.app.DatePickerDialog
 import android.content.Context
 import android.content.DialogInterface
@@ -41,7 +42,6 @@ import org.ole.planet.myplanet.ui.team.TeamPage
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Utilities
-
 @AndroidEntryPoint
 class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     private lateinit var fragmentUserInformationBinding: FragmentUserInformationBinding

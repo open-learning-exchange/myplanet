@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.community
 
+
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
@@ -11,9 +12,9 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Case
-import javax.inject.Inject
 import io.realm.RealmResults
 import io.realm.Sort
+import javax.inject.Inject
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCommunityBinding
 import org.ole.planet.myplanet.model.RealmNews
@@ -22,7 +23,6 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.news.ReplyActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
-
 @AndroidEntryPoint
 class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickListener {
     private lateinit var fragmentCommunityBinding: FragmentCommunityBinding

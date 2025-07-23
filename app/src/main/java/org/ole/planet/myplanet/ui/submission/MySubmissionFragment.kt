@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.submission
 
+
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
@@ -11,22 +12,21 @@ import android.widget.CompoundButton
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.Sort
+import javax.inject.Inject
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.getIds
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-
 @AndroidEntryPoint
 class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     private lateinit var fragmentMySubmissionBinding: FragmentMySubmissionBinding

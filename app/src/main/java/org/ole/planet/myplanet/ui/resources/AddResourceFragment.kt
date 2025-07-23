@@ -29,6 +29,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import dagger.hilt.EntryPointAccessors
 import io.realm.Realm
 import java.util.Date
 import java.util.UUID
@@ -37,6 +38,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertSoundRecorderBinding
 import org.ole.planet.myplanet.databinding.FragmentAddResourceBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.UserProfileEntryPoint
 import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.service.AudioRecorderService
 import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
@@ -267,7 +269,11 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             val v = LayoutInflater.from(context).inflate(R.layout.alert_my_personal, null)
             val etTitle = v.findViewById<EditText>(R.id.et_title)
             val etDesc = v.findViewById<EditText>(R.id.et_description)
-            val realmUserModel = UserProfileDbHandler(MainApplication.context).userModel!!
+            val entryPoint = EntryPointAccessors.fromApplication(
+                context.applicationContext,
+                UserProfileEntryPoint::class.java
+            )
+            val realmUserModel = entryPoint.userProfileDbHandler().userModel!!
             val userId = realmUserModel.id
             val userName = realmUserModel.name
             AlertDialog.Builder(context, R.style.AlertDialogTheme)

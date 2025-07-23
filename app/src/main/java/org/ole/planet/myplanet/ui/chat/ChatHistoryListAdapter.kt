@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.chat
 
+
 import android.app.AlertDialog
 import android.content.Context
 import android.graphics.drawable.ColorDrawable
@@ -18,11 +19,11 @@ import java.text.Normalizer
 import java.util.Date
 import java.util.Locale
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.databinding.AddNoteDialogBinding
 import org.ole.planet.myplanet.databinding.ChatShareDialogBinding
 import org.ole.planet.myplanet.databinding.GrandChildRecyclerviewDialogBinding
 import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -34,7 +35,6 @@ import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
 import org.ole.planet.myplanet.ui.news.GrandChildAdapter
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment.Companion.settings
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-
 class ChatHistoryListAdapter(
     private val context: Context,
     private var chatHistory: List<RealmChatHistory>,

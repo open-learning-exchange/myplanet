@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.team.teamMember
 
+
 import android.annotation.SuppressLint
 import android.content.Context
 import android.view.LayoutInflater
@@ -27,7 +28,6 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Utilities
-
 class AdapterJoinedMember(
     private val context: Context,
     private val list: MutableList<RealmUserModel>,

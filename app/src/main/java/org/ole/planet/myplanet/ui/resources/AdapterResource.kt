@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.resources
 
+
 import android.content.Context
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -28,7 +29,6 @@ import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
-
 class AdapterResource(
     private val context: Context,
     private var libraryList: List<RealmMyLibrary?>,

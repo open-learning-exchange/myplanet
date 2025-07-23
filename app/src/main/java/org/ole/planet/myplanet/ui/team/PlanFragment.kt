@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.team
 
+
 import android.app.AlertDialog
 import android.content.Context
 import android.os.Bundle
@@ -17,7 +18,6 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
-
 class PlanFragment : BaseTeamFragment() {
     private lateinit var fragmentPlanBinding: FragmentPlanBinding
     private var isEnterprise: Boolean = false

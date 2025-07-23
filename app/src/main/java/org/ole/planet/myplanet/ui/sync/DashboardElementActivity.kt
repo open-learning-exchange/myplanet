@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.sync
 
+
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Intent
@@ -47,7 +48,6 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.NotificationUtil
 import org.ole.planet.myplanet.utilities.SharedPrefManager
-
 abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBackStackChangedListener {
     lateinit var navigationView: BottomNavigationView
     var doubleBackToExitPressedOnce = false

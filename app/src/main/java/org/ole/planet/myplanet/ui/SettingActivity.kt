@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui
 
+
 import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
@@ -25,17 +26,17 @@ import androidx.preference.PreferenceManager
 import androidx.preference.SwitchPreference
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
-import org.ole.planet.myplanet.di.AppPreferences
-import org.ole.planet.myplanet.di.DefaultPreferences
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import javax.inject.Inject
 import java.io.File
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -51,7 +52,6 @@ import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryForma
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.ThemeManager
 import org.ole.planet.myplanet.utilities.Utilities
-
 @AndroidEntryPoint
 class SettingActivity : AppCompatActivity() {
 

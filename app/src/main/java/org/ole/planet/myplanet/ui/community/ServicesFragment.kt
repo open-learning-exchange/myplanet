@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.community
 
+
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -15,11 +16,10 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentServicesBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
+import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
-
 class ServicesFragment : BaseTeamFragment() {
     private lateinit var fragmentServicesBinding: FragmentServicesBinding
 

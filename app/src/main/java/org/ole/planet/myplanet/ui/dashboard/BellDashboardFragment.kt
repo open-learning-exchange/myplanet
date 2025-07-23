@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard
 
+
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -48,7 +49,6 @@ import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.TimeUtils
-
 class BellDashboardFragment : BaseDashboardFragment() {
     private lateinit var fragmentHomeBellBinding: FragmentHomeBellBinding
     private var networkStatusJob: Job? = null

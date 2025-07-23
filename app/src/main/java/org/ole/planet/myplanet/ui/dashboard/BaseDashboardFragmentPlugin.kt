@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard
 
+
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
@@ -31,7 +32,6 @@ import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.Utilities
-
 open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
     fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
         v.text = title

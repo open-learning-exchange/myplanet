@@ -1,14 +1,15 @@
 package org.ole.planet.myplanet.ui.userprofile
 
+
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentUserDetailBinding
 import org.ole.planet.myplanet.databinding.ItemTitleDescBinding
@@ -17,7 +18,6 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
 import org.ole.planet.myplanet.utilities.Utilities
-
 @AndroidEntryPoint
 class UserDetailFragment : Fragment() {
     private lateinit var fragmentUserDetailBinding: FragmentUserDetailBinding

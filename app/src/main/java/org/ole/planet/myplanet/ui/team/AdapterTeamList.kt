@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.team
 
+
 import android.content.Context
 import android.content.DialogInterface
 import android.graphics.PorterDuff
@@ -26,7 +27,6 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
-
 class AdapterTeamList(
     private val context: Context,
     private val list: List<RealmMyTeam>,
