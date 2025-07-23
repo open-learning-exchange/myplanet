@@ -1,38 +1,42 @@
 package org.ole.planet.myplanet.model
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import io.realm.RealmList
+import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import io.realm.RealmList
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.di.ChatRepository
 
-class ChatViewModel : ViewModel() {
-    private val _selectedChatHistory = MutableStateFlow<RealmList<Conversation>?>(null)
-    val selectedChatHistory: StateFlow<RealmList<Conversation>?> = _selectedChatHistory.asStateFlow()
-
-    private val _selectedId = MutableStateFlow("")
-    val selectedId: StateFlow<String> = _selectedId.asStateFlow()
-
-    private val _selectedRev = MutableStateFlow("")
-    val selectedRev: StateFlow<String> = _selectedRev.asStateFlow()
-
-    private val _selectedAiProvider = MutableStateFlow<String?>(null)
-    val selectedAiProvider: StateFlow<String?> = _selectedAiProvider.asStateFlow()
+@HiltViewModel
+class ChatViewModel @Inject constructor(
+    private val chatRepository: ChatRepository
+) : ViewModel() {
+    val selectedChatHistory: StateFlow<RealmList<Conversation>?> = chatRepository.selectedChatHistory.asStateFlow()
+    val selectedId: StateFlow<String> = chatRepository.selectedId.asStateFlow()
+    val selectedRev: StateFlow<String> = chatRepository.selectedRev.asStateFlow()
+    val selectedAiProvider: StateFlow<String?> = chatRepository.selectedAiProvider.asStateFlow()
 
     fun setSelectedChatHistory(conversations: RealmList<Conversation>) {
-        _selectedChatHistory.value = conversations
+        viewModelScope.launch(Dispatchers.IO) {
+            chatRepository.selectedChatHistory.value = conversations
+        }
     }
 
     fun setSelectedId(id: String) {
-        _selectedId.value = id
+        viewModelScope.launch(Dispatchers.IO) { chatRepository.selectedId.value = id }
     }
 
     fun setSelectedRev(rev: String) {
-        _selectedRev.value = rev
+        viewModelScope.launch(Dispatchers.IO) { chatRepository.selectedRev.value = rev }
     }
 
     fun setSelectedAiProvider(aiProvider: String?) {
-        _selectedAiProvider.value = aiProvider
+        viewModelScope.launch(Dispatchers.IO) { chatRepository.selectedAiProvider.value = aiProvider }
     }
 }
 

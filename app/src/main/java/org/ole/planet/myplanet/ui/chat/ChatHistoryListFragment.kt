@@ -13,7 +13,7 @@ import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import com.google.android.material.snackbar.Snackbar
@@ -28,8 +28,8 @@ import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.model.ChatViewModel
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
@@ -45,7 +45,7 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class ChatHistoryListFragment : Fragment() {
     private lateinit var fragmentChatHistoryListBinding: FragmentChatHistoryListBinding
-    private lateinit var sharedViewModel: ChatViewModel
+    private val sharedViewModel: ChatViewModel by activityViewModels()
     var user: RealmUserModel? = null
     private var isFullSearch: Boolean = false
     private var isQuestion: Boolean = false
@@ -63,7 +63,6 @@ class ChatHistoryListFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        sharedViewModel = ViewModelProvider(requireActivity())[ChatViewModel::class.java]
         prefManager = SharedPrefManager(requireContext())
         settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         startChatHistorySync()

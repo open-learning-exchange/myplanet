@@ -2,22 +2,26 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
-import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
+import org.ole.planet.myplanet.di.NetworkRepository
+import javax.inject.Inject
 
-class BellDashboardViewModel : ViewModel() {
+@HiltViewModel
+class BellDashboardViewModel @Inject constructor(
+    private val networkRepository: NetworkRepository
+) : ViewModel() {
     private val _networkStatus = MutableStateFlow<NetworkStatus>(NetworkStatus.Disconnected)
     val networkStatus: StateFlow<NetworkStatus> = _networkStatus.asStateFlow()
 
     init {
         viewModelScope.launch {
-            isNetworkConnectedFlow.collect { isConnected ->
+            networkRepository.isNetworkConnectedFlow.collect { isConnected ->
                 updateNetworkStatus(isConnected)
             }
         }
@@ -34,7 +38,7 @@ class BellDashboardViewModel : ViewModel() {
 
     suspend fun checkServerConnection(serverUrl: String): Boolean {
         return withContext(Dispatchers.IO) {
-            isServerReachable(serverUrl)
+            networkRepository.isServerReachable(serverUrl)
         }
     }
 }
