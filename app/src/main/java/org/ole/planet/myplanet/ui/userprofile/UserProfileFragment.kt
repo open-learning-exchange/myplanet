@@ -282,8 +282,8 @@ class UserProfileFragment : Fragment() {
                 { _, year, monthOfYear, dayOfMonth ->
                     val calendar = Calendar.getInstance()
                     calendar.set(year, monthOfYear, dayOfMonth)
-                    val sdf = SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.US)
-                    val dobFormatted = sdf.format(calendar.time)
+                    val dobMillis = calendar.timeInMillis
+                    val dobFormatted = TimeUtils.getFormatedDate(dobMillis)
 
                     date = format(Locale.US, "%04d-%02d-%02dT00:00:00.000Z", year, monthOfYear + 1, dayOfMonth)
                     binding.dateOfBirth.text = dobFormatted
