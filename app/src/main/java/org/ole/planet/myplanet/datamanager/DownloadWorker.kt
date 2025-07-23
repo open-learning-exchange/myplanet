@@ -7,6 +7,10 @@ import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+import dagger.hilt.android.worker.HiltWorker
+import org.ole.planet.myplanet.datamanager.ApiInterface
 import java.io.BufferedInputStream
 import java.io.FileOutputStream
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +23,12 @@ import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getSDPathFromUrl
 import org.ole.planet.myplanet.utilities.Utilities
 
-class DownloadWorker(val context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
+@HiltWorker
+class DownloadWorker @AssistedInject constructor(
+    @Assisted val context: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val apiInterface: ApiInterface
+) : CoroutineWorker(context, workerParams) {
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private val preferences = context.getSharedPreferences(MyDownloadService.PREFS_NAME, Context.MODE_PRIVATE)
 
@@ -66,21 +75,16 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
 
     private suspend fun downloadFile(url: String, index: Int, total: Int): Boolean {
         return try {
-            val retrofitInterface = ApiClient.client?.create(ApiInterface::class.java)
-            val response = retrofitInterface?.downloadFile(Utilities.header, url)?.execute()
+            val response = apiInterface.downloadFile(Utilities.header, url).execute()
 
-            when {
-                response == null -> false
-                response.isSuccessful -> {
-                    val responseBody = response.body()
-                    responseBody?.let {
-                        downloadFileBody(it, url, index, total)
-                        true
-                    } == true
-                }
-                else -> {
-                    false
-                }
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                responseBody?.let {
+                    downloadFileBody(it, url, index, total)
+                    true
+                } ?: false
+            } else {
+                false
             }
         } catch (e: Exception) {
             e.printStackTrace()

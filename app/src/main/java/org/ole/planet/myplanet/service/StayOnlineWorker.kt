@@ -5,11 +5,18 @@ import android.content.Intent
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+import dagger.hilt.android.worker.HiltWorker
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.NetworkUtils.isWifiConnected
 
-class StayOnlineWorker(private val context: Context, workerParams: WorkerParameters) : Worker(context, workerParams) {
+@HiltWorker
+class StayOnlineWorker @AssistedInject constructor(
+    @Assisted private val context: Context,
+    @Assisted workerParams: WorkerParameters
+) : Worker(context, workerParams) {
     override fun doWork(): Result {
         if (showBetaFeature(Constants.KEY_SYNC, context)) {
             if (isWifiConnected()) {

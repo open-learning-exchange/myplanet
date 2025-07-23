@@ -3,20 +3,31 @@ package org.ole.planet.myplanet.service
 import android.content.Context
 import androidx.work.Worker
 import androidx.work.WorkerParameters
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+import dagger.hilt.android.worker.HiltWorker
+import android.content.SharedPreferences
 import java.util.Calendar
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.utilities.NotificationUtil.create
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
-class TaskNotificationWorker(private val context: Context, workerParams: WorkerParameters) : Worker(context, workerParams) {
+@HiltWorker
+class TaskNotificationWorker @AssistedInject constructor(
+    @Assisted private val context: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val databaseService: DatabaseService,
+    @AppPreferences private val preferences: SharedPreferences
+) : Worker(context, workerParams) {
     override fun doWork(): Result {
-        val mRealm = DatabaseService(context).realmInstance
+        val mRealm = databaseService.realmInstance
         val current = Calendar.getInstance().timeInMillis
         val tomorrow = Calendar.getInstance()
         tomorrow.add(Calendar.DAY_OF_YEAR, 1)
-        val user = UserProfileDbHandler(context).userModel
+        val user = UserProfileDbHandler(context, databaseService, preferences).userModel
         if (user != null) {
             val tasks: List<RealmTeamTask> = mRealm.where(RealmTeamTask::class.java)
                 .equalTo("completed", false)

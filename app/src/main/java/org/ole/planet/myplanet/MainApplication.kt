@@ -16,6 +16,8 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import dagger.hilt.android.HiltAndroidApp
+import androidx.hilt.work.HiltWorkerFactory
+import androidx.work.Configuration
 import io.realm.Realm
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.DefaultPreferences
@@ -56,7 +58,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
 
 @HiltAndroidApp
-class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
+class MainApplication : Application(), Application.ActivityLifecycleCallbacks, Configuration.Provider {
 
     @Inject
     lateinit var databaseService: DatabaseService
@@ -68,6 +70,15 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     @Inject
     @DefaultPreferences
     lateinit var defaultPreferences: SharedPreferences
+
+    @Inject
+    lateinit var workerFactory: HiltWorkerFactory
+
+    override fun getWorkManagerConfiguration(): Configuration {
+        return Configuration.Builder()
+            .setWorkerFactory(workerFactory)
+            .build()
+    }
 
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
