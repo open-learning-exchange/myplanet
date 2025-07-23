@@ -4,13 +4,13 @@ import android.os.Bundle
 import androidx.core.text.HtmlCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import com.google.gson.Gson
 import com.google.gson.JsonArray
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Case
 import io.realm.RealmResults
 import java.util.UUID
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.FragmentDictionaryBinding

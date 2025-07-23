@@ -5,15 +5,15 @@ import android.view.View
 import android.webkit.WebSettings
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.io.File
 import java.util.Date
 import java.util.UUID
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityNewsDetailBinding

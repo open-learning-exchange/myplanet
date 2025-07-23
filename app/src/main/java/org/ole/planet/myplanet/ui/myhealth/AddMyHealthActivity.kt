@@ -12,12 +12,12 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 import com.google.gson.Gson
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.util.Calendar
 import java.util.Locale
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddMyHealthBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
