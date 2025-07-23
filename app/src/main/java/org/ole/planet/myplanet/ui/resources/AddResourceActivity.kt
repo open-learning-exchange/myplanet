@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities.toast
 @AndroidEntryPoint
 
+@AndroidEntryPoint
 class AddResourceActivity : AppCompatActivity() {
     @Inject
     lateinit var databaseService: DatabaseService
@@ -41,6 +42,8 @@ class AddResourceActivity : AppCompatActivity() {
     lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var activityAddResourceBinding: ActivityAddResourceBinding
     private lateinit var mRealm: Realm
+    @Inject
+    lateinit var databaseService: DatabaseService
     var userModel: RealmUserModel? = null
     var subjects: RealmList<String>? = null
     var levels: RealmList<String>? = null

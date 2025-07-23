@@ -51,6 +51,8 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var activityAddExaminationBinding: ActivityAddExaminationBinding
     lateinit var mRealm: Realm
+    @Inject
+    lateinit var databaseService: DatabaseService
     var userId: String? = null
     var user: RealmUserModel? = null
     private var currentUser: RealmUserModel? = null

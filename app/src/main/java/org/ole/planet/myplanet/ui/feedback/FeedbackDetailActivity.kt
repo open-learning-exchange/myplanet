@@ -40,6 +40,8 @@ class FeedbackDetailActivity : AppCompatActivity() {
     @Inject
     lateinit var databaseService: DatabaseService
     lateinit var realm: Realm
+    @Inject
+    lateinit var databaseService: DatabaseService
     private lateinit var rowFeedbackReplyBinding: RowFeedbackReplyBinding
 
     override fun attachBaseContext(base: Context) {

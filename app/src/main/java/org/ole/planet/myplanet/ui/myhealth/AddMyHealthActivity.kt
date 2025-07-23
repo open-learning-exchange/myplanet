@@ -37,6 +37,8 @@ class AddMyHealthActivity : AppCompatActivity() {
     @Inject
     lateinit var databaseService: DatabaseService
     lateinit var realm: Realm
+    @Inject
+    lateinit var databaseService: DatabaseService
     private var healthPojo: RealmMyHealthPojo? = null
     private var userModelB: RealmUserModel? = null
     var userId: String? = null

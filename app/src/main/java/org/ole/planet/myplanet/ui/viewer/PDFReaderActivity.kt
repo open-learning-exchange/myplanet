@@ -38,6 +38,8 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
     lateinit var databaseService: DatabaseService
     private lateinit var library: RealmMyLibrary
     private lateinit var mRealm: Realm
+    @Inject
+    lateinit var databaseService: DatabaseService
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         activityPdfReaderBinding = ActivityPdfreaderBinding.inflate(layoutInflater)
@@ -99,7 +101,7 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         Utilities.toast(this, getString(R.string.recording_stopped))
         cancelAll(this)
         updateTranslation(outputFile)
-        AddResourceFragment.showAlert(this, outputFile)
+        AddResourceFragment.showAlert(this, outputFile, databaseService)
         activityPdfReaderBinding.fabRecord.setImageResource(R.drawable.ic_mic)
     }
 
