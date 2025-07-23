@@ -4,12 +4,12 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
+import androidx.hilt.work.HiltWorker
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import androidx.hilt.work.HiltWorker
 import java.io.BufferedInputStream
 import java.io.FileOutputStream
 import kotlinx.coroutines.Dispatchers
