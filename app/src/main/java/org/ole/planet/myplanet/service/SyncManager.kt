@@ -9,9 +9,13 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
 import java.util.Date
 import java.util.concurrent.ConcurrentHashMap
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -29,15 +33,13 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.di.AppPreferences
-import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
-import javax.inject.Singleton
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.ManagerSync
+import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.insertMyCourses
@@ -62,7 +64,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 class SyncManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val databaseService: DatabaseService,
-    @AppPreferences private val settings: SharedPreferences
+    @AppPreferences private val settings: SharedPreferences,
+    private val apiInterface: ApiInterface
 ) {
     private var td: Thread? = null
     lateinit var mRealm: Realm
@@ -574,7 +577,6 @@ class SyncManager @Inject constructor(
         var processedItems = 0
 
         try {
-            val apiInterface = ApiClient.getEnhancedClient()
             val realmInstance = backgroundRealm ?: mRealm
             val newIds: MutableList<String?> = ArrayList()
             var totalRows = 0
@@ -724,7 +726,6 @@ class SyncManager @Inject constructor(
         var processedItems = 0
 
         try {
-            val apiInterface = ApiClient.getEnhancedClient()
             val newIds = ConcurrentHashMap.newKeySet<String>()
 
             var totalRows = 0
@@ -844,7 +845,6 @@ class SyncManager @Inject constructor(
     }
 
     private suspend fun getShelvesWithDataBatchOptimized(): List<String> {
-        val apiInterface = ApiClient.getEnhancedClient()
         val shelvesWithData = mutableListOf<String>()
         val cachedShelves = getCachedShelvesWithData()
         if (cachedShelves.isNotEmpty()) {
@@ -943,7 +943,6 @@ class SyncManager @Inject constructor(
         var processedItems = 0
 
         try {
-            val apiInterface = ApiClient.getEnhancedClient()
             val shelvesWithData = runBlocking { getShelvesWithDataBatchOptimized() }
 
             if (shelvesWithData.isEmpty()) {
@@ -1087,7 +1086,6 @@ class SyncManager @Inject constructor(
         var processedItems = 0
 
         try {
-            val apiInterface = ApiClient.getEnhancedClient()
 
             var shelfResponse: DocumentResponse? = null
             ApiClient.executeWithRetry {
@@ -1271,7 +1269,11 @@ class SyncManager @Inject constructor(
     constructor(context: Context) : this(
         context,
         DatabaseService(context),
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            ApiInterfaceEntryPoint::class.java
+        ).apiInterface()
     )
 
 }
