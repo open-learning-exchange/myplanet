@@ -62,7 +62,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentHomeBellBinding = FragmentHomeBellBinding.inflate(inflater, container, false)
-        user = UserProfileDbHandler(requireContext()).userModel
+        user = profileDbHandler.userModel
         val view = fragmentHomeBellBinding.root
         initView(view)
         declareElements()

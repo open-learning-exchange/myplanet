@@ -84,6 +84,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     
     @Inject
     lateinit var syncManager: SyncManager
+    @Inject
+    lateinit var profileDbHandler: UserProfileDbHandler
 
     private val serverUrlMapper = ServerUrlMapper()
     private val serverUrl: String
@@ -203,7 +205,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
-        userModel = UserProfileDbHandler(requireContext()).userModel
+        userModel = profileDbHandler.userModel
         searchTags = ArrayList()
         config = Utilities.getCloudConfig().showClose(R.color.black_overlay)
 

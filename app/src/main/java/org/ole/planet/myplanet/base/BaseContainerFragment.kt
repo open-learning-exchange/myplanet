@@ -63,7 +63,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private var shouldAutoOpenAfterDownload = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        profileDbHandler = UserProfileDbHandler(requireActivity())
         hasInstallPermissionValue = hasInstallPermission(requireContext())
         if (!BuildConfig.LITE) {
             installApkLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -123,7 +122,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 }
                 true
             }
-            val userModel = UserProfileDbHandler(context).userModel
+            val userModel = profileDbHandler.userModel
             if (!userModel?.isGuest()!!) {
                 setOnClickListener {
                     homeItemClickListener?.showRatingDialog(type, id, title, listener)

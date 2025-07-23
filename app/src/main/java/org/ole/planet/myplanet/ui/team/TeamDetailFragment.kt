@@ -78,7 +78,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
         val teamId = requireArguments().getString("id" ) ?: ""
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
-        val user = UserProfileDbHandler(requireContext()).userModel
+        val user = userProfileDbHandler.userModel
         mRealm = databaseService.realmInstance
 
         if (shouldQueryRealm(teamId)) {
@@ -310,7 +310,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     private fun createTeamLog() {
-        val userModel = UserProfileDbHandler(requireContext()).userModel ?: return
+        val userModel = userProfileDbHandler.userModel ?: return
         val userName = userModel.name
         val userPlanetCode = userModel.planetCode
         val userParentCode = userModel.parentCode

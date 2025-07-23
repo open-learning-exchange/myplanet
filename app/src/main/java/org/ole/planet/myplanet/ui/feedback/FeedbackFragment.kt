@@ -28,6 +28,8 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     private lateinit var mRealm: Realm
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var profileDbHandler: UserProfileDbHandler
     private var model: RealmUserModel ?= null
     var user: String? = ""
 
@@ -48,7 +50,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentFeedbackBinding = FragmentFeedbackBinding.inflate(inflater, container, false)
         mRealm = databaseService.realmInstance
-        model = UserProfileDbHandler(requireContext()).userModel
+        model = profileDbHandler.userModel
         user = model?.name
         fragmentFeedbackBinding.btnSubmit.setOnClickListener(this)
         fragmentFeedbackBinding.btnCancel.setOnClickListener(this)

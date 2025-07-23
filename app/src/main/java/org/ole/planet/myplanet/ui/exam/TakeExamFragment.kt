@@ -48,11 +48,12 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private var isCertified = false
     var container: NestedScrollView? = null
     private val gson = Gson()
+    @Inject
+    lateinit var profileDbHandler: UserProfileDbHandler
     override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTakeExamBinding = FragmentTakeExamBinding.inflate(inflater, parent, false)
         listAns = HashMap()
-        val dbHandler = UserProfileDbHandler(requireActivity())
-        user = dbHandler.userModel
+        user = profileDbHandler.userModel
         return fragmentTakeExamBinding.root
     }
 
@@ -206,7 +207,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         membershipDoc.teamId = teamId
         sub?.membershipDoc = membershipDoc
 
-        val userModel = UserProfileDbHandler(requireActivity()).userModel
+        val userModel = profileDbHandler.userModel
 
         try {
             val userJson = JSONObject()

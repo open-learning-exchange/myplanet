@@ -30,7 +30,8 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     lateinit var databaseService: DatabaseService
     lateinit var mRealm: Realm
     private var meetUpId: String? = null
-    var profileDbHandler: UserProfileDbHandler? = null
+    @Inject
+    lateinit var profileDbHandler: UserProfileDbHandler
     var user: RealmUserModel? = null
     private var listUsers: ListView? = null
     private var listDesc: ListView? = null
@@ -51,8 +52,7 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
         fragmentMyMeetupDetailBinding.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
         fragmentMyMeetupDetailBinding.btnLeave.setOnClickListener(this)
         mRealm = databaseService.realmInstance
-        profileDbHandler = UserProfileDbHandler(requireContext())
-        user = profileDbHandler?.userModel?.let { mRealm.copyFromRealm(it) }
+        user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
         return fragmentMyMeetupDetailBinding.root
     }
 

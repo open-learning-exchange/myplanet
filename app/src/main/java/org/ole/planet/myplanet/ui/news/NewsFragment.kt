@@ -45,7 +45,7 @@ class NewsFragment : BaseNewsFragment() {
         fragmentNewsBinding = FragmentNewsBinding.inflate(inflater, container, false)
         llImage = fragmentNewsBinding.llImages
         mRealm = databaseService.realmInstance
-        user = UserProfileDbHandler(requireContext()).userModel
+        user = userProfileDbHandler.userModel
         setupUI(fragmentNewsBinding.newsFragmentParentLayout, requireActivity())
         if (user?.id?.startsWith("guest") == true) {
             fragmentNewsBinding.btnNewVoice.visibility = View.GONE

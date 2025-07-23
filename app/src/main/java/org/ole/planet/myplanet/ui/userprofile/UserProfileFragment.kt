@@ -67,7 +67,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 class UserProfileFragment : Fragment() {
     private lateinit var fragmentUserProfileBinding: FragmentUserProfileBinding
     private lateinit var rowStatBinding: RowStatBinding
-    private lateinit var handler: UserProfileDbHandler
+    @Inject
+    lateinit var handler: UserProfileDbHandler
     private lateinit var settings: SharedPreferences
     @Inject
     lateinit var databaseService: DatabaseService
@@ -155,7 +156,6 @@ class UserProfileFragment : Fragment() {
 
     private fun initializeDependencies() {
         settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        handler = UserProfileDbHandler(requireContext())
         mRealm = databaseService.realmInstance
         fragmentUserProfileBinding.rvStat.layoutManager = LinearLayoutManager(activity)
         fragmentUserProfileBinding.rvStat.isNestedScrollingEnabled = false

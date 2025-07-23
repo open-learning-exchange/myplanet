@@ -28,6 +28,8 @@ class MyActivityFragment : Fragment() {
     private lateinit var fragmentMyActivityBinding : FragmentMyActivityBinding
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var profileDbHandler: UserProfileDbHandler
     lateinit var realm: Realm
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentMyActivityBinding = FragmentMyActivityBinding.inflate(inflater, container, false)
@@ -36,7 +38,7 @@ class MyActivityFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val userModel = UserProfileDbHandler(requireActivity()).userModel
+        val userModel = profileDbHandler.userModel
         realm = databaseService.realmInstance
         val calendar = Calendar.getInstance()
         val daynight_textColor = ResourcesCompat.getColor(getResources(), R.color.daynight_textColor, null);

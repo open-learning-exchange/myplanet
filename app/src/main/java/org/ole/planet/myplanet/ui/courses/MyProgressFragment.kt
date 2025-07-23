@@ -29,6 +29,8 @@ class MyProgressFragment : Fragment() {
     private lateinit var fragmentMyProgressBinding: FragmentMyProgressBinding
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var profileDbHandler: UserProfileDbHandler
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentMyProgressBinding = FragmentMyProgressBinding.inflate(inflater, container, false)
@@ -42,7 +44,7 @@ class MyProgressFragment : Fragment() {
 
     private fun initializeData() {
         val realm = databaseService.realmInstance
-        val user = UserProfileDbHandler(requireActivity()).userModel
+        val user = profileDbHandler.userModel
         val courseData = fetchCourseData(realm, user?.id)
         fragmentMyProgressBinding.rvMyprogress.layoutManager = LinearLayoutManager(requireActivity())
         fragmentMyProgressBinding.rvMyprogress.adapter = AdapterMyProgress(requireActivity(), courseData)

@@ -40,7 +40,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         fragmentCourseDetailBinding = FragmentCourseDetailBinding.inflate(inflater, container, false)
         cRealm = databaseService.realmInstance
         courses = cRealm.where(RealmMyCourse::class.java).equalTo("courseId", id).findFirst()
-        user = UserProfileDbHandler(requireContext()).userModel
+        user = profileDbHandler.userModel
         return fragmentCourseDetailBinding.root
     }
 

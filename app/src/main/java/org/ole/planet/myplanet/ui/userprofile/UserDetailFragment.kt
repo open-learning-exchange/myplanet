@@ -26,7 +26,8 @@ class UserDetailFragment : Fragment() {
     private var user: RealmUserModel? = null
     @Inject
     lateinit var databaseService: DatabaseService
-    private lateinit var db: UserProfileDbHandler
+    @Inject
+    lateinit var db: UserProfileDbHandler
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,7 +40,6 @@ class UserDetailFragment : Fragment() {
         fragmentUserDetailBinding = FragmentUserDetailBinding.inflate(inflater, container, false)
         fragmentUserDetailBinding.rvUserDetail.layoutManager = GridLayoutManager(activity, 2)
         val mRealm = databaseService.realmInstance
-        db = UserProfileDbHandler(requireActivity())
         user = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
         return fragmentUserDetailBinding.root
     }

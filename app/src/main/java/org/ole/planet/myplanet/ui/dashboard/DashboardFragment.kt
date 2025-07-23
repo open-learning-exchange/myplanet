@@ -41,7 +41,7 @@ class DashboardFragment : BaseDashboardFragment() {
             homeItemClickListener?.openCallFragment(AchievementFragment())
         }
         dRealm = databaseService.realmInstance
-        user = UserProfileDbHandler(requireContext()).userModel
+        user = profileDbHandler.userModel
         onLoaded(view)
         initView(view)
         (activity as AppCompatActivity?)?.supportActionBar?.subtitle = currentDate()

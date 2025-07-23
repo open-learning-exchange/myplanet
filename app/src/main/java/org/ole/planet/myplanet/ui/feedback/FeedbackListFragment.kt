@@ -50,6 +50,8 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     
     @Inject
     lateinit var syncManager: SyncManager
+    @Inject
+    lateinit var profileDbHandler: UserProfileDbHandler
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -64,7 +66,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentFeedbackListBinding = FragmentFeedbackListBinding.inflate(inflater, container, false)
         mRealm = databaseService.realmInstance
-        userModel = UserProfileDbHandler(requireContext()).userModel
+        userModel = profileDbHandler.userModel
 
         fragmentFeedbackListBinding.fab.setOnClickListener {
             val feedbackFragment = FeedbackFragment()

@@ -69,7 +69,6 @@ class MyHealthFragment : Fragment() {
     private lateinit var fragmentVitalSignBinding: FragmentVitalSignBinding
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
     private lateinit var alertHealthListBinding: AlertHealthListBinding
-    var profileDbHandler: UserProfileDbHandler? = null
     var userId: String? = null
     lateinit var mRealm: Realm
     var userModel: RealmUserModel? = null
@@ -159,11 +158,10 @@ class MyHealthFragment : Fragment() {
         if (!isAdded || requireActivity().isFinishing) return
 
         try {
-            profileDbHandler = UserProfileDbHandler(requireContext())
-            userId = if (TextUtils.isEmpty(profileDbHandler?.userModel?._id)) {
-                profileDbHandler?.userModel?.id
+            userId = if (TextUtils.isEmpty(userProfileDbHandler.userModel?._id)) {
+                userProfileDbHandler.userModel?.id
             } else {
-                profileDbHandler?.userModel?._id
+                userProfileDbHandler.userModel?._id
             }
             getHealthRecords(userId)
         } catch (e: Exception) {
@@ -199,8 +197,7 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun setupInitialData() {
-        profileDbHandler = UserProfileDbHandler(alertMyPersonalBinding.root.context)
-        userId = if (TextUtils.isEmpty(profileDbHandler?.userModel?._id)) profileDbHandler?.userModel?.id else profileDbHandler?.userModel?._id
+        userId = if (TextUtils.isEmpty(userProfileDbHandler.userModel?._id)) userProfileDbHandler.userModel?.id else userProfileDbHandler.userModel?._id
         getHealthRecords(userId)
     }
 

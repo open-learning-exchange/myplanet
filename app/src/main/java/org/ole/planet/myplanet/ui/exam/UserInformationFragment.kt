@@ -53,12 +53,14 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     var userModel: RealmUserModel? = null
     var shouldHideElements: Boolean? = null
     @Inject
+    lateinit var profileDbHandler: UserProfileDbHandler
+    @Inject
     lateinit var uploadManager: UploadManager
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentUserInformationBinding = FragmentUserInformationBinding.inflate(inflater, container, false)
         mRealm = databaseService.realmInstance
-        userModel = UserProfileDbHandler(requireContext()).userModel
+        userModel = profileDbHandler.userModel
         if (!TextUtils.isEmpty(id)) {
             submissions = mRealm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()
         }

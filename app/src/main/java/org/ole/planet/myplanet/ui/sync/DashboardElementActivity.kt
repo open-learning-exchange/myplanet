@@ -56,7 +56,6 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        profileDbHandler = UserProfileDbHandler(this)
         settings = applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         prefData = SharedPrefManager(this)
         supportFragmentManager.addOnBackStackChangedListener(this)

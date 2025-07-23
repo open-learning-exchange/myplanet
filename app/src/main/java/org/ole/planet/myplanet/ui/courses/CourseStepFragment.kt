@@ -38,6 +38,8 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     var stepId: String? = null
     private lateinit var cRealm: Realm
     private lateinit var step: RealmCourseStep
+    @Inject
+    lateinit var profileDbHandler: UserProfileDbHandler
     private lateinit var resources: List<RealmMyLibrary>
     private lateinit var stepExams: List<RealmStepExam>
     private lateinit var stepSurvey: List<RealmStepExam>
@@ -54,7 +56,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentCourseStepBinding = FragmentCourseStepBinding.inflate(inflater, container, false)
         cRealm = databaseService.realmInstance
-        user = UserProfileDbHandler(requireContext()).userModel
+        user = profileDbHandler.userModel
         fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
         fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
         return fragmentCourseStepBinding.root

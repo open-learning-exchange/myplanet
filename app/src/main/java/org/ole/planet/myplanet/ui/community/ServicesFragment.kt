@@ -24,6 +24,8 @@ import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
 class ServicesFragment : BaseTeamFragment() {
     private lateinit var fragmentServicesBinding: FragmentServicesBinding
+    @Inject
+    lateinit var profileDbHandler: UserProfileDbHandler
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentServicesBinding = FragmentServicesBinding.inflate(inflater, container, false)
@@ -34,7 +36,7 @@ class ServicesFragment : BaseTeamFragment() {
 
         super.onViewCreated(view, savedInstanceState)
         mRealm = databaseService.realmInstance
-        user = UserProfileDbHandler(requireActivity()).userModel
+        user = profileDbHandler.userModel
 
         val links = mRealm.where(RealmMyTeam::class.java)?.equalTo("docType", "link")?.findAll()
 

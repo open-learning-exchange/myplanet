@@ -53,7 +53,10 @@ class ChatHistoryListFragment : Fragment() {
     lateinit var prefManager: SharedPrefManager
     lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
-    
+
+    @Inject
+    lateinit var profileDbHandler: UserProfileDbHandler
+
     @Inject
     lateinit var syncManager: SyncManager
     @Inject
@@ -71,7 +74,7 @@ class ChatHistoryListFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentChatHistoryListBinding = FragmentChatHistoryListBinding.inflate(inflater, container, false)
-        user = UserProfileDbHandler(requireContext()).userModel
+        user = profileDbHandler.userModel
 
         return fragmentChatHistoryListBinding.root
     }

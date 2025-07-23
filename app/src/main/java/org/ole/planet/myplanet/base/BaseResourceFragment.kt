@@ -59,6 +59,7 @@ abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUserModel? = null
     lateinit var mRealm: Realm
+    @Inject
     lateinit var profileDbHandler: UserProfileDbHandler
     var editor: SharedPreferences.Editor? = null
     var lv: CheckboxListView? = null
@@ -168,7 +169,7 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun showPendingSurveyDialog() {
-        model = UserProfileDbHandler(requireContext()).userModel
+        model = profileDbHandler.userModel
         val list: List<RealmSubmission> = mRealm.where(RealmSubmission::class.java)
             .equalTo("userId", model?.id)
             .equalTo("status", "pending").equalTo("type", "survey")

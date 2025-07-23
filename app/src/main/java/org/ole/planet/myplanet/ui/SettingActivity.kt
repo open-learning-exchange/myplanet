@@ -96,7 +96,9 @@ class SettingActivity : AppCompatActivity() {
         }
     }
 
+    @AndroidEntryPoint
     class SettingFragment : PreferenceFragmentCompat() {
+        @Inject
         lateinit var profileDbHandler: UserProfileDbHandler
         var user: RealmUserModel? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
@@ -112,7 +114,6 @@ class SettingActivity : AppCompatActivity() {
         override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
             requireContext().setTheme(R.style.PreferencesTheme)
             setPreferencesFromResource(R.xml.pref, rootKey)
-            profileDbHandler = UserProfileDbHandler(requireActivity())
             user = profileDbHandler.userModel
             dialog = DialogUtils.getCustomProgressDialog(requireActivity())
             defaultPref = (requireActivity() as SettingActivity).defaultPreferences

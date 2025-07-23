@@ -78,6 +78,8 @@ class ChatDetailFragment : Fragment() {
     lateinit var settings: SharedPreferences
     lateinit var customProgressDialog: DialogUtils.CustomProgressDialog
     @Inject
+    lateinit var profileDbHandler: UserProfileDbHandler
+    @Inject
     lateinit var databaseService: DatabaseService
     private val gson = Gson()
     private val serverUrlMapper = ServerUrlMapper()
@@ -115,7 +117,7 @@ class ChatDetailFragment : Fragment() {
 
     private fun initChatComponents() {
         mRealm = databaseService.realmInstance
-        user = UserProfileDbHandler(requireContext()).userModel
+        user = profileDbHandler.userModel
         mAdapter = ChatAdapter(ArrayList(), requireContext(), fragmentChatDetailBinding.recyclerGchat)
         fragmentChatDetailBinding.recyclerGchat.apply {
             adapter = mAdapter

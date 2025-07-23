@@ -89,7 +89,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         selectedItems = mutableListOf()
         list = mutableListOf()
         mRealm = databaseService.realmInstance
-        profileDbHandler = UserProfileDbHandler(requireActivity())
         model = profileDbHandler.userModel!!
         val adapter = getAdapter()
         recyclerView.adapter = adapter
