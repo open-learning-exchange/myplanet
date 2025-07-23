@@ -19,15 +19,15 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
-import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
@@ -90,7 +90,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            showDownloadDialog(getLibraryList(DatabaseService(context).realmInstance))
+            showDownloadDialog(getLibraryList(databaseService.realmInstance))
         }
     }
 

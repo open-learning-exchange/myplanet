@@ -24,6 +24,7 @@ import io.realm.*
 import java.io.File
 import java.util.*
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 import kotlin.isInitialized
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -64,7 +65,6 @@ import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.ServerConfigUtils
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
-import javax.inject.Inject
 
 @AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
@@ -122,7 +122,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         super.onCreate(savedInstanceState)
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         editor = settings.edit()
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = databaseService.realmInstance
         requestAllPermissions()
         prefData = SharedPrefManager(this)
         profileDbHandler = UserProfileDbHandler(this)

@@ -13,11 +13,12 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmList
 import java.util.Calendar
 import java.util.UUID
-import kotlin.toString
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -31,9 +32,12 @@ import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
+@AndroidEntryPoint
 class AddResourceActivity : AppCompatActivity() {
     private lateinit var activityAddResourceBinding: ActivityAddResourceBinding
     private lateinit var mRealm: Realm
+    @Inject
+    lateinit var databaseService: DatabaseService
     var userModel: RealmUserModel? = null
     var subjects: RealmList<String>? = null
     var levels: RealmList<String>? = null
@@ -57,7 +61,7 @@ class AddResourceActivity : AppCompatActivity() {
         levels = RealmList()
         subjects = RealmList()
         resourceFor = RealmList()
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = databaseService.realmInstance
         initializeViews()
     }
 

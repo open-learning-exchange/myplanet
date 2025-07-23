@@ -6,12 +6,12 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmResults
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityCourseProgressBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 
+@AndroidEntryPoint
 class CourseProgressActivity : BaseActivity() {
     private lateinit var activityCourseProgressBinding: ActivityCourseProgressBinding
     lateinit var realm: Realm
@@ -35,7 +36,7 @@ class CourseProgressActivity : BaseActivity() {
         EdgeToEdgeUtil.setupEdgeToEdge(this, activityCourseProgressBinding.root)
         initActionBar()
         courseId = intent.getStringExtra("courseId").toString()
-        realm = DatabaseService(this).realmInstance
+        realm = databaseService.realmInstance
         user = UserProfileDbHandler(this).userModel
         val courseProgress = RealmCourseProgress.getCourseProgress(realm, user?.id)
         val progress = courseProgress[courseId]

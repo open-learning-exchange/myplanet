@@ -16,11 +16,13 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import io.realm.Realm
 import java.util.Date
 import java.util.Locale
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddExaminationBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -41,9 +43,12 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.getAge
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
     private lateinit var activityAddExaminationBinding: ActivityAddExaminationBinding
     lateinit var mRealm: Realm
+    @Inject
+    lateinit var databaseService: DatabaseService
     var userId: String? = null
     var user: RealmUserModel? = null
     private var currentUser: RealmUserModel? = null
@@ -75,7 +80,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         initViews()
         currentUser = UserProfileDbHandler(this).userModel
         mapConditions = HashMap()
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = databaseService.realmInstance
         userId = intent.getStringExtra("userId")
         pojo = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
         if (pojo == null) {

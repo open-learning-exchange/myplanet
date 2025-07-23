@@ -19,6 +19,7 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmList
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -31,7 +32,6 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.FragmentAchievementBinding
 import org.ole.planet.myplanet.databinding.LayoutButtonPrimaryBinding
 import org.ole.planet.myplanet.databinding.RowAchievementBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -43,7 +43,6 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class AchievementFragment : BaseContainerFragment() {
@@ -76,7 +75,7 @@ class AchievementFragment : BaseContainerFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentAchievementBinding = FragmentAchievementBinding.inflate(inflater, container, false)
-        aRealm = DatabaseService(MainApplication.context).realmInstance
+        aRealm = databaseService.realmInstance
         user = UserProfileDbHandler(MainApplication.context).userModel
         fragmentAchievementBinding.btnEdit.setOnClickListener {
             if (listener != null) listener?.openCallFragment(EditAchievementFragment())
