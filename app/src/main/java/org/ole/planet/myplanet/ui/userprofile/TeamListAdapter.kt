@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.userprofile
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.MainApplication.Companion.context
@@ -34,8 +35,17 @@ class TeamListAdapter(private var membersList: MutableList<User>, val context: C
     }
 
     fun updateList(newUserList: MutableList<User>) {
+        val diffCallback = UserDiffCallback()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = membersList.size
+            override fun getNewListSize(): Int = newUserList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(membersList[oldItemPosition], newUserList[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(membersList[oldItemPosition], newUserList[newItemPosition])
+        })
         membersList = newUserList
-        notifyDataSetChanged()
+        diffResult.dispatchUpdatesTo(this)
     }
 
     class ViewHolder(private val binding: UserListItemBinding) : RecyclerView.ViewHolder(binding.root) {
@@ -50,6 +60,18 @@ class TeamListAdapter(private var membersList: MutableList<User>, val context: C
                 .placeholder(R.drawable.profile)
                 .error(R.drawable.profile)
                 .into(binding.userProfile)
+        }
+    }
+
+    private class UserDiffCallback {
+        fun areItemsTheSame(oldItem: User, newItem: User): Boolean {
+            return oldItem.name == newItem.name
+        }
+
+        fun areContentsTheSame(oldItem: User, newItem: User): Boolean {
+            return oldItem.name == newItem.name &&
+                    oldItem.fullName == newItem.fullName &&
+                    oldItem.image == newItem.image
         }
     }
 }

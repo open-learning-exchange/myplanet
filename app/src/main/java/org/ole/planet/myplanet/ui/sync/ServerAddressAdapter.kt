@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import org.ole.planet.myplanet.MainApplication.Companion.context
@@ -19,24 +20,38 @@ class ServerAddressAdapter(private var serverList: List<ServerAddressesModel>,
     private var lastSelectedPosition: Int = -1
 
     fun updateList(newList: List<ServerAddressesModel>) {
+        val diffCallback = ServerAddressDiffCallback()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = serverList.size
+            override fun getNewListSize(): Int = newList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(serverList[oldItemPosition], newList[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(serverList[oldItemPosition], newList[newItemPosition])
+        })
         serverList = newList
-        notifyDataSetChanged()
+        diffResult.dispatchUpdatesTo(this)
     }
 
     fun setSelectedPosition(position: Int) {
+        val oldPosition = selectedPosition
         lastSelectedPosition = selectedPosition
         selectedPosition = position
-        notifyDataSetChanged()
+        if (oldPosition != -1) notifyItemChanged(oldPosition)
+        if (position != -1) notifyItemChanged(position)
     }
 
     fun revertSelection() {
+        val oldPosition = selectedPosition
         selectedPosition = lastSelectedPosition
-        notifyDataSetChanged()
+        if (oldPosition != -1) notifyItemChanged(oldPosition)
+        if (selectedPosition != -1) notifyItemChanged(selectedPosition)
     }
 
     fun clearSelection() {
+        val oldPosition = selectedPosition
         selectedPosition = -1
-        notifyDataSetChanged()
+        if (oldPosition != -1) notifyItemChanged(oldPosition)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -71,6 +86,17 @@ class ServerAddressAdapter(private var serverList: List<ServerAddressesModel>,
             } else {
                 button.setBackgroundColor(ContextCompat.getColor(button.context, android.R.color.transparent))
             }
+        }
+    }
+
+    private class ServerAddressDiffCallback {
+        fun areItemsTheSame(oldItem: ServerAddressesModel, newItem: ServerAddressesModel): Boolean {
+            return oldItem.url == newItem.url && oldItem.name == newItem.name
+        }
+
+        fun areContentsTheSame(oldItem: ServerAddressesModel, newItem: ServerAddressesModel): Boolean {
+            return oldItem.url == newItem.url &&
+                    oldItem.name == newItem.name
         }
     }
 }

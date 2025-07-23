@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
 import java.io.File
@@ -23,7 +24,7 @@ import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterMyPersonal(private val context: Context, private val list: List<RealmMyPersonal>) : RecyclerView.Adapter<ViewHolderMyPersonal>() {
+class AdapterMyPersonal(private val context: Context, private var list: List<RealmMyPersonal>) : RecyclerView.Adapter<ViewHolderMyPersonal>() {
     private lateinit var rowMyPersonalBinding: RowMyPersonalBinding
     private var realm: Realm? = null
     private var listener: OnSelectedMyPersonal? = null
@@ -50,7 +51,7 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
                         ?.equalTo("_id", list[position]._id)?.findFirst()
                     personal?.deleteFromRealm()
                     realm?.commitTransaction()
-                    notifyDataSetChanged()
+                    updatePersonalList(list.filter { it._id != list[position]._id })
                     listener?.onAddedResource()
                 }.setNegativeButton(R.string.cancel, null).show()
         }
@@ -109,14 +110,44 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
                 personal.description = desc
                 personal.title = title
                 realm?.commitTransaction()
-                notifyDataSetChanged()
+                val updatedList = list.map { if (it._id == personal._id) personal else it }
+                updatePersonalList(updatedList)
                 listener?.onAddedResource()
             }
             .setNegativeButton(R.string.cancel, null)
             .show()
     }
+    fun updatePersonalList(newList: List<RealmMyPersonal>) {
+        val diffCallback = PersonalDiffCallback()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = list.size
+            override fun getNewListSize(): Int = newList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(list[oldItemPosition], newList[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(list[oldItemPosition], newList[newItemPosition])
+        })
+        list = newList
+        diffResult.dispatchUpdatesTo(this)
+    }
+
     override fun getItemCount(): Int {
         return list.size
     }
+
     class ViewHolderMyPersonal(rowMyPersonalBinding: RowMyPersonalBinding) : RecyclerView.ViewHolder(rowMyPersonalBinding.root)
+
+    private class PersonalDiffCallback {
+        fun areItemsTheSame(oldItem: RealmMyPersonal, newItem: RealmMyPersonal): Boolean {
+            return oldItem._id == newItem._id
+        }
+
+        fun areContentsTheSame(oldItem: RealmMyPersonal, newItem: RealmMyPersonal): Boolean {
+            return oldItem._id == newItem._id &&
+                    oldItem.title == newItem.title &&
+                    oldItem.description == newItem.description &&
+                    oldItem.date == newItem.date &&
+                    oldItem.path == newItem.path
+        }
+    }
 }

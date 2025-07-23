@@ -12,6 +12,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.toColorInt
 import androidx.fragment.app.FragmentManager
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
 import org.ole.planet.myplanet.R
@@ -26,7 +27,7 @@ import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-class AdapterTeamList(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm, private val fragmentManager: FragmentManager) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
+class AdapterTeamList(private val context: Context, private var list: List<RealmMyTeam>, private val mRealm: Realm, private val fragmentManager: FragmentManager) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private lateinit var itemTeamListBinding: ItemTeamListBinding
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
@@ -171,7 +172,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         val userId = user?.id
 
         val validTeams = list.filter { it.status?.isNotEmpty() == true }
-        filteredList = validTeams.sortedWith(compareByDescending<RealmMyTeam> { team ->
+        val newFilteredList = validTeams.sortedWith(compareByDescending<RealmMyTeam> { team ->
             when {
                 userId != null && RealmMyTeam.isTeamLeader(team._id, userId, mRealm) -> 3
                 team.isMyTeam(userId, mRealm) -> 2
@@ -180,7 +181,36 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         }.thenByDescending { team ->
             RealmTeamLog.getVisitByTeam(mRealm, team._id)
         })
-        notifyDataSetChanged()
+        updateFilteredList(newFilteredList)
+    }
+
+    private fun updateFilteredList(newFilteredList: List<RealmMyTeam>) {
+        val diffCallback = TeamDiffCallback()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = filteredList.size
+            override fun getNewListSize(): Int = newFilteredList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(filteredList[oldItemPosition], newFilteredList[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(filteredList[oldItemPosition], newFilteredList[newItemPosition])
+        })
+        filteredList = newFilteredList
+        diffResult.dispatchUpdatesTo(this)
+    }
+
+    fun updateTeamList(newList: List<RealmMyTeam>) {
+        val diffCallback = TeamDiffCallback()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = list.size
+            override fun getNewListSize(): Int = newList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(list[oldItemPosition], newList[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(list[oldItemPosition], newList[newItemPosition])
+        })
+        list = newList
+        updateList()
+        diffResult.dispatchUpdatesTo(this)
     }
 
     private fun getBundle(team: RealmMyTeam): Bundle {
@@ -198,4 +228,19 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
     override fun getItemCount(): Int = filteredList.size
 
     class ViewHolderTeam(val binding: ItemTeamListBinding) : RecyclerView.ViewHolder(binding.root)
+
+    private class TeamDiffCallback {
+        fun areItemsTheSame(oldItem: RealmMyTeam, newItem: RealmMyTeam): Boolean {
+            return oldItem._id == newItem._id
+        }
+
+        fun areContentsTheSame(oldItem: RealmMyTeam, newItem: RealmMyTeam): Boolean {
+            return oldItem._id == newItem._id &&
+                    oldItem.name == newItem.name &&
+                    oldItem.teamType == newItem.teamType &&
+                    oldItem.status == newItem.status &&
+                    oldItem.createdDate == newItem.createdDate &&
+                    oldItem.type == newItem.type
+        }
+    }
 }

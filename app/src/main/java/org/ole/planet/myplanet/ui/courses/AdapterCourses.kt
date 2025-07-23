@@ -453,12 +453,12 @@ class AdapterCourses(
         }
     }
 
-    private class CourseDiffCallback : DiffUtil.ItemCallback<RealmMyCourse?>() {
-        override fun areItemsTheSame(oldItem: RealmMyCourse?, newItem: RealmMyCourse?): Boolean {
+    private class CourseDiffCallback {
+        fun areItemsTheSame(oldItem: RealmMyCourse?, newItem: RealmMyCourse?): Boolean {
             return oldItem?.courseId == newItem?.courseId
         }
 
-        override fun areContentsTheSame(oldItem: RealmMyCourse?, newItem: RealmMyCourse?): Boolean {
+        fun areContentsTheSame(oldItem: RealmMyCourse?, newItem: RealmMyCourse?): Boolean {
             return oldItem?.courseTitle == newItem?.courseTitle &&
                     oldItem?.description == newItem?.description &&
                     oldItem?.createdDate == newItem?.createdDate &&

@@ -270,12 +270,12 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
         fun bind() {}
     }
 
-    private class ResourceDiffCallback : DiffUtil.ItemCallback<RealmMyLibrary?>() {
-        override fun areItemsTheSame(oldItem: RealmMyLibrary?, newItem: RealmMyLibrary?): Boolean {
+    private class ResourceDiffCallback {
+        fun areItemsTheSame(oldItem: RealmMyLibrary?, newItem: RealmMyLibrary?): Boolean {
             return oldItem?.resourceId == newItem?.resourceId
         }
 
-        override fun areContentsTheSame(oldItem: RealmMyLibrary?, newItem: RealmMyLibrary?): Boolean {
+        fun areContentsTheSame(oldItem: RealmMyLibrary?, newItem: RealmMyLibrary?): Boolean {
             return oldItem?.resourceId == newItem?.resourceId &&
                     oldItem?.title == newItem?.title &&
                     oldItem?.description == newItem?.description &&

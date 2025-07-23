@@ -5,6 +5,7 @@ import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import java.util.regex.Pattern
 import org.ole.planet.myplanet.MainApplication.Companion.context
@@ -34,8 +35,17 @@ class AdapterNotification(
     override fun getItemCount(): Int = notificationList.size
 
     fun updateNotifications(newNotifications: List<RealmNotification>) {
+        val diffCallback = NotificationDiffCallback()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = notificationList.size
+            override fun getNewListSize(): Int = newNotifications.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(notificationList[oldItemPosition], newNotifications[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(notificationList[oldItemPosition], newNotifications[newItemPosition])
+        })
         notificationList = newNotifications
-        notifyDataSetChanged()
+        diffResult.dispatchUpdatesTo(this)
     }
 
     inner class ViewHolderNotifications(private val rowNotificationsBinding: RowNotificationsBinding) :
@@ -122,6 +132,21 @@ class AdapterNotification(
                 context.getString(R.string.task_notification, taskTitle, dateValue)
             }
             return formattedText
+        }
+    }
+
+    private class NotificationDiffCallback {
+        fun areItemsTheSame(oldItem: RealmNotification, newItem: RealmNotification): Boolean {
+            return oldItem.id == newItem.id
+        }
+
+        fun areContentsTheSame(oldItem: RealmNotification, newItem: RealmNotification): Boolean {
+            return oldItem.id == newItem.id &&
+                    oldItem.message == newItem.message &&
+                    oldItem.type == newItem.type &&
+                    oldItem.isRead == newItem.isRead &&
+                    oldItem.relatedId == newItem.relatedId &&
+                    oldItem.createdAt == newItem.createdAt
         }
     }
 }

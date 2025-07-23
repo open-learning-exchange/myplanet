@@ -11,6 +11,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import io.realm.Realm
@@ -112,7 +113,6 @@ class AdapterJoinedMember(
         }
     }
 
-    @SuppressLint("NotifyDataSetChanged")
     private fun checkUserAndShowOverflowMenu(
         binding: RowJoinedUserBinding,
         position: Int,
@@ -203,9 +203,22 @@ class AdapterJoinedMember(
             members.remove(leader)
             members.add(0, leader)
         }
+        updateMemberList(members)
+    }
+
+    fun updateMemberList(newMembers: List<RealmUserModel>) {
+        val diffCallback = MemberDiffCallback()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = list.size
+            override fun getNewListSize(): Int = newMembers.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(list[oldItemPosition], newMembers[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(list[oldItemPosition], newMembers[newItemPosition])
+        })
         list.clear()
-        list.addAll(members)
-        notifyDataSetChanged()
+        list.addAll(newMembers)
+        diffResult.dispatchUpdatesTo(this)
     }
 
     private fun makeLeader(userModel: RealmUserModel) {
@@ -222,7 +235,6 @@ class AdapterJoinedMember(
             newLeader?.isLeader = true
             teamLeaderId = newLeader?.userId
         }
-        notifyDataSetChanged()
         Utilities.toast(context, context.getString(R.string.leader_selected))
         refreshList()
     }
@@ -244,4 +256,20 @@ class AdapterJoinedMember(
 
     class ViewHolderUser(val binding: RowJoinedUserBinding) :
         RecyclerView.ViewHolder(binding.root)
+
+    private class MemberDiffCallback {
+        fun areItemsTheSame(oldItem: RealmUserModel, newItem: RealmUserModel): Boolean {
+            return oldItem.id == newItem.id
+        }
+
+        fun areContentsTheSame(oldItem: RealmUserModel, newItem: RealmUserModel): Boolean {
+            return oldItem.id == newItem.id &&
+                    oldItem.firstName == newItem.firstName &&
+                    oldItem.lastName == newItem.lastName &&
+                    oldItem.name == newItem.name &&
+                    oldItem.email == newItem.email &&
+                    oldItem.userImage == newItem.userImage &&
+                    oldItem.level == newItem.level
+        }
+    }
 }

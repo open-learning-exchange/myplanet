@@ -55,34 +55,53 @@ class AdapterSurvey(
     }
 
     fun updateDataAfterSearch(newList: List<RealmStepExam>) {
-        if(examList.isEmpty()){
+        val sortedList = if(examList.isEmpty()){
             SortSurveyList(false, newList)
+            newList.toList()
         } else{
             when (sortType){
-                SurveySortType.DATE_DESC -> SortSurveyList(false, newList)
-                SurveySortType.DATE_ASC ->  SortSurveyList(true, newList)
-                SurveySortType.TITLE -> SortSurveyListByName(isTitleAscending, newList)
+                SurveySortType.DATE_DESC -> {
+                    SortSurveyList(false, newList)
+                    newList.toList()
+                }
+                SurveySortType.DATE_ASC -> {
+                    SortSurveyList(true, newList)
+                    newList.toList()
+                }
+                SurveySortType.TITLE -> {
+                    SortSurveyListByName(isTitleAscending, newList)
+                    if (isTitleAscending) {
+                        newList.sortedBy { it.name?.lowercase() }
+                    } else {
+                        newList.sortedByDescending { it.name?.lowercase() }
+                    }
+                }
             }
         }
-        notifyDataSetChanged()
+        updateData(sortedList)
     }
 
     private fun SortSurveyList(isAscend: Boolean, list: List<RealmStepExam> = examList){
-        val list = list.toList()
-        Collections.sort(list) { survey1, survey2 ->
+        val sortedList = list.sortedWith { survey1, survey2 ->
             if (isAscend) {
                 survey1?.createdDate!!.compareTo(survey2?.createdDate!!)
             } else {
                 survey2?.createdDate!!.compareTo(survey1?.createdDate!!)
             }
         }
-        examList = list
+        examList = sortedList
     }
 
     fun SortByDate(isAscend: Boolean){
         sortType = if (isAscend) SurveySortType.DATE_DESC else SurveySortType.DATE_ASC
-        SortSurveyList(isAscend)
-        notifyDataSetChanged()
+        val sortedList = examList.sortedWith { survey1, survey2 ->
+            if (isAscend) {
+                survey1?.createdDate!!.compareTo(survey2?.createdDate!!)
+            } else {
+                survey2?.createdDate!!.compareTo(survey1?.createdDate!!)
+            }
+        }
+        updateData(sortedList)
     }
 
     private fun SortSurveyListByName(isAscend: Boolean, list: List<RealmStepExam> = examList){
@@ -96,8 +115,12 @@ class AdapterSurvey(
     fun toggleTitleSortOrder() {
         sortType = SurveySortType.TITLE
         isTitleAscending = !isTitleAscending
-        SortSurveyListByName(isTitleAscending)
-        notifyDataSetChanged()
+        val sortedList = if (isTitleAscending) {
+            examList.sortedBy { it.name?.lowercase() }
+        } else {
+            examList.sortedByDescending { it.name?.lowercase() }
+        }
+        updateData(sortedList)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderSurvey {

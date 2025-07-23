@@ -11,6 +11,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemAiResponseMessageBinding
@@ -116,6 +117,21 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
         notifyItemRangeRemoved(0, size)
     }
 
+    fun updateChatData(newChatList: List<String>) {
+        val diffCallback = ChatDiffCallback()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = chatList.size
+            override fun getNewListSize(): Int = newChatList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(chatList[oldItemPosition], newChatList[newItemPosition], oldItemPosition, newItemPosition)
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(chatList[oldItemPosition], newChatList[newItemPosition])
+        })
+        chatList.clear()
+        chatList.addAll(newChatList)
+        diffResult.dispatchUpdatesTo(this)
+    }
+
     private fun scrollToLastItem() {
         val lastPosition = chatList.size - 1
         if (lastPosition >= 0) {
@@ -164,6 +180,17 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
 
     override fun getItemCount(): Int {
         return chatList.size
+    }
+
+    private class ChatDiffCallback {
+        fun areItemsTheSame(oldItem: String, newItem: String, oldPosition: Int, newPosition: Int): Boolean {
+            // For chat, we consider items the same if they have the same content and position type (query/response)
+            return oldItem == newItem && (oldPosition % 2 == newPosition % 2)
+        }
+
+        fun areContentsTheSame(oldItem: String, newItem: String): Boolean {
+            return oldItem == newItem
+        }
     }
 
     companion object {

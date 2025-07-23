@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
 import org.ole.planet.myplanet.R
@@ -16,7 +17,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.ViewHolderTask
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
-class AdapterTask(private val context: Context, private val realm: Realm, private val list: List<RealmTeamTask>?, private val nonTeamMember: Boolean) : RecyclerView.Adapter<ViewHolderTask>() {
+class AdapterTask(private val context: Context, private val realm: Realm, private var list: List<RealmTeamTask>?, private val nonTeamMember: Boolean) : RecyclerView.Adapter<ViewHolderTask>() {
     private lateinit var rowTaskBinding: RowTaskBinding
     private var listener: OnCompletedListener? = null
     fun setListener(listener: OnCompletedListener?) {
@@ -39,24 +40,32 @@ class AdapterTask(private val context: Context, private val realm: Realm, privat
             }
             showAssignee(it)
             rowTaskBinding.icMore.setOnClickListener {
-                listener?.onClickMore(list[position])
+                list?.let { taskList ->
+                    listener?.onClickMore(taskList[position])
+                }
             }
             rowTaskBinding.editTask.setOnClickListener {
-                listener?.onEdit(list[position])
+                list?.let { taskList ->
+                    listener?.onEdit(taskList[position])
+                }
             }
             rowTaskBinding.deleteTask.setOnClickListener {
-                listener?.onDelete(list[position])
+                list?.let { taskList ->
+                    listener?.onDelete(taskList[position])
+                }
             }
             holder.itemView.setOnClickListener {
-                val alertDialog = AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                    .setTitle(list[position].title)
-                    .setMessage(list[position].description)
-                    .setNegativeButton("Cancel") { dialog, _ ->
-                        dialog.dismiss()
-                    }
-                    .create()
+                list?.let { taskList ->
+                    val alertDialog = AlertDialog.Builder(context, R.style.AlertDialogTheme)
+                        .setTitle(taskList[position].title)
+                        .setMessage(taskList[position].description)
+                        .setNegativeButton("Cancel") { dialog, _ ->
+                            dialog.dismiss()
+                        }
+                        .create()
 
-                alertDialog.show()
+                    alertDialog.show()
+                }
             }
             if (nonTeamMember) {
                 rowTaskBinding.editTask.visibility = View.GONE
@@ -86,6 +95,21 @@ class AdapterTask(private val context: Context, private val realm: Realm, privat
         return list?.size ?: 0
     }
 
+    fun updateTaskList(newList: List<RealmTeamTask>) {
+        val diffCallback = TaskDiffCallback()
+        val oldList = list ?: emptyList()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = oldList.size
+            override fun getNewListSize(): Int = newList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(oldList[oldItemPosition], newList[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(oldList[oldItemPosition], newList[newItemPosition])
+        })
+        list = newList
+        diffResult.dispatchUpdatesTo(this)
+    }
+
     interface OnCompletedListener {
         fun onCheckChange(realmTeamTask: RealmTeamTask?, b: Boolean)
         fun onEdit(task: RealmTeamTask?)
@@ -94,4 +118,19 @@ class AdapterTask(private val context: Context, private val realm: Realm, privat
     }
 
     class ViewHolderTask(rowTaskBinding: RowTaskBinding) : RecyclerView.ViewHolder(rowTaskBinding.root)
+
+    private class TaskDiffCallback {
+        fun areItemsTheSame(oldItem: RealmTeamTask, newItem: RealmTeamTask): Boolean {
+            return oldItem.id == newItem.id
+        }
+
+        fun areContentsTheSame(oldItem: RealmTeamTask, newItem: RealmTeamTask): Boolean {
+            return oldItem.id == newItem.id &&
+                    oldItem.title == newItem.title &&
+                    oldItem.description == newItem.description &&
+                    oldItem.completed == newItem.completed &&
+                    oldItem.deadline == newItem.deadline &&
+                    oldItem.assignee == newItem.assignee
+        }
+    }
 }

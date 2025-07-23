@@ -611,15 +611,15 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         }
     }
 
-    private class NewsDiffCallback : DiffUtil.ItemCallback<RealmNews?>() {
-        override fun areItemsTheSame(oldItem: RealmNews?, newItem: RealmNews?): Boolean {
+    private class NewsDiffCallback {
+        fun areItemsTheSame(oldItem: RealmNews?, newItem: RealmNews?): Boolean {
             return oldItem?.id == newItem?.id
         }
 
-        override fun areContentsTheSame(oldItem: RealmNews?, newItem: RealmNews?): Boolean {
+        fun areContentsTheSame(oldItem: RealmNews?, newItem: RealmNews?): Boolean {
             return oldItem?.id == newItem?.id &&
                     oldItem?.message == newItem?.message &&
-                    oldItem?.createdDate == newItem?.createdDate &&
+                    oldItem?.time == newItem?.time &&
                     oldItem?.messageType == newItem?.messageType &&
                     oldItem?.user == newItem?.user
         }

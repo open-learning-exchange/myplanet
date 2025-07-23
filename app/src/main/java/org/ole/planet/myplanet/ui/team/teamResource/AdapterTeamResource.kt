@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -16,7 +17,7 @@ import org.ole.planet.myplanet.ui.team.teamResource.ResourceUpdateListner
 
 class AdapterTeamResource(
     private val context: Context,
-    private val list: MutableList<RealmMyLibrary>,
+    private var list: MutableList<RealmMyLibrary>,
     private val mRealm: Realm,
     teamId: String?,
     private val settings: SharedPreferences,
@@ -86,5 +87,33 @@ class AdapterTeamResource(
         }
     }
 
+    fun updateResourceList(newList: List<RealmMyLibrary>) {
+        val diffCallback = TeamResourceDiffCallback()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = list.size
+            override fun getNewListSize(): Int = newList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(list[oldItemPosition], newList[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(list[oldItemPosition], newList[newItemPosition])
+        })
+        list.clear()
+        list.addAll(newList)
+        diffResult.dispatchUpdatesTo(this)
+    }
+
     class ViewHolderTeamResource(val rowTeamResourceBinding: RowTeamResourceBinding) : RecyclerView.ViewHolder(rowTeamResourceBinding.root)
+
+    private class TeamResourceDiffCallback {
+        fun areItemsTheSame(oldItem: RealmMyLibrary, newItem: RealmMyLibrary): Boolean {
+            return oldItem.id == newItem.id
+        }
+
+        fun areContentsTheSame(oldItem: RealmMyLibrary, newItem: RealmMyLibrary): Boolean {
+            return oldItem.id == newItem.id &&
+                    oldItem.title == newItem.title &&
+                    oldItem.description == newItem.description &&
+                    oldItem.resourceLocalAddress == newItem.resourceLocalAddress
+        }
+    }
 }

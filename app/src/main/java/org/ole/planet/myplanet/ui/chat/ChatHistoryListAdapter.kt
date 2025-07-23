@@ -86,7 +86,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
         updateFilteredList(searchResult)
     }
 
-    private fun FullConvoSearch(s: String, isQuestion: Boolean){
+    private fun FullConvoSearch(s: String, isQuestion: Boolean): List<RealmChatHistory> {
         var conversation: String?
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQuery = normalizeText(s)
@@ -116,10 +116,10 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
                 }
             }
         }
-        filteredChatHistory = inTitleStartQuery+ inTitleContainsQuery + startsWithQuery + containsQuery
+        return inTitleStartQuery + inTitleContainsQuery + startsWithQuery + containsQuery
     }
 
-    private fun searchByTitle(s: String) {
+    private fun searchByTitle(s: String): List<RealmChatHistory> {
         var title: String?
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQuery = normalizeText(s)
@@ -139,7 +139,21 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
                 containsQuery.add(chat)
             }
         }
-        filteredChatHistory = startsWithQuery + containsQuery
+        return startsWithQuery + containsQuery
+    }
+
+    private fun updateFilteredList(newFilteredList: List<RealmChatHistory>) {
+        val diffCallback = ChatHistoryDiffCallback()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = filteredChatHistory.size
+            override fun getNewListSize(): Int = newFilteredList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(filteredChatHistory[oldItemPosition], newFilteredList[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(filteredChatHistory[oldItemPosition], newFilteredList[newItemPosition])
+        })
+        filteredChatHistory = newFilteredList
+        diffResult.dispatchUpdatesTo(this)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -158,9 +172,18 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     }
 
     fun updateChatHistory(newChatHistory: List<RealmChatHistory>) {
+        val diffCallback = ChatHistoryDiffCallback()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = chatHistory.size
+            override fun getNewListSize(): Int = newChatHistory.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(chatHistory[oldItemPosition], newChatHistory[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(chatHistory[oldItemPosition], newChatHistory[newItemPosition])
+        })
         chatHistory = newChatHistory.sortedByDescending { it.lastUsed }
         filteredChatHistory = chatHistory
-        notifyDataSetChanged()
+        diffResult.dispatchUpdatesTo(this)
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
@@ -331,4 +354,20 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     }
 
     class ViewHolderChat(val rowChatHistoryBinding: RowChatHistoryBinding) : RecyclerView.ViewHolder(rowChatHistoryBinding.root)
+
+    private class ChatHistoryDiffCallback : DiffUtil.ItemCallback<RealmChatHistory>() {
+        override fun areItemsTheSame(oldItem: RealmChatHistory, newItem: RealmChatHistory): Boolean {
+            return oldItem._id == newItem._id
+        }
+
+        override fun areContentsTheSame(oldItem: RealmChatHistory, newItem: RealmChatHistory): Boolean {
+            return oldItem._id == newItem._id &&
+                    oldItem._rev == newItem._rev &&
+                    oldItem.title == newItem.title &&
+                    oldItem.user == newItem.user &&
+                    oldItem.aiProvider == newItem.aiProvider &&
+                    oldItem.lastUsed == newItem.lastUsed &&
+                    oldItem.conversations?.size == newItem.conversations?.size
+        }
+    }
 }

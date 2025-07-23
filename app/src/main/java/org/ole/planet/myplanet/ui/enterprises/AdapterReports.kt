@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -19,7 +20,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-class AdapterReports(private val context: Context, private var list: RealmResults<RealmMyTeam>) : RecyclerView.Adapter<AdapterReports.ViewHolderReports>() {
+class AdapterReports(private val context: Context, private var list: List<RealmMyTeam>) : RecyclerView.Adapter<AdapterReports.ViewHolderReports>() {
     private lateinit var reportListItemBinding: ReportListItemBinding
     private var startTimeStamp: String? = null
     private var endTimeStamp: String? = null
@@ -175,7 +176,7 @@ class AdapterReports(private val context: Context, private var list: RealmResult
                                     updated = true
                                 }
                         }
-                        notifyDataSetChanged()
+                        updateReportList(list.filter { it.status != "archived" })
                     }
                     .setNegativeButton("Cancel", null)
                     .show()
@@ -193,5 +194,38 @@ class AdapterReports(private val context: Context, private var list: RealmResult
         this.nonTeamMember = nonTeamMember
     }
 
+    fun updateReportList(newList: List<RealmMyTeam>) {
+        val diffCallback = ReportDiffCallback()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = list.size
+            override fun getNewListSize(): Int = newList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(list[oldItemPosition], newList[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(list[oldItemPosition], newList[newItemPosition])
+        })
+        list = newList
+        diffResult.dispatchUpdatesTo(this)
+    }
+
     class ViewHolderReports(reportListItemBinding: ReportListItemBinding) : RecyclerView.ViewHolder(reportListItemBinding.root)
+
+    private class ReportDiffCallback {
+        fun areItemsTheSame(oldItem: RealmMyTeam, newItem: RealmMyTeam): Boolean {
+            return oldItem._id == newItem._id
+        }
+
+        fun areContentsTheSame(oldItem: RealmMyTeam, newItem: RealmMyTeam): Boolean {
+            return oldItem._id == newItem._id &&
+                    oldItem.beginningBalance == newItem.beginningBalance &&
+                    oldItem.sales == newItem.sales &&
+                    oldItem.otherIncome == newItem.otherIncome &&
+                    oldItem.wages == newItem.wages &&
+                    oldItem.otherExpenses == newItem.otherExpenses &&
+                    oldItem.description == newItem.description &&
+                    oldItem.startDate == newItem.startDate &&
+                    oldItem.endDate == newItem.endDate &&
+                    oldItem.status == newItem.status
+        }
+    }
 }

@@ -15,6 +15,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
 import org.ole.planet.myplanet.R
@@ -35,7 +36,7 @@ import org.ole.planet.myplanet.ui.submission.MySubmissionFragment.Companion.newI
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterMyLife(private val context: Context, private val myLifeList: List<RealmMyLife>, private var mRealm: Realm, private val mDragStartListener: OnStartDragListener) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), ItemTouchHelperAdapter {
+class AdapterMyLife(private val context: Context, private var myLifeList: List<RealmMyLife>, private var mRealm: Realm, private val mDragStartListener: OnStartDragListener) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), ItemTouchHelperAdapter {
     private val hide = 0.5f
     private val show = 1f
 
@@ -106,6 +107,20 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
         return myLifeList.size
     }
 
+    fun updateMyLifeList(newList: List<RealmMyLife>) {
+        val diffCallback = MyLifeDiffCallback()
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = myLifeList.size
+            override fun getNewListSize(): Int = newList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areItemsTheSame(myLifeList[oldItemPosition], newList[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                diffCallback.areContentsTheSame(myLifeList[oldItemPosition], newList[newItemPosition])
+        })
+        myLifeList = newList
+        diffResult.dispatchUpdatesTo(this)
+    }
+
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
         updateWeight(toPosition + 1, myLifeList[fromPosition]._id, myLifeList[fromPosition].userId)
         notifyItemMoved(fromPosition, toPosition)
@@ -156,6 +171,20 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
                 activity.supportFragmentManager.beginTransaction().replace(R.id.fragment_container, it)
                     .addToBackStack(null).commit()
             }
+        }
+    }
+
+    private class MyLifeDiffCallback {
+        fun areItemsTheSame(oldItem: RealmMyLife, newItem: RealmMyLife): Boolean {
+            return oldItem._id == newItem._id
+        }
+
+        fun areContentsTheSame(oldItem: RealmMyLife, newItem: RealmMyLife): Boolean {
+            return oldItem._id == newItem._id &&
+                    oldItem.title == newItem.title &&
+                    oldItem.imageId == newItem.imageId &&
+                    oldItem.isVisible == newItem.isVisible &&
+                    oldItem.weight == newItem.weight
         }
     }
 }
