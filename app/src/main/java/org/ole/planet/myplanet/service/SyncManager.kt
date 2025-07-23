@@ -1272,7 +1272,8 @@ class SyncManager @Inject constructor(
     constructor(context: Context) : this(
         context,
         DatabaseService(context),
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+        ManagerSync(context)
     )
 
 }
