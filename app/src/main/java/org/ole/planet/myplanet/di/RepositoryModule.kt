@@ -6,6 +6,10 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import io.realm.Realm
+import io.realm.RealmList
+import io.realm.RealmResults
+import io.realm.Sort
+import io.realm.Case
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -45,6 +49,15 @@ object RepositoryModule {
         apiInterface: ApiInterface
     ): CourseRepository {
         return CourseRepositoryImpl(databaseService, apiInterface)
+    }
+
+    @Provides
+    @Singleton
+    fun provideNewsRepository(
+        databaseService: DatabaseService,
+        apiInterface: ApiInterface
+    ): NewsRepository {
+        return NewsRepositoryImpl(databaseService.realmInstance, apiInterface)
     }
 }
 
@@ -139,5 +152,77 @@ class CourseRepositoryImpl(
     private fun getCurrentUserId(): String {
         return databaseService.realmInstance.where(RealmUserModel::class.java)
             .findFirst()?.id ?: ""
+    }
+}
+
+// News Repository
+interface NewsRepository {
+    fun getRealm(): Realm
+    fun getTopLevelNewsAsync(): RealmResults<RealmNews>
+    fun getTopLevelNewsList(): List<RealmNews>
+    fun getNewsById(id: String?): RealmNews?
+    fun getReplies(parentId: String?): List<RealmNews>
+    fun createNews(
+        map: HashMap<String?, String>,
+        user: RealmUserModel?,
+        imageUrls: RealmList<String>?,
+        isReply: Boolean = false
+    ): RealmNews
+    fun addAttachment(newsId: String, attachment: String)
+}
+
+class NewsRepositoryImpl(
+    private val realm: Realm,
+    private val apiInterface: ApiInterface
+) : NewsRepository {
+    override fun getRealm(): Realm = realm
+
+    override fun getTopLevelNewsAsync(): RealmResults<RealmNews> {
+        return realm.where(RealmNews::class.java)
+            .sort("time", Sort.DESCENDING)
+            .isEmpty("replyTo")
+            .equalTo("docType", "message", Case.INSENSITIVE)
+            .findAllAsync()
+    }
+
+    override fun getTopLevelNewsList(): List<RealmNews> {
+        return realm.where(RealmNews::class.java)
+            .isEmpty("replyTo")
+            .equalTo("docType", "message", Case.INSENSITIVE)
+            .findAll()
+    }
+
+    override fun getNewsById(id: String?): RealmNews? {
+        return realm.where(RealmNews::class.java)
+            .equalTo("id", id)
+            .findFirst()
+    }
+
+    override fun getReplies(parentId: String?): List<RealmNews> {
+        return realm.where(RealmNews::class.java)
+            .sort("time", Sort.DESCENDING)
+            .equalTo("replyTo", parentId, Case.INSENSITIVE)
+            .findAll()
+    }
+
+    override fun createNews(
+        map: HashMap<String?, String>,
+        user: RealmUserModel?,
+        imageUrls: RealmList<String>?,
+        isReply: Boolean
+    ): RealmNews {
+        return RealmNews.createNews(map, realm, user, imageUrls, isReply)
+    }
+
+    override fun addAttachment(newsId: String, attachment: String) {
+        realm.executeTransaction {
+            val news = it.where(RealmNews::class.java)
+                .equalTo("id", newsId)
+                .findFirst()
+            if (news != null) {
+                if (news.imageUrls == null) news.imageUrls = RealmList()
+                news.imageUrls?.add(attachment)
+            }
+        }
     }
 }

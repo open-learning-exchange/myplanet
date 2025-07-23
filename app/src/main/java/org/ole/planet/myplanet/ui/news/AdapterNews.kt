@@ -18,8 +18,12 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
+import org.ole.planet.myplanet.di.NewsRepository
+import org.ole.planet.myplanet.di.NewsRepositoryImpl
+import org.ole.planet.myplanet.datamanager.ApiInterface
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import okhttp3.RequestBody
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
@@ -57,6 +61,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private var listener: OnNewsItemClickListener? = null
     private var imageList: RealmList<String>? = null
     lateinit var mRealm: Realm
+    lateinit var newsRepository: NewsRepository
     private var fromLogin = false
     private var nonTeamMember = false
     private var sharedPreferences: SharedPrefManager? = null
@@ -92,11 +97,40 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         this.listener = listener
     }
 
+    fun setNewsRepository(repository: NewsRepository?) {
+        if (repository != null) {
+            this.newsRepository = repository
+            this.mRealm = repository.getRealm()
+            labelManager = NewsLabelManager(context, this.mRealm, currentUser)
+        }
+    }
+
     fun setmRealm(mRealm: Realm?) {
         if (mRealm != null) {
             this.mRealm = mRealm
+            if (!::newsRepository.isInitialized) {
+                newsRepository = NewsRepositoryImpl(mRealm, DummyApi())
+            }
             labelManager = NewsLabelManager(context, this.mRealm, currentUser)
         }
+    }
+
+    private class DummyApi : ApiInterface {
+        override fun downloadFile(header: String?, fileUrl: String?) = throw UnsupportedOperationException()
+        override fun getDocuments(header: String?, url: String?) = throw UnsupportedOperationException()
+        override fun getJsonObject(header: String?, url: String?) = throw UnsupportedOperationException()
+        override fun findDocs(header: String?, c: String?, url: String?, s: JsonObject?) = throw UnsupportedOperationException()
+        override fun postDoc(header: String?, c: String?, url: String?, s: JsonObject?) = throw UnsupportedOperationException()
+        override fun uploadResource(headerMap: Map<String, String>, url: String?, body: RequestBody?) = throw UnsupportedOperationException()
+        override fun putDoc(header: String?, c: String?, url: String?, s: JsonObject?) = throw UnsupportedOperationException()
+        override fun checkVersion(serverUrl: String?) = throw UnsupportedOperationException()
+        override fun getApkVersion(url: String?) = throw UnsupportedOperationException()
+        override fun healthAccess(url: String?) = throw UnsupportedOperationException()
+        override fun getChecksum(url: String?) = throw UnsupportedOperationException()
+        override fun isPlanetAvailable(serverUrl: String?) = throw UnsupportedOperationException()
+        override fun chatGpt(url: String?, requestBody: RequestBody?) = throw UnsupportedOperationException()
+        override fun checkAiProviders(url: String?) = throw UnsupportedOperationException()
+        override fun getConfiguration(url: String?) = throw UnsupportedOperationException()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -384,10 +418,8 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         return team?.userId == currentUser?._id
     }
 
-    private fun getReplies(finalNews: RealmNews?): List<RealmNews> = mRealm.where(RealmNews::class.java)
-        .sort("time", Sort.DESCENDING)
-        .equalTo("replyTo", finalNews?.id, Case.INSENSITIVE)
-        .findAll()
+    private fun getReplies(finalNews: RealmNews?): List<RealmNews> =
+        newsRepository.getReplies(finalNews?.id)
 
     private fun updateReplyCount(viewHolder: ViewHolderNews, replies: List<RealmNews>, position: Int) {
         with(viewHolder.rowNewsBinding) {

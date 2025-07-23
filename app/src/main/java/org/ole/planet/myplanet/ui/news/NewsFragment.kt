@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.databinding.FragmentNewsBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
@@ -29,6 +28,7 @@ import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
+import org.ole.planet.myplanet.di.NewsRepository
 
 @AndroidEntryPoint
 class NewsFragment : BaseNewsFragment() {
@@ -37,6 +37,9 @@ class NewsFragment : BaseNewsFragment() {
     
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+
+    @Inject
+    lateinit var newsRepository: NewsRepository
     private var updatedNewsList: RealmResults<RealmNews>? = null
     private var filteredNewsList: List<RealmNews?> = listOf()
     private val gson = Gson()
@@ -44,7 +47,7 @@ class NewsFragment : BaseNewsFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentNewsBinding = FragmentNewsBinding.inflate(inflater, container, false)
         llImage = fragmentNewsBinding.llImages
-        mRealm = databaseService.realmInstance
+        mRealm = newsRepository.getRealm()
         user = UserProfileDbHandler(requireContext()).userModel
         setupUI(fragmentNewsBinding.newsFragmentParentLayout, requireActivity())
         if (user?.id?.startsWith("guest") == true) {
@@ -67,9 +70,7 @@ class NewsFragment : BaseNewsFragment() {
             fragmentNewsBinding.llAddNews.visibility = View.GONE
         }
 
-        updatedNewsList = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING)
-            .isEmpty("replyTo").equalTo("docType", "message", Case.INSENSITIVE)
-            .findAllAsync()
+        updatedNewsList = newsRepository.getTopLevelNewsAsync()
 
         updatedNewsList?.addChangeListener { results ->
             filteredNewsList = filterNewsList(results)
@@ -121,7 +122,7 @@ class NewsFragment : BaseNewsFragment() {
             map["messageType"] = "sync"
             map["messagePlanetCode"] = user?.planetCode ?: ""
 
-            val n = user?.let { it1 -> createNews(map, mRealm, it1, imageList) }
+            val n = user?.let { it1 -> newsRepository.createNews(map, it1, imageList) }
             imageList.clear()
             llImage?.removeAllViews()
             adapterNews?.addItem(n)
@@ -137,8 +138,7 @@ class NewsFragment : BaseNewsFragment() {
     }
 
     private val newsList: List<RealmNews?> get() {
-        val allNews: List<RealmNews> = mRealm.where(RealmNews::class.java).isEmpty("replyTo")
-            .equalTo("docType", "message", Case.INSENSITIVE).findAll()
+        val allNews: List<RealmNews> = newsRepository.getTopLevelNewsList()
         val list: MutableList<RealmNews?> = ArrayList()
         for (news in allNews) {
             if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("community", ignoreCase = true)) {
@@ -187,7 +187,7 @@ class NewsFragment : BaseNewsFragment() {
             })
             adapterNews = AdapterNews(requireActivity(), sortedList.toMutableList(), user, null, "", null, userProfileDbHandler)
 
-            adapterNews?.setmRealm(mRealm)
+            adapterNews?.setNewsRepository(newsRepository)
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
             adapterNews?.setListener(this)
             adapterNews?.registerAdapterDataObserver(observer)

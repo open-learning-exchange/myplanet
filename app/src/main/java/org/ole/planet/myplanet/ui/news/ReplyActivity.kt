@@ -29,7 +29,7 @@ import io.realm.Sort
 import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.NewsRepository
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -54,6 +54,8 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private lateinit var imageList: RealmList<String>
     private var llImage: LinearLayout? = null
     private lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
+    @Inject
+    lateinit var newsRepository: NewsRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,7 +64,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         EdgeToEdgeUtil.setupEdgeToEdge(this, activityReplyBinding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = newsRepository.getRealm()
         title = "Reply"
         imageList = RealmList()
         id = intent.getStringExtra("id")
@@ -81,11 +83,11 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     }
 
     private fun showData(id: String?) {
-        val news = mRealm.where(RealmNews::class.java).equalTo("id", id).findFirst()
-        val list: List<RealmNews?> = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING).equalTo("replyTo", id, Case.INSENSITIVE).findAll()
+        val news = newsRepository.getNewsById(id)
+        val list: List<RealmNews?> = newsRepository.getReplies(id)
         newsAdapter = AdapterNews(this, list.toMutableList(), user, news, "", null, userProfileDbHandler)
         newsAdapter.setListener(this)
-        newsAdapter.setmRealm(mRealm)
+        newsAdapter.setNewsRepository(newsRepository)
         newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
         newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
         activityReplyBinding.rvReply.adapter = newsAdapter
