@@ -45,7 +45,7 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 class ChatHistoryListFragment : Fragment() {
     private lateinit var fragmentChatHistoryListBinding: FragmentChatHistoryListBinding
     private lateinit var sharedViewModel: ChatViewModel
-    private val chatHistoryViewModel: ChatHistoryViewModel by viewModels()
+    private val chatHistoryViewModel: ChatHistoryViewModel by viewModels({ requireActivity() })
     var user: RealmUserModel? = null
     private var isFullSearch: Boolean = false
     private var isQuestion: Boolean = false

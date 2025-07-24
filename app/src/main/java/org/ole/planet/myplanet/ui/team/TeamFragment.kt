@@ -40,7 +40,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private lateinit var mRealm: Realm
     @Inject
     lateinit var databaseService: DatabaseService
-    private val teamViewModel: TeamViewModel by viewModels()
+    private val teamViewModel: TeamViewModel by viewModels({ requireActivity() })
     var type: String? = null
     private var fromDashboard: Boolean = false
     var user: RealmUserModel? = null
