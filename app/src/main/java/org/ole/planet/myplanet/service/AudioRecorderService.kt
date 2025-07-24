@@ -29,6 +29,7 @@ class AudioRecorderService {
     private var audioRecordListener: AudioRecordListener? = null
     private var caller: ActivityResultCaller? = null
     private lateinit var permissionLauncher: ActivityResultLauncher<String>
+    private lateinit var context: Context
 
     fun forceStop() {
         myAudioRecorder?.apply {
@@ -105,10 +106,12 @@ class AudioRecorderService {
         }
     }
 
-    fun setCaller(caller: ActivityResultCaller, context: Context){
+    fun setCaller(caller: ActivityResultCaller, context: Context) {
         this.caller = caller
-        permissionLauncher =
-            caller.registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        this.context = context
+        permissionLauncher = caller.registerForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { granted ->
                 if (granted){
                     toggleRecording()
                 }

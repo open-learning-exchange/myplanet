@@ -44,7 +44,7 @@ class TeamListAdapter(private var membersList: MutableList<User>, val context: C
             } else {
                 binding.userNameTextView.text = account.fullName
             }
-            Glide.with(context)
+            Glide.with(binding.root.context)
                 .load(account.image)
                 .placeholder(R.drawable.profile)
                 .error(R.drawable.profile)

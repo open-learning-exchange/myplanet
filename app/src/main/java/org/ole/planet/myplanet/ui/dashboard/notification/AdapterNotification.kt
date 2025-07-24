@@ -71,7 +71,7 @@ class AdapterNotification(
                     if (matcher.find()) {
                         val taskTitle = notification.message?.substring(0, matcher.start())?.trim() ?: ""
                         val dateValue = notification.message?.substring(matcher.start())?.trim() ?: ""
-                        return formatTaskNotification(taskTitle, dateValue)
+                        return formatTaskNotification(context, taskTitle, dateValue)
                     } else {
                         "INVALID"
                     }
@@ -109,19 +109,18 @@ class AdapterNotification(
             }
         }
 
-        private fun formatTaskNotification(taskTitle: String, dateValue: String): String {
+        private fun formatTaskNotification(context: Context, taskTitle: String, dateValue: String): String {
             val taskObj = mRealm.where(RealmTeamTask::class.java)
                 .equalTo("title", taskTitle)
                 .findFirst()
             val teamName = mRealm.where(RealmMyTeam::class.java)
                 .equalTo("_id", taskObj?.teamId)
                 .findFirst()
-            val formattedText = if (teamName != null && teamName.name != null) {
+            return if (teamName != null && teamName.name != null) {
                 "<b>${teamName.name}</b>: ${context.getString(R.string.task_notification, taskTitle, dateValue)}"
             } else {
                 context.getString(R.string.task_notification, taskTitle, dateValue)
             }
-            return formattedText
         }
     }
 }

@@ -9,7 +9,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
 import java.io.IOException
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
@@ -148,12 +147,12 @@ object TransactionSyncManager {
         }
 
         documentList.forEach { jsonDoc ->
-            continueInsert(mRealm, table, jsonDoc, context)
+            continueInsert(mRealm, table, jsonDoc)
         }
     }
 
-    private fun continueInsert(mRealm: Realm, table: String, jsonDoc: JsonObject, context: Context) {
-        val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private fun continueInsert(mRealm: Realm, table: String, jsonDoc: JsonObject) {
+        val settings = Utilities.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         when (table) {
             "exams" -> {
                 insertCourseStepsExams("", "", jsonDoc, mRealm)

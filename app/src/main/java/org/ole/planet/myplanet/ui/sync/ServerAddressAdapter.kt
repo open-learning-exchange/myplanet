@@ -63,12 +63,13 @@ class ServerAddressAdapter(private var serverList: List<ServerAddressesModel>,
 
         fun bind(serverAddress: ServerAddressesModel, isSelected: Boolean) {
             button.text = serverAddress.name
-            button.contentDescription = context.getString(R.string.server_address_content_description, serverAddress.name)
+            val ctx = button.context
+            button.contentDescription = ctx.getString(R.string.server_address_content_description, serverAddress.name)
             button.isSelected = isSelected
             if (isSelected) {
-                button.setBackgroundColor(ContextCompat.getColor(button.context, R.color.selected_color))
+                button.setBackgroundColor(ContextCompat.getColor(ctx, R.color.selected_color))
             } else {
-                button.setBackgroundColor(ContextCompat.getColor(button.context, android.R.color.transparent))
+                button.setBackgroundColor(ContextCompat.getColor(ctx, android.R.color.transparent))
             }
         }
     }

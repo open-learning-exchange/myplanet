@@ -79,6 +79,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
         val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        var listener: TeamPageListener? = null
 
         fun createLog(type: String, error: String = "") {
             applicationScope.launch(Dispatchers.IO) {
