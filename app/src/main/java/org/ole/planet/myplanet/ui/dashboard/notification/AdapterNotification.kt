@@ -5,6 +5,8 @@ import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import java.util.regex.Pattern
 import org.ole.planet.myplanet.MainApplication.Companion.context
@@ -16,10 +18,14 @@ import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 
 class AdapterNotification(
-    var notificationList: List<RealmNotification>,
+    notifications: List<RealmNotification>,
     private val onMarkAsReadClick: (Int) -> Unit,
     private val onNotificationClick: (RealmNotification) -> Unit
-) : RecyclerView.Adapter<AdapterNotification.ViewHolderNotifications>() {
+) : ListAdapter<RealmNotification, AdapterNotification.ViewHolderNotifications>(NotificationDiffCallback()) {
+
+    init {
+        submitList(notifications)
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderNotifications {
         val rowNotificationsBinding = RowNotificationsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -27,15 +33,12 @@ class AdapterNotification(
     }
 
     override fun onBindViewHolder(holder: ViewHolderNotifications, position: Int) {
-        val notification = notificationList[position]
+        val notification = currentList[position]
         holder.bind(notification, position)
     }
 
-    override fun getItemCount(): Int = notificationList.size
-
     fun updateNotifications(newNotifications: List<RealmNotification>) {
-        notificationList = newNotifications
-        notifyDataSetChanged()
+        submitList(newNotifications)
     }
 
     inner class ViewHolderNotifications(private val rowNotificationsBinding: RowNotificationsBinding) :
@@ -123,5 +126,15 @@ class AdapterNotification(
             }
             return formattedText
         }
+    }
+}
+
+class NotificationDiffCallback : DiffUtil.ItemCallback<RealmNotification>() {
+    override fun areItemsTheSame(oldItem: RealmNotification, newItem: RealmNotification): Boolean {
+        return oldItem.id == newItem.id
+    }
+
+    override fun areContentsTheSame(oldItem: RealmNotification, newItem: RealmNotification): Boolean {
+        return oldItem == newItem
     }
 }
