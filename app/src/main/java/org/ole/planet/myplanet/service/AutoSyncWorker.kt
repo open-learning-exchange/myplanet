@@ -7,9 +7,6 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.work.Worker
 import androidx.work.WorkerParameters
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedFactory
-import dagger.assisted.AssistedInject
 import java.util.Date
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
@@ -25,18 +22,14 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AutoSyncWorker @AssistedInject constructor(
-    @Assisted private val context: Context,
-    @Assisted workerParams: WorkerParameters,
-    private val syncManager: SyncManager,
-    private val uploadManager: UploadManager,
-    private val uploadToShelfService: UploadToShelfService
+class AutoSyncWorker(
+    private val context: Context,
+    workerParams: WorkerParameters
 ) : Worker(context, workerParams), SyncListener, CheckVersionCallback, SuccessListener {
-    
-    @AssistedFactory
-    interface Factory {
-        fun create(context: Context, workerParams: WorkerParameters): AutoSyncWorker
-    }
+
+    private val syncManager = SyncManager(context)
+    private val uploadManager = UploadManager(context)
+    private val uploadToShelfService = UploadToShelfService(context)
     
     private lateinit var preferences: SharedPreferences
     override fun doWork(): Result {
