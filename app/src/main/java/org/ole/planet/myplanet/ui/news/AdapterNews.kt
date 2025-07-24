@@ -15,7 +15,9 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -52,7 +54,15 @@ import com.bumptech.glide.Glide
 import java.io.File
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 
-class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
+class AdapterNews(
+    var context: Context,
+    private val list: MutableList<RealmNews?>,
+    private var currentUser: RealmUserModel?,
+    private val parentNews: RealmNews?,
+    private val teamName: String = "",
+    private val teamId: String? = null,
+    private val userProfileDbHandler: UserProfileDbHandler
+) : ListAdapter<RealmNews, RecyclerView.ViewHolder>(DIFF_CALLBACK) {
     private lateinit var rowNewsBinding: RowNewsBinding
     private var listener: OnNewsItemClickListener? = null
     private var imageList: RealmList<String>? = null
@@ -76,8 +86,10 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     }
 
     fun addItem(news: RealmNews?) {
-        list.add(news)
-        notifyDataSetChanged()
+        news?.let {
+            list.add(it)
+            submitList(list.filterNotNull())
+        }
     }
 
     fun setFromLogin(fromLogin: Boolean) {
@@ -156,7 +168,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             list.indexOfFirst { it?.id == newsId }
         }
         if (index >= 0) {
-            notifyItemChanged(index)
+            submitList(list.filterNotNull())
         }
     }
 
@@ -323,8 +335,8 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     fun updateList(newList: List<RealmNews?>) {
         list.clear()
-        list.addAll(newList)
-        notifyDataSetChanged()
+        list.addAll(newList.filterNotNull())
+        submitList(list.filterNotNull())
     }
 
     private fun setMemberClickListeners(holder: ViewHolderNews, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
@@ -401,15 +413,21 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private fun getNews(holder: RecyclerView.ViewHolder, position: Int): RealmNews? {
         val news: RealmNews? = if (parentNews != null) {
             if (position == 0) {
-                (holder.itemView as CardView).setCardBackgroundColor(ContextCompat.getColor(context, R.color.md_blue_50))
+                (holder.itemView as CardView).setCardBackgroundColor(
+                    ContextCompat.getColor(context, R.color.md_blue_50)
+                )
                 parentNews
             } else {
-                (holder.itemView as CardView).setCardBackgroundColor(ContextCompat.getColor(context, R.color.md_white_1000))
-                list[position - 1]
+                (holder.itemView as CardView).setCardBackgroundColor(
+                    ContextCompat.getColor(context, R.color.md_white_1000)
+                )
+                currentList[position - 1]
             }
         } else {
-            (holder.itemView as CardView).setCardBackgroundColor(ContextCompat.getColor(context, R.color.md_white_1000))
-            list[position]
+            (holder.itemView as CardView).setCardBackgroundColor(
+                ContextCompat.getColor(context, R.color.md_white_1000)
+            )
+            currentList[position]
         }
         return news
     }
@@ -456,7 +474,8 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     }
 
     override fun getItemCount(): Int {
-        return if (parentNews == null) list.size else list.size + 1
+        val size = super.getItemCount()
+        return if (parentNews == null) size else size + 1
     }
 
     interface OnNewsItemClickListener {
@@ -594,10 +613,26 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         dialog.show()
     }
 
-    internal inner class ViewHolderNews(val rowNewsBinding: RowNewsBinding) : RecyclerView.ViewHolder(rowNewsBinding.root) {
+internal inner class ViewHolderNews(val rowNewsBinding: RowNewsBinding) : RecyclerView.ViewHolder(rowNewsBinding.root) {
         private var adapterPosition = 0
         fun bind(position: Int) {
             adapterPosition = position
+        }
+    }
+
+    companion object {
+        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<RealmNews>() {
+            override fun areItemsTheSame(oldItem: RealmNews, newItem: RealmNews): Boolean {
+                return oldItem.id == newItem.id
+            }
+
+            override fun areContentsTheSame(oldItem: RealmNews, newItem: RealmNews): Boolean {
+                return oldItem.time == newItem.time &&
+                    oldItem.message == newItem.message &&
+                    oldItem.isEdited == newItem.isEdited &&
+                    (oldItem.imageUrls?.size ?: 0) == (newItem.imageUrls?.size ?: 0) &&
+                    (oldItem.labels?.size ?: 0) == (newItem.labels?.size ?: 0)
+            }
         }
     }
 }
