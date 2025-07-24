@@ -12,6 +12,9 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.toColorInt
 import androidx.fragment.app.FragmentManager
+import androidx.recyclerview.widget.AsyncDifferConfig
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
 import org.ole.planet.myplanet.R
@@ -19,19 +22,26 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ItemTeamListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
-import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-class AdapterTeamList(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm, private val fragmentManager: FragmentManager, private val uploadManager: UploadManager) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
+class AdapterTeamList(
+    private val context: Context,
+    private val list: List<RealmMyTeam>,
+    private val mRealm: Realm,
+    private val fragmentManager: FragmentManager,
+    private val uploadManager: UploadManager
+) : ListAdapter<RealmMyTeam, AdapterTeamList.ViewHolderTeam>(
+    AsyncDifferConfig.Builder(TeamDiffCallback()).setBackgroundThreadExecutor { it.run() }.build()
+) {
     private lateinit var itemTeamListBinding: ItemTeamListBinding
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
-    private var filteredList: List<RealmMyTeam> = emptyList()
     private lateinit var prefData: SharedPrefManager
 
     interface OnClickTeamItem {
@@ -53,7 +63,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
     }
 
     override fun onBindViewHolder(holder: ViewHolderTeam, position: Int) {
-        val team = filteredList[position]
+        val team = currentList[position]
         val user: RealmUserModel? = UserProfileDbHandler(context).userModel
 
         with(holder.binding) {
@@ -172,7 +182,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         val userId = user?.id
 
         val validTeams = list.filter { it.status?.isNotEmpty() == true }
-        filteredList = validTeams.sortedWith(compareByDescending<RealmMyTeam> { team ->
+        val sorted = validTeams.sortedWith(compareByDescending<RealmMyTeam> { team ->
             when {
                 userId != null && RealmMyTeam.isTeamLeader(team._id, userId, mRealm) -> 3
                 team.isMyTeam(userId, mRealm) -> 2
@@ -181,7 +191,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         }.thenByDescending { team ->
             RealmTeamLog.getVisitByTeam(mRealm, team._id)
         })
-        notifyDataSetChanged()
+        submitList(sorted)
     }
 
     private fun getBundle(team: RealmMyTeam): Bundle {
@@ -196,7 +206,15 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         this.type = type
     }
 
-    override fun getItemCount(): Int = filteredList.size
-
     class ViewHolderTeam(val binding: ItemTeamListBinding) : RecyclerView.ViewHolder(binding.root)
+}
+
+class TeamDiffCallback : DiffUtil.ItemCallback<RealmMyTeam>() {
+    override fun areItemsTheSame(oldItem: RealmMyTeam, newItem: RealmMyTeam): Boolean {
+        return oldItem._id == newItem._id
+    }
+
+    override fun areContentsTheSame(oldItem: RealmMyTeam, newItem: RealmMyTeam): Boolean {
+        return oldItem == newItem
+    }
 }
