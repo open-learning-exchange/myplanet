@@ -32,6 +32,14 @@ class AutoSyncWorker @AssistedInject constructor(
     private val uploadManager: UploadManager,
     private val uploadToShelfService: UploadToShelfService
 ) : Worker(context, workerParams), SyncListener, CheckVersionCallback, SuccessListener {
+
+    constructor(context: Context, workerParams: WorkerParameters) : this(
+        context,
+        workerParams,
+        SyncManager(context),
+        UploadManager(context),
+        UploadToShelfService(context)
+    )
     
     @AssistedFactory
     interface Factory {
