@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.service
 
-import android.content.Context
 import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
@@ -15,7 +14,10 @@ import java.util.Date
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
+import javax.inject.Inject
+import javax.inject.Singleton
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseIds
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
@@ -32,9 +34,11 @@ import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.RetryUtils
 import retrofit2.Response
 
-class UploadToShelfService(context: Context) {
-    private val dbService: DatabaseService = DatabaseService(context)
-    private val sharedPreferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+@Singleton
+class UploadToShelfService @Inject constructor(
+    private val dbService: DatabaseService,
+    @AppPreferences private val sharedPreferences: SharedPreferences
+) {
     lateinit var mRealm: Realm
 
     fun uploadUserData(listener: SuccessListener) {

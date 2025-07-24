@@ -43,13 +43,6 @@ class UploadManager @Inject constructor(
     @AppPreferences private val pref: SharedPreferences
 ) : FileUploadService() {
 
-    // Backward compatibility constructor for code that still uses singleton pattern
-    constructor(context: Context) : this(
-        context,
-        DatabaseService(context),
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    )
-
     private val gson = Gson()
 
     private fun getRealm(): Realm {

@@ -9,6 +9,7 @@ import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
@@ -28,13 +29,17 @@ import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.ConfigurationManager
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.NetworkResult
 import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
+import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.DatabaseServiceEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.isUserExists
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.populateUsersTable
 import org.ole.planet.myplanet.service.UploadToShelfService
+import org.ole.planet.myplanet.di.UploadToShelfServiceEntryPoint
 import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
@@ -57,17 +62,26 @@ import retrofit2.Callback
 import retrofit2.Response
 
 class Service @Inject constructor(
-    private val context: Context,
-    private val retrofitInterface: ApiInterface
+    @ApplicationContext private val context: Context,
+    private val retrofitInterface: ApiInterface,
+    private val databaseService: DatabaseService,
+    @AppPreferences private val preferences: SharedPreferences
 ) {
     constructor(context: Context) : this(
         context,
         EntryPointAccessors.fromApplication(
             context.applicationContext,
             ApiInterfaceEntryPoint::class.java
-        ).apiInterface()
+        ).apiInterface(),
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            DatabaseServiceEntryPoint::class.java
+        ).databaseService(),
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            DatabaseServiceEntryPoint::class.java
+        ).preferences()
     )
-    private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
     private val configurationManager = ConfigurationManager(context, preferences, retrofitInterface)
@@ -277,7 +291,10 @@ class Service @Inject constructor(
                 if (res?.body() != null) {
                     val model = populateUsersTable(res.body(), realm1, settings)
                     if (model != null) {
-                        UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
+                        EntryPointAccessors.fromApplication(
+                            MainApplication.context,
+                            UploadToShelfServiceEntryPoint::class.java
+                        ).uploadToShelfService().saveKeyIv(retrofitInterface, model, obj)
                     }
                 }
             } catch (e: IOException) {
