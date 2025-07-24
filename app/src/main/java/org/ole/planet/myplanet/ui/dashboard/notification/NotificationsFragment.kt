@@ -176,7 +176,7 @@ class NotificationsFragment : Fragment() {
         }
 
         if (!notification.isRead) {
-            markAsRead(adapter.notificationList.indexOf(notification))
+            markAsRead(adapter.currentList.indexOf(notification))
         }
     }
 
@@ -194,7 +194,7 @@ class NotificationsFragment : Fragment() {
     }
 
     private fun markAsRead(position: Int) {
-        val notification = adapter.notificationList[position]
+        val notification = adapter.currentList[position]
         mRealm.executeTransaction {
             notification.isRead = true
         }
