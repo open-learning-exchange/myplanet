@@ -19,10 +19,12 @@ import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.*
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.*
 import java.io.File
 import java.util.*
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 import kotlin.isInitialized
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -64,6 +66,7 @@ import org.ole.planet.myplanet.utilities.ServerConfigUtils
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
 
+@AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
     OnUserSelectedListener, ConfigurationIdListener {
     private lateinit var syncDate: TextView
@@ -110,14 +113,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     var serverAddressAdapter: ServerAddressAdapter? = null
     lateinit var serverListAddresses: List<ServerAddressesModel>
     private var isProgressDialogShowing = false
+    
+    @Inject
+    lateinit var syncManager: SyncManager
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         editor = settings.edit()
-        mRealm = DatabaseService(this).realmInstance
-        mRealm = Realm.getDefaultInstance()
+        mRealm = databaseService.realmInstance
         requestAllPermissions()
         prefData = SharedPrefManager(this)
         profileDbHandler = UserProfileDbHandler(this)
@@ -360,7 +365,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun startSync(type: String) {
-        SyncManager.instance?.start(this@SyncActivity, type)
+        syncManager.start(this@SyncActivity, type)
     }
 
     private fun saveConfigAndContinue(
@@ -435,22 +440,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 var attempt = 0
-                while (true) {
-                    val realm = Realm.getDefaultInstance()
-                    var dataInserted = false
-
-                    try {
+                Realm.getDefaultInstance().use { realm ->
+                    while (true) {
                         realm.refresh()
                         val realmResults = realm.where(RealmUserModel::class.java).findAll()
-                        if (!realmResults.isEmpty()) {
-                            dataInserted = true
+                        if (realmResults.isNotEmpty()) {
                             break
                         }
-                    } finally {
-                        realm.close()
+                        attempt++
+                        delay(1000)
                     }
-                    attempt++
-                    delay(1000)
                 }
 
                 withContext(Dispatchers.Main) {
@@ -501,7 +500,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         withContext(Dispatchers.IO) {
                             val downloadRealm = Realm.getDefaultInstance()
                             try {
-                                backgroundDownload(downloadAllFiles(getAllLibraryList(downloadRealm)))
+                                backgroundDownload(downloadAllFiles(getAllLibraryList(downloadRealm)), activityContext)
                             } finally {
                                 downloadRealm.close()
                             }
@@ -723,7 +722,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
-        mRealm = Realm.getDefaultInstance()
         val builder = getUpdateDialog(this, info, customProgressDialog)
         if (cancelable || getCustomDeviceName(this).endsWith("###")) {
             builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
@@ -777,7 +775,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
 
     override fun onSelectedUser(userModel: RealmUserModel) {
-        mRealm = Realm.getDefaultInstance()
         val layoutChildLoginBinding = LayoutChildLoginBinding.inflate(layoutInflater)
         AlertDialog.Builder(this).setView(layoutChildLoginBinding.root)
             .setTitle(R.string.please_enter_your_password)

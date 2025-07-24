@@ -39,14 +39,17 @@ import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
 import com.google.android.material.snackbar.Snackbar
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.lang.String.format
+import java.text.SimpleDateFormat
 import java.util.ArrayList
 import java.util.Calendar
 import java.util.LinkedHashMap
 import java.util.LinkedList
 import java.util.Locale
 import java.util.UUID
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.language
 import org.ole.planet.myplanet.R.array.subject_level
@@ -61,12 +64,14 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class UserProfileFragment : Fragment() {
     private lateinit var fragmentUserProfileBinding: FragmentUserProfileBinding
     private lateinit var rowStatBinding: RowStatBinding
     private lateinit var handler: UserProfileDbHandler
     private lateinit var settings: SharedPreferences
-    private lateinit var realmService: DatabaseService
+    @Inject
+    lateinit var databaseService: DatabaseService
     private lateinit var mRealm: Realm
     private var model: RealmUserModel? = null
     private var imageUrl = ""
@@ -103,6 +108,7 @@ class UserProfileFragment : Fragment() {
         captureImageLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
             if (isSuccess) {
                 startIntent(photoURI)
+                fragmentUserProfileBinding.image.setImageURI(photoURI)
             }
         }
 
@@ -151,8 +157,7 @@ class UserProfileFragment : Fragment() {
     private fun initializeDependencies() {
         settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         handler = UserProfileDbHandler(requireContext())
-        realmService = DatabaseService(requireContext())
-        mRealm = realmService.realmInstance
+        mRealm = databaseService.realmInstance
         fragmentUserProfileBinding.rvStat.layoutManager = LinearLayoutManager(activity)
         fragmentUserProfileBinding.rvStat.isNestedScrollingEnabled = false
     }
@@ -275,9 +280,13 @@ class UserProfileFragment : Fragment() {
             val dpd = DatePickerDialog(
                 requireContext(),
                 { _, year, monthOfYear, dayOfMonth ->
-                    val dob2 = format(Locale.US, "%04d-%02d-%02d", year, monthOfYear + 1, dayOfMonth)
+                    val calendar = Calendar.getInstance()
+                    calendar.set(year, monthOfYear, dayOfMonth)
+                    val dobMillis = calendar.timeInMillis
+                    val dobFormatted = TimeUtils.getFormatedDate(dobMillis)
+
                     date = format(Locale.US, "%04d-%02d-%02dT00:00:00.000Z", year, monthOfYear + 1, dayOfMonth)
-                    binding.dateOfBirth.text = dob2
+                    binding.dateOfBirth.text = dobFormatted
                 },
                 now.get(Calendar.YEAR),
                 now.get(Calendar.MONTH),

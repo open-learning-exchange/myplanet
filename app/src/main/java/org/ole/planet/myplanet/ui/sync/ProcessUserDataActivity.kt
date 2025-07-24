@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.PorterDuff
@@ -24,13 +23,15 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.google.android.material.textfield.TextInputLayout
-import java.util.concurrent.atomic.AtomicInteger
+import dagger.hilt.android.AndroidEntryPoint
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.di.AppPreferences
+import android.content.SharedPreferences
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity
 import org.ole.planet.myplanet.callback.SecurityDataCallback
@@ -49,8 +50,24 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.FileUtils.installApk
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
+import java.util.concurrent.atomic.AtomicInteger
 
+@AndroidEntryPoint
 abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
+    
+    @Inject
+    @AppPreferences
+    lateinit var appPreferences: SharedPreferences
+    
+    @Inject
+    lateinit var databaseService: DatabaseService
+    
+    @Inject
+    lateinit var uploadManager: UploadManager
+
+    @Inject
+    lateinit var uploadToShelfService: UploadToShelfService
+    
     lateinit var settings: SharedPreferences
     val customProgressDialog: DialogUtils.CustomProgressDialog by lazy {
         DialogUtils.CustomProgressDialog(this)
@@ -103,7 +120,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     }
 
     private fun safelyDismissDialog() {
-        if (customProgressDialog.isShowing() == true && !isFinishing) {
+        if (customProgressDialog.isShowing() && !isFinishing) {
             try {
                 customProgressDialog.dismiss()
             } catch (e: IllegalArgumentException) {
@@ -115,6 +132,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     fun openDashboard() {
         val dashboard = Intent(applicationContext, DashboardActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            .putExtra("from_login", true)
         startActivity(dashboard)
         finish()
     }
@@ -182,9 +200,9 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
 
     fun startUpload(source: String, userName: String? = null, securityCallback: SecurityDataCallback? = null) {
         if (source == "becomeMember") {
-            UploadToShelfService.instance?.uploadSingleUserData(userName ,object : SuccessListener {
+            uploadToShelfService.uploadSingleUserData(userName, object : SuccessListener {
                 override fun onSuccess(success: String?) {
-                    UploadToShelfService.instance?.uploadSingleUserHealth("org.couchdb.user:${userName}", object : SuccessListener {
+                    uploadToShelfService.uploadSingleUserHealth("org.couchdb.user:${userName}", object : SuccessListener {
                         override fun onSuccess(success: String?) {
                             userName?.let { name ->
                                 fetchAndLogUserSecurityData(name, securityCallback)
@@ -197,23 +215,23 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             })
             return
         } else if (source == "login") {
-            UploadManager.instance?.uploadUserActivities(this@ProcessUserDataActivity)
+            uploadManager.uploadUserActivities(this@ProcessUserDataActivity)
             return
         }
-
-        customProgressDialog.setText(context.getString(R.string.uploading_data_to_server_please_wait))
+        customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
-        UploadManager.instance?.uploadAchievement()
-        UploadManager.instance?.uploadNews()
-        UploadManager.instance?.uploadResourceActivities("")
-        UploadManager.instance?.uploadCourseActivities()
-        UploadManager.instance?.uploadSearchActivity()
-        UploadManager.instance?.uploadTeams()
-        UploadManager.instance?.uploadRating()
-        UploadManager.instance?.uploadTeamTask()
-        UploadManager.instance?.uploadMeetups()
-        UploadManager.instance?.uploadSubmissions()
-        UploadManager.instance?.uploadCrashLog()
+
+        uploadManager.uploadAchievement()
+        uploadManager.uploadNews()
+        uploadManager.uploadResourceActivities("")
+        uploadManager.uploadCourseActivities()
+        uploadManager.uploadSearchActivity()
+        uploadManager.uploadTeams()
+        uploadManager.uploadRating()
+        uploadManager.uploadTeamTask()
+        uploadManager.uploadMeetups()
+        uploadManager.uploadSubmissions()
+        uploadManager.uploadCrashLog()
 
         val asyncOperationsCounter = AtomicInteger(0)
         val totalAsyncOperations = 6
@@ -229,42 +247,42 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             }
         }
 
-        UploadToShelfService.instance?.uploadUserData {
-            UploadToShelfService.instance?.uploadHealth()
+        uploadToShelfService.uploadUserData {
+            uploadToShelfService.uploadHealth()
             checkAllOperationsComplete()
         }
 
-        UploadManager.instance?.uploadUserActivities(object : SuccessListener {
+        uploadManager.uploadUserActivities(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
-        UploadManager.instance?.uploadExamResult(object : SuccessListener {
+        uploadManager.uploadExamResult(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
-        UploadManager.instance?.uploadFeedback(object : SuccessListener {
+        uploadManager.uploadFeedback(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
-        UploadManager.instance?.uploadResource(object : SuccessListener {
+        uploadManager.uploadResource(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
-        UploadManager.instance?.uploadSubmitPhotos(object : SuccessListener {
+        uploadManager.uploadSubmitPhotos(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
         })
 
-        UploadManager.instance?.uploadActivities(object : SuccessListener {
+        uploadManager.uploadActivities(object : SuccessListener {
             override fun onSuccess(success: String?) {
                 checkAllOperationsComplete()
             }
@@ -277,7 +295,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
     }
 
     fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUserModel?) {
-        this.settings = settings
+        this.settings = settings ?: appPreferences
         settings.edit {
             putString("userId", user?.id)
             putString("name", user?.name)
@@ -356,7 +374,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
 
     private fun updateRealmUserSecurityData(name: String, userId: String?, rev: String?, derivedKey: String?, salt: String?, passwordScheme: String?, iterations: String?, securityCallback: SecurityDataCallback? = null) {
         try {
-            val realm = DatabaseService(this).realmInstance
+            val realm = databaseService.realmInstance
             realm.executeTransactionAsync({ transactionRealm ->
                 val user = transactionRealm.where(RealmUserModel::class.java)
                     .equalTo("name", name)

@@ -6,6 +6,7 @@ import okhttp3.ResponseBody
 import org.ole.planet.myplanet.model.ChatModel
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.MyPlanet
+import retrofit2.Response
 import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -40,10 +41,10 @@ interface ApiInterface {
     fun putDoc(@Header("Authorization") header: String?, @Header("Content-Type") c: String?, @Url url: String?, @Body s: JsonObject?): Call<JsonObject>
 
     @GET
-    fun checkVersion(@Url serverUrl: String?): Call<MyPlanet>
+    suspend fun checkVersion(@Url serverUrl: String?): Response<MyPlanet>
 
     @GET
-    fun getApkVersion(@Url url: String?): Call<ResponseBody>
+    suspend fun getApkVersion(@Url url: String?): Response<ResponseBody>
 
     @GET
     fun healthAccess(@Url url: String?): Call<ResponseBody>

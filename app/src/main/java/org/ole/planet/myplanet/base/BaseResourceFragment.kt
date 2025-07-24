@@ -19,11 +19,12 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
+import javax.inject.Inject
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -53,6 +54,7 @@ import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadFiles
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUserModel? = null
@@ -62,6 +64,8 @@ abstract class BaseResourceFragment : Fragment() {
     var lv: CheckboxListView? = null
     var convertView: View? = null
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
+    @Inject
+    lateinit var databaseService: DatabaseService
     private var resourceNotFoundDialog: AlertDialog? = null
 
     private fun isFragmentActive(): Boolean {
@@ -86,7 +90,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            showDownloadDialog(getLibraryList(DatabaseService(context).realmInstance))
+            showDownloadDialog(getLibraryList(databaseService.realmInstance))
         }
     }
 
@@ -95,7 +99,7 @@ abstract class BaseResourceFragment : Fragment() {
             AlertDialog.Builder(requireContext()).setMessage(R.string.do_you_want_to_stay_online)
                 .setPositiveButton(R.string.yes, null)
                 .setNegativeButton(R.string.no) { _: DialogInterface?, _: Int ->
-                    val wifi = MainApplication.context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+                    val wifi = requireContext().applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
                     wifi.setWifiEnabled(false)
                 }.show()
         }
@@ -121,7 +125,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
         if (!isAdded) return
-        Service(MainApplication.context).isPlanetAvailable(object : PlanetAvailableListener {
+        Service(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 if (!isAdded) return
                 if (dbMyLibrary.isEmpty()) {
@@ -308,7 +312,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = databaseService.realmInstance
         prgDialog = getProgressDialog(requireActivity())
         settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         editor = settings?.edit()
@@ -386,7 +390,7 @@ abstract class BaseResourceFragment : Fragment() {
             return libList
         }
 
-        fun backgroundDownload(urls: ArrayList<String>) {
+        fun backgroundDownload(urls: ArrayList<String>, context: Context) {
             Service(context).isPlanetAvailable(object : PlanetAvailableListener {
                 override fun isAvailable() {
                     if (urls.isNotEmpty()) {

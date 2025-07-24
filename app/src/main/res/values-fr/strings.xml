@@ -477,26 +477,72 @@
     </string-array>
 
     <string-array name="diagnosis_list">
+        <item>Otite moyenne aiguë</item>
+        <item>Infection respiratoire aiguë</item>
+        <item>Amibiase</item>
+        <item>Brucellose</item>
         <item>Cancer</item>
         <item>Maladies cardiovasculaires</item>
+        <item>Maladie de Chagas</item>
+        <item>Chancre mou</item>
+        <item>Chikungunya</item>
+        <item>Chlamydia</item>
+        <item>Maladie rénale chronique</item>
         <item>Cirrhose du foie</item>
+        <item>Conjonctivite</item>
         <item>COVID-19</item>
+        <item>Cryptosporidiose</item>
+        <item>Caries dentaires</item>
+        <item>Dengue</item>
         <item>Diabète</item>
         <item>Maladies diarrhéiques</item>
         <item>Ébola</item>
+        <item>Emphysème</item>
         <item>Épilepsie</item>
-        <item>FGM</item>
-        <item>Grippe</item>
-        <item>Maladie coronarienne ischémique</item>
-        <item>Malaria</item>
-        <item>Mauvaise nutrition</item>
-        <item>Méningite</item>
-        <item>Sepsis néonatal et infections</item>
+        <item>Mutilation génitale féminine</item>
+        <item>Infection fongique</item>
+        <item>Giardiase</item>
+        <item>Gonorrhée</item>
+        <item>Coup de chaleur</item>
+        <item>Hépatite A</item>
+        <item>Hépatite B</item>
+        <item>Hépatite C</item>
+        <item>Virus de l\'herpès simplex</item>
         <item>VIH/SIDA</item>
+        <item>Papillomavirus humain</item>
+        <item>Hypertension</item>
+        <item>Grippe</item>
+        <item>Anémie par carence en fer</item>
+        <item>Cardiopathie ischémique</item>
+        <item>Carence en iode</item>
+        <item>Leishmaniose</item>
+        <item>Leptospirose</item>
+        <item>Poids de naissance faible</item>
+        <item>Lymphogranulomatose vénérienne</item>
+        <item>Paludisme</item>
+        <item>Malnutrition</item>
+        <item>Hémorragie maternelle</item>
+        <item>Rougeole</item>
+        <item>Méningite</item>
+        <item>Mycoplasma genitalium</item>
+        <item>Septicémie et infections néonatales</item>
+        <item>Obésité</item>
         <item>Pneumonie</item>
+        <item>Prééclampsie/Éclampsie</item>
+        <item>Complications de la naissance prématurée</item>
+        <item>Rage</item>
+        <item>Rotavirus</item>
+        <item>Gale</item>
+        <item>Schistosomiase</item>
+        <item>Helminthiases transmises par le sol</item>
         <item>Accident vasculaire cérébral</item>
-        <item>Tuberculose</item>
+        <item>Syphilis</item>
         <item>Traumatisme</item>
+        <item>Trichomonase</item>
+        <item>Tuberculose</item>
+        <item>Fièvre typhoïde</item>
+        <item>Carence en vitamine A</item>
+        <item>Zika</item>
     </string-array>
 
     <string name="title_activity_news_detail">Detalles de noticias</string>
@@ -1100,7 +1146,7 @@
     <string name="team_financial_report">Rapport financier de %s</string>
     <string name="report_date_details">Rapport créé le : %1$s | Mis à jour le : %2$s</string>
     <string name="formatted_date">%1$d/%2$d/%3$d</string>
-    <string name="prefix_content">%1$s%2$s</string>
+    <string name="prefix_content">%1$s %2$s</string>
     <string name="rating_count_format">%d total</string>
     <string name="step_progress">Étape actuelle : %1$d sur %2$d</string>
     <string name="percentage">%s%%</string>
@@ -1113,7 +1159,6 @@
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
-    <string name="download_sync_files">télécharger les fichiers de synchronisation</string>
     <string name="member_description">%1$s (%2$d visites)</string>
     <string name="last_visit">Dernière visite: %1$s</string>
     <string name="no_visit">Pas de visite</string>
@@ -1321,5 +1366,6 @@
     <string name="syncing_health_data">Synchronisation des données de santé…</string>
     <string name="syncing_resources">Synchronisation des ressources…</string>
     <string name="syncing_achievements">Synchronisation des réalisations…</string>
+    <string name="nation_leaders">dirigeants nationaux</string>
 
 </resources>

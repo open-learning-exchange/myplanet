@@ -9,7 +9,7 @@ android {
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 2751
         versionName = "0.27.51"
         ndkVersion = '26.3.11579264'
@@ -214,7 +214,7 @@ dependencies {
     implementation 'org.jetbrains:annotations:26.0.2'
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2"
     implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.29'
 
     implementation 'com.mikepenz:google-material-typeface:3.0.1.1.original@aar'
@@ -231,7 +231,7 @@ dependencies {
     implementation "androidx.camera:camera-lifecycle:$camera_version"
     implementation "androidx.camera:camera-view:$camera_version"
 
-    def dagger_hilt_version = "2.56.2"
+    def dagger_hilt_version = "2.57"
     implementation "com.google.dagger:hilt-android:$dagger_hilt_version"
     kapt "com.google.dagger:hilt-android-compiler:$dagger_hilt_version"
 
@@ -263,4 +263,5 @@ realm {
 }
 kapt {
     correctErrorTypes = true
+    useBuildCache = true
 }

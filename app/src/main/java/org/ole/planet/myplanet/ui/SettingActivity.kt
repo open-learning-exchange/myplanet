@@ -13,25 +13,29 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
 import androidx.preference.Preference.OnPreferenceClickListener
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
 import androidx.preference.SwitchPreference
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
+import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.DefaultPreferences
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import javax.inject.Inject
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication.Companion.mRealm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -42,12 +46,25 @@ import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.LocaleHelper
-import org.ole.planet.myplanet.utilities.ThemeMode
+import org.ole.planet.myplanet.utilities.ThemeManager
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class SettingActivity : AppCompatActivity() {
+
+    @Inject
+    lateinit var databaseService: DatabaseService
+
+    @Inject
+    @AppPreferences
+    lateinit var appPreferences: SharedPreferences
+
+    @Inject
+    @DefaultPreferences 
+    lateinit var defaultPreferences: SharedPreferences
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleHelper.onAttach(base))
@@ -57,6 +74,7 @@ class SettingActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportFragmentManager.beginTransaction().replace(android.R.id.content, SettingFragment()).commit()
+        EdgeToEdgeUtil.setupEdgeToEdge(this, findViewById(android.R.id.content))
         title = getString(R.string.action_settings)
     }
 
@@ -97,12 +115,11 @@ class SettingActivity : AppCompatActivity() {
             profileDbHandler = UserProfileDbHandler(requireActivity())
             user = profileDbHandler.userModel
             dialog = DialogUtils.getCustomProgressDialog(requireActivity())
-            defaultPref = PreferenceManager.getDefaultSharedPreferences(requireActivity())
-            settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            defaultPref = (requireActivity() as SettingActivity).defaultPreferences
+            settings = (requireActivity() as SettingActivity).appPreferences
 
             setBetaToggleOn()
             setAutoSyncToggleOn()
-            setDownloadSyncFilesToggle()
             val lp = findPreference<Preference>("app_language")
             lp?.setOnPreferenceClickListener {
                 context?.let { it1 -> languageChanger(it1) }
@@ -111,7 +128,7 @@ class SettingActivity : AppCompatActivity() {
 
             val darkMode = findPreference<Preference>("dark_mode")
             darkMode?.setOnPreferenceClickListener {
-                darkMode(requireActivity())
+                ThemeManager.showThemeDialog(requireActivity())
                 true
             }
 
@@ -125,7 +142,7 @@ class SettingActivity : AppCompatActivity() {
             autoDownload?.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
                 if (autoDownload.isChecked == true) {
                     defaultPref.edit { putBoolean("beta_auto_download", true) }
-                    backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
+                    backgroundDownload(downloadAllFiles(getAllLibraryList((requireActivity() as SettingActivity).databaseService.realmInstance)), requireContext())
                 } else {
                     defaultPref.edit { putBoolean("beta_auto_download", false) }
                 }
@@ -145,7 +162,7 @@ class SettingActivity : AppCompatActivity() {
         }
 
         private fun clearDataButtonInit() {
-            val mRealm = DatabaseService(requireActivity()).realmInstance
+            val mRealm = (requireActivity() as SettingActivity).databaseService.realmInstance
             val preference = findPreference<Preference>("reset_app")
             if (preference != null) {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {
@@ -228,16 +245,6 @@ class SettingActivity : AppCompatActivity() {
             }
         }
 
-        private fun setDownloadSyncFilesToggle() {
-            val downloadSyncFiles = findPreference<SwitchPreference>("download_sync_files")
-            downloadSyncFiles?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
-                val isEnabled = newValue as Boolean
-                val sharedPreferences = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                sharedPreferences.edit { putBoolean("download_sync_files", isEnabled) }
-                true
-            }
-        }
-
         override fun onDestroy() {
             super.onDestroy()
             if (this::profileDbHandler.isInitialized) {
@@ -246,55 +253,6 @@ class SettingActivity : AppCompatActivity() {
         }
 
         companion object {
-            fun darkMode(context: Context) {
-                val options = arrayOf(context.getString(R.string.dark_mode_off), context.getString(R.string.dark_mode_on),context.getString(R.string.dark_mode_follow_system))
-                val currentMode = getCurrentThemeMode(context)
-                val checkedItem = when (currentMode) {
-                    ThemeMode.LIGHT -> 0
-                    ThemeMode.DARK -> 1
-                    else -> 2
-                }
-
-                val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                    .setTitle(context.getString(R.string.select_theme_mode))
-                    .setSingleChoiceItems(ArrayAdapter(context, R.layout.checked_list_item, options), checkedItem) { dialog, which ->
-                        val selectedMode = when (which) {
-                            0 -> ThemeMode.LIGHT
-                            1 -> ThemeMode.DARK
-                            2 -> ThemeMode.FOLLOW_SYSTEM
-                            else -> ThemeMode.FOLLOW_SYSTEM
-                        }
-                        setThemeMode(context, selectedMode)
-                        dialog.dismiss()
-                    }
-                    .setNegativeButton(R.string.cancel, null)
-
-                val dialog = builder.create()
-                dialog.show()
-
-                val window = dialog.window
-                window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            }
-
-            private fun getCurrentThemeMode(context: Context): String {
-                val sharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
-            }
-
-            private fun setThemeMode(context: Context, themeMode: String) {
-                val sharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                with(sharedPreferences.edit()) {
-                    putString("theme_mode", themeMode)
-                    apply()
-                }
-                AppCompatDelegate.setDefaultNightMode(
-                    when (themeMode) {
-                        ThemeMode.LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
-                        ThemeMode.DARK -> AppCompatDelegate.MODE_NIGHT_YES
-                        else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-                    }
-                )
-            }
 
             fun languageChanger(context: Context) {
                 val options = arrayOf(

@@ -17,13 +17,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMemberCount
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
@@ -31,6 +32,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
+import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
@@ -38,7 +40,18 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
+    
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
+    
+    @Inject
+    lateinit var syncManager: SyncManager
+
+    @Inject
+    lateinit var uploadManager: UploadManager
+    
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
     private var directTeamName: String? = null
     private var directTeamType: String? = null
@@ -66,7 +79,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         val teamId = requireArguments().getString("id" ) ?: ""
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
         val user = UserProfileDbHandler(requireContext()).userModel
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = databaseService.realmInstance
 
         if (shouldQueryRealm(teamId)) {
             if (teamId.isNotEmpty()) {
@@ -104,7 +117,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     private fun startSyncManager() {
-        SyncManager.instance?.start(object : SyncListener {
+        syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
@@ -148,16 +161,19 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     private fun setupTeamDetails(isMyTeam: Boolean, user: RealmUserModel?) {
-        fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, isMyTeam, this)
-        TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
-            tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
-        }.attach()
+        fragmentTeamDetailBinding.root.post {
+            if (isAdded && !requireActivity().isFinishing) {
+                setupViewPager(isMyTeam)
+            }
+        }
 
         val pageOrdinal = arguments?.getInt("navigateToPage", -1) ?: -1
-        if (pageOrdinal >= 0 &&
-            pageOrdinal < (fragmentTeamDetailBinding.viewPager2.adapter?.itemCount ?: 0)
-        ) {
-            fragmentTeamDetailBinding.viewPager2.currentItem = pageOrdinal
+        if (pageOrdinal >= 0) {
+            fragmentTeamDetailBinding.root.post {
+                if (pageOrdinal < (fragmentTeamDetailBinding.viewPager2.adapter?.itemCount ?: 0)) {
+                    fragmentTeamDetailBinding.viewPager2.currentItem = pageOrdinal
+                }
+            }
         }
 
         fragmentTeamDetailBinding.title.text = getEffectiveTeamName()
@@ -172,6 +188,13 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         if(getJoinedMemberCount(team!!._id.toString(), mRealm) <= 1 && isMyTeam){
             fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
         }
+    }
+
+    private fun setupViewPager(isMyTeam: Boolean) {
+        fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, isMyTeam, this)
+        TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
+            tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
+        }.attach()
     }
 
     private fun setupNonMyTeamButtons(user: RealmUserModel?) {
@@ -197,7 +220,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                     RealmMyTeam.requestToJoin(currentTeam._id!!, user, mRealm, team?.teamType)
                     fragmentTeamDetailBinding.btnLeave.text = getString(R.string.requested)
                     fragmentTeamDetailBinding.btnLeave.isEnabled = false
-                    syncTeamActivities(requireContext())
+                    syncTeamActivities(requireContext(), uploadManager)
                 }
             }
         } else {
@@ -294,7 +317,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         val teamType = getEffectiveTeamType()
 
         CoroutineScope(Dispatchers.IO).launch {
-            val realm = DatabaseService(requireActivity()).realmInstance
+            val realm = databaseService.realmInstance
 
             realm.executeTransaction { r ->
                 val log = r.createObject(RealmTeamLog::class.java, "${UUID.randomUUID()}")

@@ -8,6 +8,8 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import io.realm.Case
@@ -16,7 +18,6 @@ import io.realm.Sort
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.databinding.FragmentNewsBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
@@ -29,16 +30,21 @@ import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 
+@AndroidEntryPoint
 class NewsFragment : BaseNewsFragment() {
     private lateinit var fragmentNewsBinding: FragmentNewsBinding
     var user: RealmUserModel? = null
+    
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     private var updatedNewsList: RealmResults<RealmNews>? = null
     private var filteredNewsList: List<RealmNews?> = listOf()
+    private val gson = Gson()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentNewsBinding = FragmentNewsBinding.inflate(inflater, container, false)
         llImage = fragmentNewsBinding.llImages
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
         setupUI(fragmentNewsBinding.newsFragmentParentLayout, requireActivity())
         if (user?.id?.startsWith("guest") == true) {
@@ -81,7 +87,7 @@ class NewsFragment : BaseNewsFragment() {
             }
 
             if (!news.viewIn.isNullOrEmpty()) {
-                val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
+                val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
                 for (e in ar) {
                     val ob = e.asJsonObject
                     var userId = "${user?.planetCode}@${user?.parentCode}"
@@ -140,7 +146,7 @@ class NewsFragment : BaseNewsFragment() {
                 continue
             }
             if (!TextUtils.isEmpty(news.viewIn)) {
-                val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
+                val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
                 for (e in ar) {
                     val ob = e.asJsonObject
                     var userId = "${user?.planetCode}@${user?.parentCode}"
@@ -157,10 +163,12 @@ class NewsFragment : BaseNewsFragment() {
     }
 
     override fun setData(list: List<RealmNews?>?) {
-        if (isAdded) {
+        if (!isAdded || list == null) return
+
+        if (fragmentNewsBinding.rvNews.adapter == null) {
             changeLayoutManager(resources.configuration.orientation, fragmentNewsBinding.rvNews)
             val resourceIds: MutableList<String> = ArrayList()
-            list?.forEach { news ->
+            list.forEach { news ->
                 if ((news?.imagesArray?.size() ?: 0) > 0) {
                     val ob = news?.imagesArray?.get(0)?.asJsonObject
                     val resourceId = getString("resourceId", ob?.asJsonObject)
@@ -169,27 +177,28 @@ class NewsFragment : BaseNewsFragment() {
                     }
                 }
             }
-            val urls = ArrayList<String>()
-            val stringArray: Array<String?> = resourceIds.toTypedArray()
             val lib: List<RealmMyLibrary?> = mRealm.where(RealmMyLibrary::class.java)
-                .`in`("_id", stringArray)
+                .`in`("_id", resourceIds.toTypedArray())
                 .findAll()
-            getUrlsAndStartDownload(lib, urls)
-            val updatedListAsMutable: MutableList<RealmNews?> = list?.toMutableList() ?: mutableListOf()
+            getUrlsAndStartDownload(lib, ArrayList<String>())
+            val updatedListAsMutable: MutableList<RealmNews?> = list.toMutableList()
             val sortedList = updatedListAsMutable.sortedWith(compareByDescending { news ->
                 getSortDate(news)
             })
-            adapterNews = activity?.let { AdapterNews(it, sortedList.toMutableList(), user, null) }
+            adapterNews = AdapterNews(requireActivity(), sortedList.toMutableList(), user, null, "", null, userProfileDbHandler)
+
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
             adapterNews?.setListener(this)
             adapterNews?.registerAdapterDataObserver(observer)
+
             fragmentNewsBinding.rvNews.adapter = adapterNews
-            adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount, "news") }
-            fragmentNewsBinding.llAddNews.visibility = View.GONE
-            fragmentNewsBinding.btnNewVoice.text = getString(R.string.new_voice)
-            adapterNews?.notifyDataSetChanged()
+        } else {
+            (fragmentNewsBinding.rvNews.adapter as? AdapterNews)?.updateList(list)
         }
+        adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount, "news") }
+        fragmentNewsBinding.llAddNews.visibility = View.GONE
+        fragmentNewsBinding.btnNewVoice.text = getString(R.string.new_voice)
     }
 
     override fun onNewsItemClick(news: RealmNews?) {
@@ -238,7 +247,7 @@ class NewsFragment : BaseNewsFragment() {
         if (news == null) return 0
         try {
             if (!news.viewIn.isNullOrEmpty()) {
-                val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
+                val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
                 for (elem in ar) {
                     val obj = elem.asJsonObject
                     if (obj.has("section") && obj.get("section").asString.equals("community", true) && obj.has("sharedDate")) {
