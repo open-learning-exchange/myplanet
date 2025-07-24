@@ -39,7 +39,8 @@ import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
-import org.ole.planet.myplanet.callback.SyncListener
+import androidx.activity.viewModels
+import org.ole.planet.myplanet.model.SyncViewModel
 import org.ole.planet.myplanet.databinding.*
 import org.ole.planet.myplanet.datamanager.*
 import org.ole.planet.myplanet.datamanager.ApiClient.client
@@ -67,7 +68,7 @@ import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
 
 @AndroidEntryPoint
-abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
+abstract class SyncActivity : ProcessUserDataActivity(), CheckVersionCallback,
     OnUserSelectedListener, ConfigurationIdListener {
     private lateinit var syncDate: TextView
     lateinit var lblLastSyncDate: TextView
@@ -116,6 +117,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     
     @Inject
     lateinit var syncManager: SyncManager
+    private val syncViewModel: SyncViewModel by viewModels()
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -128,6 +130,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         profileDbHandler = UserProfileDbHandler(this)
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
         processedUrl = Utilities.getUrl()
+        observeSyncState()
     }
 
     override fun onConfigurationIdReceived(id: String, code: String, url: String, defaultUrl: String, isAlternativeUrl: Boolean, callerActivity: String) {
@@ -365,7 +368,20 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun startSync(type: String) {
-        syncManager.start(this@SyncActivity, type)
+        syncViewModel.startSync(type)
+    }
+
+    private fun observeSyncState() {
+        lifecycleScope.launch {
+            syncViewModel.syncState.collect { state ->
+                when (state) {
+                    SyncViewModel.SyncState.Syncing -> onSyncStarted()
+                    SyncViewModel.SyncState.Success -> onSyncComplete()
+                    is SyncViewModel.SyncState.Failed -> onSyncFailed(state.message)
+                    else -> {}
+                }
+            }
+        }
     }
 
     private fun saveConfigAndContinue(
@@ -413,13 +429,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         return if (isUrlValid(url)) setUrlParts(url, pin) else ""
     }
 
-    override fun onSyncStarted() {
+    private fun onSyncStarted() {
         customProgressDialog.setText(getString(R.string.syncing_data_please_wait))
         customProgressDialog.show()
         isProgressDialogShowing = true
     }
 
-    override fun onSyncFailed(msg: String?) {
+    private fun onSyncFailed(msg: String?) {
         if (isProgressDialogShowing) {
             customProgressDialog.dismiss()
         }
@@ -435,7 +451,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
     }
 
-    override fun onSyncComplete() {
+    private fun onSyncComplete() {
         val activityContext = this@SyncActivity
         lifecycleScope.launch(Dispatchers.IO) {
             try {
