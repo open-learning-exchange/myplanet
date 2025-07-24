@@ -394,4 +394,11 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         val text = "${compoundButton.text}".trim { it <= ' ' }
         mapConditions?.set(text, b)
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (this::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
+    }
 }
