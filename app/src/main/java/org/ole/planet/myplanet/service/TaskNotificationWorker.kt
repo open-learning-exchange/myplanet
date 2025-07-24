@@ -1,16 +1,16 @@
 package org.ole.planet.myplanet.service
 
 import android.content.Context
+import androidx.hilt.work.HiltWorker
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import dagger.hilt.android.work.HiltWorker
 import java.util.Calendar
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.NotificationUtil.create
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
