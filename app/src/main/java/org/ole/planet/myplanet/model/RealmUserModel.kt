@@ -68,8 +68,8 @@ open class RealmUserModel : RealmObject() {
         if (_id?.isEmpty() == true) {
             jsonObject.addProperty("password", password)
             jsonObject.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-            jsonObject.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(context))
-            jsonObject.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+            jsonObject.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(Utilities.context))
+            jsonObject.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(Utilities.context))
         } else {
             jsonObject.addProperty("derived_key", derived_key)
             jsonObject.addProperty("salt", salt)
@@ -119,7 +119,7 @@ open class RealmUserModel : RealmObject() {
         return try {
             val inputStream: InputStream? = if (imagePath.startsWith("content://")) {
                 val uri = imagePath.toUri()
-                context.contentResolver.openInputStream(uri)
+                Utilities.context.contentResolver.openInputStream(uri)
             } else {
                 File(imagePath).inputStream()
             }
@@ -435,9 +435,9 @@ open class RealmUserModel : RealmObject() {
                 }
             }, {
                 onSuccess.invoke()
-                Utilities.toast(context, "User details updated successfully")
+                Utilities.toast(Utilities.context, "User details updated successfully")
             }) {
-                Utilities.toast(context, "User details update failed")
+                Utilities.toast(Utilities.context, "User details update failed")
             }
         }
 

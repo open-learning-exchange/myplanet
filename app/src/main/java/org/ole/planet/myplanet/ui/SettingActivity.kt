@@ -170,8 +170,8 @@ class SettingActivity : AppCompatActivity() {
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                             CoroutineScope(Dispatchers.Main).launch {
                                 clearRealmDb()
-                                clearSharedPref()
-                                restartApp()
+                                clearSharedPref(requireActivity())
+                                restartApp(requireActivity())
                             }
                         }.setNegativeButton(R.string.no, null).show()
                     false

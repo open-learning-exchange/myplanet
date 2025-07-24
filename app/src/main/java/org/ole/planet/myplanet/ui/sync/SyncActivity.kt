@@ -181,10 +181,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
                         clearRealmDb()
                         prefData.setManualConfig(config)
-                        clearSharedPref()
+                        clearSharedPref(this@SyncActivity)
 
                         delay(500)
-                        restartApp()
+                        restartApp(this@SyncActivity)
                     } catch (e: Exception) {
                         e.printStackTrace()
                         customProgressDialog.dismiss()
@@ -821,10 +821,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
         }
 
-        fun clearSharedPref() {
-            val settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        fun clearSharedPref(context: Context) {
+            val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val editor = settings.edit()
-            val keysToKeep = setOf(SharedPrefManager(this@SyncActivity).firstLaunch, SharedPrefManager(this@SyncActivity).manualConfig )
+            val keysToKeep = setOf(SharedPrefManager(context).firstLaunch, SharedPrefManager(context).manualConfig )
             val tempStorage = HashMap<String, Boolean>()
             for (key in keysToKeep) {
                 tempStorage[key] = settings.getBoolean(key, false)
@@ -835,14 +835,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
             editor.commit()
 
-            val preferences = PreferenceManager.getDefaultSharedPreferences(this@SyncActivity)
+            val preferences = PreferenceManager.getDefaultSharedPreferences(context)
             preferences.edit { clear() }
         }
 
-        fun restartApp() {
-            val intent = packageManager.getLaunchIntentForPackage(packageName)
+        fun restartApp(context: Context) {
+            val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
             val mainIntent = Intent.makeRestartActivityTask(intent?.component)
-            startActivity(mainIntent)
+            context.startActivity(mainIntent)
             Runtime.getRuntime().exit(0)
         }
     }

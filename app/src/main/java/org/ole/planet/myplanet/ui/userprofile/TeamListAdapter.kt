@@ -37,7 +37,7 @@ class TeamListAdapter(private var membersList: MutableList<User>, val context: C
         notifyDataSetChanged()
     }
 
-    class ViewHolder(private val binding: UserListItemBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class ViewHolder(private val binding: UserListItemBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bindView(account: User) {
             if (account.fullName?.isEmpty() == true || account.fullName == " ") {
                 binding.userNameTextView.text = account.name

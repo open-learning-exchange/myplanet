@@ -33,10 +33,10 @@ object CameraUtils {
 
     @JvmStatic
     fun capturePhoto(callback: ImageCaptureCallback) {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(Utilities.context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             return
         }
-        openCamera(context)
+        openCamera(Utilities.context)
         imageReader = ImageReader.newInstance(IMAGE_WIDTH, IMAGE_HEIGHT, ImageFormat.JPEG, 1)
         imageReader?.setOnImageAvailableListener({ reader ->
             val image = reader.acquireLatestImage()
@@ -60,7 +60,7 @@ object CameraUtils {
         } catch (e: CameraAccessException) {
             when (e.reason) {
                 CameraAccessException.CAMERA_DISCONNECTED -> {
-                    reopenCamera(context)
+                    reopenCamera(Utilities.context)
                 }
             }
         }

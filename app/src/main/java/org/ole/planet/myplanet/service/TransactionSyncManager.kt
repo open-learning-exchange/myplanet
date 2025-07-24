@@ -28,6 +28,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Response
 
 object TransactionSyncManager {
+    private val context: Context
+        get() = Utilities.context
     fun authenticate(): Boolean {
         val apiInterface = client?.create(ApiInterface::class.java)
         try {

@@ -215,7 +215,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         anrWatchdog = ANRWatchdog(timeout = 5000L, listener = object : ANRWatchdog.ANRListener {
             override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
                 applicationScope.launch {
-                    createLog("anr", "ANR detected! Duration: ${duration}ms\n $message")
+                    createLog(this@MainApplication, "anr", "ANR detected! Duration: ${duration}ms\n $message")
                 }
             }
         })
@@ -342,9 +342,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         if (isFirstLaunch) {
             isFirstLaunch = false
         } else {
-            applicationScope.launch {
-                createLog("foreground", "")
-            }
+                applicationScope.launch {
+                    createLog(this@MainApplication, "foreground", "")
+                }
         }
     }
 
@@ -352,7 +352,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     private fun onAppStarted() {
         applicationScope.launch {
-            createLog("new login", "")
+            createLog(this@MainApplication, "new login", "")
         }
     }
 

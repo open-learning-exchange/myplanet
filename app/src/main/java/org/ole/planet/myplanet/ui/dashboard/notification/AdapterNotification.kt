@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.databinding.RowNotificationsBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
+import io.realm.Realm
 
 class AdapterNotification(
     var notificationList: List<RealmNotification>,
@@ -70,7 +71,7 @@ class AdapterNotification(
                     if (matcher.find()) {
                         val taskTitle = notification.message?.substring(0, matcher.start())?.trim() ?: ""
                         val dateValue = notification.message?.substring(matcher.start())?.trim() ?: ""
-                        return formatTaskNotification(taskTitle, dateValue)
+                        return formatTaskNotification(taskTitle, dateValue, context)
                     } else {
                         "INVALID"
                     }
@@ -108,7 +109,7 @@ class AdapterNotification(
             }
         }
 
-        private fun formatTaskNotification(taskTitle: String, dateValue: String): String {
+        private fun formatTaskNotification(taskTitle: String, dateValue: String, context: Context): String {
             val taskObj = realm.where(RealmTeamTask::class.java)
                 .equalTo("title", taskTitle)
                 .findFirst()

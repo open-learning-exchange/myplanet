@@ -16,8 +16,11 @@ import java.io.*
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID
+import org.ole.planet.myplanet.utilities.Utilities
 
 object FileUtils {
+    private val context: Context
+        get() = Utilities.context
     @JvmStatic
     @Throws(IOException::class)
     fun fullyReadFileToBytes(f: File): ByteArray = f.readBytes()

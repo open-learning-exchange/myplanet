@@ -17,8 +17,11 @@ import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.*
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.Utilities
 
 object NetworkUtils {
+    private val context: Context
+        get() = Utilities.context
     lateinit var coroutineScope: CoroutineScope
 
     fun initialize(coroutineScope: CoroutineScope) {

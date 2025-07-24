@@ -38,7 +38,7 @@ private inline fun <T> Iterable<T>.processInBatches(action: (T) -> Unit) {
 
 @Singleton
 class UploadManager @Inject constructor(
-    @ApplicationContext private val context: Context,
+    @ApplicationContext val context: Context,
     private val databaseService: DatabaseService,
     @AppPreferences private val pref: SharedPreferences
 ) : FileUploadService() {
@@ -667,7 +667,7 @@ class UploadManager @Inject constructor(
             val logs: RealmResults<RealmSearchActivity> = realm.where(RealmSearchActivity::class.java).isEmpty("_rev").findAll()
             logs.processInBatches { act ->
                     try {
-                        val o = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/search_activities", act.serialize())?.execute()?.body()
+                        val o = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/search_activities", act.serialize(context))?.execute()?.body()
                         if (o != null) {
                             act._rev = getString("rev", o)
                         }

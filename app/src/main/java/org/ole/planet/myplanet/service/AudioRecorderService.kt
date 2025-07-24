@@ -20,7 +20,6 @@ import androidx.core.content.ContextCompat
 import java.io.File
 import java.util.UUID
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -29,6 +28,7 @@ class AudioRecorderService {
     private var myAudioRecorder: MediaRecorder? = null
     private var audioRecordListener: AudioRecordListener? = null
     private var caller: ActivityResultCaller? = null
+    private var callerContext: Context? = null
     private lateinit var permissionLauncher: ActivityResultLauncher<String>
 
     fun forceStop() {
@@ -49,7 +49,7 @@ class AudioRecorderService {
     fun startRecording() {
         outputFile = createAudioFile()
         myAudioRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            MediaRecorder(context)
+            MediaRecorder(Utilities.context)
         } else {
             @Suppress("DEPRECATION")
             MediaRecorder()
@@ -98,7 +98,7 @@ class AudioRecorderService {
                     recorder.release()
                 }
             } catch (e: RuntimeException) {
-                MainApplication.handleUncaughtException(e, applicationContext)
+                MainApplication.handleUncaughtException(e, Utilities.context)
             } finally {
                 myAudioRecorder = null
                 audioRecordListener?.onRecordStopped(outputFile)
@@ -108,6 +108,7 @@ class AudioRecorderService {
 
     fun setCaller(caller: ActivityResultCaller, context: Context){
         this.caller = caller
+        this.callerContext = context
         permissionLauncher =
             caller.registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
                 if (granted){
@@ -135,7 +136,7 @@ class AudioRecorderService {
     }
 
     fun onRecordClicked() {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
+        if (ContextCompat.checkSelfPermission(Utilities.context, Manifest.permission.RECORD_AUDIO)
             == PackageManager.PERMISSION_GRANTED) {
             toggleRecording()
         } else {

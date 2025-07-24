@@ -208,7 +208,7 @@ open class RealmSubmission : RealmObject() {
                 .count().toInt()
 
             val pluralizedString = if (submissionCount == 1) "time" else "times"
-            return "${context.getString(R.string.survey_taken)} $submissionCount $pluralizedString"
+            return "${Utilities.context.getString(R.string.survey_taken)} $submissionCount $pluralizedString"
         }
 
         @JvmStatic
@@ -221,7 +221,7 @@ open class RealmSubmission : RealmObject() {
                 .count().toInt()
 
             val pluralizedString = if (submissionCount == 1) "time" else "times"
-            return "${context.getString(R.string.survey_taken)} $submissionCount $pluralizedString"
+            return "${Utilities.context.getString(R.string.survey_taken)} $submissionCount $pluralizedString"
         }
 
         @JvmStatic
