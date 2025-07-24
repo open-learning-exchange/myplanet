@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.data.chat
 
+import io.realm.Sort
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import io.realm.Sort
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmChatHistory
 

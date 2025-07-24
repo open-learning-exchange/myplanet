@@ -1,9 +1,9 @@
 package org.ole.planet.myplanet.data.team
 
 import android.content.SharedPreferences
+import io.realm.Case
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import io.realm.Case
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getMyTeamsByUserId
