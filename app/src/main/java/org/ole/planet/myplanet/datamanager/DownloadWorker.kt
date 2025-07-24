@@ -7,7 +7,9 @@ import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import dagger.hilt.android.EntryPointAccessors
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
+import dagger.hilt.android.work.HiltWorker
 import java.io.BufferedInputStream
 import java.io.FileOutputStream
 import kotlinx.coroutines.Dispatchers
@@ -15,22 +17,20 @@ import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getSDPathFromUrl
 import org.ole.planet.myplanet.utilities.Utilities
 
-class DownloadWorker(val context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
+@HiltWorker
+class DownloadWorker @AssistedInject constructor(
+    @Assisted val context: Context,
+    @Assisted workerParams: WorkerParameters,
+    private val apiInterface: ApiInterface
+) : CoroutineWorker(context, workerParams) {
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private val preferences = context.getSharedPreferences(MyDownloadService.PREFS_NAME, Context.MODE_PRIVATE)
-    private val apiInterface: ApiInterface by lazy {
-        EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            ApiInterfaceEntryPoint::class.java
-        ).apiInterface()
-    }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {

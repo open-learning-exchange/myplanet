@@ -8,8 +8,8 @@ import androidx.core.content.edit
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
-import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
+import dagger.hilt.android.work.HiltWorker
 import java.util.Date
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utilities.Utilities
 
+@HiltWorker
 class AutoSyncWorker @AssistedInject constructor(
     @Assisted private val context: Context,
     @Assisted workerParams: WorkerParameters,
@@ -32,11 +33,6 @@ class AutoSyncWorker @AssistedInject constructor(
     private val uploadManager: UploadManager,
     private val uploadToShelfService: UploadToShelfService
 ) : Worker(context, workerParams), SyncListener, CheckVersionCallback, SuccessListener {
-    
-    @AssistedFactory
-    interface Factory {
-        fun create(context: Context, workerParams: WorkerParameters): AutoSyncWorker
-    }
     
     private lateinit var preferences: SharedPreferences
     override fun doWork(): Result {
