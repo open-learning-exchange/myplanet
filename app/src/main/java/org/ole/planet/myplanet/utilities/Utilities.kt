@@ -25,7 +25,6 @@ import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.bumptech.glide.Glide
 import fisk.chipcloud.ChipCloudConfig
-import java.lang.ref.WeakReference
 import java.math.BigInteger
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DownloadWorker
@@ -35,15 +34,14 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.UrlUtils
 
 object Utilities {
-    private var contextRef: WeakReference<Context>? = null
+    private var ctx: Context? = null
 
-    fun setContext(ctx: Context) {
-        contextRef = WeakReference(ctx.applicationContext)
+    fun setContext(context: Context) {
+        ctx = context.applicationContext
     }
 
     val context: Context
-        get() = contextRef?.get()
-            ?: throw IllegalStateException("Context not set")
+        get() = ctx ?: throw IllegalStateException("Context not set")
 
     val SD_PATH: String by lazy {
         context.getExternalFilesDir(null)?.let { "$it/ole/" } ?: ""

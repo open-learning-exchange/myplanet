@@ -179,6 +179,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onCreate() {
         super.onCreate()
+        Utilities.setContext(this)
         initApp()
         setupPreferences()
         setupStrictMode()
@@ -220,8 +221,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     private fun scheduleWorkersOnStart() {
-        if (preferences?.getBoolean("autoSync", false) == true && preferences?.contains("autoSyncInterval") == true) {
-            val syncInterval = preferences?.getInt("autoSyncInterval", 60 * 60)
+        if (preferences.getBoolean("autoSync", false) && preferences.contains("autoSyncInterval")) {
+            val syncInterval = preferences.getInt("autoSyncInterval", 60 * 60)
             scheduleAutoSyncWork(syncInterval)
         } else {
             cancelAutoSyncWork()
@@ -249,7 +250,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     private fun observeNetworkForDownloads() {
         isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
-                val serverUrl = preferences?.getString("serverURL", "")
+                val serverUrl = preferences.getString("serverURL", "")
                 if (!serverUrl.isNullOrEmpty()) {
                     applicationScope.launch {
                         val canReachServer = withContext(Dispatchers.IO) {
