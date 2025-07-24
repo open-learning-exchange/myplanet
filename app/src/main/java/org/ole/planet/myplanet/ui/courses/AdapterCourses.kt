@@ -11,6 +11,7 @@ import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.AsyncDifferConfig
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -36,12 +37,15 @@ import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
+
 class AdapterCourses(
     private val context: Context,
     currentList: List<RealmMyCourse>,
     private val map: HashMap<String?, JsonObject>,
     private val userProfileDbHandler: UserProfileDbHandler
-) : ListAdapter<RealmMyCourse, RecyclerView.ViewHolder>(CourseDiffCallback()) {
+) : ListAdapter<RealmMyCourse, RecyclerView.ViewHolder>(
+    AsyncDifferConfig.Builder(CourseDiffCallback()).setBackgroundThreadExecutor { it.run() }.build()
+) {
     private val selectedItems: MutableList<RealmMyCourse> = ArrayList()
     private var listener: OnCourseItemSelected? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null

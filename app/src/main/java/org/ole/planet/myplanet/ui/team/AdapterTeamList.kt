@@ -12,6 +12,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.toColorInt
 import androidx.fragment.app.FragmentManager
+import androidx.recyclerview.widget.AsyncDifferConfig
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -28,13 +29,16 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
+
 class AdapterTeamList(
     private val context: Context,
     private val list: List<RealmMyTeam>,
     private val mRealm: Realm,
     private val fragmentManager: FragmentManager,
     private val uploadManager: UploadManager
-) : ListAdapter<RealmMyTeam, AdapterTeamList.ViewHolderTeam>(TeamDiffCallback()) {
+) : ListAdapter<RealmMyTeam, AdapterTeamList.ViewHolderTeam>(
+    AsyncDifferConfig.Builder(TeamDiffCallback()).setBackgroundThreadExecutor { it.run() }.build()
+) {
     private lateinit var itemTeamListBinding: ItemTeamListBinding
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null

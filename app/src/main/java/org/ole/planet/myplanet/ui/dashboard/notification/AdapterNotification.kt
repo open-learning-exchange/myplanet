@@ -5,6 +5,7 @@ import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.AsyncDifferConfig
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -21,7 +22,9 @@ class AdapterNotification(
     notifications: List<RealmNotification>,
     private val onMarkAsReadClick: (Int) -> Unit,
     private val onNotificationClick: (RealmNotification) -> Unit
-) : ListAdapter<RealmNotification, AdapterNotification.ViewHolderNotifications>(NotificationDiffCallback()) {
+) : ListAdapter<RealmNotification, AdapterNotification.ViewHolderNotifications>(
+    AsyncDifferConfig.Builder(NotificationDiffCallback()).setBackgroundThreadExecutor { it.run() }.build()
+) {
 
     init {
         submitList(notifications)

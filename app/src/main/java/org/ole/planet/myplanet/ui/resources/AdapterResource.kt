@@ -7,6 +7,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
+import androidx.recyclerview.widget.AsyncDifferConfig
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -36,7 +37,9 @@ class AdapterResource(
     libraryList: List<RealmMyLibrary>,
     private var ratingMap: HashMap<String?, JsonObject>,
     private val realm: Realm
-) : ListAdapter<RealmMyLibrary, RecyclerView.ViewHolder>(ResourceDiffCallback()) {
+) : ListAdapter<RealmMyLibrary, RecyclerView.ViewHolder>(
+    AsyncDifferConfig.Builder(ResourceDiffCallback()).setBackgroundThreadExecutor { it.run() }.build()
+) {
     private val selectedItems: MutableList<RealmMyLibrary> = ArrayList()
     private var listener: OnLibraryItemSelected? = null
     private val config: ChipCloudConfig = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
