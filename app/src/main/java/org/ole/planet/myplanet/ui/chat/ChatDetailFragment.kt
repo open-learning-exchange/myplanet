@@ -40,8 +40,8 @@ import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatModel
 import org.ole.planet.myplanet.model.ChatRequestModel
@@ -487,7 +487,9 @@ class ChatDetailFragment : Fragment() {
         mRealm.executeTransaction { realm ->
             RealmChatHistory.insert(realm, jsonObject)
         }
-        (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
+        if (isAdded) {
+            (activity as? DashboardActivity)?.refreshChatHistoryList()
+        }
     }
 
     private fun buildChatHistoryObject(query: String, chatResponse: String, responseBody: ChatModel): JsonObject =
