@@ -5,7 +5,7 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 
@@ -75,7 +75,7 @@ open class RealmRating : RealmObject() {
             ob.addProperty("createdOn", realmRating.createdOn)
             ob.addProperty("parentCode", realmRating.parentCode)
             ob.addProperty("planetCode", realmRating.planetCode)
-            ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+            ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(Utilities.context))
             ob.addProperty("deviceName", NetworkUtils.getDeviceName())
             ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             return ob

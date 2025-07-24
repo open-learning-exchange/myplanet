@@ -131,7 +131,7 @@ class MyDownloadService : Service() {
 
                     val url = matchResult?.groupValues?.get(1)
                     if (response.code() == 404) {
-                        createLog("File Not Found", "$url")
+                        createLog(applicationContext, "File Not Found", "$url")
                     }
                 }
             }

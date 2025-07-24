@@ -97,7 +97,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         fragmentCourseStepBinding.tvTitle.text = step.stepTitle
         val markdownContentWithLocalPaths = prependBaseUrlToImages(
             step.description,
-            "file://${MainApplication.context.getExternalFilesDir(null)}/ole/",
+            "file://${requireContext().getExternalFilesDir(null)}/ole/",
             600,
             350
         )

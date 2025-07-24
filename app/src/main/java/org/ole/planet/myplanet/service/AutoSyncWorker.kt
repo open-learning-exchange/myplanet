@@ -74,7 +74,7 @@ class AutoSyncWorker @AssistedInject constructor(
         if (!blockSync) {
             syncManager.start(this, "upload")
             uploadToShelfService.uploadUserData {
-                Service(MainApplication.context).healthAccess {
+                Service(context).healthAccess {
                     uploadToShelfService.uploadHealth()
                 }
             }
@@ -101,7 +101,7 @@ class AutoSyncWorker @AssistedInject constructor(
     }
 
     override fun onSuccess(success: String?) {
-        val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         settings.edit { putLong("lastUsageUploaded", Date().time) }
     }
 

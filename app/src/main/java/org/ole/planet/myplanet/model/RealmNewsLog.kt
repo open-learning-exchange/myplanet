@@ -18,7 +18,7 @@ open class RealmNewsLog : RealmObject() {
 
     companion object {
         @JvmStatic
-        fun serialize(log: RealmNewsLog): JsonObject {
+        fun serialize(log: RealmNewsLog, context: Context): JsonObject {
             val ob = JsonObject()
             ob.addProperty("user", log.userId)
             ob.addProperty("type", log.type)
@@ -26,7 +26,7 @@ open class RealmNewsLog : RealmObject() {
             ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             ob.addProperty("deviceName", NetworkUtils.getDeviceName())
             ob.addProperty(
-                "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
+                "customDeviceName", NetworkUtils.getCustomDeviceName(context)
             )
             return ob
         }

@@ -240,7 +240,7 @@ class Service @Inject constructor(
             }
 
             override fun notAvailable() {
-                val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 if (isUserExists(realm, obj["name"].asString)) {
                     callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                     return
@@ -254,7 +254,7 @@ class Service @Inject constructor(
                     model.iv = iv
                 }
                 realm.commitTransaction()
-                Utilities.toast(MainApplication.context, context.getString(R.string.not_connect_to_planet_created_user_offline))
+                Utilities.toast(context, context.getString(R.string.not_connect_to_planet_created_user_offline))
                 callback.onSuccess(context.getString(R.string.not_connect_to_planet_created_user_offline))
                 securityCallback?.onSecurityDataUpdated()
             }
@@ -270,14 +270,14 @@ class Service @Inject constructor(
     }
 
     private fun saveUserToDb(realm: Realm, id: String, obj: JsonObject, callback: CreateUserCallback, securityCallback: SecurityDataCallback? = null) {
-        val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         realm.executeTransactionAsync({ realm1: Realm? ->
             try {
                 val res = retrofitInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/$id")?.execute()
                 if (res?.body() != null) {
                     val model = populateUsersTable(res.body(), realm1, settings)
                     if (model != null) {
-                        UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
+                        UploadToShelfService(context).saveKeyIv(retrofitInterface, model, obj)
                     }
                 }
             } catch (e: IOException) {

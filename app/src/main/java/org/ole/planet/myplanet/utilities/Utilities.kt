@@ -27,7 +27,6 @@ import com.bumptech.glide.Glide
 import fisk.chipcloud.ChipCloudConfig
 import java.lang.ref.WeakReference
 import java.math.BigInteger
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DownloadWorker
 import org.ole.planet.myplanet.datamanager.MyDownloadService
@@ -38,12 +37,18 @@ import org.ole.planet.myplanet.utilities.UrlUtils
 object Utilities {
     private var contextRef: WeakReference<Context>? = null
 
+    private val appContext: Context
+        get() = contextRef?.get() ?: throw IllegalStateException("Context not set")
+
+    val context: Context
+        get() = appContext
+
     fun setContext(ctx: Context) {
         contextRef = WeakReference(ctx.applicationContext)
     }
 
     val SD_PATH: String by lazy {
-        context.getExternalFilesDir(null)?.let { "$it/ole/" } ?: ""
+        appContext.getExternalFilesDir(null)?.let { "$it/ole/" } ?: ""
     }
 
     @JvmStatic
@@ -201,18 +206,18 @@ object Utilities {
 
     val header: String
         get() {
-            val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val settings = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             return "Basic ${Base64.encodeToString(("${settings.getString("url_user", "")}:${ settings.getString("url_pwd", "") }").toByteArray(), Base64.NO_WRAP)}"
         }
 
     fun getUrl(): String {
-        val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val settings = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return UrlUtils.dbUrl(settings)
     }
 
     val hostUrl: String
         get() {
-            val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val settings = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             var scheme = settings.getString("url_Scheme", "")
             var hostIp = settings.getString("url_Host", "")
             val isAlternativeUrl = settings.getBoolean("isAlternativeUrl", false)
@@ -256,7 +261,7 @@ object Utilities {
     }
 
     fun getApkUpdateUrl(path: String?): String {
-        val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val preferences = appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val url = UrlUtils.baseUrl(preferences)
         return "$url$path"
     }
@@ -271,18 +276,18 @@ object Utilities {
     }
 
     fun openPlayStore() {
-        val appPackageName = context.packageName
+        val appPackageName = appContext.packageName
         val intent = Intent(Intent.ACTION_VIEW, "market://details?id=$appPackageName".toUri()).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         try {
-            context.startActivity(intent)
+            appContext.startActivity(intent)
         } catch (e: android.content.ActivityNotFoundException) {
             val webIntent = Intent(Intent.ACTION_VIEW,
                 "https://play.google.com/store/apps/details?id=$appPackageName".toUri()).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            context.startActivity(webIntent)
+            appContext.startActivity(webIntent)
         }
     }
 }

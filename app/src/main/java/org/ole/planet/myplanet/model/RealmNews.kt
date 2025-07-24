@@ -14,7 +14,7 @@ import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import java.util.Date
 import java.util.UUID
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -304,7 +304,7 @@ open class RealmNews : RealmObject() {
         }
 
         fun saveConcatenatedLinksToPrefs() {
-            val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            val settings: SharedPreferences = Utilities.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val existingJsonLinks = settings.getString("concatenated_links", null)
             val existingConcatenatedLinks = if (existingJsonLinks != null) {
                 gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableList()

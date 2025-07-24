@@ -21,15 +21,15 @@ open class RealmSearchActivity(
     var createdOn: String = "",
     var parentCode: String = ""
 ) : RealmObject() {
-    fun serialize(): JsonObject {
+    fun serialize(context: Context): JsonObject {
         val obj = JsonObject()
         obj.addProperty("text", text)
         obj.addProperty("type", type)
         obj.addProperty("time", time)
         obj.addProperty("user", user)
-        obj.addProperty("androidId", VersionUtils.getAndroidId(MainApplication.context))
+        obj.addProperty("androidId", VersionUtils.getAndroidId(context))
         obj.addProperty(
-            "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
+            "customDeviceName", NetworkUtils.getCustomDeviceName(context)
         )
         obj.addProperty("deviceName", NetworkUtils.getDeviceName())
         obj.addProperty("createdOn", createdOn)
@@ -40,14 +40,14 @@ open class RealmSearchActivity(
 
     companion object {
         @JvmStatic
-        fun insert(log: RealmNewsLog): JsonObject {
+        fun insert(log: RealmNewsLog, context: Context): JsonObject {
             val ob = JsonObject()
             ob.addProperty("user", log.userId)
             ob.addProperty("type", log.type)
             ob.addProperty("time", log.time)
             ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             ob.addProperty("deviceName", NetworkUtils.getDeviceName())
-            ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
+            ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
             return ob
         }
     }

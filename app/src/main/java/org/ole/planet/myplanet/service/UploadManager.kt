@@ -66,7 +66,7 @@ class UploadManager @Inject constructor(
 
             newsLog.processInBatches { news ->
                     try {
-                        val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/myplanet_activities", RealmNewsLog.serialize(news))?.execute()?.body()
+                        val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/myplanet_activities", RealmNewsLog.serialize(news, context))?.execute()?.body()
 
                         if (`object` != null) {
                             news._id = getString("id", `object`)
@@ -82,7 +82,7 @@ class UploadManager @Inject constructor(
 
     fun uploadActivities(listener: SuccessListener?) {
         val apiInterface = client?.create(ApiInterface::class.java)
-        val model = UserProfileDbHandler(MainApplication.context).userModel ?: run {
+        val model = UserProfileDbHandler(context).userModel ?: run {
             listener?.onSuccess("Cannot upload activities: user model is null")
             return
         }
@@ -93,13 +93,13 @@ class UploadManager @Inject constructor(
         }
 
         try {
-            apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/myplanet_activities", MyPlanet.getNormalMyPlanetActivities(MainApplication.context, pref, model))?.enqueue(object : Callback<JsonObject?> {
+            apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/myplanet_activities", MyPlanet.getNormalMyPlanetActivities(context, pref, model))?.enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {}
 
                 override fun onFailure(call: Call<JsonObject?>, t: Throwable) {}
             })
 
-            apiInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/myplanet_activities/${getAndroidId(MainApplication.context)}@${NetworkUtils.getUniqueIdentifier()}")?.enqueue(object : Callback<JsonObject?> {
+            apiInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/myplanet_activities/${getAndroidId(context)}@${NetworkUtils.getUniqueIdentifier()}")?.enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                     var `object` = response.body()
 
@@ -178,7 +178,7 @@ class UploadManager @Inject constructor(
         val object1 = JsonObject()
         `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
         `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
-        `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
+        `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
         `object`.add("privateFor", object1)
         `object`.addProperty("mediaType", "image")
         return `object`
@@ -465,7 +465,7 @@ class UploadManager @Inject constructor(
 
     fun uploadUserActivities(listener: SuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
-        val model = UserProfileDbHandler(MainApplication.context).userModel ?: run {
+        val model = UserProfileDbHandler(context).userModel ?: run {
             listener.onSuccess("Cannot upload user activities: user model is null")
             return
         }

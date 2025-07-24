@@ -98,7 +98,7 @@ class AudioRecorderService {
                     recorder.release()
                 }
             } catch (e: RuntimeException) {
-                MainApplication.handleUncaughtException(e)
+                MainApplication.handleUncaughtException(e, applicationContext)
             } finally {
                 myAudioRecorder = null
                 audioRecordListener?.onRecordStopped(outputFile)

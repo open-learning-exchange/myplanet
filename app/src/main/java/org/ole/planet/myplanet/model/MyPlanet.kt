@@ -36,7 +36,7 @@ class MyPlanet : Serializable {
             val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val planet = Gson().fromJson(preferences.getString("versionDetail", ""), MyPlanet::class.java)
             if (planet != null) postJSON.addProperty("planetVersion", planet.planetVersion)
-            postJSON.addProperty("_id", VersionUtils.getAndroidId(MainApplication.context) + "@" + NetworkUtils.getUniqueIdentifier())
+            postJSON.addProperty("_id", VersionUtils.getAndroidId(context) + "@" + NetworkUtils.getUniqueIdentifier())
             postJSON.addProperty("last_synced", pref.getLong("LastSync", 0))
             postJSON.addProperty("parentCode", model.parentCode)
             postJSON.addProperty("createdOn", model.planetCode)
@@ -57,7 +57,7 @@ class MyPlanet : Serializable {
             postJSON.addProperty("version", VersionUtils.getVersionCode(context))
             postJSON.addProperty("versionName", VersionUtils.getVersionName(context))
             postJSON.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-            postJSON.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
+            postJSON.addProperty("uniqueAndroidId", VersionUtils.getAndroidId(context))
             postJSON.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
             postJSON.addProperty("deviceName", NetworkUtils.getDeviceName())
             postJSON.addProperty("time", Date().time)
@@ -68,11 +68,11 @@ class MyPlanet : Serializable {
         @JvmStatic
         fun getTabletUsages(context: Context): JsonArray {
             val cal = Calendar.getInstance()
-            val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             cal.timeInMillis = settings.getLong("lastUsageUploaded", 0)
             val arr = JsonArray()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
-                val mUsageStatsManager = MainApplication.context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+                val mUsageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
                 val queryUsageStats = mUsageStatsManager.queryUsageStats(UsageStatsManager.INTERVAL_DAILY, cal.timeInMillis, System.currentTimeMillis())
                 for (s in queryUsageStats) {
                     addStats(s, arr, context)
@@ -82,7 +82,7 @@ class MyPlanet : Serializable {
         }
 
         private fun addStats(s: UsageStats, arr: JsonArray, context: Context) {
-            if (s.packageName == MainApplication.context.packageName) {
+            if (s.packageName == context.packageName) {
                 val `object` = JsonObject()
                 `object`.addProperty("lastTimeUsed", if (s.lastTimeUsed > 0) s.lastTimeUsed else 0)
                 `object`.addProperty("firstTimeUsed", if (s.firstTimeStamp > 0) s.lastTimeStamp else 0)

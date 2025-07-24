@@ -34,7 +34,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
@@ -258,7 +257,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         if ((myList?.size ?: 0) < 8) {
                             withContext(Dispatchers.Main) {
                                 customProgressDialog.dismiss()
-                                alertDialogOkay(context.getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
+                                alertDialogOkay(getString(R.string.check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server))
                             }
                             false
                         } else {
@@ -272,8 +271,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         syncFailed = true
                         val protocol = extractProtocol("$processedUrl")
                         val errorMessage = when (protocol) {
-                            context.getString(R.string.http_protocol) -> context.getString(R.string.device_couldn_t_reach_local_server)
-                            context.getString(R.string.https_protocol) -> context.getString(R.string.device_couldn_t_reach_nation_server)
+                            getString(R.string.http_protocol) -> getString(R.string.device_couldn_t_reach_local_server)
+                            getString(R.string.https_protocol) -> getString(R.string.device_couldn_t_reach_nation_server)
                             else -> ""
                         }
                         withContext(Dispatchers.Main) {
@@ -469,7 +468,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     }
 
                     lifecycleScope.launch {
-                        createLog("synced successfully", "")
+                        createLog(this@SyncActivity, "synced successfully", "")
                     }
 
                     lifecycleScope.launch(Dispatchers.IO) {
@@ -564,7 +563,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val storedJsonConcatenatedLinks = settings.getString("concatenated_links", null)
         if (storedJsonConcatenatedLinks != null) {
             val storedConcatenatedLinks: ArrayList<String> = Json.decodeFromString(storedJsonConcatenatedLinks)
-            openDownloadService(context, storedConcatenatedLinks, true)
+            openDownloadService(this, storedConcatenatedLinks, true)
         }
     }
 
@@ -696,12 +695,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
         Service(this).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
-                Service(context).checkVersion(this@SyncActivity, settings)
+                Service(this@SyncActivity).checkVersion(this@SyncActivity, settings)
             }
             override fun notAvailable() {
                 if (!isFinishing) {
                     syncFailed = true
-                    showAlert(context, "Error", getString(R.string.planet_server_not_reachable))
+                    showAlert(this@SyncActivity, "Error", getString(R.string.planet_server_not_reachable))
                 }
             }
         })
@@ -823,9 +822,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
 
         fun clearSharedPref() {
-            val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            val settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val editor = settings.edit()
-            val keysToKeep = setOf(SharedPrefManager(context).firstLaunch, SharedPrefManager(context).manualConfig )
+            val keysToKeep = setOf(SharedPrefManager(this@SyncActivity).firstLaunch, SharedPrefManager(this@SyncActivity).manualConfig )
             val tempStorage = HashMap<String, Boolean>()
             for (key in keysToKeep) {
                 tempStorage[key] = settings.getBoolean(key, false)
@@ -836,14 +835,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
             editor.commit()
 
-            val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+            val preferences = PreferenceManager.getDefaultSharedPreferences(this@SyncActivity)
             preferences.edit { clear() }
         }
 
         fun restartApp() {
-            val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            val intent = packageManager.getLaunchIntentForPackage(packageName)
             val mainIntent = Intent.makeRestartActivityTask(intent?.component)
-            context.startActivity(mainIntent)
+            startActivity(mainIntent)
             Runtime.getRuntime().exit(0)
         }
     }

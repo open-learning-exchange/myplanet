@@ -314,7 +314,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     } else {
                         if (!doubleBackToExitPressedOnce) {
                             doubleBackToExitPressedOnce = true
-                            toast(MainApplication.context, getString(R.string.press_back_again_to_exit))
+                            toast(this@DashboardActivity, getString(R.string.press_back_again_to_exit))
                             Handler(Looper.getMainLooper()).postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
                         } else {
                             val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)

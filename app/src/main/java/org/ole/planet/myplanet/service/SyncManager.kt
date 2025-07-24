@@ -221,7 +221,7 @@ class SyncManager @Inject constructor(
             }
 
             logger.startProcess("admin_sync")
-            ManagerSync.instance?.syncAdmin()
+            ManagerSync.getInstance(context).syncAdmin()
             logger.endProcess("admin_sync")
 
             logger.startProcess("resource_sync")
@@ -414,7 +414,7 @@ class SyncManager @Inject constructor(
             }
 
             logger.startProcess("admin_sync")
-            ManagerSync.instance?.syncAdmin()
+            ManagerSync.getInstance(context).syncAdmin()
             logger.endProcess("admin_sync")
 
             logger.startProcess("on_synced")
@@ -512,7 +512,7 @@ class SyncManager @Inject constructor(
             }
 
             logger.startProcess("admin_sync")
-            ManagerSync.instance?.syncAdmin()
+            ManagerSync.getInstance(context).syncAdmin()
             logger.endProcess("admin_sync")
 
             logger.startProcess("on_synced")
@@ -685,7 +685,7 @@ class SyncManager @Inject constructor(
 
                     skip += rows.size()
                     if (batchCount % 10 == 0) {
-                        val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                        val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                         settings.edit {
                             putLong("ResourceLastSyncTime", System.currentTimeMillis())
                             putInt("ResourceSyncPosition", skip)
@@ -831,7 +831,7 @@ class SyncManager @Inject constructor(
             }
 
             if (skip % (batchSize * 10) == 0) {
-                val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 settings.edit {
                     putLong("ResourceLastSyncTime", System.currentTimeMillis())
                     putInt("ResourceSyncPosition", skip + rows.size())

@@ -12,7 +12,7 @@ import io.realm.annotations.PrimaryKey
 import java.util.Calendar
 import java.util.Date
 import java.util.UUID
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
@@ -226,7 +226,7 @@ open class RealmMyLibrary : RealmObject() {
                 addProperty("createdDate", personal.createdDate)
                 addProperty("androidId", NetworkUtils.getUniqueIdentifier())
                 addProperty("deviceName", NetworkUtils.getDeviceName())
-                addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+                addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(Utilities.context))
             }
         }
 
@@ -257,7 +257,7 @@ open class RealmMyLibrary : RealmObject() {
         fun insertMyLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm) {
             if (doc.entrySet().isEmpty()) return
             val resourceId = JsonUtils.getString("_id", doc)
-            val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val settings = Utilities.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             var resource = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceId).findFirst()
             if (resource == null) {
                 resource = mRealm.createObject(RealmMyLibrary::class.java, resourceId)

@@ -19,7 +19,6 @@ import fisk.chipcloud.ChipCloudConfig
 import io.realm.Realm
 import java.util.Collections
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnCourseItemSelected
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener

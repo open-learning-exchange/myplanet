@@ -7,8 +7,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import java.util.regex.Pattern
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.MainApplication.Companion.mRealm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNotificationsBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -17,6 +15,7 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 
 class AdapterNotification(
     var notificationList: List<RealmNotification>,
+    private val realm: Realm,
     private val onMarkAsReadClick: (Int) -> Unit,
     private val onNotificationClick: (RealmNotification) -> Unit
 ) : RecyclerView.Adapter<AdapterNotification.ViewHolderNotifications>() {
@@ -94,7 +93,7 @@ class AdapterNotification(
                 }
                 "join_request" -> {
                     val teamId = notification.relatedId
-                    val team = mRealm.where(RealmMyTeam::class.java)
+                    val team = realm.where(RealmMyTeam::class.java)
                         .equalTo("_id", teamId)
                         .findFirst()
                     val teamName = team?.name ?: "Unknown Team"
@@ -110,10 +109,10 @@ class AdapterNotification(
         }
 
         private fun formatTaskNotification(taskTitle: String, dateValue: String): String {
-            val taskObj = mRealm.where(RealmTeamTask::class.java)
+            val taskObj = realm.where(RealmTeamTask::class.java)
                 .equalTo("title", taskTitle)
                 .findFirst()
-            val teamName = mRealm.where(RealmMyTeam::class.java)
+            val teamName = realm.where(RealmMyTeam::class.java)
                 .equalTo("_id", taskObj?.teamId)
                 .findFirst()
             val formattedText = if (teamName != null && teamName.name != null) {

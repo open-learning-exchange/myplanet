@@ -73,7 +73,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
-        lateinit var context: Context
         lateinit var mRealm: Realm
         lateinit var service: DatabaseService
         var preferences: SharedPreferences? = null
@@ -82,18 +81,10 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         var showDownload = false
         var isSyncRunning = false
         var listener: TeamPageListener? = null
-        val androidId: String get() {
-            try {
-                return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            return "0"
-        }
         val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         lateinit var defaultPref: SharedPreferences
 
-        fun createLog(type: String, error: String = "") {
+        fun createLog(context: Context, type: String, error: String = "") {
             applicationScope.launch(Dispatchers.IO) {
                 val realm = Realm.getDefaultInstance()
                 val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -128,7 +119,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             }
         }
 
-        fun setThemeMode(themeMode: String) {
+        fun setThemeMode(context: Context, themeMode: String) {
             val sharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             with(sharedPreferences.edit()) {
                 putString("theme_mode", themeMode)
@@ -172,9 +163,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             }
         }
 
-        fun handleUncaughtException(e: Throwable) {
+        fun handleUncaughtException(e: Throwable, context: Context) {
             e.printStackTrace()
-            createLog(RealmApkLog.ERROR_TYPE_CRASH, e.stackTraceToString())
+            createLog(context, RealmApkLog.ERROR_TYPE_CRASH, e.stackTraceToString())
 
             val homeIntent = Intent(Intent.ACTION_MAIN).apply {
                 addCategory(Intent.CATEGORY_HOME)
@@ -203,7 +194,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     private fun initApp() {
-        context = this
         initialize(applicationScope)
         startListenNetworkState()
     }
@@ -245,7 +235,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     private fun registerExceptionHandler() {
         Thread.setDefaultUncaughtExceptionHandler { _: Thread?, e: Throwable ->
-            handleUncaughtException(e)
+            handleUncaughtException(e, this)
         }
     }
 
@@ -318,8 +308,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         applyThemeMode(themeToApply)
     }
 
-    private fun getCurrentThemeMode(): String {
-        val sharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        private fun getCurrentThemeMode(): String {
+            val sharedPreferences = this@MainApplication.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
     }
 

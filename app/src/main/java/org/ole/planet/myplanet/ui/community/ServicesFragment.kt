@@ -65,7 +65,7 @@ class ServicesFragment : BaseTeamFragment() {
         }
         val markdownContentWithLocalPaths = prependBaseUrlToImages(
             description,
-            "file://${MainApplication.context.getExternalFilesDir(null)}/ole/",
+            "file://${requireContext().getExternalFilesDir(null)}/ole/",
             600,
             350
         )

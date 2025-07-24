@@ -213,7 +213,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
                 val conditions = gson.fromJson(examination.conditions, JsonObject::class.java)
                 c.isChecked = getBoolean(s, conditions)
             }
-            c.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
+            c.setPadding(dpToPx(this, 8), dpToPx(this, 8), dpToPx(this, 8), dpToPx(this, 8))
             c.text = s
             c.tag = s
             c.setOnCheckedChangeListener(this)

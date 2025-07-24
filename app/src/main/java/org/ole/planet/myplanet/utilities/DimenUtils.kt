@@ -6,8 +6,8 @@ import org.ole.planet.myplanet.MainApplication
 
 object DimenUtils {
     @JvmStatic
-    fun dpToPx(dp: Int): Int {
-        val displayMetrics = MainApplication.context.resources.displayMetrics
+    fun dpToPx(context: Context, dp: Int): Int {
+        val displayMetrics = context.resources.displayMetrics
         return (dp * (displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT)).roundToInt()
     }
 }

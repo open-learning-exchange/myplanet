@@ -14,7 +14,6 @@ import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import io.realm.kotlin.where
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -72,7 +71,6 @@ open class RealmMyCourse : RealmObject() {
 
         @JvmStatic
         fun insertMyCourses(userId: String?, myCoursesDoc: JsonObject?, mRealm: Realm) {
-            context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val id = JsonUtils.getString("_id", myCoursesDoc)
             var myMyCoursesDB = mRealm.where(RealmMyCourse::class.java).equalTo("id", id).findFirst()
             if (myMyCoursesDB == null) {
@@ -126,7 +124,7 @@ open class RealmMyCourse : RealmObject() {
 
         @JvmStatic
         fun saveConcatenatedLinksToPrefs() {
-            val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            val settings: SharedPreferences = Utilities.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val existingJsonLinks = settings.getString("concatenated_links", null)
             val existingConcatenatedLinks = if (existingJsonLinks != null) {
                 gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableList()

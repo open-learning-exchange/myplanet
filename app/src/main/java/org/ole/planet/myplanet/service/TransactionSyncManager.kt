@@ -77,7 +77,7 @@ object TransactionSyncManager {
 
     fun syncKeyIv(mRealm: Realm, settings: SharedPreferences, listener: SyncListener) {
         listener.onSyncStarted()
-        val model = UserProfileDbHandler(MainApplication.context).userModel
+        val model = UserProfileDbHandler(context).userModel
         val userName = settings.getString("loginUserName", "")
         val password = settings.getString("loginUserPassword", "")
 //        val table = "userdb-" + model?.planetCode?.let { Utilities.toHex(it) } + "-" + model?.name?.let { Utilities.toHex(it) }
@@ -153,7 +153,7 @@ object TransactionSyncManager {
     }
 
     private fun continueInsert(mRealm: Realm, table: String, jsonDoc: JsonObject) {
-        val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         when (table) {
             "exams" -> {
                 insertCourseStepsExams("", "", jsonDoc, mRealm)

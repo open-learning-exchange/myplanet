@@ -14,7 +14,6 @@ import io.realm.annotations.PrimaryKey
 import java.io.IOException
 import java.util.Date
 import java.util.UUID
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.settings
 import org.ole.planet.myplanet.datamanager.ApiInterface

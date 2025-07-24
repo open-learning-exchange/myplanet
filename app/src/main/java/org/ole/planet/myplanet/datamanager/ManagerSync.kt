@@ -84,7 +84,7 @@ class ManagerSync private constructor(context: Context) {
             populateUsersTable(jsonDoc, realm, settings)
             listener.onSyncComplete()
         } else {
-            listener.onSyncFailed(MainApplication.context.getString(R.string.user_verification_in_progress))
+            listener.onSyncFailed(context.getString(R.string.user_verification_in_progress))
         }
     }
 
@@ -97,10 +97,11 @@ class ManagerSync private constructor(context: Context) {
     companion object {
         private var ourInstance: ManagerSync? = null
         @JvmStatic
-        val instance: ManagerSync?
-            get() {
-                ourInstance = ManagerSync(MainApplication.context)
-                return ourInstance
+        fun getInstance(context: Context): ManagerSync {
+            if (ourInstance == null) {
+                ourInstance = ManagerSync(context)
             }
+            return ourInstance as ManagerSync
+        }
     }
 }

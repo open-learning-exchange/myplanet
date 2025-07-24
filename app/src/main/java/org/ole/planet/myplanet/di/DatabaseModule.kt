@@ -37,6 +37,7 @@ object DatabaseModule {
     }
 
     @Provides
+    @Singleton
     fun provideRealm(realmConfiguration: RealmConfiguration): Realm {
         Realm.setDefaultConfiguration(realmConfiguration)
         return Realm.getDefaultInstance()
