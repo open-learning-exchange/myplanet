@@ -182,7 +182,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             adapterCourses.updateCourseList(sortedCourseList)
             adapterCourses.setProgressMap(progressMap)
             adapterCourses.setRatingMap(map)
-            adapterCourses.notifyDataSetChanged()
 
             if (isMyCourseLib) {
                 val courseIds = courseList.mapNotNull { it?.id }

@@ -19,7 +19,6 @@ import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import io.realm.Realm
-import java.util.Collections
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
@@ -39,11 +38,11 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 class AdapterCourses(
     private val context: Context,
-    currentList: List<RealmMyCourse>,
+    currentList: List<RealmMyCourse?>,
     private val map: HashMap<String?, JsonObject>,
     private val userProfileDbHandler: UserProfileDbHandler
-) : ListAdapter<RealmMyCourse, RecyclerView.ViewHolder>(CourseDiffCallback()) {
-    private val selectedItems: MutableList<RealmMyCourse> = ArrayList()
+) : ListAdapter<RealmMyCourse?, RecyclerView.ViewHolder>(CourseDiffCallback()) {
+    private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
     private var listener: OnCourseItemSelected? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var progressMap: HashMap<String?, JsonObject>? = null
@@ -71,31 +70,31 @@ class AdapterCourses(
         this.ratingChangeListener = ratingChangeListener
     }
 
-    fun getCourseList(): List<RealmMyCourse> {
+    fun getCourseList(): List<RealmMyCourse?> {
         return currentList
     }
 
-    fun setOriginalCourseList(currentList: List<RealmMyCourse>){
+    fun setOriginalCourseList(currentList: List<RealmMyCourse?>){
         submitList(currentList)
     }
 
-    fun setCourseList(currentList: List<RealmMyCourse>) {
+    fun setCourseList(currentList: List<RealmMyCourse?>) {
         submitList(currentList)
     }
 
-    private fun sortCourseListByTitle(): List<RealmMyCourse> {
+    private fun sortCourseListByTitle(): List<RealmMyCourse?> {
         return if (isTitleAscending) {
-            currentList.sortedBy { it.courseTitle?.lowercase() }
+            currentList.sortedBy { it?.courseTitle?.lowercase() }
         } else {
-            currentList.sortedByDescending { it.courseTitle?.lowercase() }
+            currentList.sortedByDescending { it?.courseTitle?.lowercase() }
         }
     }
 
-    private fun sortCourseList(): List<RealmMyCourse> {
+    private fun sortCourseList(): List<RealmMyCourse?> {
         return if (isAscending) {
-            currentList.sortedBy { it.createdDate }
+            currentList.sortedBy { it?.createdDate }
         } else {
-            currentList.sortedByDescending { it.createdDate }
+            currentList.sortedByDescending { it?.createdDate }
         }
     }
 
@@ -321,18 +320,18 @@ class AdapterCourses(
         }
     }
 
-    private fun openCourse(realmMyCourses: RealmMyCourse, step: Int) {
+    private fun openCourse(realmMyCourses: RealmMyCourse?, step: Int) {
         if (homeItemClickListener != null) {
             val f: Fragment = TakeCourseFragment()
             val b = Bundle()
-            b.putString("id", realmMyCourses.courseId)
+            b.putString("id", realmMyCourses?.courseId)
             b.putInt("position", step)
             f.arguments = b
             homeItemClickListener?.openCallFragment(f)
         }
     }
 
-    fun updateCourseList(newCourseList: List<RealmMyCourse>) {
+    fun updateCourseList(newCourseList: List<RealmMyCourse?>) {
         selectedItems.clear()
         submitList(newCourseList)
     }
@@ -378,12 +377,12 @@ class AdapterCourses(
     }
 }
 
-class CourseDiffCallback : DiffUtil.ItemCallback<RealmMyCourse>() {
-    override fun areItemsTheSame(oldItem: RealmMyCourse, newItem: RealmMyCourse): Boolean {
-        return oldItem.id == newItem.id
+class CourseDiffCallback : DiffUtil.ItemCallback<RealmMyCourse?>() {
+    override fun areItemsTheSame(oldItem: RealmMyCourse?, newItem: RealmMyCourse?): Boolean {
+        return oldItem?.id == newItem?.id
     }
 
-    override fun areContentsTheSame(oldItem: RealmMyCourse, newItem: RealmMyCourse): Boolean {
+    override fun areContentsTheSame(oldItem: RealmMyCourse?, newItem: RealmMyCourse?): Boolean {
         return oldItem == newItem
     }
 }

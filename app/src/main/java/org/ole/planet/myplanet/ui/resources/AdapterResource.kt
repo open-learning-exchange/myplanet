@@ -33,11 +33,11 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterResource(
     private val context: Context,
-    libraryList: List<RealmMyLibrary>,
+    libraryList: List<RealmMyLibrary?>,
     private var ratingMap: HashMap<String?, JsonObject>,
     private val realm: Realm
-) : ListAdapter<RealmMyLibrary, RecyclerView.ViewHolder>(ResourceDiffCallback()) {
-    private val selectedItems: MutableList<RealmMyLibrary> = ArrayList()
+) : ListAdapter<RealmMyLibrary?, RecyclerView.ViewHolder>(ResourceDiffCallback()) {
+    private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
     private var listener: OnLibraryItemSelected? = null
     private val config: ChipCloudConfig = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
     private var homeItemClickListener: OnHomeItemClickListener? = null
@@ -57,11 +57,11 @@ class AdapterResource(
         this.ratingChangeListener = ratingChangeListener
     }
 
-    fun getLibraryList(): List<RealmMyLibrary> {
+    fun getLibraryList(): List<RealmMyLibrary?> {
         return currentList
     }
 
-    fun setLibraryList(libraryList: List<RealmMyLibrary>) {
+    fun setLibraryList(libraryList: List<RealmMyLibrary?>) {
         submitList(libraryList)
     }
 
@@ -151,7 +151,7 @@ class AdapterResource(
         }
     }
 
-    private fun openLibrary(library: RealmMyLibrary) {
+    private fun openLibrary(library: RealmMyLibrary?) {
         homeItemClickListener?.openLibraryDetailFragment(library)
     }
 
@@ -186,7 +186,7 @@ class AdapterResource(
         submitList(sortLibraryList())
     }
 
-    private fun sortLibraryListByTitle(): List<RealmMyLibrary> {
+    private fun sortLibraryListByTitle(): List<RealmMyLibrary?> {
         return if (isTitleAscending) {
             currentList.sortedBy { it?.title?.lowercase(Locale.ROOT) }
         } else {
@@ -194,7 +194,7 @@ class AdapterResource(
         }
     }
 
-    private fun sortLibraryList(): List<RealmMyLibrary> {
+    private fun sortLibraryList(): List<RealmMyLibrary?> {
         return if (isAscending) {
             currentList.sortedBy { it?.createdDate }
         } else {
@@ -232,12 +232,12 @@ class AdapterResource(
     }
 }
 
-class ResourceDiffCallback : DiffUtil.ItemCallback<RealmMyLibrary>() {
-    override fun areItemsTheSame(oldItem: RealmMyLibrary, newItem: RealmMyLibrary): Boolean {
-        return oldItem.id == newItem.id
+class ResourceDiffCallback : DiffUtil.ItemCallback<RealmMyLibrary?>() {
+    override fun areItemsTheSame(oldItem: RealmMyLibrary?, newItem: RealmMyLibrary?): Boolean {
+        return oldItem?.id == newItem?.id
     }
 
-    override fun areContentsTheSame(oldItem: RealmMyLibrary, newItem: RealmMyLibrary): Boolean {
+    override fun areContentsTheSame(oldItem: RealmMyLibrary?, newItem: RealmMyLibrary?): Boolean {
         return oldItem == newItem
     }
 }
