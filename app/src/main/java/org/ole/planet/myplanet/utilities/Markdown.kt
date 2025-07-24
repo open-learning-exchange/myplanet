@@ -35,9 +35,9 @@ import io.noties.markwon.image.file.FileSchemeHandler
 import io.noties.markwon.image.network.NetworkSchemeHandler
 import io.noties.markwon.image.network.OkHttpNetworkSchemeHandler
 import io.noties.markwon.movement.MovementMethodPlugin
+import java.util.regex.Pattern
 import org.commonmark.node.Image
 import org.ole.planet.myplanet.R
-import java.util.regex.Pattern
 
 object Markdown {
     private var currentZoomDialog: Dialog? = null
