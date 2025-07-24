@@ -35,7 +35,12 @@ import org.ole.planet.myplanet.ui.news.GrandChildAdapter
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment.Companion.settings
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
-class ChatHistoryListAdapter(var context: Context, private var chatHistory: List<RealmChatHistory>, private val fragment: ChatHistoryListFragment) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class ChatHistoryListAdapter(
+    var context: Context,
+    private var chatHistory: List<RealmChatHistory>,
+    private val fragment: ChatHistoryListFragment,
+    private val databaseService: DatabaseService
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
     private var chatHistoryItemClickListener: ChatHistoryItemClickListener? = null
     private var filteredChatHistory: List<RealmChatHistory> = chatHistory
@@ -143,7 +148,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         rowChatHistoryBinding = RowChatHistoryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        mRealm = DatabaseService(context).realmInstance
+        mRealm = databaseService.realmInstance
         user = UserProfileDbHandler(context).userModel
         newsList = mRealm.where(RealmNews::class.java)
             .equalTo("docType", "message", Case.INSENSITIVE)

@@ -44,10 +44,10 @@ import io.realm.RealmResults
 import java.io.File
 import java.util.ArrayList
 import java.util.Calendar
-import java.util.concurrent.TimeUnit
 import java.util.Date
 import java.util.HashMap
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.isInitialized
 import kotlinx.coroutines.delay
@@ -161,7 +161,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         super.onCreate(savedInstanceState)
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         editor = settings.edit()
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = databaseService.realmInstance
         requestAllPermissions()
         prefData = SharedPrefManager(this)
         profileDbHandler = UserProfileDbHandler(this)
