@@ -1,7 +1,8 @@
 package org.ole.planet.myplanet.ui.chat
 
-import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
+import javax.inject.Inject
+import org.ole.planet.myplanet.di.AppPreferences
 import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.os.Bundle
@@ -51,6 +52,8 @@ class ChatHistoryListFragment : Fragment() {
     private var isQuestion: Boolean = false
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
+    @Inject
+    @AppPreferences
     lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
     
@@ -65,7 +68,6 @@ class ChatHistoryListFragment : Fragment() {
         super.onCreate(savedInstanceState)
         sharedViewModel = ViewModelProvider(requireActivity())[ChatViewModel::class.java]
         prefManager = SharedPrefManager(requireContext())
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         startChatHistorySync()
     }
 

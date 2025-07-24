@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.ui.feedback
 
-import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import org.ole.planet.myplanet.di.AppPreferences
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -11,7 +13,6 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
-import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmResults
 import kotlinx.coroutines.Dispatchers
@@ -43,6 +44,8 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
 
+    @Inject
+    @AppPreferences
     lateinit var settings: SharedPreferences
     @Inject
     lateinit var databaseService: DatabaseService
@@ -56,7 +59,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefManager = SharedPrefManager(requireContext())
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
 
         startFeedbackSync()
     }

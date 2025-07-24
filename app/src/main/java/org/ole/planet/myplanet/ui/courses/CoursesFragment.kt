@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.app.AlertDialog
 import android.content.Context
-import android.content.Context.MODE_PRIVATE
 import android.content.DialogInterface
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -85,7 +84,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private var isCheckboxChangedByCode = false
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
-//    lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
     
     @Inject
@@ -99,7 +97,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefManager = SharedPrefManager(requireContext())
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         startCoursesSync()
     }
 

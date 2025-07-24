@@ -16,12 +16,12 @@ import java.util.Date
 import java.util.UUID
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.settings
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.Constants
 
 open class RealmSubmission : RealmObject() {
     @PrimaryKey
@@ -136,8 +136,9 @@ open class RealmSubmission : RealmObject() {
             `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
             `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
             `object`.addProperty("sender", sub.sender)
-            `object`.addProperty("source", settings?.getString("planetCode", ""))
-            `object`.addProperty("parentCode", settings?.getString("parentCode", ""))
+            val prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+            `object`.addProperty("source", prefs.getString("planetCode", ""))
+            `object`.addProperty("parentCode", prefs.getString("parentCode", ""))
             val parent = Gson().fromJson(sub.parent, JsonObject::class.java)
             `object`.add("parent", parent)
             `object`.add("answers", RealmAnswer.serializeRealmAnswer(sub.answers!!))

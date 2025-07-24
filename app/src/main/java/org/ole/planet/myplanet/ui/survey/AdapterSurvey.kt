@@ -24,7 +24,6 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getRecentSubmissionDate
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
-import org.ole.planet.myplanet.ui.team.BaseTeamFragment.Companion.settings
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
 class AdapterSurvey(
@@ -178,8 +177,9 @@ class AdapterSurvey(
 
         fun adoptSurvey(exam: RealmStepExam, teamId: String?) {
             val userModel = UserProfileDbHandler(context).userModel
-            val sParentCode = settings?.getString("parentCode", "")
-            val planetCode = settings?.getString("planetCode", "")
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val sParentCode = prefs.getString("parentCode", "")
+            val planetCode = prefs.getString("planetCode", "")
 
             val parentJsonString = try {
                 JSONObject().apply {

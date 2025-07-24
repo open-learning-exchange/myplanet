@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.base
 
-import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
@@ -39,6 +38,8 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities.toast
+import javax.inject.Inject
+import org.ole.planet.myplanet.di.AppPreferences
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
     var subjects: MutableSet<String> = mutableSetOf()
@@ -55,6 +56,10 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var list: MutableList<LI>? = null
     var resources: List<RealmMyLibrary>? = null
     var courseLib: String? = null
+
+    @Inject
+    @AppPreferences
+    lateinit var settings: SharedPreferences
 
     abstract fun getLayout(): Int
 
@@ -77,7 +82,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val v = inflater.inflate(getLayout(), container, false)
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         recyclerView = v.findViewById(R.id.recycler)
         recyclerView.layoutManager = LinearLayoutManager(activity)
         if (isMyCourseLib) {
@@ -294,8 +298,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     companion object {
-        lateinit var settings: SharedPreferences
-
         private val noDataMessages = mapOf(
             "courses" to R.string.no_courses,
             "resources" to R.string.no_resources,
