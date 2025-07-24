@@ -485,8 +485,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                             results.removeChangeListener(this)
                             realm.close()
                         }
-                        attempt++
-                        delay(1000)
                     }
                 }
 
