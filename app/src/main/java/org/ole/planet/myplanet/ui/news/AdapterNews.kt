@@ -1,24 +1,30 @@
 package org.ole.planet.myplanet.ui.news
 
 import android.annotation.SuppressLint
+import android.app.Dialog
 import android.content.Context
 import android.content.DialogInterface
 import android.content.SharedPreferences
+import android.graphics.Color
 import android.os.Build
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.github.chrisbanes.photoview.PhotoView
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -26,33 +32,27 @@ import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.Sort
+import java.io.File
 import java.util.Calendar
 import java.util.Locale
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.Conversation
-import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
-import org.ole.planet.myplanet.utilities.JsonUtils
-import android.app.Dialog
-import android.graphics.Color
-import android.widget.ImageView
-import androidx.core.graphics.drawable.toDrawable
-import com.github.chrisbanes.photoview.PhotoView
-import com.bumptech.glide.Glide
-import java.io.File
-import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 
 class AdapterNews(
     var context: Context,
@@ -87,7 +87,12 @@ class AdapterNews(
 
     fun addItem(news: RealmNews?) {
         news?.let {
-            list.add(it)
+            val item = if (::mRealm.isInitialized && it.isValid) {
+                if (it.isManaged) mRealm.copyFromRealm(it) else it
+            } else {
+                it
+            }
+            list.add(item)
             submitList(list.filterNotNull())
         }
     }
@@ -108,6 +113,12 @@ class AdapterNews(
         if (mRealm != null) {
             this.mRealm = mRealm
             labelManager = NewsLabelManager(context, this.mRealm, currentUser)
+            list.forEachIndexed { index, item ->
+                if (item != null && item.isManaged) {
+                    list[index] = this.mRealm.copyFromRealm(item)
+                }
+            }
+            submitList(list.filterNotNull())
         }
     }
 
@@ -335,7 +346,14 @@ class AdapterNews(
 
     fun updateList(newList: List<RealmNews?>) {
         list.clear()
-        list.addAll(newList.filterNotNull())
+        if (::mRealm.isInitialized) {
+            val detached = newList.filterNotNull().map { item ->
+                if (item.isManaged) mRealm.copyFromRealm(item) else item
+            }
+            list.addAll(detached)
+        } else {
+            list.addAll(newList.filterNotNull())
+        }
         submitList(list.filterNotNull())
     }
 
