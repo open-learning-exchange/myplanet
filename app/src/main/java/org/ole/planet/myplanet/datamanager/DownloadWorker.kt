@@ -3,10 +3,14 @@ package org.ole.planet.myplanet.datamanager
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import dagger.hilt.android.EntryPointAccessors
 import java.io.BufferedInputStream
 import java.io.FileOutputStream
@@ -16,15 +20,23 @@ import okhttp3.ResponseBody
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getSDPathFromUrl
 import org.ole.planet.myplanet.utilities.Utilities
 
-class DownloadWorker(val context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
+class DownloadWorker @AssistedInject constructor(
+    @Assisted val context: Context,
+    @Assisted workerParams: WorkerParameters,
+    @AppPreferences private val preferences: SharedPreferences
+) : CoroutineWorker(context, workerParams) {
+    @AssistedFactory
+    interface Factory {
+        fun create(context: Context, workerParams: WorkerParameters): DownloadWorker
+    }
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    private val preferences = context.getSharedPreferences(MyDownloadService.PREFS_NAME, Context.MODE_PRIVATE)
     private val apiInterface: ApiInterface by lazy {
         EntryPointAccessors.fromApplication(
             context.applicationContext,

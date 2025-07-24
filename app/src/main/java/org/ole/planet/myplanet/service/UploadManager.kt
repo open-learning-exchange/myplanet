@@ -4,19 +4,19 @@ import android.content.*
 import android.os.Looper
 import android.text.TextUtils
 import com.google.gson.*
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.*
 import java.io.*
 import java.util.Date
+import javax.inject.Inject
+import javax.inject.Singleton
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
-import org.ole.planet.myplanet.di.AppPreferences
-import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
-import javax.inject.Singleton
 import org.ole.planet.myplanet.datamanager.*
 import org.ole.planet.myplanet.datamanager.ApiClient.client
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.*
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
@@ -42,13 +42,6 @@ class UploadManager @Inject constructor(
     private val databaseService: DatabaseService,
     @AppPreferences private val pref: SharedPreferences
 ) : FileUploadService() {
-
-    // Backward compatibility constructor for code that still uses singleton pattern
-    constructor(context: Context) : this(
-        context,
-        DatabaseService(context),
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    )
 
     private val gson = Gson()
 
