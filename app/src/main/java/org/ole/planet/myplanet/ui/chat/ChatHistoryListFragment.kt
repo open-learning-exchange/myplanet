@@ -21,6 +21,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.Sort
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -40,7 +41,6 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class ChatHistoryListFragment : Fragment() {
@@ -222,7 +222,7 @@ class ChatHistoryListFragment : Fragment() {
 
         val adapter = fragmentChatHistoryListBinding.recyclerView.adapter as? ChatHistoryListAdapter
         if (adapter == null) {
-            val newAdapter = ChatHistoryListAdapter(requireContext(), list, this)
+            val newAdapter = ChatHistoryListAdapter(requireContext(), list, this, databaseService)
             newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
                 override fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?, aiProvider: String?) {
                     conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
