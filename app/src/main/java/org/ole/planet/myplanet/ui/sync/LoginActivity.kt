@@ -75,7 +75,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         btnLang = activityLoginBinding.btnLang
         inputName = activityLoginBinding.inputName
         inputPassword = activityLoginBinding.inputPassword
-        service = Service(this)
 
         activityLoginBinding.tvAvailableSpace.text = buildString {
             append(getString(R.string.available_space_colon))

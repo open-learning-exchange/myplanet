@@ -153,7 +153,7 @@ class BecomeMemberActivity : BaseActivity() {
             show()
         }
 
-        Service(this).becomeMember(realm, obj, object : Service.CreateUserCallback {
+        service.becomeMember(realm, obj, object : Service.CreateUserCallback {
             override fun onSuccess(success: String) {
                 runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
             }

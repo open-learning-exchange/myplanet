@@ -31,10 +31,8 @@ import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.ConfigurationManager
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.NetworkResult
-import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
 import org.ole.planet.myplanet.di.AppPreferences
-import org.ole.planet.myplanet.di.DatabaseServiceEntryPoint
-import org.ole.planet.myplanet.di.UploadToShelfServiceEntryPoint
+import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.isUserExists
@@ -65,7 +63,8 @@ class Service @Inject constructor(
     @ApplicationContext private val context: Context,
     private val retrofitInterface: ApiInterface,
     private val databaseService: DatabaseService,
-    @AppPreferences private val preferences: SharedPreferences
+    @AppPreferences private val preferences: SharedPreferences,
+    private val uploadToShelfService: UploadToShelfService
 ) {
     constructor(context: Context) : this(
         context,
@@ -73,14 +72,12 @@ class Service @Inject constructor(
             context.applicationContext,
             ApiInterfaceEntryPoint::class.java
         ).apiInterface(),
-        EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            DatabaseServiceEntryPoint::class.java
-        ).databaseService(),
-        EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            DatabaseServiceEntryPoint::class.java
-        ).preferences()
+        DatabaseService(context),
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+        UploadToShelfService(
+            DatabaseService(context),
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        )
     )
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
@@ -291,10 +288,7 @@ class Service @Inject constructor(
                 if (res?.body() != null) {
                     val model = populateUsersTable(res.body(), realm1, settings)
                     if (model != null) {
-                        EntryPointAccessors.fromApplication(
-                            MainApplication.context,
-                            UploadToShelfServiceEntryPoint::class.java
-                        ).uploadToShelfService().saveKeyIv(retrofitInterface, model, obj)
+                        uploadToShelfService.saveKeyIv(retrofitInterface, model, obj)
                     }
                 }
             } catch (e: IOException) {

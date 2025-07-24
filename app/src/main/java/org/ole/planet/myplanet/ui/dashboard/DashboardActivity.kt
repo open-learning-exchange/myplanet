@@ -159,7 +159,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         navigationView = activityDashboardBinding.topBarNavigation
         navigationView.labelVisibilityMode = NavigationBarView.LABEL_VISIBILITY_LABELED
         activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
-        service = Service(this)
         tl = findViewById(R.id.tab_layout)
         activityDashboardBinding.root.viewTreeObserver.addOnGlobalLayoutListener { topBarVisible() }
         activityDashboardBinding.appBarBell.ivSetting.setOnClickListener {

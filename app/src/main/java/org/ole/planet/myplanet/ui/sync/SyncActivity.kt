@@ -105,6 +105,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     var forceSync = false
     var syncFailed = false
     lateinit var defaultPref: SharedPreferences
+    @Inject
     lateinit var service: Service
     var currentDialog: MaterialDialog? = null
     var serverConfigAction = ""
@@ -694,9 +695,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         if (checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) && settings.getBoolean("firstRun", true)) {
             clearInternalStorage()
         }
-        Service(this).isPlanetAvailable(object : PlanetAvailableListener {
+        service.isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
-                Service(context).checkVersion(this@SyncActivity, settings)
+                service.checkVersion(this@SyncActivity, settings)
             }
             override fun notAvailable() {
                 if (!isFinishing) {
