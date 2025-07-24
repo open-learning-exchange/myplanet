@@ -23,7 +23,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.Date
 import java.util.concurrent.Executors
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.utilities.Utilities.context
 
 object CameraUtils {
     private var cameraDevice: CameraDevice? = null

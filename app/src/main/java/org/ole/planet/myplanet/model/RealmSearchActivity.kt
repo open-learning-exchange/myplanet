@@ -4,7 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.VersionUtils
 
@@ -27,9 +27,9 @@ open class RealmSearchActivity(
         obj.addProperty("type", type)
         obj.addProperty("time", time)
         obj.addProperty("user", user)
-        obj.addProperty("androidId", VersionUtils.getAndroidId(MainApplication.context))
+        obj.addProperty("androidId", VersionUtils.getAndroidId(Utilities.context))
         obj.addProperty(
-            "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
+            "customDeviceName", NetworkUtils.getCustomDeviceName(Utilities.context)
         )
         obj.addProperty("deviceName", NetworkUtils.getDeviceName())
         obj.addProperty("createdOn", createdOn)
@@ -47,7 +47,7 @@ open class RealmSearchActivity(
             ob.addProperty("time", log.time)
             ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             ob.addProperty("deviceName", NetworkUtils.getDeviceName())
-            ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
+            ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(Utilities.context))
             return ob
         }
     }

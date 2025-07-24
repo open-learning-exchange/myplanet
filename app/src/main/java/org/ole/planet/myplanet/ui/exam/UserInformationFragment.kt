@@ -219,10 +219,10 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                     model.isUpdated = true
                 }
             }, {
-                Utilities.toast(MainApplication.context, getString(R.string.user_profile_updated))
+                Utilities.toast(requireContext(), getString(R.string.user_profile_updated))
                 if (isAdded) dialog?.dismiss()
             }) {
-                Utilities.toast(MainApplication.context, getString(R.string.unable_to_update_user))
+                Utilities.toast(requireContext(), getString(R.string.unable_to_update_user))
                 if (isAdded) dialog?.dismiss()
             }
         } else {
@@ -247,7 +247,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             return
         } else {
             Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
-            val settings = MainApplication.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+            val settings = requireContext().getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
             checkAvailableServer(settings)
             val activity = requireActivity()
             if (activity is AppCompatActivity) {

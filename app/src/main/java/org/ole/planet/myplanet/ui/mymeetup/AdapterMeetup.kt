@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.mymeetup
 
 import android.view.*
 import androidx.recyclerview.widget.RecyclerView
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemMeetupBinding
 import org.ole.planet.myplanet.model.RealmMeetup

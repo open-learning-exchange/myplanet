@@ -34,7 +34,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.utilities.Utilities.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload

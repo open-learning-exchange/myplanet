@@ -90,7 +90,7 @@ class NotificationsFragment : Fragment() {
              notification.message.isNotEmpty() && notification.message != "INVALID"
         }
 
-        adapter = AdapterNotification(filteredNotifications,
+        adapter = AdapterNotification(filteredNotifications, mRealm,
             onMarkAsReadClick = { position ->
                 markAsRead(position) },
             onNotificationClick = { notification ->

@@ -272,7 +272,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             val v = LayoutInflater.from(context).inflate(R.layout.alert_my_personal, null)
             val etTitle = v.findViewById<EditText>(R.id.et_title)
             val etDesc = v.findViewById<EditText>(R.id.et_description)
-            val realmUserModel = UserProfileDbHandler(MainApplication.context).userModel!!
+            val realmUserModel = UserProfileDbHandler(context).userModel!!
             val userId = realmUserModel.id
             val userName = realmUserModel.name
             AlertDialog.Builder(context, R.style.AlertDialogTheme)
@@ -296,7 +296,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                             myPersonal.description = desc
                         },
                         Realm.Transaction.OnSuccess {
-                            Utilities.toast(MainApplication.context, context.getString(R.string.resource_saved_to_my_personal))
+                            Utilities.toast(context, context.getString(R.string.resource_saved_to_my_personal))
                         })
                     if (type == 1) {
                         myPersonalsFragment?.refreshFragment()

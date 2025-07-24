@@ -69,44 +69,31 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     @DefaultPreferences
     lateinit var defaultPreferences: SharedPreferences
 
+    private lateinit var preferences: SharedPreferences
+    private lateinit var defaultPref: SharedPreferences
+    private lateinit var mRealm: Realm
+    private lateinit var service: DatabaseService
+
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
-        lateinit var context: Context
-        lateinit var mRealm: Realm
-        lateinit var service: DatabaseService
-        var preferences: SharedPreferences? = null
-        var syncFailedCount = 0
-        var isCollectionSwitchOn = false
-        var showDownload = false
-        var isSyncRunning = false
-        var listener: TeamPageListener? = null
-        val androidId: String get() {
-            try {
-                return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            return "0"
-        }
         val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        lateinit var defaultPref: SharedPreferences
 
         fun createLog(type: String, error: String = "") {
             applicationScope.launch(Dispatchers.IO) {
                 val realm = Realm.getDefaultInstance()
-                val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                val settings = Utilities.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
                 try {
                     realm.executeTransaction { r ->
                         val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
-                        val model = UserProfileDbHandler(context).userModel
+                        val model = UserProfileDbHandler(Utilities.context).userModel
                         log.parentCode = settings.getString("parentCode", "")
                         log.createdOn = settings.getString("planetCode", "")
                         model?.let { log.userId = it.id }
                         log.time = "${Date().time}"
                         log.page = ""
-                        log.version = getVersionName(context)
+                        log.version = getVersionName(Utilities.context)
                         log.type = type
                         if (error.isNotEmpty()) {
                             log.error = error
@@ -129,7 +116,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
 
         fun setThemeMode(themeMode: String) {
-            val sharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            val sharedPreferences = Utilities.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             with(sharedPreferences.edit()) {
                 putString("theme_mode", themeMode)
                 commit()
@@ -180,7 +167,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 addCategory(Intent.CATEGORY_HOME)
                 flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
             }
-            context.startActivity(homeIntent)
+            Utilities.context.startActivity(homeIntent)
         }
     }
 
@@ -203,7 +190,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     private fun initApp() {
-        context = this
         initialize(applicationScope)
         startListenNetworkState()
     }
@@ -319,7 +305,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     private fun getCurrentThemeMode(): String {
-        val sharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val sharedPreferences = Utilities.context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         return sharedPreferences.getString("theme_mode", ThemeMode.FOLLOW_SYSTEM) ?: ThemeMode.FOLLOW_SYSTEM
     }
 

@@ -11,7 +11,6 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import java.util.Date
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.Service
@@ -32,6 +31,7 @@ class AutoSyncWorker @AssistedInject constructor(
     private val uploadManager: UploadManager,
     private val uploadToShelfService: UploadToShelfService
 ) : Worker(context, workerParams), SyncListener, CheckVersionCallback, SuccessListener {
+    private var isSyncRunning = false
     
     @AssistedFactory
     interface Factory {
@@ -58,7 +58,7 @@ class AutoSyncWorker @AssistedInject constructor(
     override fun onSyncComplete() {}
 
     override fun onSyncFailed(msg: String?) {
-        if (MainApplication.syncFailedCount > 3) {
+        if (SyncManager.syncFailedCount > 3) {
             context.startActivity(Intent(context, LoginActivity::class.java)
                 .putExtra("showWifiDialog", true)
                 .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -74,12 +74,12 @@ class AutoSyncWorker @AssistedInject constructor(
         if (!blockSync) {
             syncManager.start(this, "upload")
             uploadToShelfService.uploadUserData {
-                Service(MainApplication.context).healthAccess {
+                Service(context).healthAccess {
                     uploadToShelfService.uploadHealth()
                 }
             }
-            if (!MainApplication.isSyncRunning) {
-                MainApplication.isSyncRunning = true
+            if (!isSyncRunning) {
+                isSyncRunning = true
                 uploadManager.uploadExamResult(this)
                 uploadManager.uploadFeedback(this)
                 uploadManager.uploadAchievement()
@@ -95,13 +95,13 @@ class AutoSyncWorker @AssistedInject constructor(
                 uploadManager.uploadMeetups()
                 uploadManager.uploadCrashLog()
                 uploadManager.uploadSubmissions()
-                uploadManager.uploadActivities { MainApplication.isSyncRunning = false }
+                uploadManager.uploadActivities { isSyncRunning = false }
             }
         }
     }
 
     override fun onSuccess(success: String?) {
-        val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         settings.edit { putLong("lastUsageUploaded", Date().time) }
     }
 

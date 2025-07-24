@@ -40,7 +40,7 @@ class SyncTimeLogger private constructor() {
     }
 
     private fun saveSummaryToRealm(summary: String, uploadManager: UploadManager? = null) {
-        val settings = MainApplication.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+        val settings = Utilities.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
         handler.post {
             MainApplication.createLog("sync summary", summary)
             val updateUrl = "${settings.getString("serverURL", "")}"

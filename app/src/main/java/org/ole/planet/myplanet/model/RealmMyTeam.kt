@@ -17,7 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.utilities.Utilities.context
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -262,7 +262,7 @@ open class RealmMyTeam : RealmObject() {
 
         @JvmStatic
         fun syncTeamActivities(context: Context, uploadManager: UploadManager) {
-            val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val updateUrl = "${settings.getString("serverURL", "")}"
             val serverUrlMapper = ServerUrlMapper()
             val mapping = serverUrlMapper.processUrl(updateUrl)

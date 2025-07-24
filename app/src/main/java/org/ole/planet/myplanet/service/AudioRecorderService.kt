@@ -20,7 +20,6 @@ import androidx.core.content.ContextCompat
 import java.io.File
 import java.util.UUID
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.utilities.Utilities
 

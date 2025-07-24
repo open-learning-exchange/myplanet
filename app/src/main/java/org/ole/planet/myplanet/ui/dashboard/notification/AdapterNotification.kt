@@ -7,8 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import java.util.regex.Pattern
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.MainApplication.Companion.mRealm
+import io.realm.Realm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNotificationsBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -17,6 +16,7 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 
 class AdapterNotification(
     var notificationList: List<RealmNotification>,
+    private val mRealm: Realm,
     private val onMarkAsReadClick: (Int) -> Unit,
     private val onNotificationClick: (RealmNotification) -> Unit
 ) : RecyclerView.Adapter<AdapterNotification.ViewHolderNotifications>() {

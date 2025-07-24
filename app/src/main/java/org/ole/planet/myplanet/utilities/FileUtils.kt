@@ -16,7 +16,7 @@ import java.io.*
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.utilities.Utilities.context
 
 object FileUtils {
     @JvmStatic

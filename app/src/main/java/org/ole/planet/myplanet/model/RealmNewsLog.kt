@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.model
 import com.google.gson.JsonObject
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.NetworkUtils
 
 open class RealmNewsLog : RealmObject() {
@@ -26,7 +26,7 @@ open class RealmNewsLog : RealmObject() {
             ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             ob.addProperty("deviceName", NetworkUtils.getDeviceName())
             ob.addProperty(
-                "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
+                "customDeviceName", NetworkUtils.getCustomDeviceName(Utilities.context)
             )
             return ob
         }

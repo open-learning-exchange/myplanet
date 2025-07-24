@@ -4,7 +4,7 @@ import android.widget.TextView
 import androidx.appcompat.widget.AppCompatRatingBar
 import com.google.gson.JsonObject
 import java.util.Locale
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.utilities.Utilities.context
 import org.ole.planet.myplanet.R
 
 object CourseRatingUtils {

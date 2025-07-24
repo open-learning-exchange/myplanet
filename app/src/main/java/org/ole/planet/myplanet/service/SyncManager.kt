@@ -77,6 +77,10 @@ class SyncManager @Inject constructor(
     private val semaphore = Semaphore(5)
     private var betaSync = false
 
+    companion object {
+        var syncFailedCount = 0
+    }
+
     fun start(listener: SyncListener?, type: String, syncTables: List<String>? = null) {
         this.listener = listener
         if (!isSyncing) {
@@ -221,7 +225,7 @@ class SyncManager @Inject constructor(
             }
 
             logger.startProcess("admin_sync")
-            ManagerSync.instance?.syncAdmin()
+            ManagerSync.instance(context).syncAdmin()
             logger.endProcess("admin_sync")
 
             logger.startProcess("resource_sync")
@@ -414,7 +418,7 @@ class SyncManager @Inject constructor(
             }
 
             logger.startProcess("admin_sync")
-            ManagerSync.instance?.syncAdmin()
+            ManagerSync.instance(context).syncAdmin()
             logger.endProcess("admin_sync")
 
             logger.startProcess("on_synced")
@@ -512,7 +516,7 @@ class SyncManager @Inject constructor(
             }
 
             logger.startProcess("admin_sync")
-            ManagerSync.instance?.syncAdmin()
+            ManagerSync.instance(context).syncAdmin()
             logger.endProcess("admin_sync")
 
             logger.startProcess("on_synced")
@@ -685,7 +689,7 @@ class SyncManager @Inject constructor(
 
                     skip += rows.size()
                     if (batchCount % 10 == 0) {
-                        val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                        val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                         settings.edit {
                             putLong("ResourceLastSyncTime", System.currentTimeMillis())
                             putInt("ResourceSyncPosition", skip)
@@ -715,7 +719,7 @@ class SyncManager @Inject constructor(
     private fun handleException(message: String?) {
         if (listener != null) {
             isSyncing = false
-            MainApplication.syncFailedCount++
+            syncFailedCount++
             listener?.onSyncFailed(message)
         }
     }
@@ -831,7 +835,7 @@ class SyncManager @Inject constructor(
             }
 
             if (skip % (batchSize * 10) == 0) {
-                val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 settings.edit {
                     putLong("ResourceLastSyncTime", System.currentTimeMillis())
                     putInt("ResourceSyncPosition", skip + rows.size())

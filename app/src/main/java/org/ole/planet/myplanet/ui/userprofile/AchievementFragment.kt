@@ -76,7 +76,7 @@ class AchievementFragment : BaseContainerFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentAchievementBinding = FragmentAchievementBinding.inflate(inflater, container, false)
         aRealm = databaseService.realmInstance
-        user = UserProfileDbHandler(MainApplication.context).userModel
+        user = UserProfileDbHandler(requireContext()).userModel
         fragmentAchievementBinding.btnEdit.setOnClickListener {
             if (listener != null) listener?.openCallFragment(EditAchievementFragment())
         }
@@ -216,7 +216,7 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun createAchievementView(ob: JsonObject): View {
-        val binding = RowAchievementBinding.inflate(LayoutInflater.from(MainApplication.context))
+        val binding = RowAchievementBinding.inflate(LayoutInflater.from(requireContext()))
         val desc = getString("description", ob)
         binding.tvDescription.text = desc
         binding.tvDate.text = getString("date", ob)
@@ -244,7 +244,7 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun createResourceButton(lib: RealmMyLibrary): View {
-        val btnBinding = LayoutButtonPrimaryBinding.inflate(LayoutInflater.from(MainApplication.context))
+        val btnBinding = LayoutButtonPrimaryBinding.inflate(LayoutInflater.from(requireContext()))
         btnBinding.root.text = lib.title
         btnBinding.root.setCompoundDrawablesWithIntrinsicBounds(
             0,
@@ -263,9 +263,9 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun setupReferences() {
-        fragmentAchievementBinding.rvOtherInfo.layoutManager = LinearLayoutManager(MainApplication.context)
+        fragmentAchievementBinding.rvOtherInfo.layoutManager = LinearLayoutManager(requireContext())
         fragmentAchievementBinding.rvOtherInfo.adapter =
-            AdapterOtherInfo(MainApplication.context, achievement?.references ?: RealmList())
+            AdapterOtherInfo(requireContext(), achievement?.references ?: RealmList())
     }
 
     private fun getLibraries(array: JsonArray): List<RealmMyLibrary> {

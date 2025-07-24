@@ -123,7 +123,6 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
     }
 
     override fun onCheckedChanged(compoundButton: CompoundButton, b: Boolean) {
-        MainApplication.isCollectionSwitchOn = b
         adapter.setSelectMultiple(b)
         adapter.setTagList(list)
         fragmentCollectionsBinding.listTags.setAdapter(adapter)

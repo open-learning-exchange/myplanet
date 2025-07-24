@@ -10,7 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.snackbar.Snackbar
-import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogProgressBinding
 import org.ole.planet.myplanet.datamanager.MyDownloadService
@@ -75,7 +75,7 @@ object DialogUtils {
     }
 
     private fun showDialog(context: Context) {
-        if (MainApplication.syncFailedCount > 3) {
+        if (SyncManager.syncFailedCount > 3) {
             val pd = AlertDialog.Builder(context, R.style.AlertDialogTheme)
             var message = ""
             if (NetworkUtils.isBluetoothEnabled()) message += "Bluetooth"
@@ -90,7 +90,7 @@ object DialogUtils {
             }
             pd.setMessage(message)
             pd.setPositiveButton(context.getString(R.string.go_to_settings)) { _, _ ->
-                MainApplication.syncFailedCount = 0
+                SyncManager.syncFailedCount = 0
                 val intent = Intent(Settings.ACTION_WIFI_SETTINGS)
                 context.startActivity(intent)
             }.setNegativeButton(context.getString(R.string.cancel), null)
@@ -167,9 +167,9 @@ object DialogUtils {
 
     @JvmStatic
     fun startDownloadUpdate(context: Context, path: String, progressDialog: CustomProgressDialog?) {
-        Service(MainApplication.context).checkCheckSum(object : Service.ChecksumCallback {
+        Service(context).checkCheckSum(object : Service.ChecksumCallback {
             override fun onMatch() {
-                Utilities.toast(MainApplication.context, context.getString(R.string.apk_already_exists))
+                Utilities.toast(context, context.getString(R.string.apk_already_exists))
                 FileUtils.installApk(context, path)
             }
 

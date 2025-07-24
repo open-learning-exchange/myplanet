@@ -248,12 +248,8 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         }
 
         fragmentTeamDetailBinding.btnAddDoc.setOnClickListener {
-            MainApplication.showDownload = true
             fragmentTeamDetailBinding.viewPager2.currentItem = 6
-            MainApplication.showDownload = false
-            if (MainApplication.listener != null) {
-                MainApplication.listener?.onAddDocument()
-            }
+            MainApplication.listener?.onAddDocument()
         }
     }
 

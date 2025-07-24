@@ -75,9 +75,9 @@ object TransactionSyncManager {
         }
     }
 
-    fun syncKeyIv(mRealm: Realm, settings: SharedPreferences, listener: SyncListener) {
+    fun syncKeyIv(context: Context, mRealm: Realm, settings: SharedPreferences, listener: SyncListener) {
         listener.onSyncStarted()
-        val model = UserProfileDbHandler(MainApplication.context).userModel
+        val model = UserProfileDbHandler(context).userModel
         val userName = settings.getString("loginUserName", "")
         val password = settings.getString("loginUserPassword", "")
 //        val table = "userdb-" + model?.planetCode?.let { Utilities.toHex(it) } + "-" + model?.name?.let { Utilities.toHex(it) }
@@ -148,12 +148,12 @@ object TransactionSyncManager {
         }
 
         documentList.forEach { jsonDoc ->
-            continueInsert(mRealm, table, jsonDoc)
+            continueInsert(mRealm, table, jsonDoc, context)
         }
     }
 
-    private fun continueInsert(mRealm: Realm, table: String, jsonDoc: JsonObject) {
-        val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private fun continueInsert(mRealm: Realm, table: String, jsonDoc: JsonObject, context: Context) {
+        val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         when (table) {
             "exams" -> {
                 insertCourseStepsExams("", "", jsonDoc, mRealm)
