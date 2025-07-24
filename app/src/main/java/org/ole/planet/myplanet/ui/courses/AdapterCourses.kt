@@ -293,22 +293,27 @@ class AdapterCourses(
     private fun showProgressAndRating(position: Int, holder: RecyclerView.ViewHolder) {
         val viewHolder = holder as ViewHoldercourse
         showProgress(viewHolder.rowCourseBinding, position)
-        if (map.containsKey(currentList[position].courseId)) {
-            val `object` = map[currentList[position].courseId]
-            CourseRatingUtils.showRating(
-                `object`,
-                viewHolder.rowCourseBinding.rating,
-                viewHolder.rowCourseBinding.timesRated,
-                viewHolder.rowCourseBinding.ratingBar
-            )
-        } else {
+        currentList[position]?.courseId?.let { courseId ->
+            if (map.containsKey(courseId)) {
+                val ratingObj = map[courseId]
+                CourseRatingUtils.showRating(
+                    ratingObj,
+                    viewHolder.rowCourseBinding.rating,
+                    viewHolder.rowCourseBinding.timesRated,
+                    viewHolder.rowCourseBinding.ratingBar
+                )
+            } else {
+                viewHolder.rowCourseBinding.ratingBar.rating = 0f
+            }
+        } ?: run {
             viewHolder.rowCourseBinding.ratingBar.rating = 0f
         }
     }
 
     private fun showProgress(binding: RowCourseBinding, position: Int) {
-        if (progressMap?.containsKey(currentList[position].courseId) == true) {
-            val ob = progressMap!![currentList[position].courseId]
+        val courseId = currentList[position]?.courseId
+        if (courseId != null && progressMap?.containsKey(courseId) == true) {
+            val ob = progressMap!![courseId]
             binding.courseProgress.max = getInt("max", ob)
             binding.courseProgress.progress = getInt("current", ob)
             if (getInt("current", ob) < getInt("max", ob)) {
@@ -357,11 +362,13 @@ class AdapterCourses(
                 override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
                     val position = bindingAdapterPosition
                     if (position != RecyclerView.NO_POSITION && position < currentList.size) {
-                        if (progressMap?.containsKey(currentList[bindingAdapterPosition].courseId) == true) {
-                            val ob = progressMap!![currentList[bindingAdapterPosition].courseId]
-                            val current = getInt("current", ob)
-                            if (b && i <= current + 1) {
-                                openCourse(currentList[bindingAdapterPosition], seekBar.progress)
+                        currentList[bindingAdapterPosition]?.courseId?.let { courseId ->
+                            if (progressMap?.containsKey(courseId) == true) {
+                                val ob = progressMap!![courseId]
+                                val current = getInt("current", ob)
+                                if (b && i <= current + 1) {
+                                    openCourse(currentList[bindingAdapterPosition], seekBar.progress)
+                                }
                             }
                         }
                     }
