@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.chat
 
 import android.app.AlertDialog
 import android.content.Context
+import android.content.SharedPreferences
 import android.graphics.drawable.ColorDrawable
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -32,13 +33,13 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
 import org.ole.planet.myplanet.ui.news.GrandChildAdapter
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
 class ChatHistoryListAdapter(
     var context: Context,
     private var chatHistory: List<RealmChatHistory>,
     private val fragment: ChatHistoryListFragment,
-    private val databaseService: DatabaseService
+    private val databaseService: DatabaseService,
+    private val settings: SharedPreferences
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
     private var chatHistoryItemClickListener: ChatHistoryItemClickListener? = null
@@ -221,9 +222,8 @@ class ChatHistoryListAdapter(
                             showGrandChildRecyclerView(enterpriseList, context.getString(R.string.enterprises), filteredChatHistory[position])
                         }
                     } else {
-                        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                        val sParentcode = prefs.getString("parentCode", "")
-                        val communityName = prefs.getString("communityName", "")
+                        val sParentcode = settings.getString("parentCode", "")
+                        val communityName = settings.getString("communityName", "")
                         val teamId = "$communityName@$sParentcode"
                         val community = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
                         showEditTextAndShareButton(community, context.getString(R.string.community), filteredChatHistory[position])

@@ -31,7 +31,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.util.Date
 import java.util.Locale
-import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -62,8 +61,8 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import javax.inject.Inject
 import org.ole.planet.myplanet.di.AppPreferences
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class ChatDetailFragment : Fragment() {

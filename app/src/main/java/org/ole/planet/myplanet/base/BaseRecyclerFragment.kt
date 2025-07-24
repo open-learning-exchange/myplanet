@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.base
 
-import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
@@ -36,10 +35,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities.toast
-import javax.inject.Inject
-import org.ole.planet.myplanet.di.AppPreferences
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
     var subjects: MutableSet<String> = mutableSetOf()
@@ -57,9 +53,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var resources: List<RealmMyLibrary>? = null
     var courseLib: String? = null
 
-    @Inject
-    @AppPreferences
-    lateinit var settings: SharedPreferences
 
     abstract fun getLayout(): Int
 

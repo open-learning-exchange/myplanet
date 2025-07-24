@@ -2,8 +2,8 @@ package org.ole.planet.myplanet.ui.community
 
 import android.content.Context
 import android.content.SharedPreferences
-import javax.inject.Inject
 import org.ole.planet.myplanet.di.AppPreferences
+import javax.inject.Inject
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -13,7 +13,6 @@ import androidx.recyclerview.widget.GridLayoutManager
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMembersBinding
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint

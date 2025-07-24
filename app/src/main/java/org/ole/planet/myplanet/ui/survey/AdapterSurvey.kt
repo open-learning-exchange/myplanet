@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.survey
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -32,7 +33,8 @@ class AdapterSurvey(
     private val userId: String?,
     private val isTeam: Boolean,
     val teamId: String?,
-    private val surveyAdoptListener: SurveyAdoptListener
+    private val surveyAdoptListener: SurveyAdoptListener,
+    private val settings: SharedPreferences
 ) : RecyclerView.Adapter<AdapterSurvey.ViewHolderSurvey>() {
     private var examList: List<RealmStepExam> = emptyList()
     private var listener: OnHomeItemClickListener? = null
@@ -177,9 +179,8 @@ class AdapterSurvey(
 
         fun adoptSurvey(exam: RealmStepExam, teamId: String?) {
             val userModel = UserProfileDbHandler(context).userModel
-            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val sParentCode = prefs.getString("parentCode", "")
-            val planetCode = prefs.getString("planetCode", "")
+            val sParentCode = settings.getString("parentCode", "")
+            val planetCode = settings.getString("planetCode", "")
 
             val parentJsonString = try {
                 JSONObject().apply {
