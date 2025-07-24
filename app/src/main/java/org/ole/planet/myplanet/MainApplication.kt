@@ -17,14 +17,12 @@ import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import dagger.hilt.android.HiltAndroidApp
 import io.realm.Realm
-import org.ole.planet.myplanet.di.AppPreferences
-import org.ole.planet.myplanet.di.DefaultPreferences
-import javax.inject.Inject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Date
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -36,7 +34,8 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.callback.TeamPageListener
-import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.service.AutoSyncWorker
 import org.ole.planet.myplanet.service.StayOnlineWorker
@@ -59,9 +58,6 @@ import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     @Inject
-    lateinit var databaseService: DatabaseService
-
-    @Inject
     @AppPreferences
     lateinit var appPreferences: SharedPreferences
 
@@ -69,20 +65,19 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     @DefaultPreferences
     lateinit var defaultPreferences: SharedPreferences
 
+    @Inject
+    lateinit var realm: Realm
+
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
-        lateinit var mRealm: Realm
-        lateinit var service: DatabaseService
-        var preferences: SharedPreferences? = null
         var syncFailedCount = 0
         var isCollectionSwitchOn = false
         var showDownload = false
         var isSyncRunning = false
         var listener: TeamPageListener? = null
         val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        lateinit var defaultPref: SharedPreferences
 
         fun createLog(context: Context, type: String, error: String = "") {
             applicationScope.launch(Dispatchers.IO) {
@@ -182,6 +177,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onCreate() {
         super.onCreate()
+        Utilities.setContext(this)
         initApp()
         setupPreferences()
         setupStrictMode()
@@ -199,10 +195,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     private fun setupPreferences() {
-        preferences = appPreferences
-        service = databaseService
-        mRealm = service.realmInstance
-        defaultPref = defaultPreferences
+        // No-op: preferences are injected where needed
     }
 
     private fun setupStrictMode() {
@@ -223,8 +216,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     private fun scheduleWorkersOnStart() {
-        if (preferences?.getBoolean("autoSync", false) == true && preferences?.contains("autoSyncInterval") == true) {
-            val syncInterval = preferences?.getInt("autoSyncInterval", 60 * 60)
+        if (appPreferences.getBoolean("autoSync", false) && appPreferences.contains("autoSyncInterval")) {
+            val syncInterval = appPreferences.getInt("autoSyncInterval", 60 * 60)
             scheduleAutoSyncWork(syncInterval)
         } else {
             cancelAutoSyncWork()
@@ -252,14 +245,14 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     private fun observeNetworkForDownloads() {
         isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
-                val serverUrl = preferences?.getString("serverURL", "")
+                val serverUrl = appPreferences.getString("serverURL", "")
                 if (!serverUrl.isNullOrEmpty()) {
                     applicationScope.launch {
                         val canReachServer = withContext(Dispatchers.IO) {
                             isServerReachable(serverUrl)
                         }
-                        if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
-                            backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)), applicationContext)
+                        if (canReachServer && defaultPreferences.getBoolean("beta_auto_download", false)) {
+                            backgroundDownload(downloadAllFiles(getAllLibraryList(realm)), applicationContext)
                         }
                     }
                 }
