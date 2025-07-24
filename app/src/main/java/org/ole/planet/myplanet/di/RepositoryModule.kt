@@ -46,6 +46,22 @@ object RepositoryModule {
     ): CourseRepository {
         return CourseRepositoryImpl(databaseService, apiInterface)
     }
+
+    @Provides
+    @Singleton
+    fun provideChatRepository(
+        databaseService: DatabaseService
+    ): org.ole.planet.myplanet.data.chat.ChatRepository {
+        return org.ole.planet.myplanet.data.chat.ChatRepositoryImpl(databaseService)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTeamRepository(
+        databaseService: DatabaseService
+    ): org.ole.planet.myplanet.data.team.TeamRepository {
+        return org.ole.planet.myplanet.data.team.TeamRepositoryImpl(databaseService)
+    }
 }
 
 // User Repository
