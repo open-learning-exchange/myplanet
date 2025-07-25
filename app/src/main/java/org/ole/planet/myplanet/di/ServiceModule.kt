@@ -43,8 +43,10 @@ object ServiceModule {
     @Provides
     @Singleton
     fun provideUploadToShelfService(
-        @ApplicationContext context: Context
+        @ApplicationContext context: Context,
+        databaseService: DatabaseService,
+        @AppPreferences preferences: SharedPreferences
     ): UploadToShelfService {
-        return UploadToShelfService(context)
+        return UploadToShelfService(context, databaseService, preferences)
     }
 }

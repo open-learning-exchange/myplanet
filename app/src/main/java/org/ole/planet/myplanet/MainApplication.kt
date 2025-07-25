@@ -17,14 +17,12 @@ import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import dagger.hilt.android.HiltAndroidApp
 import io.realm.Realm
-import org.ole.planet.myplanet.di.AppPreferences
-import org.ole.planet.myplanet.di.DefaultPreferences
-import javax.inject.Inject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Date
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -37,6 +35,8 @@ import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDow
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.callback.TeamPageListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.service.AutoSyncWorker
 import org.ole.planet.myplanet.service.StayOnlineWorker
