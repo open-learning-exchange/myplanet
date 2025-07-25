@@ -28,10 +28,10 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.JsonUtils.getInt
-import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
-import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
+import org.ole.planet.myplanet.utilities.JsonUtils.getInt
+import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
+import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -234,12 +234,17 @@ class AdapterCourses(
 
     private fun setupCheckbox(holder: ViewHoldercourse, course: RealmMyCourse, position: Int, isGuest: Boolean) {
         if (!isGuest) {
-            holder.rowCourseBinding.checkbox.isChecked = selectedItems.contains(course)
-            holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
-                holder.rowCourseBinding.checkbox.contentDescription =
-                    context.getString(R.string.select_res_course, course.courseTitle)
-                Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, courseList)
-                listener?.onSelectedListChange(selectedItems)
+            if (course.isMyCourse) {
+                holder.rowCourseBinding.checkbox.visibility = View.GONE
+            } else {
+                holder.rowCourseBinding.checkbox.visibility = View.VISIBLE
+                holder.rowCourseBinding.checkbox.isChecked = selectedItems.contains(course)
+                holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
+                    holder.rowCourseBinding.checkbox.contentDescription =
+                        context.getString(R.string.select_res_course, course.courseTitle)
+                    Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, courseList)
+                    listener?.onSelectedListChange(selectedItems)
+                }
             }
         } else {
             holder.rowCourseBinding.checkbox.visibility = View.GONE
@@ -256,18 +261,30 @@ class AdapterCourses(
     }
 
     fun areAllSelected(): Boolean {
-        areAllSelected = selectedItems.size == courseList.size
+        val selectableCourses = courseList.filterNotNull().filter { !it.isMyCourse }
+        areAllSelected = selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
         return areAllSelected
     }
 
     fun selectAllItems(selectAll: Boolean) {
         selectedItems.clear()
+        
         if (selectAll) {
-            selectedItems.addAll(courseList.filter { course ->
-                course != null && !course.isMyCourse
-            })
+            val selectableCourses = courseList.filterNotNull().filter { !it.isMyCourse }
+            selectedItems.addAll(selectableCourses)
         }
-        notifyDataSetChanged()
+        
+        val updatedPositions = mutableListOf<Int>()
+        courseList.forEachIndexed { index, course ->
+            if (course != null && !course.isMyCourse) {
+                updatedPositions.add(index)
+            }
+        }
+        
+        updatedPositions.forEach { position ->
+            notifyItemChanged(position)
+        }
+        
         listener?.onSelectedListChange(selectedItems)
     }
 

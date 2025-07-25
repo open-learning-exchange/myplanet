@@ -27,6 +27,7 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -53,7 +54,6 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener {
@@ -82,7 +82,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     lateinit var spnSubject: Spinner
     lateinit var searchTags: MutableList<RealmTag>
     private lateinit var confirmation: AlertDialog
-    private var isCheckboxChangedByCode = false
+    private var isUpdatingSelectAllState = false
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
 //    lateinit var settings: SharedPreferences
@@ -401,18 +401,12 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
 
         selectAll.setOnCheckedChangeListener { _, isChecked ->
-            if (isCheckboxChangedByCode) {
-                isCheckboxChangedByCode = false
+            if (isUpdatingSelectAllState) {
                 return@setOnCheckedChangeListener
             }
             hideButtons()
-            if (isChecked) {
-                adapterCourses.selectAllItems(true)
-                selectAll.text = getString(R.string.unselect_all)
-            } else {
-                adapterCourses.selectAllItems(false)
-                selectAll.text = getString(R.string.select_all)
-            }
+            adapterCourses.selectAllItems(isChecked)
+            selectAll.text = if (isChecked) getString(R.string.unselect_all) else getString(R.string.select_all)
         }
     }
 
@@ -536,22 +530,27 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun updateCheckBoxState(programmaticState: Boolean) {
-        isCheckboxChangedByCode = true
+        isUpdatingSelectAllState = true
         selectAll.isChecked = programmaticState
-        isCheckboxChangedByCode = false
+        isUpdatingSelectAllState = false
+    }
+
+    private fun clearAllSelections() {
+        if (::adapterCourses.isInitialized) {
+            adapterCourses.selectAllItems(false)
+            updateCheckBoxState(false)
+            selectAll.text = getString(R.string.select_all)
+        }
     }
 
     private fun changeButtonStatus() {
         tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
         btnRemove.isEnabled = (selectedItems?.size ?: 0) > 0
         btnArchive.isEnabled = (selectedItems?.size ?: 0) > 0
-        if (adapterCourses.areAllSelected()) {
-            updateCheckBoxState(true)
-            selectAll.text = getString(R.string.unselect_all)
-        } else {
-            updateCheckBoxState(false)
-            selectAll.text = getString(R.string.select_all)
-        }
+        
+        val allSelected = adapterCourses.areAllSelected()
+        updateCheckBoxState(allSelected)
+        selectAll.text = if (allSelected) getString(R.string.unselect_all) else getString(R.string.select_all)
     }
 
     override fun onTagSelected(tag: RealmTag) {
@@ -602,6 +601,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     override fun onPause() {
         super.onPause()
         saveSearchActivity()
+        clearAllSelections()
     }
 
     override fun onDestroy() {

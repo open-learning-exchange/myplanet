@@ -277,7 +277,11 @@ class Service @Inject constructor(
                 if (res?.body() != null) {
                     val model = populateUsersTable(res.body(), realm1, settings)
                     if (model != null) {
-                        UploadToShelfService(context).saveKeyIv(retrofitInterface, model, obj)
+                        UploadToShelfService(
+                            MainApplication.context,
+                            DatabaseService(MainApplication.context),
+                            settings
+                        ).saveKeyIv(retrofitInterface, model, obj)
                     }
                 }
             } catch (e: IOException) {
