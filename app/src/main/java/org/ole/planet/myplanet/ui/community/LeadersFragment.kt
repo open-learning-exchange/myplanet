@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.ui.community
 
 import android.content.Context
 import android.content.SharedPreferences
+import org.ole.planet.myplanet.di.AppPreferences
+import javax.inject.Inject
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -11,14 +13,16 @@ import androidx.recyclerview.widget.GridLayoutManager
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMembersBinding
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class LeadersFragment : Fragment() {
     private lateinit var fragmentMembersBinding: FragmentMembersBinding
+    @Inject
+    @AppPreferences
     lateinit var settings: SharedPreferences
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentMembersBinding = FragmentMembersBinding.inflate(inflater, container, false)
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return fragmentMembersBinding.root
     }
 

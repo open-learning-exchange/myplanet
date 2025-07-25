@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.ui.userprofile
 
 import android.content.Context
-import android.content.Context.MODE_PRIVATE
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -37,7 +35,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
@@ -53,7 +50,6 @@ class AchievementFragment : BaseContainerFragment() {
     private var achievement: RealmAchievement? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
-    lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
     
     @Inject
@@ -64,7 +60,6 @@ class AchievementFragment : BaseContainerFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefManager = SharedPrefManager(requireContext())
-        settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         startAchievementSync()
     }
 

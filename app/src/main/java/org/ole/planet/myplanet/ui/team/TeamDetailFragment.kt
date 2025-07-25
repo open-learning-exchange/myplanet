@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.ui.team
 
-import android.content.Context.MODE_PRIVATE
 import android.content.DialogInterface
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -34,7 +32,6 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
@@ -58,7 +55,6 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     private var directTeamId: String? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
-    lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
@@ -66,7 +62,6 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefManager = SharedPrefManager(requireContext())
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         startTeamSync()
     }
 

@@ -24,6 +24,7 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
 import javax.inject.Inject
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -66,6 +67,9 @@ abstract class BaseResourceFragment : Fragment() {
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    @AppPreferences
+    lateinit var settings: SharedPreferences
     private var resourceNotFoundDialog: AlertDialog? = null
 
     private fun isFragmentActive(): Boolean {
@@ -268,7 +272,7 @@ abstract class BaseResourceFragment : Fragment() {
         }
         prgDialog.setNegativeButton("disabling", isVisible = false){ prgDialog.dismiss() }
 
-        if (settings?.getBoolean("isAlternativeUrl", false) == true) {
+        if (settings.getBoolean("isAlternativeUrl", false)) {
             editor?.putString("alternativeUrl", "")
             editor?.putString("processedAlternativeUrl", "")
             editor?.putBoolean("isAlternativeUrl", false)
@@ -307,15 +311,14 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun getLibraryList(mRealm: Realm): List<RealmMyLibrary> {
-        return getLibraryList(mRealm, settings?.getString("userId", "--"))
+        return getLibraryList(mRealm, settings.getString("userId", "--"))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mRealm = databaseService.realmInstance
         prgDialog = getProgressDialog(requireActivity())
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        editor = settings?.edit()
+        editor = settings.edit()
     }
 
     override fun onPause() {
@@ -379,7 +382,6 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     companion object {
-        var settings: SharedPreferences? = null
         var auth = ""
 
         fun getAllLibraryList(mRealm: Realm): List<RealmMyLibrary> {
