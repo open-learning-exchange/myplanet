@@ -90,7 +90,6 @@ class MyDownloadService : Service() {
         return START_STICKY
     }
 
-
     private fun updateNotificationForBatchDownload() {
         DownloadUtils.createChannels(this)
         notificationBuilder = NotificationCompat.Builder(this, "DownloadChannel")
@@ -300,7 +299,6 @@ class MyDownloadService : Service() {
         notificationManager?.cancel(ONGOING_NOTIFICATION_ID)
         super.onDestroy()
     }
-
 
     companion object {
         const val PREFS_NAME = "MyPrefsFile"
