@@ -1,7 +1,8 @@
 package org.ole.planet.myplanet.ui.chat
 
-import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
+import org.ole.planet.myplanet.di.AppPreferences
+import javax.inject.Inject
 import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.os.Bundle
@@ -21,7 +22,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.Sort
-import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -37,7 +37,6 @@ import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
@@ -51,6 +50,8 @@ class ChatHistoryListFragment : Fragment() {
     private var isQuestion: Boolean = false
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
+    @Inject
+    @AppPreferences
     lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
     
@@ -65,7 +66,6 @@ class ChatHistoryListFragment : Fragment() {
         super.onCreate(savedInstanceState)
         sharedViewModel = ViewModelProvider(requireActivity())[ChatViewModel::class.java]
         prefManager = SharedPrefManager(requireContext())
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         startChatHistorySync()
     }
 
@@ -222,7 +222,7 @@ class ChatHistoryListFragment : Fragment() {
 
         val adapter = fragmentChatHistoryListBinding.recyclerView.adapter as? ChatHistoryListAdapter
         if (adapter == null) {
-            val newAdapter = ChatHistoryListAdapter(requireContext(), list, this, databaseService)
+            val newAdapter = ChatHistoryListAdapter(requireContext(), list, this, databaseService, settings)
             newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
                 override fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?, aiProvider: String?) {
                     conversations?.let { sharedViewModel.setSelectedChatHistory(it) }

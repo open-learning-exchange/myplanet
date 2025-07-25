@@ -1,24 +1,24 @@
 package org.ole.planet.myplanet.ui.team
 
 import android.content.Context
-import android.content.SharedPreferences
+import dagger.hilt.android.AndroidEntryPoint
 import android.os.Bundle
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
+@AndroidEntryPoint
 abstract class BaseTeamFragment : BaseNewsFragment() {
     var user: RealmUserModel? = null
     lateinit var teamId: String
     var team: RealmMyTeam? = null
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val sParentCode = settings?.getString("parentCode", "")
-        val communityName = settings?.getString("communityName", "")
+        val sParentCode = settings.getString("parentCode", "")
+        val communityName = settings.getString("communityName", "")
         teamId = requireArguments().getString("id", "") ?: "$communityName@$sParentCode"
         mRealm = databaseService.realmInstance
         user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
@@ -69,7 +69,4 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         return requireArguments().getString("teamId") ?: teamId
     }
 
-    companion object {
-        var settings: SharedPreferences? = null
-    }
 }

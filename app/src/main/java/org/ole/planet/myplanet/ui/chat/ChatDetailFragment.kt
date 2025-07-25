@@ -31,7 +31,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.util.Date
 import java.util.Locale
-import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -62,6 +61,8 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import org.ole.planet.myplanet.di.AppPreferences
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class ChatDetailFragment : Fragment() {
@@ -76,6 +77,8 @@ class ChatDetailFragment : Fragment() {
     private lateinit var mRealm: Realm
     var user: RealmUserModel? = null
     private var newsId: String? = null
+    @Inject
+    @AppPreferences
     lateinit var settings: SharedPreferences
     lateinit var customProgressDialog: DialogUtils.CustomProgressDialog
     @Inject
@@ -95,7 +98,6 @@ class ChatDetailFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentChatDetailBinding = FragmentChatDetailBinding.inflate(inflater, container, false)
-        settings = requireActivity().getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
         return fragmentChatDetailBinding.root
     }
