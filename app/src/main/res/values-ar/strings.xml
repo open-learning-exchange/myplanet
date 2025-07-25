@@ -1367,5 +1367,8 @@
     <string name="syncing_resources">جارٍ مزامنة الموارد…</string>
     <string name="syncing_achievements">جارٍ مزامنة الإنجازات…</string>
     <string name="nation_leaders">قادة الأمة</string>
+    <string name="filter_by_label">تصفية حسب التصنيف</string>
+    <string name="community_board">لوحة المجتمع</string>
+    <string name="nation_board">لوحة الوطن</string>
 
 </resources>
