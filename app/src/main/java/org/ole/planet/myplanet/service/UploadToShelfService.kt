@@ -9,6 +9,9 @@ import android.util.Base64
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
+import javax.inject.Singleton
 import io.realm.Realm
 import java.io.IOException
 import java.util.Date
@@ -16,6 +19,7 @@ import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseIds
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
@@ -32,9 +36,12 @@ import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.RetryUtils
 import retrofit2.Response
 
-class UploadToShelfService(context: Context) {
-    private val dbService: DatabaseService = DatabaseService(context)
-    private val sharedPreferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+@Singleton
+class UploadToShelfService @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val dbService: DatabaseService,
+    @AppPreferences private val sharedPreferences: SharedPreferences
+) {
     lateinit var mRealm: Realm
 
     fun uploadUserData(listener: SuccessListener) {
