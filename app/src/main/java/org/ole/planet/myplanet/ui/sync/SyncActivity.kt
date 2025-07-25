@@ -1,14 +1,31 @@
 package org.ole.planet.myplanet.ui.sync
 
-import android.Manifest
-import android.content.*
+import android.content.Context
+import android.content.DialogInterface
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.SharedPreferences
+import android.content.SharedPreferences.Editor
 import android.graphics.drawable.AnimationDrawable
+import android.Manifest
 import android.os.Build
 import android.os.Bundle
-import android.text.*
-import android.view.*
+import android.text.Editable
+import android.text.TextUtils
+import android.text.TextWatcher
+import android.view.ContextThemeWrapper
+import android.view.LayoutInflater
+import android.view.View
 import android.webkit.URLUtil
-import android.widget.*
+import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.CompoundButton
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.RadioGroup
+import android.widget.Spinner
+import android.widget.TextView
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
@@ -18,53 +35,75 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.afollestad.materialdialogs.*
+import com.afollestad.materialdialogs.DialogAction
+import com.afollestad.materialdialogs.MaterialDialog
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.*
+import io.realm.Realm
+import io.realm.RealmChangeListener
+import io.realm.RealmResults
 import java.io.File
-import java.util.*
+import java.util.ArrayList
+import java.util.Calendar
+import java.util.Date
+import java.util.HashMap
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.isInitialized
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
+import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.BuildConfig
+import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
+import org.ole.planet.myplanet.databinding.LayoutChildLoginBinding
+import org.ole.planet.myplanet.datamanager.ApiClient.client
+import org.ole.planet.myplanet.datamanager.ApiInterface
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.Service
+import org.ole.planet.myplanet.datamanager.Service.CheckVersionCallback
+import org.ole.planet.myplanet.datamanager.Service.ConfigurationIdListener
+import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
+import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.ServerAddressesModel
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
-import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
-import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.databinding.*
-import org.ole.planet.myplanet.datamanager.*
-import org.ole.planet.myplanet.datamanager.ApiClient.client
-import org.ole.planet.myplanet.datamanager.Service.*
-import org.ole.planet.myplanet.model.*
-import org.ole.planet.myplanet.service.*
+import org.ole.planet.myplanet.service.SyncManager
+import org.ole.planet.myplanet.service.TransactionSyncManager
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
-import org.ole.planet.myplanet.utilities.*
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.autoSynFeature
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.getUpdateDialog
 import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.DialogUtils.showSnack
 import org.ole.planet.myplanet.utilities.DialogUtils.showWifiSettingDialog
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
+import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.ServerConfigUtils
+import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
+import org.ole.planet.myplanet.utilities.Utilities.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
+import org.ole.planet.myplanet.utilities.Utilities.toast
 
 @AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
@@ -437,85 +476,85 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     override fun onSyncComplete() {
         val activityContext = this@SyncActivity
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(Dispatchers.Main) {
             try {
-                var attempt = 0
-                Realm.getDefaultInstance().use { realm ->
-                    while (true) {
-                        realm.refresh()
-                        val realmResults = realm.where(RealmUserModel::class.java).findAll()
-                        if (realmResults.isNotEmpty()) {
-                            break
+                val realm = Realm.getDefaultInstance()
+                val results = realm.where(RealmUserModel::class.java).findAllAsync()
+                val listener = object : RealmChangeListener<RealmResults<RealmUserModel>> {
+                    override fun onChange(t: RealmResults<RealmUserModel>) {
+                        if (t.isNotEmpty()) {
+                            results.removeChangeListener(this)
+                            realm.close()
+                            handleSyncCompletion(activityContext)
                         }
-                        attempt++
-                        delay(1000)
                     }
                 }
-
-                withContext(Dispatchers.Main) {
-                    forceSyncTrigger()
-                    val syncedUrl = settings.getString("serverURL", null)?.let { ServerConfigUtils.removeProtocol(it) }
-                    if (syncedUrl != null && serverListAddresses.any { it.url.replace(Regex("^https?://"), "") == syncedUrl }) {
-                        editor.putString("pinnedServerUrl", syncedUrl).apply()
-                    }
-
-                    customProgressDialog.dismiss()
-
-                    if (::syncIconDrawable.isInitialized) {
-                        syncIconDrawable = syncIcon.drawable as AnimationDrawable
-                        syncIconDrawable.stop()
-                        syncIconDrawable.selectDrawable(0)
-                        syncIcon.invalidateDrawable(syncIconDrawable)
-                    }
-
-                    lifecycleScope.launch {
-                        createLog("synced successfully", "")
-                    }
-
-                    lifecycleScope.launch(Dispatchers.IO) {
-                        val pendingLanguage = settings.getString("pendingLanguageChange", null)
-                        if (pendingLanguage != null) {
-                            withContext(Dispatchers.Main) {
-                                editor.remove("pendingLanguageChange").apply()
-
-                                LocaleHelper.setLocale(this@SyncActivity, pendingLanguage)
-                                updateUIWithNewLanguage()
-                            }
-                        }
-                    }
-
-                    showSnack(activityContext.findViewById(android.R.id.content), getString(R.string.sync_completed))
-
-                    if (settings.getBoolean("isAlternativeUrl", false)) {
-                        editor.putString("alternativeUrl", "")
-                        editor.putString("processedAlternativeUrl", "")
-                        editor.putBoolean("isAlternativeUrl", false)
-                        editor.apply()
-                    }
-
-                    downloadAdditionalResources()
-
-                    val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
-                    if (betaAutoDownload) {
-                        withContext(Dispatchers.IO) {
-                            val downloadRealm = Realm.getDefaultInstance()
-                            try {
-                                backgroundDownload(downloadAllFiles(getAllLibraryList(downloadRealm)), activityContext)
-                            } finally {
-                                downloadRealm.close()
-                            }
-                        }
-                    }
-
-                    cancelAll(activityContext)
-
-                    if (activityContext is LoginActivity) {
-                        activityContext.updateTeamDropdown()
-                    }
-                }
+                results.addChangeListener(listener)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+        }
+    }
+
+    private fun handleSyncCompletion(activityContext: SyncActivity) {
+        forceSyncTrigger()
+        val syncedUrl = settings.getString("serverURL", null)?.let { ServerConfigUtils.removeProtocol(it) }
+        if (syncedUrl != null && serverListAddresses.any { it.url.replace(Regex("^https?://"), "") == syncedUrl }) {
+            editor.putString("pinnedServerUrl", syncedUrl).apply()
+        }
+
+        customProgressDialog.dismiss()
+
+        if (::syncIconDrawable.isInitialized) {
+            syncIconDrawable = syncIcon.drawable as AnimationDrawable
+            syncIconDrawable.stop()
+            syncIconDrawable.selectDrawable(0)
+            syncIcon.invalidateDrawable(syncIconDrawable)
+        }
+
+        lifecycleScope.launch {
+            createLog("synced successfully", "")
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            val pendingLanguage = settings.getString("pendingLanguageChange", null)
+            if (pendingLanguage != null) {
+                withContext(Dispatchers.Main) {
+                    editor.remove("pendingLanguageChange").apply()
+
+                    LocaleHelper.setLocale(this@SyncActivity, pendingLanguage)
+                    updateUIWithNewLanguage()
+                }
+            }
+        }
+
+        showSnack(activityContext.findViewById(android.R.id.content), getString(R.string.sync_completed))
+
+        if (settings.getBoolean("isAlternativeUrl", false)) {
+            editor.putString("alternativeUrl", "")
+            editor.putString("processedAlternativeUrl", "")
+            editor.putBoolean("isAlternativeUrl", false)
+            editor.apply()
+        }
+
+        downloadAdditionalResources()
+
+        val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
+        if (betaAutoDownload) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                val downloadRealm = Realm.getDefaultInstance()
+                try {
+                    backgroundDownload(downloadAllFiles(getAllLibraryList(downloadRealm)), activityContext)
+                } finally {
+                    downloadRealm.close()
+                }
+            }
+        }
+
+        cancelAll(activityContext)
+
+        if (activityContext is LoginActivity) {
+            activityContext.updateTeamDropdown()
         }
     }
 

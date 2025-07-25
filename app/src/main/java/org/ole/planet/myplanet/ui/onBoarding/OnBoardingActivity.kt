@@ -7,9 +7,9 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.viewpager.widget.ViewPager
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.viewpager.widget.ViewPager
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityOnBoardingBinding
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
