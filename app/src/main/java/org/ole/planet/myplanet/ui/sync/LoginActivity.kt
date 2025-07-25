@@ -31,7 +31,7 @@ import java.util.Locale
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.adapter.TeamListAdapter
+import org.ole.planet.myplanet.ui.userprofile.TeamListAdapter
 import org.ole.planet.myplanet.databinding.ActivityLoginBinding
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.datamanager.Service
