@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.datamanager
 
 import android.app.Activity
 import android.app.ActivityManager
-import android.app.Notification
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Context

@@ -2,17 +2,22 @@ package org.ole.planet.myplanet.utilities
 
 import android.app.PendingIntent
 import android.app.usage.StorageStatsManager
-import android.content.*
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageInstaller
 import android.database.Cursor
 import android.net.Uri
-import android.os.*
+import android.os.Environment
+import android.os.StatFs
 import android.os.storage.StorageManager
 import android.provider.MediaStore
-import android.text.TextUtils
 import android.text.format.Formatter
 import androidx.core.net.toUri
-import java.io.*
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID

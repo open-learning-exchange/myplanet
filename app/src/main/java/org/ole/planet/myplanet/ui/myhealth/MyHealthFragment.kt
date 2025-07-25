@@ -12,9 +12,11 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
 import android.widget.AdapterView.OnItemClickListener
 import android.widget.AdapterView.OnItemSelectedListener
+import android.widget.Button
+import android.widget.EditText
+import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.core.content.ContextCompat
@@ -36,7 +38,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding

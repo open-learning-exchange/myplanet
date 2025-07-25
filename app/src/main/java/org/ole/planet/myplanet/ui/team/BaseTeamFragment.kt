@@ -1,8 +1,7 @@
 package org.ole.planet.myplanet.ui.team
 
-import android.content.Context
-import dagger.hilt.android.AndroidEntryPoint
 import android.os.Bundle
+import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews

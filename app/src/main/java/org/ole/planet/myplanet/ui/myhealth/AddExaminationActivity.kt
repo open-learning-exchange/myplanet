@@ -12,8 +12,6 @@ import android.widget.CompoundButton
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint

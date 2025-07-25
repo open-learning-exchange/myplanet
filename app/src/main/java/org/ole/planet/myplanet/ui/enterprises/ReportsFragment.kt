@@ -20,7 +20,6 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.databinding.DialogAddReportBinding

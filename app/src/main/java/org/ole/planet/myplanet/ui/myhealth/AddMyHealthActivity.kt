@@ -8,10 +8,7 @@ import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.Spinner
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.google.gson.Gson
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm

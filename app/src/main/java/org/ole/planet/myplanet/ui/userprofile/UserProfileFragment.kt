@@ -42,7 +42,6 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.lang.String.format
-import java.text.SimpleDateFormat
 import java.util.ArrayList
 import java.util.Calendar
 import java.util.LinkedHashMap

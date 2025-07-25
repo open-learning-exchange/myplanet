@@ -33,7 +33,6 @@ import io.realm.Sort
 import java.io.File
 import java.util.Calendar
 import java.util.Locale
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.Conversation
