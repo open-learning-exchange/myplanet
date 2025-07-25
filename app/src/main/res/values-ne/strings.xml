@@ -1367,5 +1367,8 @@
     <string name="syncing_resources">स्रोतहरू समिकरण गर्दै…</string>
     <string name="syncing_achievements">उपलब्धिहरू समिकरण गर्दै…</string>
     <string name="nation_leaders">राष्ट्रका नेता</string>
+    <string name="filter_by_label">लेबलद्वारा फिल्टर गर्नुहोस्</string>
+    <string name="community_board">समुदाय बोर्ड</string>
+    <string name="nation_board">राष्ट्रिय बोर्ड</string>
 
 </resources>
