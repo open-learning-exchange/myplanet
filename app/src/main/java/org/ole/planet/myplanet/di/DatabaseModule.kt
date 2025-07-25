@@ -10,8 +10,8 @@ import io.realm.Realm
 import io.realm.RealmConfiguration
 import io.realm.log.LogLevel
 import io.realm.log.RealmLog
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import javax.inject.Singleton
+import org.ole.planet.myplanet.datamanager.DatabaseService
 
 @Module
 @InstallIn(SingletonComponent::class)

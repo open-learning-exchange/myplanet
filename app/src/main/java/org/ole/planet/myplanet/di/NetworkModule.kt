@@ -6,14 +6,14 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import okhttp3.OkHttpClient
-import org.ole.planet.myplanet.datamanager.ApiInterface
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import java.lang.reflect.Modifier
 import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
 import javax.inject.Singleton
+import okhttp3.OkHttpClient
+import org.ole.planet.myplanet.datamanager.ApiInterface
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)

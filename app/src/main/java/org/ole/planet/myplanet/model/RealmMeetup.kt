@@ -4,9 +4,9 @@ import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmObject
-import io.realm.Case
 import io.realm.annotations.PrimaryKey
 import org.json.JSONArray
 import org.ole.planet.myplanet.utilities.JsonUtils

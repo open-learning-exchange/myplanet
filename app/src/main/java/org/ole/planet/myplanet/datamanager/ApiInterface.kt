@@ -6,8 +6,8 @@ import okhttp3.ResponseBody
 import org.ole.planet.myplanet.model.ChatModel
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.model.MyPlanet
-import retrofit2.Response
 import retrofit2.Call
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header

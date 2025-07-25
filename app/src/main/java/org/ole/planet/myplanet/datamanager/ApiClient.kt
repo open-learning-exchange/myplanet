@@ -5,9 +5,9 @@ import java.io.IOException
 import java.lang.reflect.Modifier
 import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.delay
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.utilities.RetryUtils
-import kotlinx.coroutines.delay
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory

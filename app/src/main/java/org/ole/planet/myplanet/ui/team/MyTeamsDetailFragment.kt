@@ -20,8 +20,8 @@ import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.RealmResults
 import java.util.Date
-import javax.inject.Inject
 import java.util.UUID
+import javax.inject.Inject
 import org.json.JSONArray
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseNewsFragment
