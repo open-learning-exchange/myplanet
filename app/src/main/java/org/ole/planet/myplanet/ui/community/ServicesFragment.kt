@@ -106,7 +106,7 @@ class ServicesFragment : BaseTeamFragment() {
                             isMyTeam = isMyTeam
                         )
 
-                        (context as OnHomeItemClickListener).openCallFragment(f)
+                        homeItemClickListener?.openCallFragment(f)
                     }
                 }
             }
