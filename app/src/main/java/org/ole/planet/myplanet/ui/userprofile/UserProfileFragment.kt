@@ -42,6 +42,7 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.lang.String.format
+import java.text.SimpleDateFormat
 import java.util.ArrayList
 import java.util.Calendar
 import java.util.LinkedHashMap
@@ -279,9 +280,13 @@ class UserProfileFragment : Fragment() {
             val dpd = DatePickerDialog(
                 requireContext(),
                 { _, year, monthOfYear, dayOfMonth ->
-                    val dob2 = format(Locale.US, "%04d-%02d-%02d", year, monthOfYear + 1, dayOfMonth)
+                    val calendar = Calendar.getInstance()
+                    calendar.set(year, monthOfYear, dayOfMonth)
+                    val dobMillis = calendar.timeInMillis
+                    val dobFormatted = TimeUtils.getFormatedDate(dobMillis)
+
                     date = format(Locale.US, "%04d-%02d-%02dT00:00:00.000Z", year, monthOfYear + 1, dayOfMonth)
-                    binding.dateOfBirth.text = dob2
+                    binding.dateOfBirth.text = dobFormatted
                 },
                 now.get(Calendar.YEAR),
                 now.get(Calendar.MONTH),
