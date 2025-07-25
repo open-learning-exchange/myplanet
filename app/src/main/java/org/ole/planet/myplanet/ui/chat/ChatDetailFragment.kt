@@ -198,7 +198,7 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun observeViewModelData() {
-        viewLifecycleOwner.lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     sharedViewModel.selectedChatHistory.collect { conversations ->
@@ -249,18 +249,18 @@ class ChatDetailFragment : Fragment() {
     private fun checkAiProviders() {
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
-                customProgressDialog.setText("${context?.getString(R.string.fetching_ai_providers)}")
-                customProgressDialog.show()
-                chatApiHelper.fetchAiProviders { providers ->
-                    customProgressDialog.dismiss()
-                    if (providers == null || providers.values.all { !it }) {
-                        onFailError()
-                    } else {
-                        updateAIButtons(providers)
-                    }
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
+            withContext(Dispatchers.IO) { updateServerIfNecessary(mapping) }
+            if (!isAdded) return@launchWhenStarted
+            customProgressDialog.setText("${context?.getString(R.string.fetching_ai_providers)}")
+            customProgressDialog.show()
+            chatApiHelper.fetchAiProviders { providers ->
+                if (!isAdded) return@fetchAiProviders
+                customProgressDialog.dismiss()
+                if (providers == null || providers.values.all { !it }) {
+                    onFailError()
+                } else {
+                    updateAIButtons(providers)
                 }
             }
         }
@@ -365,7 +365,7 @@ class ChatDetailFragment : Fragment() {
     private fun launchRequest(content: RequestBody, query: String, id: String?) {
         disableUI()
         val mapping = processServerUrl()
-        viewLifecycleOwner.lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             withContext(Dispatchers.IO) { updateServerIfNecessary(mapping) }
             sendChatRequest(content, query, id, id == null)
         }
@@ -433,13 +433,15 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun sendChatRequest(content: RequestBody, query: String, id: String?, newChat: Boolean) {
-        viewLifecycleOwner.lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launchWhenStarted {
             chatApiHelper.sendChatRequest(content, object : Callback<ChatModel> {
                 override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
+                    if (!isAdded) return
                     handleResponse(response, query, id)
                 }
 
                 override fun onFailure(call: Call<ChatModel>, t: Throwable) {
+                    if (!isAdded) return
                     handleFailure(t.message, query, id)
                 }
             })
