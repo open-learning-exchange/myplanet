@@ -2,10 +2,10 @@ package org.ole.planet.myplanet.ui.chat
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import okhttp3.RequestBody
-import okhttp3.ResponseBody
 import javax.inject.Inject
 import javax.inject.Singleton
+import okhttp3.RequestBody
+import okhttp3.ResponseBody
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.model.ChatModel
 import org.ole.planet.myplanet.utilities.Utilities
