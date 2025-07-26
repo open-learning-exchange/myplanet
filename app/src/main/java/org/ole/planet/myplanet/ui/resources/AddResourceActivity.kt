@@ -17,7 +17,6 @@ import io.realm.RealmList
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
-import kotlin.toString
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
