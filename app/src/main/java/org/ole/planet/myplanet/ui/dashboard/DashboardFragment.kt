@@ -6,7 +6,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
 import io.realm.Realm
-import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBinding
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSurveySubmissionByUser

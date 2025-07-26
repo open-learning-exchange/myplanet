@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.os.Bundle
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject

@@ -2,9 +2,6 @@ package org.ole.planet.myplanet.service
 
 import android.content.Context
 import android.content.SharedPreferences
-import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
-import javax.inject.Singleton
 import android.os.Handler
 import android.os.Looper
 import android.text.TextUtils
@@ -12,9 +9,12 @@ import android.util.Base64
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
 import java.io.IOException
 import java.util.Date
+import javax.inject.Inject
+import javax.inject.Singleton
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
@@ -29,7 +29,6 @@ import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.removedIds
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.RetryUtils

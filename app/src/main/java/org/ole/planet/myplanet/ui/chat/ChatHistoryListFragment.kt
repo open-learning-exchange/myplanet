@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.ui.chat
 
 import android.content.SharedPreferences
-import org.ole.planet.myplanet.di.AppPreferences
-import javax.inject.Inject
 import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.os.Bundle
@@ -19,9 +17,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import io.realm.RealmList
 import io.realm.Sort
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -31,6 +29,7 @@ import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.ChatViewModel
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory

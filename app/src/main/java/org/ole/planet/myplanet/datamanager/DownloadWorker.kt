@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.datamanager
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
-import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters

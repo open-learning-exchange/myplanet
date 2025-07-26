@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.courses
 import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -48,7 +47,6 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
