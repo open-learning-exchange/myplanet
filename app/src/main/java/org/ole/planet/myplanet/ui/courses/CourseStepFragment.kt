@@ -11,7 +11,6 @@ import androidx.fragment.app.Fragment
 import io.realm.Realm
 import java.util.Date
 import java.util.UUID
-import javax.inject.Inject
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment

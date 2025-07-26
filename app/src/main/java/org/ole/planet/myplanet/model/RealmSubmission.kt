@@ -17,11 +17,11 @@ import java.util.UUID
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.ApiInterface
+import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import org.ole.planet.myplanet.utilities.Constants
 
 open class RealmSubmission : RealmObject() {
     @PrimaryKey

@@ -21,8 +21,6 @@ import io.realm.RealmList
 import io.realm.RealmQuery
 import io.realm.Sort
 import java.util.Date
-import java.util.Locale
-import java.util.UUID
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeExamBinding
@@ -33,7 +31,6 @@ import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.exam.ExamAnswerUtils
 import org.ole.planet.myplanet.ui.exam.ExamSubmissionUtils
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto

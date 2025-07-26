@@ -3,8 +3,6 @@ package org.ole.planet.myplanet.ui.news
 import android.os.Bundle
 import android.view.View
 import android.webkit.WebSettings
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.google.gson.JsonObject

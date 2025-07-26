@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.text.TextUtils
@@ -27,7 +26,6 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import org.ole.planet.myplanet.BuildConfig
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity.Companion.hasInstallPermission
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -35,8 +33,6 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_DOWNLOAD
-import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_OPEN
-import org.ole.planet.myplanet.ui.courses.AdapterCourses
 import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity
 import org.ole.planet.myplanet.ui.viewer.CSVViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity

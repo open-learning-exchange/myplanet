@@ -1,12 +1,16 @@
 package org.ole.planet.myplanet.service
 
-import android.content.*
+import android.content.Context
+import android.content.SharedPreferences
 import android.os.Looper
 import android.text.TextUtils
-import com.google.gson.*
+import com.google.gson.Gson
+import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.realm.*
-import java.io.*
+import io.realm.Realm
+import io.realm.RealmResults
+import java.io.File
+import java.io.IOException
 import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -14,17 +18,41 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
-import org.ole.planet.myplanet.datamanager.*
 import org.ole.planet.myplanet.datamanager.ApiClient.client
+import org.ole.planet.myplanet.datamanager.ApiInterface
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.FileUploadService
 import org.ole.planet.myplanet.di.AppPreferences
-import org.ole.planet.myplanet.model.*
+import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.model.RealmAchievement
+import org.ole.planet.myplanet.model.RealmApkLog
+import org.ole.planet.myplanet.model.RealmCourseActivity
+import org.ole.planet.myplanet.model.RealmCourseProgress
+import org.ole.planet.myplanet.model.RealmFeedback
+import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyPersonal
+import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmNewsLog
+import org.ole.planet.myplanet.model.RealmOfflineActivity
+import org.ole.planet.myplanet.model.RealmRating
+import org.ole.planet.myplanet.model.RealmResourceActivity
+import org.ole.planet.myplanet.model.RealmSearchActivity
+import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmSubmitPhotos
+import org.ole.planet.myplanet.model.RealmTeamLog
+import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getAndroidId
-import retrofit2.*
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
 
 private const val BATCH_SIZE = 50
 

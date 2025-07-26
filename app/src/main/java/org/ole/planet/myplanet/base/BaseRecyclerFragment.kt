@@ -10,8 +10,6 @@ import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.common.reflect.TypeToken
-import com.google.gson.Gson
 import io.realm.RealmList
 import io.realm.RealmModel
 import io.realm.RealmObject

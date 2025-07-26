@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.survey
 
-import android.content.Context.MODE_PRIVATE
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher

@@ -11,7 +11,6 @@ import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
