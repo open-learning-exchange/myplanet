@@ -78,13 +78,20 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             fragmentTakeCourseBinding.nextStep.visibility = View.GONE
             fragmentTakeCourseBinding.previousStep.visibility = View.GONE
         }
-        fragmentTakeCourseBinding.viewPager2.adapter = CoursesPagerAdapter(this, courseId, getCourseStepIds(mRealm, courseId))
-        fragmentTakeCourseBinding.viewPager2.isUserInputEnabled = false
 
         currentStep = getCourseProgress()
-
         position = if (currentStep > 0) currentStep - 1 else 0
-        fragmentTakeCourseBinding.viewPager2.currentItem = position
+        println("position: $position")
+        fragmentTakeCourseBinding.viewPager2.adapter =
+            CoursesPagerAdapter(
+                this@TakeCourseFragment,
+                courseId,
+                getCourseStepIds(mRealm, courseId)
+            )
+
+        fragmentTakeCourseBinding.viewPager2.isUserInputEnabled = false
+        fragmentTakeCourseBinding.viewPager2.setCurrentItem(position, false)
+
         updateStepDisplay(position)
 
         if (position == 0) {
@@ -92,7 +99,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         }
         setCourseData()
         setListeners()
-        fragmentTakeCourseBinding.viewPager2.currentItem = position
         checkSurveyCompletion()
         fragmentTakeCourseBinding.backButton.setOnClickListener {
             requireActivity().supportFragmentManager.popBackStack()
