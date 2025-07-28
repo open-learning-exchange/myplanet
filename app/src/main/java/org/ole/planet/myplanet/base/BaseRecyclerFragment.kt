@@ -13,7 +13,6 @@ import androidx.recyclerview.widget.RecyclerView
 import io.realm.RealmList
 import io.realm.RealmModel
 import io.realm.RealmObject
-import io.realm.RealmResults
 import java.text.Normalizer
 import java.util.Locale
 import org.ole.planet.myplanet.R
@@ -33,7 +32,11 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.di.LibraryRepository
+import org.ole.planet.myplanet.di.CourseRepository
+import org.ole.planet.myplanet.di.UserRepository
 import org.ole.planet.myplanet.utilities.Utilities.toast
+import javax.inject.Inject
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
     var subjects: MutableSet<String> = mutableSetOf()
@@ -50,6 +53,15 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var list: MutableList<LI>? = null
     var resources: List<RealmMyLibrary>? = null
     var courseLib: String? = null
+
+    @Inject
+    lateinit var libraryRepository: LibraryRepository
+
+    @Inject
+    lateinit var courseRepository: CourseRepository
+
+    @Inject
+    lateinit var userRepository: UserRepository
 
 
     abstract fun getLayout(): Int
@@ -83,7 +95,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         tvMessage = v.findViewById(R.id.tv_message)
         selectedItems = mutableListOf()
         list = mutableListOf()
-        mRealm = databaseService.realmInstance
+        mRealm = userRepository.getRealm()
         profileDbHandler = UserProfileDbHandler(requireActivity())
         model = profileDbHandler.userModel!!
         val adapter = getAdapter()
@@ -91,7 +103,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
             resources?.let { showDownloadDialog(it) }
         } else if (isMyCourseLib && courseLib == null && !isSurvey) {
-            showDownloadDialog(getLibraryList(mRealm))
+            showDownloadDialog(libraryRepository.getLibraryList(model?.id))
         }
         return v
     }
@@ -170,15 +182,20 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     private fun <LI : RealmModel> getData(s: String, c: Class<LI>): List<LI> {
-        if (s.isEmpty()) return mRealm.where(c).findAll()
+        val data: List<LI> = when (c) {
+            RealmMyLibrary::class.java -> libraryRepository.getAllLibraryItems() as List<LI>
+            else -> courseRepository.getAllCourses() as List<LI>
+        }
+
+        if (s.isEmpty()) return data
 
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
-        val data: RealmResults<LI> = mRealm.where(c).findAll()
+        val results: List<LI> = data
         val normalizedQuery = normalizeText(s)
         val startsWithQuery = mutableListOf<LI>()
         val containsQuery = mutableListOf<LI>()
 
-        for (item in data) {
+        for (item in results) {
             val title = getTitle(item, c)?.let { normalizeText(it) } ?: continue
 
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {

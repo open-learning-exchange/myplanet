@@ -82,6 +82,9 @@ interface LibraryRepository {
     fun getAllLibraryItems(): List<RealmMyLibrary>
     fun getLibraryItemById(id: String): RealmMyLibrary?
     fun getOfflineLibraryItems(): List<RealmMyLibrary>
+    fun getLibraryList(userId: String?): List<RealmMyLibrary>
+    fun getMyLibraries(userId: String?): List<RealmMyLibrary>
+    fun getOurLibraries(userId: String?): List<RealmMyLibrary>
 }
 
 class LibraryRepositoryImpl(
@@ -104,6 +107,29 @@ class LibraryRepositoryImpl(
             .equalTo("resourceOffline", true)
             .findAll()
     }
+
+    override fun getLibraryList(userId: String?): List<RealmMyLibrary> {
+        val libs = databaseService.realmInstance.where(RealmMyLibrary::class.java)
+            .equalTo("isPrivate", false)
+            .findAll()
+        val libraryList = mutableListOf<RealmMyLibrary>()
+        for (item in libs) {
+            if (item.needToUpdate() && item.userId?.contains(userId) == true) {
+                libraryList.add(item)
+            }
+        }
+        return libraryList
+    }
+
+    override fun getMyLibraries(userId: String?): List<RealmMyLibrary> {
+        val libs = databaseService.realmInstance.where(RealmMyLibrary::class.java).findAll()
+        return RealmMyLibrary.getMyLibraryByUserId(userId, libs.toList())
+    }
+
+    override fun getOurLibraries(userId: String?): List<RealmMyLibrary> {
+        val libs = databaseService.realmInstance.where(RealmMyLibrary::class.java).findAll()
+        return RealmMyLibrary.getOurLibrary(userId, libs.toList())
+    }
 }
 
 // Course Repository
@@ -111,6 +137,8 @@ interface CourseRepository {
     fun getAllCourses(): List<RealmMyCourse>
     fun getCourseById(id: String): RealmMyCourse?
     fun getEnrolledCourses(): List<RealmMyCourse>
+    fun getMyCourses(userId: String?): List<RealmMyCourse>
+    fun getOurCourses(userId: String?): List<RealmMyCourse>
 }
 
 class CourseRepositoryImpl(
@@ -132,6 +160,16 @@ class CourseRepositoryImpl(
         return databaseService.realmInstance.where(RealmMyCourse::class.java)
             .equalTo("userId", getCurrentUserId())
             .findAll()
+    }
+
+    override fun getMyCourses(userId: String?): List<RealmMyCourse> {
+        val results = databaseService.realmInstance.where(RealmMyCourse::class.java).findAll()
+        return RealmMyCourse.getMyCourseByUserId(userId, results.toList())
+    }
+
+    override fun getOurCourses(userId: String?): List<RealmMyCourse> {
+        val results = databaseService.realmInstance.where(RealmMyCourse::class.java).findAll()
+        return RealmMyCourse.getOurCourse(userId, results.toList())
     }
 
     private fun getCurrentUserId(): String {
