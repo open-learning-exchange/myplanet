@@ -502,17 +502,15 @@ class NotificationActionReceiver : BroadcastReceiver() {
         if (notificationId == null) return
 
         try {
-            val realm = databaseService.realmInstance
-            
-            realm.executeTransaction { r ->
-                val notification = r.where(RealmNotification::class.java)
-                    .contains("id", notificationId)
-                    .findFirst()
-                
-                notification?.isRead = true
+            databaseService.withRealmSync { realm ->
+                realm.executeTransaction { r ->
+                    val notification = r.where(RealmNotification::class.java)
+                        .contains("id", notificationId)
+                        .findFirst()
+
+                    notification?.isRead = true
+                }
             }
-            
-            realm.close()
         } catch (e: Exception) {
             e.printStackTrace()
         }

@@ -32,7 +32,6 @@ object DatabaseModule {
             .name(Realm.DEFAULT_REALM_NAME)
             .deleteRealmIfMigrationNeeded()
             .schemaVersion(4)
-            .allowWritesOnUiThread(true)
             .build()
     }
 

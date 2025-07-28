@@ -289,12 +289,9 @@ open class RealmMyTeam : RealmObject() {
         private fun uploadTeamActivities(context: Context, uploadManager: UploadManager) {
             MainApplication.applicationScope.launch {
                 try {
-                    withContext(Dispatchers.IO) {
-                        uploadManager.uploadTeams()
-                    }
-                    withContext(Dispatchers.IO) {
-                        val apiInterface = client?.create(ApiInterface::class.java)
-                        val realm = DatabaseService(context).realmInstance
+                    withContext(Dispatchers.IO) { uploadManager.uploadTeams() }
+                    val apiInterface = client?.create(ApiInterface::class.java)
+                    DatabaseService(context).withRealm { realm ->
                         realm.executeTransaction { transactionRealm ->
                             uploadManager.uploadTeamActivities(transactionRealm, apiInterface)
                         }
