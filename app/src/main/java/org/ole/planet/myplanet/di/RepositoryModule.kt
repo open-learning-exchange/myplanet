@@ -6,6 +6,8 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import io.realm.Realm
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import javax.inject.Singleton
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -50,8 +52,8 @@ object RepositoryModule {
 interface UserRepository {
     suspend fun getUserProfile(): String?
     suspend fun saveUserData(data: String)
-    fun getRealm(): Realm
-    fun getCurrentUser(): RealmUserModel?
+    suspend fun getRealm(): Realm
+    suspend fun getCurrentUser(): RealmUserModel?
 }
 
 class UserRepositoryImpl(
@@ -68,12 +70,16 @@ class UserRepositoryImpl(
         preferences.edit().putString("user_profile", data).apply()
     }
 
-    override fun getRealm(): Realm {
-        return databaseService.realmInstance
+    override suspend fun getRealm(): Realm {
+        return withContext(Dispatchers.IO) {
+            databaseService.realmInstance
+        }
     }
 
-    override fun getCurrentUser(): RealmUserModel? {
-        return databaseService.realmInstance.where(RealmUserModel::class.java).findFirst()
+    override suspend fun getCurrentUser(): RealmUserModel? {
+        return withContext(Dispatchers.IO) {
+            databaseService.realmInstance.where(RealmUserModel::class.java).findFirst()
+        }
     }
 }
 

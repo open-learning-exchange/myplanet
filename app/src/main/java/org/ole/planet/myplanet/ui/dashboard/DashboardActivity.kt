@@ -46,6 +46,7 @@ import kotlin.math.ceil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
@@ -513,7 +514,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         newNotifications.addAll(createdNotifications)
                     }
 
-                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(backgroundRealm, userId)
+                    unreadCount = runBlocking {
+                        dashboardViewModel.getUnreadNotificationsSize(userId)
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -539,7 +542,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun createNotifications(realm: Realm, userId: String?): List<NotificationUtil.NotificationConfig> {
         val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
 
-        dashboardViewModel.updateResourceNotification(realm, userId)
+        lifecycleScope.launch {
+            dashboardViewModel.updateResourceNotification(userId)
+        }
 
         newNotifications.addAll(createSurveyNotifications(realm, userId))
         newNotifications.addAll(createTaskNotifications(realm, userId))
@@ -551,7 +556,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun createSurveyNotifications(realm: Realm, userId: String?): List<NotificationUtil.NotificationConfig> {
         val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
-        val pendingSurveys = dashboardViewModel.getPendingSurveys(realm, userId)
+        val pendingSurveys = runBlocking {
+            dashboardViewModel.getPendingSurveys(userId)
+        }
         val surveyTitles = dashboardViewModel.getSurveyTitlesFromSubmissions(realm, pendingSurveys)
 
         surveyTitles.forEach { title ->
