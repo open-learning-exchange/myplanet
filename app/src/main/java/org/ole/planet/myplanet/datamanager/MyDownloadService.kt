@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.datamanager
 
 import android.app.Activity
 import android.app.ActivityManager
-import android.app.Notification
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
@@ -89,7 +88,6 @@ class MyDownloadService : Service() {
 
         return START_STICKY
     }
-
 
     private fun updateNotificationForBatchDownload() {
         DownloadUtils.createChannels(this)
@@ -291,6 +289,15 @@ class MyDownloadService : Service() {
         notificationManager?.notify(COMPLETION_NOTIFICATION_ID, notification)
     }
 
+    override fun onDestroy() {
+        request?.cancel()
+        try {
+            stopForeground(true)
+        } catch (_: Exception) {
+        }
+        notificationManager?.cancel(ONGOING_NOTIFICATION_ID)
+        super.onDestroy()
+    }
 
     companion object {
         const val PREFS_NAME = "MyPrefsFile"

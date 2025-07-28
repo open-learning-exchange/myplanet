@@ -11,9 +11,9 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Case
-import javax.inject.Inject
 import io.realm.RealmResults
 import io.realm.Sort
+import javax.inject.Inject
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCommunityBinding
 import org.ole.planet.myplanet.model.RealmNews

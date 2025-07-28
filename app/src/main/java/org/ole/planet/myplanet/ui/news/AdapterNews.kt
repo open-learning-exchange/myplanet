@@ -1,22 +1,28 @@
 package org.ole.planet.myplanet.ui.news
 
 import android.annotation.SuppressLint
+import android.app.Dialog
 import android.content.Context
 import android.content.DialogInterface
 import android.content.SharedPreferences
+import android.graphics.Color
 import android.os.Build
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.github.chrisbanes.photoview.PhotoView
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -24,33 +30,26 @@ import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.Sort
+import java.io.File
 import java.util.Calendar
 import java.util.Locale
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.Conversation
-import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
-import org.ole.planet.myplanet.utilities.JsonUtils
-import android.app.Dialog
-import android.graphics.Color
-import android.widget.ImageView
-import androidx.core.graphics.drawable.toDrawable
-import com.github.chrisbanes.photoview.PhotoView
-import com.bumptech.glide.Glide
-import java.io.File
-import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 
 class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
     private lateinit var rowNewsBinding: RowNewsBinding
@@ -330,12 +329,12 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private fun setMemberClickListeners(holder: ViewHolderNews, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
         if (!fromLogin) {
             holder.rowNewsBinding.imgUser.setOnClickListener {
-                val activity = it.context as AppCompatActivity
+                val activity = context as AppCompatActivity
                 val model = userModel ?: currentLeader
                 NewsActions.showMemberDetails(activity, model, profileDbHandler)
             }
             holder.rowNewsBinding.tvName.setOnClickListener {
-                val activity = it.context as AppCompatActivity
+                val activity = context as AppCompatActivity
                 val model = userModel ?: currentLeader
                 NewsActions.showMemberDetails(activity, model, profileDbHandler)
             }
