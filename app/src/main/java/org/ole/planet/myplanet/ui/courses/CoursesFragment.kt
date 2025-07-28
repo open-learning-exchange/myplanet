@@ -17,6 +17,7 @@ import android.widget.TextView
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
@@ -26,34 +27,28 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnCourseItemSelected
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TagClickListener
-import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmRating.Companion.getRatings
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener {
+
+    private val viewModel: CoursesViewModel by viewModels()
 
     companion object {
         fun newInstance(isMyCourseLib: Boolean): CoursesFragment {
@@ -82,10 +77,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private var isUpdatingSelectAllState = false
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
-    private val serverUrlMapper = ServerUrlMapper()
-    
-    @Inject
-    lateinit var syncManager: SyncManager
     
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
@@ -95,125 +86,20 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefManager = SharedPrefManager(requireContext())
-        startCoursesSync()
+        viewModel.startCoursesSync(serverUrl, settings, prefManager, isMyCourseLib)
+        viewModel.refreshCoursesData(isMyCourseLib)
     }
 
     override fun getLayout(): Int {
         return R.layout.fragment_my_course
     }
 
-    private fun startCoursesSync() {
-        val isFastSync = settings.getBoolean("fastSync", false)
-        if (isFastSync && !prefManager.isCoursesSynced()) {
-            checkServerAndStartSync()
-        }
-    }
-
-    private fun checkServerAndStartSync() {
-        val mapping = serverUrlMapper.processUrl(serverUrl)
-
-        lifecycleScope.launch(Dispatchers.IO) {
-            updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
-                startSyncManager()
-            }
-        }
-    }
-
-    private fun startSyncManager() {
-        syncManager.start(object : SyncListener {
-            override fun onSyncStarted() {
-                activity?.runOnUiThread {
-                    if (isAdded && !requireActivity().isFinishing) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText(getString(R.string.syncing_courses_data))
-                        customProgressDialog?.show()
-                    }
-                }
-            }
-
-            override fun onSyncComplete() {
-                activity?.runOnUiThread {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-
-                        refreshCoursesData()
-                        prefManager.setCoursesSynced(true)
-                    }
-                }
-            }
-
-            override fun onSyncFailed(msg: String?) {
-                activity?.runOnUiThread {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-
-                        Snackbar.make(requireView(), "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG).setAction("Retry") {
-                            startCoursesSync()
-                        }.show()
-                    }
-                }
-            }
-        }, "full", listOf("courses"))
-    }
-
-    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
-            isServerReachable(url)
-        }
-    }
-
-    private fun refreshCoursesData() {
-        if (!isAdded || requireActivity().isFinishing) return
-
-        try {
-            val map = getRatings(mRealm, "course", model?.id)
-            val progressMap = getCourseProgress(mRealm, model?.id)
-            val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>()
-            val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
-
-            adapterCourses.updateCourseList(sortedCourseList)
-            adapterCourses.setProgressMap(progressMap)
-            adapterCourses.setRatingMap(map)
-            adapterCourses.notifyDataSetChanged()
-
-            if (isMyCourseLib) {
-                val courseIds = courseList.mapNotNull { it?.id }
-                resources = mRealm.where(RealmMyLibrary::class.java)
-                    .`in`("courseId", courseIds.toTypedArray())
-                    .equalTo("resourceOffline", false)
-                    .isNotNull("resourceLocalAddress")
-                    .findAll()
-            }
-
-            checkList()
-            showNoData(tvMessage, adapterCourses.itemCount, "courses")
-
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        val map = getRatings(mRealm, "course", model?.id)
-        val progressMap = getCourseProgress(mRealm, model?.id)
-        val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>()
-        val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
-        adapterCourses = AdapterCourses(requireActivity(), sortedCourseList, map, userProfileDbHandler)
-        adapterCourses.setProgressMap(progressMap)
+        adapterCourses = AdapterCourses(requireActivity(), emptyList(), hashMapOf(), userProfileDbHandler)
         adapterCourses.setmRealm(mRealm)
         adapterCourses.setListener(this)
         adapterCourses.setRatingChangeListener(this)
-
         if (isMyCourseLib) {
-            val courseIds = courseList.mapNotNull { it?.id }
-            resources = mRealm.where(RealmMyLibrary::class.java)
-                .`in`("courseId", courseIds.toTypedArray())
-                .equalTo("resourceOffline", false)
-                .isNotNull("resourceLocalAddress")
-                .findAll()
             courseLib = "courses"
         }
         return adapterCourses
@@ -234,6 +120,57 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
         additionalSetup()
         setupMyProgressButton()
+        observeViewModel()
+    }
+
+    private fun observeViewModel() {
+        lifecycleScope.launchWhenStarted {
+            viewModel.courses.collect { list ->
+                adapterCourses.updateCourseList(list)
+                if (isMyCourseLib) checkList()
+                showNoData(tvMessage, adapterCourses.itemCount, "courses")
+            }
+        }
+        lifecycleScope.launchWhenStarted {
+            viewModel.progressMap.collect {
+                adapterCourses.setProgressMap(it)
+                adapterCourses.notifyDataSetChanged()
+            }
+        }
+        lifecycleScope.launchWhenStarted {
+            viewModel.ratingMap.collect {
+                adapterCourses.setRatingMap(it)
+                adapterCourses.notifyDataSetChanged()
+            }
+        }
+        lifecycleScope.launchWhenStarted {
+            viewModel.libraryResources.collect { res ->
+                if (isMyCourseLib) resources = res
+            }
+        }
+        lifecycleScope.launchWhenStarted {
+            viewModel.isSyncing.collect { syncing ->
+                if (syncing) {
+                    if (customProgressDialog == null) {
+                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                        customProgressDialog?.setText(getString(R.string.syncing_courses_data))
+                        customProgressDialog?.show()
+                    }
+                } else {
+                    customProgressDialog?.dismiss()
+                    customProgressDialog = null
+                }
+            }
+        }
+        lifecycleScope.launchWhenStarted {
+            viewModel.syncError.collect { msg ->
+                msg ?: return@collect
+                Snackbar.make(requireView(), "Sync failed: ${'$'}msg", Snackbar.LENGTH_LONG)
+                    .setAction("Retry") {
+                        viewModel.startCoursesSync(serverUrl, settings, prefManager, isMyCourseLib)
+                    }.show()
+            }
+        }
     }
 
     private fun setupButtonVisibility() {
