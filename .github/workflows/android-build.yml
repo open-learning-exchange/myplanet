@@ -48,6 +48,35 @@ jobs:
           cache-write-only: false
 
       - name: build debug as test
+        env:
+          PLANET_LEARNING_URL: ${{ secrets.PLANET_LEARNING_URL }}
+          PLANET_LEARNING_PIN: ${{ secrets.PLANET_LEARNING_PIN }}
+          PLANET_GUATEMALA_URL: ${{ secrets.PLANET_GUATEMALA_URL }}
+          PLANET_GUATEMALA_PIN: ${{ secrets.PLANET_GUATEMALA_PIN }}
+          PLANET_SANPABLO_URL: ${{ secrets.PLANET_SANPABLO_URL }}
+          PLANET_SANPABLO_PIN: ${{ secrets.PLANET_SANPABLO_PIN }}
+          PLANET_SANPABLO_CLONE_URL: ${{ secrets.PLANET_SANPABLO_CLONE_URL }}
+          PLANET_SANPABLO_CLONE_PIN: ${{ secrets.PLANET_SANPABLO_CLONE_PIN }}
+          PLANET_EARTH_URL: ${{ secrets.PLANET_EARTH_URL }}
+          PLANET_EARTH_PIN: ${{ secrets.PLANET_EARTH_PIN }}
+          PLANET_SOMALIA_URL: ${{ secrets.PLANET_SOMALIA_URL }}
+          PLANET_SOMALIA_PIN: ${{ secrets.PLANET_SOMALIA_PIN }}
+          PLANET_VI_URL: ${{ secrets.PLANET_VI_URL }}
+          PLANET_VI_PIN: ${{ secrets.PLANET_VI_PIN }}
+          PLANET_XELA_URL: ${{ secrets.PLANET_XELA_URL }}
+          PLANET_XELA_PIN: ${{ secrets.PLANET_XELA_PIN }}
+          PLANET_URIUR_URL: ${{ secrets.PLANET_URIUR_URL }}
+          PLANET_URIUR_PIN: ${{ secrets.PLANET_URIUR_PIN }}
+          PLANET_URIUR_CLONE_URL: ${{ secrets.PLANET_URIUR_CLONE_URL }}
+          PLANET_URIUR_CLONE_PIN: ${{ secrets.PLANET_URIUR_CLONE_PIN }}
+          PLANET_RUIRU_URL: ${{ secrets.PLANET_RUIRU_URL }}
+          PLANET_RUIRU_PIN: ${{ secrets.PLANET_RUIRU_PIN }}
+          PLANET_EMBAKASI_URL: ${{ secrets.PLANET_EMBAKASI_URL }}
+          PLANET_EMBAKASI_PIN: ${{ secrets.PLANET_EMBAKASI_PIN }}
+          PLANET_EMBAKASI_CLONE_URL: ${{ secrets.PLANET_EMBAKASI_CLONE_URL }}
+          PLANET_EMBAKASI_CLONE_PIN: ${{ secrets.PLANET_EMBAKASI_CLONE_PIN }}
+          PLANET_CAMBRIDGE_URL: ${{ secrets.PLANET_CAMBRIDGE_URL }}
+          PLANET_CAMBRIDGE_PIN: ${{ secrets.PLANET_CAMBRIDGE_PIN }}
         run: |
           FLAVOR=${{ matrix.build }}
           ./gradlew assemble${FLAVOR^}Debug --warning-mode all --stacktrace
