@@ -8,7 +8,6 @@ class CoursesPagerAdapter(fm: Fragment, private val courseId: String?, private v
     override fun createFragment(position: Int): Fragment {
         val b = Bundle()
         val f: Fragment
-        println("adapt: $position")
         if (position == 0) {
             f = CourseDetailFragment()
             b.putString("courseId", courseId)
