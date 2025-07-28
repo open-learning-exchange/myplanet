@@ -12,6 +12,8 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -108,9 +110,9 @@ class LibraryRepositoryImpl(
 
 // Course Repository
 interface CourseRepository {
-    fun getAllCourses(): List<RealmMyCourse>
-    fun getCourseById(id: String): RealmMyCourse?
-    fun getEnrolledCourses(): List<RealmMyCourse>
+    suspend fun getAllCourses(): List<RealmMyCourse>
+    suspend fun getCourseById(id: String): RealmMyCourse?
+    suspend fun getEnrolledCourses(): List<RealmMyCourse>
 }
 
 class CourseRepositoryImpl(
@@ -118,20 +120,26 @@ class CourseRepositoryImpl(
     private val apiInterface: ApiInterface
 ) : CourseRepository {
 
-    override fun getAllCourses(): List<RealmMyCourse> {
-        return databaseService.realmInstance.where(RealmMyCourse::class.java).findAll()
+    override suspend fun getAllCourses(): List<RealmMyCourse> {
+        return withContext(Dispatchers.IO) {
+            databaseService.realmInstance.where(RealmMyCourse::class.java).findAll()
+        }
     }
 
-    override fun getCourseById(id: String): RealmMyCourse? {
-        return databaseService.realmInstance.where(RealmMyCourse::class.java)
-            .equalTo("courseId", id)
-            .findFirst()
+    override suspend fun getCourseById(id: String): RealmMyCourse? {
+        return withContext(Dispatchers.IO) {
+            databaseService.realmInstance.where(RealmMyCourse::class.java)
+                .equalTo("courseId", id)
+                .findFirst()
+        }
     }
 
-    override fun getEnrolledCourses(): List<RealmMyCourse> {
-        return databaseService.realmInstance.where(RealmMyCourse::class.java)
-            .equalTo("userId", getCurrentUserId())
-            .findAll()
+    override suspend fun getEnrolledCourses(): List<RealmMyCourse> {
+        return withContext(Dispatchers.IO) {
+            databaseService.realmInstance.where(RealmMyCourse::class.java)
+                .equalTo("userId", getCurrentUserId())
+                .findAll()
+        }
     }
 
     private fun getCurrentUserId(): String {
