@@ -47,7 +47,6 @@ import java.util.HashMap
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import kotlin.isInitialized
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
@@ -146,7 +145,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     var serverCheck = true
     var showAdditionalServers = false
     var serverAddressAdapter: ServerAddressAdapter? = null
-    lateinit var serverListAddresses: List<ServerAddressesModel>
+    var serverListAddresses: List<ServerAddressesModel> = emptyList()
     private var isProgressDialogShowing = false
     
     @Inject
@@ -163,6 +162,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         profileDbHandler = UserProfileDbHandler(this)
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
         processedUrl = Utilities.getUrl()
+        serverListAddresses = ServerConfigUtils.getServerAddresses(this)
     }
 
     override fun onConfigurationIdReceived(id: String, code: String, url: String, defaultUrl: String, isAlternativeUrl: Boolean, callerActivity: String) {
@@ -712,7 +712,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         setupFastSyncOption(binding)
 
         showAdditionalServers = false
-        if (::serverListAddresses.isInitialized && settings.getString("serverURL", "")?.isNotEmpty() == true) {
+        if (serverListAddresses.isNotEmpty() && settings.getString("serverURL", "")?.isNotEmpty() == true) {
             refreshServerList()
         }
 
