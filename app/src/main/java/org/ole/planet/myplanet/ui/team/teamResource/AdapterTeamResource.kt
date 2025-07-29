@@ -72,7 +72,7 @@ class AdapterTeamResource(
             .findFirst()
 
         if (itemToDelete != null) {
-            mRealm.executeTransaction {
+            mRealm.executeTransactionAsync {
                 itemToDelete.resourceId = ""
                 itemToDelete.updated = true
             }

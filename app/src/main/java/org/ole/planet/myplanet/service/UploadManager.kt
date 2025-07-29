@@ -663,7 +663,7 @@ class UploadManager @Inject constructor(
                     uploadCrashLogData(realm, apiInterface)
                 }
             } else {
-                realm.executeTransaction { realm: Realm ->
+                realm.executeTransactionAsync { realm: Realm ->
                     uploadCrashLogData(realm, apiInterface)
                 }
             }

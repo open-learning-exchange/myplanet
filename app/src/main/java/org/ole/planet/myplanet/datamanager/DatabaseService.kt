@@ -14,7 +14,6 @@ class DatabaseService(context: Context) {
             .name(Realm.DEFAULT_REALM_NAME)
             .deleteRealmIfMigrationNeeded()
             .schemaVersion(4)
-            .allowWritesOnUiThread(true)
             .build()
         Realm.setDefaultConfiguration(config)
     }

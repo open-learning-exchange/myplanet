@@ -85,7 +85,7 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
                 return@setOnClickListener
             }
 
-            mRealm.executeTransaction {
+            mRealm.executeTransactionAsync {
                 val team = it.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
                 team.docType = "link"
                 team.updated = true

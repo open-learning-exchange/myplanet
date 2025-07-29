@@ -157,7 +157,7 @@ object DownloadUtils {
         try {
             val backgroundRealm = Realm.getDefaultInstance()
             backgroundRealm.use { realm ->
-                realm.executeTransaction {
+                realm.executeTransactionAsync {
                     realm.where(RealmMyLibrary::class.java)
                         .equalTo("resourceLocalAddress", currentFileName)
                         .findAll()?.forEach {

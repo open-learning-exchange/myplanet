@@ -29,7 +29,7 @@ open class RealmCourseActivity : RealmObject() {
             withContext(Dispatchers.IO) {
                 try {
                     if (!realm.isInTransaction) {
-                        realm.executeTransaction { realmInstance ->
+                        realm.executeTransactionAsync { realmInstance ->
                             val activity = realmInstance.createObject(RealmCourseActivity::class.java, UUID.randomUUID().toString())
                             activity.type = "visit"
                             activity.title = course?.courseTitle

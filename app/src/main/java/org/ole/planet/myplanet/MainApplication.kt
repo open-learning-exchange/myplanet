@@ -97,7 +97,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 val realm = Realm.getDefaultInstance()
                 val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
                 try {
-                    realm.executeTransaction { r ->
+                    realm.executeTransactionAsync { r ->
                         val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
                         val model = UserProfileDbHandler(context).userModel
                         log.parentCode = settings.getString("parentCode", "")

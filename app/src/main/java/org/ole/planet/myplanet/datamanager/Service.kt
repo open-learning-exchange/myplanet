@@ -310,7 +310,7 @@ class Service @Inject constructor(
                     Executors.newSingleThreadExecutor().execute {
                         Realm.getDefaultInstance().use { backgroundRealm ->
                             try {
-                                backgroundRealm.executeTransaction { realm1 ->
+                                backgroundRealm.executeTransactionAsync { realm1 ->
                                     realm1.delete(RealmCommunity::class.java)
                                     for (j in arr) {
                                         var jsonDoc = j.asJsonObject

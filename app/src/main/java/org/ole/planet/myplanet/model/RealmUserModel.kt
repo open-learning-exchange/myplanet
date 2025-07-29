@@ -215,7 +215,7 @@ open class RealmUserModel : RealmObject() {
                 var user: RealmUserModel? = null
 
                 if (!mRealm.isInTransaction) {
-                    mRealm.executeTransaction { realm ->
+                    mRealm.executeTransactionAsync { realm ->
                         user = realm.where(RealmUserModel::class.java)
                             .equalTo("_id", id)
                             .findFirst()
@@ -471,7 +471,7 @@ open class RealmUserModel : RealmObject() {
 
         @JvmStatic
         fun cleanupDuplicateUsers(realm: Realm) {
-            realm.executeTransaction { mRealm ->
+            realm.executeTransactionAsync { mRealm ->
                 val allUsers = mRealm.where(RealmUserModel::class.java).findAll()
                 val usersByName = allUsers.groupBy { it.name }
 

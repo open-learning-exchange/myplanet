@@ -295,7 +295,7 @@ open class RealmMyTeam : RealmObject() {
                     withContext(Dispatchers.IO) {
                         val apiInterface = client?.create(ApiInterface::class.java)
                         val realm = DatabaseService(context).realmInstance
-                        realm.executeTransaction { transactionRealm ->
+                        realm.executeTransactionAsync { transactionRealm ->
                             uploadManager.uploadTeamActivities(transactionRealm, apiInterface)
                         }
                     }

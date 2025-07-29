@@ -22,7 +22,7 @@ object ExamSubmissionUtils {
         total: Int
     ): Boolean {
         var isCorrect = true
-        realm.executeTransaction { r ->
+        realm.executeTransactionAsync { r ->
             val answer = createOrRetrieveAnswer(r, submission, question)
             populateAnswer(answer, question, ans, listAns, otherText, otherVisible)
             if (type == "exam") {

@@ -94,7 +94,7 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     }
 
     private fun leaveJoinMeetUp() {
-        mRealm.executeTransaction {
+        mRealm.executeTransactionAsync {
             if (meetups?.userId?.isEmpty() == true) {
                 meetups?.userId = user?.id
                 fragmentMyMeetupDetailBinding.btnLeave.setText(R.string.leave)

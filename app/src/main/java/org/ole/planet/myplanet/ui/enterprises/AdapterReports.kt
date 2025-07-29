@@ -169,7 +169,7 @@ class AdapterReports(private val context: Context, private var list: RealmResult
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _, _ ->
                         Realm.getDefaultInstance().use { realm ->
-                            realm.executeTransaction { realmTx ->
+                            realm.executeTransactionAsync { realmTx ->
                                 realmTx.where(RealmMyTeam::class.java)
                                     .equalTo("_id", reportId)
                                     .findFirst()?.apply {

@@ -75,7 +75,7 @@ open class RealmStepExam : RealmObject() {
             if (isInTransaction) {
                 performInsert()
             } else {
-                mRealm.executeTransaction { performInsert() }
+                mRealm.executeTransactionAsync { performInsert() }
             }
         }
 

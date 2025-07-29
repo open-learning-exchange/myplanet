@@ -105,7 +105,7 @@ class PlanFragment : BaseTeamFragment() {
         }
 
         val userId = UserProfileDbHandler(activity).userModel?._id
-        realm.executeTransaction {
+        realm.executeTransactionAsync {
             team.name = name
             team.services = binding.etServices.text.toString()
             team.rules = binding.etRules.text.toString()

@@ -850,7 +850,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             withContext(Dispatchers.IO) {
                 val realm = Realm.getDefaultInstance()
                 try {
-                    realm.executeTransaction { transactionRealm ->
+                    realm.executeTransactionAsync { transactionRealm ->
                         transactionRealm.deleteAll()
                     }
                 } finally {

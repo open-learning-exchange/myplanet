@@ -483,7 +483,7 @@ class ChatDetailFragment : Fragment() {
     private fun saveNewChat(query: String, chatResponse: String, responseBody: ChatModel) {
         val jsonObject = buildChatHistoryObject(query, chatResponse, responseBody)
 
-        mRealm.executeTransaction { realm ->
+        mRealm.executeTransactionAsync { realm ->
             RealmChatHistory.insert(realm, jsonObject)
         }
         (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()

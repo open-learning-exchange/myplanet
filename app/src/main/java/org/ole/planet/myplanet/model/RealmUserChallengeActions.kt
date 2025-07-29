@@ -15,7 +15,7 @@ open class RealmUserChallengeActions : RealmObject() {
 
     companion object {
         fun createAction(realm: Realm, userId: String, resourceId: String?, actionType: String) {
-            realm.executeTransaction { transactionRealm ->
+            realm.executeTransactionAsync { transactionRealm ->
                 val action = transactionRealm.createObject(
                     RealmUserChallengeActions::class.java, UUID.randomUUID().toString()
                 )

@@ -42,7 +42,7 @@ open class RealmMyLife : RealmObject {
             executor.execute {
                 val backgroundRealm = Realm.getDefaultInstance()
                 try {
-                    backgroundRealm.executeTransaction { mRealm ->
+                    backgroundRealm.executeTransactionAsync { mRealm ->
                         val targetItem = mRealm.where(RealmMyLife::class.java).equalTo("_id", id)
                             .findFirst()
 
@@ -70,7 +70,7 @@ open class RealmMyLife : RealmObject {
             executor.execute {
                 val backgroundRealm = Realm.getDefaultInstance()
                 try {
-                    backgroundRealm.executeTransaction { mRealm ->
+                    backgroundRealm.executeTransactionAsync { mRealm ->
                         mRealm.where(RealmMyLife::class.java).equalTo("_id", id).findFirst()
                             ?.isVisible = isVisible
                     }

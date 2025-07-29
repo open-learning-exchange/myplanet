@@ -195,7 +195,7 @@ class NotificationsFragment : Fragment() {
 
     private fun markAsRead(position: Int) {
         val notification = adapter.notificationList[position]
-        mRealm.executeTransaction {
+        mRealm.executeTransactionAsync {
             notification.isRead = true
         }
         adapter.notifyItemChanged(position)
@@ -204,7 +204,7 @@ class NotificationsFragment : Fragment() {
     }
 
     private fun markAllAsRead() {
-        mRealm.executeTransaction { realm ->
+        mRealm.executeTransactionAsync { realm ->
             realm.where(RealmNotification::class.java)
                 .equalTo("userId", userId)
                 .equalTo("isRead", false)

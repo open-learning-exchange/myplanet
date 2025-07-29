@@ -162,7 +162,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun createSubmission() {
-        mRealm.executeTransaction { realm ->
+        mRealm.executeTransactionAsync { realm ->
             sub = createSubmission(null, realm)
             setParentId()
             sub?.userId = user?.id

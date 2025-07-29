@@ -209,7 +209,7 @@ class AdapterJoinedMember(
     }
 
     private fun makeLeader(userModel: RealmUserModel) {
-        mRealm.executeTransaction { realm ->
+        mRealm.executeTransactionAsync { realm ->
             val currentLeader = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
                 .equalTo("isLeader", true)
@@ -228,7 +228,7 @@ class AdapterJoinedMember(
     }
 
     private fun reject(userModel: RealmUserModel, position: Int) {
-        mRealm.executeTransaction {
+        mRealm.executeTransactionAsync {
             val team = it.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
                 .equalTo("userId", userModel.id)

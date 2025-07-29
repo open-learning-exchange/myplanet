@@ -222,7 +222,7 @@ class AdapterSurvey(
 
             val adoptionId = "${UUID.randomUUID()}"
 
-            mRealm.executeTransaction { realm ->
+            mRealm.executeTransactionAsync { realm ->
                 val existingAdoption = realm.where(RealmSubmission::class.java)
                     .equalTo("userId", userModel?.id)
                     .equalTo("parentId", exam.id)

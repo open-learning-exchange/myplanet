@@ -314,7 +314,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         CoroutineScope(Dispatchers.IO).launch {
             val realm = databaseService.realmInstance
 
-            realm.executeTransaction { r ->
+            realm.executeTransactionAsync { r ->
                 val log = r.createObject(RealmTeamLog::class.java, "${UUID.randomUUID()}")
                 log.teamId = getEffectiveTeamId()
                 log.user = userName

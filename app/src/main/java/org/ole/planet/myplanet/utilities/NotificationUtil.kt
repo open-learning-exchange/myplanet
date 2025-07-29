@@ -504,7 +504,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
         try {
             val realm = databaseService.realmInstance
             
-            realm.executeTransaction { r ->
+            realm.executeTransactionAsync { r ->
                 val notification = r.where(RealmNotification::class.java)
                     .contains("id", notificationId)
                     .findFirst()

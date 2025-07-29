@@ -640,7 +640,7 @@ class SyncManager @Inject constructor(
 
                             val savedIds = mutableListOf<String>()
                             for ((_, chunk) in chunks.withIndex()) {
-                                realmInstance.executeTransaction { realm ->
+                                realmInstance.executeTransactionAsync { realm ->
                                     val chunkDocuments = JsonArray()
                                     chunk.forEach { (doc, _) -> chunkDocuments.add(doc) }
 
@@ -667,7 +667,7 @@ class SyncManager @Inject constructor(
 
                             for ((doc, _) in validDocuments) {
                                 try {
-                                    realmInstance.executeTransaction { realm ->
+                                    realmInstance.executeTransactionAsync { realm ->
                                         val singleDocArray = JsonArray()
                                         singleDocArray.add(doc)
                                         val singleIds = save(singleDocArray, realm)
@@ -756,7 +756,7 @@ class SyncManager @Inject constructor(
             }
 
             safeRealmOperation { realmInstance ->
-                realmInstance.executeTransaction { realm ->
+                realmInstance.executeTransactionAsync { realm ->
                     removeDeletedResource(newIds.toList(), realm)
                 }
             }
@@ -803,7 +803,7 @@ class SyncManager @Inject constructor(
             if (validDocs.isEmpty()) return 0
 
             safeRealmOperation { realmInstance ->
-                realmInstance.executeTransaction { realm ->
+                realmInstance.executeTransactionAsync { realm ->
                     val bulkArray = JsonArray()
                     validDocs.forEach { doc -> bulkArray.add(doc) }
 
@@ -1055,7 +1055,7 @@ class SyncManager @Inject constructor(
 
                 if (documentsToProcess.isNotEmpty()) {
                     safeRealmOperation { realm ->
-                        realm.executeTransaction { realmTx ->
+                        realm.executeTransactionAsync { realmTx ->
                             documentsToProcess.forEach { doc ->
                                 try {
                                     when (shelfData.type) {
@@ -1237,7 +1237,7 @@ class SyncManager @Inject constructor(
             }
 
             if (documentsToProcess.isNotEmpty()) {
-                realmInstance.executeTransaction { realm ->
+                realmInstance.executeTransactionAsync { realm ->
                     documentsToProcess.forEach { doc ->
                         try {
                             when (shelfData.type) {

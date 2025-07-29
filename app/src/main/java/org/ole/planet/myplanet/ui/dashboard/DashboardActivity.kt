@@ -508,7 +508,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
             try {
                 databaseService.realmInstance.use { backgroundRealm ->
-                    backgroundRealm.executeTransaction { realm ->
+                    backgroundRealm.executeTransactionAsync { realm ->
                         val createdNotifications = createNotifications(realm, userId)
                         newNotifications.addAll(createdNotifications)
                     }
