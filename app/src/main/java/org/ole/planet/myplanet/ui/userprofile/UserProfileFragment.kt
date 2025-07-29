@@ -62,6 +62,8 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import java.time.Instant
+import java.util.TimeZone
 
 @AndroidEntryPoint
 class UserProfileFragment : Fragment() {
@@ -275,6 +277,11 @@ class UserProfileFragment : Fragment() {
 
     private fun setupDatePicker(binding: EditProfileDialogBinding) {
         binding.dateOfBirth.setOnClickListener {
+            val previousSelectedDate = date ?: model?.dob
+            val instant = Instant.parse(previousSelectedDate)
+            val dobPrevious = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                timeInMillis = instant.toEpochMilli()
+            }
             val now = Calendar.getInstance()
             val dpd = DatePickerDialog(
                 requireContext(),
@@ -287,9 +294,9 @@ class UserProfileFragment : Fragment() {
                     date = format(Locale.US, "%04d-%02d-%02dT00:00:00.000Z", year, monthOfYear + 1, dayOfMonth)
                     binding.dateOfBirth.text = dobFormatted
                 },
-                now.get(Calendar.YEAR),
-                now.get(Calendar.MONTH),
-                now.get(Calendar.DAY_OF_MONTH)
+                dobPrevious.get(Calendar.YEAR),
+                dobPrevious.get(Calendar.MONTH),
+                dobPrevious.get(Calendar.DAY_OF_MONTH)
             )
             dpd.datePicker.maxDate = now.timeInMillis
             dpd.show()
