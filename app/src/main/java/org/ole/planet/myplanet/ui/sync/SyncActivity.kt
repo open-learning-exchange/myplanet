@@ -604,17 +604,19 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun forceSyncTrigger(): Boolean {
-        if (settings.getLong(getString(R.string.last_syncs), 0) <= 0) {
-            lblLastSyncDate.text = getString(R.string.last_synced_never)
-        } else {
-            val lastSyncMillis = settings.getLong(getString(R.string.last_syncs), 0)
-            var relativeTime = getRelativeTime(lastSyncMillis)
+        if (::lblLastSyncDate.isInitialized) {
+            if (settings.getLong(getString(R.string.last_syncs), 0) <= 0) {
+                lblLastSyncDate.text = getString(R.string.last_synced_never)
+            } else {
+                val lastSyncMillis = settings.getLong(getString(R.string.last_syncs), 0)
+                var relativeTime = getRelativeTime(lastSyncMillis)
 
-            if (relativeTime.matches(Regex("^\\d{1,2} seconds ago$"))) {
-                relativeTime = getString(R.string.a_few_seconds_ago)
+                if (relativeTime.matches(Regex("^\\d{1,2} seconds ago$"))) {
+                    relativeTime = getString(R.string.a_few_seconds_ago)
+                }
+
+                lblLastSyncDate.text = getString(R.string.last_sync, relativeTime)
             }
-
-            lblLastSyncDate.text = getString(R.string.last_sync, relativeTime)
         }
         if (autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext) && autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, applicationContext)) {
             return checkForceSync(7)
