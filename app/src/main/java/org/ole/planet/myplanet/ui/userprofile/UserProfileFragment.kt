@@ -318,9 +318,9 @@ class UserProfileFragment : Fragment() {
                 selectedLevel,
                 selectedLanguage.takeUnless { it == getString(R.string.language) },
                 selectedGender,
-                date?: model?.dob
-            ) {
-                updateUIWithUserData(model)
+                date ?: model?.dob
+            ) { updatedModel ->
+                updateUIWithUserData(updatedModel)
             }
             realm.close()
             dialog.dismiss()
