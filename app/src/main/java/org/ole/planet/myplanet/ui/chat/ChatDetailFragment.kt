@@ -486,7 +486,9 @@ class ChatDetailFragment : Fragment() {
         mRealm.executeTransaction { realm ->
             RealmChatHistory.insert(realm, jsonObject)
         }
-        (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
+        if (isAdded && activity is DashboardActivity) {
+            (activity as DashboardActivity).refreshChatHistoryList()
+        }
     }
 
     private fun buildChatHistoryObject(query: String, chatResponse: String, responseBody: ChatModel): JsonObject =
