@@ -47,7 +47,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private var conditionApplied: Boolean = false
     @Inject
     lateinit var uploadManager: UploadManager
-    private val viewModel: TeamViewModel by viewModels(ownerProducer = { requireActivity() })
+    private val viewModel: TeamViewModel by viewModels()
     private val settings by lazy {
         requireActivity().getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     }
