@@ -48,6 +48,8 @@ import java.util.LinkedHashMap
 import java.util.LinkedList
 import java.util.Locale
 import java.util.UUID
+import java.util.TimeZone
+import java.time.Instant
 import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.language
@@ -62,8 +64,6 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import java.time.Instant
-import java.util.TimeZone
 
 @AndroidEntryPoint
 class UserProfileFragment : Fragment() {
