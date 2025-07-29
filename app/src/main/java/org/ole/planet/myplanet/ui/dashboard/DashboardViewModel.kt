@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import io.realm.Realm
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
@@ -48,7 +49,7 @@ class DashboardViewModel @Inject constructor(
         return total.coerceAtMost(11)
     }
 
-    suspend fun updateResourceNotification(userId: String?) {
+    suspend fun updateResourceNotification(userId: String?) = withContext(Dispatchers.IO) {
         val realm = userRepository.getRealm()
         val resourceCount = BaseResourceFragment.getLibraryList(realm, userId).size
         if (resourceCount > 0) {
@@ -89,9 +90,9 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {
+    suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> = withContext(Dispatchers.IO) {
         val realm = userRepository.getRealm()
-        return realm.where(RealmSubmission::class.java)
+        realm.where(RealmSubmission::class.java)
             .equalTo("userId", userId)
             .equalTo("type", "survey")
             .equalTo("status", "pending", Case.INSENSITIVE)
@@ -110,9 +111,9 @@ class DashboardViewModel @Inject constructor(
         return titles
     }
 
-    suspend fun getUnreadNotificationsSize(userId: String?): Int {
+    suspend fun getUnreadNotificationsSize(userId: String?): Int = withContext(Dispatchers.IO) {
         val realm = userRepository.getRealm()
-        return realm.where(RealmNotification::class.java)
+        realm.where(RealmNotification::class.java)
             .equalTo("userId", userId)
             .equalTo("isRead", false)
             .count()

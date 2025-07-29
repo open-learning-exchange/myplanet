@@ -514,9 +514,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         newNotifications.addAll(createdNotifications)
                     }
 
-                    unreadCount = runBlocking {
-                        dashboardViewModel.getUnreadNotificationsSize(userId)
-                    }
+                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -542,7 +540,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun createNotifications(realm: Realm, userId: String?): List<NotificationUtil.NotificationConfig> {
         val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
 
-        lifecycleScope.launch {
+        lifecycleScope.launch(Dispatchers.IO) {
             dashboardViewModel.updateResourceNotification(userId)
         }
 
@@ -556,7 +554,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun createSurveyNotifications(realm: Realm, userId: String?): List<NotificationUtil.NotificationConfig> {
         val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
-        val pendingSurveys = runBlocking {
+        val pendingSurveys = runBlocking(Dispatchers.IO) {
             dashboardViewModel.getPendingSurveys(userId)
         }
         val surveyTitles = dashboardViewModel.getSurveyTitlesFromSubmissions(realm, pendingSurveys)
