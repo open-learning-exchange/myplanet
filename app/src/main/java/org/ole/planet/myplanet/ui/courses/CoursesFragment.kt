@@ -262,8 +262,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     val courseList = filterCourseByTag(query, searchTags)
                     val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
                     adapterCourses.setOriginalCourseList(sortedCourseList)
-                }
-                else {
+                    showNoData(tvMessage, adapterCourses.itemCount, "courses")
+                } else {
                     adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
                     showNoData(tvMessage, adapterCourses.itemCount, "courses")
                 }
