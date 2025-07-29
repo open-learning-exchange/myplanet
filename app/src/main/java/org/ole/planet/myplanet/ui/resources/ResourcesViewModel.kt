@@ -32,6 +32,10 @@ class ResourcesViewModel @Inject constructor(
     private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
     val syncStatus: StateFlow<SyncStatus> = _syncStatus.asStateFlow()
 
+    init {
+        loadResources()
+    }
+
     fun loadResources() {
         _libraryItems.value = libraryRepository.getAllLibraryItems()
     }
@@ -53,12 +57,16 @@ class ResourcesViewModel @Inject constructor(
             }
 
             override fun onSyncComplete() {
-                _syncStatus.value = SyncStatus.Completed
-                loadResources()
+                viewModelScope.launch(Dispatchers.Main) {
+                    _syncStatus.value = SyncStatus.Completed
+                    loadResources()
+                }
             }
 
             override fun onSyncFailed(msg: String?) {
-                _syncStatus.value = SyncStatus.Failed(msg)
+                viewModelScope.launch(Dispatchers.Main) {
+                    _syncStatus.value = SyncStatus.Failed(msg)
+                }
             }
         }, "full", listOf("resources"))
     }

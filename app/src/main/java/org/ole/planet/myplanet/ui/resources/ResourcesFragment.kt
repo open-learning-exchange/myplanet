@@ -87,6 +87,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         super.onCreate(savedInstanceState)
         prefManager = SharedPrefManager(requireContext())
         settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        viewModel.loadResources()
         startResourcesSync()
     }
 
