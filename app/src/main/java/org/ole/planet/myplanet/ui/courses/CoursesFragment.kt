@@ -48,7 +48,7 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener {
 
-    private val viewModel: CoursesViewModel by viewModels()
+    private val viewModel: CoursesViewModel by viewModels { defaultViewModelProviderFactory }
 
     companion object {
         fun newInstance(isMyCourseLib: Boolean): CoursesFragment {
