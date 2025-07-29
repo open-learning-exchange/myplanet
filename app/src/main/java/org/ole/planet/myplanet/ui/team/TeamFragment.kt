@@ -47,7 +47,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private var conditionApplied: Boolean = false
     @Inject
     lateinit var uploadManager: UploadManager
-    private val viewModel: TeamViewModel by viewModels()
+    private val viewModel: TeamViewModel by viewModels(ownerProducer = { requireActivity() })
     private val settings by lazy {
         requireActivity().getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     }
@@ -81,7 +81,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             getString(R.string.team)
         }
         conditionApplied = !fromDashboard && !(TextUtils.isEmpty(type) || type == "team")
-        viewModel.loadTeams(type, fromDashboard, settings)
         return fragmentTeamBinding.root
     }
 
@@ -208,6 +207,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         fragmentTeamBinding.rvTeamList.layoutManager = LinearLayoutManager(activity)
+        viewModel.loadTeams(type, fromDashboard, settings)
         lifecycleScope.launchWhenStarted {
             viewModel.teams.collect { list ->
                 teamList = list
