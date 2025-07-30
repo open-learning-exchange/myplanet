@@ -36,7 +36,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private lateinit var fragmentTeamBinding: FragmentTeamBinding
     private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
     private lateinit var mRealm: Realm
-    private val teamViewModel: TeamViewModel by viewModels { defaultViewModelProviderFactory }
+    private val teamViewModel: TeamViewModel by viewModels()
     @Inject
     lateinit var databaseService: DatabaseService
     var type: String? = null
