@@ -39,24 +39,26 @@ class DashboardViewModel @Inject constructor(
 
     suspend fun updateResourceNotification(userId: String?) = withContext(Dispatchers.IO) {
         userRepository.getRealm().use { realm ->
-            val resourceCount = BaseResourceFragment.getLibraryList(realm, userId).size
-            if (resourceCount > 0) {
-                val existingNotification = realm.where(RealmNotification::class.java)
-                    .equalTo("userId", userId)
-                    .equalTo("type", "resource")
-                    .findFirst()
+            realm.executeTransaction { transactionRealm ->
+                val resourceCount = BaseResourceFragment.getLibraryList(transactionRealm, userId).size
+                if (resourceCount > 0) {
+                    val existingNotification = transactionRealm.where(RealmNotification::class.java)
+                        .equalTo("userId", userId)
+                        .equalTo("type", "resource")
+                        .findFirst()
 
-                if (existingNotification != null) {
-                    existingNotification.message = "$resourceCount"
-                    existingNotification.relatedId = "$resourceCount"
+                    if (existingNotification != null) {
+                        existingNotification.message = "$resourceCount"
+                        existingNotification.relatedId = "$resourceCount"
+                    } else {
+                        createNotificationIfNotExists(transactionRealm, "resource", "$resourceCount", "$resourceCount", userId)
+                    }
                 } else {
-                    createNotificationIfNotExists(realm, "resource", "$resourceCount", "$resourceCount", userId)
+                    transactionRealm.where(RealmNotification::class.java)
+                        .equalTo("userId", userId)
+                        .equalTo("type", "resource")
+                        .findFirst()?.deleteFromRealm()
                 }
-            } else {
-                realm.where(RealmNotification::class.java)
-                    .equalTo("userId", userId)
-                    .equalTo("type", "resource")
-                    .findFirst()?.deleteFromRealm()
             }
         }
     }
