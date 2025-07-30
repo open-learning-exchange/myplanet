@@ -11,10 +11,12 @@ import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.work.Configuration
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import dagger.hilt.android.HiltAndroidApp
+import dagger.hilt.android.work.HiltWorkerFactory
 import io.realm.Realm
 import java.net.HttpURLConnection
 import java.net.URL
@@ -55,7 +57,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
 
 @HiltAndroidApp
-class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
+class MainApplication : Application(), Application.ActivityLifecycleCallbacks, Configuration.Provider {
 
     @Inject
     lateinit var databaseService: DatabaseService
@@ -67,6 +69,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     @Inject
     @DefaultPreferences
     lateinit var defaultPreferences: SharedPreferences
+
+    @Inject
+    lateinit var hiltWorkerFactory: HiltWorkerFactory
 
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
@@ -190,6 +195,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onCreate() {
         super.onCreate()
+        WorkManager.initialize(this, getWorkManagerConfiguration())
         initApp()
         setupPreferences()
         setupStrictMode()
@@ -366,6 +372,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     private fun onAppClosed() {}
+
+    override fun getWorkManagerConfiguration(): Configuration {
+        return Configuration.Builder()
+            .setWorkerFactory(hiltWorkerFactory)
+            .build()
+    }
 
     override fun onTerminate() {
         if (::anrWatchdog.isInitialized) {
