@@ -3,11 +3,11 @@ package org.ole.planet.myplanet.ui.viewer
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import java.io.BufferedReader
+import androidx.lifecycle.lifecycleScope
 import java.io.File
-import java.io.FileReader
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityTextfileViewerBinding
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
@@ -37,25 +37,17 @@ class TextFileViewerActivity : AppCompatActivity() {
         renderTextFileThread()
     }
     private fun renderTextFileThread() {
-        val openTextFileThread: Thread = object : Thread() {
-            override fun run() {
-                try {
-                    val basePath = getExternalFilesDir(null)
-                    val file = File(basePath, "ole/$fileName")
-                    val text = StringBuilder()
-                    val reader = BufferedReader(FileReader(file))
-                    var line: String?
-                    while (reader.readLine().also { line = it } != null) {
-                        text.append(line)
-                        text.append('\n')
-                    }
-                    reader.close()
-                    activityTextFileViewerBinding.textFileContent.text = text.toString()
-                } catch (e: Exception) {
-                    e.printStackTrace()
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val basePath = getExternalFilesDir(null)
+                val file = File(basePath, "ole/$fileName")
+                val text = file.readText()
+                withContext(Dispatchers.Main) {
+                    activityTextFileViewerBinding.textFileContent.text = text
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
-        openTextFileThread.start()
     }
 }

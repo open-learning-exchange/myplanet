@@ -3,16 +3,18 @@ package org.ole.planet.myplanet.datamanager
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
-import androidx.core.app.NotificationCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import dagger.hilt.android.EntryPointAccessors
 import java.io.BufferedInputStream
 import java.io.FileOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.datamanager.ApiInterface
+import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
@@ -22,6 +24,12 @@ import org.ole.planet.myplanet.utilities.Utilities
 class DownloadWorker(val context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private val preferences = context.getSharedPreferences(MyDownloadService.PREFS_NAME, Context.MODE_PRIVATE)
+    private val apiInterface: ApiInterface by lazy {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            ApiInterfaceEntryPoint::class.java
+        ).apiInterface()
+    }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
@@ -66,8 +74,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
 
     private suspend fun downloadFile(url: String, index: Int, total: Int): Boolean {
         return try {
-            val retrofitInterface = ApiClient.client?.create(ApiInterface::class.java)
-            val response = retrofitInterface?.downloadFile(Utilities.header, url)?.execute()
+            val response = apiInterface.downloadFile(Utilities.header, url)?.execute()
 
             when {
                 response == null -> false

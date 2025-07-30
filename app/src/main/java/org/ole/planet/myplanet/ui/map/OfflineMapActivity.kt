@@ -2,8 +2,6 @@ package org.ole.planet.myplanet.ui.map
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.preference.PreferenceManager
 import org.ole.planet.myplanet.databinding.ActivityOfflineMapBinding
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil

@@ -5,14 +5,14 @@ import android.text.TextUtils
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.github.barteksc.pdfviewer.listener.OnLoadCompleteListener
 import com.github.barteksc.pdfviewer.listener.OnPageChangeListener
 import com.github.barteksc.pdfviewer.listener.OnPageErrorListener
 import com.github.barteksc.pdfviewer.scroll.DefaultScrollHandle
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.io.File
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityPdfreaderBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -27,10 +27,13 @@ import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.NotificationUtil.create
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompleteListener, OnPageErrorListener, AudioRecordListener {
     private lateinit var activityPdfReaderBinding: ActivityPdfreaderBinding
-    private var fileName: String? = null
     private lateinit var audioRecorderService: AudioRecorderService
+    private var fileName: String? = null
+    @Inject
+    lateinit var databaseService: DatabaseService
     private lateinit var library: RealmMyLibrary
     private lateinit var mRealm: Realm
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,7 +43,7 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         EdgeToEdgeUtil.setupEdgeToEdge(this, activityPdfReaderBinding.root)
         audioRecorderService = AudioRecorderService().setAudioRecordListener(this)
         audioRecorderService.setCaller(this, this)
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = databaseService.realmInstance
         if (intent.hasExtra("resourceId")) {
             val resourceID = intent.getStringExtra("resourceId")
             library = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceID).findFirst()!!
@@ -94,7 +97,7 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         Utilities.toast(this, getString(R.string.recording_stopped))
         cancelAll(this)
         updateTranslation(outputFile)
-        AddResourceFragment.showAlert(this, outputFile)
+        AddResourceFragment.showAlert(this, outputFile, databaseService)
         activityPdfReaderBinding.fabRecord.setImageResource(R.drawable.ic_mic)
     }
 
