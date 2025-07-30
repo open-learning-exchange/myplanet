@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.resources
 
-import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
 import android.view.MenuItem
@@ -10,15 +9,14 @@ import android.widget.EditText
 import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmList
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
-import kotlin.toString
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -28,11 +26,10 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
-import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 @AndroidEntryPoint
-class AddResourceActivity : AppCompatActivity() {
+class AddResourceActivity : BaseActivity() {
     @Inject
     lateinit var databaseService: DatabaseService
     @Inject
@@ -44,10 +41,6 @@ class AddResourceActivity : AppCompatActivity() {
     var levels: RealmList<String>? = null
     private var resourceFor: RealmList<String>? = null
     private var resourceUrl: String? = null
-
-    override fun attachBaseContext(base: Context) {
-        super.attachBaseContext(LocaleHelper.onAttach(base))
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
