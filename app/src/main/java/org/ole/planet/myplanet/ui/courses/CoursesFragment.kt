@@ -18,7 +18,9 @@ import androidx.appcompat.view.ContextThemeWrapper
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
@@ -123,56 +125,60 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         observeViewModel()
     }
 
+
     private fun observeViewModel() {
-        lifecycleScope.launchWhenStarted {
-            viewModel.courses.collect { list ->
-                adapterCourses.updateCourseList(list)
-                if (isMyCourseLib) checkList()
-                showNoData(tvMessage, adapterCourses.itemCount, "courses")
-            }
-        }
-        lifecycleScope.launchWhenStarted {
-            viewModel.progressMap.collect {
-                adapterCourses.setProgressMap(it)
-                adapterCourses.notifyDataSetChanged()
-            }
-        }
-        lifecycleScope.launchWhenStarted {
-            viewModel.ratingMap.collect {
-                adapterCourses.setRatingMap(it)
-                adapterCourses.notifyDataSetChanged()
-            }
-        }
-        lifecycleScope.launchWhenStarted {
-            viewModel.libraryResources.collect { res ->
-                if (isMyCourseLib) resources = res
-            }
-        }
-        lifecycleScope.launchWhenStarted {
-            viewModel.isSyncing.collect { syncing ->
-                if (syncing) {
-                    if (customProgressDialog == null) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText(getString(R.string.syncing_courses_data))
-                        customProgressDialog?.show()
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.courses.collect { list ->
+                        adapterCourses.updateCourseList(list)
+                        if (isMyCourseLib) checkList()
+                        showNoData(tvMessage, adapterCourses.itemCount, "courses")
                     }
-                } else {
-                    customProgressDialog?.dismiss()
-                    customProgressDialog = null
+                }
+                launch {
+                    viewModel.progressMap.collect {
+                        adapterCourses.setProgressMap(it)
+                        adapterCourses.notifyDataSetChanged()
+                    }
+                }
+                launch {
+                    viewModel.ratingMap.collect {
+                        adapterCourses.setRatingMap(it)
+                        adapterCourses.notifyDataSetChanged()
+                    }
+                }
+                launch {
+                    viewModel.libraryResources.collect { res ->
+                        if (isMyCourseLib) resources = res
+                    }
+                }
+                launch {
+                    viewModel.isSyncing.collect { syncing ->
+                        if (syncing) {
+                            if (customProgressDialog == null) {
+                                customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                                customProgressDialog?.setText(getString(R.string.syncing_courses_data))
+                                customProgressDialog?.show()
+                            }
+                        } else {
+                            customProgressDialog?.dismiss()
+                            customProgressDialog = null
+                        }
+                    }
+                }
+                launch {
+                    viewModel.syncError.collect { msg ->
+                        msg ?: return@collect
+                        Snackbar.make(requireView(), "Sync failed: $msg", Snackbar.LENGTH_LONG)
+                            .setAction("Retry") {
+                                viewModel.startCoursesSync(serverUrl, settings, prefManager, isMyCourseLib)
+                            }.show()
+                    }
                 }
             }
         }
-        lifecycleScope.launchWhenStarted {
-            viewModel.syncError.collect { msg ->
-                msg ?: return@collect
-                Snackbar.make(requireView(), "Sync failed: ${'$'}msg", Snackbar.LENGTH_LONG)
-                    .setAction("Retry") {
-                        viewModel.startCoursesSync(serverUrl, settings, prefManager, isMyCourseLib)
-                    }.show()
-            }
-        }
     }
-
     private fun setupButtonVisibility() {
         if (isMyCourseLib) {
             btnRemove.visibility = View.VISIBLE
