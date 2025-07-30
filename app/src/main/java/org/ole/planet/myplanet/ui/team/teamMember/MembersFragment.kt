@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getRequestedMember
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
+import org.ole.planet.myplanet.data.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 @AndroidEntryPoint
@@ -23,6 +24,8 @@ class MembersFragment : BaseMemberFragment() {
 
     @Inject
     lateinit var uploadManager: UploadManager
+    @Inject
+    lateinit var userRepository: UserRepository
 
     fun setMemberChangeListener(listener: MemberChangeListener) {
         this.memberChangeListener = listener
@@ -30,7 +33,7 @@ class MembersFragment : BaseMemberFragment() {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        currentUser = UserProfileDbHandler(context).userModel!!
+        currentUser = userRepository.getCurrentUser() ?: UserProfileDbHandler(context).userModel!!
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}

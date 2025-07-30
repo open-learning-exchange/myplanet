@@ -539,7 +539,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun createNotifications(realm: Realm, userId: String?): List<NotificationUtil.NotificationConfig> {
         val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
 
-        dashboardViewModel.updateResourceNotification(realm, userId)
+        dashboardViewModel.updateResourceNotification()
 
         newNotifications.addAll(createSurveyNotifications(realm, userId))
         newNotifications.addAll(createTaskNotifications(realm, userId))

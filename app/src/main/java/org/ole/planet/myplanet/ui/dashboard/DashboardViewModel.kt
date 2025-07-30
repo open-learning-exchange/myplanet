@@ -37,8 +37,15 @@ class DashboardViewModel @Inject constructor(
         return total.coerceAtMost(11)
     }
 
-    fun updateResourceNotification(realm: Realm, userId: String?) {
-        val resourceCount = BaseResourceFragment.getLibraryList(realm, userId).size
+    fun updateResourceNotification() {
+        val realm = userRepository.getRealm()
+        val userId = userRepository.getCurrentUser()?.id
+
+        val libraryItems = libraryRepository.getAllLibraryItems().filter {
+            it.userId?.contains(userId) == true && !it.isPrivate
+        }
+        val resourceCount = libraryItems.size
+
         if (resourceCount > 0) {
             val existingNotification = realm.where(RealmNotification::class.java)
                 .equalTo("userId", userId)
@@ -57,6 +64,10 @@ class DashboardViewModel @Inject constructor(
                 .equalTo("type", "resource")
                 .findFirst()?.deleteFromRealm()
         }
+    }
+
+    fun getEnrolledCourseCount(): Int {
+        return courseRepository.getEnrolledCourses().size
     }
 
     fun createNotificationIfNotExists(realm: Realm, type: String, message: String, relatedId: String?, userId: String?) {
