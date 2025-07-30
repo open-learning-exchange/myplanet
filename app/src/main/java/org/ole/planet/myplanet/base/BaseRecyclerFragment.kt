@@ -20,13 +20,10 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.createMyCourse
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getAllCourses
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseByUserId
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createFromResource
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getMyLibraryByUserId
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getOurLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -103,7 +100,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
             resources?.let { showDownloadDialog(it) }
         } else if (isMyCourseLib && courseLib == null && !isSurvey) {
-            showDownloadDialog(libraryRepository.getLibraryList(model?.id))
+            showDownloadDialog(libraryRepository.getLibraryList(userRepository.getCurrentUser()?.id))
         }
         return v
     }
@@ -183,8 +180,20 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     private fun <LI : RealmModel> getData(s: String, c: Class<LI>): List<LI> {
         val data: List<LI> = when (c) {
-            RealmMyLibrary::class.java -> libraryRepository.getAllLibraryItems() as List<LI>
-            else -> courseRepository.getAllCourses() as List<LI>
+            RealmMyLibrary::class.java -> {
+                if (isMyCourseLib) {
+                    libraryRepository.getMyLibraries(userRepository.getCurrentUser()?.id) as List<LI>
+                } else {
+                    libraryRepository.getOurLibraries(userRepository.getCurrentUser()?.id) as List<LI>
+                }
+            }
+            else -> {
+                if (isMyCourseLib) {
+                    courseRepository.getMyCourses(userRepository.getCurrentUser()?.id) as List<LI>
+                } else {
+                    courseRepository.getOurCourses(userRepository.getCurrentUser()?.id) as List<LI>
+                }
+            }
         }
 
         if (s.isEmpty()) return data
@@ -215,13 +224,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     fun filterLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
-        val normalizedSearchTerm = normalizeText(s)
         var list = getData(s, RealmMyLibrary::class.java)
-        list = if (isMyCourseLib) {
-            getMyLibraryByUserId(model?.id, list)
-        } else {
-            getOurLibrary(model?.id, list)
-        }
 
         val libraries = if (tags.isNotEmpty()) {
             val filteredLibraries = mutableListOf<RealmMyLibrary>()
@@ -246,11 +249,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             return applyCourseFilter(filterRealmMyCourseList(getList(RealmMyCourse::class.java)))
         }
         var list = getData(s, RealmMyCourse::class.java)
-        list = if (isMyCourseLib) {
-            getMyCourseByUserId(model?.id, list)
-        } else {
-            getAllCourses(model?.id, list)
-        }
         if (tags.isEmpty()) {
             return list
         }
