@@ -18,7 +18,6 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createFromResource
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
@@ -31,11 +30,8 @@ import org.ole.planet.myplanet.utilities.Utilities.toast
 @AndroidEntryPoint
 class AddResourceActivity : BaseActivity() {
     @Inject
-    lateinit var databaseService: DatabaseService
-    @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var activityAddResourceBinding: ActivityAddResourceBinding
-    private lateinit var mRealm: Realm
     var userModel: RealmUserModel? = null
     var subjects: RealmList<String>? = null
     var levels: RealmList<String>? = null
@@ -55,16 +51,9 @@ class AddResourceActivity : BaseActivity() {
         levels = RealmList()
         subjects = RealmList()
         resourceFor = RealmList()
-        mRealm = databaseService.realmInstance
         initializeViews()
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
-    }
 
     private fun initializeViews() {
         val etYear = findViewById<EditText>(R.id.et_year)
