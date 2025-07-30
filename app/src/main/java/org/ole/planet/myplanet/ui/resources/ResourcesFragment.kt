@@ -178,6 +178,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             viewModel.libraryItems.collect { items ->
                 adapterLibrary.setLibraryList(items)
                 showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+                checkList()
+                changeButtonStatus()
             }
         }
 
@@ -314,6 +316,16 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             requireView().findViewById<View>(R.id.filter).visibility = View.GONE
             clearTags.visibility = View.GONE
             tvDelete?.visibility = View.GONE
+        } else {
+            selectAll.visibility = View.VISIBLE
+            etSearch.visibility = View.VISIBLE
+            tvAddToLib.visibility = View.VISIBLE
+            requireView().findViewById<View>(R.id.btn_collections).visibility = View.VISIBLE
+            requireView().findViewById<View>(R.id.filter).visibility = View.VISIBLE
+            clearTags.visibility = View.VISIBLE
+            if (isMyCourseLib) {
+                tvDelete?.visibility = View.VISIBLE
+            }
         }
     }
 
