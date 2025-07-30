@@ -17,7 +17,7 @@ import android.widget.TextView
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -50,7 +50,13 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener {
 
-    private val viewModel: CoursesViewModel by viewModels()
+    private val viewModel: CoursesViewModel by lazy {
+        ViewModelProvider(
+            this,
+            defaultViewModelProviderFactory,
+            defaultViewModelCreationExtras
+        )[CoursesViewModel::class.java]
+    }
 
     companion object {
         fun newInstance(isMyCourseLib: Boolean): CoursesFragment {
