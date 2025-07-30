@@ -11,12 +11,12 @@ import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import dagger.hilt.android.HiltAndroidApp
-import androidx.hilt.work.HiltWorkerFactory
 import io.realm.Realm
 import java.net.HttpURLConnection
 import java.net.URL
