@@ -103,7 +103,7 @@ object NotificationUtil {
         private val notificationManager = NotificationManagerCompat.from(context)
         private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         private val activeNotifications = mutableSetOf<String>()
-        private val currentSessionNotifications = mutableSetOf<String>() // In-memory only, not persisted
+        private val currentSessionNotifications = mutableSetOf<String>()
 
         init {
             loadActiveNotifications()
@@ -162,7 +162,6 @@ object NotificationUtil {
                 val notification = buildNotification(config)
                 val notificationId = config.id.hashCode()
 
-                // Always show the notification - Android system handles duplicates by replacing existing ones
                 notificationManager.notify(notificationId, notification)
                 markNotificationAsShown(config.id)
                 return true
@@ -373,7 +372,7 @@ object NotificationUtil {
 
         fun createSurveyNotification(surveyId: String, surveyTitle: String): NotificationConfig {
             return NotificationConfig(
-                id = surveyId, // Use database ID directly
+                id = surveyId,
                 type = TYPE_SURVEY,
                 title = "📋 New Survey Available",
                 message = surveyTitle,
@@ -393,7 +392,7 @@ object NotificationUtil {
             }
 
             return NotificationConfig(
-                id = taskId, // Use database ID directly
+                id = taskId,
                 type = TYPE_TASK,
                 title = "✅ New Task Assigned",
                 message = "$taskTitle\nDue: $deadline",
@@ -407,7 +406,7 @@ object NotificationUtil {
 
         fun createJoinRequestNotification(requestId: String, requesterName: String, teamName: String): NotificationConfig {
             return NotificationConfig(
-                id = requestId, // Use database ID directly
+                id = requestId,
                 type = TYPE_JOIN_REQUEST,
                 title = "👥 Team Join Request",
                 message = "$requesterName wants to join $teamName",
@@ -427,7 +426,7 @@ object NotificationUtil {
             }
 
             return NotificationConfig(
-                id = customId, // Use provided ID (database ID when called from createNotificationConfigFromDatabase)
+                id = customId,
                 type = TYPE_STORAGE,
                 title = "⚠️ Storage Warning",
                 message = "Device storage is at $storagePercentage%. Consider freeing up space.",
@@ -440,7 +439,7 @@ object NotificationUtil {
 
         fun createResourceNotification(notificationId: String, resourceCount: Int): NotificationConfig {
             return NotificationConfig(
-                id = notificationId, // Use database ID directly
+                id = notificationId,
                 type = TYPE_RESOURCE,
                 title = "📚 New Resources Available",
                 message = "$resourceCount new resources have been added",
