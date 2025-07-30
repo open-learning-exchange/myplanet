@@ -546,25 +546,74 @@ class NotificationActionReceiver : BroadcastReceiver() {
     }
     
     private fun markNotificationAsRead(context: Context, notificationId: String?) {
-        if (notificationId == null) return
+        if (notificationId == null) {
+            android.util.Log.d("NotificationActionReceiver", "markNotificationAsRead: notificationId is null")
+            return
+        }
+
+        android.util.Log.d("NotificationActionReceiver", "markNotificationAsRead: Starting for notificationId: $notificationId")
 
         try {
             val realm = databaseService.realmInstance
+            android.util.Log.d("NotificationActionReceiver", "markNotificationAsRead: Got realm instance")
             
             realm.executeTransaction { r ->
                 val notification = r.where(RealmNotification::class.java)
                     .equalTo("id", notificationId)
                     .findFirst()
                 
-                notification?.isRead = true
+                if (notification != null) {
+                    android.util.Log.d("NotificationActionReceiver", "markNotificationAsRead: Found notification with id: $notificationId, current isRead: ${notification.isRead}")
+                    notification.isRead = true
+                    android.util.Log.d("NotificationActionReceiver", "markNotificationAsRead: Marked notification as read")
+                } else {
+                    android.util.Log.w("NotificationActionReceiver", "markNotificationAsRead: Notification not found with id: $notificationId")
+                }
             }
             
-            // Broadcast that a notification was marked as read from system tray
-            val broadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
-            broadcastIntent.putExtra("notification_id", notificationId)
-            context.sendBroadcast(broadcastIntent)
+            // Close the realm instance to ensure changes are committed
+            realm.close()
+            android.util.Log.d("NotificationActionReceiver", "markNotificationAsRead: Realm closed, transaction committed")
+            
+            // Add a delay to ensure database write is complete before broadcasting
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                android.util.Log.d("NotificationActionReceiver", "markNotificationAsRead: Broadcasting notification read from system")
+                
+                // Try multiple broadcast approaches to ensure delivery
+                // 1. Regular broadcast
+                val broadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
+                broadcastIntent.setPackage(context.packageName)
+                broadcastIntent.putExtra("notification_id", notificationId)
+                context.sendBroadcast(broadcastIntent)
+                
+                // 2. Local broadcast as backup
+                try {
+                    val localBroadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM_LOCAL")
+                    localBroadcastIntent.putExtra("notification_id", notificationId)
+                    androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(context)
+                        .sendBroadcast(localBroadcastIntent)
+                    android.util.Log.d("NotificationActionReceiver", "markNotificationAsRead: Local broadcast also sent")
+                } catch (e: Exception) {
+                    android.util.Log.w("NotificationActionReceiver", "markNotificationAsRead: Local broadcast failed", e)
+                }
+                
+                // 3. Direct activity refresh if possible
+                try {
+                    val dashboardIntent = Intent(context, DashboardActivity::class.java)
+                    dashboardIntent.action = "REFRESH_NOTIFICATION_BADGE"
+                    dashboardIntent.putExtra("notification_id", notificationId)
+                    dashboardIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                    context.startActivity(dashboardIntent)
+                    android.util.Log.d("NotificationActionReceiver", "markNotificationAsRead: Direct activity intent sent")
+                } catch (e: Exception) {
+                    android.util.Log.w("NotificationActionReceiver", "markNotificationAsRead: Direct activity intent failed", e)
+                }
+                
+                android.util.Log.d("NotificationActionReceiver", "markNotificationAsRead: All broadcast methods attempted")
+            }, 200) // 200ms delay to ensure database write completion
             
         } catch (e: Exception) {
+            android.util.Log.e("NotificationActionReceiver", "markNotificationAsRead: Exception occurred", e)
             e.printStackTrace()
         }
     }

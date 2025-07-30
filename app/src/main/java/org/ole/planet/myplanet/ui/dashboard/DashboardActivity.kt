@@ -508,23 +508,57 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun setupSystemNotificationReceiver() {
         systemNotificationReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
+                android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: Received broadcast with action: ${intent?.action}")
                 if (intent?.action == "org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM") {
-                    // Update notification badge count immediately
+                    val notificationId = intent.getStringExtra("notification_id")
+                    android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: Processing notification_id: $notificationId")
+                    
                     val userId = user?.id
                     if (userId != null) {
-                        val unreadCount = dashboardViewModel.getUnreadNotificationsSize(mRealm, userId)
-                        updateNotificationBadge(unreadCount) {
-                            openNotificationsList(userId)
-                        }
-                        
-                        // Refresh NotificationFragment if visible
+                        android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: User ID: $userId")
+                        // Refresh NotificationFragment if visible - this will handle the badge update
                         val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
                         if (fragment is NotificationsFragment) {
+                            android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: NotificationsFragment is visible, refreshing list")
                             fragment.view?.post {
                                 fragment.refreshNotificationsList()
                             }
+                        } else {
+                            android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: NotificationsFragment not visible, updating badge directly")
+                            // Add delay to ensure database write is fully synced across all Realm instances
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                try {
+                                    android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: Refreshing Realm instance")
+                                    mRealm.refresh() // Force refresh to get latest data
+                                    val unreadCount = dashboardViewModel.getUnreadNotificationsSize(mRealm, userId)
+                                    android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: Got unread count: $unreadCount")
+                                    onNotificationCountUpdated(unreadCount) // Use the same method as NotificationsFragment
+                                    android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: Called onNotificationCountUpdated with count: $unreadCount")
+                                } catch (e: Exception) {
+                                    android.util.Log.e("DashboardActivity", "SystemNotificationReceiver: Exception in first attempt", e)
+                                    e.printStackTrace()
+                                    // Fallback: try again with a fresh query
+                                    Handler(Looper.getMainLooper()).postDelayed({
+                                        try {
+                                            android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: Fallback attempt - refreshing Realm")
+                                            mRealm.refresh()
+                                            val unreadCount = dashboardViewModel.getUnreadNotificationsSize(mRealm, userId)
+                                            android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: Fallback - got unread count: $unreadCount")
+                                            onNotificationCountUpdated(unreadCount)
+                                            android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: Fallback - called onNotificationCountUpdated")
+                                        } catch (e2: Exception) {
+                                            android.util.Log.e("DashboardActivity", "SystemNotificationReceiver: Exception in fallback attempt", e2)
+                                            e2.printStackTrace()
+                                        }
+                                    }, 300)
+                                }
+                            }, 300) // 300ms delay to ensure database synchronization
                         }
+                    } else {
+                        android.util.Log.w("DashboardActivity", "SystemNotificationReceiver: User ID is null")
                     }
+                } else {
+                    android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: Ignoring broadcast with action: ${intent?.action}")
                 }
             }
         }
@@ -537,6 +571,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             @Suppress("UnspecifiedRegisterReceiverFlag")
             registerReceiver(systemNotificationReceiver, filter)
         }
+        android.util.Log.d("DashboardActivity", "SystemNotificationReceiver registered for action: org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
     }
 
     private fun checkIfShouldShowNotifications() {
@@ -742,9 +777,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onNotificationCountUpdated(unreadCount: Int) {
+        android.util.Log.d("DashboardActivity", "onNotificationCountUpdated called with count: $unreadCount")
         updateNotificationBadge(unreadCount) {
             openNotificationsList(user?.id ?: "")
         }
+        android.util.Log.d("DashboardActivity", "onNotificationCountUpdated completed badge update")
     }
 
     private fun updateNotificationBadge(count: Int, onClickListener: View.OnClickListener) {
@@ -1115,6 +1152,26 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         super.onNewIntent(intent)
         setIntent(intent)
         handleNotificationIntent(intent)
+        
+        // Handle direct notification badge refresh
+        if (intent?.action == "REFRESH_NOTIFICATION_BADGE") {
+            val notificationId = intent.getStringExtra("notification_id")
+            android.util.Log.d("DashboardActivity", "onNewIntent: Direct badge refresh requested for notification: $notificationId")
+            
+            val userId = user?.id
+            if (userId != null) {
+                Handler(Looper.getMainLooper()).postDelayed({
+                    try {
+                        mRealm.refresh()
+                        val unreadCount = dashboardViewModel.getUnreadNotificationsSize(mRealm, userId)
+                        android.util.Log.d("DashboardActivity", "onNewIntent: Direct refresh - got unread count: $unreadCount")
+                        onNotificationCountUpdated(unreadCount)
+                    } catch (e: Exception) {
+                        android.util.Log.e("DashboardActivity", "onNewIntent: Direct refresh failed", e)
+                    }
+                }, 100)
+            }
+        }
     }
 
     override fun onNotificationPermissionGranted() {

@@ -231,16 +231,24 @@ class NotificationsFragment : Fragment() {
 
     private fun updateUnreadCount() {
         val unreadCount = getUnreadNotificationsSize()
+        android.util.Log.d("NotificationsFragment", "updateUnreadCount: Got unread count: $unreadCount")
+        android.util.Log.d("NotificationsFragment", "updateUnreadCount: notificationUpdateListener is null: ${notificationUpdateListener == null}")
         notificationUpdateListener?.onNotificationCountUpdated(unreadCount)
+        android.util.Log.d("NotificationsFragment", "updateUnreadCount: Called onNotificationCountUpdated")
     }
 
     fun refreshNotificationsList() {
+        android.util.Log.d("NotificationsFragment", "refreshNotificationsList: Called")
         if (::adapter.isInitialized && ::fragmentNotificationsBinding.isInitialized) {
+            android.util.Log.d("NotificationsFragment", "refreshNotificationsList: Adapter and binding initialized")
             val selectedFilter = fragmentNotificationsBinding.status.selectedItem.toString().lowercase()
+            android.util.Log.d("NotificationsFragment", "refreshNotificationsList: Selected filter: $selectedFilter")
             val notifications = loadNotifications(userId, selectedFilter)
+            android.util.Log.d("NotificationsFragment", "refreshNotificationsList: Loaded ${notifications.size} notifications")
             adapter.updateNotifications(notifications)
             updateMarkAllAsReadButtonVisibility()
             updateUnreadCount()
+            android.util.Log.d("NotificationsFragment", "refreshNotificationsList: Completed refresh")
             
             // Update empty state visibility
             if (notifications.isEmpty()) {
@@ -248,6 +256,8 @@ class NotificationsFragment : Fragment() {
             } else {
                 fragmentNotificationsBinding.emptyData.visibility = View.GONE
             }
+        } else {
+            android.util.Log.w("NotificationsFragment", "refreshNotificationsList: Adapter or binding not initialized")
         }
     }
 
