@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.dashboard
 import android.app.AlertDialog
 import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Context.RECEIVER_NOT_EXPORTED
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Configuration
@@ -23,7 +22,6 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
-import androidx.core.content.ContextCompat.registerReceiver
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.MenuItemCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -117,7 +115,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private lateinit var notificationManager: NotificationUtil.NotificationManager
     private var notificationsShownThisSession = false
     private var lastNotificationCheckTime = 0L
-    private val notificationCheckThrottleMs = 5000L // 5 seconds
+    private val notificationCheckThrottleMs = 5000L
     private var systemNotificationReceiver: BroadcastReceiver? = null
 
     private interface RealmListener {
@@ -508,70 +506,48 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun setupSystemNotificationReceiver() {
         systemNotificationReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
-                android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: Received broadcast with action: ${intent?.action}")
                 if (intent?.action == "org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM") {
-                    val notificationId = intent.getStringExtra("notification_id")
-                    android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: Processing notification_id: $notificationId")
-                    
                     val userId = user?.id
                     if (userId != null) {
-                        android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: User ID: $userId")
-                        // Refresh NotificationFragment if visible - this will handle the badge update
                         val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
                         if (fragment is NotificationsFragment) {
-                            android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: NotificationsFragment is visible, refreshing list")
                             fragment.view?.post {
                                 fragment.refreshNotificationsList()
                             }
                         } else {
-                            android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: NotificationsFragment not visible, updating badge directly")
-                            // Add delay to ensure database write is fully synced across all Realm instances
                             Handler(Looper.getMainLooper()).postDelayed({
                                 try {
-                                    android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: Refreshing Realm instance")
-                                    mRealm.refresh() // Force refresh to get latest data
+                                    mRealm.refresh()
                                     val unreadCount = dashboardViewModel.getUnreadNotificationsSize(mRealm, userId)
-                                    android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: Got unread count: $unreadCount")
-                                    onNotificationCountUpdated(unreadCount) // Use the same method as NotificationsFragment
-                                    android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: Called onNotificationCountUpdated with count: $unreadCount")
+                                    onNotificationCountUpdated(unreadCount)
                                 } catch (e: Exception) {
-                                    android.util.Log.e("DashboardActivity", "SystemNotificationReceiver: Exception in first attempt", e)
                                     e.printStackTrace()
-                                    // Fallback: try again with a fresh query
                                     Handler(Looper.getMainLooper()).postDelayed({
                                         try {
-                                            android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: Fallback attempt - refreshing Realm")
                                             mRealm.refresh()
                                             val unreadCount = dashboardViewModel.getUnreadNotificationsSize(mRealm, userId)
-                                            android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: Fallback - got unread count: $unreadCount")
                                             onNotificationCountUpdated(unreadCount)
-                                            android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: Fallback - called onNotificationCountUpdated")
                                         } catch (e2: Exception) {
-                                            android.util.Log.e("DashboardActivity", "SystemNotificationReceiver: Exception in fallback attempt", e2)
                                             e2.printStackTrace()
                                         }
                                     }, 300)
                                 }
-                            }, 300) // 300ms delay to ensure database synchronization
+                            }, 300)
                         }
                     } else {
                         android.util.Log.w("DashboardActivity", "SystemNotificationReceiver: User ID is null")
                     }
-                } else {
-                    android.util.Log.d("DashboardActivity", "SystemNotificationReceiver: Ignoring broadcast with action: ${intent?.action}")
                 }
             }
         }
         
         val filter = IntentFilter("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
-        if (Build.VERSION.SDK_INT >= 33) { // API 33 = TIRAMISU
+        if (Build.VERSION.SDK_INT >= 33) {
             registerReceiver(systemNotificationReceiver, filter, RECEIVER_NOT_EXPORTED)
         } else {
-            // Suppress warning for older API levels where flag is not required
             @Suppress("UnspecifiedRegisterReceiverFlag")
             registerReceiver(systemNotificationReceiver, filter)
         }
-        android.util.Log.d("DashboardActivity", "SystemNotificationReceiver registered for action: org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
     }
 
     private fun checkIfShouldShowNotifications() {
@@ -621,11 +597,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun createNotifications(realm: Realm, userId: String?): List<NotificationUtil.NotificationConfig> {
         val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
-
-        // First, create/update database notifications from data sources
         createDatabaseNotificationsFromSources(realm, userId)
-
-        // Then, get all unread notifications from database and convert to system notifications
         val unreadNotifications = realm.where(RealmNotification::class.java)
             .equalTo("userId", userId)
             .equalTo("isRead", false)
@@ -634,8 +606,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         unreadNotifications.forEach { dbNotification ->
             val config = createNotificationConfigFromDatabase(dbNotification)
             if (config != null) {
-                // Always add unread notifications - let the system handle duplicates
-                // The notification system will replace existing notifications with the same ID
                 newNotifications.add(config)
             }
         }
@@ -643,19 +613,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun createDatabaseNotificationsFromSources(realm: Realm, userId: String?) {
-        // Update resource notifications
         dashboardViewModel.updateResourceNotification(realm, userId)
-        
-        // Create survey notifications
         createSurveyDatabaseNotifications(realm, userId)
-        
-        // Create task notifications
         createTaskDatabaseNotifications(realm, userId)
-        
-        // Create storage notifications
         createStorageDatabaseNotifications(realm, userId)
-        
-        // Create join request notifications
         createJoinRequestDatabaseNotifications(realm, userId)
     }
 
@@ -667,13 +628,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             )
             "task" -> {
                 val parts = dbNotification.message.split(" ")
-                val taskTitle = parts.dropLast(3).joinToString(" ") // Remove date part
-                val deadline = parts.takeLast(3).joinToString(" ") // Get date part
-                notificationManager.createTaskNotification(
-                    dbNotification.id,
-                    taskTitle,
-                    deadline
-                )
+                val taskTitle = parts.dropLast(3).joinToString(" ")
+                val deadline = parts.takeLast(3).joinToString(" ")
+                notificationManager.createTaskNotification(dbNotification.id, taskTitle, deadline)
             }
             "resource" -> notificationManager.createResourceNotification(
                 dbNotification.id,
@@ -685,7 +642,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
             "join_request" -> notificationManager.createJoinRequestNotification(
                 dbNotification.id,
-                "New Request", // We'll need to parse this from message if needed
+                "New Request",
                 dbNotification.message
             )
             else -> null
@@ -724,8 +681,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (storageRatio > 85) {
             dashboardViewModel.createNotificationIfNotExists(realm, "storage", "$storageRatio%", "storage", userId)
         }
-        
-        // FOR TESTING: Always create a test storage notification
+
         dashboardViewModel.createNotificationIfNotExists(realm, "storage", "90%", "storage_test", userId)
     }
 
@@ -777,11 +733,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onNotificationCountUpdated(unreadCount: Int) {
-        android.util.Log.d("DashboardActivity", "onNotificationCountUpdated called with count: $unreadCount")
         updateNotificationBadge(unreadCount) {
             openNotificationsList(user?.id ?: "")
         }
-        android.util.Log.d("DashboardActivity", "onNotificationCountUpdated completed badge update")
     }
 
     private fun updateNotificationBadge(count: Int, onClickListener: View.OnClickListener) {
@@ -1031,8 +985,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         profileDbHandler.onDestroy()
         realmListeners.forEach { it.removeListener() }
         realmListeners.clear()
-        
-        // Unregister broadcast receiver
+
         systemNotificationReceiver?.let {
             unregisterReceiver(it)
             systemNotificationReceiver = null
@@ -1152,22 +1105,17 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         super.onNewIntent(intent)
         setIntent(intent)
         handleNotificationIntent(intent)
-        
-        // Handle direct notification badge refresh
+
         if (intent?.action == "REFRESH_NOTIFICATION_BADGE") {
-            val notificationId = intent.getStringExtra("notification_id")
-            android.util.Log.d("DashboardActivity", "onNewIntent: Direct badge refresh requested for notification: $notificationId")
-            
             val userId = user?.id
             if (userId != null) {
                 Handler(Looper.getMainLooper()).postDelayed({
                     try {
                         mRealm.refresh()
                         val unreadCount = dashboardViewModel.getUnreadNotificationsSize(mRealm, userId)
-                        android.util.Log.d("DashboardActivity", "onNewIntent: Direct refresh - got unread count: $unreadCount")
                         onNotificationCountUpdated(unreadCount)
                     } catch (e: Exception) {
-                        android.util.Log.e("DashboardActivity", "onNewIntent: Direct refresh failed", e)
+                        e.printStackTrace()
                     }
                 }, 100)
             }

@@ -356,39 +356,9 @@ object NotificationUtil {
             saveActiveNotifications()
         }
 
-        fun hasNotificationBeenShown(notificationId: String): Boolean {
-            return activeNotifications.contains(notificationId) || isNotificationReadInDatabase(notificationId)
-        }
-
-        fun hasNotificationBeenShownInSession(notificationId: String): Boolean {
-            return activeNotifications.contains(notificationId)
-        }
-
-        fun isNotificationActiveInCurrentSession(notificationId: String): Boolean {
-            return currentSessionNotifications.contains(notificationId)
-        }
-
-        private fun isNotificationReadInDatabase(notificationId: String): Boolean {
-            return try {
-                val realm = org.ole.planet.myplanet.MainApplication.mRealm
-                val notification = realm.where(org.ole.planet.myplanet.model.RealmNotification::class.java)
-                    .equalTo("id", notificationId)
-                    .findFirst()
-                notification?.isRead == true
-            } catch (e: Exception) {
-                false
-            }
-        }
-
         fun clearNotification(notificationId: String) {
             notificationManager.cancel(notificationId.hashCode())
             activeNotifications.remove(notificationId)
-            saveActiveNotifications()
-        }
-
-        fun clearAllNotifications() {
-            notificationManager.cancelAll()
-            activeNotifications.clear()
             saveActiveNotifications()
         }
 
@@ -447,10 +417,6 @@ object NotificationUtil {
                 extras = mapOf("requestId" to requestId, "teamName" to teamName),
                 relatedId = requestId
             )
-        }
-
-        fun createStorageWarningNotification(storagePercentage: Int): NotificationConfig {
-            return createStorageWarningNotification(storagePercentage, "storage_warning")
         }
 
         fun createStorageWarningNotification(storagePercentage: Int, customId: String): NotificationConfig {
@@ -547,15 +513,12 @@ class NotificationActionReceiver : BroadcastReceiver() {
     
     private fun markNotificationAsRead(context: Context, notificationId: String?) {
         if (notificationId == null) {
-            android.util.Log.d("NotificationActionReceiver", "markNotificationAsRead: notificationId is null")
             return
         }
 
-        android.util.Log.d("NotificationActionReceiver", "markNotificationAsRead: Starting for notificationId: $notificationId")
 
         try {
             val realm = databaseService.realmInstance
-            android.util.Log.d("NotificationActionReceiver", "markNotificationAsRead: Got realm instance")
             
             realm.executeTransaction { r ->
                 val notification = r.where(RealmNotification::class.java)
@@ -563,57 +526,40 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     .findFirst()
                 
                 if (notification != null) {
-                    android.util.Log.d("NotificationActionReceiver", "markNotificationAsRead: Found notification with id: $notificationId, current isRead: ${notification.isRead}")
                     notification.isRead = true
-                    android.util.Log.d("NotificationActionReceiver", "markNotificationAsRead: Marked notification as read")
-                } else {
-                    android.util.Log.w("NotificationActionReceiver", "markNotificationAsRead: Notification not found with id: $notificationId")
                 }
             }
-            
-            // Close the realm instance to ensure changes are committed
+
             realm.close()
-            android.util.Log.d("NotificationActionReceiver", "markNotificationAsRead: Realm closed, transaction committed")
-            
-            // Add a delay to ensure database write is complete before broadcasting
+
             android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
-                android.util.Log.d("NotificationActionReceiver", "markNotificationAsRead: Broadcasting notification read from system")
-                
-                // Try multiple broadcast approaches to ensure delivery
-                // 1. Regular broadcast
                 val broadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
                 broadcastIntent.setPackage(context.packageName)
                 broadcastIntent.putExtra("notification_id", notificationId)
                 context.sendBroadcast(broadcastIntent)
-                
-                // 2. Local broadcast as backup
+
                 try {
                     val localBroadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM_LOCAL")
                     localBroadcastIntent.putExtra("notification_id", notificationId)
                     androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(context)
                         .sendBroadcast(localBroadcastIntent)
-                    android.util.Log.d("NotificationActionReceiver", "markNotificationAsRead: Local broadcast also sent")
                 } catch (e: Exception) {
-                    android.util.Log.w("NotificationActionReceiver", "markNotificationAsRead: Local broadcast failed", e)
+                    e.printStackTrace()
                 }
-                
-                // 3. Direct activity refresh if possible
+
                 try {
                     val dashboardIntent = Intent(context, DashboardActivity::class.java)
                     dashboardIntent.action = "REFRESH_NOTIFICATION_BADGE"
                     dashboardIntent.putExtra("notification_id", notificationId)
                     dashboardIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
                     context.startActivity(dashboardIntent)
-                    android.util.Log.d("NotificationActionReceiver", "markNotificationAsRead: Direct activity intent sent")
                 } catch (e: Exception) {
-                    android.util.Log.w("NotificationActionReceiver", "markNotificationAsRead: Direct activity intent failed", e)
+                    e.printStackTrace()
                 }
-                
-                android.util.Log.d("NotificationActionReceiver", "markNotificationAsRead: All broadcast methods attempted")
-            }, 200) // 200ms delay to ensure database write completion
+
+            }, 200)
             
         } catch (e: Exception) {
-            android.util.Log.e("NotificationActionReceiver", "markNotificationAsRead: Exception occurred", e)
             e.printStackTrace()
         }
     }

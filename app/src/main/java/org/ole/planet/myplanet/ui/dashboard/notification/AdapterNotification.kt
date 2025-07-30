@@ -15,7 +15,11 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 
-class AdapterNotification(var notificationList: List<RealmNotification>, private val onMarkAsReadClick: (Int) -> Unit, private val onNotificationClick: (RealmNotification) -> Unit) : RecyclerView.Adapter<AdapterNotification.ViewHolderNotifications>() {
+class AdapterNotification(
+    var notificationList: List<RealmNotification>,
+    private val onMarkAsReadClick: (Int) -> Unit,
+    private val onNotificationClick: (RealmNotification) -> Unit
+) : RecyclerView.Adapter<AdapterNotification.ViewHolderNotifications>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderNotifications {
         val rowNotificationsBinding = RowNotificationsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolderNotifications(rowNotificationsBinding)
