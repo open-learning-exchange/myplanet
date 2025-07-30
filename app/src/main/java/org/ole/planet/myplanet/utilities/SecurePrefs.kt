@@ -64,4 +64,12 @@ object SecurePrefs {
         }
         return pwd
     }
+
+    fun clearCredentials(context: Context) {
+        val enc = prefs(context)
+        enc.edit {
+            remove("loginUserName")
+            remove("loginUserPassword")
+        }
+    }
 }
