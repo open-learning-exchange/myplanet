@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.CourseRepository
 import org.ole.planet.myplanet.di.LibraryRepository
 import org.ole.planet.myplanet.di.UserRepository
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getMyTeamsByUserId
 import org.ole.planet.myplanet.service.UploadManager
@@ -32,7 +33,8 @@ class TeamViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val libraryRepository: LibraryRepository,
     private val courseRepository: CourseRepository,
-    val uploadManager: UploadManager
+    val uploadManager: UploadManager,
+    private val userProfileDbHandler: UserProfileDbHandler,
 ) : ViewModel() {
 
     val realm: Realm
@@ -155,7 +157,7 @@ class TeamViewModel @Inject constructor(
                         team.rules = "${binding.etRules.text}"
                         team.limit = 12
                         team.description = "${binding.etDescription.text}"
-                        team.createdBy = userRepository.getCurrentUser()?._id
+                        team.createdBy = userProfileDbHandler.userModel?._id
                         team.updated = true
                         team.realm.commitTransaction()
                     }
@@ -175,7 +177,7 @@ class TeamViewModel @Inject constructor(
         map: HashMap<String, String>,
         isPublic: Boolean
     ) {
-        val user = userRepository.getCurrentUser() ?: return
+        val user = userProfileDbHandler.userModel ?: return
         val mRealm = databaseService.realmInstance
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
         val teamId = AndroidDecrypter.generateIv()
