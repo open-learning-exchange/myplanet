@@ -52,7 +52,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     private val viewModel: CoursesViewModel by lazy {
         ViewModelProvider(
-            this,
+            viewModelStore,
             defaultViewModelProviderFactory,
             defaultViewModelCreationExtras
         )[CoursesViewModel::class.java]
