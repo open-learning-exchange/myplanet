@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.realm.Case
 import java.util.Date
@@ -14,10 +13,8 @@ import org.ole.planet.myplanet.di.UserRepository
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmUserModel
 import io.realm.Realm
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @HiltViewModel
@@ -26,15 +23,6 @@ class DashboardViewModel @Inject constructor(
     private val libraryRepository: LibraryRepository,
     private val courseRepository: CourseRepository
 ) : ViewModel() {
-    private var realm: Realm? = null
-    private var currentUser: RealmUserModel? = null
-
-    init {
-        viewModelScope.launch(Dispatchers.IO) {
-            realm = userRepository.getRealm()
-            currentUser = userRepository.getCurrentUser()
-        }
-    }
     fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
         val earnedDollarsVoice = minOf(voiceCount, 5) * 2
         val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
@@ -50,25 +38,26 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun updateResourceNotification(userId: String?) = withContext(Dispatchers.IO) {
-        val realm = userRepository.getRealm()
-        val resourceCount = BaseResourceFragment.getLibraryList(realm, userId).size
-        if (resourceCount > 0) {
-            val existingNotification = realm.where(RealmNotification::class.java)
-                .equalTo("userId", userId)
-                .equalTo("type", "resource")
-                .findFirst()
+        userRepository.getRealm().use { realm ->
+            val resourceCount = BaseResourceFragment.getLibraryList(realm, userId).size
+            if (resourceCount > 0) {
+                val existingNotification = realm.where(RealmNotification::class.java)
+                    .equalTo("userId", userId)
+                    .equalTo("type", "resource")
+                    .findFirst()
 
-            if (existingNotification != null) {
-                existingNotification.message = "$resourceCount"
-                existingNotification.relatedId = "$resourceCount"
+                if (existingNotification != null) {
+                    existingNotification.message = "$resourceCount"
+                    existingNotification.relatedId = "$resourceCount"
+                } else {
+                    createNotificationIfNotExists(realm, "resource", "$resourceCount", "$resourceCount", userId)
+                }
             } else {
-                createNotificationIfNotExists(realm, "resource", "$resourceCount", "$resourceCount", userId)
+                realm.where(RealmNotification::class.java)
+                    .equalTo("userId", userId)
+                    .equalTo("type", "resource")
+                    .findFirst()?.deleteFromRealm()
             }
-        } else {
-            realm.where(RealmNotification::class.java)
-                .equalTo("userId", userId)
-                .equalTo("type", "resource")
-                .findFirst()?.deleteFromRealm()
         }
     }
 
@@ -91,12 +80,14 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> = withContext(Dispatchers.IO) {
-        val realm = userRepository.getRealm()
-        realm.where(RealmSubmission::class.java)
-            .equalTo("userId", userId)
-            .equalTo("type", "survey")
-            .equalTo("status", "pending", Case.INSENSITIVE)
-            .findAll()
+        userRepository.getRealm().use { realm ->
+            val results = realm.where(RealmSubmission::class.java)
+                .equalTo("userId", userId)
+                .equalTo("type", "survey")
+                .equalTo("status", "pending", Case.INSENSITIVE)
+                .findAll()
+            realm.copyFromRealm(results)
+        }
     }
 
     fun getSurveyTitlesFromSubmissions(realm: Realm, submissions: List<RealmSubmission>): List<String> {
@@ -112,12 +103,13 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun getUnreadNotificationsSize(userId: String?): Int = withContext(Dispatchers.IO) {
-        val realm = userRepository.getRealm()
-        realm.where(RealmNotification::class.java)
-            .equalTo("userId", userId)
-            .equalTo("isRead", false)
-            .count()
-            .toInt()
+        userRepository.getRealm().use { realm ->
+            realm.where(RealmNotification::class.java)
+                .equalTo("userId", userId)
+                .equalTo("isRead", false)
+                .count()
+                .toInt()
+        }
     }
 }
 
