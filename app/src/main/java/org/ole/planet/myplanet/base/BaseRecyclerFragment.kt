@@ -100,7 +100,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
             resources?.let { showDownloadDialog(it) }
         } else if (isMyCourseLib && courseLib == null && !isSurvey) {
-            showDownloadDialog(libraryRepository.getLibraryList(userRepository.getCurrentUser()?.id))
+            showDownloadDialog(libraryRepository.getLibraryList(model?.id))
         }
         return v
     }
@@ -182,16 +182,16 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         val data: List<LI> = when (c) {
             RealmMyLibrary::class.java -> {
                 if (isMyCourseLib) {
-                    libraryRepository.getMyLibraries(userRepository.getCurrentUser()?.id) as List<LI>
+                    libraryRepository.getMyLibraries(model?.id) as List<LI>
                 } else {
-                    libraryRepository.getOurLibraries(userRepository.getCurrentUser()?.id) as List<LI>
+                    libraryRepository.getOurLibraries(model?.id) as List<LI>
                 }
             }
             else -> {
                 if (isMyCourseLib) {
-                    courseRepository.getMyCourses(userRepository.getCurrentUser()?.id) as List<LI>
+                    courseRepository.getMyCourses(model?.id) as List<LI>
                 } else {
-                    courseRepository.getOurCourses(userRepository.getCurrentUser()?.id) as List<LI>
+                    courseRepository.getOurCourses(model?.id) as List<LI>
                 }
             }
         }
