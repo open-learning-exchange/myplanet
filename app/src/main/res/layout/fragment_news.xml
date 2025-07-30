@@ -19,7 +19,7 @@
             app:cardCornerRadius="@dimen/_10dp"
             android:elevation="@dimen/_10dp"
             android:padding="@dimen/padding_normal"
-            app:cardBackgroundColor="@color/mainColorLight"
+            app:cardBackgroundColor="@color/colorPrimaryLight"
             android:layout_height="wrap_content">
 
             <androidx.constraintlayout.widget.ConstraintLayout
@@ -31,7 +31,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_normal"
-                    android:textColor="@color/daynight_textColor"
+                    android:textColor="@color/md_white_1000"
                     android:textSize="@dimen/text_size_large"
                     android:textStyle="bold"
                     app:layout_constraintStart_toStartOf="parent"
@@ -53,7 +53,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/filter_by_label"
-                            android:textColor="@color/daynight_textColor"
+                            android:textColor="@color/md_white_1000"
                             android:textSize="14sp"
                             android:paddingStart="8dp"
                             android:paddingEnd="8dp"
@@ -80,10 +80,10 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="10dp"
-                    android:backgroundTint="@color/mainColor"
+                    android:backgroundTint="@color/md_white_1000"
                     android:text="@string/new_voice"
                     android:textAllCaps="false"
-                    android:textColor="@android:color/white"
+                    android:textColor="@color/md_black_1000"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/linearLayout6" />
             </androidx.constraintlayout.widget.ConstraintLayout>
