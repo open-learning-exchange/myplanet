@@ -16,7 +16,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import dagger.hilt.android.HiltAndroidApp
-import dagger.hilt.android.work.HiltWorkerFactory
+import androidx.hilt.work.HiltWorkerFactory
 import io.realm.Realm
 import java.net.HttpURLConnection
 import java.net.URL
