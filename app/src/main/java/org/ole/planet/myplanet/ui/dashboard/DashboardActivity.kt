@@ -507,13 +507,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
 
             try {
+                val pendingSurveys = dashboardViewModel.getPendingSurveys(userId)
+                dashboardViewModel.updateResourceNotification(userId)
+
                 databaseService.realmInstance.use { backgroundRealm ->
                     backgroundRealm.executeTransaction { realm ->
-                        val createdNotifications = createNotifications(realm, userId)
+                        val createdNotifications = createNotifications(realm, userId, pendingSurveys)
                         newNotifications.addAll(createdNotifications)
                     }
 
-                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(backgroundRealm, userId)
+                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -536,12 +539,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun createNotifications(realm: Realm, userId: String?): List<NotificationUtil.NotificationConfig> {
+    private fun createNotifications(
+        realm: Realm,
+        userId: String?,
+        pendingSurveys: List<RealmSubmission>
+    ): List<NotificationUtil.NotificationConfig> {
         val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
 
-        dashboardViewModel.updateResourceNotification(realm, userId)
-
-        newNotifications.addAll(createSurveyNotifications(realm, userId))
+        newNotifications.addAll(createSurveyNotifications(realm, userId, pendingSurveys))
         newNotifications.addAll(createTaskNotifications(realm, userId))
         newNotifications.addAll(createStorageNotification(realm, userId))
         newNotifications.addAll(createJoinRequestNotifications(realm, userId))
@@ -549,9 +554,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         return newNotifications
     }
 
-    private fun createSurveyNotifications(realm: Realm, userId: String?): List<NotificationUtil.NotificationConfig> {
+    private fun createSurveyNotifications(
+        realm: Realm,
+        userId: String?,
+        pendingSurveys: List<RealmSubmission>
+    ): List<NotificationUtil.NotificationConfig> {
         val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
-        val pendingSurveys = dashboardViewModel.getPendingSurveys(realm, userId)
         val surveyTitles = dashboardViewModel.getSurveyTitlesFromSubmissions(realm, pendingSurveys)
 
         surveyTitles.forEach { title ->
