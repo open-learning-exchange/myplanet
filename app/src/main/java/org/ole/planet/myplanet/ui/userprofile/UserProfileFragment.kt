@@ -277,12 +277,16 @@ class UserProfileFragment : Fragment() {
 
     private fun setupDatePicker(binding: EditProfileDialogBinding) {
         binding.dateOfBirth.setOnClickListener {
-            val previousSelectedDate = date ?: model?.dob
-            val instant = Instant.parse(previousSelectedDate)
-            val dobPrevious = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
-                timeInMillis = instant.toEpochMilli()
-            }
             val now = Calendar.getInstance()
+            var dobPrevious = Calendar.getInstance()
+            val previousSelectedDate = date ?: model?.dob
+            if(!previousSelectedDate.isNullOrEmpty()){
+                val instant = Instant.parse(previousSelectedDate)
+                dobPrevious = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                    timeInMillis = instant.toEpochMilli()
+                }
+            }
+
             val dpd = DatePickerDialog(
                 requireContext(),
                 { _, year, monthOfYear, dayOfMonth ->
