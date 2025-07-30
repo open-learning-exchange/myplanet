@@ -199,8 +199,9 @@ class TeamViewModel @Inject constructor(
         team.parentCode = user.parentCode
         team.teamPlanetCode = user.planetCode
         team.updated = true
-        val teamMemberObj = mRealm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
-        teamMemberObj.userId = user._id
+        val teamMemberObj =
+            mRealm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
+        teamMemberObj.userId = user.id
         teamMemberObj.teamId = teamId
         teamMemberObj.teamPlanetCode = user.planetCode
         teamMemberObj.userPlanetCode = user.planetCode
