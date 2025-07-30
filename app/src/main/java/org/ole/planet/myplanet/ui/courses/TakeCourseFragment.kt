@@ -78,13 +78,20 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             fragmentTakeCourseBinding.nextStep.visibility = View.GONE
             fragmentTakeCourseBinding.previousStep.visibility = View.GONE
         }
-        fragmentTakeCourseBinding.viewPager2.adapter = CoursesPagerAdapter(this, courseId, getCourseStepIds(mRealm, courseId))
-        fragmentTakeCourseBinding.viewPager2.isUserInputEnabled = false
 
         currentStep = getCourseProgress()
+        position = if (currentStep > 0) currentStep  else 0
+        setNavigationButtons()
+        fragmentTakeCourseBinding.viewPager2.adapter =
+            CoursesPagerAdapter(
+                this@TakeCourseFragment,
+                courseId,
+                getCourseStepIds(mRealm, courseId)
+            )
 
-        position = if (currentStep > 0) currentStep - 1 else 0
-        fragmentTakeCourseBinding.viewPager2.currentItem = position
+        fragmentTakeCourseBinding.viewPager2.isUserInputEnabled = false
+        fragmentTakeCourseBinding.viewPager2.setCurrentItem(position, false)
+
         updateStepDisplay(position)
 
         if (position == 0) {
@@ -92,11 +99,15 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         }
         setCourseData()
         setListeners()
-        fragmentTakeCourseBinding.viewPager2.currentItem = position
         checkSurveyCompletion()
         fragmentTakeCourseBinding.backButton.setOnClickListener {
             requireActivity().supportFragmentManager.popBackStack()
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateStepDisplay(fragmentTakeCourseBinding.viewPager2.currentItem)
     }
 
     private fun setListeners() {
@@ -118,7 +129,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun updateStepDisplay(position: Int) {
-        val currentPosition = position + 1
+        val currentPosition = position
         fragmentTakeCourseBinding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", currentPosition, steps.size)
 
         val currentProgress = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
@@ -162,10 +173,11 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
             withContext(Dispatchers.Main) {
                 fragmentTakeCourseBinding.courseProgress.max = stepsSize
-                updateStepDisplay(currentItem)
 
                 if (containsUserId) {
-                    fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
+                    if(position != currentCourse?.courseSteps?.size){
+                        fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
+                    }
                     fragmentTakeCourseBinding.courseProgress.visibility = View.VISIBLE
                 } else {
                     fragmentTakeCourseBinding.nextStep.visibility = View.GONE
@@ -295,6 +307,17 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 requireActivity().supportFragmentManager.popBackStack()
             }
         }
+    }
+
+    private fun setNavigationButtons(){
+        if(position == currentCourse?.courseSteps?.size){
+            fragmentTakeCourseBinding.nextStep.visibility = View.GONE
+            fragmentTakeCourseBinding.finishStep.visibility = View.VISIBLE
+        } else {
+            fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
+            fragmentTakeCourseBinding.finishStep.visibility = View.GONE
+        }
+
     }
 
     private val isValidClickRight: Boolean get() = fragmentTakeCourseBinding.viewPager2.adapter != null && fragmentTakeCourseBinding.viewPager2.currentItem < fragmentTakeCourseBinding.viewPager2.adapter?.itemCount!!
