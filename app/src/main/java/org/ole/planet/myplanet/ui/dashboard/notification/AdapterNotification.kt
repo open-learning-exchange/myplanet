@@ -78,7 +78,7 @@ class AdapterNotification(var notificationList: List<RealmNotification>, private
                     } ?: "INVALID"
                 }
                 "storage" -> {
-                    val storageValue = notification.message.toIntOrNull()
+                    val storageValue = notification.message.replace("%", "").toIntOrNull()
                     storageValue?.let {
                         when {
                             it <= 10 -> context.getString(R.string.storage_running_low) + " ${it}%"
