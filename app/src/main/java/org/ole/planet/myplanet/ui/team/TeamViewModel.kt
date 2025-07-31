@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.team
 
+import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -7,6 +8,8 @@ import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.realm.Case
 import io.realm.Realm
@@ -23,6 +26,7 @@ import org.ole.planet.myplanet.di.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getMyTeamsByUserId
+import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Utilities
@@ -212,6 +216,41 @@ class TeamViewModel @Inject constructor(
         teamMemberObj.teamType = teamType
         teamMemberObj.updated = true
         mRealm.commitTransaction()
+    }
+
+    fun joinTeam(context: Context, teamId: String?, teamType: String?, onComplete: () -> Unit) {
+        val user = userProfileDbHandler.userModel ?: return
+        val realmInstance = databaseService.realmInstance
+        realmInstance.executeTransactionAsync({ realm ->
+            val req = realm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
+            req.docType = "request"
+            req.createdDate = Date().time
+            req.teamType = teamType
+            req.userId = user.id
+            req.teamId = teamId
+            req.updated = true
+            req.teamPlanetCode = user.planetCode
+            req.userPlanetCode = user.planetCode
+        }, {
+            onComplete()
+            syncTeamActivities(context, uploadManager)
+        })
+    }
+
+    fun leaveTeam(context: Context, team: RealmMyTeam, onComplete: () -> Unit) {
+        val user = userProfileDbHandler.userModel
+        val realmInstance = databaseService.realmInstance
+        realmInstance.executeTransactionAsync({ realm ->
+            val teams = realm.where(RealmMyTeam::class.java)
+                .equalTo("userId", user?.id)
+                .equalTo("teamId", team._id)
+                .equalTo("docType", "membership")
+                .findAll()
+            teams.forEach { it.deleteFromRealm() }
+        }, {
+            onComplete()
+            syncTeamActivities(context, uploadManager)
+        })
     }
 }
 
