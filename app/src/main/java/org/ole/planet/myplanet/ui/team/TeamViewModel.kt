@@ -15,6 +15,7 @@ import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
+import io.realm.kotlin.where
 import java.util.Date
 import javax.inject.Inject
 import org.ole.planet.myplanet.R
@@ -221,7 +222,7 @@ class TeamViewModel @Inject constructor(
     fun joinTeam(context: Context, teamId: String?, teamType: String?, onComplete: () -> Unit) {
         val user = userProfileDbHandler.userModel ?: return
         val realmInstance = databaseService.realmInstance
-        realmInstance.executeTransactionAsync({ realm ->
+        realmInstance.executeTransactionAsync(Realm.Transaction { realm ->
             val req = realm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
             req.docType = "request"
             req.createdDate = Date().time
@@ -231,7 +232,7 @@ class TeamViewModel @Inject constructor(
             req.updated = true
             req.teamPlanetCode = user.planetCode
             req.userPlanetCode = user.planetCode
-        }, {
+        }, Realm.Transaction.OnSuccess {
             onComplete()
             syncTeamActivities(context, uploadManager)
         })
@@ -240,14 +241,16 @@ class TeamViewModel @Inject constructor(
     fun leaveTeam(context: Context, team: RealmMyTeam, onComplete: () -> Unit) {
         val user = userProfileDbHandler.userModel
         val realmInstance = databaseService.realmInstance
-        realmInstance.executeTransactionAsync({ realm ->
+        realmInstance.executeTransactionAsync(Realm.Transaction { realm ->
             val teams = realm.where(RealmMyTeam::class.java)
                 .equalTo("userId", user?.id)
                 .equalTo("teamId", team._id)
                 .equalTo("docType", "membership")
                 .findAll()
-            teams.forEach { it.deleteFromRealm() }
-        }, {
+            for (t in teams) {
+                t.deleteFromRealm()
+            }
+        }, Realm.Transaction.OnSuccess {
             onComplete()
             syncTeamActivities(context, uploadManager)
         })
