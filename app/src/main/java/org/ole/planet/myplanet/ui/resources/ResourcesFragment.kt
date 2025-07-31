@@ -88,7 +88,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         viewModel = ViewModelProvider(this)[ResourcesViewModel::class.java]
         prefManager = SharedPrefManager(requireContext())
         settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        viewModel.loadResources()
         startResourcesSync()
     }
 
@@ -116,6 +115,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         super.onViewCreated(view, savedInstanceState)
         isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
         userModel = UserProfileDbHandler(requireContext()).userModel
+        viewModel.loadResources(isMyCourseLib, userModel?.id)
         searchTags = ArrayList()
         config = Utilities.getCloudConfig().showClose(R.color.black_overlay)
 
@@ -319,12 +319,15 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         } else {
             selectAll.visibility = View.VISIBLE
             etSearch.visibility = View.VISIBLE
-            tvAddToLib.visibility = View.VISIBLE
             requireView().findViewById<View>(R.id.btn_collections).visibility = View.VISIBLE
             requireView().findViewById<View>(R.id.filter).visibility = View.VISIBLE
             clearTags.visibility = View.VISIBLE
             if (isMyCourseLib) {
+                tvAddToLib.visibility = View.GONE
                 tvDelete?.visibility = View.VISIBLE
+            } else {
+                tvAddToLib.visibility = View.VISIBLE
+                tvDelete?.visibility = View.GONE
             }
         }
     }

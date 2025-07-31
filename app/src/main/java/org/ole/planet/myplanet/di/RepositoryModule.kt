@@ -82,6 +82,8 @@ interface LibraryRepository {
     fun getAllLibraryItems(): List<RealmMyLibrary>
     fun getLibraryItemById(id: String): RealmMyLibrary?
     fun getOfflineLibraryItems(): List<RealmMyLibrary>
+    fun getMyLibraryItems(userId: String?): List<RealmMyLibrary>
+    fun getOurLibraryItems(userId: String?): List<RealmMyLibrary>
 }
 
 class LibraryRepositoryImpl(
@@ -103,6 +105,19 @@ class LibraryRepositoryImpl(
         return databaseService.realmInstance.where(RealmMyLibrary::class.java)
             .equalTo("resourceOffline", true)
             .findAll()
+    }
+
+    override fun getMyLibraryItems(userId: String?): List<RealmMyLibrary> {
+        val libs = databaseService.realmInstance.where(RealmMyLibrary::class.java)
+            .findAll()
+        return RealmMyLibrary.getMyLibraryByUserId(userId, libs)
+    }
+
+    override fun getOurLibraryItems(userId: String?): List<RealmMyLibrary> {
+        val libs = databaseService.realmInstance.where(RealmMyLibrary::class.java)
+            .equalTo("isPrivate", false)
+            .findAll()
+        return RealmMyLibrary.getOurLibrary(userId, libs)
     }
 }
 

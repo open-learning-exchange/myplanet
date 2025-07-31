@@ -29,15 +29,20 @@ class ResourcesViewModel @Inject constructor(
     private val _libraryItems = MutableStateFlow<List<RealmMyLibrary>>(emptyList())
     val libraryItems: StateFlow<List<RealmMyLibrary>> = _libraryItems.asStateFlow()
 
+    private var currentIsMyLibrary: Boolean = false
+    private var currentUserId: String? = null
+
     private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
     val syncStatus: StateFlow<SyncStatus> = _syncStatus.asStateFlow()
 
-    init {
-        loadResources()
-    }
-
-    fun loadResources() {
-        _libraryItems.value = libraryRepository.getAllLibraryItems()
+    fun loadResources(isMyLibrary: Boolean, userId: String?) {
+        currentIsMyLibrary = isMyLibrary
+        currentUserId = userId
+        _libraryItems.value = if (isMyLibrary) {
+            libraryRepository.getMyLibraryItems(userId)
+        } else {
+            libraryRepository.getOurLibraryItems(userId)
+        }
     }
 
     fun startResourcesSync(settings: SharedPreferences, serverUrl: String) {
@@ -59,7 +64,7 @@ class ResourcesViewModel @Inject constructor(
             override fun onSyncComplete() {
                 viewModelScope.launch(Dispatchers.Main) {
                     _syncStatus.value = SyncStatus.Completed
-                    loadResources()
+                    loadResources(currentIsMyLibrary, currentUserId)
                 }
             }
 
