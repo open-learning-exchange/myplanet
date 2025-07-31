@@ -12,7 +12,7 @@
     <color name="daynight_white_grey">@color/card_bg</color>
     <color name="card_bg">@color/colorPrimaryLight</color>
     <color name="secondary_bg">@color/colorPrimaryDark</color>
-    <color name="hint_color">#FFFFFF</color>
+    <color name="hint_color">#808080</color>
     <color name="text_highlight_color">@color/hint_color</color>
     <color name="light_dark">@color/colorPrimary</color>
     <color name="mainColor">@color/md_blue_700</color>
