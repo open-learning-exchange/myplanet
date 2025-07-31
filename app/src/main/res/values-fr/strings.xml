@@ -1367,5 +1367,8 @@
     <string name="syncing_resources">Synchronisation des ressources…</string>
     <string name="syncing_achievements">Synchronisation des réalisations…</string>
     <string name="nation_leaders">dirigeants nationaux</string>
+    <string name="filter_by_label">filtrer par étiquette</string>
+    <string name="community_board">tableau communautaire</string>
+    <string name="nation_board">tableau national</string>
 
 </resources>
