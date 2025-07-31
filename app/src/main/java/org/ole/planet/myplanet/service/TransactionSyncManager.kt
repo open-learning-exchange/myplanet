@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.SecurePrefs
 import retrofit2.Response
 
 object TransactionSyncManager {
@@ -43,8 +44,8 @@ object TransactionSyncManager {
 
     fun syncAllHealthData(mRealm: Realm, settings: SharedPreferences, listener: SyncListener) {
         listener.onSyncStarted()
-        val userName = settings.getString("loginUserName", "")
-        val password = settings.getString("loginUserPassword", "")
+        val userName = SecurePrefs.getUserName(MainApplication.context, settings) ?: ""
+        val password = SecurePrefs.getPassword(MainApplication.context, settings) ?: ""
         val header = "Basic ${Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)}"
         mRealm.executeTransactionAsync({ realm: Realm ->
             val users = realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll()
@@ -78,8 +79,8 @@ object TransactionSyncManager {
     fun syncKeyIv(mRealm: Realm, settings: SharedPreferences, listener: SyncListener) {
         listener.onSyncStarted()
         val model = UserProfileDbHandler(MainApplication.context).userModel
-        val userName = settings.getString("loginUserName", "")
-        val password = settings.getString("loginUserPassword", "")
+        val userName = SecurePrefs.getUserName(MainApplication.context, settings) ?: ""
+        val password = SecurePrefs.getPassword(MainApplication.context, settings) ?: ""
 //        val table = "userdb-" + model?.planetCode?.let { Utilities.toHex(it) } + "-" + model?.name?.let { Utilities.toHex(it) }
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
         val id = model?.id
