@@ -10,7 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Case
@@ -36,13 +36,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private lateinit var fragmentTeamBinding: FragmentTeamBinding
     private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
     private lateinit var mRealm: Realm
-    private val teamViewModel: TeamViewModel by lazy {
-        ViewModelProvider(
-            requireActivity(),
-            defaultViewModelProviderFactory,
-            requireActivity().defaultViewModelCreationExtras
-        )[TeamViewModel::class.java]
-    }
+    private val teamViewModel: TeamViewModel by viewModels()
     @Inject
     lateinit var databaseService: DatabaseService
     var type: String? = null
