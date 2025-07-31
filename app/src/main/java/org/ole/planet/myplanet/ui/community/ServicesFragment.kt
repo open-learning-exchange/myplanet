@@ -9,10 +9,8 @@ import android.view.ViewGroup
 import android.widget.TextView
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import io.realm.RealmResults
-import javax.inject.Inject
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentServicesBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
@@ -33,7 +31,7 @@ class ServicesFragment : BaseTeamFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
         super.onViewCreated(view, savedInstanceState)
-        mRealm = databaseService.realmInstance
+        mRealm = userRepository.getRealm()
         user = UserProfileDbHandler(requireActivity()).userModel
 
         val links = mRealm.where(RealmMyTeam::class.java)?.equalTo("docType", "link")?.findAll()
@@ -106,7 +104,7 @@ class ServicesFragment : BaseTeamFragment() {
                             isMyTeam = isMyTeam
                         )
 
-                        (context as OnHomeItemClickListener).openCallFragment(f)
+                        homeItemClickListener?.openCallFragment(f)
                     }
                 }
             }

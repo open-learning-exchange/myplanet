@@ -33,7 +33,6 @@ import io.realm.Sort
 import java.io.File
 import java.util.Calendar
 import java.util.Locale
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.Conversation
@@ -330,12 +329,12 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private fun setMemberClickListeners(holder: ViewHolderNews, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
         if (!fromLogin) {
             holder.rowNewsBinding.imgUser.setOnClickListener {
-                val activity = it.context as AppCompatActivity
+                val activity = context as AppCompatActivity
                 val model = userModel ?: currentLeader
                 NewsActions.showMemberDetails(activity, model, profileDbHandler)
             }
             holder.rowNewsBinding.tvName.setOnClickListener {
-                val activity = it.context as AppCompatActivity
+                val activity = context as AppCompatActivity
                 val model = userModel ?: currentLeader
                 NewsActions.showMemberDetails(activity, model, profileDbHandler)
             }

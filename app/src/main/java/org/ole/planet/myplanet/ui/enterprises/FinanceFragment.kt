@@ -16,7 +16,6 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
-import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddTransactionBinding
 import org.ole.planet.myplanet.databinding.FragmentFinanceBinding
@@ -48,7 +47,7 @@ class FinanceFragment : BaseTeamFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentFinanceBinding = FragmentFinanceBinding.inflate(inflater, container, false)
-        fRealm = databaseService.realmInstance
+        fRealm = userRepository.getRealm()
         date = Calendar.getInstance()
         fragmentFinanceBinding.tvFromDateCalendar.setOnClickListener {
             showDatePickerDialog(isFromDate = true)

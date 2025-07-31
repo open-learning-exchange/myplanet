@@ -14,7 +14,6 @@ import android.widget.ListView
 import android.widget.Toast
 import android.widget.Toolbar
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
 import com.google.gson.JsonArray
@@ -23,12 +22,10 @@ import fisk.chipcloud.ChipCloud
 import io.realm.Realm
 import java.util.Calendar
 import java.util.Locale
-import javax.inject.Inject
 import kotlin.Array
 import kotlin.Int
 import kotlin.String
 import kotlin.arrayOf
-import kotlin.plus
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.AlertAddAttachmentBinding
@@ -64,7 +61,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentEditAchievementBinding = FragmentEditAchievementBinding.inflate(inflater, container, false)
-        aRealm = databaseService.realmInstance
+        aRealm = userRepository.getRealm()
         user = UserProfileDbHandler(requireContext()).userModel
         achievementArray = JsonArray()
         achievement = aRealm.where(RealmAchievement::class.java).equalTo("_id", user?.id + "@" + user?.planetCode).findFirst()

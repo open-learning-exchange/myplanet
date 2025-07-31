@@ -18,19 +18,17 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.graphics.drawable.DrawableCompat
+import org.ole.planet.myplanet.utilities.SecurePrefs
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
-import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createAction
 import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createActionAsync
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.SettingActivity
@@ -223,6 +221,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     fun logout() {
         lifecycleScope.launch {
             profileDbHandler.logoutAsync()
+            SecurePrefs.clearCredentials(this@DashboardElementActivity)
             settings.edit { putBoolean(Constants.KEY_LOGIN, false) }
             settings.edit { putBoolean(Constants.KEY_NOTIFICATION_SHOWN, false) }
             NotificationUtil.cancelAll(this@DashboardElementActivity)

@@ -19,7 +19,6 @@ import io.realm.RealmResults
 import java.util.Date
 import javax.inject.Inject
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService

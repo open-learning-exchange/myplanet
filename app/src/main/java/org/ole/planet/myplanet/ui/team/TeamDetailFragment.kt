@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.ui.team
 
-import android.content.Context.MODE_PRIVATE
 import android.content.DialogInterface
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -34,7 +32,6 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
@@ -58,7 +55,6 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     private var directTeamId: String? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
-    lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
@@ -66,7 +62,6 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefManager = SharedPrefManager(requireContext())
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         startTeamSync()
     }
 
@@ -79,7 +74,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         val teamId = requireArguments().getString("id" ) ?: ""
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
         val user = UserProfileDbHandler(requireContext()).userModel
-        mRealm = databaseService.realmInstance
+        mRealm = userRepository.getRealm()
 
         if (shouldQueryRealm(teamId)) {
             if (teamId.isNotEmpty()) {
@@ -317,7 +312,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         val teamType = getEffectiveTeamType()
 
         CoroutineScope(Dispatchers.IO).launch {
-            val realm = databaseService.realmInstance
+            val realm = userRepository.getRealm()
 
             realm.executeTransaction { r ->
                 val log = r.createObject(RealmTeamLog::class.java, "${UUID.randomUUID()}")

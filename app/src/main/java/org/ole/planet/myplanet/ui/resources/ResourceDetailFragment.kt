@@ -8,7 +8,6 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import io.realm.Realm
-import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -79,7 +78,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         super.onCreateView(inflater, container, savedInstanceState)
         fragmentLibraryDetailBinding = FragmentLibraryDetailBinding.inflate(inflater, container, false)
-        lRealm = databaseService.realmInstance
+        lRealm = userRepository.getRealm()
         userModel = UserProfileDbHandler(requireContext()).userModel!!
         library = lRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", libraryId).findFirst()!!
         return fragmentLibraryDetailBinding.root

@@ -14,7 +14,6 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TableRow
 import androidx.core.content.ContextCompat
-import androidx.core.net.toUri
 import androidx.core.view.isNotEmpty
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
@@ -22,7 +21,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -42,6 +40,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatModel
 import org.ole.planet.myplanet.model.ChatRequestModel
@@ -56,7 +55,6 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatApiHelper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import retrofit2.Call
@@ -76,6 +74,8 @@ class ChatDetailFragment : Fragment() {
     private lateinit var mRealm: Realm
     var user: RealmUserModel? = null
     private var newsId: String? = null
+    @Inject
+    @AppPreferences
     lateinit var settings: SharedPreferences
     lateinit var customProgressDialog: DialogUtils.CustomProgressDialog
     @Inject
@@ -95,7 +95,6 @@ class ChatDetailFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentChatDetailBinding = FragmentChatDetailBinding.inflate(inflater, container, false)
-        settings = requireActivity().getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
         return fragmentChatDetailBinding.root
     }
@@ -487,7 +486,9 @@ class ChatDetailFragment : Fragment() {
         mRealm.executeTransaction { realm ->
             RealmChatHistory.insert(realm, jsonObject)
         }
-        (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
+        if (isAdded && activity is DashboardActivity) {
+            (activity as DashboardActivity).refreshChatHistoryList()
+        }
     }
 
     private fun buildChatHistoryObject(query: String, chatResponse: String, responseBody: ChatModel): JsonObject =

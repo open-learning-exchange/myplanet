@@ -11,7 +11,6 @@ import androidx.fragment.app.Fragment
 import io.realm.Realm
 import java.util.Date
 import java.util.UUID
-import javax.inject.Inject
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -53,7 +52,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentCourseStepBinding = FragmentCourseStepBinding.inflate(inflater, container, false)
-        cRealm = databaseService.realmInstance
+        cRealm = userRepository.getRealm()
         user = UserProfileDbHandler(requireContext()).userModel
         fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
         fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE

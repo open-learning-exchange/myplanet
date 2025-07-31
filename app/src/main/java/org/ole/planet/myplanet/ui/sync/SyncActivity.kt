@@ -1,13 +1,12 @@
 package org.ole.planet.myplanet.ui.sync
 
-import android.content.Context
+import android.Manifest
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.SharedPreferences.Editor
 import android.graphics.drawable.AnimationDrawable
-import android.Manifest
 import android.os.Build
 import android.os.Bundle
 import android.text.Editable
@@ -33,7 +32,6 @@ import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
@@ -50,33 +48,31 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlin.isInitialized
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.MainApplication.Companion.createLog
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
-import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.databinding.LayoutChildLoginBinding
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.CheckVersionCallback
 import org.ole.planet.myplanet.datamanager.Service.ConfigurationIdListener
 import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
-import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.model.ServerAddressesModel
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -84,8 +80,8 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.Constants.autoSynFeature
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.Constants.autoSynFeature
 import org.ole.planet.myplanet.utilities.DialogUtils.getUpdateDialog
 import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.DialogUtils.showSnack
@@ -608,17 +604,19 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun forceSyncTrigger(): Boolean {
-        if (settings.getLong(getString(R.string.last_syncs), 0) <= 0) {
-            lblLastSyncDate.text = getString(R.string.last_synced_never)
-        } else {
-            val lastSyncMillis = settings.getLong(getString(R.string.last_syncs), 0)
-            var relativeTime = getRelativeTime(lastSyncMillis)
+        if (::lblLastSyncDate.isInitialized) {
+            if (settings.getLong(getString(R.string.last_syncs), 0) <= 0) {
+                lblLastSyncDate.text = getString(R.string.last_synced_never)
+            } else {
+                val lastSyncMillis = settings.getLong(getString(R.string.last_syncs), 0)
+                var relativeTime = getRelativeTime(lastSyncMillis)
 
-            if (relativeTime.matches(Regex("^\\d{1,2} seconds ago$"))) {
-                relativeTime = getString(R.string.a_few_seconds_ago)
+                if (relativeTime.matches(Regex("^\\d{1,2} seconds ago$"))) {
+                    relativeTime = getString(R.string.a_few_seconds_ago)
+                }
+
+                lblLastSyncDate.text = getString(R.string.last_sync, relativeTime)
             }
-
-            lblLastSyncDate.text = getString(R.string.last_sync, relativeTime)
         }
         if (autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext) && autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, applicationContext)) {
             return checkForceSync(7)

@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.team
 
 import android.content.DialogInterface
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -75,7 +74,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         fragmentMyTeamsDetailBinding = FragmentMyTeamsDetailBinding.inflate(inflater, container, false)
         val v: View = fragmentMyTeamsDetailBinding.root
         initializeViews(v)
-        mRealm = databaseService.realmInstance
+        mRealm = userRepository.getRealm()
         user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
         team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
         return fragmentMyTeamsDetailBinding.root

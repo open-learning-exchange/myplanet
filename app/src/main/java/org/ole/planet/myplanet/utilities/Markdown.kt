@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.utilities
 import android.app.Dialog
 import android.content.Context
 import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.text.Layout
 import android.text.Spannable
 import android.text.TextPaint

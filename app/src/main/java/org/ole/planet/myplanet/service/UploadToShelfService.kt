@@ -2,9 +2,6 @@ package org.ole.planet.myplanet.service
 
 import android.content.Context
 import android.content.SharedPreferences
-import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
-import javax.inject.Singleton
 import android.os.Handler
 import android.os.Looper
 import android.text.TextUtils
@@ -12,9 +9,12 @@ import android.util.Base64
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
 import java.io.IOException
 import java.util.Date
+import javax.inject.Inject
+import javax.inject.Singleton
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.removedIds
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.SecurePrefs
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.RetryUtils
@@ -55,7 +55,7 @@ class UploadToShelfService @Inject constructor(
             if (userModels.isEmpty()) {
                 return@executeTransactionAsync
             }
-            val password = sharedPreferences.getString("loginUserPassword", "")
+            val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
             userModels.forEachIndexed { index, model ->
                 try {
                     val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
@@ -92,7 +92,7 @@ class UploadToShelfService @Inject constructor(
 
             if (userModel != null) {
                 try {
-                    val password = sharedPreferences.getString("loginUserPassword", "")
+                    val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
                     val header = "Basic ${Base64.encodeToString(("${userModel.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
 
                     val userExists = checkIfUserExists(apiInterface, header, userModel)
@@ -143,7 +143,7 @@ class UploadToShelfService @Inject constructor(
 
     private fun processUserAfterCreation(apiInterface: ApiInterface?, realm: Realm, model: RealmUserModel, obj: JsonObject) {
         try {
-            val password = sharedPreferences.getString("loginUserPassword", "")
+            val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
             val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
             val fetchDataResponse = apiInterface?.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")?.execute()
             if (fetchDataResponse?.isSuccessful == true) {
@@ -191,7 +191,7 @@ class UploadToShelfService @Inject constructor(
 
     private fun replacedUrl(model: RealmUserModel): String {
         val url = Utilities.getUrl()
-        val password = sharedPreferences.getString("loginUserPassword", "")
+        val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
         val replacedUrl = url.replaceFirst("[^:]+:[^@]+@".toRegex(), "${model.name}:${password}@")
         val protocolIndex = url.indexOf("://")
         val protocol = url.substring(0, protocolIndex)

@@ -15,8 +15,6 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import dagger.hilt.android.AndroidEntryPoint
-import java.text.SimpleDateFormat
-import java.util.Locale
 import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -105,6 +103,7 @@ object NotificationUtil {
         private val notificationManager = NotificationManagerCompat.from(context)
         private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         private val activeNotifications = mutableSetOf<String>()
+        private val currentSessionNotifications = mutableSetOf<String>()
 
         init {
             loadActiveNotifications()
@@ -305,21 +304,27 @@ object NotificationUtil {
         }
 
         private fun canShowNotification(type: String): Boolean {
-            if (!notificationManager.areNotificationsEnabled()) {
+            val notificationsEnabled = notificationManager.areNotificationsEnabled()
+            
+            if (!notificationsEnabled) {
                 return false
             }
 
-            if (!preferences.getBoolean(KEY_ENABLED, true)) {
+            val globalEnabled = preferences.getBoolean(KEY_ENABLED, true)
+            
+            if (!globalEnabled) {
                 return false
             }
 
-            return when (type) {
+            val typeEnabled = when (type) {
                 TYPE_SURVEY -> preferences.getBoolean(KEY_SURVEY_ENABLED, true)
                 TYPE_TASK -> preferences.getBoolean(KEY_TASK_ENABLED, true)
                 TYPE_STORAGE, TYPE_RESOURCE, TYPE_COURSE -> preferences.getBoolean(KEY_SYSTEM_ENABLED, true)
                 TYPE_JOIN_REQUEST -> preferences.getBoolean(KEY_TEAM_ENABLED, true)
                 else -> true
             }
+            
+            return typeEnabled
         }
 
         private fun getChannelForType(type: String): String {
@@ -345,23 +350,14 @@ object NotificationUtil {
         }
 
         private fun markNotificationAsShown(notificationId: String) {
+            currentSessionNotifications.add(notificationId)
             activeNotifications.add(notificationId)
             saveActiveNotifications()
-        }
-
-        fun hasNotificationBeenShown(notificationId: String): Boolean {
-            return activeNotifications.contains(notificationId)
         }
 
         fun clearNotification(notificationId: String) {
             notificationManager.cancel(notificationId.hashCode())
             activeNotifications.remove(notificationId)
-            saveActiveNotifications()
-        }
-
-        fun clearAllNotifications() {
-            notificationManager.cancelAll()
-            activeNotifications.clear()
             saveActiveNotifications()
         }
 
@@ -376,7 +372,7 @@ object NotificationUtil {
 
         fun createSurveyNotification(surveyId: String, surveyTitle: String): NotificationConfig {
             return NotificationConfig(
-                id = "survey_$surveyId",
+                id = surveyId,
                 type = TYPE_SURVEY,
                 title = "📋 New Survey Available",
                 message = surveyTitle,
@@ -396,7 +392,7 @@ object NotificationUtil {
             }
 
             return NotificationConfig(
-                id = "task_$taskId",
+                id = taskId,
                 type = TYPE_TASK,
                 title = "✅ New Task Assigned",
                 message = "$taskTitle\nDue: $deadline",
@@ -410,7 +406,7 @@ object NotificationUtil {
 
         fun createJoinRequestNotification(requestId: String, requesterName: String, teamName: String): NotificationConfig {
             return NotificationConfig(
-                id = "join_request_$requestId",
+                id = requestId,
                 type = TYPE_JOIN_REQUEST,
                 title = "👥 Team Join Request",
                 message = "$requesterName wants to join $teamName",
@@ -422,7 +418,7 @@ object NotificationUtil {
             )
         }
 
-        fun createStorageWarningNotification(storagePercentage: Int): NotificationConfig {
+        fun createStorageWarningNotification(storagePercentage: Int, customId: String): NotificationConfig {
             val priority = if (storagePercentage > 95) {
                 NotificationCompat.PRIORITY_HIGH
             } else {
@@ -430,7 +426,7 @@ object NotificationUtil {
             }
 
             return NotificationConfig(
-                id = "storage_warning",
+                id = customId,
                 type = TYPE_STORAGE,
                 title = "⚠️ Storage Warning",
                 message = "Device storage is at $storagePercentage%. Consider freeing up space.",
@@ -438,6 +434,20 @@ object NotificationUtil {
                 category = NotificationCompat.CATEGORY_STATUS,
                 actionable = true,
                 relatedId = "storage"
+            )
+        }
+
+        fun createResourceNotification(notificationId: String, resourceCount: Int): NotificationConfig {
+            return NotificationConfig(
+                id = notificationId,
+                type = TYPE_RESOURCE,
+                title = "📚 New Resources Available",
+                message = "$resourceCount new resources have been added",
+                priority = NotificationCompat.PRIORITY_DEFAULT,
+                category = NotificationCompat.CATEGORY_RECOMMENDATION,
+                actionable = true,
+                extras = mapOf("resourceCount" to resourceCount.toString()),
+                relatedId = notificationId
             )
         }
 
@@ -501,20 +511,53 @@ class NotificationActionReceiver : BroadcastReceiver() {
     }
     
     private fun markNotificationAsRead(context: Context, notificationId: String?) {
-        if (notificationId == null) return
+        if (notificationId == null) {
+            return
+        }
+
 
         try {
             val realm = databaseService.realmInstance
             
             realm.executeTransaction { r ->
                 val notification = r.where(RealmNotification::class.java)
-                    .contains("id", notificationId)
+                    .equalTo("id", notificationId)
                     .findFirst()
                 
-                notification?.isRead = true
+                if (notification != null) {
+                    notification.isRead = true
+                }
             }
-            
+
             realm.close()
+
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                val broadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
+                broadcastIntent.setPackage(context.packageName)
+                broadcastIntent.putExtra("notification_id", notificationId)
+                context.sendBroadcast(broadcastIntent)
+
+                try {
+                    val localBroadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM_LOCAL")
+                    localBroadcastIntent.putExtra("notification_id", notificationId)
+                    androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(context)
+                        .sendBroadcast(localBroadcastIntent)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+
+                try {
+                    val dashboardIntent = Intent(context, DashboardActivity::class.java)
+                    dashboardIntent.action = "REFRESH_NOTIFICATION_BADGE"
+                    dashboardIntent.putExtra("notification_id", notificationId)
+                    dashboardIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                    context.startActivity(dashboardIntent)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+
+            }, 200)
+            
         } catch (e: Exception) {
             e.printStackTrace()
         }
