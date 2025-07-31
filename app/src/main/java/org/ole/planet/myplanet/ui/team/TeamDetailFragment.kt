@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
+import androidx.fragment.app.viewModels
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
@@ -25,13 +26,13 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMemberCount
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.team.TeamViewModel
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
@@ -48,6 +49,8 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
     @Inject
     lateinit var uploadManager: UploadManager
+
+    private val viewModel: TeamViewModel by viewModels()
     
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
     private var directTeamName: String? = null
@@ -212,10 +215,10 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
             } else {
                 fragmentTeamDetailBinding.btnLeave.text = getString(R.string.join)
                 fragmentTeamDetailBinding.btnLeave.setOnClickListener {
-                    RealmMyTeam.requestToJoin(currentTeam._id!!, user, mRealm, team?.teamType)
-                    fragmentTeamDetailBinding.btnLeave.text = getString(R.string.requested)
-                    fragmentTeamDetailBinding.btnLeave.isEnabled = false
-                    syncTeamActivities(requireContext(), uploadManager)
+                    viewModel.joinTeam(requireContext(), currentTeam._id, team?.teamType) {
+                        fragmentTeamDetailBinding.btnLeave.text = getString(R.string.requested)
+                        fragmentTeamDetailBinding.btnLeave.isEnabled = false
+                    }
                 }
             }
         } else {
@@ -232,13 +235,16 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         fragmentTeamDetailBinding.btnLeave.setOnClickListener {
             AlertDialog.Builder(requireContext()).setMessage(R.string.confirm_exit)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                    team?.leave(user, mRealm)
-                    Utilities.toast(activity, getString(R.string.left_team))
-                    fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, false, this)
-                    TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
-                        tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
-                    }.attach()
-                    fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
+                    team?.let {
+                        viewModel.leaveTeam(requireContext(), it) {
+                            Utilities.toast(activity, getString(R.string.left_team))
+                            fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, false, this)
+                            TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
+                                tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
+                            }.attach()
+                            fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
+                        }
+                    }
                 }.setNegativeButton(R.string.no, null).show()
         }
 
