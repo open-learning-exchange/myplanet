@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.ContextThemeWrapper
 import android.view.KeyEvent
 import android.view.LayoutInflater
@@ -121,7 +122,12 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             activityLoginBinding.openCommunity.visibility = View.GONE
         }
         activityLoginBinding.btnFeedback.setOnClickListener {
-            FeedbackFragment().show(supportFragmentManager, "")
+            if (getUrl() != "/db") {
+                FeedbackFragment().show(supportFragmentManager, "")
+            } else {
+                toast(this, getString(R.string.please_enter_server_url_first))
+                settingDialog()
+            }
         }
 
         guest = intent.getBooleanExtra("guest", false)
@@ -164,35 +170,45 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
         activityLoginBinding.customDeviceName.text = getCustomDeviceName()
         btnSignIn.setOnClickListener {
-            if (TextUtils.isEmpty(activityLoginBinding.inputName.text.toString())) {
-                activityLoginBinding.inputName.error = getString(R.string.err_msg_name)
-            } else if (TextUtils.isEmpty(activityLoginBinding.inputPassword.text.toString())) {
-                activityLoginBinding.inputPassword.error = getString(R.string.err_msg_password)
-            } else {
-                val enterUserName = activityLoginBinding.inputName.text.toString().trimEnd()
-                val user = mRealm.where(RealmUserModel::class.java).equalTo("name", enterUserName).findFirst()
-                if (user == null || !user.isArchived) {
-                    submitForm(enterUserName, activityLoginBinding.inputPassword.text.toString())
+            if (getUrl() != "/db") {
+                if (TextUtils.isEmpty(activityLoginBinding.inputName.text.toString())) {
+                    activityLoginBinding.inputName.error = getString(R.string.err_msg_name)
+                } else if (TextUtils.isEmpty(activityLoginBinding.inputPassword.text.toString())) {
+                    activityLoginBinding.inputPassword.error = getString(R.string.err_msg_password)
                 } else {
-                    val builder = AlertDialog.Builder(this)
-                    builder.setMessage("member ${activityLoginBinding.inputName.text} is archived")
-                    builder.setCancelable(false)
-                    builder.setPositiveButton("ok") { dialog: DialogInterface, _: Int ->
-                        dialog.dismiss()
-                        activityLoginBinding.inputName.setText(R.string.empty_text)
-                        activityLoginBinding.inputPassword.setText(R.string.empty_text)
+                    val enterUserName = activityLoginBinding.inputName.text.toString().trimEnd()
+                    val user = mRealm.where(RealmUserModel::class.java).equalTo("name", enterUserName).findFirst()
+                    if (user == null || !user.isArchived) {
+                        submitForm(enterUserName, activityLoginBinding.inputPassword.text.toString())
+                    } else {
+                        val builder = AlertDialog.Builder(this)
+                        builder.setMessage("member ${activityLoginBinding.inputName.text} is archived")
+                        builder.setCancelable(false)
+                        builder.setPositiveButton("ok") { dialog: DialogInterface, _: Int ->
+                            dialog.dismiss()
+                            activityLoginBinding.inputName.setText(R.string.empty_text)
+                            activityLoginBinding.inputPassword.setText(R.string.empty_text)
+                        }
+                        val dialog = builder.create()
+                        dialog.show()
                     }
-                    val dialog = builder.create()
-                    dialog.show()
                 }
+            } else {
+                toast(this, getString(R.string.please_enter_server_url_first))
+                settingDialog()
             }
         }
         if (!settings.contains("serverProtocol")) settings.edit {
             putString("serverProtocol", "http://")
         }
         activityLoginBinding.becomeMember.setOnClickListener {
-            activityLoginBinding.inputName.setText(R.string.empty_text)
-            becomeAMember()
+            if (getUrl() != "/db") {
+                activityLoginBinding.inputName.setText(R.string.empty_text)
+                becomeAMember()
+            } else {
+                toast(this, getString(R.string.please_enter_server_url_first))
+                settingDialog()
+            }
         }
 
         activityLoginBinding.imgBtnSetting.setOnClickListener {
@@ -201,7 +217,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
 
         activityLoginBinding.btnGuestLogin.setOnClickListener {
-            if (getUrl().isNotEmpty()) {
+            if (getUrl() != "/db") {
                 activityLoginBinding.inputName.setText(R.string.empty_text)
                 showGuestLoginDialog()
             } else {
@@ -217,23 +233,28 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             syncIcon.scaleType
             syncIconDrawable = syncIcon.drawable as AnimationDrawable
             syncIcon.setOnClickListener {
-                val protocol = settings.getString("serverProtocol", "")
-                val serverUrl = "${settings.getString("serverURL", "")}"
-                val serverPin = "${settings.getString("serverPin", "")}"
+                if (getUrl() != "/db") {
+                    val protocol = settings.getString("serverProtocol", "")
+                    val serverUrl = "${settings.getString("serverURL", "")}"
+                    val serverPin = "${settings.getString("serverPin", "")}"
 
-                val url = if (serverUrl.startsWith("http://") || serverUrl.startsWith("https://")) {
-                    serverUrl
+                    val url = if (serverUrl.startsWith("http://") || serverUrl.startsWith("https://")) {
+                        serverUrl
+                    } else {
+                        "$protocol$serverUrl"
+                    }
+                    syncIconDrawable.start()
+
+                    val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
+                    val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
+                    val builder = MaterialDialog.Builder(contextWrapper).customView(dialogServerUrlBinding.root, true)
+                    val dialog = builder.build()
+                    currentDialog = dialog
+                    service.getMinApk(this, url, serverPin, this, "LoginActivity")
                 } else {
-                    "$protocol$serverUrl"
+                    toast(this, getString(R.string.please_enter_server_url_first))
+                    settingDialog()
                 }
-                syncIconDrawable.start()
-
-                val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
-                val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
-                val builder = MaterialDialog.Builder(contextWrapper).customView(dialogServerUrlBinding.root, true)
-                val dialog = builder.build()
-                currentDialog = dialog
-                service.getMinApk(this, url, serverPin, this, "LoginActivity")
             }
             declareHideKeyboardElements()
             activityLoginBinding.lblVersion.text = getString(R.string.version, resources.getText(R.string.app_version))
