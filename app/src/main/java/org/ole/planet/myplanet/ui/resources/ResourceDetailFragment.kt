@@ -24,9 +24,11 @@ import org.ole.planet.myplanet.model.RealmRating.Companion.getRatingsById
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.di.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.FileUtils.getFileExtension
 import org.ole.planet.myplanet.utilities.Utilities
+import javax.inject.Inject
 
 class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private lateinit var fragmentLibraryDetailBinding: FragmentLibraryDetailBinding
@@ -34,6 +36,8 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private lateinit var lRealm: Realm
     private lateinit var library: RealmMyLibrary
     var userModel: RealmUserModel? = null
+    @Inject
+    lateinit var userRepository: UserRepository
     private val fragmentScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,10 +54,12 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 try {
                     val backgroundLibrary = backgroundRealm.where(RealmMyLibrary::class.java)
                         .equalTo("resourceId", libraryId).findFirst()
-                    if (backgroundLibrary != null && !backgroundLibrary.userId?.contains(profileDbHandler.userModel?.id)!!) {
+                    val currentUser = userRepository.getCurrentUser()
+                    val userId = currentUser?.id
+                    if (backgroundLibrary != null && userId != null && !backgroundLibrary.userId?.contains(userId)!!) {
                         if (!backgroundRealm.isInTransaction) backgroundRealm.beginTransaction()
-                        backgroundLibrary.setUserId(profileDbHandler.userModel?.id)
-                        onAdd(backgroundRealm, "resources", profileDbHandler.userModel?.id, libraryId)
+                        backgroundLibrary.setUserId(userId)
+                        onAdd(backgroundRealm, "resources", userId, libraryId)
                         backgroundRealm.commitTransaction()
                     }
                 } catch (e: Exception) {
@@ -67,7 +73,8 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             withContext(Dispatchers.Main) {
                 fragmentLibraryDetailBinding.btnDownload.setImageResource(R.drawable.ic_play)
-                if (!library.userId?.contains(profileDbHandler.userModel?.id)!!) {
+                val currentUser = userRepository.getCurrentUser()
+                if (!library.userId?.contains(currentUser?.id)!!) {
                     Utilities.toast(activity, getString(R.string.added_to_my_library))
                     fragmentLibraryDetailBinding.btnRemove.setImageResource(R.drawable.close_x)
                 }
@@ -79,7 +86,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         super.onCreateView(inflater, container, savedInstanceState)
         fragmentLibraryDetailBinding = FragmentLibraryDetailBinding.inflate(inflater, container, false)
         lRealm = databaseService.realmInstance
-        userModel = UserProfileDbHandler(requireContext()).userModel!!
+        userModel = userRepository.getCurrentUser()
         library = lRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", libraryId).findFirst()!!
         return fragmentLibraryDetailBinding.root
     }
@@ -104,22 +111,18 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             setTextViewVisibility(tvType, llType, library.resourceType)
         }
         fragmentScope.launch {
-            withContext(Dispatchers.IO) {
-                try {
-                    profileDbHandler.setResourceOpenCount(library)
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
-                }
+            try {
+                profileDbHandler.setResourceOpenCount(library)
+            } catch (ex: Exception) {
+                ex.printStackTrace()
             }
-            withContext(Dispatchers.Main) {
-                try {
-                    onRatingChanged()
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
-                }
-                setupDownloadButton()
-                setClickListeners()
+            try {
+                onRatingChanged()
+            } catch (ex: Exception) {
+                ex.printStackTrace()
             }
+            setupDownloadButton()
+            setClickListeners()
         }
     }
 
@@ -159,7 +162,8 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             openResource(library)
         }
-        val isAdd = !library.userId?.contains(profileDbHandler.userModel?.id)!!
+        val currentUser = userRepository.getCurrentUser()
+        val isAdd = !library.userId?.contains(currentUser?.id)!!
         if (userModel?.isGuest() != true) {
             fragmentLibraryDetailBinding.btnRemove.setImageResource(
                 if (isAdd) {
@@ -178,7 +182,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             fragmentLibraryDetailBinding.btnRemove.visibility = View.GONE
         }
         fragmentLibraryDetailBinding.btnRemove.setOnClickListener {
-            val userId = profileDbHandler.userModel?.id
+            val userId = userRepository.getCurrentUser()?.id
             fragmentScope.launch {
                 withContext(Dispatchers.IO) {
                     val backgroundRealm = Realm.getDefaultInstance()
