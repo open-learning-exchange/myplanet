@@ -78,7 +78,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         super.onCreateView(inflater, container, savedInstanceState)
         fragmentLibraryDetailBinding = FragmentLibraryDetailBinding.inflate(inflater, container, false)
-        lRealm = databaseService.realmInstance
+        lRealm = userRepository.getRealm()
         userModel = UserProfileDbHandler(requireContext()).userModel!!
         library = lRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", libraryId).findFirst()!!
         return fragmentLibraryDetailBinding.root
