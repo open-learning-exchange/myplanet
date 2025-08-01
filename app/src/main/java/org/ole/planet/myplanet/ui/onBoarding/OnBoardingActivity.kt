@@ -6,6 +6,7 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.edit
 import androidx.core.content.ContextCompat
 import androidx.viewpager.widget.ViewPager
 import org.ole.planet.myplanet.R
@@ -17,6 +18,7 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils.copyAssets
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.utilities.SecurePrefs
 
 class OnBoardingActivity : AppCompatActivity() {
     private lateinit var binding: ActivityOnBoardingBinding
@@ -35,6 +37,11 @@ class OnBoardingActivity : AppCompatActivity() {
 
         copyAssets(this)
         val settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val savedUser = SecurePrefs.getUserName(this, settings)
+        val savedPass = SecurePrefs.getPassword(this, settings)
+        if (!savedUser.isNullOrEmpty() && !savedPass.isNullOrEmpty() && !settings.getBoolean(Constants.KEY_LOGIN, false)) {
+            settings.edit { putBoolean(Constants.KEY_LOGIN, true) }
+        }
         if (settings.getBoolean(Constants.KEY_LOGIN, false) && !Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext)) {
             val dashboard = Intent(applicationContext, DashboardActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)

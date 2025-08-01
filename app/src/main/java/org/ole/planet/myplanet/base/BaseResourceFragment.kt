@@ -26,11 +26,13 @@ import io.realm.RealmResults
 import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourse
@@ -64,7 +66,11 @@ abstract class BaseResourceFragment : Fragment() {
     var convertView: View? = null
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
     @Inject
-    lateinit var databaseService: DatabaseService
+    lateinit var userRepository: UserRepository
+    @Inject
+    lateinit var libraryRepository: LibraryRepository
+    @Inject
+    lateinit var submissionRepository: SubmissionRepository
     @Inject
     @AppPreferences
     lateinit var settings: SharedPreferences
@@ -92,7 +98,10 @@ abstract class BaseResourceFragment : Fragment() {
 
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            showDownloadDialog(getLibraryList(databaseService.realmInstance))
+            val list = libraryRepository.getLibraryListForUser(
+                settings.getString("userId", "--")
+            )
+            showDownloadDialog(list)
         }
     }
 
@@ -171,10 +180,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun showPendingSurveyDialog() {
         model = UserProfileDbHandler(requireContext()).userModel
-        val list: List<RealmSubmission> = mRealm.where(RealmSubmission::class.java)
-            .equalTo("userId", model?.id)
-            .equalTo("status", "pending").equalTo("type", "survey")
-            .findAll()
+        val list: List<RealmSubmission> = submissionRepository.getPendingSurveys(model?.id)
         if (list.isEmpty()) {
             return
         }
@@ -309,12 +315,14 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun getLibraryList(mRealm: Realm): List<RealmMyLibrary> {
-        return getLibraryList(mRealm, settings.getString("userId", "--"))
+        return libraryRepository.getLibraryListForUser(
+            settings.getString("userId", "--")
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = databaseService.realmInstance
+        mRealm = userRepository.getRealm()
         prgDialog = getProgressDialog(requireActivity())
         editor = settings.edit()
     }
