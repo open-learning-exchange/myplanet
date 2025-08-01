@@ -1370,5 +1370,6 @@
     <string name="filter_by_label">लेबलद्वारा फिल्टर गर्नुहोस्</string>
     <string name="community_board">समुदाय बोर्ड</string>
     <string name="nation_board">राष्ट्रिय बोर्ड</string>
+    <string name="is_available">%1$s उपलब्ध छ। सिकाइ जारी राख्न ट्याप गर्नुहोस्।</string>
 
 </resources>
