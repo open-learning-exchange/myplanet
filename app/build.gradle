@@ -184,7 +184,6 @@ dependencies {
     implementation 'androidx.recyclerview:recyclerview:1.4.0'
     implementation 'androidx.annotation:annotation:1.9.1'
     implementation 'androidx.exifinterface:exifinterface:1.4.1'
-    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation "androidx.core:core-ktx:1.16.0"
     implementation "androidx.security:security-crypto:1.1.0-alpha06"
