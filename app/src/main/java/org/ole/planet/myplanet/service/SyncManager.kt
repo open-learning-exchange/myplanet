@@ -1199,7 +1199,7 @@ class SyncManager @Inject constructor(
 
     private fun <T> safeRealmOperation(operation: (Realm) -> T): T? {
         return try {
-            Realm.getDefaultInstance().use { realm ->
+            databaseService.realmInstance.use { realm ->
                 operation(realm)
             }
         } catch (e: Exception) {
