@@ -1370,5 +1370,6 @@
     <string name="filter_by_label">filtrar por etiqueta</string>
     <string name="community_board">tablero comunitario</string>
     <string name="nation_board">tablero nacional</string>
+    <string name="is_available">%1$s está disponible. Toca para continuar aprendiendo</string>
 
 </resources>

@@ -1370,5 +1370,6 @@
     <string name="filter_by_label">shaandhee calaamadda</string>
     <string name="community_board">guddiga bulshada</string>
     <string name="nation_board">guddiga qaranka</string>
+    <string name="is_available">%1$s waa la heli karaa. Taabo si aad u sii wadato barashada</string>
 
 </resources>
