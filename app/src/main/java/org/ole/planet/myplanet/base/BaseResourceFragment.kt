@@ -30,9 +30,9 @@ import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
 import org.ole.planet.myplanet.di.AppPreferences
-import org.ole.planet.myplanet.di.LibraryRepository
-import org.ole.planet.myplanet.di.SubmissionRepository
-import org.ole.planet.myplanet.di.UserRepository
+import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourse
