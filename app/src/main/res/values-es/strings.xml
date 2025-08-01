@@ -1368,7 +1368,5 @@
     <string name="syncing_achievements">Sincronizando logros…</string>
     <string name="nation_leaders">líderes nacionales</string>
     <string name="filter_by_label">filtrar por etiqueta</string>
-    <string name="community_board">tablero comunitario</string>
-    <string name="nation_board">tablero nacional</string>
 
 </resources>
