@@ -1367,5 +1367,6 @@
     <string name="syncing_resources">Sincronizando recursos…</string>
     <string name="syncing_achievements">Sincronizando logros…</string>
     <string name="nation_leaders">líderes nacionales</string>
+    <string name="filter_by_label">filtrar por etiqueta</string>
 
 </resources>

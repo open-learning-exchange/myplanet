@@ -76,7 +76,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         val teamId = requireArguments().getString("id" ) ?: ""
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
         val user = UserProfileDbHandler(requireContext()).userModel
-        mRealm = databaseService.realmInstance
+        mRealm = userRepository.getRealm()
 
         if (shouldQueryRealm(teamId)) {
             if (teamId.isNotEmpty()) {
@@ -322,7 +322,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         val teamType = getEffectiveTeamType()
 
         CoroutineScope(Dispatchers.IO).launch {
-            val realm = databaseService.realmInstance
+            val realm = userRepository.getRealm()
 
             realm.executeTransaction { r ->
                 val log = r.createObject(RealmTeamLog::class.java, "${UUID.randomUUID()}")
