@@ -6,12 +6,12 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
 import androidx.core.app.NotificationCompat
-import io.realm.Realm
 import java.util.regex.Pattern
 import kotlin.text.isNotEmpty
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.MainApplication
 
 object DownloadUtils {
     private const val DOWNLOAD_CHANNEL = "DownloadChannel"
@@ -155,8 +155,7 @@ object DownloadUtils {
     fun updateResourceOfflineStatus(url: String) {
         val currentFileName = FileUtils.getFileNameFromUrl(url)
         try {
-            val backgroundRealm = Realm.getDefaultInstance()
-            backgroundRealm.use { realm ->
+            MainApplication.service.withRealm { realm ->
                 realm.executeTransaction {
                     realm.where(RealmMyLibrary::class.java)
                         .equalTo("resourceLocalAddress", currentFileName)

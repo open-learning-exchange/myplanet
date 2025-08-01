@@ -529,7 +529,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             }
         }
     }
-
+    
     private fun updateUIWithNewLanguage() {
         try {
             if (::lblLastSyncDate.isInitialized) {
@@ -650,7 +650,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                                 startUpload("login")
                             }
                             withContext(Dispatchers.Default) {
-                                val backgroundRealm = Realm.getDefaultInstance()
+                                val backgroundRealm = databaseService.realmInstance
                                 try {
                                     TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
                                 } finally {
@@ -824,13 +824,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
         suspend fun clearRealmDb() {
             withContext(Dispatchers.IO) {
-                val realm = Realm.getDefaultInstance()
-                try {
+                MainApplication.service.withRealm { realm ->
                     realm.executeTransaction { transactionRealm ->
                         transactionRealm.deleteAll()
                     }
-                } finally {
-                    realm.close()
                 }
             }
         }

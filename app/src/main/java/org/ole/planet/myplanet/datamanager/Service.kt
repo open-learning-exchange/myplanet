@@ -308,7 +308,7 @@ class Service @Inject constructor(
                     val arr = JsonUtils.getJsonArray("rows", response.body())
 
                     Executors.newSingleThreadExecutor().execute {
-                        Realm.getDefaultInstance().use { backgroundRealm ->
+                        MainApplication.service.withRealm { backgroundRealm ->
                             try {
                                 backgroundRealm.executeTransaction { realm1 ->
                                     realm1.delete(RealmCommunity::class.java)

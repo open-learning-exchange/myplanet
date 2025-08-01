@@ -162,12 +162,13 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             val detachedCurrentCourse = currentCourse?.let { mRealm.copyFromRealm(it) }
 
             withContext(Dispatchers.IO) {
+                val backgroundRealm = databaseService.realmInstance
                 try {
-                    Realm.getDefaultInstance().use { backgroundRealm ->
-                        createActivity(backgroundRealm, detachedUserModel, detachedCurrentCourse)
-                    }
+                    createActivity(backgroundRealm, detachedUserModel, detachedCurrentCourse)
                 } catch (e: Exception) {
                     e.printStackTrace()
+                } finally {
+                    backgroundRealm.close()
                 }
             }
 

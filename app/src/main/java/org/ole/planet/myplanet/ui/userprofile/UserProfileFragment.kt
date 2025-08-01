@@ -316,7 +316,7 @@ class UserProfileFragment : Fragment() {
                 binding.rbFemale.isChecked -> "female"
                 else -> selectedGender
             }
-            val realm = Realm.getDefaultInstance()
+            val realm = databaseService.realmInstance
             val userId = settings.getString("userId", "")
             RealmUserModel.updateUserDetails(
                 realm,

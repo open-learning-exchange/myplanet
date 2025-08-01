@@ -42,6 +42,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.mymeetup.AdapterMeetup
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.MainApplication
 
 class TeamCalendarFragment : BaseTeamFragment() {
     private lateinit var fragmentEnterpriseCalendarBinding: FragmentEnterpriseCalendarBinding
@@ -308,7 +309,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             var meetupList = mutableListOf<RealmMeetup>()
             val newDates = mutableListOf<Calendar>()
-            val realm = Realm.getDefaultInstance()
+            val realm = MainApplication.service.realmInstance
             try {
                 meetupList = realm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
                 val calendarInstance = Calendar.getInstance()
