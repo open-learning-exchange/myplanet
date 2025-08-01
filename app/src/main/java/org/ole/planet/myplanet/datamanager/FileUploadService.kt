@@ -1,22 +1,27 @@
 package org.ole.planet.myplanet.datamanager
 
 import com.google.gson.JsonObject
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.io.IOException
+import javax.inject.Inject
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
+import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-
-open class FileUploadService {
+@AndroidEntryPoint
+open class FileUploadService @Inject constructor(
+    private val apiInterface: ApiInterface,
+) {
     fun uploadAttachment(id: String, rev: String, personal: RealmMyPersonal, listener: SuccessListener) {
         val f = personal.path?.let { File(it) }
         val name = FileUtils.getFileNameFromUrl(personal.path)
@@ -42,14 +47,13 @@ open class FileUploadService {
     }
 
     private fun uploadDoc(id: String, rev: String, format: String, f: File, name: String, listener: SuccessListener) {
-        val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
         try {
             val connection = f.toURI().toURL().openConnection()
             val mimeType = connection.contentType
             val body = FileUtils.fullyReadFileToBytes(f)
                 .toRequestBody("application/octet-stream".toMediaTypeOrNull())
             val url = String.format(format, Utilities.getUrl(), id, name)
-            apiInterface?.uploadResource(getHeaderMap(mimeType, rev), url, body)?.enqueue(object : Callback<JsonObject?> {
+            apiInterface.uploadResource(getHeaderMap(mimeType, rev), url, body).enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                     onDataReceived(response.body(), listener)
                 }

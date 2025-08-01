@@ -21,7 +21,9 @@ import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import dagger.hilt.android.EntryPointAccessors
 import org.ole.planet.myplanet.datamanager.FileUploadService
+import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmAchievement
@@ -68,14 +70,19 @@ private inline fun <T> Iterable<T>.processInBatches(action: (T) -> Unit) {
 class UploadManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val databaseService: DatabaseService,
-    @AppPreferences private val pref: SharedPreferences
-) : FileUploadService() {
+    @AppPreferences private val pref: SharedPreferences,
+    apiInterface: ApiInterface,
+) : FileUploadService(apiInterface) {
 
     // Backward compatibility constructor for code that still uses singleton pattern
     constructor(context: Context) : this(
         context,
         DatabaseService(context),
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            ApiInterfaceEntryPoint::class.java,
+        ).apiInterface(),
     )
 
     private val gson = Gson()
