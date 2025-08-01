@@ -9,9 +9,9 @@ import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.di.CourseRepository
-import org.ole.planet.myplanet.di.LibraryRepository
-import org.ole.planet.myplanet.di.UserRepository
+import org.ole.planet.myplanet.repository.CourseRepository
+import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
