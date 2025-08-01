@@ -56,19 +56,19 @@ class AdapterSurvey(
     }
 
     fun updateDataAfterSearch(newList: List<RealmStepExam>) {
-        if(examList.isEmpty()){
-            SortSurveyList(false, newList)
-        } else{
-            when (sortType){
-                SurveySortType.DATE_DESC -> SortSurveyList(false, newList)
-                SurveySortType.DATE_ASC ->  SortSurveyList(true, newList)
-                SurveySortType.TITLE -> SortSurveyListByName(isTitleAscending, newList)
+        if (examList.isEmpty()) {
+            sortSurveyList(false, newList)
+        } else {
+            when (sortType) {
+                SurveySortType.DATE_DESC -> sortSurveyList(false, newList)
+                SurveySortType.DATE_ASC -> sortSurveyList(true, newList)
+                SurveySortType.TITLE -> sortSurveyListByName(isTitleAscending, newList)
             }
         }
         notifyDataSetChanged()
     }
 
-    private fun SortSurveyList(isAscend: Boolean, list: List<RealmStepExam> = examList){
+    private fun sortSurveyList(isAscend: Boolean, list: List<RealmStepExam> = examList) {
         val list = list.toList()
         Collections.sort(list) { survey1, survey2 ->
             if (isAscend) {
@@ -80,13 +80,13 @@ class AdapterSurvey(
         examList = list
     }
 
-    fun SortByDate(isAscend: Boolean){
+    fun sortByDate(isAscend: Boolean) {
         sortType = if (isAscend) SurveySortType.DATE_DESC else SurveySortType.DATE_ASC
-        SortSurveyList(isAscend)
+        sortSurveyList(isAscend)
         notifyDataSetChanged()
     }
 
-    private fun SortSurveyListByName(isAscend: Boolean, list: List<RealmStepExam> = examList){
+    private fun sortSurveyListByName(isAscend: Boolean, list: List<RealmStepExam> = examList) {
         examList = if (isAscend) {
             list.sortedBy { it.name?.lowercase() }
         } else {
@@ -97,7 +97,7 @@ class AdapterSurvey(
     fun toggleTitleSortOrder() {
         sortType = SurveySortType.TITLE
         isTitleAscending = !isTitleAscending
-        SortSurveyListByName(isTitleAscending)
+        sortSurveyListByName(isTitleAscending)
         notifyDataSetChanged()
     }
 

@@ -2,16 +2,16 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.realm.Case
 import io.realm.Realm
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.di.CourseRepository
-import org.ole.planet.myplanet.di.LibraryRepository
-import org.ole.planet.myplanet.di.UserRepository
+import org.ole.planet.myplanet.repository.CourseRepository
+import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -21,7 +21,8 @@ class DashboardViewModel @Inject constructor(
     private val databaseService: DatabaseService,
     private val userRepository: UserRepository,
     private val libraryRepository: LibraryRepository,
-    private val courseRepository: CourseRepository
+    private val courseRepository: CourseRepository,
+    private val submissionRepository: SubmissionRepository
 ) : ViewModel() {
     fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
         val earnedDollarsVoice = minOf(voiceCount, 5) * 2
@@ -77,12 +78,8 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    fun getPendingSurveys(realm: Realm, userId: String?): List<RealmSubmission> {
-        return realm.where(RealmSubmission::class.java)
-            .equalTo("userId", userId)
-            .equalTo("type", "survey")
-            .equalTo("status", "pending", Case.INSENSITIVE)
-            .findAll()
+    fun getPendingSurveys(userId: String?): List<RealmSubmission> {
+        return submissionRepository.getPendingSurveys(userId)
     }
 
     fun getSurveyTitlesFromSubmissions(realm: Realm, submissions: List<RealmSubmission>): List<String> {

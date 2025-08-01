@@ -76,12 +76,6 @@ class NewsFragment : BaseNewsFragment() {
             fragmentNewsBinding.llAddNews.visibility = View.GONE
         }
 
-        fragmentNewsBinding.tvNewsTitle.text = if (settings?.getString("planetType", "") == "community") {
-            getString(R.string.community_board)
-        } else {
-            getString(R.string.nation_board)
-        }
-
         updatedNewsList = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING)
             .isEmpty("replyTo").equalTo("docType", "message", Case.INSENSITIVE)
             .findAllAsync()

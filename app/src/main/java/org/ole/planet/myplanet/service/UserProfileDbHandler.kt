@@ -128,11 +128,11 @@ class UserProfileDbHandler @Inject constructor(
     }
 
     fun getLastVisit(m: RealmUserModel): String {
-        Realm.getDefaultInstance().use { realm ->
+        return realmService.withRealm { realm ->
             val lastLogoutTimestamp = realm.where(RealmOfflineActivity::class.java)
                 .equalTo("userName", m.name)
                 .max("loginTime") as Long?
-            return if (lastLogoutTimestamp != null) {
+            if (lastLogoutTimestamp != null) {
                 val date = Date(lastLogoutTimestamp)
                 SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(date)
             } else {
