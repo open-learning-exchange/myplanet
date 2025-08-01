@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.repository
 
-import javax.inject.Inject
 import io.realm.RealmResults
+import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary

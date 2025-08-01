@@ -8,10 +8,10 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import java.util.regex.Pattern
 import kotlin.text.isNotEmpty
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.MainApplication
 
 object DownloadUtils {
     private const val DOWNLOAD_CHANNEL = "DownloadChannel"
