@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2772
-        versionName = "0.27.72"
+        versionCode = 2778
+        versionName = "0.27.78"
         ndkVersion = '26.3.11579264'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -186,7 +186,7 @@ dependencies {
     implementation 'androidx.exifinterface:exifinterface:1.4.1'
     implementation 'androidx.cardview:cardview:1.0.0'
     implementation "androidx.core:core-ktx:1.16.0"
-    implementation "androidx.security:security-crypto:1.1.0-alpha06"
+    implementation "androidx.security:security-crypto:1.1.0"
     implementation "androidx.work:work-runtime:2.10.3"
     implementation "androidx.slidingpanelayout:slidingpanelayout:1.2.0"
     implementation 'androidx.preference:preference-ktx:1.2.1'
