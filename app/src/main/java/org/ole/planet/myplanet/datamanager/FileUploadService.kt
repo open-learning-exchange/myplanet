@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.datamanager
 
 import com.google.gson.JsonObject
-import dagger.hilt.android.AndroidEntryPoint
+
 import java.io.File
 import java.io.IOException
 import javax.inject.Inject
@@ -18,9 +18,9 @@ import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-@AndroidEntryPoint
+
 open class FileUploadService @Inject constructor(
-    private val apiInterface: ApiInterface,
+    protected val apiInterface: ApiInterface,
 ) {
     fun uploadAttachment(id: String, rev: String, personal: RealmMyPersonal, listener: SuccessListener) {
         val f = personal.path?.let { File(it) }
