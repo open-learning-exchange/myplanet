@@ -650,7 +650,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun createSurveyDatabaseNotifications(realm: Realm, userId: String?) {
-        val pendingSurveys = dashboardViewModel.getPendingSurveys(realm, userId)
+        val pendingSurveys = dashboardViewModel.getPendingSurveys(userId)
         val surveyTitles = dashboardViewModel.getSurveyTitlesFromSubmissions(realm, pendingSurveys)
 
         surveyTitles.forEach { title ->
