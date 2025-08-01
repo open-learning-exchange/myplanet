@@ -5,7 +5,7 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import androidx.appcompat.app.AlertDialog
-import io.realm.Realm
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -13,7 +13,7 @@ import org.ole.planet.myplanet.utilities.AuthHelper
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 fun LoginActivity.showGuestLoginDialog() {
-    Realm.getDefaultInstance().use { realm ->
+    MainApplication.service.withRealm { realm ->
         realm.refresh()
         val binding = AlertGuestLoginBinding.inflate(LayoutInflater.from(this))
         val view: View = binding.root
@@ -47,7 +47,7 @@ fun LoginActivity.showGuestLoginDialog() {
         val login = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
         val cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
         login.setOnClickListener {
-            Realm.getDefaultInstance().use { loginRealm ->
+            MainApplication.service.withRealm { loginRealm ->
                 val username = binding.etUserName.text.toString().trim { it <= ' ' }
                 val error = AuthHelper.validateUsername(this@showGuestLoginDialog, username)
                 if (error == null) {
