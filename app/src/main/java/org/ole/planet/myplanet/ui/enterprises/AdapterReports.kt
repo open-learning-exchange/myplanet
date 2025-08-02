@@ -11,13 +11,13 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
 import io.realm.RealmResults
 import java.util.Calendar
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
-import org.ole.planet.myplanet.MainApplication
 
 class AdapterReports(private val context: Context, private var list: RealmResults<RealmMyTeam>) : RecyclerView.Adapter<AdapterReports.ViewHolderReports>() {
     private lateinit var reportListItemBinding: ReportListItemBinding

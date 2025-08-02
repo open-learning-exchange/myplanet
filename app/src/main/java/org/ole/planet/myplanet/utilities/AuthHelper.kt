@@ -2,8 +2,6 @@ package org.ole.planet.myplanet.utilities
 
 import android.content.Context
 import android.widget.Toast
-import androidx.core.content.edit
-import org.ole.planet.myplanet.utilities.SecurePrefs
 import io.realm.Realm
 import java.text.Normalizer
 import java.util.regex.Pattern
@@ -12,6 +10,7 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.ManagerSync
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.sync.LoginActivity
+import org.ole.planet.myplanet.utilities.SecurePrefs
 
 object AuthHelper {
     private val specialCharPattern = Pattern.compile(
@@ -91,4 +90,3 @@ object AuthHelper {
         })
     }
 }
-
