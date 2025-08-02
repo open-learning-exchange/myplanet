@@ -18,7 +18,6 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.graphics.drawable.DrawableCompat
-import org.ole.planet.myplanet.utilities.SecurePrefs
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
@@ -44,6 +43,7 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.NotificationUtil
+import org.ole.planet.myplanet.utilities.SecurePrefs
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBackStackChangedListener {

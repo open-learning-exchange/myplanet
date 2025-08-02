@@ -30,9 +30,6 @@ import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
 import org.ole.planet.myplanet.di.AppPreferences
-import org.ole.planet.myplanet.repository.LibraryRepository
-import org.ole.planet.myplanet.repository.SubmissionRepository
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourse
@@ -44,6 +41,9 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission

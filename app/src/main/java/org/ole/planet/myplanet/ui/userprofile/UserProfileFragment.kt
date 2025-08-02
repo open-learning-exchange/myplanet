@@ -42,14 +42,14 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.lang.String.format
+import java.time.Instant
 import java.util.ArrayList
 import java.util.Calendar
 import java.util.LinkedHashMap
 import java.util.LinkedList
 import java.util.Locale
-import java.util.UUID
 import java.util.TimeZone
-import java.time.Instant
+import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.language
