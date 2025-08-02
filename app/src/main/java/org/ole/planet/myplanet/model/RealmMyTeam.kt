@@ -18,9 +18,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import dagger.hilt.android.EntryPointAccessors
+import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -293,7 +294,10 @@ open class RealmMyTeam : RealmObject() {
                         uploadManager.uploadTeams()
                     }
                     withContext(Dispatchers.IO) {
-                        val apiInterface = client?.create(ApiInterface::class.java)
+                        val apiInterface = EntryPointAccessors.fromApplication(
+                            context.applicationContext,
+                            ApiInterfaceEntryPoint::class.java,
+                        ).apiInterface()
                         val realm = DatabaseService(context).realmInstance
                         realm.executeTransaction { transactionRealm ->
                             uploadManager.uploadTeamActivities(transactionRealm, apiInterface)

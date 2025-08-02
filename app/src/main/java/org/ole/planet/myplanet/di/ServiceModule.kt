@@ -35,9 +35,10 @@ object ServiceModule {
     fun provideUploadManager(
         @ApplicationContext context: Context,
         databaseService: DatabaseService,
-        @AppPreferences preferences: SharedPreferences
+        @AppPreferences preferences: SharedPreferences,
+        apiInterface: ApiInterface,
     ): UploadManager {
-        return UploadManager(context, databaseService, preferences)
+        return UploadManager(context, databaseService, preferences, apiInterface)
     }
 
     @Provides
