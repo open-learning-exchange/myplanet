@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.userprofile
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.MainApplication.Companion.context
@@ -34,8 +35,10 @@ class TeamListAdapter(private var membersList: MutableList<User>, val context: C
     }
 
     fun updateList(newUserList: MutableList<User>) {
+        val diffCallback = UserDiffCallback(membersList, newUserList)
+        val diffResult = DiffUtil.calculateDiff(diffCallback)
         membersList = newUserList
-        notifyDataSetChanged()
+        diffResult.dispatchUpdatesTo(this)
     }
 
     class ViewHolder(private val binding: UserListItemBinding) : RecyclerView.ViewHolder(binding.root) {
@@ -51,5 +54,20 @@ class TeamListAdapter(private var membersList: MutableList<User>, val context: C
                 .error(R.drawable.profile)
                 .into(binding.userProfile)
         }
+    }
+}
+
+class UserDiffCallback(
+    private val oldList: List<User>,
+    private val newList: List<User>
+) : DiffUtil.Callback() {
+    override fun getOldListSize(): Int = oldList.size
+    override fun getNewListSize(): Int = newList.size
+    override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+        return oldList[oldItemPosition].name == newList[newItemPosition].name
+    }
+
+    override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+        return oldList[oldItemPosition] == newList[newItemPosition]
     }
 }
