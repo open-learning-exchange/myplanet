@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
 import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.DiffUtil
 import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
@@ -53,8 +54,10 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
     }
 
     fun setLibraryList(libraryList: List<RealmMyLibrary?>) {
+        val diffCallback = LibraryDiffCallback(this.libraryList, libraryList)
+        val diffResult = DiffUtil.calculateDiff(diffCallback)
         this.libraryList = libraryList
-        notifyDataSetChanged()
+        diffResult.dispatchUpdatesTo(this)
     }
 
     fun setListener(listener: OnLibraryItemSelected?) {
@@ -224,5 +227,21 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
             }
 
         fun bind() {}
+    }
+}
+
+class LibraryDiffCallback(
+    private val oldList: List<RealmMyLibrary?>,
+    private val newList: List<RealmMyLibrary?>
+) : DiffUtil.Callback() {
+    override fun getOldListSize(): Int = oldList.size
+    override fun getNewListSize(): Int = newList.size
+
+    override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+        return oldList[oldItemPosition]?.id == newList[newItemPosition]?.id
+    }
+
+    override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+        return oldList[oldItemPosition] == newList[newItemPosition]
     }
 }
