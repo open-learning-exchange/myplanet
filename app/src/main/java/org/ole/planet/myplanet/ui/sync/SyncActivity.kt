@@ -474,7 +474,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val activityContext = this@SyncActivity
         lifecycleScope.launch(Dispatchers.Main) {
             try {
-                val realm = Realm.getDefaultInstance()
+                val realm = databaseService.realmInstance
                 val results = realm.where(RealmUserModel::class.java).findAllAsync()
                 val listener = object : RealmChangeListener<RealmResults<RealmUserModel>> {
                     override fun onChange(t: RealmResults<RealmUserModel>) {
@@ -538,7 +538,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
         if (betaAutoDownload) {
             lifecycleScope.launch(Dispatchers.IO) {
-                val downloadRealm = Realm.getDefaultInstance()
+                val downloadRealm = databaseService.realmInstance
                 try {
                     backgroundDownload(downloadAllFiles(getAllLibraryList(downloadRealm)), activityContext)
                 } finally {
@@ -674,7 +674,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                                 startUpload("login")
                             }
                             withContext(Dispatchers.Default) {
-                                val backgroundRealm = Realm.getDefaultInstance()
+                                val backgroundRealm = databaseService.realmInstance
                                 try {
                                     TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
                                 } finally {
@@ -848,13 +848,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
         suspend fun clearRealmDb() {
             withContext(Dispatchers.IO) {
-                val realm = Realm.getDefaultInstance()
-                try {
+                MainApplication.service.withRealm { realm ->
                     realm.executeTransaction { transactionRealm ->
                         transactionRealm.deleteAll()
                     }
-                } finally {
-                    realm.close()
                 }
             }
         }

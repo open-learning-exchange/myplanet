@@ -14,6 +14,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
@@ -46,23 +47,19 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         super.onDownloadComplete()
         fragmentScope.launch {
             withContext(Dispatchers.IO) {
-                val backgroundRealm = Realm.getDefaultInstance()
                 try {
-                    val backgroundLibrary = backgroundRealm.where(RealmMyLibrary::class.java)
-                        .equalTo("resourceId", libraryId).findFirst()
-                    if (backgroundLibrary != null && !backgroundLibrary.userId?.contains(profileDbHandler.userModel?.id)!!) {
-                        if (!backgroundRealm.isInTransaction) backgroundRealm.beginTransaction()
-                        backgroundLibrary.setUserId(profileDbHandler.userModel?.id)
-                        onAdd(backgroundRealm, "resources", profileDbHandler.userModel?.id, libraryId)
-                        backgroundRealm.commitTransaction()
+                    MainApplication.service.withRealm { backgroundRealm ->
+                        val backgroundLibrary = backgroundRealm.where(RealmMyLibrary::class.java)
+                            .equalTo("resourceId", libraryId).findFirst()
+                        if (backgroundLibrary != null && !backgroundLibrary.userId?.contains(profileDbHandler.userModel?.id)!!) {
+                            if (!backgroundRealm.isInTransaction) backgroundRealm.beginTransaction()
+                            backgroundLibrary.setUserId(profileDbHandler.userModel?.id)
+                            onAdd(backgroundRealm, "resources", profileDbHandler.userModel?.id, libraryId)
+                            backgroundRealm.commitTransaction()
+                        }
                     }
                 } catch (e: Exception) {
-                    if (backgroundRealm.isInTransaction) {
-                        backgroundRealm.cancelTransaction()
-                    }
                     e.printStackTrace()
-                } finally {
-                    backgroundRealm.close()
                 }
             }
             withContext(Dispatchers.Main) {
@@ -181,29 +178,25 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             val userId = profileDbHandler.userModel?.id
             fragmentScope.launch {
                 withContext(Dispatchers.IO) {
-                    val backgroundRealm = Realm.getDefaultInstance()
                     try {
-                        val backgroundLibrary = backgroundRealm.where(RealmMyLibrary::class.java)
-                            .equalTo("resourceId", libraryId).findFirst()
+                        MainApplication.service.withRealm { backgroundRealm ->
+                            val backgroundLibrary = backgroundRealm.where(RealmMyLibrary::class.java)
+                                .equalTo("resourceId", libraryId).findFirst()
 
-                        if (backgroundLibrary != null) {
-                            if (!backgroundRealm.isInTransaction) backgroundRealm.beginTransaction()
-                            if (isAdd) {
-                                backgroundLibrary.setUserId(userId)
-                                onAdd(backgroundRealm, "resources", userId, libraryId)
-                            } else {
-                                backgroundLibrary.removeUserId(userId)
-                                onRemove(backgroundRealm, "resources", userId, libraryId)
+                            if (backgroundLibrary != null) {
+                                if (!backgroundRealm.isInTransaction) backgroundRealm.beginTransaction()
+                                if (isAdd) {
+                                    backgroundLibrary.setUserId(userId)
+                                    onAdd(backgroundRealm, "resources", userId, libraryId)
+                                } else {
+                                    backgroundLibrary.removeUserId(userId)
+                                    onRemove(backgroundRealm, "resources", userId, libraryId)
+                                }
+                                backgroundRealm.commitTransaction()
                             }
-                            backgroundRealm.commitTransaction()
                         }
                     } catch (e: Exception) {
-                        if (backgroundRealm.isInTransaction) {
-                            backgroundRealm.cancelTransaction()
-                        }
                         e.printStackTrace()
-                    } finally {
-                        backgroundRealm.close()
                     }
                 }
                 withContext(Dispatchers.Main) {

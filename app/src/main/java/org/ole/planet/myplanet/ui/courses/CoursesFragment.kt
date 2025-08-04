@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.callback.OnCourseItemSelected
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TagClickListener
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -171,7 +172,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         try {
             val map = getRatings(mRealm, "course", model?.id)
             val progressMap = getCourseProgress(mRealm, model?.id)
-            val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>()
+            val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }.filter { !it?.courseTitle.isNullOrBlank() }
             val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
 
             adapterCourses.updateCourseList(sortedCourseList)
@@ -199,7 +200,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     override fun getAdapter(): RecyclerView.Adapter<*> {
         val map = getRatings(mRealm, "course", model?.id)
         val progressMap = getCourseProgress(mRealm, model?.id)
-        val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>()
+        val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
         val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
         adapterCourses = AdapterCourses(requireActivity(), sortedCourseList, map, userProfileDbHandler)
         adapterCourses.setProgressMap(progressMap)
@@ -319,10 +320,12 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                         }
                     }
 
-                    parentFragmentManager.beginTransaction()
-                        .replace(R.id.fragment_container, myProgressFragment)
-                        .addToBackStack(null)
-                        .commit()
+                    NavigationHelper.replaceFragment(
+                        parentFragmentManager,
+                        R.id.fragment_container,
+                        myProgressFragment,
+                        addToBackStack = true
+                    )
                 }
             }
         }
@@ -613,15 +616,21 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 args.putString("courseLib", courseLib)
                 args.putSerializable("resources", resources?.let { ArrayList(it) })
                 fragment.arguments = args
-                val transaction = parentFragmentManager.beginTransaction()
-                transaction.replace(R.id.fragment_container, fragment)
-                transaction.addToBackStack(null)
-                transaction.commitAllowingStateLoss()
+                NavigationHelper.replaceFragment(
+                    parentFragmentManager,
+                    R.id.fragment_container,
+                    fragment,
+                    addToBackStack = true,
+                    allowStateLoss = true
+                )
             } else {
-                val transaction = parentFragmentManager.beginTransaction()
-                transaction.replace(R.id.fragment_container, fragment)
-                transaction.addToBackStack(null)
-                transaction.commitAllowingStateLoss()
+                NavigationHelper.replaceFragment(
+                    parentFragmentManager,
+                    R.id.fragment_container,
+                    fragment,
+                    addToBackStack = true,
+                    allowStateLoss = true
+                )
             }
         }
     }

@@ -21,7 +21,6 @@ import com.applandeo.materialcalendarview.CalendarView
 import com.applandeo.materialcalendarview.listeners.OnCalendarDayClickListener
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import io.realm.Realm
 import io.realm.RealmResults
 import java.net.MalformedURLException
 import java.net.URL
@@ -34,6 +33,7 @@ import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
@@ -308,7 +308,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             var meetupList = mutableListOf<RealmMeetup>()
             val newDates = mutableListOf<Calendar>()
-            val realm = Realm.getDefaultInstance()
+            val realm = MainApplication.service.realmInstance
             try {
                 meetupList = realm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
                 val calendarInstance = Calendar.getInstance()

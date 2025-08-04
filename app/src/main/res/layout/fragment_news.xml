@@ -14,79 +14,53 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <androidx.cardview.widget.CardView
+        <LinearLayout
+            android:id="@+id/linearLayout6"
             android:layout_width="match_parent"
-            app:cardCornerRadius="@dimen/_10dp"
-            android:elevation="@dimen/_10dp"
-            android:padding="@dimen/padding_normal"
-            app:cardBackgroundColor="@color/colorPrimaryLight"
             android:layout_height="wrap_content">
 
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/tvNewsTitle"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:padding="@dimen/padding_normal"
-                    android:textColor="@color/md_white_1000"
-                    android:textSize="@dimen/text_size_large"
-                    android:textStyle="bold"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-                <LinearLayout
-                    android:id="@+id/linearLayout6"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:layout_constraintTop_toBottomOf="@+id/tvNewsTitle">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/filter_by_label"
-                            android:textColor="@color/md_white_1000"
-                            android:textSize="14sp"
-                            android:paddingStart="8dp"
-                            android:paddingEnd="8dp"
-                            android:paddingBottom="@dimen/padding_small" />
-                        <Spinner
-                            android:id="@+id/filterByLabel"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="center"
-                            android:padding="@dimen/padding_large"
-                            android:theme="@style/ResourcePopupMenu" />
-                    </LinearLayout>
-
-                    <include
-                        layout="@layout/layout_search"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1" />
-                </LinearLayout>
-
-                <Button
-                    android:id="@+id/btnNewVoice"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="10dp"
-                    android:backgroundTint="@color/md_white_1000"
-                    android:text="@string/new_voice"
-                    android:textAllCaps="false"
-                    android:textColor="@color/md_black_1000"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/linearLayout6" />
-            </androidx.constraintlayout.widget.ConstraintLayout>
-        </androidx.cardview.widget.CardView>
+                    android:text="@string/filter_by_label"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="14sp"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:paddingBottom="@dimen/padding_small" />
+                <Spinner
+                    android:id="@+id/filterByLabel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:padding="@dimen/padding_large"
+                    android:theme="@style/ResourcePopupMenu" />
+            </LinearLayout>
 
+            <include
+                layout="@layout/layout_search"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnNewVoice"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:backgroundTint="@color/mainColor"
+            android:text="@string/new_voice"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/linearLayout6" />
         <LinearLayout
             android:id="@+id/ll_add_news"
             android:layout_width="match_parent"

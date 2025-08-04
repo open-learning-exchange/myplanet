@@ -9,9 +9,9 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
-import io.realm.Realm
 import io.realm.RealmResults
 import java.util.Calendar
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
@@ -152,7 +152,7 @@ class AdapterReports(private val context: Context, private var list: RealmResult
                         addProperty("updatedDate", System.currentTimeMillis())
                         addProperty("updated", true)
                     }
-                    Realm.getDefaultInstance().use { realm ->
+                    MainApplication.service.withRealm { realm ->
                         RealmMyTeam.updateReports(doc, realm)
                     }
                     dialog.dismiss()
@@ -168,7 +168,7 @@ class AdapterReports(private val context: Context, private var list: RealmResult
                 builder.setTitle("Delete Report")
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _, _ ->
-                        Realm.getDefaultInstance().use { realm ->
+                        MainApplication.service.withRealm { realm ->
                             realm.executeTransaction { realmTx ->
                                 realmTx.where(RealmMyTeam::class.java)
                                     .equalTo("_id", reportId)

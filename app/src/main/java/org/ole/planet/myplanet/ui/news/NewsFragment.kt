@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 
 @AndroidEntryPoint
 class NewsFragment : BaseNewsFragment() {
@@ -74,12 +75,6 @@ class NewsFragment : BaseNewsFragment() {
         if (requireArguments().getBoolean("fromLogin")) {
             fragmentNewsBinding.btnNewVoice.visibility = View.GONE
             fragmentNewsBinding.llAddNews.visibility = View.GONE
-        }
-
-        fragmentNewsBinding.tvNewsTitle.text = if (settings?.getString("planetType", "") == "community") {
-            getString(R.string.community_board)
-        } else {
-            getString(R.string.nation_board)
         }
 
         updatedNewsList = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING)
@@ -242,10 +237,12 @@ class NewsFragment : BaseNewsFragment() {
             val chatDetailFragment = ChatDetailFragment()
             chatDetailFragment.arguments = bundle
 
-            parentFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, chatDetailFragment)
-                .addToBackStack(null)
-                .commit()
+            NavigationHelper.replaceFragment(
+                parentFragmentManager,
+                R.id.fragment_container,
+                chatDetailFragment,
+                addToBackStack = true
+            )
         }
     }
 

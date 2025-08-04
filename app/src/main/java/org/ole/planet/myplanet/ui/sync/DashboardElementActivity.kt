@@ -18,7 +18,6 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.core.graphics.drawable.DrawableCompat
-import org.ole.planet.myplanet.utilities.SecurePrefs
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
@@ -44,7 +43,9 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.NotificationUtil
+import org.ole.planet.myplanet.utilities.SecurePrefs
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 
 abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBackStackChangedListener {
     lateinit var navigationView: BottomNavigationView
@@ -99,10 +100,13 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 c--
                 fragmentManager.popBackStack(tag, 0)
             }else{
-                fragmentManager.beginTransaction()
-                    .replace(R.id.fragment_container, newFragment, tag)
-                    .addToBackStack(tag)
-                    .commit()
+                NavigationHelper.replaceFragment(
+                    fragmentManager,
+                    R.id.fragment_container,
+                    newFragment,
+                    addToBackStack = true,
+                    tag = tag
+                )
             }
         } else {
             if (existingFragment != null && existingFragment.isVisible) {
@@ -117,10 +121,13 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                     c=0
                 }
                 if(tag!="") {
-                    fragmentManager.beginTransaction()
-                        .replace(R.id.fragment_container, newFragment, tag)
-                        .addToBackStack(tag)
-                        .commit()
+                    NavigationHelper.replaceFragment(
+                        fragmentManager,
+                        R.id.fragment_container,
+                        newFragment,
+                        addToBackStack = true,
+                        tag = tag
+                    )
                 }
             }
         }
