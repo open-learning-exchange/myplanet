@@ -5,6 +5,8 @@ import io.realm.Realm
 import io.realm.RealmConfiguration
 import io.realm.log.LogLevel
 import io.realm.log.RealmLog
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class DatabaseService(context: Context) {
     init {
@@ -14,7 +16,6 @@ class DatabaseService(context: Context) {
             .name(Realm.DEFAULT_REALM_NAME)
             .deleteRealmIfMigrationNeeded()
             .schemaVersion(4)
-            .allowWritesOnUiThread(true)
             .build()
         Realm.setDefaultConfiguration(config)
     }
@@ -25,6 +26,34 @@ class DatabaseService(context: Context) {
     fun <T> withRealm(operation: (Realm) -> T): T {
         return Realm.getDefaultInstance().use { realm ->
             operation(realm)
+        }
+    }
+    
+    suspend fun <T> withRealmAsync(operation: (Realm) -> T): T {
+        return withContext(Dispatchers.IO) {
+            Realm.getDefaultInstance().use { realm ->
+                operation(realm)
+            }
+        }
+    }
+    
+    suspend fun executeTransactionAsync(transaction: (Realm) -> Unit) {
+        withContext(Dispatchers.IO) {
+            Realm.getDefaultInstance().use { realm ->
+                realm.executeTransaction { transaction(it) }
+            }
+        }
+    }
+    
+    suspend fun <T> executeTransactionWithResultAsync(transaction: (Realm) -> T): T {
+        return withContext(Dispatchers.IO) {
+            Realm.getDefaultInstance().use { realm ->
+                var result: T? = null
+                realm.executeTransaction { 
+                    result = transaction(it)
+                }
+                result!!
+            }
         }
     }
 }

@@ -21,11 +21,39 @@ class UserRepositoryImpl @Inject constructor(
         preferences.edit().putString("user_profile", data).apply()
     }
 
+    override suspend fun getCurrentUser(): RealmUserModel? {
+        return databaseService.withRealmAsync { realm ->
+            realm.where(RealmUserModel::class.java).findFirst()
+        }
+    }
+
+    override suspend fun getUserById(userId: String): RealmUserModel? {
+        return databaseService.withRealmAsync { realm ->
+            realm.where(RealmUserModel::class.java)
+                .equalTo("id", userId)
+                .findFirst()
+        }
+    }
+
+    override suspend fun getUserByName(username: String): RealmUserModel? {
+        return databaseService.withRealmAsync { realm ->
+            realm.where(RealmUserModel::class.java)
+                .equalTo("name", username)
+                .findFirst()
+        }
+    }
+
+    override suspend fun getAllUsers(): List<RealmUserModel> {
+        return databaseService.withRealmAsync { realm ->
+            realm.where(RealmUserModel::class.java).findAll()
+        }
+    }
+
     override fun getRealm(): Realm {
         return databaseService.realmInstance
     }
 
-    override fun getCurrentUser(): RealmUserModel? {
+    override fun getCurrentUserSync(): RealmUserModel? {
         return databaseService.realmInstance.where(RealmUserModel::class.java).findFirst()
     }
 }
