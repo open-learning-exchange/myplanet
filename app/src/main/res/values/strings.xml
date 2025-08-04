@@ -1368,5 +1368,8 @@
     <string name="syncing_achievements">Syncing achievements…</string>
     <string name="nation_leaders">nation leaders</string>
     <string name="filter_by_label">filter by label</string>
+    <string name="community_board">community board</string>
+    <string name="nation_board">nation board</string>
+    <string name="is_available">%1$s is available. Tap to continue learning</string>
 
 </resources>
