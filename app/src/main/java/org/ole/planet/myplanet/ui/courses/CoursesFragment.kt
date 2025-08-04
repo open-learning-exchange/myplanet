@@ -171,7 +171,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         try {
             val map = getRatings(mRealm, "course", model?.id)
             val progressMap = getCourseProgress(mRealm, model?.id)
-            val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>()
+            val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }.filter { !it?.courseTitle.isNullOrBlank() }
             val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
 
             adapterCourses.updateCourseList(sortedCourseList)
@@ -199,7 +199,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     override fun getAdapter(): RecyclerView.Adapter<*> {
         val map = getRatings(mRealm, "course", model?.id)
         val progressMap = getCourseProgress(mRealm, model?.id)
-        val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>()
+        val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
         val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
         adapterCourses = AdapterCourses(requireActivity(), sortedCourseList, map, userProfileDbHandler)
         adapterCourses.setProgressMap(progressMap)

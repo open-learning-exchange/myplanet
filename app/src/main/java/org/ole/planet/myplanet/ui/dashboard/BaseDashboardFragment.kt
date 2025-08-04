@@ -179,7 +179,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         setUpMyLife(userId)
         dbMycourses = when (c) {
             RealmMyCourse::class.java -> {
-                RealmMyCourse.getMyByUserId(mRealm, settings)
+                RealmMyCourse.getMyByUserId(mRealm, settings).filter { !it.courseTitle.isNullOrBlank() }
             }
             RealmMyTeam::class.java -> {
                 val i = myTeamInit(flexboxLayout)
@@ -199,6 +199,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         setCountText(dbMycourses.size, c, view)
         val myCoursesTextViewArray = arrayOfNulls<TextView>(dbMycourses.size)
         for ((itemCnt, items) in dbMycourses.withIndex()) {
+            val course = items as RealmMyCourse
             setTextViewProperties(myCoursesTextViewArray, itemCnt, items)
             myCoursesTextViewArray[itemCnt]?.let { setTextColor(it, itemCnt) }
             flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params)
