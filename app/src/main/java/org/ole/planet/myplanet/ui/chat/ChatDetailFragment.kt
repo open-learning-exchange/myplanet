@@ -17,7 +17,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.isNotEmpty
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -44,7 +44,6 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatModel
 import org.ole.planet.myplanet.model.ChatRequestModel
-import org.ole.planet.myplanet.model.ChatViewModel
 import org.ole.planet.myplanet.model.ContentData
 import org.ole.planet.myplanet.model.ContinueChatModel
 import org.ole.planet.myplanet.model.Conversation
@@ -65,7 +64,7 @@ import retrofit2.Response
 class ChatDetailFragment : Fragment() {
     lateinit var fragmentChatDetailBinding: FragmentChatDetailBinding
     private lateinit var mAdapter: ChatAdapter
-    private lateinit var sharedViewModel: ChatViewModel
+    private val sharedViewModel: ChatViewModel by activityViewModels()
     private var _id: String = ""
     private var _rev: String = ""
     private var currentID: String = ""
@@ -87,11 +86,6 @@ class ChatDetailFragment : Fragment() {
     private val jsonMediaType = "application/json".toMediaTypeOrNull()
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        sharedViewModel = ViewModelProvider(requireActivity())[ChatViewModel::class.java]
-    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentChatDetailBinding = FragmentChatDetailBinding.inflate(inflater, container, false)
