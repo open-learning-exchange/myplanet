@@ -1,12 +1,16 @@
-package org.ole.planet.myplanet.model
+package org.ole.planet.myplanet.ui.chat
 
 import androidx.lifecycle.ViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
 import io.realm.RealmList
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.ole.planet.myplanet.model.Conversation
 
-class ChatViewModel : ViewModel() {
+@HiltViewModel
+class ChatViewModel @Inject constructor() : ViewModel() {
     private val _selectedChatHistory = MutableStateFlow<RealmList<Conversation>?>(null)
     val selectedChatHistory: StateFlow<RealmList<Conversation>?> = _selectedChatHistory.asStateFlow()
 
