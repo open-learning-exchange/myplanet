@@ -16,8 +16,8 @@ import android.widget.TableRow
 import androidx.core.content.ContextCompat
 import androidx.core.view.isNotEmpty
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
-import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -64,7 +64,7 @@ import retrofit2.Response
 class ChatDetailFragment : Fragment() {
     lateinit var fragmentChatDetailBinding: FragmentChatDetailBinding
     private lateinit var mAdapter: ChatAdapter
-    private val sharedViewModel: ChatViewModel by activityViewModels()
+    private val sharedViewModel: ChatViewModel by viewModels({ requireActivity() })
     private var _id: String = ""
     private var _rev: String = ""
     private var currentID: String = ""
