@@ -12,6 +12,7 @@ import android.os.StatFs
 import android.os.storage.StorageManager
 import android.provider.MediaStore
 import android.text.format.Formatter
+import android.util.Log
 import androidx.core.net.toUri
 import java.io.File
 import java.io.FileOutputStream
@@ -141,18 +142,25 @@ object FileUtils {
     @JvmStatic
     fun copyAssets(context: Context) {
         val tiles = arrayOf("dhulikhel.mbtiles", "somalia.mbtiles")
-        try {
-            for (name in tiles) {
+        val available = context.assets.list("")?.toSet() ?: emptySet()
+        for (name in tiles) {
+            if (!available.contains(name)) {
+                Log.w("FileUtils", "Asset $name not found; skipping copy")
+                continue
+            }
+            try {
                 context.assets.open(name).use { input ->
-                    FileOutputStream(
-                        File(Environment.getExternalStorageDirectory().toString() + "/osmdroid", name)
-                    ).use { out ->
+                    val dir = File(Environment.getExternalStorageDirectory(), "osmdroid")
+                    if (!dir.exists()) {
+                        dir.mkdirs()
+                    }
+                    FileOutputStream(File(dir, name)).use { out ->
                         input.copyTo(out)
                     }
                 }
+            } catch (e: Exception) {
+                Log.e("FileUtils", "Failed to copy asset $name", e)
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
