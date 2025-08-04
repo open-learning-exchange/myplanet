@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 
 @AndroidEntryPoint
 class ChatHistoryListFragment : Fragment() {
@@ -85,18 +86,22 @@ class ChatHistoryListFragment : Fragment() {
         fragmentChatHistoryListBinding.newChat.setOnClickListener {
             if (resources.getBoolean(R.bool.isLargeScreen)) {
                 val chatHistoryListFragment = ChatHistoryListFragment()
-                parentFragmentManager.beginTransaction().apply {
-                    replace(R.id.fragment_container, chatHistoryListFragment)
-                    addToBackStack("ChatHistoryList")
-                    commit()
-                }
+                NavigationHelper.replaceFragment(
+                    parentFragmentManager,
+                    R.id.fragment_container,
+                    chatHistoryListFragment,
+                    addToBackStack = true,
+                    tag = "ChatHistoryList"
+                )
             } else {
                 val chatDetailFragment = ChatDetailFragment()
-                parentFragmentManager.beginTransaction().apply {
-                    replace(R.id.fragment_container, chatDetailFragment)
-                    addToBackStack("ChatDetail")
-                    commit()
-                }
+                NavigationHelper.replaceFragment(
+                    parentFragmentManager,
+                    R.id.fragment_container,
+                    chatDetailFragment,
+                    addToBackStack = true,
+                    tag = "ChatDetail"
+                )
             }
         }
 
