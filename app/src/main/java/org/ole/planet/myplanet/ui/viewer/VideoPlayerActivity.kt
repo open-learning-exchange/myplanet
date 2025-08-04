@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.SharedPreferences
 import android.media.AudioManager
 import android.os.Bundle
 import androidx.activity.OnBackPressedCallback
@@ -27,19 +26,24 @@ import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityExoPlayerVideoBinding
 import org.ole.planet.myplanet.utilities.AuthSessionUpdater
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.Utilities
 
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import javax.inject.Provider
+
+@AndroidEntryPoint
 class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback {
     private lateinit var binding: ActivityExoPlayerVideoBinding
     private var exoPlayer: ExoPlayer? = null
     private var auth: String = ""
     private var videoURL: String = ""
-    private lateinit var settings: SharedPreferences
     private var playWhenReady = true
     private var currentPosition = 0L
     private var isActivityVisible = false
+    @Inject
+    lateinit var authSessionUpdaterProvider: Provider<AuthSessionUpdater>
     private var authSessionUpdater: AuthSessionUpdater? = null
 
     private val audioBecomingNoisyReceiver = object : BroadcastReceiver() {
@@ -55,8 +59,6 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         binding = ActivityExoPlayerVideoBinding.inflate(layoutInflater)
         setContentView(binding.root)
         EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
-        settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-
         val extras = intent.extras
         val videoType = extras?.getString("videoType")
         videoURL = extras?.getString("videoURL") ?: ""
@@ -67,7 +69,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         when (videoType) {
             "offline" -> prepareExoPlayerFromFileUri(videoURL)
             "online" -> {
-                authSessionUpdater = AuthSessionUpdater(this, settings)
+                authSessionUpdater = authSessionUpdaterProvider.get()
             }
         }
 

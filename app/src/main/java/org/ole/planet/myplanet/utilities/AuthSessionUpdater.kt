@@ -12,11 +12,13 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import javax.inject.Inject
+import org.ole.planet.myplanet.di.AppPreferences
 
-class AuthSessionUpdater(
+class AuthSessionUpdater @Inject constructor(
     private val callback: AuthCallback,
-    private val settings: SharedPreferences,
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
+    @AppPreferences private val settings: SharedPreferences,
+    private val scope: CoroutineScope
 ) {
 
     interface AuthCallback {
