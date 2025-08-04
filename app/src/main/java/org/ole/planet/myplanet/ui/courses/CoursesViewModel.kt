@@ -3,6 +3,9 @@ package org.ole.planet.myplanet.ui.courses
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.Calendar
+import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -17,9 +20,6 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import java.util.Calendar
-import java.util.UUID
-import javax.inject.Inject
 
 @HiltViewModel
 class CoursesViewModel @Inject constructor(
