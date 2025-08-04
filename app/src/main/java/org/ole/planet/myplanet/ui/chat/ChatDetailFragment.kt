@@ -204,7 +204,7 @@ class ChatDetailFragment : Fragment() {
                         mAdapter.clearData()
                         fragmentChatDetailBinding.editGchatMessage.text.clear()
                         fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
-                        if (conversations != null && conversations.isValid && conversations.isNotEmpty()) {
+                        if (!conversations.isNullOrEmpty()) {
                             for (conversation in conversations) {
                                 conversation.query?.let { mAdapter.addQuery(it) }
                                 mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
