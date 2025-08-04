@@ -35,21 +35,6 @@ By leveraging myPlanet, users gain seamless access to the Planet system’s exte
 
 For the app usage manual, please visit the [myPlanet Manual page](https://open-learning-exchange.github.io/#!pages/manual/myplanet/overview.md) on OLE Support.
 
-## Navigation
-
-To ensure consistent fragment transactions, use the `NavigationHelper` utility:
-
-```
-NavigationHelper.replaceFragment(
-    fragmentManager,
-    R.id.fragment_container,
-    fragment,
-    addToBackStack = true
-)
-```
-
-This centralizes navigation logic and avoids scattered `beginTransaction().replace` calls.
-
 ## Contact
 
 For any questions or feedback, please join [our Discord server](https://discord.gg/BVrFEeNtQZ).
