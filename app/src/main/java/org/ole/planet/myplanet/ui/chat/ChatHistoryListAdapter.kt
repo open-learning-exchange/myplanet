@@ -12,7 +12,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
 import io.realm.Case
 import io.realm.Realm
-import io.realm.RealmList
 import io.realm.RealmResults
 import java.text.Normalizer
 import java.util.Date
@@ -57,7 +56,7 @@ class ChatHistoryListAdapter(
     }
 
     interface ChatHistoryItemClickListener {
-        fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?, aiProvider: String?)
+        fun onChatHistoryItemClicked(conversations: List<Conversation>?, id: String, rev: String?, aiProvider: String?)
     }
 
     fun setChatHistoryItemClickListener(listener: ChatHistoryItemClickListener) {
@@ -181,7 +180,7 @@ class ChatHistoryListAdapter(
         viewHolderChat.rowChatHistoryBinding.root.setOnClickListener {
             viewHolderChat.rowChatHistoryBinding.chatCardView.contentDescription = chatTitle
             chatHistoryItemClickListener?.onChatHistoryItemClicked(
-                filteredChatHistory[position].conversations,
+                filteredChatHistory[position].conversations?.toList(),
                 "${filteredChatHistory[position]._id}",
                 filteredChatHistory[position]._rev,
                 filteredChatHistory[position].aiProvider
