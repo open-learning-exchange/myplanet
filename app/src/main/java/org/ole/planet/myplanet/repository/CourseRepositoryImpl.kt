@@ -1,14 +1,12 @@
 package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
-import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmUserModel
 
 class CourseRepositoryImpl @Inject constructor(
-    private val databaseService: DatabaseService,
-    private val apiInterface: ApiInterface,
+    private val databaseService: DatabaseService
 ) : CourseRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
