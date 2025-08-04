@@ -7,7 +7,6 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.base.BaseResourceFragment
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -18,7 +17,6 @@ import org.ole.planet.myplanet.repository.UserRepository
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
-    private val databaseService: DatabaseService,
     private val userRepository: UserRepository,
     private val libraryRepository: LibraryRepository,
     private val courseRepository: CourseRepository,
