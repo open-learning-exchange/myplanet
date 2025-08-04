@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.ui.references.ReferenceFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterMyLife(private val context: Context, private val myLifeList: List<RealmMyLife>, private var mRealm: Realm, private val mDragStartListener: OnStartDragListener) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), ItemTouchHelperAdapter {
@@ -153,8 +154,12 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
         fun transactionFragment(f: Fragment?, view: View) {
             val activity = view.context as AppCompatActivity
             f?.let {
-                activity.supportFragmentManager.beginTransaction().replace(R.id.fragment_container, it)
-                    .addToBackStack(null).commit()
+                NavigationHelper.replaceFragment(
+                    activity.supportFragmentManager,
+                    R.id.fragment_container,
+                    it,
+                    addToBackStack = true
+                )
             }
         }
     }

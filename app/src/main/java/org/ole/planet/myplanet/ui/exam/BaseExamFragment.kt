@@ -41,6 +41,7 @@ import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.NetworkUtils.getUniqueIdentifier
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 
 @AndroidEntryPoint
 abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
@@ -174,9 +175,11 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     companion object {
         fun navigateToSurveyList(activity: FragmentActivity) {
             val surveyListFragment = SurveyFragment()
-            activity.supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, surveyListFragment)
-                .commit()
+            NavigationHelper.replaceFragment(
+                activity.supportFragmentManager,
+                R.id.fragment_container,
+                surveyListFragment
+            )
         }
     }
 
