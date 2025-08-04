@@ -2,13 +2,15 @@ package org.ole.planet.myplanet.utilities
 
 import android.content.Context
 import android.content.SharedPreferences
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
-class SharedPrefManager(context: Context) {
+class SharedPrefManager @Inject constructor(@ApplicationContext context: Context) {
     private var privateMode = 0
     private var pref: SharedPreferences = context.getSharedPreferences(PREFS_NAME, privateMode)
     private var editor: SharedPreferences.Editor = pref.edit()
