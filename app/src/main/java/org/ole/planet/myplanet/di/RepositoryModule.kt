@@ -6,7 +6,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
-import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.repository.CourseRepository
@@ -26,28 +25,25 @@ object RepositoryModule {
     @Singleton
     fun provideUserRepository(
         databaseService: DatabaseService,
-        @AppPreferences preferences: SharedPreferences,
-        apiInterface: ApiInterface
+        @AppPreferences preferences: SharedPreferences
     ): UserRepository {
-        return UserRepositoryImpl(databaseService, preferences, apiInterface)
+        return UserRepositoryImpl(databaseService, preferences)
     }
 
     @Provides
     @Singleton
     fun provideLibraryRepository(
-        databaseService: DatabaseService,
-        apiInterface: ApiInterface
+        databaseService: DatabaseService
     ): LibraryRepository {
-        return LibraryRepositoryImpl(databaseService, apiInterface)
+        return LibraryRepositoryImpl(databaseService)
     }
 
     @Provides
     @Singleton
     fun provideCourseRepository(
-        databaseService: DatabaseService,
-        apiInterface: ApiInterface
+        databaseService: DatabaseService
     ): CourseRepository {
-        return CourseRepositoryImpl(databaseService, apiInterface)
+        return CourseRepositoryImpl(databaseService)
     }
 
     @Provides
