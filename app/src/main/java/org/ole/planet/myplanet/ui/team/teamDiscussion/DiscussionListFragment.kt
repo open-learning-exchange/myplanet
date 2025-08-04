@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
@@ -104,10 +105,12 @@ class DiscussionListFragment : BaseTeamFragment() {
         val chatDetailFragment = ChatDetailFragment()
         chatDetailFragment.arguments = bundle
 
-        parentFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, chatDetailFragment)
-            .addToBackStack(null)
-            .commit()
+        NavigationHelper.replaceFragment(
+            parentFragmentManager,
+            R.id.fragment_container,
+            chatDetailFragment,
+            addToBackStack = true
+        )
     }
 
     override fun clearImages() {
