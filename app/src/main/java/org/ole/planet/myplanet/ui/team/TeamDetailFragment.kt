@@ -36,6 +36,21 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.ApplicantsPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.CalendarPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.ChatPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.CoursesPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.DocumentsPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.FinancesPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.JoinRequestsPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.MembersPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.MissionPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.PlanPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.ReportsPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.ResourcesPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.SurveyPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.TasksPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.TeamPage
 
 @AndroidEntryPoint
 class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
@@ -58,6 +73,28 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     private val serverUrlMapper = ServerUrlMapper()
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
+    private var pageConfigs: List<TeamPageConfig> = emptyList()
+
+    private fun buildPages(isMyTeam: Boolean): List<TeamPageConfig> {
+        val isEnterprise = team?.type == "enterprise"
+        val pages = mutableListOf<TeamPageConfig>()
+        if (isMyTeam || team?.isPublic == true) {
+            pages += ChatPage
+            pages += if (isEnterprise) MissionPage else PlanPage
+            pages += if (isEnterprise) TeamPage else MembersPage
+            pages += TasksPage
+            pages += CalendarPage
+            pages += SurveyPage
+            pages += if (isEnterprise) FinancesPage else CoursesPage
+            if (isEnterprise) pages += ReportsPage
+            pages += if (isEnterprise) DocumentsPage else ResourcesPage
+            pages += if (isEnterprise) ApplicantsPage else JoinRequestsPage
+        } else {
+            pages += if (isEnterprise) MissionPage else PlanPage
+            pages += if (isEnterprise) TeamPage else MembersPage
+        }
+        return pages
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -162,11 +199,12 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
             }
         }
 
-        val pageOrdinal = arguments?.getInt("navigateToPage", -1) ?: -1
-        if (pageOrdinal >= 0) {
+        val pageId = arguments?.getString("navigateToPage")
+        if (!pageId.isNullOrEmpty()) {
             fragmentTeamDetailBinding.root.post {
-                if (pageOrdinal < (fragmentTeamDetailBinding.viewPager2.adapter?.itemCount ?: 0)) {
-                    fragmentTeamDetailBinding.viewPager2.currentItem = pageOrdinal
+                val index = pageConfigs.indexOfFirst { it.id == pageId }
+                if (index >= 0 && index < (fragmentTeamDetailBinding.viewPager2.adapter?.itemCount ?: 0)) {
+                    fragmentTeamDetailBinding.viewPager2.currentItem = index
                 }
             }
         }
@@ -186,7 +224,13 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     private fun setupViewPager(isMyTeam: Boolean) {
-        fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, isMyTeam, this)
+        pageConfigs = buildPages(isMyTeam)
+        fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(
+            requireActivity(),
+            pageConfigs,
+            team?._id,
+            this
+        )
         TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
             tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
         }.attach()
@@ -234,7 +278,12 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     team?.leave(user, mRealm)
                     Utilities.toast(activity, getString(R.string.left_team))
-                    fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, false, this)
+                    fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(
+                        requireActivity(),
+                        buildPages(false),
+                        team?._id,
+                        this
+                    )
                     TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
                         tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
                     }.attach()
@@ -244,11 +293,12 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
         fragmentTeamDetailBinding.btnAddDoc.setOnClickListener {
             MainApplication.showDownload = true
-            fragmentTeamDetailBinding.viewPager2.currentItem = 6
-            MainApplication.showDownload = false
-            if (MainApplication.listener != null) {
-                MainApplication.listener?.onAddDocument()
+            val documentsIndex = pageConfigs.indexOf(DocumentsPage)
+            if (documentsIndex != -1) {
+                fragmentTeamDetailBinding.viewPager2.currentItem = documentsIndex
             }
+            MainApplication.showDownload = false
+            MainApplication.listener?.onAddDocument()
         }
     }
 
@@ -264,7 +314,13 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                 if (updatedTeam != null) {
                     team = updatedTeam
 
-                    fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(requireActivity(), team, isMyTeam, this)
+                    pageConfigs = buildPages(isMyTeam)
+                    fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(
+                        requireActivity(),
+                        pageConfigs,
+                        team?._id,
+                        this
+                    )
                     TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
                         tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
                     }.attach()
@@ -345,7 +401,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
             teamName: String,
             teamType: String,
             isMyTeam: Boolean,
-            navigateToPage: TeamPage? = null
+            navigateToPage: TeamPageConfig? = null
         ): TeamDetailFragment {
             val fragment = TeamDetailFragment()
             val args = Bundle().apply {
@@ -353,7 +409,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                 putString("teamName", teamName)
                 putString("teamType", teamType)
                 putBoolean("isMyTeam", isMyTeam)
-                navigateToPage?.let { putInt("navigateToPage", it.ordinal) }
+                navigateToPage?.let { putString("navigateToPage", it.id) }
             }
             fragment.arguments = args
             return fragment
