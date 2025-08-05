@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.resources
 
 import android.app.AlertDialog
 import android.content.Context
-import android.content.Context.MODE_PRIVATE
 import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Editable
@@ -15,7 +14,10 @@ import android.widget.ImageButton
 import android.widget.TextView
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
 import com.github.clans.fab.FloatingActionButton
 import com.google.android.flexbox.FlexboxLayout
@@ -28,35 +30,25 @@ import fisk.chipcloud.ChipCloudConfig
 import fisk.chipcloud.ChipDeletedListener
 import java.util.Calendar
 import java.util.UUID
-import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnFilterListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected
-import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TagClickListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getArrayList
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getLevels
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getSubjects
-import org.ole.planet.myplanet.model.RealmRating.Companion.getRatings
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
-import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 
@@ -81,122 +73,21 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
-
-    @Inject
-    lateinit var prefManager: SharedPrefManager
-
-    @Inject
-    lateinit var syncManager: SyncManager
-
-    private val serverUrlMapper = ServerUrlMapper()
-    private val serverUrl: String
-        get() = settings.getString("serverURL", "") ?: ""
+    private val viewModel: ResourcesViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        startResourcesSync()
+        viewModel.startResourcesSync()
     }
 
     override fun getLayout(): Int {
         return R.layout.fragment_my_library
     }
 
-    private fun startResourcesSync() {
-        val isFastSync = settings.getBoolean("fastSync", false)
-        if (isFastSync && !prefManager.isResourcesSynced()) {
-            checkServerAndStartSync()
-        }
-    }
-
-    private fun checkServerAndStartSync() {
-        val mapping = serverUrlMapper.processUrl(serverUrl)
-
-        lifecycleScope.launch(Dispatchers.IO) {
-            updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
-                startSyncManager()
-            }
-        }
-    }
-
-    private fun startSyncManager() {
-        syncManager.start(object : SyncListener {
-            override fun onSyncStarted() {
-                activity?.runOnUiThread {
-                    if (isAdded && !requireActivity().isFinishing) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText(getString(R.string.syncing_resources))
-                        customProgressDialog?.show()
-                    }
-                }
-            }
-
-            override fun onSyncComplete() {
-                activity?.runOnUiThread {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-                        refreshResourcesData()
-                        prefManager.setResourcesSynced(true)
-                    }
-                }
-            }
-
-            override fun onSyncFailed(msg: String?) {
-                activity?.runOnUiThread {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-
-                        Snackbar.make(requireView(), "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG
-                        ).setAction("Retry") {
-                            startResourcesSync()
-                        }.show()
-                    }
-                }
-            }
-        }, "full", listOf("resources"))
-    }
-
-    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, settings) { url ->
-            isServerReachable(url)
-        }
-    }
-
-    private fun refreshResourcesData() {
-        if (!isAdded || requireActivity().isFinishing) return
-
-        try {
-            map = getRatings(mRealm, "resource", model?.id)
-            val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-            adapterLibrary.setLibraryList(libraryList)
-            adapterLibrary.setRatingMap(map!!)
-            adapterLibrary.notifyDataSetChanged()
-            checkList()
-            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
-
-            if (searchTags.isNotEmpty() || etSearch.text?.isNotEmpty() == true) {
-                adapterLibrary.setLibraryList(
-                    applyFilter(
-                        filterLibraryByTag(
-                            etSearch.text.toString().trim(), searchTags
-                        )
-                    )
-                )
-                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
-            }
-
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        map = getRatings(mRealm, "resource", model?.id)
-        val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-        adapterLibrary = AdapterResource(requireActivity(), libraryList, map!!, mRealm)
+        map = HashMap()
+        adapterLibrary = AdapterResource(requireActivity(), emptyList(), map!!, mRealm)
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
         return adapterLibrary
@@ -215,6 +106,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         hideButton()
 
         setupGuestUserRestrictions()
+        observeViewModel()
 
         showNoData(tvMessage, adapterLibrary.itemCount, "resources")
         clearTagsButton()
@@ -574,6 +466,75 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 fragment,
                 addToBackStack = true
             )
+        }
+    }
+
+    private fun observeViewModel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.resourcesState.collect { state ->
+                    when (state) {
+                        is ResourcesViewModel.ResourcesUiState.Success -> {
+                            map = state.ratingMap
+                            adapterLibrary.setLibraryList(state.resources)
+                            adapterLibrary.setRatingMap(state.ratingMap)
+                            adapterLibrary.notifyDataSetChanged()
+                            checkList()
+                            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+                            if (searchTags.isNotEmpty() || etSearch.text?.isNotEmpty() == true) {
+                                adapterLibrary.setLibraryList(
+                                    applyFilter(
+                                        filterLibraryByTag(
+                                            etSearch.text.toString().trim(), searchTags
+                                        )
+                                    )
+                                )
+                                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+                            }
+                        }
+                        is ResourcesViewModel.ResourcesUiState.Error -> {
+                            if (isAdded) {
+                                Snackbar.make(requireView(), state.message, Snackbar.LENGTH_LONG).show()
+                            }
+                        }
+                        else -> {}
+                    }
+                }
+            }
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.syncState.collect { state ->
+                    when (state) {
+                        ResourcesViewModel.SyncState.Syncing -> {
+                            if (isAdded && customProgressDialog == null) {
+                                customProgressDialog =
+                                    DialogUtils.CustomProgressDialog(requireContext())
+                                customProgressDialog?.setText(getString(R.string.syncing_resources))
+                                customProgressDialog?.show()
+                            }
+                        }
+                        ResourcesViewModel.SyncState.Success -> {
+                            customProgressDialog?.dismiss()
+                            customProgressDialog = null
+                        }
+                        is ResourcesViewModel.SyncState.Error -> {
+                            customProgressDialog?.dismiss()
+                            customProgressDialog = null
+                            if (isAdded) {
+                                Snackbar.make(
+                                    requireView(),
+                                    "Sync failed: ${state.message}",
+                                    Snackbar.LENGTH_LONG
+                                ).setAction("Retry") {
+                                    viewModel.startResourcesSync()
+                                }.show()
+                            }
+                        }
+                        else -> {}
+                    }
+                }
+            }
         }
     }
 
