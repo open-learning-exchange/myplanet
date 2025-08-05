@@ -1374,5 +1374,6 @@
     <string name="failed_to_add_please_retry">Error al agregar. Por favor, inténtalo de nuevo</string>
     <string name="failed_to_mark_as_read">No se pudo marcar como leído. Por favor, inténtalo de nuevo</string>
     <string name="failed_to_remove_resource">Error al eliminar el recurso. Por favor, inténtalo de nuevo</string>
+    <string name="failed_to_adopt_survey">No se pudo adoptar la encuesta. Por favor, inténtalo de nuevo</string>
 
 </resources>

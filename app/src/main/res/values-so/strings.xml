@@ -1374,5 +1374,6 @@
     <string name="failed_to_add_please_retry">Ku guuldareystay in lagu daro. Fadlan isku day mar kale</string>
     <string name="failed_to_mark_as_read">Ku guuldareystay calaamadeynta sidii la akhriyey. Fadlan isku day mar kale</string>
     <string name="failed_to_remove_resource">Ku guuldareystay ka saarista kheyraadka. Fadlan isku day mar kale</string>
+    <string name="failed_to_adopt_survey">Ku guuldareystay qaadashada sahanka. Fadlan isku day mar kale</string>
 
 </resources>
