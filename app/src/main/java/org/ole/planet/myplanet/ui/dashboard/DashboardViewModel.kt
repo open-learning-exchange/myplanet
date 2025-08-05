@@ -120,49 +120,4 @@ class DashboardViewModel @Inject constructor(
                 .toInt()
         }
     }
-
-    @Deprecated("Use async version without realm parameter", ReplaceWith("getUnreadNotificationsSize(userId)"))
-    fun getUnreadNotificationsSize(realm: Realm, userId: String?): Int {
-        return realm.where(RealmNotification::class.java)
-            .equalTo("userId", userId)
-            .equalTo("isRead", false)
-            .count()
-            .toInt()
-    }
-    
-    @Deprecated("Use async version", ReplaceWith("getSurveyTitlesFromSubmissions(submissions)"))
-    fun getSurveyTitlesFromSubmissions(realm: Realm, submissions: List<RealmSubmission>): List<String> {
-        val titles = mutableListOf<String>()
-        submissions.forEach { submission ->
-            val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
-            val exam = realm.where(RealmStepExam::class.java)
-                .equalTo("id", examId)
-                .findFirst()
-            exam?.name?.let { titles.add(it) }
-        }
-        return titles
-    }
-    
-    @Deprecated("Use async version", ReplaceWith("updateResourceNotification(userId)"))
-    fun updateResourceNotification(realm: Realm, userId: String?) {
-        val resourceCount = BaseResourceFragment.getLibraryList(realm, userId).size
-        if (resourceCount > 0) {
-            val existingNotification = realm.where(RealmNotification::class.java)
-                .equalTo("userId", userId)
-                .equalTo("type", "resource")
-                .findFirst()
-
-            if (existingNotification != null) {
-                existingNotification.message = "$resourceCount"
-                existingNotification.relatedId = "$resourceCount"
-            } else {
-                createNotificationIfNotExists(realm, "resource", "$resourceCount", "$resourceCount", userId)
-            }
-        } else {
-            realm.where(RealmNotification::class.java)
-                .equalTo("userId", userId)
-                .equalTo("type", "resource")
-                .findFirst()?.deleteFromRealm()
-        }
-    }
 }

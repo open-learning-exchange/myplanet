@@ -49,6 +49,9 @@ import kotlin.math.ceil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 import org.json.JSONObject
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
@@ -570,14 +573,20 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
 
             try {
+                suspendCancellableCoroutine<Unit> { cont ->
+                    dashboardViewModel.updateResourceNotification(userId) {
+                        cont.resume(Unit)
+                    }
+                }
+
                 databaseService.realmInstance.use { backgroundRealm ->
                     backgroundRealm.executeTransaction { realm ->
                         val createdNotifications = createNotifications(realm, userId)
                         newNotifications.addAll(createdNotifications)
                     }
-
-                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(backgroundRealm, userId)
                 }
+
+                unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -617,7 +626,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun createDatabaseNotificationsFromSources(realm: Realm, userId: String?) {
-        dashboardViewModel.updateResourceNotification(realm, userId)
         createSurveyDatabaseNotifications(realm, userId)
         createTaskDatabaseNotifications(realm, userId)
         createStorageDatabaseNotifications(realm, userId)
@@ -655,7 +663,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun createSurveyDatabaseNotifications(realm: Realm, userId: String?) {
         val pendingSurveys = dashboardViewModel.getPendingSurveys(userId)
-        val surveyTitles = dashboardViewModel.getSurveyTitlesFromSubmissions(realm, pendingSurveys)
+        val surveyTitles = runBlocking { dashboardViewModel.getSurveyTitlesFromSubmissions(pendingSurveys) }
 
         surveyTitles.forEach { title ->
             dashboardViewModel.createNotificationIfNotExists(realm, "survey", title, title, userId)
