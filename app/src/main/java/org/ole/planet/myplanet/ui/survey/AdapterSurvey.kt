@@ -254,9 +254,7 @@ class AdapterSurvey(
                     }
                 }
             }, {
-                // onSuccess - update UI on main thread
-                adoptedSurveyIds.add("${examId}")
-
+                adoptedSurveyIds.add("$examId")
                 val position = examList.indexOfFirst { it.id == examId }
                 if (position != -1) {
                     notifyItemChanged(position)
@@ -265,7 +263,6 @@ class AdapterSurvey(
                 Snackbar.make(binding.root, context.getString(R.string.survey_adopted_successfully), Snackbar.LENGTH_LONG).show()
                 surveyAdoptListener.onSurveyAdopted()
             }, {
-                // onError - handle error if needed
                 Snackbar.make(binding.root, context.getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
             })
         }
