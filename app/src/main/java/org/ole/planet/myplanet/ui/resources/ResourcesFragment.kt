@@ -75,11 +75,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     private val viewModel: ResourcesViewModel by viewModels()
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        viewModel.startResourcesSync()
-    }
-
     override fun getLayout(): Int {
         return R.layout.fragment_my_library
     }
@@ -107,6 +102,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         setupGuestUserRestrictions()
         observeViewModel()
+        viewModel.startResourcesSync()
 
         showNoData(tvMessage, adapterLibrary.itemCount, "resources")
         clearTagsButton()
