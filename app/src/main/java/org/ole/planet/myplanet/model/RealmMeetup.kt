@@ -86,8 +86,8 @@ open class RealmMeetup : RealmObject() {
             map["Created By"] = checkNull(meetups.creator)
             map["Category"] = checkNull(meetups.category)
             try {
-                map["Meetup Date"] = TimeUtils.getFormatedDate(meetups.startDate) +
-                        " - " + TimeUtils.getFormatedDate(meetups.endDate)
+                map["Meetup Date"] = TimeUtils.getFormattedDate(meetups.startDate) +
+                        " - " + TimeUtils.getFormattedDate(meetups.endDate)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

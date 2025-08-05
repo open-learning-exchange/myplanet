@@ -32,7 +32,7 @@ object TimeUtils {
     }
 
     @JvmStatic
-    fun getFormatedDate(date: Long?): String {
+    fun getFormattedDate(date: Long?): String {
         return try {
             val instant = date?.let { Instant.ofEpochMilli(it) } ?: Instant.now()
             defaultDateFormatter.format(instant)
@@ -42,8 +42,14 @@ object TimeUtils {
         }
     }
 
+    @Deprecated("Use getFormattedDate", ReplaceWith("getFormattedDate(date)"))
     @JvmStatic
-    fun getFormatedDateWithTime(date: Long): String {
+    fun getFormatedDate(date: Long?): String {
+        return getFormattedDate(date)
+    }
+
+    @JvmStatic
+    fun getFormattedDateWithTime(date: Long): String {
         return try {
             val instant = Instant.ofEpochMilli(date)
             dateTimeFormatter.format(instant)
@@ -51,6 +57,12 @@ object TimeUtils {
             e.printStackTrace()
             "N/A"
         }
+    }
+
+    @Deprecated("Use getFormattedDateWithTime", ReplaceWith("getFormattedDateWithTime(date)"))
+    @JvmStatic
+    fun getFormatedDateWithTime(date: Long): String {
+        return getFormattedDateWithTime(date)
     }
 
     @JvmStatic
@@ -83,16 +95,22 @@ object TimeUtils {
     }
 
     @JvmStatic
-    fun getFormatedDate(stringDate: String?, pattern: String?): String {
+    fun getFormattedDate(stringDate: String?, pattern: String?): String {
         return try {
             if (stringDate.isNullOrBlank() || pattern.isNullOrBlank()) return "N/A"
             val formatter = DateTimeFormatter.ofPattern(pattern, defaultLocale).withZone(utcZone)
             val instant = LocalDate.parse(stringDate, formatter).atStartOfDay(utcZone).toInstant()
-            getFormatedDate(instant.toEpochMilli())
+            getFormattedDate(instant.toEpochMilli())
         } catch (e: Exception) {
             e.printStackTrace()
             "N/A"
         }
+    }
+
+    @Deprecated("Use getFormattedDate", ReplaceWith("getFormattedDate(stringDate, pattern)"))
+    @JvmStatic
+    fun getFormatedDate(stringDate: String?, pattern: String?): String {
+        return getFormattedDate(stringDate, pattern)
     }
 
     @JvmStatic

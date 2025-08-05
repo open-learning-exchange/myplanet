@@ -55,7 +55,7 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
+import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -222,7 +222,7 @@ class MyHealthFragment : Fragment() {
             startActivity(Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId))
         }
 
-        fragmentVitalSignBinding.txtDob.text = if (TextUtils.isEmpty(userModel?.dob)) getString(R.string.birth_date) else getFormatedDate(userModel?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        fragmentVitalSignBinding.txtDob.text = if (TextUtils.isEmpty(userModel?.dob)) getString(R.string.birth_date) else getFormattedDate(userModel?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
     }
 
     private fun getHealthRecords(memberId: String?) {
