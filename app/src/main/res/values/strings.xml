@@ -1375,5 +1375,6 @@
     <string name="failed_to_mark_as_read">Failed to mark as read. Please retry</string>
     <string name="failed_to_remove_resource">Failed to remove resource. Please retry</string>
     <string name="failed_to_adopt_survey">Failed to adopt survey. Please retry</string>
+    <string name="failed_to_save_chat">Failed to save chat. Please retry.</string>
 
 </resources>
