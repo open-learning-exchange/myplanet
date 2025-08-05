@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.feedback.FeedbackDetailActivity.RvFeedbackAdapter.ReplyViewHolder
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.LocaleHelper
-import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDateWithTime
+import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
 
 @AndroidEntryPoint
 class FeedbackDetailActivity : AppCompatActivity() {
@@ -54,7 +54,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
         setTitle(R.string.feedback)
         realm = databaseService.realmInstance
         feedback = realm.where(RealmFeedback::class.java).equalTo("id", intent.getStringExtra("id")).findFirst()!!
-        activityFeedbackDetailBinding.tvDate.text = getFormatedDateWithTime(feedback.openTime)
+        activityFeedbackDetailBinding.tvDate.text = getFormattedDateWithTime(feedback.openTime)
         activityFeedbackDetailBinding.tvMessage.text = if (TextUtils.isEmpty(feedback.message))
             "N/A"
         else
@@ -138,7 +138,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: ReplyViewHolder, position: Int) {
             rowFeedbackReplyBinding.tvDate.text = replyList?.get(position)?.date?.let {
-                getFormatedDateWithTime(it.toLong())
+                getFormattedDateWithTime(it.toLong())
             }
             rowFeedbackReplyBinding.tvUser.text = replyList?.get(position)?.user
             rowFeedbackReplyBinding.tvMessage.text = replyList?.get(position)?.message
