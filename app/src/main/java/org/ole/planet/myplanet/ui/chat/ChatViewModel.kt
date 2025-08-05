@@ -1,6 +1,7 @@
-package org.ole.planet.myplanet.model
+package org.ole.planet.myplanet.ui.chat
 
 import androidx.lifecycle.ViewModel
+import org.ole.planet.myplanet.model.Conversation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
