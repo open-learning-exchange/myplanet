@@ -67,15 +67,15 @@ class AdapterTeamResource(
     fun removeResource(resource: RealmMyLibrary, position: Int) {
         if (position < 0 || position >= list.size) return
 
-        val itemToDelete = mRealm.where(RealmMyTeam::class.java)
-            .equalTo("resourceId", resource.id)
-            .findFirst()
-
-        if (itemToDelete != null) {
-            mRealm.executeTransaction {
-                itemToDelete.resourceId = ""
-                itemToDelete.updated = true
-            }
+        val resourceId = resource.id
+        mRealm.executeTransactionAsync { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .equalTo("resourceId", resourceId)
+                .findFirst()
+                ?.apply {
+                    this.resourceId = ""
+                    this.updated = true
+                }
         }
 
         list.removeAt(position)
