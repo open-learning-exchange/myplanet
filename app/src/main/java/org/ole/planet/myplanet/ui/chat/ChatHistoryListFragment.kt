@@ -12,7 +12,7 @@ import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import com.google.android.material.snackbar.Snackbar
@@ -42,7 +42,7 @@ import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 @AndroidEntryPoint
 class ChatHistoryListFragment : Fragment() {
     private lateinit var fragmentChatHistoryListBinding: FragmentChatHistoryListBinding
-    private val sharedViewModel: ChatViewModel by activityViewModels()
+    private val sharedViewModel: ChatViewModel by viewModels({ requireActivity() })
     var user: RealmUserModel? = null
     private var isFullSearch: Boolean = false
     private var isQuestion: Boolean = false
