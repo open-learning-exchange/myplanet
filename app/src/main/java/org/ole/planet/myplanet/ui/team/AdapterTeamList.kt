@@ -57,7 +57,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         val user: RealmUserModel? = UserProfileDbHandler(context).userModel
 
         with(holder.binding) {
-            created.text = TimeUtils.getFormatedDate(team.createdDate)
+            created.text = TimeUtils.getFormattedDate(team.createdDate)
             type.text = team.teamType
             type.visibility = if (team.teamType == null) View.GONE else View.VISIBLE
             name.text = team.name
