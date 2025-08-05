@@ -8,7 +8,6 @@ import android.content.SharedPreferences
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.text.TextUtils
 import android.text.format.DateUtils
 import android.util.Base64
 import android.util.Log
@@ -56,7 +55,7 @@ object Utilities {
     }
 
     fun isValidEmail(target: CharSequence): Boolean {
-        return !TextUtils.isEmpty(target) && Patterns.EMAIL_ADDRESS.matcher(target).matches()
+        return !target.isNullOrEmpty() && Patterns.EMAIL_ADDRESS.matcher(target).matches()
     }
 
     fun getUrl(id: String?, file: String?): String {
@@ -180,7 +179,7 @@ object Utilities {
     }
 
     fun loadImage(userImage: String?, imageView: ImageView) {
-        if (!TextUtils.isEmpty(userImage)) {
+        if (!userImage.isNullOrEmpty()) {
             Glide.with(context)
                 .load(userImage)
                 .placeholder(R.drawable.profile)
