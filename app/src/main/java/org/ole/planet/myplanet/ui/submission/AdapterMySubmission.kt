@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission.ViewHolderMySurvey
-import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
+import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 
 class AdapterMySubmission(private val context: Context, private val list: List<RealmSubmission>?, private val examHashMap: HashMap<String?, RealmStepExam>?) : RecyclerView.Adapter<ViewHolderMySurvey>() {
     private lateinit var rowMySurveyBinding: RowMysurveyBinding
@@ -48,7 +48,7 @@ class AdapterMySubmission(private val context: Context, private val list: List<R
 
     override fun onBindViewHolder(holder: ViewHolderMySurvey, position: Int) {
         rowMySurveyBinding.status.text = list?.get(position)?.status
-        rowMySurveyBinding.date.text = getFormatedDate(list?.get(position)?.startTime)
+        rowMySurveyBinding.date.text = getFormattedDate(list?.get(position)?.startTime)
         showSubmittedBy(rowMySurveyBinding.submittedBy, position)
         if (examHashMap?.containsKey(list?.get(position)?.parentId) == true)
             rowMySurveyBinding.title.text = examHashMap[list?.get(position)?.parentId]?.name
