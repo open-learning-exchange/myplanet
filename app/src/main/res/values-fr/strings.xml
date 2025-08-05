@@ -1371,5 +1371,7 @@
     <string name="community_board">tableau communautaire</string>
     <string name="nation_board">tableau national</string>
     <string name="is_available">%1$s est disponible. Appuyez pour continuer à apprendre</string>
+    <string name="failed_to_delete_report">Échec de la suppression du rapport. Veuillez réessayer</string>
+    <string name="delete_report">Supprimer le rapport</string>
 
 </resources>

@@ -1371,5 +1371,7 @@
     <string name="community_board">guddiga bulshada</string>
     <string name="nation_board">guddiga qaranka</string>
     <string name="is_available">%1$s waa la heli karaa. Taabo si aad u sii wadato barashada</string>
+    <string name="failed_to_delete_report">Ku guuldareystay tirtiridda warbixinta. Fadlan isku day mar kale</string>
+    <string name="delete_report">Tirtir warbixinta</string>
 
 </resources>
