@@ -1371,5 +1371,6 @@
     <string name="community_board">tableau communautaire</string>
     <string name="nation_board">tableau national</string>
     <string name="is_available">%1$s est disponible. Appuyez pour continuer à apprendre</string>
+    <string name="failed_to_save_chat">Échec de l\'enregistrement de la conversation. Veuillez réessayer.</string>
 
 </resources>

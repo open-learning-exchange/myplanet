@@ -1371,5 +1371,6 @@
     <string name="community_board">community board</string>
     <string name="nation_board">nation board</string>
     <string name="is_available">%1$s is available. Tap to continue learning</string>
+    <string name="failed_to_save_chat">Failed to save chat. Please retry.</string>
 
 </resources>
