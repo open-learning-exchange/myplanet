@@ -162,8 +162,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun createSubmission() {
-        mRealm.executeTransaction { realm ->
-            sub = createSubmission(null, realm)
+        mRealm.beginTransaction()
+        try {
+            sub = createSubmission(null, mRealm)
             setParentId()
             sub?.userId = user?.id
             sub?.status = "pending"
@@ -176,8 +177,12 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
             currentIndex = 0
             if (isTeam == true && teamId != null) {
-                addTeamInformation(realm)
+                addTeamInformation(mRealm)
             }
+            mRealm.commitTransaction()
+        } catch (e: Exception) {
+            mRealm.cancelTransaction()
+            throw e
         }
     }
 
