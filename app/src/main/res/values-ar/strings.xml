@@ -1371,6 +1371,8 @@
     <string name="community_board">لوحة المجتمع</string>
     <string name="nation_board">لوحة الوطن</string>
     <string name="is_available">%1$s متاح. انقر للمتابعة في التعلم</string>
+    <string name="failed_to_add_please_retry">فشل في الإضافة. الرجاء المحاولة مرة أخرى</string>
+    <string name="failed_to_mark_as_read">فشل في التعليم كمقروء. الرجاء المحاولة مرة أخرى</string>
     <string name="failed_to_remove_resource">فشل في إزالة المورد. الرجاء المحاولة مرة أخرى</string>
 
 </resources>

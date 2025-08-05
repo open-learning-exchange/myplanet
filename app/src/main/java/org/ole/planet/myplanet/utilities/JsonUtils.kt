@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.utilities
 
-import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
@@ -64,7 +63,7 @@ object JsonUtils {
 
     @JvmStatic
     fun addString(`object`: JsonObject, fieldName: String, value: String?) {
-        if (!TextUtils.isEmpty(value)) `object`.addProperty(fieldName, value)
+        if (!value.isNullOrEmpty()) `object`.addProperty(fieldName, value)
     }
 
     @JvmStatic
