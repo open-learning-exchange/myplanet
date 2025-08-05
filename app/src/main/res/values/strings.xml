@@ -1371,5 +1371,8 @@
     <string name="community_board">community board</string>
     <string name="nation_board">nation board</string>
     <string name="is_available">%1$s is available. Tap to continue learning</string>
+    <string name="failed_to_add_please_retry">Failed to add. Please retry</string>
+    <string name="failed_to_mark_as_read">Failed to mark as read. Please retry</string>
+    <string name="failed_to_remove_resource">Failed to remove resource. Please retry</string>
 
 </resources>
