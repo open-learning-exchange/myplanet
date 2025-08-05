@@ -221,19 +221,21 @@ class AdapterSurvey(
             }
 
             val adoptionId = "${UUID.randomUUID()}"
+            val examId = exam.id
+            val userId = userModel?.id
 
-            mRealm.executeTransaction { realm ->
+            mRealm.executeTransactionAsync({ realm ->
                 val existingAdoption = realm.where(RealmSubmission::class.java)
-                    .equalTo("userId", userModel?.id)
-                    .equalTo("parentId", exam.id)
+                    .equalTo("userId", userId)
+                    .equalTo("parentId", examId)
                     .equalTo("status", "")
                     .findFirst()
 
                 if (existingAdoption == null) {
                     realm.createObject(RealmSubmission::class.java, adoptionId).apply {
-                        parentId = exam.id
+                        parentId = examId
                         parent = parentJsonString
-                        userId = userModel?.id
+                        this.userId = userId
                         user = userJsonString
                         type = "survey"
                         status = ""
@@ -251,17 +253,21 @@ class AdapterSurvey(
                         }
                     }
                 }
-            }
+            }, {
+                // onSuccess - update UI on main thread
+                adoptedSurveyIds.add("${examId}")
 
-            adoptedSurveyIds.add("${exam.id}")
+                val position = examList.indexOfFirst { it.id == examId }
+                if (position != -1) {
+                    notifyItemChanged(position)
+                }
 
-            val position = examList.indexOfFirst { it.id == exam.id }
-            if (position != -1) {
-                notifyItemChanged(position)
-            }
-
-            Snackbar.make(binding.root, context.getString(R.string.survey_adopted_successfully), Snackbar.LENGTH_LONG).show()
-            surveyAdoptListener.onSurveyAdopted()
+                Snackbar.make(binding.root, context.getString(R.string.survey_adopted_successfully), Snackbar.LENGTH_LONG).show()
+                surveyAdoptListener.onSurveyAdopted()
+            }, {
+                // onError - handle error if needed
+                Snackbar.make(binding.root, context.getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
+            })
         }
     }
 }
