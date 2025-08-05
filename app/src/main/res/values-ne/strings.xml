@@ -1376,5 +1376,7 @@
     <string name="failed_to_remove_resource">स्रोत हटाउन असफल भयो। कृपया फेरि प्रयास गर्नुहोस्</string>
     <string name="failed_to_adopt_survey">सर्वेक्षण अपनाउन असफल भयो। कृपया फेरि प्रयास गर्नुहोस्</string>
     <string name="failed_to_save_chat">कुराकानी सुरक्षित गर्न असफल भयो। कृपया फेरि प्रयास गर्नुहोस्।</string>
+    <string name="failed_to_delete_report">प्रतिवेदन मेटाउन असफल भयो। कृपया फेरि प्रयास गर्नुहोस्</string>
+    <string name="delete_report">प्रतिवेदन मेटाउनुहोस्</string>
 
 </resources>

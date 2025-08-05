@@ -1376,5 +1376,7 @@
     <string name="failed_to_remove_resource">Error al eliminar el recurso. Por favor, inténtalo de nuevo</string>
     <string name="failed_to_adopt_survey">No se pudo adoptar la encuesta. Por favor, inténtalo de nuevo</string>
     <string name="failed_to_save_chat">Error al guardar el chat. Por favor, inténtalo de nuevo.</string>
+    <string name="failed_to_delete_report">Error al eliminar el informe. Por favor, inténtalo de nuevo</string>
+    <string name="delete_report">Eliminar informe</string>
 
 </resources>
