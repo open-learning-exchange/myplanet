@@ -8,6 +8,7 @@ interface LibraryRepository {
     suspend fun getOfflineLibraryItemsAsync(): List<RealmMyLibrary>
     suspend fun getLibraryListForUserAsync(userId: String?): List<RealmMyLibrary>
     suspend fun getAllLibraryListAsync(): List<RealmMyLibrary>
+    suspend fun getCourseLibraryItems(courseIds: List<String>): List<RealmMyLibrary>
     suspend fun saveLibraryItem(item: RealmMyLibrary)
     suspend fun deleteLibraryItem(id: String)
     suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit)

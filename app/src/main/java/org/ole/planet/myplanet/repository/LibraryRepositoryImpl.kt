@@ -49,6 +49,16 @@ class LibraryRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getCourseLibraryItems(courseIds: List<String>): List<RealmMyLibrary> {
+        return databaseService.withRealmAsync { realm ->
+            realm.where(RealmMyLibrary::class.java)
+                .`in`("courseId", courseIds.toTypedArray())
+                .equalTo("resourceOffline", false)
+                .isNotNull("resourceLocalAddress")
+                .findAll()
+        }
+    }
+
     override suspend fun saveLibraryItem(item: RealmMyLibrary) {
         databaseService.executeTransactionAsync { realm ->
             realm.copyToRealmOrUpdate(item)
