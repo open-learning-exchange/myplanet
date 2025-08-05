@@ -36,26 +36,26 @@ object NetworkModule {
             .create()
     }
 
+    private fun buildOkHttpClient(connect: Long, read: Long, write: Long): OkHttpClient {
+        return OkHttpClient.Builder()
+            .connectTimeout(connect, TimeUnit.SECONDS)
+            .readTimeout(read, TimeUnit.SECONDS)
+            .writeTimeout(write, TimeUnit.SECONDS)
+            .build()
+    }
+
     @Provides
     @Singleton
     @StandardHttpClient
     fun provideStandardOkHttpClient(): OkHttpClient {
-        return OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS)
-            .writeTimeout(10, TimeUnit.SECONDS)
-            .build()
+        return buildOkHttpClient(10, 10, 10)
     }
 
     @Provides
     @Singleton
     @EnhancedHttpClient
     fun provideEnhancedOkHttpClient(): OkHttpClient {
-        return OkHttpClient.Builder()
-            .connectTimeout(60, TimeUnit.SECONDS)
-            .readTimeout(120, TimeUnit.SECONDS)
-            .writeTimeout(60, TimeUnit.SECONDS)
-            .build()
+        return buildOkHttpClient(60, 120, 60)
     }
 
     @Provides
