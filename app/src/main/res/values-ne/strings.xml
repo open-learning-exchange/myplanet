@@ -1373,6 +1373,7 @@
     <string name="is_available">%1$s उपलब्ध छ। सिकाइ जारी राख्न ट्याप गर्नुहोस्।</string>
     <string name="failed_to_add_please_retry">थप गर्न असफल भयो। कृपया फेरि प्रयास गर्नुहोस्</string>
     <string name="failed_to_mark_as_read">पढिएको रूपमा चिन्ह लगाउन असफल भयो। कृपया फेरि प्रयास गर्नुहोस्</string>
+    <string name="failed_to_remove_resource">स्रोत हटाउन असफल भयो। कृपया फेरि प्रयास गर्नुहोस्</string>
     <string name="failed_to_adopt_survey">सर्वेक्षण अपनाउन असफल भयो। कृपया फेरि प्रयास गर्नुहोस्</string>
 
 </resources>
