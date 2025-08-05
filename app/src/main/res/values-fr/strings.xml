@@ -1372,5 +1372,6 @@
     <string name="nation_board">tableau national</string>
     <string name="is_available">%1$s est disponible. Appuyez pour continuer à apprendre</string>
     <string name="failed_to_add_please_retry">Échec de l\'ajout. Veuillez réessayer</string>
+    <string name="failed_to_mark_as_read">Échec du marquage comme lu. Veuillez réessayer</string>
 
 </resources>

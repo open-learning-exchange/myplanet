@@ -1372,5 +1372,6 @@
     <string name="nation_board">tablero nacional</string>
     <string name="is_available">%1$s está disponible. Toca para continuar aprendiendo</string>
     <string name="failed_to_add_please_retry">Error al agregar. Por favor, inténtalo de nuevo</string>
+    <string name="failed_to_mark_as_read">No se pudo marcar como leído. Por favor, inténtalo de nuevo</string>
 
 </resources>
