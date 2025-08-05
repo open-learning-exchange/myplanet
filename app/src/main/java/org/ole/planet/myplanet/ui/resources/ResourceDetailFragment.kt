@@ -46,15 +46,18 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onDownloadComplete() {
         super.onDownloadComplete()
         fragmentScope.launch {
+            val userId = withContext(Dispatchers.Main) {
+                profileDbHandler.userModel?.id
+            }
             withContext(Dispatchers.IO) {
                 try {
                     MainApplication.service.withRealm { backgroundRealm ->
                         val backgroundLibrary = backgroundRealm.where(RealmMyLibrary::class.java)
                             .equalTo("resourceId", libraryId).findFirst()
-                        if (backgroundLibrary != null && !backgroundLibrary.userId?.contains(profileDbHandler.userModel?.id)!!) {
+                        if (backgroundLibrary != null && !backgroundLibrary.userId?.contains(userId)!!) {
                             if (!backgroundRealm.isInTransaction) backgroundRealm.beginTransaction()
-                            backgroundLibrary.setUserId(profileDbHandler.userModel?.id)
-                            onAdd(backgroundRealm, "resources", profileDbHandler.userModel?.id, libraryId)
+                            backgroundLibrary.setUserId(userId)
+                            onAdd(backgroundRealm, "resources", userId, libraryId)
                             backgroundRealm.commitTransaction()
                         }
                     }
@@ -101,7 +104,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             setTextViewVisibility(tvType, llType, library.resourceType)
         }
         fragmentScope.launch {
-            withContext(Dispatchers.IO) {
+            withContext(Dispatchers.Main) {
                 try {
                     profileDbHandler.setResourceOpenCount(library)
                 } catch (ex: Exception) {
