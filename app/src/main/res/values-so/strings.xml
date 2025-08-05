@@ -1368,5 +1368,8 @@
     <string name="syncing_achievements">Waxaa la daabacayaa guulaha…</string>
     <string name="nation_leaders">hoggaamiyeyaasha qaranka</string>
     <string name="filter_by_label">shaandhee calaamadda</string>
+    <string name="community_board">guddiga bulshada</string>
+    <string name="nation_board">guddiga qaranka</string>
+    <string name="is_available">%1$s waa la heli karaa. Taabo si aad u sii wadato barashada</string>
 
 </resources>
