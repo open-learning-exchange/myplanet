@@ -1371,5 +1371,9 @@
     <string name="community_board">tableau communautaire</string>
     <string name="nation_board">tableau national</string>
     <string name="is_available">%1$s est disponible. Appuyez pour continuer à apprendre</string>
+    <string name="failed_to_add_please_retry">Échec de l\'ajout. Veuillez réessayer</string>
+    <string name="failed_to_mark_as_read">Échec du marquage comme lu. Veuillez réessayer</string>
+    <string name="failed_to_remove_resource">Échec de la suppression de la ressource. Veuillez réessayer</string>
+    <string name="failed_to_adopt_survey">Échec de l\'adoption du sondage. Veuillez réessayer</string>
 
 </resources>

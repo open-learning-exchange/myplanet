@@ -11,6 +11,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.Sort
@@ -195,25 +196,37 @@ class NotificationsFragment : Fragment() {
 
     private fun markAsRead(position: Int) {
         val notification = adapter.notificationList[position]
-        mRealm.executeTransaction {
-            notification.isRead = true
-        }
-        adapter.notifyItemChanged(position)
-        updateUnreadCount()
-        updateMarkAllAsReadButtonVisibility()
+        val notificationId = notification.id
+        mRealm.executeTransactionAsync({ realm ->
+            val realmNotification = realm.where(RealmNotification::class.java)
+                .equalTo("id", notificationId)
+                .findFirst()
+            realmNotification?.isRead = true
+        }, {
+            activity?.runOnUiThread {
+                adapter.notifyItemChanged(position)
+                updateUnreadCount()
+                updateMarkAllAsReadButtonVisibility()
+            }
+        }, {})
     }
 
     private fun markAllAsRead() {
-        mRealm.executeTransaction { realm ->
+        mRealm.executeTransactionAsync({ realm ->
             realm.where(RealmNotification::class.java)
                 .equalTo("userId", userId)
                 .equalTo("isRead", false)
                 .findAll()
                 .forEach { it.isRead = true }
-        }
-        adapter.updateNotifications(loadNotifications(userId, fragmentNotificationsBinding.status.selectedItem.toString().lowercase()))
-        updateMarkAllAsReadButtonVisibility()
-        updateUnreadCount()
+        }, {
+            activity?.runOnUiThread {
+                adapter.updateNotifications(loadNotifications(userId, fragmentNotificationsBinding.status.selectedItem.toString().lowercase()))
+                updateMarkAllAsReadButtonVisibility()
+                updateUnreadCount()
+            }
+        }, {
+            Snackbar.make(fragmentNotificationsBinding.root, getString(R.string.failed_to_mark_as_read), Snackbar.LENGTH_LONG).show()
+        })
     }
 
     private fun updateMarkAllAsReadButtonVisibility() {

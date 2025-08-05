@@ -10,8 +10,14 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.CourseRepositoryImpl
+import org.ole.planet.myplanet.repository.CourseProgressRepository
+import org.ole.planet.myplanet.repository.CourseProgressRepositoryImpl
 import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.LibraryRepositoryImpl
+import org.ole.planet.myplanet.repository.RatingRepository
+import org.ole.planet.myplanet.repository.RatingRepositoryImpl
+import org.ole.planet.myplanet.repository.SearchRepository
+import org.ole.planet.myplanet.repository.SearchRepositoryImpl
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.SubmissionRepositoryImpl
 import org.ole.planet.myplanet.repository.UserRepository
@@ -44,6 +50,30 @@ object RepositoryModule {
         databaseService: DatabaseService
     ): CourseRepository {
         return CourseRepositoryImpl(databaseService)
+    }
+
+    @Provides
+    @Singleton
+    fun provideCourseProgressRepository(
+        databaseService: DatabaseService
+    ): CourseProgressRepository {
+        return CourseProgressRepositoryImpl(databaseService)
+    }
+
+    @Provides
+    @Singleton
+    fun provideRatingRepository(
+        databaseService: DatabaseService
+    ): RatingRepository {
+        return RatingRepositoryImpl(databaseService)
+    }
+
+    @Provides
+    @Singleton
+    fun provideSearchRepository(
+        databaseService: DatabaseService
+    ): SearchRepository {
+        return SearchRepositoryImpl(databaseService)
     }
 
     @Provides
