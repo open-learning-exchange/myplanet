@@ -105,17 +105,32 @@ class PlanFragment : BaseTeamFragment() {
         }
 
         val userId = UserProfileDbHandler(activity).userModel?._id
-        realm.executeTransaction {
-            team.name = name
-            team.services = binding.etServices.text.toString()
-            team.rules = binding.etRules.text.toString()
-            team.description = binding.etDescription.text.toString()
-            team.createdBy = userId
-            team.updated = true
-        }
-        updateUIWithTeamData(team)
-        Utilities.toast(activity, context.getString(R.string.added_successfully))
-        dialog.dismiss()
+        val teamId = team._id
+        val servicesToSave = binding.etServices.text.toString()
+        val rulesToSave = binding.etRules.text.toString()
+        val descriptionToSave = binding.etDescription.text.toString()
+        
+        realm.executeTransactionAsync({ r ->
+            val realmTeam = r.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+            realmTeam?.let {
+                it.name = name
+                it.services = servicesToSave
+                it.rules = rulesToSave
+                it.description = descriptionToSave
+                it.createdBy = userId
+                it.updated = true
+            }
+        }, {
+            activity.runOnUiThread {
+                updateUIWithTeamData(team)
+                Utilities.toast(activity, context.getString(R.string.added_successfully))
+                dialog.dismiss()
+            }
+        }, {
+            activity.runOnUiThread {
+                Utilities.toast(activity, context.getString(R.string.failed_to_add_please_retry))
+            }
+        })
     }
 
     private fun updateUIWithTeamData(updatedTeam: RealmMyTeam?) {
