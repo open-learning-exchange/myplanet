@@ -47,14 +47,10 @@ open class RealmMyCourse : RealmObject() {
             this.userId = RealmList()
         }
         if (!this.userId?.contains(userId)!! && !TextUtils.isEmpty(userId)) {
-            Log.d("RealmMyCourse", "User $userId joining course: ${this.courseTitle} (ID: ${this.courseId})")
             this.userId?.add(userId)
-            Log.d("RealmMyCourse", "Course joined successfully. Total users in course: ${this.userId?.size}")
             
             // Track local course joining action
-            RealmMyCourse.trackLocalCourseChange(userId, this.courseId, "joined")
-        } else {
-            Log.w("RealmMyCourse", "User $userId already enrolled in course ${this.courseTitle} or userId is empty")
+            trackLocalCourseChange(userId, this.courseId, "joined")
         }
     }
 
@@ -63,27 +59,18 @@ open class RealmMyCourse : RealmObject() {
             this.userId = RealmList()
         }
         if (!this.userId?.contains(userId)!! && !TextUtils.isEmpty(userId)) {
-            Log.d("RealmMyCourse", "User $userId joining course: ${this.courseTitle} (ID: ${this.courseId})")
             this.userId?.add(userId)
-            Log.d("RealmMyCourse", "Course joined successfully. Total users in course: ${this.userId?.size}")
-            
             // Don't track this action as it's from server sync, not a local user action
-        } else {
-            Log.w("RealmMyCourse", "User $userId already enrolled in course ${this.courseTitle} or userId is empty")
         }
     }
 
     fun removeUserId(userId: String?) {
         val wasEnrolled = this.userId?.contains(userId) == true
         if (wasEnrolled) {
-            Log.d("RealmMyCourse", "User $userId leaving course: ${this.courseTitle} (ID: ${this.courseId})")
             this.userId?.remove(userId)
-            Log.d("RealmMyCourse", "Course left successfully. Remaining users in course: ${this.userId?.size}")
             
             // Track local course leaving action
-            RealmMyCourse.trackLocalCourseChange(userId, this.courseId, "left")
-        } else {
-            Log.w("RealmMyCourse", "User $userId was not enrolled in course ${this.courseTitle}")
+            trackLocalCourseChange(userId, this.courseId, "left")
         }
     }
 
@@ -107,24 +94,16 @@ open class RealmMyCourse : RealmObject() {
         fun insertMyCourses(userId: String?, myCoursesDoc: JsonObject?, mRealm: Realm) {
             context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val id = JsonUtils.getString("_id", myCoursesDoc)
-            val courseTitle = JsonUtils.getString("courseTitle", myCoursesDoc)
-            Log.d("RealmMyCourse", "insertMyCourses - Syncing course from server: $courseTitle (ID: $id) for user: $userId")
-            
             var myMyCoursesDB = mRealm.where(RealmMyCourse::class.java).equalTo("id", id).findFirst()
             val isNewCourse = myMyCoursesDB == null
             
             if (isNewCourse) {
-                Log.d("RealmMyCourse", "Creating new course record: $courseTitle")
                 myMyCoursesDB = mRealm.createObject(RealmMyCourse::class.java, id)
-            } else {
-                Log.d("RealmMyCourse", "Updating existing course record: $courseTitle")
             }
             
             // Only enroll user if they haven't locally left the course
             if (!isUserLocallyLeftCourse(userId, id)) {
                 myMyCoursesDB?.setUserIdDuringSync(userId)
-            } else {
-                Log.d("RealmMyCourse", "User $userId locally left course $courseTitle - skipping enrollment during sync")
             }
             myMyCoursesDB?.courseId = JsonUtils.getString("_id", myCoursesDoc)
             myMyCoursesDB?.courseRev = JsonUtils.getString("_rev", myCoursesDoc)
@@ -170,7 +149,6 @@ open class RealmMyCourse : RealmObject() {
             myMyCoursesDB?.courseSteps = RealmList()
             myMyCoursesDB?.courseSteps?.addAll(courseStepsList)
             
-            Log.d("RealmMyCourse", "insertMyCourses completed - Course: $courseTitle with ${courseStepsList.size} steps, enrolled users: ${myMyCoursesDB?.userId?.size}")
         }
 
         @JvmStatic
@@ -298,13 +276,11 @@ open class RealmMyCourse : RealmObject() {
 
         @JvmStatic
         fun createMyCourse(course: RealmMyCourse?, mRealm: Realm, id: String?) {
-            Log.d("RealmMyCourse", "createMyCourse called for user: $id, course: ${course?.courseTitle}")
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
             course?.setUserId(id)
             mRealm.commitTransaction()
-            Log.d("RealmMyCourse", "createMyCourse transaction completed for course: ${course?.courseId}")
         }
 
         @JvmStatic
@@ -348,15 +324,6 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        fun clearLocalCourseChanges() {
-            val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            settings.edit {
-                putString("local_course_changes", "[]")
-            }
-            Log.d("RealmMyCourse", "Cleared local course changes")
-        }
-
-        @JvmStatic
         fun isUserLocallyLeftCourse(userId: String?, courseId: String?): Boolean {
             if (userId.isNullOrEmpty() || courseId.isNullOrEmpty()) return false
             
@@ -370,21 +337,6 @@ open class RealmMyCourse : RealmObject() {
                 }
             }
             return false
-        }
-
-        @JvmStatic
-        fun logLocalCourseChanges() {
-            val changes = getLocalCourseChanges()
-            Log.d("RealmMyCourse", "=== Local Course Changes (${changes.size()} total) ===")
-            for (i in 0 until changes.size()) {
-                val change = changes[i].asJsonObject
-                val userId = change.get("userId").asString
-                val courseId = change.get("courseId").asString
-                val action = change.get("action").asString
-                val timestamp = change.get("timestamp").asLong
-                Log.d("RealmMyCourse", "[$i] User: $userId, Course: $courseId, Action: $action, Time: $timestamp")
-            }
-            Log.d("RealmMyCourse", "=== End Local Course Changes ===")
         }
     }
 }

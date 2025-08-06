@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Looper
 import android.text.TextUtils
-import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -86,7 +85,6 @@ class UploadManager @Inject constructor(
     }
 
     private fun uploadNewsActivities() {
-        Log.d("UploadManager", "Starting news activities upload")
         val apiInterface = client?.create(ApiInterface::class.java)
         val realm = getRealm()
         realm.executeTransactionAsync { realm: Realm ->
@@ -96,18 +94,13 @@ class UploadManager @Inject constructor(
 
             newsLog.processInBatches { news ->
                     try {
-                        Log.d("UploadManager", "Uploading news activity: ${news.id}")
                         val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/myplanet_activities", RealmNewsLog.serialize(news))?.execute()?.body()
 
                         if (`object` != null) {
                             news._id = getString("id", `object`)
                             news._rev = getString("rev", `object`)
-                            Log.d("UploadManager", "News activity uploaded successfully: ${news._id}")
-                        } else {
-                            Log.w("UploadManager", "Failed to upload news activity: ${news.id} - No response")
                         }
                     } catch (e: IOException) {
-                        Log.e("UploadManager", "Error uploading news activity: ${news.id}", e)
                         e.printStackTrace()
                     }
             }
@@ -116,35 +109,26 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadActivities(listener: SuccessListener?) {
-        Log.d("UploadManager", "Starting activities upload")
         val apiInterface = client?.create(ApiInterface::class.java)
         val model = UserProfileDbHandler(MainApplication.context).userModel ?: run {
-            Log.w("UploadManager", "Cannot upload activities: user model is null")
             listener?.onSuccess("Cannot upload activities: user model is null")
             return
         }
 
         if (model.isManager()) {
-            Log.d("UploadManager", "Skipping activities upload for manager")
             listener?.onSuccess("Skipping activities upload for manager")
             return
         }
 
         try {
-            Log.d("UploadManager", "Posting normal MyPlanet activities")
             apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/myplanet_activities", MyPlanet.getNormalMyPlanetActivities(MainApplication.context, pref, model))?.enqueue(object : Callback<JsonObject?> {
-                override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                    Log.d("UploadManager", "Normal MyPlanet activities posted successfully")
-                }
+                override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {}
 
-                override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                    Log.e("UploadManager", "Failed to post normal MyPlanet activities", t)
-                }
+                override fun onFailure(call: Call<JsonObject?>, t: Throwable) {}
             })
 
             apiInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/myplanet_activities/${getAndroidId(MainApplication.context)}@${NetworkUtils.getUniqueIdentifier()}")?.enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                    Log.d("UploadManager", "Retrieved existing MyPlanet activities")
                     var `object` = response.body()
 
                     if (`object` != null) {
@@ -155,45 +139,37 @@ class UploadManager @Inject constructor(
                         `object` = MyPlanet.getMyPlanetActivities(context, pref, model)
                     }
 
-                    Log.d("UploadManager", "Uploading merged MyPlanet activities")
                     apiInterface.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/myplanet_activities", `object`).enqueue(object : Callback<JsonObject?> {
                         override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                            Log.d("UploadManager", "MyPlanet activities uploaded successfully")
                             listener?.onSuccess("My planet activities uploaded successfully")
                         }
 
                         override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                            Log.e("UploadManager", "Failed to upload activities", t)
                             listener?.onSuccess("Failed to upload activities: ${t.message}")
                         }
                     })
                 }
 
                 override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                    Log.w("UploadManager", "Failed to retrieve existing activities, uploading new ones", t)
                     val `object` = MyPlanet.getMyPlanetActivities(context, pref, model)
                     apiInterface.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/myplanet_activities", `object`).enqueue(object : Callback<JsonObject?> {
                         override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                            Log.d("UploadManager", "MyPlanet activities uploaded successfully (fallback)")
                             listener?.onSuccess("My planet activities uploaded successfully")
                         }
 
                         override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                            Log.e("UploadManager", "Failed to upload activities (fallback)", t)
                             listener?.onSuccess("Failed to upload activities: ${t.message}")
                         }
                     })
                 }
             })
         } catch (e: Exception) {
-            Log.e("UploadManager", "Exception during activities upload", e)
             e.printStackTrace()
             listener?.onSuccess("Failed to upload activities: ${e.message}")
         }
     }
 
     fun uploadExamResult(listener: SuccessListener) {
-        Log.d("UploadManager", "Starting exam result upload")
         val realm = getRealm()
         val apiInterface = client?.create(ApiInterface::class.java)
 
@@ -203,21 +179,16 @@ class UploadManager @Inject constructor(
             submissions.processInBatches { sub ->
                     try {
                         if ((sub.answers?.size ?: 0) > 0) {
-                            Log.d("UploadManager", "Uploading exam result: ${sub.id}")
                             RealmSubmission.continueResultUpload(sub, apiInterface, realm, context)
-                            Log.d("UploadManager", "Exam result uploaded: ${sub.id}")
                         }
                     } catch (e: Exception) {
-                        Log.e("UploadManager", "Error uploading exam result: ${sub.id}", e)
                         e.printStackTrace()
                     }
             }
         }, {
-            Log.d("UploadManager", "Exam result upload completed, starting course progress upload")
             uploadCourseProgress()
             listener.onSuccess("Result sync completed successfully")
         }) { e: Throwable ->
-            Log.e("UploadManager", "Error during exam result sync", e)
             e.printStackTrace()
             listener.onSuccess("Error during result sync: ${e.message}")
         }
@@ -242,19 +213,15 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadAchievement() {
-        Log.d("UploadManager", "Starting achievement upload")
         val realm = getRealm()
         realm.executeTransactionAsync { realm: Realm ->
             val list: List<RealmAchievement> = realm.where(RealmAchievement::class.java).findAll()
             list.processInBatches { sub ->
                 try {
                     if (sub._id?.startsWith("guest") == true) {
-                        Log.d("UploadManager", "Skipping guest achievement: ${sub._id}")
                         return@processInBatches
                     }
-                    Log.d("UploadManager", "Processing achievement: ${sub._id}")
                 } catch (e: IOException) {
-                    Log.e("UploadManager", "Error processing achievement: ${sub._id}", e)
                     e.printStackTrace()
                 }
             }
@@ -263,7 +230,6 @@ class UploadManager @Inject constructor(
     }
 
     private fun uploadCourseProgress() {
-        Log.d("UploadManager", "Starting course progress upload")
         val apiInterface = client?.create(ApiInterface::class.java)
         val realm = getRealm()
         realm.executeTransactionAsync { realm: Realm ->
@@ -275,52 +241,42 @@ class UploadManager @Inject constructor(
             data.processInBatches { sub ->
                     try {
                         if (sub.userId?.startsWith("guest") == true) {
-                            Log.d("UploadManager", "Skipping guest course progress: ${sub.userId}")
                             skipCount++
                             return@processInBatches
                         }
 
-                        Log.d("UploadManager", "Uploading course progress: ${sub.courseId} for user ${sub.userId}")
                         val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/courses_progress", RealmCourseProgress.serializeProgress(sub))?.execute()?.body()
                         if (`object` != null) {
                             sub._id = getString("id", `object`)
                             sub._rev = getString("rev", `object`)
-                            Log.d("UploadManager", "Course progress uploaded: ${sub._id}")
                             successCount++
                         } else {
-                            Log.w("UploadManager", "Failed to upload course progress: ${sub.courseId} - No response")
                             errorCount++
                         }
                     } catch (e: IOException) {
-                        Log.e("UploadManager", "Error uploading course progress: ${sub.courseId}", e)
                         errorCount++
                         e.printStackTrace()
                     }
             }
-            Log.d("UploadManager", "Course progress upload completed - Success: $successCount, Skip: $skipCount, Error: $errorCount")
 
         }
     }
 
     fun uploadFeedback(listener: SuccessListener) {
-        Log.d("UploadManager", "Starting feedback upload")
         val apiInterface = client?.create(ApiInterface::class.java)
         val realm = getRealm()
         realm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
             val feedbacks: List<RealmFeedback> = realm.where(RealmFeedback::class.java).findAll()
 
             if (feedbacks.isEmpty()) {
-                Log.d("UploadManager", "No feedbacks to upload")
                 return@Transaction
             }
-            Log.d("UploadManager", "Found ${feedbacks.size} feedbacks to upload")
 
             var successCount = 0
             var errorCount = 0
 
             feedbacks.processInBatches { feedback ->
                 try {
-                    Log.d("UploadManager", "Uploading feedback: ${feedback.id}")
                     val res: Response<JsonObject>? = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/feedback", RealmFeedback.serializeFeedback(feedback))?.execute()
 
                     val r = res?.body()
@@ -330,42 +286,33 @@ class UploadManager @Inject constructor(
                         if (revElement != null && idElement != null) {
                             feedback._rev = revElement.asString
                             feedback._id = idElement.asString
-                            Log.d("UploadManager", "Feedback uploaded: ${feedback._id}")
                             successCount++
                         } else {
-                            Log.w("UploadManager", "Invalid response for feedback: ${feedback.id}")
                             errorCount++
                         }
                     } else {
-                        Log.w("UploadManager", "No response for feedback: ${feedback.id}")
                         errorCount++
                     }
                 } catch (e: IOException) {
-                    Log.e("UploadManager", "Error uploading feedback: ${feedback.id}", e)
                     errorCount++
                     e.printStackTrace()
                 }
             }
-            Log.d("UploadManager", "Feedback upload completed - Success: $successCount, Error: $errorCount")
         }, {
-            Log.d("UploadManager", "Feedback sync completed successfully")
             listener.onSuccess("Feedback sync completed successfully")
         }, { error ->
-            Log.e("UploadManager", "Feedback sync failed", error)
             listener.onSuccess("Feedback sync failed: ${error.message}")
             error.printStackTrace()
         })
     }
 
     fun uploadSubmitPhotos(listener: SuccessListener?) {
-        Log.d("UploadManager", "Starting submit photos upload")
         val realm = getRealm()
         val apiInterface = client?.create(ApiInterface::class.java)
         realm.executeTransactionAsync { realm: Realm ->
             val data: List<RealmSubmitPhotos> = realm.where(RealmSubmitPhotos::class.java).equalTo("uploaded", false).findAll()
             data.processInBatches { sub ->
                     try {
-                        Log.d("UploadManager", "Uploading submit photo: ${sub.id}")
                         val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/submissions", RealmSubmitPhotos.serializeRealmSubmitPhotos(sub))?.execute()?.body()
                         if (`object` != null) {
                             val rev = getString("rev", `object`)
@@ -373,27 +320,19 @@ class UploadManager @Inject constructor(
                             sub.uploaded = true
                             sub._rev = rev
                             sub._id = id
-                            Log.d("UploadManager", "Submit photo uploaded: $id, uploading attachment")
                             uploadAttachment(id, rev, sub, listener!!)
-                        } else {
-                            Log.w("UploadManager", "Failed to upload submit photo: ${sub.id} - No response")
                         }
                     } catch (e: Exception) {
-                        Log.e("UploadManager", "Error uploading submit photo: ${sub.id}", e)
                         e.printStackTrace()
                     }
             }
             if (data.isEmpty()) {
-                Log.d("UploadManager", "No photos to upload")
                 listener?.onSuccess("No photos to upload")
-            } else {
-                Log.d("UploadManager", "Found ${data.size} photos to upload")
             }
         }
     }
 
     fun uploadResource(listener: SuccessListener?) {
-        Log.d("UploadManager", "Starting resource upload")
         val realm = getRealm()
         val apiInterface = client?.create(ApiInterface::class.java)
 
@@ -407,14 +346,11 @@ class UploadManager @Inject constructor(
                 .findAll()
 
             if (data.isEmpty()) {
-                Log.d("UploadManager", "No resources to upload")
                 return@executeTransactionAsync
             }
-            Log.d("UploadManager", "Found ${data.size} resources to upload")
 
             data.processInBatches { sub ->
                 try {
-                    Log.d("UploadManager", "Uploading resource: ${sub.id}")
                     val `object` = apiInterface?.postDoc(
                         Utilities.header,
                         "application/json",
@@ -427,32 +363,24 @@ class UploadManager @Inject constructor(
                         val id = getString("id", `object`)
                         sub._rev = rev
                         sub._id = id
-                        Log.d("UploadManager", "Resource uploaded: $id, uploading attachment")
                         uploadAttachment(id, rev, sub, listener!!)
-                    } else {
-                        Log.w("UploadManager", "Failed to upload resource: ${sub.id} - No response")
                     }
                 } catch (e: Exception) {
-                    Log.e("UploadManager", "Error uploading resource: ${sub.id}", e)
                     e.printStackTrace()
                 }
             }
         }, {
-            Log.d("UploadManager", "Resource upload transaction completed")
             listener?.onSuccess("No resources to upload")
         }) { error ->
-            Log.e("UploadManager", "Resource upload failed", error)
             listener?.onSuccess("Resource upload failed: ${error.message}")
         }
     }
 
     fun uploadMyPersonal(personal: RealmMyPersonal, listener: SuccessListener) {
-        Log.d("UploadManager", "Starting personal resource upload: ${personal.id}")
         val realm = getRealm()
         val apiInterface = client?.create(ApiInterface::class.java)
 
         if (!personal.isUploaded) {
-            Log.d("UploadManager", "Uploading personal resource data")
             apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/resources", RealmMyPersonal.serialize(personal, context))?.enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                     val `object` = response.body()
@@ -467,34 +395,29 @@ class UploadManager @Inject constructor(
                             personal._rev = rev
                             personal._id = id
                             realm.commitTransaction()
-                            Log.d("UploadManager", "Personal resource uploaded: $id, uploading attachment")
+
                             uploadAttachment(id, rev, personal, listener)
                         } catch (e: Exception) {
-                            Log.e("UploadManager", "Error updating personal resource", e)
                             if (realm.isInTransaction) {
                                 realm.cancelTransaction()
                             }
                             listener.onSuccess("Error updating personal resource: ${e.message}")
                         }
                     } else {
-                        Log.w("UploadManager", "Failed to upload personal resource: No response")
                         listener.onSuccess("Failed to upload personal resource: No response")
                     }
                 }
 
                 override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                    Log.e("UploadManager", "Failed to upload personal resource", t)
                     listener.onSuccess("Unable to upload resource: ${t.message}")
                 }
             })
         } else {
-            Log.d("UploadManager", "Personal resource already uploaded: ${personal.id}")
             listener.onSuccess("Resource already uploaded")
         }
     }
 
     fun uploadTeamTask() {
-        Log.d("UploadManager", "Starting team task upload")
         val realm = getRealm()
         val apiInterface = client?.create(ApiInterface::class.java)
         realm.executeTransactionAsync { realm: Realm ->
@@ -503,10 +426,8 @@ class UploadManager @Inject constructor(
                 TextUtils.isEmpty(task._id) || task.isUpdated
             }
 
-            Log.d("UploadManager", "Found ${tasksToUpload.size} team tasks to upload")
             tasksToUpload.processInBatches { task ->
                     try {
-                        Log.d("UploadManager", "Uploading team task: ${task._id ?: "new"}")
                         val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/tasks", RealmTeamTask.serialize(realm, task))?.execute()?.body()
 
                         if (`object` != null) {
@@ -514,12 +435,8 @@ class UploadManager @Inject constructor(
                             val id = getString("id", `object`)
                             task._rev = rev
                             task._id = id
-                            Log.d("UploadManager", "Team task uploaded: $id")
-                        } else {
-                            Log.w("UploadManager", "Failed to upload team task - No response")
                         }
                     } catch (e: IOException) {
-                        Log.e("UploadManager", "Error uploading team task: ${task._id}", e)
                         e.printStackTrace()
                     }
             }
@@ -527,7 +444,6 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadSubmissions() {
-        Log.d("UploadManager", "Starting submissions upload")
         val realm = getRealm()
         val apiInterface = client?.create(ApiInterface::class.java)
 
@@ -535,10 +451,8 @@ class UploadManager @Inject constructor(
             val list: List<RealmSubmission> = realm.where(RealmSubmission::class.java)
                 .equalTo("isUpdated", true).or().isEmpty("_id").findAll()
 
-            Log.d("UploadManager", "Found ${list.size} submissions to upload")
             list.processInBatches { submission ->
                     try {
-                        Log.d("UploadManager", "Uploading submission: ${submission._id ?: "new"}")
                         val requestJson = RealmSubmission.serialize(realm, submission)
                         val response = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/submissions", requestJson)?.execute()
 
@@ -549,12 +463,8 @@ class UploadManager @Inject constructor(
                             submission._rev = rev
                             submission._id = id
                             submission.isUpdated = false
-                            Log.d("UploadManager", "Submission uploaded: $id")
-                        } else {
-                            Log.w("UploadManager", "Failed to upload submission - No response")
                         }
                     } catch (e: IOException) {
-                        Log.e("UploadManager", "Error uploading submission: ${submission._id}", e)
                         e.printStackTrace()
                     }
             }
@@ -562,26 +472,19 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadTeams() {
-        Log.d("UploadManager", "Starting teams upload")
         val apiInterface = client?.create(ApiInterface::class.java)
         val realm = getRealm()
 
         realm.executeTransactionAsync { realm: Realm ->
             val teams: List<RealmMyTeam> = realm.where(RealmMyTeam::class.java).equalTo("updated", true).findAll()
-            Log.d("UploadManager", "Found ${teams.size} teams to upload")
             teams.processInBatches { team ->
                     try {
-                        Log.d("UploadManager", "Uploading team: ${team._id}")
                         val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/teams", RealmMyTeam.serialize(team))?.execute()?.body()
                         if (`object` != null) {
                             team._rev = getString("rev", `object`)
                             team.updated = false
-                            Log.d("UploadManager", "Team uploaded: ${team._id}")
-                        } else {
-                            Log.w("UploadManager", "Failed to upload team: ${team._id} - No response")
                         }
                     } catch (e: IOException) {
-                        Log.e("UploadManager", "Error uploading team: ${team._id}", e)
                         e.printStackTrace()
                     }
             }
@@ -589,16 +492,13 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadUserActivities(listener: SuccessListener) {
-        Log.d("UploadManager", "Starting user activities upload")
         val apiInterface = client?.create(ApiInterface::class.java)
         val model = UserProfileDbHandler(MainApplication.context).userModel ?: run {
-            Log.w("UploadManager", "Cannot upload user activities: user model is null")
             listener.onSuccess("Cannot upload user activities: user model is null")
             return
         }
 
         if (model.isManager()) {
-            Log.d("UploadManager", "Skipping user activities upload for manager")
             listener.onSuccess("Skipping user activities upload for manager")
             return
         }
@@ -607,34 +507,23 @@ class UploadManager @Inject constructor(
         realm.executeTransactionAsync({ transactionRealm: Realm ->
             val activities = transactionRealm.where(RealmOfflineActivity::class.java).isNull("_rev").equalTo("type", "login").findAll()
 
-            Log.d("UploadManager", "Found ${activities.size} user activities to upload")
             activities.processInBatches { act ->
                 try {
                     if (act.userId?.startsWith("guest") == true) {
-                        Log.d("UploadManager", "Skipping guest user activity: ${act.userId}")
                         return@processInBatches
                     }
 
-                    Log.d("UploadManager", "Uploading user activity: ${act.id}")
                     val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/login_activities", RealmOfflineActivity.serializeLoginActivities(act, context))?.execute()?.body()
                     act.changeRev(`object`)
-                    if (`object` != null) {
-                        Log.d("UploadManager", "User activity uploaded: ${act.id}")
-                    } else {
-                        Log.w("UploadManager", "Failed to upload user activity: ${act.id} - No response")
-                    }
                 } catch (e: IOException) {
-                    Log.e("UploadManager", "Error uploading user activity: ${act.id}", e)
                     e.printStackTrace()
                 }
             }
             uploadTeamActivities(transactionRealm, apiInterface)
         }, {
-            Log.d("UploadManager", "User activities sync completed successfully")
             realm.close()
             listener.onSuccess("User activities sync completed successfully")
         }) { e: Throwable ->
-            Log.e("UploadManager", "User activities sync failed", e)
             realm.close()
             e.printStackTrace()
             listener.onSuccess(e.message)
@@ -642,47 +531,34 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadTeamActivities(realm: Realm, apiInterface: ApiInterface?) {
-        Log.d("UploadManager", "Starting team activities upload")
         val logs = realm.where(RealmTeamLog::class.java).isNull("_rev").findAll()
-        Log.d("UploadManager", "Found ${logs.size} team activities to upload")
         logs.processInBatches { log ->
                 try {
-                    Log.d("UploadManager", "Uploading team activity: ${log.id}")
                     val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/team_activities", RealmTeamLog.serializeTeamActivities(log, context))?.execute()?.body()
                     if (`object` != null) {
                         log._id = getString("id", `object`)
                         log._rev = getString("rev", `object`)
-                        Log.d("UploadManager", "Team activity uploaded: ${log._id}")
-                    } else {
-                        Log.w("UploadManager", "Failed to upload team activity: ${log.id} - No response")
                     }
                 } catch (e: IOException) {
-                    Log.e("UploadManager", "Error uploading team activity: ${log.id}", e)
                     e.printStackTrace()
                 }
         }
     }
 
     fun uploadRating() {
-        Log.d("UploadManager", "Starting rating upload")
         val realm = getRealm()
         val apiInterface = client?.create(ApiInterface::class.java)
 
         realm.executeTransactionAsync { realm: Realm ->
             val activities = realm.where(RealmRating::class.java).equalTo("isUpdated", true).findAll()
-            Log.d("UploadManager", "Found ${activities.size} ratings to upload")
             activities.processInBatches { act ->
                     try {
                         if (act.userId?.startsWith("guest") == true) {
-                            Log.d("UploadManager", "Skipping guest rating: ${act.userId}")
                             return@processInBatches
                         }
 
-                        val isNewRating = TextUtils.isEmpty(act._id)
-                        Log.d("UploadManager", "Uploading rating: ${act._id ?: "new"} for item ${act.item}")
-                        
                         val `object`: Response<JsonObject>? =
-                            if (isNewRating) {
+                            if (TextUtils.isEmpty(act._id)) {
                                 apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/ratings", RealmRating.serializeRating(act))?.execute()
                             } else {
                                 apiInterface?.putDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/ratings/" + act._id, RealmRating.serializeRating(act))?.execute()
@@ -691,12 +567,8 @@ class UploadManager @Inject constructor(
                             act._id = getString("id", `object`.body())
                             act._rev = getString("rev", `object`.body())
                             act.isUpdated = false
-                            Log.d("UploadManager", "Rating uploaded: ${act._id}")
-                        } else {
-                            Log.w("UploadManager", "Failed to upload rating for item ${act.item} - No response")
                         }
                     } catch (e: Exception) {
-                        Log.e("UploadManager", "Error uploading rating for item ${act.item}", e)
                         e.printStackTrace()
                     }
             }
@@ -704,20 +576,16 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadNews() {
-        Log.d("UploadManager", "Starting news upload")
         val realm = getRealm()
         val apiInterface = client?.create(ApiInterface::class.java)
 
         realm.executeTransactionAsync { realm: Realm ->
             val activities = realm.where(RealmNews::class.java).findAll()
-            Log.d("UploadManager", "Found ${activities.size} news items to upload")
             activities.processInBatches { act ->
                     try {
                         if (act.userId?.startsWith("guest") == true) {
-                            Log.d("UploadManager", "Skipping guest news: ${act.userId}")
                             return@processInBatches
                         }
-                        Log.d("UploadManager", "Uploading news: ${act._id ?: "new"}")
 
                         val `object` = RealmNews.serializeNews(act)
                         val image = act.imagesArray
@@ -774,12 +642,8 @@ class UploadManager @Inject constructor(
                             act.imageUrls?.clear()
                             act._id = getString("id", newsUploadResponse.body())
                             act._rev = getString("rev", newsUploadResponse.body())
-                            Log.d("UploadManager", "News uploaded: ${act._id}")
-                        } else {
-                            Log.w("UploadManager", "Failed to upload news - No response")
                         }
                     } catch (e: Exception) {
-                        Log.e("UploadManager", "Error uploading news: ${act._id}", e)
                         e.printStackTrace()
                     }
                 }
@@ -788,7 +652,6 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadCrashLog() {
-        Log.d("UploadManager", "Starting crash log upload")
         val realm = getRealm()
         val apiInterface = client?.create(ApiInterface::class.java)
 
@@ -805,52 +668,38 @@ class UploadManager @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            Log.e("UploadManager", "Error during crash log upload", e)
             e.printStackTrace()
         }
     }
 
     private fun uploadCrashLogData(realm: Realm, apiInterface: ApiInterface?) {
         val logs: RealmResults<RealmApkLog> = realm.where(RealmApkLog::class.java).isNull("_rev").findAll()
-        Log.d("UploadManager", "Found ${logs.size} crash logs to upload")
 
         logs.processInBatches { act ->
                 try {
-                    Log.d("UploadManager", "Uploading crash log: ${act.id}")
                     val o = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/apk_logs", RealmApkLog.serialize(act, context))?.execute()?.body()
 
                     if (o != null) {
                         act._rev = getString("rev", o)
-                        Log.d("UploadManager", "Crash log uploaded: ${act.id}")
-                    } else {
-                        Log.w("UploadManager", "Failed to upload crash log: ${act.id} - No response")
                     }
                 } catch (e: IOException) {
-                    Log.e("UploadManager", "Error uploading crash log: ${act.id}", e)
                     e.printStackTrace()
                 }
         }
     }
 
     fun uploadSearchActivity() {
-        Log.d("UploadManager", "Starting search activity upload")
         val realm = getRealm()
         val apiInterface = client?.create(ApiInterface::class.java)
         realm.executeTransactionAsync { realm: Realm ->
             val logs: RealmResults<RealmSearchActivity> = realm.where(RealmSearchActivity::class.java).isEmpty("_rev").findAll()
-            Log.d("UploadManager", "Found ${logs.size} search activities to upload")
             logs.processInBatches { act ->
                     try {
-                        Log.d("UploadManager", "Uploading search activity: ${act.id}")
                         val o = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/search_activities", act.serialize())?.execute()?.body()
                         if (o != null) {
                             act._rev = getString("rev", o)
-                            Log.d("UploadManager", "Search activity uploaded: ${act.id}")
-                        } else {
-                            Log.w("UploadManager", "Failed to upload search activity: ${act.id} - No response")
                         }
                     } catch (e: IOException) {
-                        Log.e("UploadManager", "Error uploading search activity: ${act.id}", e)
                         e.printStackTrace()
                     }
             }
@@ -859,7 +708,6 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadResourceActivities(type: String) {
-        Log.d("UploadManager", "Starting resource activities upload for type: $type")
         val realm = getRealm()
         val apiInterface = client?.create(ApiInterface::class.java)
 
@@ -876,21 +724,15 @@ class UploadManager @Inject constructor(
                 } else {
                     realm.where(RealmResourceActivity::class.java).isNull("_rev").notEqualTo("type", "sync").findAll()
                 }
-            Log.d("UploadManager", "Found ${activities.size} resource activities to upload for $type")
             activities.processInBatches { act ->
                     try {
-                        Log.d("UploadManager", "Uploading resource activity: ${act.id} (type: $type)")
                         val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/" + db, RealmResourceActivity.serializeResourceActivities(act))?.execute()?.body()
 
                         if (`object` != null) {
                             act._rev = getString("rev", `object`)
                             act._id = getString("id", `object`)
-                            Log.d("UploadManager", "Resource activity uploaded: ${act._id}")
-                        } else {
-                            Log.w("UploadManager", "Failed to upload resource activity: ${act.id} - No response")
                         }
                     } catch (e: IOException) {
-                        Log.e("UploadManager", "Error uploading resource activity: ${act.id}", e)
                         e.printStackTrace()
                     }
             }
@@ -898,27 +740,20 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadCourseActivities() {
-        Log.d("UploadManager", "Starting course activities upload")
         val realm = getRealm()
         val apiInterface = client?.create(ApiInterface::class.java)
 
         realm.executeTransactionAsync { realm: Realm ->
             val activities: RealmResults<RealmCourseActivity> = realm.where(RealmCourseActivity::class.java).isNull("_rev").notEqualTo("type", "sync").findAll()
-            Log.d("UploadManager", "Found ${activities.size} course activities to upload")
             activities.processInBatches { act ->
                     try {
-                        Log.d("UploadManager", "Uploading course activity: ${act.id}")
                         val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/course_activities", RealmCourseActivity.serializeSerialize(act))?.execute()?.body()
 
                         if (`object` != null) {
                             act._rev = getString("rev", `object`)
                             act._id = getString("id", `object`)
-                            Log.d("UploadManager", "Course activity uploaded: ${act._id}")
-                        } else {
-                            Log.w("UploadManager", "Failed to upload course activity: ${act.id} - No response")
                         }
                     } catch (e: IOException) {
-                        Log.e("UploadManager", "Error uploading course activity: ${act.id}", e)
                         e.printStackTrace()
                     }
             }
@@ -926,27 +761,20 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadMeetups() {
-        Log.d("UploadManager", "Starting meetups upload")
         val realm = getRealm()
         val apiInterface = client?.create(ApiInterface::class.java)
         realm.executeTransactionAsync { realm: Realm ->
             val meetups: List<RealmMeetup> = realm.where(RealmMeetup::class.java).findAll()
-            Log.d("UploadManager", "Found ${meetups.size} meetups to upload")
             meetups.processInBatches { meetup ->
                     try {
-                        Log.d("UploadManager", "Uploading meetup: ${meetup.meetupId ?: "new"}")
                         val meetupJson = RealmMeetup.serialize(meetup)
                         val `object` = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/meetups", meetupJson)?.execute()?.body()
 
                         if (`object` != null) {
                             meetup.meetupId = getString("id", `object`)
                             meetup.meetupIdRev = getString("rev", `object`)
-                            Log.d("UploadManager", "Meetup uploaded: ${meetup.meetupId}")
-                        } else {
-                            Log.w("UploadManager", "Failed to upload meetup - No response")
                         }
                     } catch (e: IOException) {
-                        Log.e("UploadManager", "Error uploading meetup: ${meetup.meetupId}", e)
                         e.printStackTrace()
                     }
             }

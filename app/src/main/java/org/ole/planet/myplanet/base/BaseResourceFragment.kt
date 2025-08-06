@@ -10,7 +10,6 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -338,39 +337,19 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun removeFromShelf(`object`: RealmObject) {
-        val userId = model?.id
-        Log.d("BaseResourceFragment", "removeFromShelf called for user: $userId")
-        
         if (`object` is RealmMyLibrary) {
-            Log.d("BaseResourceFragment", "Removing library resource: ${`object`.resourceId} for user: $userId")
             val myObject = mRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", `object`.resourceId).findFirst()
-            myObject?.removeUserId(userId)
+            myObject?.removeUserId(model?.id)
             model?.id?.let { `object`.resourceId?.let { it1 ->
                 onRemove(mRealm, "resources", it, it1)
             } }
-            Log.d("BaseResourceFragment", "Library resource removed successfully: ${`object`.resourceId}")
             Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
         } else {
-            val courseObject = `object` as RealmMyCourse
-            val courseTitle = courseObject.courseTitle
-            val courseId = courseObject.courseId
-            
-            Log.d("BaseResourceFragment", "Removing course from CoursesFragment: $courseTitle (ID: $courseId) for user: $userId")
-            val myObject = getMyCourse(mRealm, courseId)
-            
-            if (myObject != null) {
-                Log.d("BaseResourceFragment", "Found course object, calling removeUserId")
-                myObject.removeUserId(userId)
-                model?.id?.let { courseId?.let { it1 -> onRemove(mRealm, "courses", it, it1) } }
-                Log.d("BaseResourceFragment", "Course successfully removed from user's courses: $courseTitle")
-            } else {
-                Log.w("BaseResourceFragment", "Course object not found: $courseId")
-            }
-            
+            val myObject = getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
+            myObject?.removeUserId(model?.id)
+            model?.id?.let { `object`.courseId?.let { it1 -> onRemove(mRealm, "courses", it, it1) } }
             Utilities.toast(activity, getString(R.string.removed_from_mycourse))
         }
-        
-        Log.d("BaseResourceFragment", "removeFromShelf completed")
     }
 
     override fun onResume() {

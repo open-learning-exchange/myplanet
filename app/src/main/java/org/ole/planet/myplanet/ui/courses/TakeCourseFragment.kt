@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.content.DialogInterface
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -266,36 +265,19 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun addRemoveCourse() {
-        val courseTitle = currentCourse?.courseTitle
-        val courseId = currentCourse?.courseId
-        val userId = userModel?.id
-        val wasEnrolled = currentCourse?.userId?.contains(userId) == true
-        
-        Log.d("TakeCourseFragment", "addRemoveCourse called - User: $userId, Course: $courseTitle (ID: $courseId), Currently enrolled: $wasEnrolled")
-        
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        
-        if (wasEnrolled) {
-            Log.d("TakeCourseFragment", "Removing user $userId from course $courseTitle")
-            currentCourse?.removeUserId(userId)
-            onRemove(mRealm, "courses", userId, courseId)
-            Log.d("TakeCourseFragment", "User $userId successfully removed from course $courseTitle")
+        if (currentCourse?.userId?.contains(userModel?.id) == true) {
+            currentCourse?.removeUserId(userModel?.id)
+            onRemove(mRealm, "courses", userModel?.id, courseId)
         } else {
-            Log.d("TakeCourseFragment", "Adding user $userId to course $courseTitle")
-            currentCourse?.setUserId(userId)
-            onAdd(mRealm, "courses", userId, courseId)
-            Log.d("TakeCourseFragment", "User $userId successfully added to course $courseTitle")
+            currentCourse?.setUserId(userModel?.id)
+            onAdd(mRealm, "courses", userModel?.id, courseId)
         }
-        
-        val actionText = if (currentCourse?.userId?.contains(userId) == true) {
+        Utilities.toast(activity, "course ${(if (currentCourse?.userId?.contains(userModel?.id) == true) {
             getString(R.string.added_to)
         } else {
             getString(R.string.removed_from)
-        }
-        
-        Log.d("TakeCourseFragment", "Course action completed: User $userId $actionText course $courseTitle")
-        
-        Utilities.toast(activity, "course $actionText ${getString(R.string.my_courses)}")
+        })} ${getString(R.string.my_courses)}")
         setCourseData()
     }
 
