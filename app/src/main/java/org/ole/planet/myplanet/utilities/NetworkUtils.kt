@@ -10,7 +10,6 @@ import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
-import android.text.TextUtils
 import androidx.core.net.toUri
 import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
@@ -141,7 +140,7 @@ object NetworkUtils {
         if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) {
             val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager?
             val connectionInfo: WifiInfo? = wifiManager?.connectionInfo
-            if (connectionInfo != null && !TextUtils.isEmpty(connectionInfo.ssid)) {
+            if (!connectionInfo?.ssid.isNullOrEmpty()) {
                 ssid = connectionInfo.networkId
             }
         }

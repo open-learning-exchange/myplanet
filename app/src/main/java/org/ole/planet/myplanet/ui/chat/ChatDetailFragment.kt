@@ -18,6 +18,8 @@ import androidx.core.view.isNotEmpty
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
+import com.google.android.material.snackbar.Snackbar
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -477,12 +479,17 @@ class ChatDetailFragment : Fragment() {
     private fun saveNewChat(query: String, chatResponse: String, responseBody: ChatModel) {
         val jsonObject = buildChatHistoryObject(query, chatResponse, responseBody)
 
-        mRealm.executeTransaction { realm ->
+        mRealm.executeTransactionAsync({ realm ->
             RealmChatHistory.insert(realm, jsonObject)
-        }
-        if (isAdded && activity is DashboardActivity) {
-            (activity as DashboardActivity).refreshChatHistoryList()
-        }
+        }, {
+            if (isAdded && activity is DashboardActivity) {
+                (activity as DashboardActivity).refreshChatHistoryList()
+            }
+        }, {
+            if (isAdded) {
+                Snackbar.make(fragmentChatDetailBinding.root, getString(R.string.failed_to_save_chat), Snackbar.LENGTH_LONG).show()
+            }
+        })
     }
 
     private fun buildChatHistoryObject(query: String, chatResponse: String, responseBody: ChatModel): JsonObject =
