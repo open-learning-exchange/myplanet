@@ -292,11 +292,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         return items.mapNotNull { it?.takeIf(clazz::isInstance)?.let(clazz::cast) }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        mRealm.close()
-    }
-
     companion object {
         fun newInstance(): SurveyFragment = SurveyFragment()
     }
