@@ -22,6 +22,8 @@ import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.SubmissionRepositoryImpl
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserRepositoryImpl
+import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.TeamRepositoryImpl
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -82,5 +84,13 @@ object RepositoryModule {
         databaseService: DatabaseService
     ): SubmissionRepository {
         return SubmissionRepositoryImpl(databaseService)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTeamRepository(
+        databaseService: DatabaseService,
+    ): TeamRepository {
+        return TeamRepositoryImpl(databaseService)
     }
 }

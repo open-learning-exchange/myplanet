@@ -2,18 +2,22 @@ package org.ole.planet.myplanet.ui.team.teamMember
 
 import android.content.Context
 import android.content.res.Configuration
+import android.os.Bundle
+import android.view.View
+import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseMemberFragment
 import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMemberCount
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getRequestedMember
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class MembersFragment : BaseMemberFragment() {
@@ -21,8 +25,7 @@ class MembersFragment : BaseMemberFragment() {
     private lateinit var currentUser: RealmUserModel
     private lateinit var memberChangeListener: MemberChangeListener
 
-    @Inject
-    lateinit var uploadManager: UploadManager
+    private val viewModel: MemberRequestViewModel by viewModels()
 
     fun setMemberChangeListener(listener: MemberChangeListener) {
         this.memberChangeListener = listener
@@ -31,6 +34,18 @@ class MembersFragment : BaseMemberFragment() {
     override fun onAttach(context: Context) {
         super.onAttach(context)
         currentUser = UserProfileDbHandler(context).userModel!!
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        viewModel.result.observe(viewLifecycleOwner) { result ->
+            result.onSuccess {
+                memberChangeListener.onMemberChanged()
+            }
+            result.onFailure {
+                Utilities.toast(requireContext(), getString(R.string.request_failed_please_retry))
+            }
+        }
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
@@ -43,8 +58,18 @@ class MembersFragment : BaseMemberFragment() {
         get() = getRequestedMember(teamId, mRealm)
 
     override val adapter: RecyclerView.Adapter<*>
-        get() = AdapterMemberRequest(requireActivity(), list.toMutableList(),
-            mRealm, currentUser, memberChangeListener, uploadManager).apply { setTeamId(teamId) }
+        get() {
+            val memberCount = getJoinedMemberCount(teamId, mRealm)
+            return AdapterMemberRequest(
+                requireActivity(),
+                list.toMutableList(),
+                teamId,
+                currentUser,
+                isTeamLeader(),
+                memberCount,
+                viewModel
+            )
+        }
 
     override val layoutManager: RecyclerView.LayoutManager
         get() {
