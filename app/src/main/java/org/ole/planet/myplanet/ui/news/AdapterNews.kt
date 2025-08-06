@@ -77,12 +77,13 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
 
     fun addItem(news: RealmNews?) {
         val newList = list.toMutableList()
-        newList.add(news)
+        newList.add(0, news)
         val diffCallback = RealmNewsDiffCallback(list, newList)
         val diffResult = DiffUtil.calculateDiff(diffCallback)
         list.clear()
         list.addAll(newList)
         diffResult.dispatchUpdatesTo(this)
+        recyclerView?.scrollToPosition(0)
     }
 
     fun setFromLogin(fromLogin: Boolean) {
