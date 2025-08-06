@@ -49,6 +49,7 @@ import kotlin.math.ceil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
@@ -570,13 +571,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
 
             try {
+                dashboardViewModel.updateResourceNotification(userId)
                 databaseService.realmInstance.use { backgroundRealm ->
                     backgroundRealm.executeTransaction { realm ->
                         val createdNotifications = createNotifications(realm, userId)
                         newNotifications.addAll(createdNotifications)
                     }
 
-                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(backgroundRealm, userId)
+                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -601,7 +603,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun createNotifications(realm: Realm, userId: String?): List<NotificationUtil.NotificationConfig> {
         val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
-        createDatabaseNotificationsFromSources(realm, userId)
+        createSurveyDatabaseNotifications(realm, userId)
+        createTaskDatabaseNotifications(realm, userId)
+        createStorageDatabaseNotifications(realm, userId)
+        createJoinRequestDatabaseNotifications(realm, userId)
+
         val unreadNotifications = realm.where(RealmNotification::class.java)
             .equalTo("userId", userId)
             .equalTo("isRead", false)
@@ -614,14 +620,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         }
         return newNotifications
-    }
-
-    private fun createDatabaseNotificationsFromSources(realm: Realm, userId: String?) {
-        dashboardViewModel.updateResourceNotification(realm, userId)
-        createSurveyDatabaseNotifications(realm, userId)
-        createTaskDatabaseNotifications(realm, userId)
-        createStorageDatabaseNotifications(realm, userId)
-        createJoinRequestDatabaseNotifications(realm, userId)
     }
 
     private fun createNotificationConfigFromDatabase(dbNotification: RealmNotification): NotificationUtil.NotificationConfig? {
@@ -655,7 +653,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun createSurveyDatabaseNotifications(realm: Realm, userId: String?) {
         val pendingSurveys = dashboardViewModel.getPendingSurveys(userId)
-        val surveyTitles = dashboardViewModel.getSurveyTitlesFromSubmissions(realm, pendingSurveys)
+        val surveyTitles = runBlocking { dashboardViewModel.getSurveyTitlesFromSubmissions(pendingSurveys) }
 
         surveyTitles.forEach { title ->
             dashboardViewModel.createNotificationIfNotExists(realm, "survey", title, title, userId)
