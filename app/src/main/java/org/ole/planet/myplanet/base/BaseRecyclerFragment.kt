@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.base
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -128,14 +129,24 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     fun deleteSelected(deleteProgress: Boolean) {
+        val itemCount = selectedItems?.size ?: 0
+        Log.d("BaseRecyclerFragment", "deleteSelected called - removing $itemCount items, deleteProgress: $deleteProgress")
+        
         for (i in selectedItems?.indices!!) {
             if (!mRealm.isInTransaction()) mRealm.beginTransaction()
             val `object` = selectedItems?.get(i) as RealmObject
+            
+            if (`object` is RealmMyCourse) {
+                Log.d("BaseRecyclerFragment", "Removing course item ${i+1}/$itemCount: ${`object`.courseTitle}")
+            }
+            
             deleteCourseProgress(deleteProgress, `object`)
             removeFromShelf(`object`)
             recyclerView.adapter = getAdapter()
             showNoData(tvMessage, getAdapter().itemCount, "")
         }
+        
+        Log.d("BaseRecyclerFragment", "deleteSelected completed - $itemCount items processed")
     }
 
     fun countSelected(): Int {

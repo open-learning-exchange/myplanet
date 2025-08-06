@@ -679,7 +679,7 @@ class UploadManager @Inject constructor(
                         }
 
                         val isNewRating = TextUtils.isEmpty(act._id)
-                        Log.d("UploadManager", "Uploading rating: ${act._id ?: "new"} for resource ${act.resourceId}")
+                        Log.d("UploadManager", "Uploading rating: ${act._id ?: "new"} for item ${act.item}")
                         
                         val `object`: Response<JsonObject>? =
                             if (isNewRating) {
@@ -693,10 +693,10 @@ class UploadManager @Inject constructor(
                             act.isUpdated = false
                             Log.d("UploadManager", "Rating uploaded: ${act._id}")
                         } else {
-                            Log.w("UploadManager", "Failed to upload rating for resource ${act.resourceId} - No response")
+                            Log.w("UploadManager", "Failed to upload rating for item ${act.item} - No response")
                         }
                     } catch (e: Exception) {
-                        Log.e("UploadManager", "Error uploading rating for resource ${act.resourceId}", e)
+                        Log.e("UploadManager", "Error uploading rating for item ${act.item}", e)
                         e.printStackTrace()
                     }
             }
