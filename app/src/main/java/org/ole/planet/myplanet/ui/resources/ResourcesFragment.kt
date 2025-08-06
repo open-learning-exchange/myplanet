@@ -14,7 +14,7 @@ import android.widget.ImageButton
 import android.widget.TextView
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -73,7 +73,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
-    private val viewModel: ResourcesViewModel by viewModels()
+    private lateinit var viewModel: ResourcesViewModel
 
     override fun getLayout(): Int {
         return R.layout.fragment_my_library
@@ -101,6 +101,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         hideButton()
 
         setupGuestUserRestrictions()
+        viewModel = ViewModelProvider(this)[ResourcesViewModel::class.java]
         observeViewModel()
         viewModel.startResourcesSync()
 
