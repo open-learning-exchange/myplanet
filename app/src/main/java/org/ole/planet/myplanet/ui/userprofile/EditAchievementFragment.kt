@@ -322,4 +322,14 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         achievement?.setReferences(referenceArray)
         achievement?.sendToNation = fragmentEditAchievementBinding.cbSendToNation.isChecked.toString() + ""
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (this::aRealm.isInitialized && !aRealm.isClosed) {
+            aRealm.close()
+        }
+        if (this::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
+    }
 }

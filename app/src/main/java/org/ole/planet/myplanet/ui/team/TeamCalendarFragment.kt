@@ -332,4 +332,11 @@ class TeamCalendarFragment : BaseTeamFragment() {
             }
         }
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (this::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
+    }
 }
