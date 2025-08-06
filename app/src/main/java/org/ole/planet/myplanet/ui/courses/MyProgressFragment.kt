@@ -42,10 +42,14 @@ class MyProgressFragment : Fragment() {
 
     private fun initializeData() {
         val realm = databaseService.realmInstance
-        val user = UserProfileDbHandler(requireActivity()).userModel
-        val courseData = fetchCourseData(realm, user?.id)
-        fragmentMyProgressBinding.rvMyprogress.layoutManager = LinearLayoutManager(requireActivity())
-        fragmentMyProgressBinding.rvMyprogress.adapter = AdapterMyProgress(requireActivity(), courseData)
+        try {
+            val user = UserProfileDbHandler(requireActivity()).userModel
+            val courseData = fetchCourseData(realm, user?.id)
+            fragmentMyProgressBinding.rvMyprogress.layoutManager = LinearLayoutManager(requireActivity())
+            fragmentMyProgressBinding.rvMyprogress.adapter = AdapterMyProgress(requireActivity(), courseData)
+        } finally {
+            realm.close()
+        }
     }
 
     companion object {
