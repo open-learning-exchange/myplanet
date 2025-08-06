@@ -42,14 +42,14 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.lang.String.format
+import java.time.Instant
 import java.util.ArrayList
 import java.util.Calendar
 import java.util.LinkedHashMap
 import java.util.LinkedList
 import java.util.Locale
-import java.util.UUID
 import java.util.TimeZone
-import java.time.Instant
+import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.language
@@ -170,7 +170,7 @@ class UserProfileFragment : Fragment() {
             model?.name ?: ""
         }
         fragmentUserProfileBinding.txtEmail.text = getString(R.string.two_strings, getString(R.string.email_colon), Utilities.checkNA(model?.email))
-        val dob = if (TextUtils.isEmpty(model?.dob)) getString(R.string.n_a) else TimeUtils.getFormatedDate(model?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        val dob = if (TextUtils.isEmpty(model?.dob)) getString(R.string.n_a) else TimeUtils.getFormattedDate(model?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         fragmentUserProfileBinding.txtDob.text = getString(R.string.two_strings, getString(R.string.date_of_birth), dob)
         fragmentUserProfileBinding.txtGender.text = getString(R.string.gender_colon, Utilities.checkNA(model?.gender))
         fragmentUserProfileBinding.txtLanguage.text = getString(R.string.two_strings, getString(R.string.language_colon), Utilities.checkNA(model?.language))
@@ -223,7 +223,7 @@ class UserProfileFragment : Fragment() {
         val dobText = if (TextUtils.isEmpty(model?.dob)) {
             getString(R.string.n_a)
         } else {
-            TimeUtils.getFormatedDate(model?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+            TimeUtils.getFormattedDate(model?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         }
         binding.dateOfBirth.text = dobText
     }
@@ -293,7 +293,7 @@ class UserProfileFragment : Fragment() {
                     val calendar = Calendar.getInstance()
                     calendar.set(year, monthOfYear, dayOfMonth)
                     val dobMillis = calendar.timeInMillis
-                    val dobFormatted = TimeUtils.getFormatedDate(dobMillis)
+                    val dobFormatted = TimeUtils.getFormattedDate(dobMillis)
 
                     date = format(Locale.US, "%04d-%02d-%02dT00:00:00.000Z", year, monthOfYear + 1, dayOfMonth)
                     binding.dateOfBirth.text = dobFormatted
@@ -316,7 +316,7 @@ class UserProfileFragment : Fragment() {
                 binding.rbFemale.isChecked -> "female"
                 else -> selectedGender
             }
-            val realm = Realm.getDefaultInstance()
+            val realm = databaseService.realmInstance
             val userId = settings.getString("userId", "")
             RealmUserModel.updateUserDetails(
                 realm,
@@ -475,7 +475,7 @@ class UserProfileFragment : Fragment() {
         model?.let {
             fragmentUserProfileBinding.txtName.text = String.format("%s %s %s", it.firstName, it.middleName, it.lastName)
             fragmentUserProfileBinding.txtEmail.text = getString(R.string.two_strings, getString(R.string.email_colon), Utilities.checkNA(it.email))
-            val dob = if (TextUtils.isEmpty(it.dob)) "N/A" else TimeUtils.getFormatedDate(it.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+            val dob = if (TextUtils.isEmpty(it.dob)) "N/A" else TimeUtils.getFormattedDate(it.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
             fragmentUserProfileBinding.txtDob.text = getString(R.string.two_strings, getString(R.string.date_of_birth), dob)
             fragmentUserProfileBinding.txtGender.text = getString(R.string.gender_colon, Utilities.checkNA(it.gender))
             fragmentUserProfileBinding.txtLanguage.text = getString(R.string.two_strings, getString(R.string.language_colon), Utilities.checkNA(it.language))

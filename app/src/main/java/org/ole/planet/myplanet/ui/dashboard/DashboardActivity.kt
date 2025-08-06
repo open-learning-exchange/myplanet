@@ -518,21 +518,25 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                             }
                         } else {
                             Handler(Looper.getMainLooper()).postDelayed({
-                                try {
-                                    mRealm.refresh()
-                                    val unreadCount = dashboardViewModel.getUnreadNotificationsSize(mRealm, userId)
-                                    onNotificationCountUpdated(unreadCount)
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                    Handler(Looper.getMainLooper()).postDelayed({
-                                        try {
-                                            mRealm.refresh()
-                                            val unreadCount = dashboardViewModel.getUnreadNotificationsSize(mRealm, userId)
-                                            onNotificationCountUpdated(unreadCount)
-                                        } catch (e2: Exception) {
-                                            e2.printStackTrace()
-                                        }
-                                    }, 300)
+                                lifecycleScope.launch {
+                                    try {
+                                        mRealm.refresh()
+                                        val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+                                        onNotificationCountUpdated(unreadCount)
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                        Handler(Looper.getMainLooper()).postDelayed({
+                                            lifecycleScope.launch {
+                                                try {
+                                                    mRealm.refresh()
+                                                    val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+                                                    onNotificationCountUpdated(unreadCount)
+                                                } catch (e2: Exception) {
+                                                    e2.printStackTrace()
+                                                }
+                                            }
+                                        }, 300)
+                                    }
                                 }
                             }, 300)
                         }
@@ -652,7 +656,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun createSurveyDatabaseNotifications(realm: Realm, userId: String?) {
-        val pendingSurveys = dashboardViewModel.getPendingSurveys(realm, userId)
+        val pendingSurveys = dashboardViewModel.getPendingSurveys(userId)
         val surveyTitles = dashboardViewModel.getSurveyTitlesFromSubmissions(realm, pendingSurveys)
 
         surveyTitles.forEach { title ->
@@ -1112,12 +1116,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val userId = user?.id
             if (userId != null) {
                 Handler(Looper.getMainLooper()).postDelayed({
-                    try {
-                        mRealm.refresh()
-                        val unreadCount = dashboardViewModel.getUnreadNotificationsSize(mRealm, userId)
-                        onNotificationCountUpdated(unreadCount)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                    lifecycleScope.launch {
+                        try {
+                            mRealm.refresh()
+                            val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+                            onNotificationCountUpdated(unreadCount)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
                     }
                 }, 100)
             }

@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities.toast
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 
 @AndroidEntryPoint
 class AddResourceActivity : AppCompatActivity() {
@@ -119,10 +120,13 @@ class AddResourceActivity : AppCompatActivity() {
                 }
             }
 
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, fragment)
-                .addToBackStack(null)
-                .commitAllowingStateLoss()
+            NavigationHelper.replaceFragment(
+                supportFragmentManager,
+                R.id.fragment_container,
+                fragment,
+                addToBackStack = true,
+                allowStateLoss = true
+            )
         } else {
             existingFragment.arguments = Bundle().apply {
                 putString("libraryId", libraryId)

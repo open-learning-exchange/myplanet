@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
+import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
@@ -71,6 +72,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
     private val serverUrlMapper = ServerUrlMapper()
+    private val teamLastPage = mutableMapOf<String, Int>()
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
     private var pageConfigs: List<TeamPageConfig> = emptyList()
@@ -195,7 +197,8 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     private fun setupTeamDetails(isMyTeam: Boolean, user: RealmUserModel?) {
         fragmentTeamDetailBinding.root.post {
             if (isAdded && !requireActivity().isFinishing) {
-                setupViewPager(isMyTeam)
+                val last = team?._id?.let { teamLastPage[it] } ?: arguments?.getInt("navigateToPage", 0) ?: 0
+                setupViewPager(isMyTeam, last)
             }
         }
 
@@ -223,8 +226,10 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         }
     }
 
-    private fun setupViewPager(isMyTeam: Boolean) {
+    private fun setupViewPager(isMyTeam: Boolean, restorePage: Int = 0) {
         pageConfigs = buildPages(isMyTeam)
+        fragmentTeamDetailBinding.viewPager2.isSaveEnabled = true
+        fragmentTeamDetailBinding.viewPager2.id = View.generateViewId()
         fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(
             requireActivity(),
             pageConfigs,
@@ -234,6 +239,16 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
             tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
         }.attach()
+
+        fragmentTeamDetailBinding.viewPager2.setCurrentItem(restorePage, false)
+
+        fragmentTeamDetailBinding.viewPager2.registerOnPageChangeCallback(
+            object : ViewPager2.OnPageChangeCallback() {
+                override fun onPageSelected(position: Int) {
+                    team?._id?.let { teamLastPage[it] = position }
+                }
+            }
+        )
     }
 
     private fun setupNonMyTeamButtons(user: RealmUserModel?) {
@@ -278,15 +293,8 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     team?.leave(user, mRealm)
                     Utilities.toast(activity, getString(R.string.left_team))
-                    fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(
-                        requireActivity(),
-                        buildPages(false),
-                        team?._id,
-                        this
-                    )
-                    TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
-                        tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
-                    }.attach()
+                    val last = team?._id?.let { teamLastPage[it] } ?: arguments?.getInt("navigateToPage", 0) ?: 0
+                    setupViewPager(false, last)
                     fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
                 }.setNegativeButton(R.string.no, null).show()
         }
@@ -313,17 +321,8 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                 val updatedTeam = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
                 if (updatedTeam != null) {
                     team = updatedTeam
-
-                    pageConfigs = buildPages(isMyTeam)
-                    fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(
-                        requireActivity(),
-                        pageConfigs,
-                        team?._id,
-                        this
-                    )
-                    TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
-                        tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
-                    }.attach()
+                    val last = team?._id?.let { teamLastPage[it] } ?: arguments?.getInt("navigateToPage", 0) ?: 0
+                    setupViewPager(isMyTeam, last)
 
                     fragmentTeamDetailBinding.title.text = getEffectiveTeamName()
                     fragmentTeamDetailBinding.subtitle.text = getEffectiveTeamType()

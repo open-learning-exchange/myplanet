@@ -17,7 +17,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.RealmList
 import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -30,7 +29,6 @@ import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
-import org.ole.planet.myplanet.model.ChatViewModel
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -39,6 +37,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 
 @AndroidEntryPoint
 class ChatHistoryListFragment : Fragment() {
@@ -85,18 +84,22 @@ class ChatHistoryListFragment : Fragment() {
         fragmentChatHistoryListBinding.newChat.setOnClickListener {
             if (resources.getBoolean(R.bool.isLargeScreen)) {
                 val chatHistoryListFragment = ChatHistoryListFragment()
-                parentFragmentManager.beginTransaction().apply {
-                    replace(R.id.fragment_container, chatHistoryListFragment)
-                    addToBackStack("ChatHistoryList")
-                    commit()
-                }
+                NavigationHelper.replaceFragment(
+                    parentFragmentManager,
+                    R.id.fragment_container,
+                    chatHistoryListFragment,
+                    addToBackStack = true,
+                    tag = "ChatHistoryList"
+                )
             } else {
                 val chatDetailFragment = ChatDetailFragment()
-                parentFragmentManager.beginTransaction().apply {
-                    replace(R.id.fragment_container, chatDetailFragment)
-                    addToBackStack("ChatDetail")
-                    commit()
-                }
+                NavigationHelper.replaceFragment(
+                    parentFragmentManager,
+                    R.id.fragment_container,
+                    chatDetailFragment,
+                    addToBackStack = true,
+                    tag = "ChatDetail"
+                )
             }
         }
 
@@ -223,7 +226,7 @@ class ChatHistoryListFragment : Fragment() {
         if (adapter == null) {
             val newAdapter = ChatHistoryListAdapter(requireContext(), list, this, databaseService, settings)
             newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
-                override fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?, aiProvider: String?) {
+                override fun onChatHistoryItemClicked(conversations: List<Conversation>?, id: String, rev: String?, aiProvider: String?) {
                     conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
                     sharedViewModel.setSelectedId(id)
                     rev?.let { sharedViewModel.setSelectedRev(it) }

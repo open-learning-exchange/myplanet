@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterJoinedMember(
@@ -105,10 +106,12 @@ class AdapterJoinedMember(
                 member.level.toString(),
                 member.userImage
             )
-            activity.supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, fragment)
-                .addToBackStack(null)
-                .commit()
+            NavigationHelper.replaceFragment(
+                activity.supportFragmentManager,
+                R.id.fragment_container,
+                fragment,
+                addToBackStack = true
+            )
         }
     }
 

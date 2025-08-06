@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.service.AutoSyncWorker
+import org.ole.planet.myplanet.service.NetworkConnectivityService
 import org.ole.planet.myplanet.service.StayOnlineWorker
 import org.ole.planet.myplanet.service.TaskNotificationWorker
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -94,9 +95,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
         fun createLog(type: String, error: String = "") {
             applicationScope.launch(Dispatchers.IO) {
-                val realm = Realm.getDefaultInstance()
                 val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                try {
+                service.withRealm { realm ->
                     realm.executeTransaction { r ->
                         val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
                         val model = UserProfileDbHandler(context).userModel
@@ -111,10 +111,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                             log.error = error
                         }
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                } finally {
-                    realm.close()
                 }
             }
         }
@@ -240,6 +236,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
         scheduleStayOnlineWork()
         scheduleTaskNotificationWork()
+        startNetworkConnectivityService()
     }
 
     private fun registerExceptionHandler() {
@@ -299,6 +296,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         val taskNotificationWork: PeriodicWorkRequest = PeriodicWorkRequest.Builder(TaskNotificationWorker::class.java, 900, TimeUnit.SECONDS).build()
         val workManager = WorkManager.getInstance(this)
         workManager.enqueueUniquePeriodicWork(TASK_NOTIFICATION_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, taskNotificationWork)
+    }
+
+    private fun startNetworkConnectivityService() {
+        val serviceIntent = Intent(this, NetworkConnectivityService::class.java)
+        startService(serviceIntent)
     }
 
     override fun attachBaseContext(base: Context) {

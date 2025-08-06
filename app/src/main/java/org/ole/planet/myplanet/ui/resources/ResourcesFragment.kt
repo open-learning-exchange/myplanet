@@ -58,6 +58,7 @@ import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 
 @AndroidEntryPoint
 class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSelected,
@@ -80,8 +81,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+
+    @Inject
     lateinit var prefManager: SharedPrefManager
-    
+
     @Inject
     lateinit var syncManager: SyncManager
 
@@ -91,7 +94,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        prefManager = SharedPrefManager(requireContext())
         settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         startResourcesSync()
     }
@@ -560,16 +562,18 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     private fun recreateFragment(fragment: Fragment) {
         if (isAdded && activity != null && !requireActivity().isFinishing) {
-            val transaction = parentFragmentManager.beginTransaction()
             if (isMyCourseLib) {
                 val args = Bundle().apply {
                     putBoolean("isMyCourseLib", true)
                 }
                 fragment.arguments = args
             }
-            transaction.replace(R.id.fragment_container, fragment)
-            transaction.addToBackStack(null)
-            transaction.commit()
+            NavigationHelper.replaceFragment(
+                parentFragmentManager,
+                R.id.fragment_container,
+                fragment,
+                addToBackStack = true
+            )
         }
     }
 
