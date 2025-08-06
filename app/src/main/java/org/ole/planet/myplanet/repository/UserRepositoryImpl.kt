@@ -4,11 +4,12 @@ import android.content.SharedPreferences
 import io.realm.Realm
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmUserModel
 
 class UserRepositoryImpl @Inject constructor(
     private val databaseService: DatabaseService,
-    private val preferences: SharedPreferences
+    @AppPreferences private val preferences: SharedPreferences,
 ) : UserRepository {
 
     override suspend fun getUserProfile(): String? {
