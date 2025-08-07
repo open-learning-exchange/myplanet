@@ -328,8 +328,11 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         if (this::aRealm.isInitialized && !aRealm.isClosed) {
             aRealm.close()
         }
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
+        try {
+            if (!mRealm.isClosed) {
+                mRealm.close()
+            }
+        } catch (_: UninitializedPropertyAccessException) {
         }
     }
 }

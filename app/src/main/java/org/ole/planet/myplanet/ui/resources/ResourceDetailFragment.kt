@@ -230,8 +230,11 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         if (this::lRealm.isInitialized && !lRealm.isClosed) {
             lRealm.close()
         }
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
+        try {
+            if (!mRealm.isClosed) {
+                mRealm.close()
+            }
+        } catch (_: UninitializedPropertyAccessException) {
         }
     }
 }
