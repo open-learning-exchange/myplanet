@@ -276,5 +276,8 @@ class AchievementFragment : BaseContainerFragment() {
         super.onDestroy()
         customProgressDialog?.dismiss()
         customProgressDialog = null
+        if (::aRealm.isInitialized && !aRealm.isClosed) {
+            aRealm.close()
+        }
     }
 }
