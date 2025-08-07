@@ -49,7 +49,6 @@ import kotlin.math.ceil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
@@ -652,10 +651,19 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun createSurveyDatabaseNotifications(realm: Realm, userId: String?) {
-        val pendingSurveys = dashboardViewModel.getPendingSurveys(userId)
-        val surveyTitles = runBlocking { dashboardViewModel.getSurveyTitlesFromSubmissions(pendingSurveys) }
+        val pendingSurveys = realm.where(RealmSubmission::class.java)
+            .equalTo("userId", userId)
+            .equalTo("status", "pending")
+            .equalTo("type", "survey")
+            .findAll()
 
-        surveyTitles.forEach { title ->
+        pendingSurveys.mapNotNull { submission ->
+            val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
+            realm.where(RealmStepExam::class.java)
+                .equalTo("id", examId)
+                .findFirst()
+                ?.name
+        }.forEach { title ->
             dashboardViewModel.createNotificationIfNotExists(realm, "survey", title, title, userId)
         }
     }
