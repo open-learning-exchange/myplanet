@@ -65,4 +65,3 @@ object ApiClient {
         return NetworkResult.Exception(lastException ?: Exception("Unknown error"))
     }
 }
-
