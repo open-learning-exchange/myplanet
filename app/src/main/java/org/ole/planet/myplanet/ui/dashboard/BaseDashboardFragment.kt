@@ -50,6 +50,7 @@ import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
@@ -131,7 +132,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         list.add(Constants.DICTIONARY_URL)
         if (!FileUtils.checkFileExist(Constants.DICTIONARY_URL)) {
             Utilities.toast(activity, getString(R.string.downloading_started_please_check_notification))
-            Utilities.openDownloadService(activity, list, false)
+            DownloadUtils.openDownloadService(activity, list, false)
         } else {
             Utilities.toast(activity, getString(R.string.file_already_exists))
         }
