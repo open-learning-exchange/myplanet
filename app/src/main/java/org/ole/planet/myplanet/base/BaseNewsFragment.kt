@@ -100,8 +100,8 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         profileDbHandler.onDestroy()
+        super.onDestroy()
     }
 
     override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
