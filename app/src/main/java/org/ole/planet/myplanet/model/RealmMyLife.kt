@@ -39,40 +39,40 @@ open class RealmMyLife : RealmObject {
 
         @JvmStatic
         fun updateWeight(weight: Int, id: String?, userId: String?) {
-            val executor = Executors.newSingleThreadExecutor()
-            executor.execute {
-                MainApplication.service.withRealm { backgroundRealm ->
-                    backgroundRealm.executeTransaction { mRealm ->
-                        val targetItem = mRealm.where(RealmMyLife::class.java).equalTo("_id", id)
-                            .findFirst()
+            Executors.newSingleThreadExecutor().use { executor ->
+                executor.execute {
+                    MainApplication.service.withRealm { backgroundRealm ->
+                        backgroundRealm.executeTransaction { mRealm ->
+                            val targetItem = mRealm.where(RealmMyLife::class.java).equalTo("_id", id)
+                                .findFirst()
 
-                        targetItem?.let {
-                            val currentWeight = it.weight
-                            it.weight = weight
+                            targetItem?.let {
+                                val currentWeight = it.weight
+                                it.weight = weight
 
-                            val otherItem = mRealm.where(RealmMyLife::class.java)
-                                .equalTo("userId", userId).equalTo("weight", weight)
-                                .notEqualTo("_id", id).findFirst()
+                                val otherItem = mRealm.where(RealmMyLife::class.java)
+                                    .equalTo("userId", userId).equalTo("weight", weight)
+                                    .notEqualTo("_id", id).findFirst()
 
-                            otherItem?.weight = currentWeight
+                                otherItem?.weight = currentWeight
+                            }
                         }
                     }
                 }
-                executor.shutdown()
             }
         }
 
         @JvmStatic
         fun updateVisibility(isVisible: Boolean, id: String?) {
-            val executor = Executors.newSingleThreadExecutor()
-            executor.execute {
-                MainApplication.service.withRealm { backgroundRealm ->
-                    backgroundRealm.executeTransaction { mRealm ->
-                        mRealm.where(RealmMyLife::class.java).equalTo("_id", id).findFirst()
-                            ?.isVisible = isVisible
+            Executors.newSingleThreadExecutor().use { executor ->
+                executor.execute {
+                    MainApplication.service.withRealm { backgroundRealm ->
+                        backgroundRealm.executeTransaction { mRealm ->
+                            mRealm.where(RealmMyLife::class.java).equalTo("_id", id).findFirst()
+                                ?.isVisible = isVisible
+                        }
                     }
                 }
-                executor.shutdown()
             }
         }
     }
