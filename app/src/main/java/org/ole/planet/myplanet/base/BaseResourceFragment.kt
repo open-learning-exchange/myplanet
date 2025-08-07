@@ -387,6 +387,17 @@ abstract class BaseResourceFragment : Fragment() {
         Utilities.toast(activity, getString(R.string.added_to_my_library))
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.removeAllChangeListeners()
+            if (mRealm.isInTransaction) {
+                mRealm.cancelTransaction()
+            }
+            mRealm.close()
+        }
+    }
+
     companion object {
         var auth = ""
 
