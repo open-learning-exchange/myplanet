@@ -10,7 +10,10 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import kotlinx.coroutines.launch
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
@@ -27,6 +30,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.ui.dashboard.DashboardViewModel
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
@@ -43,6 +47,7 @@ class NotificationsFragment : Fragment() {
     private lateinit var userId: String
     private var notificationUpdateListener: NotificationListener? = null
     private lateinit var dashboardActivity: DashboardActivity
+    private val dashboardViewModel: DashboardViewModel by viewModels()
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -220,31 +225,37 @@ class NotificationsFragment : Fragment() {
                 .forEach { it.isRead = true }
         }, {
             activity?.runOnUiThread {
-                adapter.updateNotifications(loadNotifications(userId, fragmentNotificationsBinding.status.selectedItem.toString().lowercase()))
+                adapter.updateNotifications(
+                    loadNotifications(
+                        userId,
+                        fragmentNotificationsBinding.status.selectedItem.toString().lowercase()
+                    )
+                )
                 updateMarkAllAsReadButtonVisibility()
                 updateUnreadCount()
             }
         }, {
-            Snackbar.make(fragmentNotificationsBinding.root, getString(R.string.failed_to_mark_as_read), Snackbar.LENGTH_LONG).show()
+            Snackbar.make(
+                fragmentNotificationsBinding.root,
+                getString(R.string.failed_to_mark_as_read),
+                Snackbar.LENGTH_LONG
+            ).show()
         })
     }
 
     private fun updateMarkAllAsReadButtonVisibility() {
-        val unreadCount = getUnreadNotificationsSize()
-        fragmentNotificationsBinding.btnMarkAllAsRead.visibility = if (unreadCount > 0) View.VISIBLE else View.GONE
-    }
-
-    private fun getUnreadNotificationsSize(): Int {
-        return mRealm.where(RealmNotification::class.java)
-            .equalTo("userId", userId)
-            .equalTo("isRead", false)
-            .count()
-            .toInt()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+            fragmentNotificationsBinding.btnMarkAllAsRead.visibility =
+                if (unreadCount > 0) View.VISIBLE else View.GONE
+        }
     }
 
     private fun updateUnreadCount() {
-        val unreadCount = getUnreadNotificationsSize()
-        notificationUpdateListener?.onNotificationCountUpdated(unreadCount)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+            notificationUpdateListener?.onNotificationCountUpdated(unreadCount)
+        }
     }
 
     fun refreshNotificationsList() {

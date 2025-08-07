@@ -570,14 +570,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
 
             try {
-                databaseService.realmInstance.use { backgroundRealm ->
-                    backgroundRealm.executeTransaction { realm ->
-                        val createdNotifications = createNotifications(realm, userId)
-                        newNotifications.addAll(createdNotifications)
-                    }
+                val pendingSurveys = dashboardViewModel.getPendingSurveys(userId)
+                val surveyTitles = dashboardViewModel.getSurveyTitlesFromSubmissions(pendingSurveys)
+                dashboardViewModel.updateResourceNotification(userId)
 
-                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(backgroundRealm, userId)
+                val createdNotifications = databaseService.executeTransactionWithResultAsync { realm ->
+                    createNotifications(realm, userId, surveyTitles)
                 }
+                newNotifications.addAll(createdNotifications)
+
+                unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -599,9 +601,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun createNotifications(realm: Realm, userId: String?): List<NotificationUtil.NotificationConfig> {
+    private fun createNotifications(
+        realm: Realm,
+        userId: String?,
+        surveyTitles: List<String>
+    ): List<NotificationUtil.NotificationConfig> {
         val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
-        createDatabaseNotificationsFromSources(realm, userId)
+        createDatabaseNotificationsFromSources(realm, userId, surveyTitles)
         val unreadNotifications = realm.where(RealmNotification::class.java)
             .equalTo("userId", userId)
             .equalTo("isRead", false)
@@ -616,9 +622,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         return newNotifications
     }
 
-    private fun createDatabaseNotificationsFromSources(realm: Realm, userId: String?) {
-        dashboardViewModel.updateResourceNotification(realm, userId)
-        createSurveyDatabaseNotifications(realm, userId)
+    private fun createDatabaseNotificationsFromSources(
+        realm: Realm,
+        userId: String?,
+        surveyTitles: List<String>
+    ) {
+        createSurveyDatabaseNotifications(realm, userId, surveyTitles)
         createTaskDatabaseNotifications(realm, userId)
         createStorageDatabaseNotifications(realm, userId)
         createJoinRequestDatabaseNotifications(realm, userId)
@@ -653,10 +662,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun createSurveyDatabaseNotifications(realm: Realm, userId: String?) {
-        val pendingSurveys = dashboardViewModel.getPendingSurveys(userId)
-        val surveyTitles = dashboardViewModel.getSurveyTitlesFromSubmissions(realm, pendingSurveys)
-
+    private fun createSurveyDatabaseNotifications(
+        realm: Realm,
+        userId: String?,
+        surveyTitles: List<String>
+    ) {
         surveyTitles.forEach { title ->
             dashboardViewModel.createNotificationIfNotExists(realm, "survey", title, title, userId)
         }

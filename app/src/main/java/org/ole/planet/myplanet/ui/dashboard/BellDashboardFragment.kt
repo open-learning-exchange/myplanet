@@ -53,6 +53,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private lateinit var fragmentHomeBellBinding: FragmentHomeBellBinding
     private var networkStatusJob: Job? = null
     private val viewModel: BellDashboardViewModel by viewModels()
+    private val dashboardViewModel: DashboardViewModel by viewModels()
     var user: RealmUserModel? = null
     private var surveyReminderJob: Job? = null
 
@@ -318,52 +319,42 @@ class BellDashboardFragment : BaseDashboardFragment() {
         return uniqueSurveyMap.values.toList()
     }
 
-    private fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>, realm: Realm): List<String> {
-        val titles = mutableListOf<String>()
-        submissions.forEach { submission ->
-            val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
-            val exam = realm.where(RealmStepExam::class.java)
-                .equalTo("id", examId)
-                .findFirst()
-            exam?.name?.let { titles.add(it) }
-        }
-        return titles
-    }
-
     private fun showSurveyListDialog(
         pendingSurveys: List<RealmSubmission>,
         title: String,
         dismissOnNeutral: Boolean = false
     ) {
-        val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val surveyTitles = dashboardViewModel.getSurveyTitlesFromSubmissions(pendingSurveys)
 
-        val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
-        val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
-        recyclerView.layoutManager = LinearLayoutManager(requireActivity())
+            val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
+            val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
+            recyclerView.layoutManager = LinearLayoutManager(requireActivity())
 
-        val alertDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
-            .setTitle(title)
-            .setView(dialogView)
-            .setPositiveButton(getString(R.string.ok)) { dialog, _ ->
-                homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
-                dialog.dismiss()
+            val alertDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+                .setTitle(title)
+                .setView(dialogView)
+                .setPositiveButton(getString(R.string.ok)) { dialog, _ ->
+                    homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
+                    dialog.dismiss()
+                }
+                .setNeutralButton(getString(R.string.remind_later)) { _, _ -> }
+                .setNegativeButton(getString(R.string.cancel)) { dialog, _ -> dialog.dismiss() }
+                .create()
+
+            val adapter = SurveyAdapter(surveyTitles, { position ->
+                val selectedSurvey = pendingSurveys[position].id
+                AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
+            }, alertDialog)
+
+            recyclerView.adapter = adapter
+            alertDialog.show()
+            alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
+
+            alertDialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
+                showRemindLaterDialog(pendingSurveys, alertDialog)
+                if (dismissOnNeutral) alertDialog.dismiss()
             }
-            .setNeutralButton(getString(R.string.remind_later)) { _, _ -> }
-            .setNegativeButton(getString(R.string.cancel)) { dialog, _ -> dialog.dismiss() }
-            .create()
-
-        val adapter = SurveyAdapter(surveyTitles, { position ->
-            val selectedSurvey = pendingSurveys[position].id
-            AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
-        }, alertDialog)
-
-        recyclerView.adapter = adapter
-        alertDialog.show()
-        alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
-
-        alertDialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
-            showRemindLaterDialog(pendingSurveys, alertDialog)
-            if (dismissOnNeutral) alertDialog.dismiss()
         }
     }
 
