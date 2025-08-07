@@ -51,8 +51,4 @@ class UserRepositoryImpl @Inject constructor(
     override fun getRealm(): Realm {
         return databaseService.realmInstance
     }
-
-    override fun getCurrentUserSync(): RealmUserModel? {
-        return databaseService.realmInstance.where(RealmUserModel::class.java).findFirst()
-    }
 }
