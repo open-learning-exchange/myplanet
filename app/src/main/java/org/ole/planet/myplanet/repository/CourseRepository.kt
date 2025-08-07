@@ -10,10 +10,4 @@ interface CourseRepository {
     suspend fun saveCourse(course: RealmMyCourse)
     suspend fun updateCourse(id: String, updater: (RealmMyCourse) -> Unit)
     suspend fun deleteCourse(id: String)
-    @Deprecated("Use async version", ReplaceWith("getAllCourses()"))
-    fun getAllCoursesSync(): List<RealmMyCourse>
-    @Deprecated("Use async version", ReplaceWith("getCourseById(id)"))
-    fun getCourseByIdSync(id: String): RealmMyCourse?
-    @Deprecated("Use async version", ReplaceWith("getEnrolledCourses()"))
-    fun getEnrolledCoursesSync(): List<RealmMyCourse>
 }
