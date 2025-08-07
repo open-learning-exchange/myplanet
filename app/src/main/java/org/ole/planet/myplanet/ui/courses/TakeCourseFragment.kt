@@ -18,6 +18,7 @@ import java.util.Locale
 import javax.inject.Inject
 import kotlin.collections.isNotEmpty
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -319,6 +320,15 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             fragmentTakeCourseBinding.finishStep.visibility = View.GONE
         }
 
+    }
+
+    override fun onDestroyView() {
+        fragmentTakeCourseBinding.courseProgress.setOnSeekBarChangeListener(null)
+        lifecycleScope.coroutineContext.cancelChildren()
+        super.onDestroyView()
+        if (this::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
     }
 
     private val isValidClickRight: Boolean get() = fragmentTakeCourseBinding.viewPager2.adapter != null && fragmentTakeCourseBinding.viewPager2.currentItem < fragmentTakeCourseBinding.viewPager2.adapter?.itemCount!!

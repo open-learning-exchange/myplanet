@@ -495,7 +495,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private fun handleSyncCompletion(activityContext: SyncActivity) {
         forceSyncTrigger()
         val syncedUrl = settings.getString("serverURL", null)?.let { ServerConfigUtils.removeProtocol(it) }
-        if (syncedUrl != null && serverListAddresses.any { it.url.replace(Regex("^https?://"), "") == syncedUrl }) {
+        if (syncedUrl != null && ::serverListAddresses.isInitialized && serverListAddresses.any { it.url.replace(Regex("^https?://"), "") == syncedUrl }) {
             editor.putString("pinnedServerUrl", syncedUrl).apply()
         }
 
@@ -560,22 +560,42 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 lblLastSyncDate.text = getString(R.string.last_sync, getRelativeTime(Date().time))
             }
 
-            lblVersion.text = getString(R.string.app_version)
-            tvAvailableSpace.text = buildString {
-                append(getString(R.string.available_space_colon))
-                append(" ")
-                append(availableOverTotalMemoryFormattedString)
+            if (::lblVersion.isInitialized) {
+                lblVersion.text = getString(R.string.app_version)
+            }
+            if (::tvAvailableSpace.isInitialized) {
+                tvAvailableSpace.text = buildString {
+                    append(getString(R.string.available_space_colon))
+                    append(" ")
+                    append(availableOverTotalMemoryFormattedString)
+                }
             }
 
-            inputName.hint = getString(R.string.hint_name)
-            inputPassword.hint = getString(R.string.password)
-            btnSignIn.text = getString(R.string.btn_sign_in)
-            btnGuestLogin.text = getString(R.string.btn_guest_login)
-            becomeMember.text = getString(R.string.become_a_member)
-            btnFeedback.text = getString(R.string.feedback)
-            openCommunity.text = getString(R.string.open_community)
+            if (::inputName.isInitialized) {
+                inputName.hint = getString(R.string.hint_name)
+            }
+            if (::inputPassword.isInitialized) {
+                inputPassword.hint = getString(R.string.password)
+            }
+            if (::btnSignIn.isInitialized) {
+                btnSignIn.text = getString(R.string.btn_sign_in)
+            }
+            if (::btnGuestLogin.isInitialized) {
+                btnGuestLogin.text = getString(R.string.btn_guest_login)
+            }
+            if (::becomeMember.isInitialized) {
+                becomeMember.text = getString(R.string.become_a_member)
+            }
+            if (::btnFeedback.isInitialized) {
+                btnFeedback.text = getString(R.string.feedback)
+            }
+            if (::openCommunity.isInitialized) {
+                openCommunity.text = getString(R.string.open_community)
+            }
             val currentLanguage = LocaleHelper.getLanguage(this)
-            btnLang.text = getLanguageString(currentLanguage)
+            if (::btnLang.isInitialized) {
+                btnLang.text = getLanguageString(currentLanguage)
+            }
             invalidateOptionsMenu()
         } catch (e: Exception) {
             e.printStackTrace()
