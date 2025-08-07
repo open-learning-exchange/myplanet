@@ -19,6 +19,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -75,8 +76,14 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     }
 
     fun addItem(news: RealmNews?) {
-        list.add(news)
-        notifyDataSetChanged()
+        val newList = list.toMutableList()
+        newList.add(0, news)
+        val diffCallback = RealmNewsDiffCallback(list, newList)
+        val diffResult = DiffUtil.calculateDiff(diffCallback)
+        list.clear()
+        list.addAll(newList)
+        diffResult.dispatchUpdatesTo(this)
+        recyclerView?.scrollToPosition(0)
     }
 
     fun setFromLogin(fromLogin: Boolean) {
@@ -321,9 +328,11 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     }
 
     fun updateList(newList: List<RealmNews?>) {
+        val diffCallback = RealmNewsDiffCallback(list, newList)
+        val diffResult = DiffUtil.calculateDiff(diffCallback)
         list.clear()
         list.addAll(newList)
-        notifyDataSetChanged()
+        diffResult.dispatchUpdatesTo(this)
     }
 
     private fun setMemberClickListeners(holder: ViewHolderNews, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
