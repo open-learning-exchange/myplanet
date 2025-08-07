@@ -307,7 +307,8 @@ class Service @Inject constructor(
                 if (response.body() != null) {
                     val arr = JsonUtils.getJsonArray("rows", response.body())
 
-                    Executors.newSingleThreadExecutor().use { executor ->
+                    val executor = Executors.newSingleThreadExecutor()
+                    try {
                         executor.execute {
                             MainApplication.service.withRealm { backgroundRealm ->
                                 try {
@@ -332,6 +333,8 @@ class Service @Inject constructor(
                                 }
                             }
                         }
+                    } finally {
+                        executor.shutdown()
                     }
                 }
             }

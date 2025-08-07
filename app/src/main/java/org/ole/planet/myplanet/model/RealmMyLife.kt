@@ -39,7 +39,8 @@ open class RealmMyLife : RealmObject {
 
         @JvmStatic
         fun updateWeight(weight: Int, id: String?, userId: String?) {
-            Executors.newSingleThreadExecutor().use { executor ->
+            val executor = Executors.newSingleThreadExecutor()
+            try {
                 executor.execute {
                     MainApplication.service.withRealm { backgroundRealm ->
                         backgroundRealm.executeTransaction { mRealm ->
@@ -59,12 +60,15 @@ open class RealmMyLife : RealmObject {
                         }
                     }
                 }
+            } finally {
+                executor.shutdown()
             }
         }
 
         @JvmStatic
         fun updateVisibility(isVisible: Boolean, id: String?) {
-            Executors.newSingleThreadExecutor().use { executor ->
+            val executor = Executors.newSingleThreadExecutor()
+            try {
                 executor.execute {
                     MainApplication.service.withRealm { backgroundRealm ->
                         backgroundRealm.executeTransaction { mRealm ->
@@ -73,6 +77,8 @@ open class RealmMyLife : RealmObject {
                         }
                     }
                 }
+            } finally {
+                executor.shutdown()
             }
         }
     }
