@@ -4,9 +4,8 @@ import android.content.Context
 import android.content.SharedPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
-import org.json.JSONArray
-import org.json.JSONException
-import org.json.JSONObject
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
@@ -14,6 +13,7 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
     private var privateMode = 0
     private var pref: SharedPreferences = context.getSharedPreferences(PREFS_NAME, privateMode)
     private var editor: SharedPreferences.Editor = pref.edit()
+    private val gson = Gson()
 
     private var savedUsers = "savedUsers"
     private var repliedNewsId = "repliedNewsId"
@@ -36,41 +36,15 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
     fun getSavedUsers(): List<User> {
         val usersJson = pref.getString(savedUsers, null)
         return if (usersJson != null) {
-            try {
-                val jsonArray = JSONArray(usersJson)
-                val userList = mutableListOf<User>()
-                for (i in 0 until jsonArray.length()) {
-                    val userJson = jsonArray.getJSONObject(i)
-                    val fullName = userJson.getString("fullName")
-                    val name = userJson.getString("name")
-                    val password = userJson.getString("password")
-                    val image = userJson.getString("image")
-                    val source = userJson.getString("source")
-                    val user = User(fullName, name, password, image, source)
-                    userList.add(user)
-                }
-                userList
-            } catch (e: JSONException) {
-                e.printStackTrace()
-                emptyList()
-            }
+            val type = object : TypeToken<List<User>>() {}.type
+            gson.fromJson(usersJson, type)
         } else {
             emptyList()
         }
     }
 
     fun setSavedUsers(users: List<User>) {
-        val jsonArray = JSONArray()
-        for (user in users) {
-            val userJson = JSONObject()
-            userJson.put("fullName", user.fullName)
-            userJson.put("name", user.name)
-            userJson.put("password", user.password)
-            userJson.put("image", user.image)
-            userJson.put("source", user.source)
-            jsonArray.put(userJson)
-        }
-        editor.putString(savedUsers, jsonArray.toString())
+        editor.putString(savedUsers, gson.toJson(users))
         editor.apply()
     }
 
