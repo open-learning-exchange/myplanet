@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getResourceIds
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
-import org.ole.planet.myplanet.ui.team.teamResource.ResourceUpdateListner
 import org.ole.planet.myplanet.utilities.CheckboxListView
 
 class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdateListner  {

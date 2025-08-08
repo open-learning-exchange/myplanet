@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DownloadWorker
 import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.utilities.FileUtils
 
 object DownloadUtils {
     private const val DOWNLOAD_CHANNEL = "DownloadChannel"

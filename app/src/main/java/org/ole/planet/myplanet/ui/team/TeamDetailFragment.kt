@@ -33,10 +33,6 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
-import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.ApplicantsPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.CalendarPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.ChatPage
@@ -52,6 +48,10 @@ import org.ole.planet.myplanet.ui.team.TeamPageConfig.ResourcesPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.SurveyPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.TeamPage
+import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {

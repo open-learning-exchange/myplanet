@@ -25,9 +25,6 @@ import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.callback.SuccessListener
-import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.datamanager.ConfigurationManager
-import org.ole.planet.myplanet.datamanager.NetworkResult
 import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
