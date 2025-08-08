@@ -128,4 +128,12 @@ class NewsDetailActivity : BaseActivity() {
         }
         activityNewsDetailBinding.img.visibility = View.GONE
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (::realm.isInitialized && !realm.isClosed) {
+            realm.removeAllChangeListeners()
+            realm.close()
+        }
+    }
 }
