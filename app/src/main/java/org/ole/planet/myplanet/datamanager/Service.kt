@@ -307,29 +307,34 @@ class Service @Inject constructor(
                 if (response.body() != null) {
                     val arr = JsonUtils.getJsonArray("rows", response.body())
 
-                    Executors.newSingleThreadExecutor().execute {
-                        MainApplication.service.withRealm { backgroundRealm ->
-                            try {
-                                backgroundRealm.executeTransaction { realm1 ->
-                                    realm1.delete(RealmCommunity::class.java)
-                                    for (j in arr) {
-                                        var jsonDoc = j.asJsonObject
-                                        jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-                                        val id = JsonUtils.getString("_id", jsonDoc)
-                                        val community = realm1.createObject(RealmCommunity::class.java, id)
-                                        if (JsonUtils.getString("name", jsonDoc) == "learning") {
-                                            community.weight = 0
+                    val executor = Executors.newSingleThreadExecutor()
+                    try {
+                        executor.execute {
+                            MainApplication.service.withRealm { backgroundRealm ->
+                                try {
+                                    backgroundRealm.executeTransaction { realm1 ->
+                                        realm1.delete(RealmCommunity::class.java)
+                                        for (j in arr) {
+                                            var jsonDoc = j.asJsonObject
+                                            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+                                            val id = JsonUtils.getString("_id", jsonDoc)
+                                            val community = realm1.createObject(RealmCommunity::class.java, id)
+                                            if (JsonUtils.getString("name", jsonDoc) == "learning") {
+                                                community.weight = 0
+                                            }
+                                            community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
+                                            community.name = JsonUtils.getString("name", jsonDoc)
+                                            community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
+                                            community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
                                         }
-                                        community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
-                                        community.name = JsonUtils.getString("name", jsonDoc)
-                                        community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
-                                        community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
                                     }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
                                 }
-                            } catch (e: Exception) {
-                                e.printStackTrace()
                             }
                         }
+                    } finally {
+                        executor.shutdown()
                     }
                 }
             }
