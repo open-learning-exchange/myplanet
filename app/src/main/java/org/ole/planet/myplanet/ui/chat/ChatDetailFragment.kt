@@ -523,17 +523,17 @@ class ChatDetailFragment : Fragment() {
             add("conversations", conversationsArray)
         }
 
-    private fun continueConversationRealm(id:String, query:String, chatResponse:String) {
-        try {
-            addConversationToChatHistory(mRealm, id, query, chatResponse, _rev)
-            mRealm.commitTransaction()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            if (mRealm.isInTransaction) {
-                mRealm.cancelTransaction()
+    private fun continueConversationRealm(id: String, query: String, chatResponse: String) {
+        databaseService.withRealm { realm ->
+            try {
+                addConversationToChatHistory(realm, id, query, chatResponse, _rev)
+                realm.commitTransaction()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                if (realm.isInTransaction) {
+                    realm.cancelTransaction()
+                }
             }
-        } finally {
-            mRealm.close()
         }
     }
 
@@ -548,6 +548,9 @@ class ChatDetailFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
         super.onDestroyView()
         val editor = settings.edit()
         if (settings.getBoolean("isAlternativeUrl", false)) {
