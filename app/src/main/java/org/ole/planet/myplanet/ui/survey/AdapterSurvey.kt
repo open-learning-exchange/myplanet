@@ -57,10 +57,8 @@ class AdapterSurvey(
 
     fun updateDataAfterSearch(newList: List<RealmStepExam>) {
         if (examList.isEmpty()) {
-            println("hi")
             sortSurveyList(false, newList)
         } else {
-            println(sortType)
             when (sortType) {
                 SurveySortType.DATE_DESC -> sortSurveyList(false, newList)
                 SurveySortType.DATE_ASC -> sortSurveyList(true, newList)
@@ -72,7 +70,6 @@ class AdapterSurvey(
 
     private fun sortSurveyList(isAscend: Boolean, list: List<RealmStepExam> = examList) {
         val list = list.toList()
-        println(isAscend)
         Collections.sort(list) { survey1, survey2 ->
             if (isAscend) {
                 survey1.createdDate.compareTo(survey2.createdDate)
@@ -84,7 +81,6 @@ class AdapterSurvey(
     }
 
     fun sortByDate(isAscend: Boolean) {
-        println("sort by date")
         sortType = if (isAscend) SurveySortType.DATE_ASC else SurveySortType.DATE_DESC
         sortSurveyList(isAscend)
         notifyDataSetChanged()
