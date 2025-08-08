@@ -98,7 +98,7 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
-import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
+import org.ole.planet.myplanet.utilities.DownloadUtils.openDownloadService
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 @AndroidEntryPoint
