@@ -81,7 +81,9 @@ import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
-import org.ole.planet.myplanet.ui.team.TeamPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.JoinRequestsPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
@@ -426,7 +428,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     teamName = teamObject?.name ?: "",
                     teamType = teamObject?.type ?: "",
                     isMyTeam = true,
-                    navigateToPage = TeamPage.TASKS
+                    navigateToPage = TasksPage
                 )
 
                 openCallFragment(f)
@@ -453,7 +455,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 val b = Bundle()
                 b.putString("id", teamId)
                 b.putBoolean("isMyTeam", true)
-                b.putInt("navigateToPage", TeamPage.JOIN_REQUESTS.ordinal)
+                b.putString("navigateToPage", JoinRequestsPage.id)
                 f.arguments = b
                 openCallFragment(f)
             }
