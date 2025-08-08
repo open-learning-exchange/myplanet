@@ -166,4 +166,12 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         if (item.itemId == android.R.id.home) finish()
         return super.onOptionsItemSelected(item)
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.removeAllChangeListeners()
+            mRealm.close()
+        }
+    }
 }
