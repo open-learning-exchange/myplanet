@@ -51,6 +51,7 @@ import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.getProgressDialog
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
+import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadFiles
 import org.ole.planet.myplanet.utilities.Utilities
@@ -246,7 +247,7 @@ abstract class BaseResourceFragment : Fragment() {
                 if (urls.isNotEmpty()) {
                     try {
                         showProgressDialog()
-                        Utilities.openDownloadService(activity, urls, false)
+                        DownloadUtils.openDownloadService(activity, urls, false)
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
@@ -413,7 +414,7 @@ abstract class BaseResourceFragment : Fragment() {
             Service(context).isPlanetAvailable(object : PlanetAvailableListener {
                 override fun isAvailable() {
                     if (urls.isNotEmpty()) {
-                        Utilities.openDownloadService(context, urls, false)
+                        DownloadUtils.openDownloadService(context, urls, false)
                     }
                 }
 
