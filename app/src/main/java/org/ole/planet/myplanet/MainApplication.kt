@@ -15,7 +15,6 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import dagger.hilt.android.HiltAndroidApp
-import io.realm.Realm
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Date
@@ -33,6 +32,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.callback.TeamPageListener
+import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.DefaultPreferences
@@ -69,12 +69,14 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     @DefaultPreferences
     lateinit var defaultPreferences: SharedPreferences
 
+    @Inject
+    lateinit var apiClient: ApiClient
+
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
         lateinit var context: Context
-        lateinit var mRealm: Realm
         lateinit var service: DatabaseService
         var preferences: SharedPreferences? = null
         var syncFailedCount = 0
@@ -206,7 +208,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     private fun setupPreferences() {
         preferences = appPreferences
         service = databaseService
-        mRealm = service.realmInstance
+        service.withRealm { }
         defaultPref = defaultPreferences
     }
 
@@ -265,7 +267,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                             isServerReachable(serverUrl)
                         }
                         if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
-                            backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)), applicationContext)
+                            service.withRealm { realm ->
+                                backgroundDownload(
+                                    downloadAllFiles(getAllLibraryList(realm)),
+                                    applicationContext
+                                )
+                            }
                         }
                     }
                 }

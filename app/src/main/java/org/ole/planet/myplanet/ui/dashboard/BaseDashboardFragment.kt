@@ -284,7 +284,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         profileDbHandler.onDestroy()
         if (::myCoursesResults.isInitialized) {
             myCoursesResults.removeChangeListener(myCoursesChangeListener)
@@ -292,7 +291,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         if (::myTeamsResults.isInitialized) {
             myTeamsResults.removeChangeListener(myTeamsChangeListener)
         }
-        mRealm.close()
+        super.onDestroy()
     }
 
     private fun setCountText(countText: Int, c: Class<*>, v: View) {

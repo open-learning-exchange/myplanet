@@ -64,36 +64,8 @@ class CourseRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun getCurrentUserId(): String {
-        return databaseService.withRealmAsync { realm ->
-            getCurrentUserId(realm)
-        }
-    }
-
     private fun getCurrentUserId(realm: io.realm.Realm): String {
         return realm.where(RealmUserModel::class.java)
-            .findFirst()?.id ?: ""
-    }
-
-    // Deprecated methods for backward compatibility
-    override fun getAllCoursesSync(): List<RealmMyCourse> {
-        return databaseService.realmInstance.where(RealmMyCourse::class.java).findAll()
-    }
-
-    override fun getCourseByIdSync(id: String): RealmMyCourse? {
-        return databaseService.realmInstance.where(RealmMyCourse::class.java)
-            .equalTo("courseId", id)
-            .findFirst()
-    }
-
-    override fun getEnrolledCoursesSync(): List<RealmMyCourse> {
-        return databaseService.realmInstance.where(RealmMyCourse::class.java)
-            .equalTo("userId", getCurrentUserIdSync())
-            .findAll()
-    }
-
-    private fun getCurrentUserIdSync(): String {
-        return databaseService.realmInstance.where(RealmUserModel::class.java)
             .findFirst()?.id ?: ""
     }
 }
