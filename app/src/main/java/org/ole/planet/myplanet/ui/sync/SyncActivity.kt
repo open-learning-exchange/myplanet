@@ -148,6 +148,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     var serverAddressAdapter: ServerAddressAdapter? = null
     lateinit var serverListAddresses: List<ServerAddressesModel>
     private var isProgressDialogShowing = false
+    private lateinit var bManager: LocalBroadcastManager
     
     @Inject
     lateinit var syncManager: SyncManager
@@ -797,7 +798,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun registerReceiver() {
-        val bManager = LocalBroadcastManager.getInstance(this)
+        bManager = LocalBroadcastManager.getInstance(this)
         val intentFilter = IntentFilter()
         intentFilter.addAction(DashboardActivity.MESSAGE_PROGRESS)
         bManager.registerReceiver(broadcastReceiver, intentFilter)
@@ -858,6 +859,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     override fun onDestroy() {
         super.onDestroy()
+        if (this::bManager.isInitialized) {
+            bManager.unregisterReceiver(broadcastReceiver)
+        }
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
