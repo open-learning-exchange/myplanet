@@ -332,4 +332,14 @@ class TeamCalendarFragment : BaseTeamFragment() {
             }
         }
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        try {
+            if (!mRealm.isClosed) {
+                mRealm.close()
+            }
+        } catch (_: UninitializedPropertyAccessException) {
+        }
+    }
 }

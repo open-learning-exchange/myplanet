@@ -71,12 +71,14 @@ class UploadToShelfService @Inject constructor(
                 }
             }
         }, {
+            mRealm.close()
             uploadToShelf(object : SuccessListener {
                 override fun onSuccess(success: String?) {
                     listener.onSuccess(success)
                 }
             })
         }) { error ->
+            mRealm.close()
             listener.onSuccess("Error during user data sync: ${error.localizedMessage}")
         }
     }
@@ -107,8 +109,10 @@ class UploadToShelfService @Inject constructor(
                 }
             }
         }, {
+            mRealm.close()
             uploadSingleUserToShelf(userName, listener)
         }) { error ->
+            mRealm.close()
             listener.onSuccess("Error during user data sync: ${error.localizedMessage}")
         }
     }
@@ -248,7 +252,7 @@ class UploadToShelfService @Inject constructor(
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm = dbService.realmInstance
 
-        mRealm.executeTransactionAsync { realm: Realm ->
+        mRealm.executeTransactionAsync({ realm: Realm ->
             val myHealths: List<RealmMyHealthPojo> = realm.where(RealmMyHealthPojo::class.java).equalTo("isUpdated", true).notEqualTo("userId", "").findAll()
             myHealths.forEachIndexed { index, pojo ->
                 try {
@@ -262,6 +266,10 @@ class UploadToShelfService @Inject constructor(
                     e.printStackTrace()
                 }
             }
+        }, {
+            mRealm.close()
+        }) { _ ->
+            mRealm.close()
         }
     }
 
@@ -297,8 +305,10 @@ class UploadToShelfService @Inject constructor(
                 }
             }
         }, {
+            mRealm.close()
             listener?.onSuccess("Health data for user $userId uploaded successfully")
         }) { error ->
+            mRealm.close()
             listener?.onSuccess("Error uploading health data for user $userId: ${error.localizedMessage}")
         }
     }
@@ -313,6 +323,7 @@ class UploadToShelfService @Inject constructor(
             val users = realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll()
             unmanagedUsers = realm.copyFromRealm(users)
         }, {
+            mRealm.close()
             if (unmanagedUsers.isEmpty()) {
                 listener.onSuccess("Sync with server completed successfully")
                 return@executeTransactionAsync
@@ -341,6 +352,7 @@ class UploadToShelfService @Inject constructor(
                 }
             }.start()
         }, { error ->
+            mRealm.close()
             listener.onSuccess("Unable to update documents: ${error.localizedMessage}")
         })
     }
@@ -371,8 +383,10 @@ class UploadToShelfService @Inject constructor(
                 }
             }
         }, {
+            mRealm.close()
             listener.onSuccess("Single user shelf sync completed successfully")
         }) { error ->
+            mRealm.close()
             listener.onSuccess("Unable to update document: ${error.localizedMessage}")
         }
     }
