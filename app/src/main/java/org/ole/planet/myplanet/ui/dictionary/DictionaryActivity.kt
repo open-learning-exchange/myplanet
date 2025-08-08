@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -38,7 +39,7 @@ class DictionaryActivity : BaseActivity() {
             val list = ArrayList<String>()
             list.add(Constants.DICTIONARY_URL)
             Utilities.toast(this, getString(R.string.downloading_started_please_check_notificati))
-            Utilities.openDownloadService(this, list, false)
+            DownloadUtils.openDownloadService(this, list, false)
         }
     }
 
