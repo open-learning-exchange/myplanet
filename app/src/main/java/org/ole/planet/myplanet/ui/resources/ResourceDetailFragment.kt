@@ -227,5 +227,14 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onDestroy() {
         super.onDestroy()
         fragmentScope.cancel()
+        if (this::lRealm.isInitialized && !lRealm.isClosed) {
+            lRealm.close()
+        }
+        try {
+            if (!mRealm.isClosed) {
+                mRealm.close()
+            }
+        } catch (_: UninitializedPropertyAccessException) {
+        }
     }
 }

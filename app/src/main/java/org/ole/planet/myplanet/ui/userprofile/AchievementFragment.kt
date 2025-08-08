@@ -276,8 +276,14 @@ class AchievementFragment : BaseContainerFragment() {
         super.onDestroy()
         customProgressDialog?.dismiss()
         customProgressDialog = null
-        if (::aRealm.isInitialized && !aRealm.isClosed) {
+        if (this::aRealm.isInitialized && !aRealm.isClosed) {
             aRealm.close()
+        }
+        try {
+            if (!mRealm.isClosed) {
+                mRealm.close()
+            }
+        } catch (_: UninitializedPropertyAccessException) {
         }
     }
 }
