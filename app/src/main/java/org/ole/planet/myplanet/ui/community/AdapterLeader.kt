@@ -9,8 +9,8 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
+import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
 
 class AdapterLeader(var context: Context, private var leaders: List<RealmUserModel>) :
     RecyclerView.Adapter<RecyclerView.ViewHolder>() {
