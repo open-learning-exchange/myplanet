@@ -11,6 +11,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import io.realm.Realm
@@ -196,38 +197,56 @@ class AdapterJoinedMember(
     }
 
     private fun refreshList() {
-        val members = getJoinedMember(teamId, mRealm).toMutableList()
-        val leaderId = mRealm.where(RealmMyTeam::class.java)
+        // Must run on main thread
+        val newLeaderId = mRealm.where(RealmMyTeam::class.java)
             .equalTo("teamId", teamId)
             .equalTo("isLeader", true)
-            .findFirst()?.userId
-        val leader = members.find { it.id == leaderId }
-        if (leader != null) {
-            members.remove(leader)
-            members.add(0, leader)
+            .findFirst()
+            ?.userId
+
+        if (newLeaderId == null) return
+
+        val oldLeaderPos = if (teamLeaderId != null) {
+            list.indexOfFirst { it.id == teamLeaderId }
+        } else -1
+        val newLeaderPos = list.indexOfFirst { it.id == newLeaderId }
+
+        if (oldLeaderPos != -1 && oldLeaderPos != newLeaderPos) {
+            notifyItemChanged(oldLeaderPos)   // hide tvIsLeader
         }
-        list.clear()
-        list.addAll(members)
-        notifyDataSetChanged()
+        if (newLeaderPos != -1) {
+            notifyItemChanged(newLeaderPos)   // show tvIsLeader
+        }
+
+        if (newLeaderPos > 0) {
+            val leader = list.removeAt(newLeaderPos)
+            list.add(0, leader)
+            notifyItemMoved(newLeaderPos, 0)
+            notifyItemChanged(0)
+        }
     }
 
+
     private fun makeLeader(userModel: RealmUserModel) {
-        mRealm.executeTransaction { realm ->
+        val userId = userModel.id
+
+        mRealm.executeTransactionAsync({ realm ->
             val currentLeader = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
                 .equalTo("isLeader", true)
                 .findFirst()
             val newLeader = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
-                .equalTo("userId", userModel.id)
+                .equalTo("userId", userId)
                 .findFirst()
             currentLeader?.isLeader = false
             newLeader?.isLeader = true
-            teamLeaderId = newLeader?.userId
-        }
-        notifyDataSetChanged()
-        Utilities.toast(context, context.getString(R.string.leader_selected))
-        refreshList()
+        }, {
+            // Success callback: runs on main thread
+            refreshList()
+        }, {
+            it.printStackTrace()
+        })
     }
 
     private fun reject(userModel: RealmUserModel, position: Int) {
