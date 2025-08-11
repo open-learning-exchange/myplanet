@@ -42,12 +42,6 @@ object TimeUtils {
         }
     }
 
-    @Deprecated("Use getFormattedDate", ReplaceWith("getFormattedDate(date)"))
-    @JvmStatic
-    fun getFormatedDate(date: Long?): String {
-        return getFormattedDate(date)
-    }
-
     @JvmStatic
     fun getFormattedDateWithTime(date: Long): String {
         return try {
@@ -57,12 +51,6 @@ object TimeUtils {
             e.printStackTrace()
             "N/A"
         }
-    }
-
-    @Deprecated("Use getFormattedDateWithTime", ReplaceWith("getFormattedDateWithTime(date)"))
-    @JvmStatic
-    fun getFormatedDateWithTime(date: Long): String {
-        return getFormattedDateWithTime(date)
     }
 
     @JvmStatic
@@ -105,12 +93,6 @@ object TimeUtils {
             e.printStackTrace()
             "N/A"
         }
-    }
-
-    @Deprecated("Use getFormattedDate", ReplaceWith("getFormattedDate(stringDate, pattern)"))
-    @JvmStatic
-    fun getFormatedDate(stringDate: String?, pattern: String?): String {
-        return getFormattedDate(stringDate, pattern)
     }
 
     @JvmStatic
