@@ -283,6 +283,13 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return sub && lev && lan && med
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
+    }
+
     companion object {
         private val noDataMessages = mapOf(
             "courses" to R.string.no_courses,
