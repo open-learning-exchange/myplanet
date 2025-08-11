@@ -55,7 +55,7 @@ class AddResourceActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         activityAddResourceBinding = ActivityAddResourceBinding.inflate(layoutInflater)
         setContentView(activityAddResourceBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityAddResourceBinding.root)
+        EdgeToEdgeUtil.applyWindowInsets(activityAddResourceBinding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         userModel = userProfileDbHandler.userModel

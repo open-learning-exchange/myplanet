@@ -32,9 +32,10 @@ class CourseProgressActivity : BaseActivity() {
     lateinit var courseId: String
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        EdgeToEdgeUtil.enableEdgeToEdge(this)
         activityCourseProgressBinding = ActivityCourseProgressBinding.inflate(layoutInflater)
         setContentView(activityCourseProgressBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityCourseProgressBinding.root)
+        EdgeToEdgeUtil.applyWindowInsets(activityCourseProgressBinding.root)
         initActionBar()
         courseId = intent.getStringExtra("courseId").toString()
         realm = databaseService.realmInstance

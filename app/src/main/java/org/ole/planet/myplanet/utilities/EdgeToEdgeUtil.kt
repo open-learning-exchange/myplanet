@@ -5,98 +5,51 @@ import android.graphics.Color
 import android.os.Build
 import android.view.View
 import android.view.Window
+import android.view.WindowManager
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import org.ole.planet.myplanet.R
 
 object EdgeToEdgeUtil {
-    /**
-     * Sets up edge-to-edge display with transparent system bars and proper window insets handling
-     * @param activity The activity to apply edge-to-edge to
-     * @param rootView The root view that should handle window insets
-     * @param lightStatusBar Whether to use light status bar icons (default: true)
-     * @param lightNavigationBar Whether to use light navigation bar icons (default: true)
-     */
-    fun setupEdgeToEdge(activity: Activity, rootView: View, lightStatusBar: Boolean = true, lightNavigationBar: Boolean = true) {
-        // Enable edge-to-edge
-        activity.window.enableEdgeToEdge(lightStatusBar, lightNavigationBar)
-
-        // Set up window insets listener
-        ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
-            WindowInsetsCompat.CONSUMED
-        }
-    }
-
-    /**
-     * Sets up edge-to-edge display with custom inset handling
-     * @param activity The activity to apply edge-to-edge to
-     * @param rootView The root view that should handle window insets
-     * @param lightStatusBar Whether to use light status bar icons (default: true)
-     * @param lightNavigationBar Whether to use light navigation bar icons (default: true)
-     * @param customInsetsHandler Custom handler for window insets
-     */
-    fun setupEdgeToEdge(activity: Activity, rootView: View, lightStatusBar: Boolean = true, lightNavigationBar: Boolean = true, customInsetsHandler: (View, WindowInsetsCompat) -> WindowInsetsCompat) {
-        // Enable edge-to-edge
-        activity.window.enableEdgeToEdge(lightStatusBar, lightNavigationBar)
-
-        // Set up custom window insets listener
-        ViewCompat.setOnApplyWindowInsetsListener(rootView, customInsetsHandler)
-    }
-
-    /**
-     * Extension function to enable edge-to-edge on a Window
-     */
-    private fun Window.enableEdgeToEdge(lightStatusBar: Boolean = true, lightNavigationBar: Boolean = true) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            // Android 11+ (API 30+)
-            statusBarColor = Color.TRANSPARENT
-            navigationBarColor = Color.TRANSPARENT
-        } else {
-            // Android 10 and below
-            statusBarColor = Color.TRANSPARENT
-            navigationBarColor = Color.TRANSPARENT
-
-            // Control system bar icon colors for older versions
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                var flags = decorView.systemUiVisibility
-
-                if (lightStatusBar) {
-                    flags = flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+    
+    fun enableEdgeToEdge(activity: Activity) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            val window: Window = activity.window
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+            
+            val primaryDarkColor = ContextCompat.getColor(activity, R.color.colorPrimaryDark)
+            val primaryColor = ContextCompat.getColor(activity, R.color.colorPrimary)
+            window.statusBarColor = primaryDarkColor
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                window.navigationBarColor = primaryColor
+                
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    window.attributes.layoutInDisplayCutoutMode = 
+                        WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
                 }
-
-                if (lightNavigationBar && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    flags = flags or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
-                }
-
-                decorView.systemUiVisibility = flags
             }
+            
+            val windowInsetsController = WindowInsetsControllerCompat(window, window.decorView)
+            windowInsetsController.isAppearanceLightStatusBars = false
+            windowInsetsController.isAppearanceLightNavigationBars = false
         }
     }
-
-    /**
-     * Sets up edge-to-edge with only top padding (for activities with bottom navigation)
-     */
-    fun setupEdgeToEdgeWithTopPadding(activity: Activity, rootView: View, lightStatusBar: Boolean = true, lightNavigationBar: Boolean = true) {
-        activity.window.enableEdgeToEdge(lightStatusBar, lightNavigationBar)
-
-        ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(insets.left, insets.top, insets.right, 0)
-            WindowInsetsCompat.CONSUMED
-        }
-    }
-
-    /**
-     * Sets up edge-to-edge with only bottom padding (for activities with toolbar)
-     */
-    fun setupEdgeToEdgeWithBottomPadding(activity: Activity, rootView: View, lightStatusBar: Boolean = true, lightNavigationBar: Boolean = true) {
-        activity.window.enableEdgeToEdge(lightStatusBar, lightNavigationBar)
-
-        ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(insets.left, 0, insets.right, insets.bottom)
-            WindowInsetsCompat.CONSUMED
+    
+    fun applyWindowInsets(rootView: View, applyTopInsets: Boolean = true, applyBottomInsets: Boolean = true) {
+        ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
+            
+            view.setPadding(
+                systemBars.left,
+                if (applyTopInsets) systemBars.top else 0,
+                systemBars.right,
+                if (applyBottomInsets) maxOf(systemBars.bottom, imeInsets.bottom) else 0
+            )
+            insets
         }
     }
 }

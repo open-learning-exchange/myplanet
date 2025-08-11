@@ -73,7 +73,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         super.onCreate(savedInstanceState)
         activityAddExaminationBinding = ActivityAddExaminationBinding.inflate(layoutInflater)
         setContentView(activityAddExaminationBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityAddExaminationBinding.root)
+        EdgeToEdgeUtil.applyWindowInsets(activityAddExaminationBinding.root)
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         customDiag = HashSet()

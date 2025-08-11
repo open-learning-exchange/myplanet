@@ -27,7 +27,6 @@ class DictionaryActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         fragmentDictionaryBinding = FragmentDictionaryBinding.inflate(layoutInflater)
         setContentView(fragmentDictionaryBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, fragmentDictionaryBinding.root)
         initActionBar()
         title = getString(R.string.dictionary)
         mRealm = databaseService.realmInstance

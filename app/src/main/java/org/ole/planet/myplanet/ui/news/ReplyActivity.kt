@@ -59,7 +59,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         super.onCreate(savedInstanceState)
         activityReplyBinding = ActivityReplyBinding.inflate(layoutInflater)
         setContentView(activityReplyBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityReplyBinding.root)
+        EdgeToEdgeUtil.applyWindowInsets(activityReplyBinding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         mRealm = databaseService.realmInstance

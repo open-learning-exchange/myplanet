@@ -36,7 +36,7 @@ class NewsDetailActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         activityNewsDetailBinding = ActivityNewsDetailBinding.inflate(layoutInflater)
         setContentView(activityNewsDetailBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityNewsDetailBinding.root)
+        EdgeToEdgeUtil.applyWindowInsets(activityNewsDetailBinding.root)
         setSupportActionBar(activityNewsDetailBinding.toolbar)
         initActionBar()
         realm = databaseService.realmInstance

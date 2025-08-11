@@ -63,9 +63,10 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        EdgeToEdgeUtil.enableEdgeToEdge(this)
         activityLoginBinding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(activityLoginBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityLoginBinding.root)
+        EdgeToEdgeUtil.applyWindowInsets(activityLoginBinding.root)
         lblLastSyncDate = activityLoginBinding.lblLastSyncDate
         btnSignIn = activityLoginBinding.btnSignin
         syncIcon = activityLoginBinding.syncIcon

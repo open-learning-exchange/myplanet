@@ -18,9 +18,10 @@ class TextFileViewerActivity : AppCompatActivity() {
     private var fileName: String? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        EdgeToEdgeUtil.enableEdgeToEdge(this)
         activityTextFileViewerBinding = ActivityTextfileViewerBinding.inflate(layoutInflater)
         setContentView(activityTextFileViewerBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityTextFileViewerBinding.root)
+        EdgeToEdgeUtil.applyWindowInsets(activityTextFileViewerBinding.root)
         renderTextFile()
     }
 

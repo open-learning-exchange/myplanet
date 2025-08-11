@@ -33,9 +33,10 @@ class AudioPlayerActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        EdgeToEdgeUtil.enableEdgeToEdge(this)
         binding = ActivityAudioPlayerBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
+        EdgeToEdgeUtil.applyWindowInsets(binding.root)
 
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         filePath = intent.getStringExtra("TOUCHED_FILE")

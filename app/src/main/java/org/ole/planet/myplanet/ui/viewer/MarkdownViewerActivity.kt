@@ -21,9 +21,10 @@ class MarkdownViewerActivity : AppCompatActivity() {
     private var fileName: String? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        EdgeToEdgeUtil.enableEdgeToEdge(this)
         activityMarkdownViewerBinding = ActivityMarkdownViewerBinding.inflate(layoutInflater)
         setContentView(activityMarkdownViewerBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityMarkdownViewerBinding.root)
+        EdgeToEdgeUtil.applyWindowInsets(activityMarkdownViewerBinding.root)
         renderMarkdownFile()
     }
 

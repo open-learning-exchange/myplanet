@@ -18,9 +18,10 @@ class ImageViewerActivity : AppCompatActivity() {
     var fileName: String? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        EdgeToEdgeUtil.enableEdgeToEdge(this)
         activityImageViewerBinding = ActivityImageViewerBinding.inflate(layoutInflater)
         setContentView(activityImageViewerBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityImageViewerBinding.root)
+        EdgeToEdgeUtil.applyWindowInsets(activityImageViewerBinding.root)
         renderImageFile()
     }
 

@@ -55,9 +55,10 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        EdgeToEdgeUtil.enableEdgeToEdge(this)
         binding = ActivityExoPlayerVideoBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
+        EdgeToEdgeUtil.applyWindowInsets(binding.root)
 
         val extras = intent.extras
         val videoType = extras?.getString("videoType")

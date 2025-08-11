@@ -32,8 +32,8 @@ class OnBoardingActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityOnBoardingBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        EdgeToEdgeUtil.applyWindowInsets(binding.root)
         prefData = SharedPrefManager(this)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
 
         copyAssets(this)
         val settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)

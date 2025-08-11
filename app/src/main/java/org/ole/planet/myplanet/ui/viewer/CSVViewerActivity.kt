@@ -20,9 +20,10 @@ class CSVViewerActivity : AppCompatActivity() {
     private lateinit var activityCsvViewerBinding: ActivityCsvviewerBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        EdgeToEdgeUtil.enableEdgeToEdge(this)
         activityCsvViewerBinding = ActivityCsvviewerBinding.inflate(layoutInflater)
         setContentView(activityCsvViewerBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityCsvViewerBinding.root)
+        EdgeToEdgeUtil.applyWindowInsets(activityCsvViewerBinding.root)
         renderCSVFile()
     }
 

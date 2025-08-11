@@ -165,7 +165,7 @@ class BecomeMemberActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         activityBecomeMemberBinding = ActivityBecomeMemberBinding.inflate(layoutInflater)
         setContentView(activityBecomeMemberBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityBecomeMemberBinding.root)
+        EdgeToEdgeUtil.applyWindowInsets(activityBecomeMemberBinding.root)
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         val mRealm: Realm = databaseService.realmInstance

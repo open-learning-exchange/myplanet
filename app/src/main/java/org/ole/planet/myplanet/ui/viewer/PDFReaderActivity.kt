@@ -38,9 +38,10 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
     private lateinit var mRealm: Realm
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        EdgeToEdgeUtil.enableEdgeToEdge(this)
         activityPdfReaderBinding = ActivityPdfreaderBinding.inflate(layoutInflater)
         setContentView(activityPdfReaderBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityPdfReaderBinding.root)
+        EdgeToEdgeUtil.applyWindowInsets(activityPdfReaderBinding.root)
         audioRecorderService = AudioRecorderService().setAudioRecordListener(this)
         audioRecorderService.setCaller(this, this)
         mRealm = databaseService.realmInstance

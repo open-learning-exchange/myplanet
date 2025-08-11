@@ -45,7 +45,7 @@ class AddMyHealthActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityAddMyHealthBinding = ActivityAddMyHealthBinding.inflate(layoutInflater)
         setContentView(activityAddMyHealthBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityAddMyHealthBinding.root)
+        EdgeToEdgeUtil.applyWindowInsets(activityAddMyHealthBinding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         realm = databaseService.realmInstance
