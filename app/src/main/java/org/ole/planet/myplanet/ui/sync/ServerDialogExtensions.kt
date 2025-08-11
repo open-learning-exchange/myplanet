@@ -14,7 +14,6 @@ import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.RealmCommunity
-import org.ole.planet.myplanet.ui.sync.ServerAddressAdapter
 import org.ole.planet.myplanet.utilities.ServerConfigUtils
 
 fun SyncActivity.showConfigurationUIElements(
