@@ -87,6 +87,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.DialogUtils.showSnack
 import org.ole.planet.myplanet.utilities.DialogUtils.showWifiSettingDialog
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
+import org.ole.planet.myplanet.utilities.DownloadUtils.openDownloadService
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
@@ -98,7 +99,6 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities.getUrl
-import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 @AndroidEntryPoint
@@ -148,6 +148,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     var serverAddressAdapter: ServerAddressAdapter? = null
     lateinit var serverListAddresses: List<ServerAddressesModel>
     private var isProgressDialogShowing = false
+    private lateinit var bManager: LocalBroadcastManager
     
     @Inject
     lateinit var syncManager: SyncManager
@@ -797,7 +798,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun registerReceiver() {
-        val bManager = LocalBroadcastManager.getInstance(this)
+        bManager = LocalBroadcastManager.getInstance(this)
         val intentFilter = IntentFilter()
         intentFilter.addAction(DashboardActivity.MESSAGE_PROGRESS)
         bManager.registerReceiver(broadcastReceiver, intentFilter)
@@ -858,6 +859,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     override fun onDestroy() {
         super.onDestroy()
+        if (this::bManager.isInitialized) {
+            bManager.unregisterReceiver(broadcastReceiver)
+        }
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
