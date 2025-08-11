@@ -12,6 +12,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -53,7 +54,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private lateinit var fragmentHomeBellBinding: FragmentHomeBellBinding
     private var networkStatusJob: Job? = null
     private val viewModel: BellDashboardViewModel by viewModels()
-    private val dashboardViewModel: DashboardViewModel by viewModels()
+    private val dashboardViewModel: DashboardViewModel by activityViewModels()
     var user: RealmUserModel? = null
     private var surveyReminderJob: Job? = null
 

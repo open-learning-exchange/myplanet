@@ -10,7 +10,7 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import kotlinx.coroutines.launch
@@ -47,7 +47,7 @@ class NotificationsFragment : Fragment() {
     private lateinit var userId: String
     private var notificationUpdateListener: NotificationListener? = null
     private lateinit var dashboardActivity: DashboardActivity
-    private val dashboardViewModel: DashboardViewModel by viewModels()
+    private val dashboardViewModel: DashboardViewModel by activityViewModels()
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
