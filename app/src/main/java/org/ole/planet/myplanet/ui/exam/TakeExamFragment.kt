@@ -31,7 +31,6 @@ import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.exam.ExamSubmissionUtils
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
 import org.ole.planet.myplanet.utilities.JsonParserUtils.getStringAsJsonArray
@@ -162,8 +161,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun createSubmission() {
-        mRealm.executeTransaction { realm ->
-            sub = createSubmission(null, realm)
+        mRealm.beginTransaction()
+        try {
+            sub = createSubmission(null, mRealm)
             setParentId()
             sub?.userId = user?.id
             sub?.status = "pending"
@@ -176,8 +176,12 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
             currentIndex = 0
             if (isTeam == true && teamId != null) {
-                addTeamInformation(realm)
+                addTeamInformation(mRealm)
             }
+            mRealm.commitTransaction()
+        } catch (e: Exception) {
+            mRealm.cancelTransaction()
+            throw e
         }
     }
 

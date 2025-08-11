@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
 import javax.inject.Singleton
 import okhttp3.OkHttpClient
+import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -22,6 +23,14 @@ annotation class StandardHttpClient
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class EnhancedHttpClient
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class StandardRetrofit
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class EnhancedRetrofit
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -36,31 +45,32 @@ object NetworkModule {
             .create()
     }
 
+    private fun buildOkHttpClient(connect: Long, read: Long, write: Long): OkHttpClient {
+        return OkHttpClient.Builder()
+            .connectTimeout(connect, TimeUnit.SECONDS)
+            .readTimeout(read, TimeUnit.SECONDS)
+            .writeTimeout(write, TimeUnit.SECONDS)
+            .build()
+    }
+
     @Provides
     @Singleton
     @StandardHttpClient
     fun provideStandardOkHttpClient(): OkHttpClient {
-        return OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS)
-            .writeTimeout(10, TimeUnit.SECONDS)
-            .build()
+        return buildOkHttpClient(10, 10, 10)
     }
 
     @Provides
     @Singleton
     @EnhancedHttpClient
     fun provideEnhancedOkHttpClient(): OkHttpClient {
-        return OkHttpClient.Builder()
-            .connectTimeout(60, TimeUnit.SECONDS)
-            .readTimeout(120, TimeUnit.SECONDS)
-            .writeTimeout(60, TimeUnit.SECONDS)
-            .build()
+        return buildOkHttpClient(60, 120, 60)
     }
 
     @Provides
     @Singleton
-    fun provideRetrofit(
+    @StandardRetrofit
+    fun provideStandardRetrofit(
         @StandardHttpClient okHttpClient: OkHttpClient,
         gson: Gson
     ): Retrofit {
@@ -73,7 +83,32 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideApiInterface(retrofit: Retrofit): ApiInterface {
+    @EnhancedRetrofit
+    fun provideEnhancedRetrofit(
+        @EnhancedHttpClient okHttpClient: OkHttpClient,
+        gson: Gson
+    ): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("https://vi.media.mit.edu/")
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideApiInterface(@StandardRetrofit retrofit: Retrofit): ApiInterface {
         return retrofit.create(ApiInterface::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideApiClient(
+        @StandardRetrofit retrofit: Retrofit,
+        @EnhancedRetrofit enhancedRetrofit: Retrofit,
+    ): ApiClient {
+        ApiClient.client = retrofit
+        ApiClient.enhancedRetrofit = enhancedRetrofit
+        return ApiClient
     }
 }

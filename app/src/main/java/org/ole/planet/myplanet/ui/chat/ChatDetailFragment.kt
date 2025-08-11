@@ -21,6 +21,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -44,7 +45,6 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatModel
 import org.ole.planet.myplanet.model.ChatRequestModel
-import org.ole.planet.myplanet.model.ChatViewModel
 import org.ole.planet.myplanet.model.ContentData
 import org.ole.planet.myplanet.model.ContinueChatModel
 import org.ole.planet.myplanet.model.Conversation
@@ -53,7 +53,6 @@ import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.chat.ChatApiHelper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
@@ -483,12 +482,17 @@ class ChatDetailFragment : Fragment() {
     private fun saveNewChat(query: String, chatResponse: String, responseBody: ChatModel) {
         val jsonObject = buildChatHistoryObject(query, chatResponse, responseBody)
 
-        mRealm.executeTransaction { realm ->
+        mRealm.executeTransactionAsync({ realm ->
             RealmChatHistory.insert(realm, jsonObject)
-        }
-        if (isAdded && activity is DashboardActivity) {
-            (activity as DashboardActivity).refreshChatHistoryList()
-        }
+        }, {
+            if (isAdded && activity is DashboardActivity) {
+                (activity as DashboardActivity).refreshChatHistoryList()
+            }
+        }, {
+            if (isAdded) {
+                Snackbar.make(fragmentChatDetailBinding.root, getString(R.string.failed_to_save_chat), Snackbar.LENGTH_LONG).show()
+            }
+        })
     }
 
     private fun buildChatHistoryObject(query: String, chatResponse: String, responseBody: ChatModel): JsonObject =
@@ -518,17 +522,17 @@ class ChatDetailFragment : Fragment() {
             add("conversations", conversationsArray)
         }
 
-    private fun continueConversationRealm(id:String, query:String, chatResponse:String) {
-        try {
-            addConversationToChatHistory(mRealm, id, query, chatResponse, _rev)
-            mRealm.commitTransaction()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            if (mRealm.isInTransaction) {
-                mRealm.cancelTransaction()
+    private fun continueConversationRealm(id: String, query: String, chatResponse: String) {
+        databaseService.withRealm { realm ->
+            try {
+                addConversationToChatHistory(realm, id, query, chatResponse, _rev)
+                realm.commitTransaction()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                if (realm.isInTransaction) {
+                    realm.cancelTransaction()
+                }
             }
-        } finally {
-            mRealm.close()
         }
     }
 
@@ -543,6 +547,9 @@ class ChatDetailFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
         super.onDestroyView()
         val editor = settings.edit()
         if (settings.getBoolean("isAlternativeUrl", false)) {

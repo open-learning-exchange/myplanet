@@ -247,7 +247,7 @@ open class RealmSubmission : RealmObject() {
                 .equalTo("userId", userId)
                 .sort("startTime", Sort.DESCENDING)
                 .findFirst()
-            return recentSubmission?.startTime?.let { TimeUtils.getFormatedDateWithTime(it) } ?: ""
+            return recentSubmission?.startTime?.let { TimeUtils.getFormattedDateWithTime(it) } ?: ""
         }
 
         @JvmStatic

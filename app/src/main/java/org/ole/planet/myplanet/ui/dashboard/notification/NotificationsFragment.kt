@@ -11,6 +11,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.Sort
@@ -30,7 +31,8 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
-import org.ole.planet.myplanet.ui.team.TeamPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.JoinRequestsPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.TasksPage
 
 @AndroidEntryPoint
 class NotificationsFragment : Fragment() {
@@ -137,7 +139,7 @@ class NotificationsFragment : Fragment() {
                             teamName = teamObject?.name ?: "",
                             teamType = teamObject?.type ?: "",
                             isMyTeam = true,
-                            navigateToPage = TeamPage.TASKS
+                            navigateToPage = TasksPage
                         )
 
                         (context as OnHomeItemClickListener).openCallFragment(f)
@@ -164,7 +166,7 @@ class NotificationsFragment : Fragment() {
                         val b = Bundle()
                         b.putString("id", teamId)
                         b.putBoolean("isMyTeam", true)
-                        b.putInt("navigateToPage", TeamPage.JOIN_REQUESTS.ordinal)
+                        b.putString("navigateToPage", JoinRequestsPage.id)
                         f.arguments = b
                         (context as OnHomeItemClickListener).openCallFragment(f)
                     }
@@ -195,25 +197,37 @@ class NotificationsFragment : Fragment() {
 
     private fun markAsRead(position: Int) {
         val notification = adapter.notificationList[position]
-        mRealm.executeTransaction {
-            notification.isRead = true
-        }
-        adapter.notifyItemChanged(position)
-        updateUnreadCount()
-        updateMarkAllAsReadButtonVisibility()
+        val notificationId = notification.id
+        mRealm.executeTransactionAsync({ realm ->
+            val realmNotification = realm.where(RealmNotification::class.java)
+                .equalTo("id", notificationId)
+                .findFirst()
+            realmNotification?.isRead = true
+        }, {
+            activity?.runOnUiThread {
+                adapter.notifyItemChanged(position)
+                updateUnreadCount()
+                updateMarkAllAsReadButtonVisibility()
+            }
+        }, {})
     }
 
     private fun markAllAsRead() {
-        mRealm.executeTransaction { realm ->
+        mRealm.executeTransactionAsync({ realm ->
             realm.where(RealmNotification::class.java)
                 .equalTo("userId", userId)
                 .equalTo("isRead", false)
                 .findAll()
                 .forEach { it.isRead = true }
-        }
-        adapter.updateNotifications(loadNotifications(userId, fragmentNotificationsBinding.status.selectedItem.toString().lowercase()))
-        updateMarkAllAsReadButtonVisibility()
-        updateUnreadCount()
+        }, {
+            activity?.runOnUiThread {
+                adapter.updateNotifications(loadNotifications(userId, fragmentNotificationsBinding.status.selectedItem.toString().lowercase()))
+                updateMarkAllAsReadButtonVisibility()
+                updateUnreadCount()
+            }
+        }, {
+            Snackbar.make(fragmentNotificationsBinding.root, getString(R.string.failed_to_mark_as_read), Snackbar.LENGTH_LONG).show()
+        })
     }
 
     private fun updateMarkAllAsReadButtonVisibility() {

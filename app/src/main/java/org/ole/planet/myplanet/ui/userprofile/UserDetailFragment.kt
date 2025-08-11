@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.databinding.ItemTitleDescBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
+import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -38,9 +38,12 @@ class UserDetailFragment : Fragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentUserDetailBinding = FragmentUserDetailBinding.inflate(inflater, container, false)
         fragmentUserDetailBinding.rvUserDetail.layoutManager = GridLayoutManager(activity, 2)
-        val mRealm = databaseService.realmInstance
         db = UserProfileDbHandler(requireActivity())
-        user = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+        user = databaseService.withRealm { realm ->
+            realm.where(RealmUserModel::class.java)
+                .equalTo("id", userId)
+                .findFirst()?.let { realm.copyFromRealm(it) }
+        }
         return fragmentUserDetailBinding.root
     }
 
@@ -72,7 +75,7 @@ class UserDetailFragment : Fragment() {
     private fun getList(user: RealmUserModel, db: UserProfileDbHandler?): List<Detail> {
         val list: MutableList<Detail> = ArrayList()
         list.add(Detail("Full Name", user.getFullName()))
-        list.add(Detail("DOB", getFormatedDate(user.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")))
+        list.add(Detail("DOB", getFormattedDate(user.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")))
         list.add(Detail("Email", user.email!!))
         list.add(Detail("Phone", user.phoneNumber!!))
         list.add(Detail("Language", user.language!!))
