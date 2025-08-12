@@ -85,6 +85,13 @@ class RatingFragment : DialogFragment() {
         }
     }
 
+    override fun onDestroyView() {
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
+        super.onDestroyView()
+    }
+
     private fun saveRating() {
         val comment = fragmentRatingBinding.etComment.text.toString()
         val rating = fragmentRatingBinding.ratingBar.rating
