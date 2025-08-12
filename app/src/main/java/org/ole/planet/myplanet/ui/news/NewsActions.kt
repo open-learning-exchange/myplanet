@@ -159,7 +159,7 @@ object NewsActions {
         context: Context,
         realm: Realm,
         news: RealmNews?,
-        list: MutableList<RealmNews?>,
+        list: MutableList<RealmNews>,
         teamName: String,
         listener: AdapterNews.OnNewsItemClickListener? = null
     ) {
@@ -191,7 +191,7 @@ object NewsActions {
     private fun deleteChildPosts(
         realm: Realm,
         parentId: String?,
-        list: MutableList<RealmNews?>
+        list: MutableList<RealmNews>
     ) {
         if (parentId == null) return
         val children = realm.where(RealmNews::class.java)

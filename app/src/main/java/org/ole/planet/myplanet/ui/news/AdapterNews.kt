@@ -60,7 +60,7 @@ class AdapterNews(
     private val teamName: String = "",
     private val teamId: String? = null,
     private val userProfileDbHandler: UserProfileDbHandler
-) : ListAdapter<RealmNews?, RecyclerView.ViewHolder>(RealmNewsDiffCallback()) {
+) : ListAdapter<RealmNews, RecyclerView.ViewHolder>(RealmNewsDiffCallback()) {
     private lateinit var rowNewsBinding: RowNewsBinding
     private var listener: OnNewsItemClickListener? = null
     private var imageList: RealmList<String>? = null
@@ -80,7 +80,7 @@ class AdapterNews(
     }
 
     init {
-        submitList(list)
+        submitList(list.filterNotNull())
     }
 
     fun setImageList(imageList: RealmList<String>?) {
@@ -88,6 +88,7 @@ class AdapterNews(
     }
 
     fun addItem(news: RealmNews?) {
+        news ?: return
         val newList = currentList.toMutableList()
         newList.add(0, news)
         submitList(newList)
@@ -162,9 +163,9 @@ class AdapterNews(
     fun updateReplyBadge(newsId: String?) {
         if (newsId.isNullOrEmpty()) return
         val exists = if (parentNews != null) {
-            parentNews.id == newsId || currentList.any { it?.id == newsId }
+            parentNews.id == newsId || currentList.any { it.id == newsId }
         } else {
-            currentList.any { it?.id == newsId }
+            currentList.any { it.id == newsId }
         }
         if (exists) {
             submitList(currentList.toMutableList())
@@ -332,7 +333,7 @@ class AdapterNews(
     }
 
     fun updateList(newList: List<RealmNews?>) {
-        submitList(newList.toMutableList())
+        submitList(newList.filterNotNull())
     }
 
     private fun setMemberClickListeners(holder: ViewHolderNews, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
