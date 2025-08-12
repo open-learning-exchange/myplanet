@@ -154,6 +154,11 @@ class ChatHistoryListFragment : Fragment() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        refreshChatHistoryList()
+    }
+
     private fun startChatHistorySync() {
         val isFastSync = settings.getBoolean("fastSync", false)
         if (isFastSync && !prefManager.isChatHistorySynced()) {
@@ -218,10 +223,12 @@ class ChatHistoryListFragment : Fragment() {
 
     fun refreshChatHistoryList() {
         databaseService.withRealm { realm ->
-            val list = realm.where(RealmChatHistory::class.java)
-                .equalTo("user", user?.name)
-                .sort("id", Sort.DESCENDING)
-                .findAll()
+            val list = realm.copyFromRealm(
+                realm.where(RealmChatHistory::class.java)
+                    .equalTo("user", user?.name)
+                    .sort("id", Sort.DESCENDING)
+                    .findAll()
+            )
 
             val adapter = fragmentChatHistoryListBinding.recyclerView.adapter as? ChatHistoryListAdapter
             if (adapter == null) {
