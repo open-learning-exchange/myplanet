@@ -22,7 +22,9 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getCurrentUser(): RealmUserModel? {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmUserModel::class.java).findFirst()
+            realm.where(RealmUserModel::class.java)
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }
         }
     }
 
@@ -31,6 +33,7 @@ class UserRepositoryImpl @Inject constructor(
             realm.where(RealmUserModel::class.java)
                 .equalTo("id", userId)
                 .findFirst()
+                ?.let { realm.copyFromRealm(it) }
         }
     }
 
@@ -39,12 +42,15 @@ class UserRepositoryImpl @Inject constructor(
             realm.where(RealmUserModel::class.java)
                 .equalTo("name", username)
                 .findFirst()
+                ?.let { realm.copyFromRealm(it) }
         }
     }
 
     override suspend fun getAllUsers(): List<RealmUserModel> {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmUserModel::class.java).findAll()
+            realm.where(RealmUserModel::class.java)
+                .findAll()
+                .let { realm.copyFromRealm(it) }
         }
     }
 
