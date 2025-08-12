@@ -306,8 +306,13 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     }
 
     private fun startNetworkConnectivityService() {
-        val serviceIntent = Intent(this, NetworkConnectivityService::class.java)
-        startService(serviceIntent)
+        try {
+            val serviceIntent = Intent(this, NetworkConnectivityService::class.java)
+            startForegroundService(serviceIntent)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            createLog("service_start_error", "Failed to start NetworkConnectivityService: ${e.message}")
+        }
     }
 
     override fun attachBaseContext(base: Context) {
