@@ -72,16 +72,16 @@ class AdapterSurvey(
         val list = list.toList()
         Collections.sort(list) { survey1, survey2 ->
             if (isAscend) {
-                survey1?.createdDate!!.compareTo(survey2?.createdDate!!)
+                survey1.createdDate.compareTo(survey2.createdDate)
             } else {
-                survey2?.createdDate!!.compareTo(survey1?.createdDate!!)
+                survey2.createdDate.compareTo(survey1.createdDate)
             }
         }
         examList = list
     }
 
     fun sortByDate(isAscend: Boolean) {
-        sortType = if (isAscend) SurveySortType.DATE_DESC else SurveySortType.DATE_ASC
+        sortType = if (isAscend) SurveySortType.DATE_ASC else SurveySortType.DATE_DESC
         sortSurveyList(isAscend)
         notifyDataSetChanged()
     }
