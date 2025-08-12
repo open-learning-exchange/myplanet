@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.ui.community
 
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -39,11 +37,10 @@ class ServicesFragment : BaseTeamFragment() {
         fragmentServicesBinding.fab.setOnClickListener {
             val bottomSheetDialog: BottomSheetDialogFragment = AddLinkFragment()
             bottomSheetDialog.show(childFragmentManager, "")
-            Handler(Looper.getMainLooper()).postDelayed({
-                bottomSheetDialog.dialog?.setOnDismissListener {
-                    setRecyclerView(links)
-                }
-            }, 1000)
+            childFragmentManager.executePendingTransactions()
+            bottomSheetDialog.dialog?.setOnDismissListener {
+                setRecyclerView(links)
+            }
         }
 
         if (links?.size == 0) {
