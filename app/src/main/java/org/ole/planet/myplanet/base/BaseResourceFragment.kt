@@ -77,6 +77,8 @@ abstract class BaseResourceFragment : Fragment() {
     lateinit var settings: SharedPreferences
     private var resourceNotFoundDialog: AlertDialog? = null
 
+    protected fun isRealmInitialized() = this::mRealm.isInitialized
+
     private fun isFragmentActive(): Boolean {
         return isAdded && activity != null &&
             !requireActivity().isFinishing && !requireActivity().isDestroyed

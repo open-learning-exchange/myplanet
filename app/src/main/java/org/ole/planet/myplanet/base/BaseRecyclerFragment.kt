@@ -284,14 +284,10 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     override fun onDestroy() {
-        super.onDestroy()
-        try {
-            if (!mRealm.isClosed) {
-                mRealm.close()
-            }
-        } catch (_: UninitializedPropertyAccessException) {
-            // Realm was not initialized
+        if (isRealmInitialized() && !mRealm.isClosed) {
+            mRealm.close()
         }
+        super.onDestroy()
     }
 
     companion object {
