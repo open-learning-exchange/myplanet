@@ -199,7 +199,7 @@ object NewsActions {
             .findAll()
         children.forEach { child ->
             deleteChildPosts(realm, child.id, list)
-            val idx = list.indexOf(child)
+            val idx = list.indexOfFirst { it.id == child.id }
             if (idx != -1) list.removeAt(idx)
             child.deleteFromRealm()
         }

@@ -22,6 +22,7 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import io.realm.RealmObject
 import com.bumptech.glide.Glide
 import com.github.chrisbanes.photoview.PhotoView
 import com.google.gson.Gson
@@ -79,8 +80,16 @@ class AdapterNews(
         RealmUserModel.parseLeadersJson(raw)
     }
 
+    private fun RealmNews.toUnmanaged(): RealmNews {
+        return if (::mRealm.isInitialized && RealmObject.isManaged(this)) {
+            mRealm.copyFromRealm(this)
+        } else {
+            this
+        }
+    }
+
     init {
-        submitList(list.filterNotNull())
+        submitList(list.filterNotNull().map { it.toUnmanaged() })
     }
 
     fun setImageList(imageList: RealmList<String>?) {
@@ -90,7 +99,7 @@ class AdapterNews(
     fun addItem(news: RealmNews?) {
         news ?: return
         val newList = currentList.toMutableList()
-        newList.add(0, news)
+        newList.add(0, news.toUnmanaged())
         submitList(newList)
         recyclerView?.scrollToPosition(0)
     }
@@ -111,6 +120,7 @@ class AdapterNews(
         if (mRealm != null) {
             this.mRealm = mRealm
             labelManager = NewsLabelManager(context, this.mRealm, currentUser)
+            submitList(this.mRealm.copyFromRealm(currentList))
         }
     }
 
@@ -333,7 +343,7 @@ class AdapterNews(
     }
 
     fun updateList(newList: List<RealmNews?>) {
-        submitList(newList.filterNotNull())
+        submitList(newList.filterNotNull().map { it.toUnmanaged() })
     }
 
     private fun setMemberClickListeners(holder: ViewHolderNews, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
