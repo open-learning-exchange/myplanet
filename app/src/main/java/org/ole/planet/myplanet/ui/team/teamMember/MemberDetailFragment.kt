@@ -10,11 +10,17 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMemberDetailBinding
 
 class MemberDetailFragment : Fragment() {
-    private lateinit var binding: FragmentMemberDetailBinding
+    private var _binding: FragmentMemberDetailBinding? = null
+    private val binding get() = _binding!!
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        binding = FragmentMemberDetailBinding.inflate(inflater, container, false)
+        _binding = FragmentMemberDetailBinding.inflate(inflater, container, false)
         return binding.root
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
