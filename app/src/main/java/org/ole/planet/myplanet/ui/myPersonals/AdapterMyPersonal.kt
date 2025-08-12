@@ -51,7 +51,8 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
                         ?.equalTo("_id", list[position]._id)?.findFirst()
                     personal?.deleteFromRealm()
                     realm?.commitTransaction()
-                    notifyDataSetChanged()
+                    notifyItemRemoved(position)
+                    notifyItemRangeChanged(position, list.size - position)
                     listener?.onAddedResource()
                 }.setNegativeButton(R.string.cancel, null).show()
         }
@@ -110,7 +111,7 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
                 personal.description = desc
                 personal.title = title
                 realm?.commitTransaction()
-                notifyDataSetChanged()
+                notifyItemChanged(position)
                 listener?.onAddedResource()
             }
             .setNegativeButton(R.string.cancel, null)

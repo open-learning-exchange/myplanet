@@ -7,7 +7,9 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
+import io.realm.OrderedRealmCollectionChangeListener
 import io.realm.Realm
+import io.realm.RealmResults
 import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSelectedMyPersonal
@@ -26,6 +28,9 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     lateinit var mRealm: Realm
     private lateinit var pg: DialogUtils.CustomProgressDialog
     private var addResourceFragment: AddResourceFragment? = null
+    private var realmChangeListener: OrderedRealmCollectionChangeListener<RealmResults<RealmMyPersonal>>? = null
+    private lateinit var realmMyPersonals: RealmResults<RealmMyPersonal>
+    private var personalAdapter: AdapterMyPersonal? = null
     
     @Inject
     lateinit var uploadManager: UploadManager
@@ -62,18 +67,28 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     }
 
     private fun setAdapter() {
+        realmChangeListener?.let { realmMyPersonals.removeChangeListener(it) }
         val model = UserProfileDbHandler(requireContext()).userModel
-        val realmMyPersonals: List<RealmMyPersonal> = mRealm.where(RealmMyPersonal::class.java)
+        realmMyPersonals = mRealm.where(RealmMyPersonal::class.java)
             .equalTo("userId", model?.id).findAll()
-        val personalAdapter = AdapterMyPersonal(requireActivity(), realmMyPersonals)
-        personalAdapter.setListener(this)
-        personalAdapter.setRealm(mRealm)
+        personalAdapter = AdapterMyPersonal(requireActivity(), realmMyPersonals)
+        personalAdapter?.setListener(this)
+        personalAdapter?.setRealm(mRealm)
         fragmentMyPersonalsBinding.rvMypersonal.adapter = personalAdapter
         showNodata()
-        mRealm.addChangeListener {
+        realmChangeListener = OrderedRealmCollectionChangeListener { _, changeSet ->
             showNodata()
-            personalAdapter.notifyDataSetChanged()
+            changeSet.insertions.forEach { index ->
+                personalAdapter?.notifyItemInserted(index)
+            }
+            changeSet.changes.forEach { index ->
+                personalAdapter?.notifyItemChanged(index)
+            }
+            changeSet.deletions.sortedDescending().forEach { index ->
+                personalAdapter?.notifyItemRemoved(index)
+            }
         }
+        realmMyPersonals.addChangeListener(realmChangeListener!!)
     }
 
     private fun showNodata() {
@@ -90,6 +105,14 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
         if (::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+    }
+
+    override fun onDestroyView() {
+        if (::pg.isInitialized && pg.isShowing) {
+            pg.dismiss()
+        }
+        realmChangeListener?.let { realmMyPersonals.removeChangeListener(it) }
+        super.onDestroyView()
     }
 
     override fun onUpload(personal: RealmMyPersonal?) {
