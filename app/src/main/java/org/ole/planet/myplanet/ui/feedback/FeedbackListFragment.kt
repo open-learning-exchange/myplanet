@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
+import io.realm.RealmChangeListener
 import io.realm.RealmResults
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -38,6 +39,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     private lateinit var mRealm: Realm
     var userModel: RealmUserModel? = null
     private var feedbackList: RealmResults<RealmFeedback>? = null
+    private var feedbackChangeListener: RealmChangeListener<RealmResults<RealmFeedback>>? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
 
@@ -141,10 +143,13 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     private fun setupFeedbackListener() {
+        feedbackChangeListener?.let { listener ->
+            feedbackList?.removeChangeListener(listener)
+        }
         feedbackList = mRealm.where(RealmFeedback::class.java)
             .equalTo("owner", userModel?.name).findAllAsync()
 
-        feedbackList?.addChangeListener { results ->
+        feedbackChangeListener = feedbackList?.addChangeListener { results ->
             updatedFeedbackList(results)
         }
     }
@@ -194,14 +199,20 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         updateTextViewsVisibility(itemCount)
     }
 
+    override fun onDestroyView() {
+        feedbackChangeListener?.let { listener ->
+            feedbackList?.removeChangeListener(listener)
+        }
+        if (this::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
+        super.onDestroyView()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         customProgressDialog?.dismiss()
         customProgressDialog = null
-
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
     }
 
     override fun onFeedbackSubmitted() {
