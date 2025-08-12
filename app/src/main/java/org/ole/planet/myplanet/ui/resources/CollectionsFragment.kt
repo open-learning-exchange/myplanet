@@ -130,6 +130,13 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
         fragmentCollectionsBinding.btnOk.visibility = if (b) View.VISIBLE else View.GONE
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
+    }
+
     companion object {
         private lateinit var recentList: MutableList<RealmTag>
         @JvmStatic
