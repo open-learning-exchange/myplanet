@@ -181,8 +181,13 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     private fun setupListeners() {
         addNewSurvey.setOnClickListener {}
 
+        var isSpinnerInitialized = false
         spn.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
+                if (!isSpinnerInitialized) {
+                    isSpinnerInitialized = true
+                    return
+                }
                 when (i) {
                     0 -> adapter.sortByDate(false)
                     1 -> adapter.sortByDate(true)
