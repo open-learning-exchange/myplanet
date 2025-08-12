@@ -57,7 +57,7 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
                 }.setNegativeButton(R.string.cancel, null).show()
         }
         rowMyPersonalBinding.imgEdit.setOnClickListener {
-            editPersonal(list[position])
+            editPersonal(list[position], position)
         }
         holder.itemView.setOnClickListener {
             openResource(list[position].path)
@@ -92,7 +92,7 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
         i.putExtras(b)
         context.startActivity(i)
     }
-    private fun editPersonal(personal: RealmMyPersonal) {
+    private fun editPersonal(personal: RealmMyPersonal, position: Int) {
         val alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(context))
         alertMyPersonalBinding.etDescription.setText(personal.description)
         alertMyPersonalBinding.etTitle.setText(personal.title)

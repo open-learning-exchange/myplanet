@@ -108,7 +108,7 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     }
 
     override fun onDestroyView() {
-        if (::pg.isInitialized && pg.isShowing) {
+        if (::pg.isInitialized && pg.isShowing()) {
             pg.dismiss()
         }
         realmChangeListener?.let { realmMyPersonals.removeChangeListener(it) }
