@@ -141,6 +141,7 @@
 
         <service
             android:name=".service.NetworkConnectivityService"
+            android:foregroundServiceType="dataSync"
             android:enabled="true"
             android:exported="false"/>
 
