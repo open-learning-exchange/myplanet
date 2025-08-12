@@ -323,7 +323,9 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = userRepository.getRealm()
+        profileDbHandler = UserProfileDbHandler(requireActivity())
+        mRealm = profileDbHandler.mRealm
+        model = profileDbHandler.userModel
         prgDialog = getProgressDialog(requireActivity())
         editor = settings.edit()
     }

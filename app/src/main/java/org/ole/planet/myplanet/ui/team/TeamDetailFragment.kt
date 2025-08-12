@@ -32,7 +32,6 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UploadManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.ApplicantsPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.CalendarPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.ChatPage
@@ -112,8 +111,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
         val teamId = requireArguments().getString("id" ) ?: ""
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
-        val user = UserProfileDbHandler(requireContext()).userModel
-        mRealm = userRepository.getRealm()
+        val user = profileDbHandler.userModel
 
         if (shouldQueryRealm(teamId)) {
             if (teamId.isNotEmpty()) {
@@ -360,27 +358,25 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     private fun createTeamLog() {
-        val userModel = UserProfileDbHandler(requireContext()).userModel ?: return
+        val userModel = profileDbHandler.userModel ?: return
         val userName = userModel.name
         val userPlanetCode = userModel.planetCode
         val userParentCode = userModel.parentCode
         val teamType = getEffectiveTeamType()
 
         CoroutineScope(Dispatchers.IO).launch {
-            val realm = userRepository.getRealm()
-
-            realm.executeTransaction { r ->
-                val log = r.createObject(RealmTeamLog::class.java, "${UUID.randomUUID()}")
-                log.teamId = getEffectiveTeamId()
-                log.user = userName
-                log.createdOn = userPlanetCode
-                log.type = "teamVisit"
-                log.teamType = teamType
-                log.parentCode = userParentCode
-                log.time = Date().time
+            MainApplication.service.withRealm { realm ->
+                realm.executeTransaction { r ->
+                    val log = r.createObject(RealmTeamLog::class.java, "${UUID.randomUUID()}")
+                    log.teamId = getEffectiveTeamId()
+                    log.user = userName
+                    log.createdOn = userPlanetCode
+                    log.type = "teamVisit"
+                    log.teamType = teamType
+                    log.parentCode = userParentCode
+                    log.time = Date().time
+                }
             }
-
-            realm.close()
         }
     }
 

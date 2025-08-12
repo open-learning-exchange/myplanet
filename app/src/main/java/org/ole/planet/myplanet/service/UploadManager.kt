@@ -80,13 +80,9 @@ class UploadManager @Inject constructor(
 
     private val gson = Gson()
 
-    private fun getRealm(): Realm {
-        return databaseService.realmInstance
-    }
-
     private fun uploadNewsActivities() {
         val apiInterface = client?.create(ApiInterface::class.java)
-        val realm = getRealm()
+        val realm = databaseService.realmInstance
         realm.executeTransactionAsync { realm: Realm ->
             val newsLog: List<RealmNewsLog> = realm.where(RealmNewsLog::class.java)
                 .isNull("_id").or().isEmpty("_id")
@@ -170,7 +166,7 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadExamResult(listener: SuccessListener) {
-        val realm = getRealm()
+        val realm = databaseService.realmInstance
         val apiInterface = client?.create(ApiInterface::class.java)
 
         realm.executeTransactionAsync({ realm: Realm ->
@@ -213,7 +209,7 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadAchievement() {
-        val realm = getRealm()
+        val realm = databaseService.realmInstance
         realm.executeTransactionAsync { realm: Realm ->
             val list: List<RealmAchievement> = realm.where(RealmAchievement::class.java).findAll()
             list.processInBatches { sub ->
@@ -231,7 +227,7 @@ class UploadManager @Inject constructor(
 
     private fun uploadCourseProgress() {
         val apiInterface = client?.create(ApiInterface::class.java)
-        val realm = getRealm()
+        val realm = databaseService.realmInstance
         realm.executeTransactionAsync { realm: Realm ->
             val data: List<RealmCourseProgress> = realm.where(RealmCourseProgress::class.java).isNull("_id").findAll()
             var successCount = 0
@@ -264,7 +260,7 @@ class UploadManager @Inject constructor(
 
     fun uploadFeedback(listener: SuccessListener) {
         val apiInterface = client?.create(ApiInterface::class.java)
-        val realm = getRealm()
+        val realm = databaseService.realmInstance
         realm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
             val feedbacks: List<RealmFeedback> = realm.where(RealmFeedback::class.java).findAll()
 
@@ -307,7 +303,7 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadSubmitPhotos(listener: SuccessListener?) {
-        val realm = getRealm()
+        val realm = databaseService.realmInstance
         val apiInterface = client?.create(ApiInterface::class.java)
         realm.executeTransactionAsync { realm: Realm ->
             val data: List<RealmSubmitPhotos> = realm.where(RealmSubmitPhotos::class.java).equalTo("uploaded", false).findAll()
@@ -333,7 +329,7 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadResource(listener: SuccessListener?) {
-        val realm = getRealm()
+        val realm = databaseService.realmInstance
         val apiInterface = client?.create(ApiInterface::class.java)
 
         realm.executeTransactionAsync({ realm: Realm ->
@@ -377,7 +373,7 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadMyPersonal(personal: RealmMyPersonal, listener: SuccessListener) {
-        val realm = getRealm()
+        val realm = databaseService.realmInstance
         val apiInterface = client?.create(ApiInterface::class.java)
 
         if (!personal.isUploaded) {
@@ -418,7 +414,7 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadTeamTask() {
-        val realm = getRealm()
+        val realm = databaseService.realmInstance
         val apiInterface = client?.create(ApiInterface::class.java)
         realm.executeTransactionAsync { realm: Realm ->
             val list: List<RealmTeamTask> = realm.where(RealmTeamTask::class.java).findAll()
@@ -444,7 +440,7 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadSubmissions() {
-        val realm = getRealm()
+        val realm = databaseService.realmInstance
         val apiInterface = client?.create(ApiInterface::class.java)
 
         realm.executeTransactionAsync { realm: Realm ->
@@ -473,7 +469,7 @@ class UploadManager @Inject constructor(
 
     fun uploadTeams() {
         val apiInterface = client?.create(ApiInterface::class.java)
-        val realm = getRealm()
+        val realm = databaseService.realmInstance
 
         realm.executeTransactionAsync { realm: Realm ->
             val teams: List<RealmMyTeam> = realm.where(RealmMyTeam::class.java).equalTo("updated", true).findAll()
@@ -503,7 +499,7 @@ class UploadManager @Inject constructor(
             return
         }
 
-        val realm = getRealm()
+        val realm = databaseService.realmInstance
         realm.executeTransactionAsync({ transactionRealm: Realm ->
             val activities = transactionRealm.where(RealmOfflineActivity::class.java).isNull("_rev").equalTo("type", "login").findAll()
 
@@ -546,7 +542,7 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadRating() {
-        val realm = getRealm()
+        val realm = databaseService.realmInstance
         val apiInterface = client?.create(ApiInterface::class.java)
 
         realm.executeTransactionAsync { realm: Realm ->
@@ -576,7 +572,7 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadNews() {
-        val realm = getRealm()
+        val realm = databaseService.realmInstance
         val apiInterface = client?.create(ApiInterface::class.java)
 
         realm.executeTransactionAsync { realm: Realm ->
@@ -652,7 +648,7 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadCrashLog() {
-        val realm = getRealm()
+        val realm = databaseService.realmInstance
         val apiInterface = client?.create(ApiInterface::class.java)
 
         try {
@@ -689,7 +685,7 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadSearchActivity() {
-        val realm = getRealm()
+        val realm = databaseService.realmInstance
         val apiInterface = client?.create(ApiInterface::class.java)
         realm.executeTransactionAsync { realm: Realm ->
             val logs: RealmResults<RealmSearchActivity> = realm.where(RealmSearchActivity::class.java).isEmpty("_rev").findAll()
@@ -708,7 +704,7 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadResourceActivities(type: String) {
-        val realm = getRealm()
+        val realm = databaseService.realmInstance
         val apiInterface = client?.create(ApiInterface::class.java)
 
         val db = if (type == "sync") {
@@ -740,7 +736,7 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadCourseActivities() {
-        val realm = getRealm()
+        val realm = databaseService.realmInstance
         val apiInterface = client?.create(ApiInterface::class.java)
 
         realm.executeTransactionAsync { realm: Realm ->
@@ -761,7 +757,7 @@ class UploadManager @Inject constructor(
     }
 
     fun uploadMeetups() {
-        val realm = getRealm()
+        val realm = databaseService.realmInstance
         val apiInterface = client?.create(ApiInterface::class.java)
         realm.executeTransactionAsync { realm: Realm ->
             val meetups: List<RealmMeetup> = realm.where(RealmMeetup::class.java).findAll()

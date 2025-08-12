@@ -10,7 +10,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBinding
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSurveySubmissionByUser
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.news.NewsFragment
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
@@ -39,8 +38,8 @@ class DashboardFragment : BaseDashboardFragment() {
         fragmentHomeBinding.cardProfile.tvAchievement.setOnClickListener {
             homeItemClickListener?.openCallFragment(AchievementFragment())
         }
-        dRealm = userRepository.getRealm()
-        user = UserProfileDbHandler(requireContext()).userModel
+        dRealm = mRealm
+        user = profileDbHandler.userModel
         onLoaded(view)
         initView(view)
         (activity as AppCompatActivity?)?.supportActionBar?.subtitle = currentDate()

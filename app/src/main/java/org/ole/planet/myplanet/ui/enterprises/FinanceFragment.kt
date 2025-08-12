@@ -47,7 +47,7 @@ class FinanceFragment : BaseTeamFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentFinanceBinding = FragmentFinanceBinding.inflate(inflater, container, false)
-        fRealm = userRepository.getRealm()
+        fRealm = mRealm
         date = Calendar.getInstance()
         fragmentFinanceBinding.tvFromDateCalendar.setOnClickListener {
             showDatePickerDialog(isFromDate = true)

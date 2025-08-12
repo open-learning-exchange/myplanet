@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRating.Companion.getRatingsById
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.getNoOfExam
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
@@ -37,9 +36,9 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentCourseDetailBinding = FragmentCourseDetailBinding.inflate(inflater, container, false)
-        cRealm = userRepository.getRealm()
+        cRealm = mRealm
         courses = cRealm.where(RealmMyCourse::class.java).equalTo("courseId", id).findFirst()
-        user = UserProfileDbHandler(requireContext()).userModel
+        user = profileDbHandler.userModel
         return fragmentCourseDetailBinding.root
     }
 

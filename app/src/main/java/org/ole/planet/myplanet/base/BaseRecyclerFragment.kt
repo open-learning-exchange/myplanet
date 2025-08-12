@@ -83,9 +83,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         tvMessage = v.findViewById(R.id.tv_message)
         selectedItems = mutableListOf()
         list = mutableListOf()
-        mRealm = userRepository.getRealm()
         profileDbHandler = UserProfileDbHandler(requireActivity())
-        model = profileDbHandler.userModel!!
+        mRealm = profileDbHandler.mRealm
+        model = profileDbHandler.userModel
         val adapter = getAdapter()
         recyclerView.adapter = adapter
         if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
