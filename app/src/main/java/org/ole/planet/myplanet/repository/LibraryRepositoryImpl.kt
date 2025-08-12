@@ -11,7 +11,9 @@ class LibraryRepositoryImpl @Inject constructor(
 
     override suspend fun getAllLibraryItemsAsync(): List<RealmMyLibrary> {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmMyLibrary::class.java).findAll()
+            realm.copyFromRealm(
+                realm.where(RealmMyLibrary::class.java).findAll()
+            )
         }
     }
 
@@ -20,14 +22,17 @@ class LibraryRepositoryImpl @Inject constructor(
             realm.where(RealmMyLibrary::class.java)
                 .equalTo("id", id)
                 .findFirst()
+                ?.let { realm.copyFromRealm(it) }
         }
     }
 
     override suspend fun getOfflineLibraryItemsAsync(): List<RealmMyLibrary> {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmMyLibrary::class.java)
-                .equalTo("resourceOffline", true)
-                .findAll()
+            realm.copyFromRealm(
+                realm.where(RealmMyLibrary::class.java)
+                    .equalTo("resourceOffline", true)
+                    .findAll()
+            )
         }
     }
 
@@ -36,7 +41,9 @@ class LibraryRepositoryImpl @Inject constructor(
             val results = realm.where(RealmMyLibrary::class.java)
                 .equalTo("isPrivate", false)
                 .findAll()
-            filterLibrariesNeedingUpdate(results).filter { it.userId?.contains(userId) == true }
+            val filteredList =
+                filterLibrariesNeedingUpdate(results).filter { it.userId?.contains(userId) == true }
+            realm.copyFromRealm(filteredList)
         }
     }
 
@@ -45,17 +52,20 @@ class LibraryRepositoryImpl @Inject constructor(
             val results = realm.where(RealmMyLibrary::class.java)
                 .equalTo("resourceOffline", false)
                 .findAll()
-            filterLibrariesNeedingUpdate(results)
+            val filteredList = filterLibrariesNeedingUpdate(results)
+            realm.copyFromRealm(filteredList)
         }
     }
 
     override suspend fun getCourseLibraryItems(courseIds: List<String>): List<RealmMyLibrary> {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmMyLibrary::class.java)
-                .`in`("courseId", courseIds.toTypedArray())
-                .equalTo("resourceOffline", false)
-                .isNotNull("resourceLocalAddress")
-                .findAll()
+            realm.copyFromRealm(
+                realm.where(RealmMyLibrary::class.java)
+                    .`in`("courseId", courseIds.toTypedArray())
+                    .equalTo("resourceOffline", false)
+                    .isNotNull("resourceLocalAddress")
+                    .findAll()
+            )
         }
     }
 
