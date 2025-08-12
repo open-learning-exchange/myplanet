@@ -168,7 +168,7 @@ class BecomeMemberActivity : BaseActivity() {
         EdgeToEdgeUtil.setupEdgeToEdge(this, activityBecomeMemberBinding.root)
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        val mRealm: Realm = databaseService.realmInstance
+        mRealm = databaseService.realmInstance
         val languages = resources.getStringArray(R.array.language)
         val lnAadapter = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, languages)
         activityBecomeMemberBinding.spnLang.adapter = lnAadapter
@@ -183,7 +183,7 @@ class BecomeMemberActivity : BaseActivity() {
         guest = intent.getBooleanExtra("guest", false)
 
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        setupTextWatchers(mRealm)
+        setupTextWatchers()
 
         if (guest) {
             activityBecomeMemberBinding.etUsername.setText(username)
@@ -203,8 +203,14 @@ class BecomeMemberActivity : BaseActivity() {
         }
     }
 
+    override fun onDestroy() {
+        if (!mRealm.isClosed) {
+            mRealm.close()
+        }
+        super.onDestroy()
+    }
+
     private fun autoLoginNewMember(username: String, password: String) {
-        val mRealm = databaseService.realmInstance
         RealmUserModel.cleanupDuplicateUsers(mRealm)
         mRealm.close()
 
@@ -220,7 +226,7 @@ class BecomeMemberActivity : BaseActivity() {
         finish()
     }
 
-    private fun setupTextWatchers(mRealm: Realm) {
+    private fun setupTextWatchers() {
         activityBecomeMemberBinding.etUsername.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
