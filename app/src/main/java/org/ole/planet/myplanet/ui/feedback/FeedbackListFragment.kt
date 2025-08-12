@@ -39,7 +39,10 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     private lateinit var mRealm: Realm
     var userModel: RealmUserModel? = null
     private var feedbackList: RealmResults<RealmFeedback>? = null
-    private var feedbackChangeListener: RealmChangeListener<RealmResults<RealmFeedback>>? = null
+    private val feedbackChangeListener =
+        RealmChangeListener<RealmResults<RealmFeedback>> { results ->
+            updatedFeedbackList(results)
+        }
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
 
@@ -143,15 +146,10 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     private fun setupFeedbackListener() {
-        feedbackChangeListener?.let { listener ->
-            feedbackList?.removeChangeListener(listener)
-        }
+        feedbackList?.removeChangeListener(feedbackChangeListener)
         feedbackList = mRealm.where(RealmFeedback::class.java)
             .equalTo("owner", userModel?.name).findAllAsync()
-
-        feedbackChangeListener = feedbackList?.addChangeListener { results ->
-            updatedFeedbackList(results)
-        }
+        feedbackList?.addChangeListener(feedbackChangeListener)
     }
 
     private fun refreshFeedbackData() {
@@ -200,9 +198,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     override fun onDestroyView() {
-        feedbackChangeListener?.let { listener ->
-            feedbackList?.removeChangeListener(listener)
-        }
+        feedbackList?.removeChangeListener(feedbackChangeListener)
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
