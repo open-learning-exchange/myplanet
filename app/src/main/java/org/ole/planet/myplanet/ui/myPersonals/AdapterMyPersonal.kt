@@ -43,28 +43,38 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
         rowMyPersonalBinding.description.text = list[position].description
         rowMyPersonalBinding.date.text = getFormattedDate(list[position].date)
         rowMyPersonalBinding.imgDelete.setOnClickListener {
-            AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                .setMessage(R.string.delete_record)
-                .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                    if (!realm?.isInTransaction!!) realm?.beginTransaction()
-                    val personal = realm?.where(RealmMyPersonal::class.java)
-                        ?.equalTo("_id", list[position]._id)?.findFirst()
-                    personal?.deleteFromRealm()
-                    realm?.commitTransaction()
-                    notifyItemRemoved(position)
-                    notifyItemRangeChanged(position, list.size - position)
-                    listener?.onAddedResource()
-                }.setNegativeButton(R.string.cancel, null).show()
+            val currentPosition = holder.bindingAdapterPosition
+            if (currentPosition != RecyclerView.NO_POSITION) {
+                AlertDialog.Builder(context, R.style.AlertDialogTheme)
+                    .setMessage(R.string.delete_record)
+                    .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
+                        if (!realm?.isInTransaction!!) realm?.beginTransaction()
+                        val personal = realm?.where(RealmMyPersonal::class.java)
+                            ?.equalTo("_id", list[currentPosition]._id)?.findFirst()
+                        personal?.deleteFromRealm()
+                        realm?.commitTransaction()
+                        notifyItemRemoved(currentPosition)
+                        notifyItemRangeChanged(currentPosition, list.size - currentPosition)
+                        listener?.onAddedResource()
+                    }.setNegativeButton(R.string.cancel, null).show()
+            }
         }
         rowMyPersonalBinding.imgEdit.setOnClickListener {
-            editPersonal(list[position], position)
+            val currentPosition = holder.bindingAdapterPosition
+            if (currentPosition != RecyclerView.NO_POSITION) {
+                editPersonal(list[currentPosition], currentPosition)
+            }
         }
         holder.itemView.setOnClickListener {
-            openResource(list[position].path)
+            val currentPosition = holder.bindingAdapterPosition
+            if (currentPosition != RecyclerView.NO_POSITION) {
+                openResource(list[currentPosition].path)
+            }
         }
         rowMyPersonalBinding.imgUpload.setOnClickListener {
-            if (listener != null) {
-                listener?.onUpload(list[position])
+            val currentPosition = holder.bindingAdapterPosition
+            if (currentPosition != RecyclerView.NO_POSITION && listener != null) {
+                listener?.onUpload(list[currentPosition])
             }
         }
     }
