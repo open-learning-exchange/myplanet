@@ -470,8 +470,8 @@ open class RealmUserModel : RealmObject() {
         }
 
         @JvmStatic
-        fun cleanupDuplicateUsers(realm: Realm) {
-            realm.executeTransaction { mRealm ->
+        fun cleanupDuplicateUsers(realm: Realm, onSuccess: () -> Unit) {
+            realm.executeTransactionAsync({ mRealm: Realm ->
                 val allUsers = mRealm.where(RealmUserModel::class.java).findAll()
                 val usersByName = allUsers.groupBy { it.name }
 
@@ -492,6 +492,9 @@ open class RealmUserModel : RealmObject() {
                         }
                     }
                 }
+            }, {
+                onSuccess.invoke()
+            }) {
             }
         }
     }

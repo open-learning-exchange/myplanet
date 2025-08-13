@@ -205,19 +205,20 @@ class BecomeMemberActivity : BaseActivity() {
 
     private fun autoLoginNewMember(username: String, password: String) {
         val mRealm = databaseService.realmInstance
-        RealmUserModel.cleanupDuplicateUsers(mRealm)
-        mRealm.close()
+        RealmUserModel.cleanupDuplicateUsers(mRealm) {
+            mRealm.close()
 
-        val intent = Intent(this, LoginActivity::class.java)
-        intent.putExtra("username", username)
-        intent.putExtra("password", password)
-        intent.putExtra("auto_login", true)
-        if (guest) {
-            intent.putExtra("guest", guest)
+            val intent = Intent(this, LoginActivity::class.java)
+            intent.putExtra("username", username)
+            intent.putExtra("password", password)
+            intent.putExtra("auto_login", true)
+            if (guest) {
+                intent.putExtra("guest", guest)
+            }
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(intent)
+            finish()
         }
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
-        startActivity(intent)
-        finish()
     }
 
     private fun setupTextWatchers(mRealm: Realm) {
