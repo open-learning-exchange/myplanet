@@ -98,9 +98,9 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        super.onDestroyView()
     }
 }
