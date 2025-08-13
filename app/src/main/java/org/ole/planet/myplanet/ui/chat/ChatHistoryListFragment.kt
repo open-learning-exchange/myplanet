@@ -222,38 +222,38 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     fun refreshChatHistoryList() {
-        databaseService.withRealm { realm ->
-            val list = realm.copyFromRealm(
+        val list = databaseService.withRealm { realm ->
+            realm.copyFromRealm(
                 realm.where(RealmChatHistory::class.java)
                     .equalTo("user", user?.name)
                     .sort("id", Sort.DESCENDING)
                     .findAll()
             )
+        }
 
-            val adapter = fragmentChatHistoryListBinding.recyclerView.adapter as? ChatHistoryListAdapter
-            if (adapter == null) {
-                val newAdapter = ChatHistoryListAdapter(requireContext(), list, this, databaseService, settings)
-                newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
-                    override fun onChatHistoryItemClicked(conversations: List<Conversation>?, id: String, rev: String?, aiProvider: String?) {
-                        conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
-                        sharedViewModel.setSelectedId(id)
-                        rev?.let { sharedViewModel.setSelectedRev(it) }
-                        aiProvider?.let { sharedViewModel.setSelectedAiProvider(it) }
-                        fragmentChatHistoryListBinding.slidingPaneLayout.openPane()
-                    }
-                })
-                fragmentChatHistoryListBinding.recyclerView.adapter = newAdapter
-            } else {
-                adapter.updateChatHistory(list)
-                fragmentChatHistoryListBinding.searchBar.visibility = View.VISIBLE
-                fragmentChatHistoryListBinding.recyclerView.visibility = View.VISIBLE
-            }
+        val adapter = fragmentChatHistoryListBinding.recyclerView.adapter as? ChatHistoryListAdapter
+        if (adapter == null) {
+            val newAdapter = ChatHistoryListAdapter(requireContext(), list, this, databaseService, settings)
+            newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
+                override fun onChatHistoryItemClicked(conversations: List<Conversation>?, id: String, rev: String?, aiProvider: String?) {
+                    conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
+                    sharedViewModel.setSelectedId(id)
+                    rev?.let { sharedViewModel.setSelectedRev(it) }
+                    aiProvider?.let { sharedViewModel.setSelectedAiProvider(it) }
+                    fragmentChatHistoryListBinding.slidingPaneLayout.openPane()
+                }
+            })
+            fragmentChatHistoryListBinding.recyclerView.adapter = newAdapter
+        } else {
+            adapter.updateChatHistory(list)
+            fragmentChatHistoryListBinding.searchBar.visibility = View.VISIBLE
+            fragmentChatHistoryListBinding.recyclerView.visibility = View.VISIBLE
+        }
 
-            showNoData(fragmentChatHistoryListBinding.noChats, list.size, "chatHistory")
-            if (list.isEmpty()) {
-                fragmentChatHistoryListBinding.searchBar.visibility = View.GONE
-                fragmentChatHistoryListBinding.recyclerView.visibility = View.GONE
-            }
+        showNoData(fragmentChatHistoryListBinding.noChats, list.size, "chatHistory")
+        if (list.isEmpty()) {
+            fragmentChatHistoryListBinding.searchBar.visibility = View.GONE
+            fragmentChatHistoryListBinding.recyclerView.visibility = View.GONE
         }
     }
 
