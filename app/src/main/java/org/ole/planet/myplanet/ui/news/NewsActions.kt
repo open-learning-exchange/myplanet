@@ -165,7 +165,7 @@ object NewsActions {
     ) {
         val ar = Gson().fromJson(news?.viewIn, JsonArray::class.java)
         if (!realm.isInTransaction) realm.beginTransaction()
-        val position = list.indexOf(news)
+        val position = list.indexOfFirst { it.id == news?.id }
         if (position != -1) {
             list.removeAt(position)
         }

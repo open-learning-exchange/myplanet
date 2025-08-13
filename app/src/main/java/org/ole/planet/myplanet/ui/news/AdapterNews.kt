@@ -81,8 +81,12 @@ class AdapterNews(
     }
 
     private fun RealmNews.toUnmanaged(): RealmNews {
-        return if (::mRealm.isInitialized && RealmObject.isManaged(this)) {
-            mRealm.copyFromRealm(this)
+        return if (RealmObject.isManaged(this)) {
+            if (::mRealm.isInitialized) {
+                mRealm.copyFromRealm(this)
+            } else {
+                Realm.getDefaultInstance().use { realm -> realm.copyFromRealm(this) }
+            }
         } else {
             this
         }
@@ -117,10 +121,10 @@ class AdapterNews(
     }
 
     fun setmRealm(mRealm: Realm?) {
-        if (mRealm != null) {
-            this.mRealm = mRealm
+        mRealm?.let {
+            this.mRealm = it
             labelManager = NewsLabelManager(context, this.mRealm, currentUser)
-            submitList(this.mRealm.copyFromRealm(currentList))
+            submitList(currentList.map { item -> item.toUnmanaged() })
         }
     }
 
