@@ -12,6 +12,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
     var user: RealmUserModel? = null
     lateinit var teamId: String
     var team: RealmMyTeam? = null
+    private var realmInitialized = false
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -20,6 +21,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         val communityName = settings.getString("communityName", "")
         teamId = requireArguments().getString("id", "") ?: "$communityName@$sParentCode"
         mRealm = userRepository.getRealm()
+        realmInitialized = true
         user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
 
         if (shouldQueryTeamFromRealm()) {
@@ -69,16 +71,12 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
     }
 
     override fun onDestroy() {
-        try {
-            if (!mRealm.isClosed) {
-                mRealm.removeAllChangeListeners()
-                if (mRealm.isInTransaction) {
-                    mRealm.cancelTransaction()
-                }
-                mRealm.close()
+        if (realmInitialized && !mRealm.isClosed) {
+            mRealm.removeAllChangeListeners()
+            if (mRealm.isInTransaction) {
+                mRealm.cancelTransaction()
             }
-        } catch (_: UninitializedPropertyAccessException) {
-            // Realm instance was never initialized; nothing to close
+            mRealm.close()
         }
         super.onDestroy()
     }
