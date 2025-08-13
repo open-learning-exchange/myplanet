@@ -68,4 +68,15 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         return requireArguments().getString("teamId") ?: teamId
     }
 
+    override fun onDestroy() {
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.removeAllChangeListeners()
+            if (mRealm.isInTransaction) {
+                mRealm.cancelTransaction()
+            }
+            mRealm.close()
+        }
+        super.onDestroy()
+    }
+
 }
