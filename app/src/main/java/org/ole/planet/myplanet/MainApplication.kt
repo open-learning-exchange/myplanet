@@ -38,7 +38,7 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.service.AutoSyncWorker
-import org.ole.planet.myplanet.service.NetworkConnectivityService
+import org.ole.planet.myplanet.service.NetworkMonitorWorker
 import org.ole.planet.myplanet.service.StayOnlineWorker
 import org.ole.planet.myplanet.service.TaskNotificationWorker
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -238,7 +238,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
         scheduleStayOnlineWork()
         scheduleTaskNotificationWork()
-        startNetworkConnectivityService()
+        startNetworkMonitoring()
     }
 
     private fun registerExceptionHandler() {
@@ -305,14 +305,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         workManager.enqueueUniquePeriodicWork(TASK_NOTIFICATION_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, taskNotificationWork)
     }
 
-    private fun startNetworkConnectivityService() {
-        try {
-            val serviceIntent = Intent(this, NetworkConnectivityService::class.java)
-            startForegroundService(serviceIntent)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            createLog("service_start_error", "Failed to start NetworkConnectivityService: ${e.message}")
-        }
+    private fun startNetworkMonitoring() {
+        NetworkMonitorWorker.start(this)
     }
 
     override fun attachBaseContext(base: Context) {
