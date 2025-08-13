@@ -13,7 +13,6 @@ import com.google.gson.JsonObject
 import io.realm.RealmResults
 import java.util.Calendar
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -23,7 +22,11 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-class AdapterReports(private val context: Context, private var list: RealmResults<RealmMyTeam>) : RecyclerView.Adapter<AdapterReports.ViewHolderReports>() {
+class AdapterReports(
+    private val context: Context,
+    private var list: RealmResults<RealmMyTeam>,
+    private val scope: CoroutineScope
+) : RecyclerView.Adapter<AdapterReports.ViewHolderReports>() {
     private lateinit var reportListItemBinding: ReportListItemBinding
     private var startTimeStamp: String? = null
     private var endTimeStamp: String? = null
@@ -156,7 +159,7 @@ class AdapterReports(private val context: Context, private var list: RealmResult
                         addProperty("updatedDate", System.currentTimeMillis())
                         addProperty("updated", true)
                     }
-                    CoroutineScope(Dispatchers.Main).launch {
+                    scope.launch {
                         try {
                             MainApplication.service.executeTransactionAsync { realm ->
                                 RealmMyTeam.updateReports(doc, realm)
@@ -178,7 +181,7 @@ class AdapterReports(private val context: Context, private var list: RealmResult
                 builder.setTitle(context.getString(R.string.delete_report))
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _, _ ->
-                        CoroutineScope(Dispatchers.Main).launch {
+                        scope.launch {
                             try {
                                 MainApplication.service.executeTransactionAsync { realm ->
                                     realm.where(RealmMyTeam::class.java)

@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.JsonObject
 import io.realm.RealmResults
@@ -233,7 +234,7 @@ class ReportsFragment : BaseTeamFragment() {
 
     fun updatedReportsList(results: RealmResults<RealmMyTeam>) {
         activity?.runOnUiThread {
-            adapterReports = AdapterReports(requireContext(), results)
+            adapterReports = AdapterReports(requireContext(), results, viewLifecycleOwner.lifecycleScope)
             adapterReports.setNonTeamMember(!isMember())
             fragmentReportsBinding.rvReports.layoutManager = LinearLayoutManager(activity)
             fragmentReportsBinding.rvReports.adapter = adapterReports
