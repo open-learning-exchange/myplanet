@@ -20,6 +20,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.databinding.DialogAddReportBinding
@@ -123,6 +124,7 @@ class ReportsFragment : BaseTeamFragment() {
                     dialogAddReportBinding.nonPersonnel.error = "non-personnel is required"
                 } else {
                     val doc = JsonObject().apply {
+                        addProperty("_id", UUID.randomUUID().toString())
                         addProperty("createdDate", System.currentTimeMillis())
                         addProperty("description", "${dialogAddReportBinding.summary.text}")
                         addProperty("beginningBalance", "${dialogAddReportBinding.beginningBalance.text}")
