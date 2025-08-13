@@ -160,7 +160,6 @@ class SettingActivity : AppCompatActivity() {
         }
 
         private fun clearDataButtonInit() {
-            val mRealm = (requireActivity() as SettingActivity).databaseService.realmInstance
             val preference = findPreference<Preference>("reset_app")
             if (preference != null) {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {
@@ -180,13 +179,19 @@ class SettingActivity : AppCompatActivity() {
                 prefFreeUp.onPreferenceClickListener = OnPreferenceClickListener {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure_want_to_delete_all_the_files)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            mRealm.executeTransactionAsync({ realm: Realm ->
-                                val libraries = realm.where(RealmMyLibrary::class.java).findAll()
-                                for (library in libraries) library.resourceOffline = false }, {
-                                val f = File(Utilities.SD_PATH)
-                                deleteRecursive(f)
-                                Utilities.toast(requireActivity(), R.string.data_cleared.toString()) }) {
-                                Utilities.toast(requireActivity(), R.string.unable_to_clear_files.toString())
+                            (requireActivity() as SettingActivity).databaseService.withRealm { realm ->
+                                realm.executeTransactionAsync({ bgRealm ->
+                                    val libraries = bgRealm.where(RealmMyLibrary::class.java).findAll()
+                                    for (library in libraries) {
+                                        library.resourceOffline = false
+                                    }
+                                }, {
+                                    val f = File(Utilities.SD_PATH)
+                                    deleteRecursive(f)
+                                    Utilities.toast(requireActivity(), R.string.data_cleared.toString())
+                                }) {
+                                    Utilities.toast(requireActivity(), R.string.unable_to_clear_files.toString())
+                                }
                             }
                         }.setNegativeButton("No", null).show()
                     false
