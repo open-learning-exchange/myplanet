@@ -96,4 +96,11 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
             }
         }
     }
+
+    override fun onDestroyView() {
+        if (this::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
+        super.onDestroyView()
+    }
 }
