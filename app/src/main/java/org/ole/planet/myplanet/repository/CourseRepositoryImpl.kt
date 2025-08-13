@@ -11,7 +11,9 @@ class CourseRepositoryImpl @Inject constructor(
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmMyCourse::class.java).findAll()
+            realm.copyFromRealm(
+                realm.where(RealmMyCourse::class.java).findAll()
+            )
         }
     }
 
@@ -20,23 +22,28 @@ class CourseRepositoryImpl @Inject constructor(
             realm.where(RealmMyCourse::class.java)
                 .equalTo("courseId", id)
                 .findFirst()
+                ?.let { realm.copyFromRealm(it) }
         }
     }
 
     override suspend fun getEnrolledCourses(): List<RealmMyCourse> {
         return databaseService.withRealmAsync { realm ->
             val userId = getCurrentUserId(realm)
-            realm.where(RealmMyCourse::class.java)
-                .equalTo("userId", userId)
-                .findAll()
+            realm.copyFromRealm(
+                realm.where(RealmMyCourse::class.java)
+                    .equalTo("userId", userId)
+                    .findAll()
+            )
         }
     }
 
     override suspend fun getCoursesByUserId(userId: String): List<RealmMyCourse> {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmMyCourse::class.java)
-                .equalTo("userId", userId)
-                .findAll()
+            realm.copyFromRealm(
+                realm.where(RealmMyCourse::class.java)
+                    .equalTo("userId", userId)
+                    .findAll()
+            )
         }
     }
 
