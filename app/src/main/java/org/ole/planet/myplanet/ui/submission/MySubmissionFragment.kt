@@ -162,6 +162,13 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         fragmentMySubmissionBinding.rvMysurvey.adapter = adapter
     }
 
+    override fun onDestroyView() {
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
+        super.onDestroyView()
+    }
+
     companion object {
         @JvmStatic
         fun newInstance(type: String?): Fragment {
