@@ -69,12 +69,16 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
     }
 
     override fun onDestroy() {
-        if (::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.removeAllChangeListeners()
-            if (mRealm.isInTransaction) {
-                mRealm.cancelTransaction()
+        try {
+            if (!mRealm.isClosed) {
+                mRealm.removeAllChangeListeners()
+                if (mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
+                mRealm.close()
             }
-            mRealm.close()
+        } catch (_: UninitializedPropertyAccessException) {
+            // Realm instance was never initialized; nothing to close
         }
         super.onDestroy()
     }
