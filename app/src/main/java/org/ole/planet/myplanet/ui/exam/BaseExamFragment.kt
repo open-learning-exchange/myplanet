@@ -231,9 +231,9 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         if (::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        super.onDestroy()
     }
 }
