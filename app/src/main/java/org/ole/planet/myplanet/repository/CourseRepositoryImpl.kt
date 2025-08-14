@@ -3,10 +3,10 @@ package org.ole.planet.myplanet.repository
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmUserModel
 
 class CourseRepositoryImpl @Inject constructor(
-    private val databaseService: DatabaseService
+    private val databaseService: DatabaseService,
+    private val userRepository: UserRepository,
 ) : CourseRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
@@ -27,8 +27,8 @@ class CourseRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getEnrolledCourses(): List<RealmMyCourse> {
+        val userId = userRepository.getCurrentUser()?.id ?: ""
         return databaseService.withRealmAsync { realm ->
-            val userId = getCurrentUserId(realm)
             realm.copyFromRealm(
                 realm.where(RealmMyCourse::class.java)
                     .equalTo("userId", userId)
@@ -69,10 +69,5 @@ class CourseRepositoryImpl @Inject constructor(
                 .findFirst()
                 ?.deleteFromRealm()
         }
-    }
-
-    private fun getCurrentUserId(realm: io.realm.Realm): String {
-        return realm.where(RealmUserModel::class.java)
-            .findFirst()?.id ?: ""
     }
 }
