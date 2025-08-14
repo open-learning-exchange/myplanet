@@ -496,11 +496,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         )
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        mRealm.close()
-    }
-
     override fun onCheckedChanged(compoundButton: CompoundButton, isChecked: Boolean) {
         if (isChecked) {
             handleChecked(compoundButton)
