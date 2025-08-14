@@ -4,7 +4,7 @@ apply plugin: 'kotlin-kapt'
 apply plugin: 'kotlinx-serialization'
 apply plugin: 'dagger.hilt.android.plugin'
 apply plugin: 'realm-android'
-android
+android {
     compileSdk = 35
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
