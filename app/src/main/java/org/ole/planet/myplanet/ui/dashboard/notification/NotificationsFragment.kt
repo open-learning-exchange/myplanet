@@ -265,9 +265,9 @@ class NotificationsFragment : Fragment() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         if (::mRealm.isInitialized) {
             mRealm.close()
         }
+        super.onDestroy()
     }
 }

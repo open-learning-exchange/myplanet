@@ -388,9 +388,9 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         customProgressDialog?.dismiss()
         customProgressDialog = null
+        super.onDestroy()
     }
 
     companion object {

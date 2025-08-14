@@ -603,9 +603,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         customProgressDialog?.dismiss()
         customProgressDialog = null
+        super.onDestroy()
     }
 
     private fun recreateFragment(fragment: Fragment) {
