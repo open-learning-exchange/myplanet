@@ -79,10 +79,10 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         if (this::cRealm.isInitialized && !cRealm.isClosed) {
             cRealm.close()
         }
+        super.onDestroy()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

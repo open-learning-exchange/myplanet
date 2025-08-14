@@ -225,7 +225,6 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         setRatings(`object`)
     }
     override fun onDestroy() {
-        super.onDestroy()
         fragmentScope.cancel()
         if (this::lRealm.isInitialized && !lRealm.isClosed) {
             lRealm.close()
@@ -236,5 +235,6 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
         } catch (_: UninitializedPropertyAccessException) {
         }
+        super.onDestroy()
     }
 }

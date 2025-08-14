@@ -858,13 +858,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         if (this::bManager.isInitialized) {
             bManager.unregisterReceiver(broadcastReceiver)
         }
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        super.onDestroy()
     }
     companion object {
         lateinit var cal_today: Calendar

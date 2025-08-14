@@ -325,10 +325,10 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onDestroyView() {
         fragmentTakeCourseBinding.courseProgress.setOnSeekBarChangeListener(null)
         lifecycleScope.coroutineContext.cancelChildren()
-        super.onDestroyView()
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        super.onDestroyView()
     }
 
     private val isValidClickRight: Boolean get() = fragmentTakeCourseBinding.viewPager2.adapter != null && fragmentTakeCourseBinding.viewPager2.currentItem < fragmentTakeCourseBinding.viewPager2.adapter?.itemCount!!
