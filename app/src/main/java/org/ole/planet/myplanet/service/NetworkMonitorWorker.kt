@@ -7,7 +7,6 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import kotlinx.coroutines.flow.first
 import org.ole.planet.myplanet.utilities.NetworkUtils
 
 class NetworkMonitorWorker(
@@ -32,8 +31,6 @@ class NetworkMonitorWorker(
     override suspend fun doWork(): Result {
         return try {
             var wasConnected = false
-            
-            // Monitor network connectivity
             NetworkUtils.isNetworkConnectedFlow.collect { isConnected ->
                 if (isConnected && !wasConnected) {
                     scheduleServerReachabilityCheck()
