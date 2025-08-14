@@ -139,12 +139,6 @@
             android:permission="android.permission.FOREGROUND_SERVICE"
             android:exported="false"/>
 
-        <service
-            android:name=".service.NetworkConnectivityService"
-            android:foregroundServiceType="dataSync"
-            android:enabled="true"
-            android:exported="false"/>
-
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
