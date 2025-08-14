@@ -24,11 +24,9 @@ class BellDashboardViewModel : ViewModel() {
     }
 
     private fun updateNetworkStatus(isConnected: Boolean) {
-        viewModelScope.launch {
-            _networkStatus.value = when {
-                !isConnected -> NetworkStatus.Disconnected
-                else -> NetworkStatus.Connecting
-            }
+        _networkStatus.value = when {
+            !isConnected -> NetworkStatus.Disconnected
+            else -> NetworkStatus.Connecting
         }
     }
 
