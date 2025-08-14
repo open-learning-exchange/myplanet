@@ -11,7 +11,8 @@ import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 
 class SearchRepositoryImpl @Inject constructor(
-    private val databaseService: DatabaseService
+    private val databaseService: DatabaseService,
+    private val gson: Gson
 ) : SearchRepository {
 
     override suspend fun saveSearchActivity(
@@ -41,7 +42,7 @@ class SearchRepositoryImpl @Inject constructor(
             filter.addProperty("doc.gradeLevel", gradeLevel)
             filter.addProperty("doc.subjectLevel", subjectLevel)
 
-            activity.filter = Gson().toJson(filter)
+            activity.filter = gson.toJson(filter)
         }
     }
 }
