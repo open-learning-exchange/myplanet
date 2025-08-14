@@ -18,7 +18,9 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import kotlinx.coroutines.launch
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmObject
@@ -99,10 +101,12 @@ abstract class BaseResourceFragment : Fragment() {
 
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            val list = libraryRepository.getLibraryListForUser(
-                settings.getString("userId", "--")
-            )
-            showDownloadDialog(list)
+            this@BaseResourceFragment.lifecycleScope.launch {
+                val list = libraryRepository.getLibraryListForUserAsync(
+                    settings.getString("userId", "--")
+                )
+                showDownloadDialog(list)
+            }
         }
     }
 
@@ -315,8 +319,8 @@ abstract class BaseResourceFragment : Fragment() {
         bManager.registerReceiver(resourceNotFoundReceiver, resourceNotFoundFilter)
     }
 
-    fun getLibraryList(mRealm: Realm): List<RealmMyLibrary> {
-        return libraryRepository.getLibraryListForUser(
+    suspend fun getLibraryList(mRealm: Realm): List<RealmMyLibrary> {
+        return libraryRepository.getLibraryListForUserAsync(
             settings.getString("userId", "--")
         )
     }
