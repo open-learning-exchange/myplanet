@@ -229,4 +229,11 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         }
         etAnswer.setText(oldAnswer)
     }
+
+    override fun onDestroy() {
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
+        super.onDestroy()
+    }
 }
