@@ -12,7 +12,6 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
     var user: RealmUserModel? = null
     lateinit var teamId: String
     var team: RealmMyTeam? = null
-    private var realmInitialized = false
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -21,7 +20,6 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         val communityName = settings.getString("communityName", "")
         teamId = requireArguments().getString("id", "") ?: "$communityName@$sParentCode"
         mRealm = userRepository.getRealm()
-        realmInitialized = true
         user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
 
         if (shouldQueryTeamFromRealm()) {
@@ -71,7 +69,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
     }
 
     override fun onDestroy() {
-        if (realmInitialized && !mRealm.isClosed) {
+        if (isRealmInitialized() && !mRealm.isClosed) {
             mRealm.removeAllChangeListeners()
             if (mRealm.isInTransaction) {
                 mRealm.cancelTransaction()
