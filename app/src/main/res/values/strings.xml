@@ -1139,6 +1139,9 @@
     <string name="empty_text" />
     <string name="message_placeholder">%s</string>
     <string name="reports">Reports</string>
+    <string name="enterprise_reports">Enterprise Reports</string>
+    <string name="number_of_visits">Number of Visits</string>
+    <string name="markdown_filename">Markdown Filename</string>
     <string name="number_placeholder">%d</string>
     <string name="float_placeholder">%.1f</string>
     <string name="date_range">%1$s to %2$s</string>

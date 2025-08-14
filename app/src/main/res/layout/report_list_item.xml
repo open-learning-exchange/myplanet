@@ -9,7 +9,7 @@
         android:id="@+id/tvReportTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Enterprise Reports"
+        android:text="@string/enterprise_reports"
         android:textColor="@color/daynight_textColor"
         android:textSize="16sp"
         android:textStyle="bold"
