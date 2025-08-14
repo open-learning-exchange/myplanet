@@ -19,6 +19,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmObject
@@ -55,6 +56,7 @@ import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadFiles
 import org.ole.planet.myplanet.utilities.Utilities
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
@@ -181,16 +183,16 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun showPendingSurveyDialog() {
         model = UserProfileDbHandler(requireContext()).userModel
-        val list: List<RealmSubmission> = submissionRepository.getPendingSurveys(model?.id)
-        if (list.isEmpty()) {
-            return
+        viewLifecycleOwner.lifecycleScope.launch {
+            val list = submissionRepository.getPendingSurveysAsync(model?.id)
+            if (list.isEmpty()) return@launch
+            val exams = getExamMap(mRealm, list)
+            val arrayAdapter = createSurveyAdapter(list, exams)
+            AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
+                .setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
+                    AdapterMySubmission.openSurvey(homeItemClickListener, list[i].id, true, false, "")
+                }.setPositiveButton(R.string.dismiss, null).show()
         }
-        val exams = getExamMap(mRealm, list)
-        val arrayAdapter = createSurveyAdapter(list, exams)
-        AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
-            .setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
-                AdapterMySubmission.openSurvey(homeItemClickListener, list[i].id, true, false, "")
-            }.setPositiveButton(R.string.dismiss, null).show()
     }
 
     private fun createSurveyAdapter(
