@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 class ReportsFragment : BaseTeamFragment() {
     private lateinit var fragmentReportsBinding: FragmentReportsBinding
     private lateinit var adapterReports: AdapterReports
+    private lateinit var reportsList: RealmResults<RealmMyTeam>
     private var startTimeStamp: String? = null
     private var endTimeStamp: String? = null
     lateinit var teamType: String
@@ -163,7 +164,7 @@ class ReportsFragment : BaseTeamFragment() {
             createFileLauncher.launch(intent)
         }
 
-        val reportsList = mRealm.where(RealmMyTeam::class.java)
+        reportsList = mRealm.where(RealmMyTeam::class.java)
             .equalTo("teamId", teamId)
             .equalTo("docType", "report")
             .notEqualTo("status", "archived")
