@@ -53,8 +53,8 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
         _binding = null
+        super.onDestroyView()
     }
 
     override fun onStartDrag(viewHolder: RecyclerView.ViewHolder?) {

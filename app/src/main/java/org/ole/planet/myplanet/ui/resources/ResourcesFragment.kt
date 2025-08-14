@@ -555,9 +555,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         customProgressDialog?.dismiss()
         customProgressDialog = null
+        super.onDestroy()
     }
 
     private fun recreateFragment(fragment: Fragment) {
