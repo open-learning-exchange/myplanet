@@ -582,9 +582,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         if (!mRealm.isClosed) {
             mRealm.close()
         }
+        super.onDestroy()
     }
 }
