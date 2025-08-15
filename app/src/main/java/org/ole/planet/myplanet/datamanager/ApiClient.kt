@@ -15,8 +15,8 @@ object ApiClient {
         return enhancedRetrofit.create(ApiInterface::class.java)
     }
 
-    fun <T> executeWithRetry(operation: () -> Response<T>?): Response<T>? {
-        return RetryUtils.retry(
+    suspend fun <T> executeWithRetry(operation: suspend () -> Response<T>?): Response<T>? {
+        return RetryUtils.retrySuspending(
             maxAttempts = 3,
             delayMs = 2000L,
             shouldRetry = { resp -> resp == null || !resp.isSuccessful },

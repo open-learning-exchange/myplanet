@@ -571,7 +571,7 @@ class SyncManager @Inject constructor(
         }
     }
 
-    private fun resourceTransactionSync(backgroundRealm: Realm? = null) {
+    private suspend fun resourceTransactionSync(backgroundRealm: Realm? = null) {
         val logger = SyncTimeLogger.getInstance()
         logger.startProcess("resource_sync")
         var processedItems = 0
@@ -720,7 +720,7 @@ class SyncManager @Inject constructor(
         }
     }
 
-    private fun fastResourceTransactionSync() {
+    private suspend fun fastResourceTransactionSync() {
         val logger = SyncTimeLogger.getInstance()
         logger.startProcess("resource_sync")
         var processedItems = 0
@@ -1003,7 +1003,7 @@ class SyncManager @Inject constructor(
         return processedItems
     }
 
-    private fun processShelfDataOptimizedSync(shelfId: String?, shelfData: Constants.ShelfData, shelfDoc: JsonObject?, apiInterface: ApiInterface): Int {
+    private suspend fun processShelfDataOptimizedSync(shelfId: String?, shelfData: Constants.ShelfData, shelfDoc: JsonObject?, apiInterface: ApiInterface): Int {
         var processedCount = 0
 
         try {
@@ -1080,7 +1080,7 @@ class SyncManager @Inject constructor(
         return processedCount
     }
 
-    private fun fastMyLibraryTransactionSync() {
+    private suspend fun fastMyLibraryTransactionSync() {
         val logger = SyncTimeLogger.getInstance()
         logger.startProcess("library_sync")
         var processedItems = 0
@@ -1197,18 +1197,19 @@ class SyncManager @Inject constructor(
         return processedCount
     }
 
-    private fun <T> safeRealmOperation(operation: (Realm) -> T): T? {
+    private suspend fun <T> safeRealmOperation(operation: suspend (Realm) -> T): T? {
+        val realm = databaseService.realmInstance
         return try {
-            databaseService.realmInstance.use { realm ->
-                operation(realm)
-            }
+            operation(realm)
         } catch (e: Exception) {
             e.printStackTrace()
             null
+        } finally {
+            realm.close()
         }
     }
 
-    private fun processBatchForShelfData(batch: List<String>, shelfData: Constants.ShelfData, shelfId: String?, apiInterface: ApiInterface, realmInstance: Realm): Int {
+    private suspend fun processBatchForShelfData(batch: List<String>, shelfData: Constants.ShelfData, shelfId: String?, apiInterface: ApiInterface, realmInstance: Realm): Int {
         var processedCount = 0
 
         try {
