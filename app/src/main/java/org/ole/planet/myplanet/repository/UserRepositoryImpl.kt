@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import io.realm.Realm
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.queryList
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmUserModel
 
@@ -48,9 +49,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getAllUsers(): List<RealmUserModel> {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmUserModel::class.java)
-                .findAll()
-                .let { realm.copyFromRealm(it) }
+            realm.queryList(RealmUserModel::class.java)
         }
     }
 
