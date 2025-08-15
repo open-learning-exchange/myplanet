@@ -1378,5 +1378,6 @@
     <string name="failed_to_save_chat">فشل في حفظ الدردشة. الرجاء المحاولة مرة أخرى.</string>
     <string name="failed_to_delete_report">فشل في حذف التقرير. الرجاء المحاولة مرة أخرى</string>
     <string name="delete_report">حذف التقرير</string>
+    <string name="checking_server_availability">فحص توفر الخادم…</string>
 
 </resources>
