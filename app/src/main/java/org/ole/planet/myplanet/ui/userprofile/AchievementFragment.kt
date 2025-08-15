@@ -273,7 +273,6 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         customProgressDialog?.dismiss()
         customProgressDialog = null
         if (this::aRealm.isInitialized && !aRealm.isClosed) {
@@ -285,5 +284,6 @@ class AchievementFragment : BaseContainerFragment() {
             }
         } catch (_: UninitializedPropertyAccessException) {
         }
+        super.onDestroy()
     }
 }
