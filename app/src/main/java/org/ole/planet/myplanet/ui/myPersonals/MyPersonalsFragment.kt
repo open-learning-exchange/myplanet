@@ -86,10 +86,10 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         if (::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        super.onDestroy()
     }
 
     override fun onUpload(personal: RealmMyPersonal?) {

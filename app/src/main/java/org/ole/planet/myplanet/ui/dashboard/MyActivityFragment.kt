@@ -96,10 +96,10 @@ class MyActivityFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
         if (::realm.isInitialized && !realm.isClosed) {
             realm.close()
         }
+        super.onDestroyView()
     }
 
     fun getMonth(month: Int): String {

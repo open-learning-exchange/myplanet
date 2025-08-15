@@ -95,9 +95,9 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
         if (this::cRealm.isInitialized && !cRealm.isClosed) {
             cRealm.close()
         }
+        super.onDestroyView()
     }
 }

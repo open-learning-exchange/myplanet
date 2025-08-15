@@ -314,6 +314,13 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         dpd.show()
     }
 
+    override fun onDestroyView() {
+        if (this::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
+        super.onDestroyView()
+    }
+
     override val key: String
         get() = "sub_id"
 
