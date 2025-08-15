@@ -393,7 +393,6 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         if (::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.removeAllChangeListeners()
             if (mRealm.isInTransaction) {
@@ -401,6 +400,7 @@ abstract class BaseResourceFragment : Fragment() {
             }
             mRealm.close()
         }
+        super.onDestroy()
     }
 
     companion object {

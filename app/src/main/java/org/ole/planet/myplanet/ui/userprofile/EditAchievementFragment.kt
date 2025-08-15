@@ -324,7 +324,6 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         if (this::aRealm.isInitialized && !aRealm.isClosed) {
             aRealm.close()
         }
@@ -334,5 +333,6 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             }
         } catch (_: UninitializedPropertyAccessException) {
         }
+        super.onDestroy()
     }
 }

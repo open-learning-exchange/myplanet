@@ -206,9 +206,9 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         customProgressDialog?.dismiss()
         customProgressDialog = null
+        super.onDestroy()
     }
 
     override fun onFeedbackSubmitted() {

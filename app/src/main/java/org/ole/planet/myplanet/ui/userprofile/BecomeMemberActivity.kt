@@ -33,8 +33,7 @@ class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
     var guest: Boolean = false
-
-
+    
     private data class MemberInfo(
         val username: String,
         var password: String,
@@ -168,7 +167,6 @@ class BecomeMemberActivity : BaseActivity() {
         EdgeToEdgeUtil.setupEdgeToEdge(this, activityBecomeMemberBinding.root)
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        val mRealm: Realm = databaseService.realmInstance
         val languages = resources.getStringArray(R.array.language)
         val lnAadapter = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, languages)
         activityBecomeMemberBinding.spnLang.adapter = lnAadapter
@@ -201,6 +199,13 @@ class BecomeMemberActivity : BaseActivity() {
                 addMember(info, mRealm)
             }
         }
+    }
+
+    override fun onDestroy() {
+        if (!mRealm.isClosed) {
+            mRealm.close()
+        }
+        super.onDestroy()
     }
 
     private fun autoLoginNewMember(username: String, password: String) {
