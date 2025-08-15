@@ -85,13 +85,12 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
             if (result.resultCode == Activity.RESULT_OK) {
                 val newsId = result.data?.getStringExtra("newsId")
                 newsId.let { adapterNews?.updateReplyBadge(it) }
-                adapterNews?.notifyDataSetChanged()
             }
         }
     }
 
     override fun onDataChanged() {
-        adapterNews?.notifyDataSetChanged()
+        adapterNews?.currentList?.let { adapterNews?.submitList(it.toList()) }
     }
 
     override fun onAttach(context: Context) {

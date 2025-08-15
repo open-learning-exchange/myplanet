@@ -206,24 +206,26 @@ class NewsFragment : BaseNewsFragment() {
                 .`in`("_id", resourceIds.toTypedArray())
                 .findAll()
             getUrlsAndStartDownload(lib, ArrayList())
-            val updatedListAsMutable: MutableList<RealmNews?> = list.toMutableList()
-            val sortedList = updatedListAsMutable.sortedWith(compareByDescending { news ->
+            val sortedList = list.filterNotNull().sortedWith(compareByDescending { news ->
                 getSortDate(news)
             })
-            adapterNews = AdapterNews(requireActivity(), sortedList.toMutableList(), user, null, "", null, userProfileDbHandler)
+            if (fragmentNewsBinding.rvNews.adapter == null) {
+                adapterNews = AdapterNews(requireActivity(), sortedList.toMutableList(), user, null, "", null, userProfileDbHandler)
 
-            adapterNews?.setmRealm(mRealm)
-            adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
-            adapterNews?.setListener(this)
-            adapterNews?.registerAdapterDataObserver(observer)
+                adapterNews?.setmRealm(mRealm)
+                adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
+                adapterNews?.setListener(this)
+                adapterNews?.registerAdapterDataObserver(observer)
 
-            fragmentNewsBinding.rvNews.adapter = adapterNews
-        } else {
-            (fragmentNewsBinding.rvNews.adapter as? AdapterNews)?.updateList(list)
+                fragmentNewsBinding.rvNews.adapter = adapterNews
+            } else {
+                adapterNews = fragmentNewsBinding.rvNews.adapter as? AdapterNews
+            }
+            adapterNews?.submitList(sortedList)
+            adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount, "news") }
+            fragmentNewsBinding.llAddNews.visibility = View.GONE
+            fragmentNewsBinding.btnNewVoice.text = getString(R.string.new_voice)
         }
-        adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount, "news") }
-        fragmentNewsBinding.llAddNews.visibility = View.GONE
-        fragmentNewsBinding.btnNewVoice.text = getString(R.string.new_voice)
     }
 
     override fun onNewsItemClick(news: RealmNews?) {
