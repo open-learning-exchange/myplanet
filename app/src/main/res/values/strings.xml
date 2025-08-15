@@ -1378,5 +1378,6 @@
     <string name="failed_to_save_chat">Failed to save chat. Please retry.</string>
     <string name="failed_to_delete_report">Failed to delete report. Please retry</string>
     <string name="delete_report">Delete report</string>
+    <string name="checking_server_availability">checking server availability…</string>
 
 </resources>

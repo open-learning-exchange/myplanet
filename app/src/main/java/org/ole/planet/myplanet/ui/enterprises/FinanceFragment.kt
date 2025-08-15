@@ -28,7 +28,6 @@ import org.ole.planet.myplanet.utilities.Utilities
 class FinanceFragment : BaseTeamFragment() {
     private lateinit var fragmentFinanceBinding: FragmentFinanceBinding
     private lateinit var addTransactionBinding: AddTransactionBinding
-    private lateinit var fRealm: Realm
     private var adapterFinance: AdapterFinance? = null
     var date: Calendar? = null
     var list: RealmResults<RealmMyTeam>? = null
@@ -47,7 +46,6 @@ class FinanceFragment : BaseTeamFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentFinanceBinding = FragmentFinanceBinding.inflate(inflater, container, false)
-        fRealm = userRepository.getRealm()
         date = Calendar.getInstance()
         fragmentFinanceBinding.tvFromDateCalendar.setOnClickListener {
             showDatePickerDialog(isFromDate = true)
@@ -66,7 +64,7 @@ class FinanceFragment : BaseTeamFragment() {
         }
 
 
-        list = fRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
+        list = mRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
             .equalTo("teamId", teamId).equalTo("docType", "transaction")
             .sort("date", Sort.DESCENDING).findAllAsync()
         list?.addChangeListener { results ->
@@ -83,7 +81,7 @@ class FinanceFragment : BaseTeamFragment() {
         fragmentFinanceBinding.btnReset.setOnClickListener {
             fragmentFinanceBinding.tvFromDateCalendar.setText("")
             fragmentFinanceBinding.etToDate.setText("")
-            list = fRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
+            list = mRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
                 .equalTo("teamId", teamId).equalTo("docType", "transaction")
                 .sort("date", Sort.DESCENDING).findAll()
             updatedFinanceList(list as RealmResults<RealmMyTeam>)
@@ -145,7 +143,7 @@ class FinanceFragment : BaseTeamFragment() {
             val start = dateFormat.parse(fromDate)?.time ?: throw IllegalArgumentException("Invalid fromDate format")
             val end = dateFormat.parse(toDate)?.time ?: throw IllegalArgumentException("Invalid toDate format")
 
-            list = fRealm.where(RealmMyTeam::class.java)
+            list = mRealm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
                 .equalTo("docType", "transaction")
                 .between("date", start, end)
@@ -170,7 +168,7 @@ class FinanceFragment : BaseTeamFragment() {
             fragmentFinanceBinding.addTransaction.visibility = View.GONE
         }
         fragmentFinanceBinding.addTransaction.setOnClickListener { addTransaction() }
-        list = fRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
+        list = mRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
             .equalTo("teamId", teamId).equalTo("docType", "transaction")
             .sort("date", Sort.DESCENDING).findAll()
         updatedFinanceList(list as RealmResults<RealmMyTeam>)
@@ -213,7 +211,7 @@ class FinanceFragment : BaseTeamFragment() {
                 } else if (date == null) {
                     Utilities.toast(activity, getString(R.string.date_is_required))
                 } else {
-                    fRealm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
+                    mRealm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
                         createTransactionObject(realm, type, note, amount, date)
                     }, Realm.Transaction.OnSuccess {
                         Utilities.toast(activity, getString(R.string.transaction_added))

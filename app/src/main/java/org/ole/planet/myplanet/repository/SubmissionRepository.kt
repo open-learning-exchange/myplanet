@@ -10,5 +10,4 @@ interface SubmissionRepository {
     suspend fun saveSubmission(submission: RealmSubmission)
     suspend fun updateSubmission(id: String, updater: (RealmSubmission) -> Unit)
     suspend fun deleteSubmission(id: String)
-    fun getPendingSurveys(userId: String?): List<RealmSubmission>
 }

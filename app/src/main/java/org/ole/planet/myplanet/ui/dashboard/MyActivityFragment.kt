@@ -95,6 +95,13 @@ class MyActivityFragment : Fragment() {
         fragmentMyActivityBinding.chart.invalidate()
     }
 
+    override fun onDestroyView() {
+        if (::realm.isInitialized && !realm.isClosed) {
+            realm.close()
+        }
+        super.onDestroyView()
+    }
+
     fun getMonth(month: Int): String {
         return DateFormatSymbols().months[month]
     }
