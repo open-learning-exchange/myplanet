@@ -88,4 +88,11 @@ class CourseProgressActivity : BaseActivity() {
             }
         }
     }
+
+    override fun onDestroy() {
+        if (this::realm.isInitialized && !realm.isClosed) {
+            realm.close()
+        }
+        super.onDestroy()
+    }
 }

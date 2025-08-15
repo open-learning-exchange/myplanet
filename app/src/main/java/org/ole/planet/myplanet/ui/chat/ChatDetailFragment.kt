@@ -550,7 +550,6 @@ class ChatDetailFragment : Fragment() {
         if (::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
-        super.onDestroyView()
         val editor = settings.edit()
         if (settings.getBoolean("isAlternativeUrl", false)) {
             editor.putString("alternativeUrl", "")
@@ -558,5 +557,6 @@ class ChatDetailFragment : Fragment() {
             editor.putBoolean("isAlternativeUrl", false)
             editor.apply()
         }
+        super.onDestroyView()
     }
 }

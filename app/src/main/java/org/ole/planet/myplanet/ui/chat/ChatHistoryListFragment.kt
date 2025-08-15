@@ -249,9 +249,9 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         customProgressDialog?.dismiss()
         customProgressDialog = null
+        super.onDestroy()
     }
 }
 

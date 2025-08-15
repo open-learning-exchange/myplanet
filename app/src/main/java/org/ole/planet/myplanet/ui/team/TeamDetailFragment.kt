@@ -14,7 +14,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -366,7 +365,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         val userParentCode = userModel.parentCode
         val teamType = getEffectiveTeamType()
 
-        CoroutineScope(Dispatchers.IO).launch {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             val realm = userRepository.getRealm()
 
             realm.executeTransaction { r ->
@@ -389,9 +388,9 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         customProgressDialog?.dismiss()
         customProgressDialog = null
+        super.onDestroy()
     }
 
     companion object {

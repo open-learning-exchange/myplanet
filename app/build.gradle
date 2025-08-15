@@ -5,13 +5,13 @@ apply plugin: 'kotlinx-serialization'
 apply plugin: 'dagger.hilt.android.plugin'
 apply plugin: 'realm-android'
 android {
-    compileSdk = 35
+    compileSdk = 36
     defaultConfig {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
-        targetSdk = 35
-        versionCode = 2838
-        versionName = "0.28.38"
+        targetSdk = 36
+        versionCode = 2867
+        versionName = "0.28.67"
         ndkVersion = '26.3.11579264'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -185,7 +185,7 @@ dependencies {
     implementation 'androidx.annotation:annotation:1.9.1'
     implementation 'androidx.exifinterface:exifinterface:1.4.1'
     implementation 'androidx.cardview:cardview:1.0.0'
-    implementation "androidx.core:core-ktx:1.16.0"
+    implementation "androidx.core:core-ktx:1.17.0"
     implementation "androidx.security:security-crypto:1.1.0"
     implementation "androidx.work:work-runtime:2.10.3"
     implementation "androidx.slidingpanelayout:slidingpanelayout:1.2.0"
