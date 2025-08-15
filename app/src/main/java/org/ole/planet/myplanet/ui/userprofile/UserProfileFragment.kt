@@ -86,10 +86,10 @@ class UserProfileFragment : Fragment() {
     private lateinit var requestCameraLauncher: ActivityResultLauncher<String>
 
     override fun onDestroy() {
-        super.onDestroy()
         if (this::mRealm.isInitialized) {
             mRealm.close()
         }
+        super.onDestroy()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

@@ -130,10 +130,10 @@ class NewsDetailActivity : BaseActivity() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         if (::realm.isInitialized && !realm.isClosed) {
             realm.removeAllChangeListeners()
             realm.close()
         }
+        super.onDestroy()
     }
 }

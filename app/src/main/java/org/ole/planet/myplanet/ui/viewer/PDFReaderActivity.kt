@@ -111,7 +111,6 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         if (this::audioRecorderService.isInitialized && audioRecorderService.isRecording()) {
             audioRecorderService.stopRecording()
         }
@@ -125,6 +124,7 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
             }
             mRealm.close()
         }
+        super.onDestroy()
     }
 
     override fun onError(error: String?) {
