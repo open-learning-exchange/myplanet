@@ -63,7 +63,7 @@ import kotlinx.coroutines.launch
 abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUserModel? = null
-    lateinit var mRealm: Realm
+    protected lateinit var mRealm: Realm
     lateinit var profileDbHandler: UserProfileDbHandler
     var editor: SharedPreferences.Editor? = null
     var lv: CheckboxListView? = null
@@ -79,6 +79,10 @@ abstract class BaseResourceFragment : Fragment() {
     @AppPreferences
     lateinit var settings: SharedPreferences
     private var resourceNotFoundDialog: AlertDialog? = null
+
+    protected fun isRealmInitialized(): Boolean {
+        return ::mRealm.isInitialized && !mRealm.isClosed
+    }
 
     private fun isFragmentActive(): Boolean {
         return isAdded && activity != null &&
@@ -394,7 +398,7 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     override fun onDestroy() {
-        if (::mRealm.isInitialized && !mRealm.isClosed) {
+        if (isRealmInitialized()) {
             mRealm.removeAllChangeListeners()
             if (mRealm.isInTransaction) {
                 mRealm.cancelTransaction()

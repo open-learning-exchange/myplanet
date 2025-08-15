@@ -207,13 +207,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         mRealm.commitTransaction()
     }
 
-    override fun onDestroy() {
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
-        super.onDestroy()
-    }
-
     override fun onResume() {
         super.onResume()
         setTeamList()
