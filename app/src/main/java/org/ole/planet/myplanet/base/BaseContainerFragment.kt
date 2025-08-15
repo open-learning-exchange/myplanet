@@ -22,6 +22,7 @@ import androidx.appcompat.view.ContextThemeWrapper
 import androidx.appcompat.widget.AppCompatRatingBar
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
@@ -355,8 +356,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     open fun handleBackPressed() {
-        val fragmentManager = parentFragmentManager
-        fragmentManager.popBackStack()
+        NavigationHelper.popBackStack(parentFragmentManager)
     }
 
     override fun onPause() {

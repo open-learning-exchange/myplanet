@@ -44,6 +44,7 @@ import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 
 class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDateSetListener {
     private lateinit var fragmentEditAchievementBinding: FragmentEditAchievementBinding
@@ -76,7 +77,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         super.onViewCreated(view, savedInstanceState)
         val toolbar = view.findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
         toolbar.setNavigationOnClickListener {
-            requireActivity().supportFragmentManager.popBackStack()
+            NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
         }
     }
     
@@ -86,12 +87,10 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             setUserInfo()
             setAchievementInfo()
             aRealm.commitTransaction()
-            val fragmentManager = parentFragmentManager
-            fragmentManager.popBackStack()
+            NavigationHelper.popBackStack(parentFragmentManager)
         }
         fragmentEditAchievementBinding.btnCancel.setOnClickListener {
-            val fragmentManager = parentFragmentManager
-            fragmentManager.popBackStack()
+            NavigationHelper.popBackStack(parentFragmentManager)
         }
         fragmentEditAchievementBinding.btnAchievement.setOnClickListener {
             showAddAchievementAlert(null)

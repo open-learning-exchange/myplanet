@@ -78,6 +78,7 @@ import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.survey.SendSurveyFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
@@ -312,7 +313,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     result?.closeDrawer()
                 } else {
                     if (supportFragmentManager.backStackEntryCount > 1) {
-                        supportFragmentManager.popBackStack()
+                        NavigationHelper.popBackStack(supportFragmentManager)
                     } else {
                         if (!doubleBackToExitPressedOnce) {
                             doubleBackToExitPressedOnce = true
