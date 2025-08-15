@@ -6,7 +6,6 @@ import io.realm.Realm
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNotification
@@ -87,10 +86,6 @@ class DashboardViewModel @Inject constructor(
 
     suspend fun getPendingSurveysAsync(userId: String?): List<RealmSubmission> {
         return submissionRepository.getPendingSurveysAsync(userId)
-    }
-
-    fun getPendingSurveys(userId: String?): List<RealmSubmission> {
-        return submissionRepository.getPendingSurveys(userId)
     }
 
     suspend fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>): List<String> {

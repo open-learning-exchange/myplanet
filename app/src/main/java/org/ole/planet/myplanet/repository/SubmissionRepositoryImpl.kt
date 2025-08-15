@@ -10,11 +10,13 @@ class SubmissionRepositoryImpl @Inject constructor(
 
     override suspend fun getPendingSurveysAsync(userId: String?): List<RealmSubmission> {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmSubmission::class.java)
-                .equalTo("userId", userId)
-                .equalTo("status", "pending")
-                .equalTo("type", "survey")
-                .findAll()
+            realm.copyFromRealm(
+                realm.where(RealmSubmission::class.java)
+                    .equalTo("userId", userId)
+                    .equalTo("status", "pending")
+                    .equalTo("type", "survey")
+                    .findAll()
+            )
         }
     }
 
@@ -23,22 +25,27 @@ class SubmissionRepositoryImpl @Inject constructor(
             realm.where(RealmSubmission::class.java)
                 .equalTo("id", id)
                 .findFirst()
+                ?.let { realm.copyFromRealm(it) }
         }
     }
 
     override suspend fun getSubmissionsByUserId(userId: String): List<RealmSubmission> {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmSubmission::class.java)
-                .equalTo("userId", userId)
-                .findAll()
+            realm.copyFromRealm(
+                realm.where(RealmSubmission::class.java)
+                    .equalTo("userId", userId)
+                    .findAll()
+            )
         }
     }
 
     override suspend fun getSubmissionsByType(type: String): List<RealmSubmission> {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmSubmission::class.java)
-                .equalTo("type", type)
-                .findAll()
+            realm.copyFromRealm(
+                realm.where(RealmSubmission::class.java)
+                    .equalTo("type", type)
+                    .findAll()
+            )
         }
     }
 
@@ -66,15 +73,4 @@ class SubmissionRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getPendingSurveys(userId: String?): List<RealmSubmission> {
-        return databaseService.withRealm { realm ->
-            realm.copyFromRealm(
-                realm.where(RealmSubmission::class.java)
-                    .equalTo("userId", userId)
-                    .equalTo("status", "pending")
-                    .equalTo("type", "survey")
-                    .findAll()
-            )
-        }
-    }
 }
