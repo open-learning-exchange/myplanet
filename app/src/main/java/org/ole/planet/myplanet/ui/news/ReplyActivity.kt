@@ -168,10 +168,10 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         if (::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.removeAllChangeListeners()
             mRealm.close()
         }
+        super.onDestroy()
     }
 }

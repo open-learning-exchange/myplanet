@@ -68,10 +68,10 @@ class AddResourceActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        super.onDestroy()
     }
 
     private fun initializeViews() {

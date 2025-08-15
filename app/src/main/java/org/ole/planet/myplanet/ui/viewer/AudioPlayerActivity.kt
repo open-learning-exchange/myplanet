@@ -169,9 +169,9 @@ class AudioPlayerActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         binding.playerView.player = null
         exoPlayer?.release()
         exoPlayer = null
+        super.onDestroy()
     }
 }

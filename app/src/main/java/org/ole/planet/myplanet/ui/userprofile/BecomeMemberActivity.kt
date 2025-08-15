@@ -33,8 +33,7 @@ class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
     var guest: Boolean = false
-
-
+    
     private data class MemberInfo(
         val username: String,
         var password: String,
@@ -168,7 +167,6 @@ class BecomeMemberActivity : BaseActivity() {
         EdgeToEdgeUtil.applyWindowInsets(activityBecomeMemberBinding.root)
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        val mRealm: Realm = databaseService.realmInstance
         val languages = resources.getStringArray(R.array.language)
         val lnAadapter = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, languages)
         activityBecomeMemberBinding.spnLang.adapter = lnAadapter
@@ -203,21 +201,29 @@ class BecomeMemberActivity : BaseActivity() {
         }
     }
 
+    override fun onDestroy() {
+        if (!mRealm.isClosed) {
+            mRealm.close()
+        }
+        super.onDestroy()
+    }
+
     private fun autoLoginNewMember(username: String, password: String) {
         val mRealm = databaseService.realmInstance
-        RealmUserModel.cleanupDuplicateUsers(mRealm)
-        mRealm.close()
+        RealmUserModel.cleanupDuplicateUsers(mRealm) {
+            mRealm.close()
 
-        val intent = Intent(this, LoginActivity::class.java)
-        intent.putExtra("username", username)
-        intent.putExtra("password", password)
-        intent.putExtra("auto_login", true)
-        if (guest) {
-            intent.putExtra("guest", guest)
+            val intent = Intent(this, LoginActivity::class.java)
+            intent.putExtra("username", username)
+            intent.putExtra("password", password)
+            intent.putExtra("auto_login", true)
+            if (guest) {
+                intent.putExtra("guest", guest)
+            }
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(intent)
+            finish()
         }
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
-        startActivity(intent)
-        finish()
     }
 
     private fun setupTextWatchers(mRealm: Realm) {

@@ -3,15 +3,17 @@ package org.ole.planet.myplanet.repository
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmUserModel
 
 class CourseRepositoryImpl @Inject constructor(
-    private val databaseService: DatabaseService
+    private val databaseService: DatabaseService,
+    private val userRepository: UserRepository,
 ) : CourseRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmMyCourse::class.java).findAll()
+            realm.copyFromRealm(
+                realm.where(RealmMyCourse::class.java).findAll()
+            )
         }
     }
 
@@ -20,23 +22,28 @@ class CourseRepositoryImpl @Inject constructor(
             realm.where(RealmMyCourse::class.java)
                 .equalTo("courseId", id)
                 .findFirst()
+                ?.let { realm.copyFromRealm(it) }
         }
     }
 
     override suspend fun getEnrolledCourses(): List<RealmMyCourse> {
+        val userId = userRepository.getCurrentUser()?.id ?: ""
         return databaseService.withRealmAsync { realm ->
-            val userId = getCurrentUserId(realm)
-            realm.where(RealmMyCourse::class.java)
-                .equalTo("userId", userId)
-                .findAll()
+            realm.copyFromRealm(
+                realm.where(RealmMyCourse::class.java)
+                    .equalTo("userId", userId)
+                    .findAll()
+            )
         }
     }
 
     override suspend fun getCoursesByUserId(userId: String): List<RealmMyCourse> {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmMyCourse::class.java)
-                .equalTo("userId", userId)
-                .findAll()
+            realm.copyFromRealm(
+                realm.where(RealmMyCourse::class.java)
+                    .equalTo("userId", userId)
+                    .findAll()
+            )
         }
     }
 
@@ -62,10 +69,5 @@ class CourseRepositoryImpl @Inject constructor(
                 .findFirst()
                 ?.deleteFromRealm()
         }
-    }
-
-    private fun getCurrentUserId(realm: io.realm.Realm): String {
-        return realm.where(RealmUserModel::class.java)
-            .findFirst()?.id ?: ""
     }
 }

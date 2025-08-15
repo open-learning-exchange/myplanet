@@ -226,12 +226,12 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         authSessionUpdater?.stop()
         try {
             unregisterReceiver(audioBecomingNoisyReceiver)
         } catch (e: IllegalArgumentException) {
             e.printStackTrace()
         }
+        super.onDestroy()
     }
 }
