@@ -225,7 +225,7 @@ class SyncManager @Inject constructor(
             logger.endProcess("admin_sync")
 
             logger.startProcess("resource_sync")
-            resourceTransactionSync()
+            runBlocking { resourceTransactionSync() }
             logger.endProcess("resource_sync")
 
             logger.startProcess("on_synced")
