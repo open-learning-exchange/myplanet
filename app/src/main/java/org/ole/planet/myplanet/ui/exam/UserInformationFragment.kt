@@ -14,13 +14,13 @@ import android.widget.RadioButton
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -257,7 +257,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
-        CoroutineScope(Dispatchers.IO).launch {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
             val alternativeAvailable =
                 mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true

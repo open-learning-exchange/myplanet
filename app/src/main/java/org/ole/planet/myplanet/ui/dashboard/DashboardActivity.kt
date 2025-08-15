@@ -992,7 +992,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         profileDbHandler.onDestroy()
         realmListeners.forEach { it.removeListener() }
         realmListeners.clear()
@@ -1001,6 +1000,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             unregisterReceiver(it)
             systemNotificationReceiver = null
         }
+        super.onDestroy()
     }
 
     override fun openCallFragment(f: Fragment) {

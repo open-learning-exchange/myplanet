@@ -11,6 +11,10 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
 import androidx.core.net.toUri
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
 import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,13 +24,21 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
 object NetworkUtils {
-    lateinit var coroutineScope: CoroutineScope
 
-    fun initialize(coroutineScope: CoroutineScope) {
-        this.coroutineScope = coroutineScope
+    private val coroutineScope: CoroutineScope by lazy {
+        val entryPoint = EntryPointAccessors.fromApplication(context, NetworkUtilsEntryPoint::class.java)
+        entryPoint.applicationScope()
+    }
+
+    @EntryPoint
+    @InstallIn(SingletonComponent::class)
+    interface NetworkUtilsEntryPoint {
+        @ApplicationScope
+        fun applicationScope(): CoroutineScope
     }
 
     private val connectivityManager: ConnectivityManager by lazy {
@@ -56,6 +68,15 @@ object NetworkUtils {
         }
 
         connectivityManager.registerDefaultNetworkCallback(networkCallback)
+    }
+
+    fun stopListenNetworkState() {
+        if (!_currentNetwork.value.isListening) {
+            return
+        }
+
+        connectivityManager.unregisterNetworkCallback(networkCallback)
+        _currentNetwork.update { provideDefaultCurrentNetwork() }
     }
 
     private class NetworkCallback : ConnectivityManager.NetworkCallback() {

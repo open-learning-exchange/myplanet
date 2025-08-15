@@ -10,11 +10,12 @@ class RatingRepositoryImpl @Inject constructor(
 
     override suspend fun getRatings(type: String, userId: String?): Map<String, Int> {
         return databaseService.withRealmAsync { realm ->
-            val ratings = realm.where(RealmRating::class.java)
+            val realmRatings = realm.where(RealmRating::class.java)
                 .equalTo("type", type)
                 .equalTo("userId", userId)
                 .findAll()
 
+            val ratings = realm.copyFromRealm(realmRatings)
             ratings.associate { (it.item ?: "") to (it.rate?.toInt() ?: 0) }
         }
     }

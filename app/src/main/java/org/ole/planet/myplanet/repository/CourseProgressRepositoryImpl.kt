@@ -13,8 +13,9 @@ class CourseProgressRepositoryImpl @Inject constructor(
             val progressList = realm.where(RealmCourseProgress::class.java)
                 .equalTo("userId", userId)
                 .findAll()
+            val detachedList = realm.copyFromRealm(progressList)
 
-            progressList.associate { (it.courseId ?: "") to it }
+            detachedList.associate { (it.courseId ?: "") to it }
         }
     }
 }

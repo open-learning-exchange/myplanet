@@ -131,10 +131,10 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
         if (::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        super.onDestroyView()
     }
 
     companion object {
