@@ -20,6 +20,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.databinding.DialogAddReportBinding
@@ -33,8 +34,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 class ReportsFragment : BaseTeamFragment() {
     private lateinit var fragmentReportsBinding: FragmentReportsBinding
-    var list: RealmResults<RealmMyTeam>? = null
     private lateinit var adapterReports: AdapterReports
+    private lateinit var reportsList: RealmResults<RealmMyTeam>
     private var startTimeStamp: String? = null
     private var endTimeStamp: String? = null
     lateinit var teamType: String
@@ -42,7 +43,6 @@ class ReportsFragment : BaseTeamFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentReportsBinding = FragmentReportsBinding.inflate(inflater, container, false)
-        mRealm = userRepository.getRealm()
         prefData = SharedPrefManager(requireContext())
         if (!isMember()) {
             fragmentReportsBinding.addReports.visibility = View.GONE
@@ -125,6 +125,7 @@ class ReportsFragment : BaseTeamFragment() {
                     dialogAddReportBinding.nonPersonnel.error = "non-personnel is required"
                 } else {
                     val doc = JsonObject().apply {
+                        addProperty("_id", UUID.randomUUID().toString())
                         addProperty("createdDate", System.currentTimeMillis())
                         addProperty("description", "${dialogAddReportBinding.summary.text}")
                         addProperty("beginningBalance", "${dialogAddReportBinding.beginningBalance.text}")
@@ -163,14 +164,14 @@ class ReportsFragment : BaseTeamFragment() {
             createFileLauncher.launch(intent)
         }
 
-        list = mRealm.where(RealmMyTeam::class.java)
+        reportsList = mRealm.where(RealmMyTeam::class.java)
             .equalTo("teamId", teamId)
             .equalTo("docType", "report")
             .notEqualTo("status", "archived")
             .sort("date", Sort.DESCENDING)
             .findAllAsync()
 
-        list?.addChangeListener { results ->
+        reportsList.addChangeListener { results ->
             updatedReportsList(results)
         }
 
@@ -211,17 +212,6 @@ class ReportsFragment : BaseTeamFragment() {
             }
         }
         return fragmentReportsBinding.root
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        list = mRealm.where(RealmMyTeam::class.java)
-            .equalTo("teamId", teamId)
-            .equalTo("docType", "report")
-            .notEqualTo("status", "archived")
-            .sort("date", Sort.DESCENDING)
-            .findAll()
-        updatedReportsList(list as RealmResults<RealmMyTeam>)
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
