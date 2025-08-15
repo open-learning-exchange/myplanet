@@ -365,7 +365,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         dismissProgressDialog()
+        super.onDestroy()
     }
 }

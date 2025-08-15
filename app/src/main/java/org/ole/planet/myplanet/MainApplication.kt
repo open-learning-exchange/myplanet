@@ -46,9 +46,9 @@ import org.ole.planet.myplanet.utilities.ANRWatchdog
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.LocaleHelper
-import org.ole.planet.myplanet.utilities.NetworkUtils.initialize
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NetworkUtils.startListenNetworkState
+import org.ole.planet.myplanet.utilities.NetworkUtils.stopListenNetworkState
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.ThemeMode
@@ -201,7 +201,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     private fun initApp() {
         context = this
-        initialize(applicationScope)
         startListenNetworkState()
     }
 
@@ -382,6 +381,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
         super.onTerminate()
         onAppClosed()
+        stopListenNetworkState()
         applicationScope.cancel()
     }
 }
