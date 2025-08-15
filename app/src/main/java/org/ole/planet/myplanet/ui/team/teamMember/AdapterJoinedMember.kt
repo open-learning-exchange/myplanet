@@ -22,10 +22,12 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
+import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterJoinedMember(
     private val context: Context,
@@ -190,43 +192,26 @@ class AdapterJoinedMember(
             val user= mRealm.where(RealmUserModel::class.java).equalTo("id", successor.userId).findFirst()
             return user
         }
-        return null
     }
 
     private fun refreshList() {
-        // Must run on main thread
-        val newLeaderId = mRealm.where(RealmMyTeam::class.java)
+        val members = getJoinedMember(teamId, mRealm).toMutableList()
+        val leaderId = mRealm.where(RealmMyTeam::class.java)
             .equalTo("teamId", teamId)
             .equalTo("isLeader", true)
-            .findFirst()
-            ?.userId
-
-        if (newLeaderId == null) return
-
-        val oldLeaderPos = if (teamLeaderId != null) {
-            list.indexOfFirst { it.id == teamLeaderId }
-        } else -1
-        val newLeaderPos = list.indexOfFirst { it.id == newLeaderId }
-
-        if (oldLeaderPos != -1 && oldLeaderPos != newLeaderPos) {
-            notifyItemChanged(oldLeaderPos)   // hide tvIsLeader
+            .findFirst()?.userId
+        val leader = members.find { it.id == leaderId }
+        if (leader != null) {
+            members.remove(leader)
+            members.add(0, leader)
         }
-        if (newLeaderPos != -1) {
-            notifyItemChanged(newLeaderPos)   // show tvIsLeader
-        }
-
-        if (newLeaderPos > 0) {
-            val leader = list.removeAt(newLeaderPos)
-            list.add(0, leader)
-            notifyItemMoved(newLeaderPos, 0)
-            notifyItemChanged(0)
-        }
+        list.clear()
+        list.addAll(members)
+        notifyDataSetChanged()
     }
-
 
     private fun makeLeader(userModel: RealmUserModel) {
         val userId = userModel.id
-
         mRealm.executeTransactionAsync({ realm ->
             val currentLeader = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
@@ -238,12 +223,12 @@ class AdapterJoinedMember(
                 .findFirst()
             currentLeader?.isLeader = false
             newLeader?.isLeader = true
-        }, {
-            // Success callback: runs on main thread
-            refreshList()
-        }, {
-            it.printStackTrace()
+            teamLeaderId = newLeader?.userId
+        }, Realm.Transaction.OnSuccess {
+            notifyDataSetChanged()
+            Utilities.toast(context, context.getString(R.string.leader_selected))
         })
+        refreshList()
     }
 
     private fun reject(userModel: RealmUserModel, position: Int) {
