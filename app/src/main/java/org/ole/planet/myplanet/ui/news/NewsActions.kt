@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
 import org.ole.planet.myplanet.utilities.Constants
 
@@ -145,14 +146,12 @@ object NewsActions {
             userModel.level.toString(),
             userModel.userImage
         )
-        val fm = activity.supportFragmentManager
-        val tx = fm.beginTransaction()
-        fm.findFragmentById(R.id.fragment_container)?.let { currentFragment ->
-            tx.hide(currentFragment)
-        }
-        tx.add(R.id.fragment_container, fragment)
-        tx.addToBackStack(null)
-        tx.commit()
+        NavigationHelper.replaceFragment(
+            activity.supportFragmentManager,
+            R.id.fragment_container,
+            fragment,
+            addToBackStack = true
+        )
     }
 
     fun deletePost(
