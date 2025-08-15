@@ -52,7 +52,6 @@ import org.ole.planet.myplanet.utilities.NetworkUtils.stopListenNetworkState
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.ThemeMode
-import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
 
 @HiltAndroidApp
@@ -311,7 +310,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleHelper.onAttach(base))
-        Utilities.setContext(base)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
