@@ -83,9 +83,9 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private fun showData(id: String?) {
         val news = mRealm.where(RealmNews::class.java).equalTo("id", id).findFirst()
         val list: List<RealmNews?> = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING).equalTo("replyTo", id, Case.INSENSITIVE).findAll()
-        val mutable = list.filterNotNull().toMutableList()
-        newsAdapter = AdapterNews(this, mutable, user, news, "", null, userProfileDbHandler)
-        newsAdapter.submitList(mutable)
+        val items = list.filterNotNull()
+        newsAdapter = AdapterNews(this, user, news, "", null, userProfileDbHandler)
+        newsAdapter.submitList(items)
         newsAdapter.setListener(this)
         newsAdapter.setmRealm(mRealm)
         newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))

@@ -210,7 +210,7 @@ class NewsFragment : BaseNewsFragment() {
                 getSortDate(news)
             })
             if (fragmentNewsBinding.rvNews.adapter == null) {
-                adapterNews = AdapterNews(requireActivity(), sortedList.toMutableList(), user, null, "", null, userProfileDbHandler)
+                adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler)
 
                 adapterNews?.setmRealm(mRealm)
                 adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))

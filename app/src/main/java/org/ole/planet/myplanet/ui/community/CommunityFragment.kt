@@ -87,14 +87,14 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
 
     private fun updatedNewsList(updatedList: RealmResults<RealmNews>?) {
         activity?.runOnUiThread {
-            val updatedListAsMutable: MutableList<RealmNews> = updatedList?.filterNotNull()?.toMutableList() ?: mutableListOf()
-            val adapter = activity?.let { AdapterNews(it, updatedListAsMutable, user, null, "", null, userProfileDbHandler) }
+            val updatedListFiltered = updatedList?.filterNotNull() ?: emptyList()
+            val adapter = activity?.let { AdapterNews(it, user, null, "", null, userProfileDbHandler) }
             adapter?.setListener(this)
             adapter?.setFromLogin(requireArguments().getBoolean("fromLogin", false))
             adapter?.setmRealm(mRealm)
             fragmentCommunityBinding.rvCommunity.adapter = adapter
             fragmentCommunityBinding.llEditDelete.visibility = if (user?.isManager() == true) View.VISIBLE else View.GONE
-            adapter?.submitList(updatedListAsMutable)
+            adapter?.submitList(updatedListFiltered)
         }
     }
 }

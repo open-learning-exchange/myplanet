@@ -169,9 +169,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         val existingAdapter = fragmentDiscussionListBinding.rvDiscussion.adapter
         if (existingAdapter == null) {
             val adapterNews = activity?.let {
-                realmNewsList?.filterNotNull()?.toMutableList()?.let { list ->
-                    AdapterNews(it, list, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler)
-                }
+                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler)
             }
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setListener(this)

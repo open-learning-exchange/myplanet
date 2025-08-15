@@ -159,18 +159,13 @@ object NewsActions {
         context: Context,
         realm: Realm,
         news: RealmNews,
-        list: MutableList<RealmNews>,
         teamName: String,
         listener: AdapterNews.OnNewsItemClickListener? = null
     ) {
         val ar = Gson().fromJson(news.viewIn, JsonArray::class.java)
         if (!realm.isInTransaction) realm.beginTransaction()
-        val position = list.indexOf(news)
-        if (position != -1) {
-            list.removeAt(position)
-        }
         if (teamName.isNotEmpty() || ar.size() < 2) {
-            deleteChildPosts(realm, news.id, list)
+            deleteChildPosts(realm, news.id)
             news.deleteFromRealm()
         } else {
             val filtered = JsonArray().apply {
@@ -188,17 +183,14 @@ object NewsActions {
 
     private fun deleteChildPosts(
         realm: Realm,
-        parentId: String?,
-        list: MutableList<RealmNews>
+        parentId: String?
     ) {
         if (parentId == null) return
         val children = realm.where(RealmNews::class.java)
             .equalTo("replyTo", parentId)
             .findAll()
         children.forEach { child ->
-            deleteChildPosts(realm, child.id, list)
-            val idx = list.indexOf(child)
-            if (idx != -1) list.removeAt(idx)
+            deleteChildPosts(realm, child.id)
             child.deleteFromRealm()
         }
     }
