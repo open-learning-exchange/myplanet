@@ -73,12 +73,12 @@ import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationListener
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationsFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.survey.SendSurveyFragment
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
-import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
