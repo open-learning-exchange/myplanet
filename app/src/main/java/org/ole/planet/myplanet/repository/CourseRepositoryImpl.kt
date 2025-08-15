@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.queryList
 import org.ole.planet.myplanet.model.RealmMyCourse
 
 class CourseRepositoryImpl @Inject constructor(
@@ -11,9 +12,7 @@ class CourseRepositoryImpl @Inject constructor(
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
         return databaseService.withRealmAsync { realm ->
-            realm.copyFromRealm(
-                realm.where(RealmMyCourse::class.java).findAll()
-            )
+            realm.queryList(RealmMyCourse::class.java)
         }
     }
 
@@ -29,21 +28,17 @@ class CourseRepositoryImpl @Inject constructor(
     override suspend fun getEnrolledCourses(): List<RealmMyCourse> {
         val userId = userRepository.getCurrentUser()?.id ?: ""
         return databaseService.withRealmAsync { realm ->
-            realm.copyFromRealm(
-                realm.where(RealmMyCourse::class.java)
-                    .equalTo("userId", userId)
-                    .findAll()
-            )
+            realm.queryList(RealmMyCourse::class.java) {
+                equalTo("userId", userId)
+            }
         }
     }
 
     override suspend fun getCoursesByUserId(userId: String): List<RealmMyCourse> {
         return databaseService.withRealmAsync { realm ->
-            realm.copyFromRealm(
-                realm.where(RealmMyCourse::class.java)
-                    .equalTo("userId", userId)
-                    .findAll()
-            )
+            realm.queryList(RealmMyCourse::class.java) {
+                equalTo("userId", userId)
+            }
         }
     }
 
