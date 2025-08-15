@@ -7,19 +7,27 @@ class RealmNewsDiffCallback(
     private val oldList: List<RealmNews?>,
     private val newList: List<RealmNews?>
 ) : DiffUtil.Callback() {
-    override fun getOldListSize(): Int = oldList.size
 
-    override fun getNewListSize(): Int = newList.size
+    override fun getOldListSize() = oldList.size
+    override fun getNewListSize() = newList.size
+
+    private fun safeId(n: RealmNews?): String? = if (n?.isValid == true) n.id else null
 
     override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-        val oldItem = oldList[oldItemPosition]
-        val newItem = newList[newItemPosition]
-        return oldItem?.id == newItem?.id
+        val oId = safeId(oldList[oldItemPosition])
+        val nId = safeId(newList[newItemPosition])
+        return oId != null && oId == nId
     }
 
     override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-        val oldItem = oldList[oldItemPosition]
-        val newItem = newList[newItemPosition]
-        return oldItem == newItem
+        val o = oldList[oldItemPosition]
+        val n = newList[newItemPosition]
+
+        if (o?.isValid != true || n?.isValid != true) return false
+
+        return o.id == n.id &&
+                o.time == n.time &&
+                o.isEdited == n.isEdited &&
+                o.message == n.message
     }
 }

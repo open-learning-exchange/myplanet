@@ -90,9 +90,9 @@ class CourseProgressActivity : BaseActivity() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         if (this::realm.isInitialized && !realm.isClosed) {
             realm.close()
         }
+        super.onDestroy()
     }
 }

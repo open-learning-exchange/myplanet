@@ -57,7 +57,7 @@ class NetworkConnectivityService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        super.onDestroy()
         serviceScope.cancel()
+        super.onDestroy()
     }
 }

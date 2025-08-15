@@ -249,10 +249,10 @@ class SettingActivity : AppCompatActivity() {
         }
 
         override fun onDestroy() {
-            super.onDestroy()
             if (this::profileDbHandler.isInitialized) {
                 profileDbHandler.onDestroy()
             }
+            super.onDestroy()
         }
 
         companion object {
