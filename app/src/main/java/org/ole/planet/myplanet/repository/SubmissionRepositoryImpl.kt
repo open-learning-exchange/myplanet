@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.queryList
 import org.ole.planet.myplanet.model.RealmSubmission
 
 class SubmissionRepositoryImpl @Inject constructor(
@@ -10,13 +11,11 @@ class SubmissionRepositoryImpl @Inject constructor(
 
     override suspend fun getPendingSurveysAsync(userId: String?): List<RealmSubmission> {
         return databaseService.withRealmAsync { realm ->
-            realm.copyFromRealm(
-                realm.where(RealmSubmission::class.java)
-                    .equalTo("userId", userId)
-                    .equalTo("status", "pending")
-                    .equalTo("type", "survey")
-                    .findAll()
-            )
+            realm.queryList(RealmSubmission::class.java) {
+                equalTo("userId", userId)
+                equalTo("status", "pending")
+                equalTo("type", "survey")
+            }
         }
     }
 
@@ -31,21 +30,17 @@ class SubmissionRepositoryImpl @Inject constructor(
 
     override suspend fun getSubmissionsByUserId(userId: String): List<RealmSubmission> {
         return databaseService.withRealmAsync { realm ->
-            realm.copyFromRealm(
-                realm.where(RealmSubmission::class.java)
-                    .equalTo("userId", userId)
-                    .findAll()
-            )
+            realm.queryList(RealmSubmission::class.java) {
+                equalTo("userId", userId)
+            }
         }
     }
 
     override suspend fun getSubmissionsByType(type: String): List<RealmSubmission> {
         return databaseService.withRealmAsync { realm ->
-            realm.copyFromRealm(
-                realm.where(RealmSubmission::class.java)
-                    .equalTo("type", type)
-                    .findAll()
-            )
+            realm.queryList(RealmSubmission::class.java) {
+                equalTo("type", type)
+            }
         }
     }
 

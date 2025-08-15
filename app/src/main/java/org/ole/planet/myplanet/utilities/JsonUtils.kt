@@ -4,6 +4,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser.parseString
 import io.realm.RealmList
 
 object JsonUtils {
@@ -44,6 +45,12 @@ object JsonUtils {
         val array = JsonArray()
         list?.forEach { s -> array.add(s) }
         return array
+    }
+
+    @JvmStatic
+    fun getStringAsJsonArray(s: String?): JsonArray {
+        val arrayElement = parseString(s)
+        return arrayElement.asJsonArray
     }
 
     @JvmStatic
