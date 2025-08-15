@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMemberDetailBinding
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 
 class MemberDetailFragment : Fragment() {
     private lateinit var binding: FragmentMemberDetailBinding
@@ -42,7 +43,7 @@ class MemberDetailFragment : Fragment() {
         }
 
         binding.btnClose.setOnClickListener {
-            activity?.supportFragmentManager?.popBackStack()
+            activity?.supportFragmentManager?.let { NavigationHelper.popBackStack(it) }
         }
     }
 

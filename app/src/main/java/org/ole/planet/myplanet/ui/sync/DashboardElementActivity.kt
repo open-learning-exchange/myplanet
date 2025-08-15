@@ -98,7 +98,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             c++
             if(c>2){
                 c--
-                fragmentManager.popBackStack(tag, 0)
+                NavigationHelper.popBackStack(fragmentManager, tag, 0)
             }else{
                 NavigationHelper.replaceFragment(
                     fragmentManager,
@@ -115,7 +115,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 if(c>0 && c>2){
                     c=0
                 }
-                fragmentManager.popBackStack(tag, 0)
+                NavigationHelper.popBackStack(fragmentManager, tag, 0)
             } else {
                 if(c>0 && c>2){
                     c=0

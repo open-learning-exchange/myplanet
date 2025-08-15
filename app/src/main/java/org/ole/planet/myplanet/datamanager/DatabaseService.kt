@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.datamanager
 import android.content.Context
 import io.realm.Realm
 import io.realm.RealmConfiguration
+import io.realm.RealmModel
+import io.realm.RealmQuery
 import io.realm.log.LogLevel
 import io.realm.log.RealmLog
 import kotlinx.coroutines.Dispatchers
@@ -49,11 +51,18 @@ class DatabaseService(context: Context) {
         return withContext(Dispatchers.IO) {
             Realm.getDefaultInstance().use { realm ->
                 var result: T? = null
-                realm.executeTransaction { 
+                realm.executeTransaction {
                     result = transaction(it)
                 }
                 result!!
             }
         }
     }
+}
+
+fun <T : RealmModel> Realm.queryList(
+    clazz: Class<T>,
+    builder: RealmQuery<T>.() -> Unit = {}
+): List<T> {
+    return where(clazz).apply(builder).findAll().let { copyFromRealm(it) }
 }

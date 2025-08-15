@@ -8,8 +8,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
+import androidx.lifecycle.lifecycleScope
 import com.mikepenz.materialdrawer.Drawer
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -135,7 +135,7 @@ class MarkdownDialog : DialogFragment() {
                         (activity as DashboardActivity).openCallFragment(CommunityTabFragment())
                     }
                     context.getString(R.string.sync) -> {
-                        CoroutineScope(Dispatchers.IO).launch {
+                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
                             (activity as DashboardElementActivity).logSyncInSharedPrefs()
                         }
                     }
