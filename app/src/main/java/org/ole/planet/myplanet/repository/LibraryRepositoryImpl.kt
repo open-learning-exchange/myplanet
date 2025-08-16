@@ -89,12 +89,6 @@ class LibraryRepositoryImpl @Inject constructor(
     }
 
     private fun filterLibrariesNeedingUpdate(results: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {
-        val libraries = mutableListOf<RealmMyLibrary>()
-        for (lib in results) {
-            if (lib.needToUpdate()) {
-                libraries.add(lib)
-            }
-        }
-        return libraries
+        return results.filter { it.needToUpdate() }
     }
 }
