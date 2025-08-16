@@ -1,16 +1,17 @@
 package org.ole.planet.myplanet.ui.userprofile
 
-import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.UserListItemBinding
 import org.ole.planet.myplanet.model.User
 
-class TeamListAdapter(private var membersList: MutableList<User>, val context: Context, private val onItemClickListener: OnItemClickListener) : RecyclerView.Adapter<TeamListAdapter.ViewHolder>() {
+class TeamListAdapter(
+    private var membersList: MutableList<User>,
+    private val onItemClickListener: OnItemClickListener
+) : RecyclerView.Adapter<TeamListAdapter.ViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = UserListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolder(binding)
@@ -45,7 +46,7 @@ class TeamListAdapter(private var membersList: MutableList<User>, val context: C
             } else {
                 binding.userNameTextView.text = account.fullName
             }
-            Glide.with(context)
+            Glide.with(binding.userProfile.context)
                 .load(account.image)
                 .placeholder(R.drawable.profile)
                 .error(R.drawable.profile)

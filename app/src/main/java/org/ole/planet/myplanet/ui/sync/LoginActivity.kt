@@ -430,7 +430,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         updateTeamDropdown()
 
         if (mAdapter == null) {
-            mAdapter = TeamListAdapter(prefData.getSavedUsers().toMutableList(), this, this)
+            mAdapter = TeamListAdapter(prefData.getSavedUsers().toMutableList(), this)
             activityLoginBinding.recyclerView.layoutManager = LinearLayoutManager(this)
             activityLoginBinding.recyclerView.adapter = mAdapter
         } else {
