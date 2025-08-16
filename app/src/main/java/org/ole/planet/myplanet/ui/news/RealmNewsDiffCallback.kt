@@ -3,31 +3,21 @@ package org.ole.planet.myplanet.ui.news
 import androidx.recyclerview.widget.DiffUtil
 import org.ole.planet.myplanet.model.RealmNews
 
-class RealmNewsDiffCallback(
-    private val oldList: List<RealmNews?>,
-    private val newList: List<RealmNews?>
-) : DiffUtil.Callback() {
-
-    override fun getOldListSize() = oldList.size
-    override fun getNewListSize() = newList.size
-
+object RealmNewsDiffCallback : DiffUtil.ItemCallback<RealmNews>() {
     private fun safeId(n: RealmNews?): String? = if (n?.isValid == true) n.id else null
 
-    override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-        val oId = safeId(oldList[oldItemPosition])
-        val nId = safeId(newList[newItemPosition])
+    override fun areItemsTheSame(oldItem: RealmNews, newItem: RealmNews): Boolean {
+        val oId = safeId(oldItem)
+        val nId = safeId(newItem)
         return oId != null && oId == nId
     }
 
-    override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-        val o = oldList[oldItemPosition]
-        val n = newList[newItemPosition]
+    override fun areContentsTheSame(oldItem: RealmNews, newItem: RealmNews): Boolean {
+        if (oldItem.isValid != true || newItem.isValid != true) return false
 
-        if (o?.isValid != true || n?.isValid != true) return false
-
-        return o.id == n.id &&
-                o.time == n.time &&
-                o.isEdited == n.isEdited &&
-                o.message == n.message
+        return oldItem.id == newItem.id &&
+            oldItem.time == newItem.time &&
+            oldItem.isEdited == newItem.isEdited &&
+            oldItem.message == newItem.message
     }
 }

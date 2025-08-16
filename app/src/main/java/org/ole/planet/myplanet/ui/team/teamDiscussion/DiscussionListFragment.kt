@@ -169,21 +169,20 @@ class DiscussionListFragment : BaseTeamFragment() {
         val existingAdapter = fragmentDiscussionListBinding.rvDiscussion.adapter
         if (existingAdapter == null) {
             val adapterNews = activity?.let {
-                realmNewsList?.let { list ->
-                    AdapterNews(it, list.toMutableList(), user, null, getEffectiveTeamName(), teamId, userProfileDbHandler)
-                }
+                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler)
             }
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setListener(this)
             if (!isMember()) adapterNews?.setNonTeamMember(true)
             fragmentDiscussionListBinding.rvDiscussion.adapter = adapterNews
+            adapterNews?.submitList(realmNewsList?.filterNotNull())
             adapterNews?.let {
                 showNoData(fragmentDiscussionListBinding.tvNodata, it.itemCount, "discussions")
             }
         } else {
             (existingAdapter as? AdapterNews)?.let { adapter ->
                 realmNewsList?.let {
-                    adapter.updateList(it)
+                    adapter.submitList(it.filterNotNull())
                     showNoData(fragmentDiscussionListBinding.tvNodata, adapter.itemCount, "discussions")
                 }
             }
@@ -219,7 +218,6 @@ class DiscussionListFragment : BaseTeamFragment() {
                 map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
                 map["name"] = getEffectiveTeamName()
                 user?.let { createNews(map, mRealm, it, imageList) }
-                fragmentDiscussionListBinding.rvDiscussion.adapter?.notifyDataSetChanged()
                 setData(news)
                 layout.editText?.text?.clear()
                 imageList.clear()
