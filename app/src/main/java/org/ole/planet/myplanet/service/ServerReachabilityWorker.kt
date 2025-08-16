@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 
 class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
     companion object {
-        private const val TAG = "ServerReachabilityWorker"
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "server_reachability_channel"
         private const val CHANNEL_NAME = "Server Connectivity"
@@ -118,11 +117,11 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
             applicationContext, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         
-        val appName = applicationContext.getString(R.string.app_name)
+        val appName = applicationContext.getString(R.string.app_project_name)
         val serverName = getServerDisplayName(preferences)
         
         val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notifications)
+            .setSmallIcon(R.drawable.ole_logo)
             .setContentTitle(appName)
             .setContentText(applicationContext.getString(R.string.is_available, serverName))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)

@@ -41,6 +41,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 
 @AndroidEntryPoint
 class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnClickListener {
@@ -102,7 +103,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         setListeners()
         checkSurveyCompletion()
         fragmentTakeCourseBinding.backButton.setOnClickListener {
-            requireActivity().supportFragmentManager.popBackStack()
+            NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
         }
     }
 
@@ -306,7 +307,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             fragmentTakeCourseBinding.finishStep.isEnabled = true
             fragmentTakeCourseBinding.finishStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
             fragmentTakeCourseBinding.finishStep.setOnClickListener {
-                requireActivity().supportFragmentManager.popBackStack()
+                NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
             }
         }
     }

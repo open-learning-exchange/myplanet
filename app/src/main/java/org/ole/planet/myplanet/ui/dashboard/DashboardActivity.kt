@@ -73,6 +73,7 @@ import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationListener
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationsFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
@@ -312,7 +313,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     result?.closeDrawer()
                 } else {
                     if (supportFragmentManager.backStackEntryCount > 1) {
-                        supportFragmentManager.popBackStack()
+                        NavigationHelper.popBackStack(supportFragmentManager)
                     } else {
                         if (!doubleBackToExitPressedOnce) {
                             doubleBackToExitPressedOnce = true
