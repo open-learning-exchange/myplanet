@@ -9,7 +9,6 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import io.realm.Realm
-import java.util.Collections
 import java.util.UUID
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
@@ -69,15 +68,11 @@ class AdapterSurvey(
     }
 
     private fun sortSurveyList(isAscend: Boolean, list: List<RealmStepExam> = examList) {
-        val list = list.toList()
-        Collections.sort(list) { survey1, survey2 ->
-            if (isAscend) {
-                survey1.createdDate.compareTo(survey2.createdDate)
-            } else {
-                survey2.createdDate.compareTo(survey1.createdDate)
-            }
+        examList = if (isAscend) {
+            list.sortedBy { it.createdDate }
+        } else {
+            list.sortedByDescending { it.createdDate }
         }
-        examList = list
     }
 
     fun sortByDate(isAscend: Boolean) {
