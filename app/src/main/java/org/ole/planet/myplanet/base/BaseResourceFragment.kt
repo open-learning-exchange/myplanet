@@ -57,6 +57,7 @@ import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadFiles
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.MainApplication
 
 @AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
@@ -331,7 +332,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = userRepository.getRealm()
+        mRealm = MainApplication.service.realmInstance
         prgDialog = getProgressDialog(requireActivity())
         editor = settings.edit()
     }

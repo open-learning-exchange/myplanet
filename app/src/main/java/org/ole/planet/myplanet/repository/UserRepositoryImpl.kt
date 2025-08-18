@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
-import io.realm.Realm
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.queryList
@@ -51,9 +50,5 @@ class UserRepositoryImpl @Inject constructor(
         return databaseService.withRealmAsync { realm ->
             realm.queryList(RealmUserModel::class.java)
         }
-    }
-
-    override fun getRealm(): Realm {
-        return databaseService.realmInstance
     }
 }

@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.TimeUtils.currentDate
+import org.ole.planet.myplanet.MainApplication
 
 class DashboardFragment : BaseDashboardFragment() {
     private lateinit var fragmentHomeBinding: FragmentHomeBinding
@@ -39,7 +40,7 @@ class DashboardFragment : BaseDashboardFragment() {
         fragmentHomeBinding.cardProfile.tvAchievement.setOnClickListener {
             homeItemClickListener?.openCallFragment(AchievementFragment())
         }
-        dRealm = userRepository.getRealm()
+        dRealm = MainApplication.service.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
         onLoaded(view)
         initView(view)
