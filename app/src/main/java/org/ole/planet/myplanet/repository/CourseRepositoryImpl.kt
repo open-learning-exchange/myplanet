@@ -7,7 +7,6 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 
 class CourseRepositoryImpl @Inject constructor(
     private val databaseService: DatabaseService,
-    private val userRepository: UserRepository,
 ) : CourseRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
@@ -25,14 +24,8 @@ class CourseRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getEnrolledCourses(): List<RealmMyCourse> {
-        val userId = userRepository.getCurrentUser()?.id ?: ""
-        return databaseService.withRealmAsync { realm ->
-            realm.queryList(RealmMyCourse::class.java) {
-                equalTo("userId", userId)
-            }
-        }
-    }
+    override suspend fun getEnrolledCourses(userId: String): List<RealmMyCourse> =
+        getCoursesByUserId(userId)
 
     override suspend fun getCoursesByUserId(userId: String): List<RealmMyCourse> {
         return databaseService.withRealmAsync { realm ->
