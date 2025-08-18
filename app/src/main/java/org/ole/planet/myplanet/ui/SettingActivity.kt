@@ -21,7 +21,6 @@ import androidx.preference.Preference.OnPreferenceClickListener
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
