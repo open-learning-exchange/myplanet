@@ -120,12 +120,11 @@ object NetworkUtils {
         return isListening && isAvailable && !isBlocked && networkCapabilities.isNetworkCapabilitiesValid()
     }
 
-    private fun NetworkCapabilities?.isNetworkCapabilitiesValid(): Boolean =
-        when {
-            this == null -> false
-            hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) && (hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || hasTransport(NetworkCapabilities.TRANSPORT_VPN) || hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) || hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) -> true
-            else -> false
-        }
+    private fun NetworkCapabilities?.isNetworkCapabilitiesValid(): Boolean = when {
+        this == null -> false
+        hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) && (hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || hasTransport(NetworkCapabilities.TRANSPORT_VPN) || hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) || hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) -> true
+        else -> false
+    }
 
     fun isWifiEnabled(): Boolean {
         val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
