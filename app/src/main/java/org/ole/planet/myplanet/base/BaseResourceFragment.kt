@@ -57,7 +57,6 @@ import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadFiles
 import org.ole.planet.myplanet.utilities.Utilities
-import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
