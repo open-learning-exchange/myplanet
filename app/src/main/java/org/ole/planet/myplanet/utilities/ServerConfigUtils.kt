@@ -6,7 +6,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.ServerAddressesModel
 
 object ServerConfigUtils {
-    @JvmStatic
     fun getServerAddresses(context: Context): List<ServerAddressesModel> {
         return listOf(
             ServerAddressesModel(context.getString(R.string.sync_planet_learning), BuildConfig.PLANET_LEARNING_URL),
@@ -23,7 +22,6 @@ object ServerConfigUtils {
         )
     }
 
-    @JvmStatic
     fun getFilteredList(
         showAdditionalServers: Boolean,
         serverList: List<ServerAddressesModel>,
@@ -42,12 +40,10 @@ object ServerConfigUtils {
         }
     }
 
-    @JvmStatic
     fun removeProtocol(url: String): String {
         return url.removePrefix("https://").removePrefix("http://")
     }
 
-    @JvmStatic
     fun getPinForUrl(url: String): String {
         val pinMap = mapOf(
             BuildConfig.PLANET_LEARNING_URL to BuildConfig.PLANET_LEARNING_PIN,
@@ -65,7 +61,6 @@ object ServerConfigUtils {
         return pinMap[url] ?: ""
     }
 
-    @JvmStatic
     fun saveAlternativeUrl(
         url: String,
         password: String,
