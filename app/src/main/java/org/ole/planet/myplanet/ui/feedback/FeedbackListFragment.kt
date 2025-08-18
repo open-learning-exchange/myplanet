@@ -21,6 +21,9 @@ import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
+import org.ole.planet.myplanet.callback.TableDataUpdate
+import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.databinding.FragmentFeedbackListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
@@ -57,6 +60,9 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     lateinit var syncManager: SyncManager
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
+    
+    private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
+    private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -79,8 +85,36 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         }
 
         setupFeedbackListener()
+        setupRealtimeSync()
 
         return fragmentFeedbackListBinding.root
+    }
+    
+    private fun setupRealtimeSync() {
+        realtimeSyncListener = object : BaseRealtimeSyncListener() {
+            override fun onTableDataUpdated(update: TableDataUpdate) {
+                if (update.table == "feedback" && update.shouldRefreshUI) {
+                    activity?.runOnUiThread {
+                        refreshFeedbackListData()
+                    }
+                }
+            }
+            
+            override fun onSyncStarted() {}
+            override fun onSyncComplete() {}
+            override fun onSyncFailed(msg: String?) {}
+        }
+        syncCoordinator.addListener(realtimeSyncListener)
+    }
+    
+    private fun refreshFeedbackListData() {
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
+            feedbackList?.removeAllChangeListeners()
+            feedbackList = mRealm.where(RealmFeedback::class.java)
+                .equalTo("source", userModel?.planetCode)
+                .findAllAsync()
+            feedbackList?.addChangeListener(feedbackChangeListener)
+        }
     }
 
     private fun startFeedbackSync() {
@@ -199,6 +233,9 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onDestroyView() {
         feedbackList?.removeChangeListener(feedbackChangeListener)
+        if (::realtimeSyncListener.isInitialized) {
+            syncCoordinator.removeListener(realtimeSyncListener)
+        }
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }

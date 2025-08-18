@@ -40,6 +40,9 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TagClickListener
+import org.ole.planet.myplanet.callback.TableDataUpdate
+import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
+import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getArrayList
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getLevels
@@ -62,7 +65,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSelected,
-    ChipDeletedListener, TagClickListener, OnFilterListener {
+    ChipDeletedListener, TagClickListener, OnFilterListener, RealtimeSyncMixin {
     private lateinit var tvAddToLib: TextView
     private lateinit var tvSelected: TextView
     private lateinit var etSearch: EditText
@@ -91,6 +94,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private val serverUrlMapper = ServerUrlMapper()
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
+    
+    private lateinit var realtimeSyncHelper: RealtimeSyncHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -225,6 +230,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         tvFragmentInfo = view.findViewById(R.id.tv_fragment_info)
         if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
         checkList()
+        
+        realtimeSyncHelper = RealtimeSyncHelper(this, this)
+        realtimeSyncHelper.setupRealtimeSync()
     }
 
     private fun initializeViews(view: View) {
@@ -592,5 +600,26 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
         orderByDate.setOnClickListener { adapterLibrary.toggleSortOrder() }
         orderByTitle.setOnClickListener { adapterLibrary.toggleTitleSortOrder() }
+    }
+    
+    override fun getWatchedTables(): List<String> {
+        return listOf("resources")
+    }
+    
+    override fun onDataUpdated(table: String, update: TableDataUpdate) {
+        if (table == "resources" && update.shouldRefreshUI) {
+            refreshResourcesData()
+        }
+    }
+    
+    override fun getSyncRecyclerView(): RecyclerView? {
+        return if (::recyclerView.isInitialized) recyclerView else null
+    }
+    
+    override fun onDestroyView() {
+        if (::realtimeSyncHelper.isInitialized) {
+            realtimeSyncHelper.cleanup()
+        }
+        super.onDestroyView()
     }
 }

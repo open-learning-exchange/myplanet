@@ -20,8 +20,10 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMemberCount
@@ -30,6 +32,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
+import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.ApplicantsPage
@@ -63,6 +66,8 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
     @Inject
     lateinit var uploadManager: UploadManager
+    private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
+    private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
     private var directTeamName: String? = null
@@ -348,6 +353,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupRealtimeSync()
         createTeamLog()
     }
 
@@ -383,8 +389,28 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         }
     }
 
+    private fun setupRealtimeSync() {
+        realtimeSyncListener = object : BaseRealtimeSyncListener() {
+            override fun onTableDataUpdated(update: TableDataUpdate) {
+                if (update.table == "teams" && update.shouldRefreshUI) {
+                    activity?.runOnUiThread {
+                        refreshTeamData()
+                    }
+                }
+            }
+        }
+        syncCoordinator.addListener(realtimeSyncListener)
+    }
+
     private fun shouldQueryRealm(teamId: String): Boolean {
         return teamId.isNotEmpty()
+    }
+
+    override fun onDestroyView() {
+        if (::realtimeSyncListener.isInitialized) {
+            syncCoordinator.removeListener(realtimeSyncListener)
+        }
+        super.onDestroyView()
     }
 
     override fun onDestroy() {
