@@ -97,10 +97,7 @@ object NetworkUtils {
             }
         }
 
-        override fun onCapabilitiesChanged(
-            network: Network,
-            networkCapabilities: NetworkCapabilities,
-        ) {
+        override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
             _currentNetwork.update {
                 it.copy(networkCapabilities = networkCapabilities)
             }
