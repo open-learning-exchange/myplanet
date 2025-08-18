@@ -111,20 +111,10 @@ object NetworkUtils {
     }
 
     private fun provideDefaultCurrentNetwork(): CurrentNetwork {
-        return CurrentNetwork(
-            isListening = false,
-            networkCapabilities = null,
-            isAvailable = false,
-            isBlocked = false,
-        )
+        return CurrentNetwork(isListening = false, networkCapabilities = null, isAvailable = false, isBlocked = false)
     }
 
-    private data class CurrentNetwork(
-        val isListening: Boolean,
-        val networkCapabilities: NetworkCapabilities?,
-        val isAvailable: Boolean,
-        val isBlocked: Boolean,
-    )
+    private data class CurrentNetwork(val isListening: Boolean, val networkCapabilities: NetworkCapabilities?, val isAvailable: Boolean, val isBlocked: Boolean)
 
     private fun CurrentNetwork.isConnected(): Boolean {
         return isListening && isAvailable && !isBlocked && networkCapabilities.isNetworkCapabilitiesValid()
@@ -133,19 +123,7 @@ object NetworkUtils {
     private fun NetworkCapabilities?.isNetworkCapabilitiesValid(): Boolean =
         when {
             this == null -> false
-            hasCapability(
-                NetworkCapabilities.NET_CAPABILITY_INTERNET,
-            ) &&
-                hasCapability(
-                    NetworkCapabilities.NET_CAPABILITY_VALIDATED,
-                ) && (
-                    hasTransport(
-                        NetworkCapabilities.TRANSPORT_WIFI,
-                    ) ||
-                        hasTransport(
-                            NetworkCapabilities.TRANSPORT_VPN,
-                        ) || hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) || hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
-                ) -> true
+            hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) && hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) && (hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || hasTransport(NetworkCapabilities.TRANSPORT_VPN) || hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) || hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) -> true
             else -> false
         }
 
