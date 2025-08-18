@@ -103,10 +103,7 @@ object NetworkUtils {
             }
         }
 
-        override fun onBlockedStatusChanged(
-            network: Network,
-            blocked: Boolean,
-        ) {
+        override fun onBlockedStatusChanged(network: Network, blocked: Boolean) {
             _currentNetwork.update {
                 it.copy(isBlocked = blocked)
             }
