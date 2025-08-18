@@ -50,6 +50,7 @@ import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.diff.RealmDiffCallback
 import org.ole.planet.myplanet.utilities.makeExpandable
 
 class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
@@ -78,7 +79,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     fun addItem(news: RealmNews?) {
         val newList = list.toMutableList()
         newList.add(0, news)
-        val diffCallback = RealmNewsDiffCallback(list, newList)
+        val diffCallback = RealmDiffCallback(list, newList) { n -> if (n?.isValid == true) n.id else null }
         val diffResult = DiffUtil.calculateDiff(diffCallback)
         list.clear()
         list.addAll(newList)
@@ -328,7 +329,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     }
 
     fun updateList(newList: List<RealmNews?>) {
-        val diffCallback = RealmNewsDiffCallback(list, newList)
+        val diffCallback = RealmDiffCallback(list, newList) { n -> if (n?.isValid == true) n.id else null }
         val diffResult = DiffUtil.calculateDiff(diffCallback)
         list.clear()
         list.addAll(newList)

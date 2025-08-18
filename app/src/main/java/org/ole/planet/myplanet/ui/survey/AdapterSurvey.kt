@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.getRecentSubmissi
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import org.ole.planet.myplanet.utilities.diff.RealmDiffCallback
 
 class AdapterSurvey(
     private val context: Context,
@@ -48,7 +49,7 @@ class AdapterSurvey(
     }
 
     fun updateData(newList: List<RealmStepExam>) {
-        val diffCallback = SurveyDiffCallback(examList, newList)
+        val diffCallback = RealmDiffCallback(examList, newList) { exam -> exam.takeIf { it.isValid }?.id }
         val diffResult = DiffUtil.calculateDiff(diffCallback)
         examList = newList
         diffResult.dispatchUpdatesTo(this)
@@ -261,18 +262,6 @@ class AdapterSurvey(
                 Snackbar.make(binding.root, context.getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
             })
         }
-    }
-}
-
-class SurveyDiffCallback(private val oldList: List<RealmStepExam>, private val newList: List<RealmStepExam>) : DiffUtil.Callback() {
-    override fun getOldListSize(): Int = oldList.size
-    override fun getNewListSize(): Int = newList.size
-    override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-        return oldList[oldItemPosition].id == newList[newItemPosition].id
-    }
-
-    override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-        return oldList[oldItemPosition] == newList[newItemPosition]
     }
 }
 
