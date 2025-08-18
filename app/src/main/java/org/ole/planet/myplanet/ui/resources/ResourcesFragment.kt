@@ -539,7 +539,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
         confirmation = null
 
-        if (customProgressDialog?.isShowing == true) {
+        if (customProgressDialog?.isShowing() == true) {
             customProgressDialog?.dismiss()
         }
         customProgressDialog = null
