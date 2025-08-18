@@ -5,7 +5,8 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 interface CourseRepository {
     suspend fun getAllCourses(): List<RealmMyCourse>
     suspend fun getCourseById(id: String): RealmMyCourse?
-    suspend fun getEnrolledCourses(): List<RealmMyCourse>
+    suspend fun getEnrolledCourses(userId: String): List<RealmMyCourse> =
+        getCoursesByUserId(userId)
     suspend fun getCoursesByUserId(userId: String): List<RealmMyCourse>
     suspend fun saveCourse(course: RealmMyCourse)
     suspend fun updateCourse(id: String, updater: (RealmMyCourse) -> Unit)

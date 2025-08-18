@@ -59,4 +59,9 @@ class DashboardFragment : BaseDashboardFragment() {
             }
         }
     }
+
+    override fun onDestroy() {
+        dRealm.close()
+        super.onDestroy()
+    }
 }
