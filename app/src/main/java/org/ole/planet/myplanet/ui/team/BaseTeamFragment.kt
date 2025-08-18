@@ -2,10 +2,14 @@ package org.ole.planet.myplanet.ui.team
 
 import android.os.Bundle
 import dagger.hilt.android.AndroidEntryPoint
+import io.realm.Realm
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
+
+private val Realm.isOpen: Boolean
+    get() = !isClosed
 
 @AndroidEntryPoint
 abstract class BaseTeamFragment : BaseNewsFragment() {
@@ -68,4 +72,11 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         return requireArguments().getString("teamId") ?: teamId
     }
 
+    override fun onDestroy() {
+        if (isRealmInitialized() && mRealm.isOpen) {
+            mRealm.close()
+        }
+        super.onDestroy()
+    }
+    
 }

@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_DOWNLOAD
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity
 import org.ole.planet.myplanet.ui.viewer.CSVViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
@@ -355,8 +356,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     open fun handleBackPressed() {
-        val fragmentManager = parentFragmentManager
-        fragmentManager.popBackStack()
+        NavigationHelper.popBackStack(parentFragmentManager)
     }
 
     override fun onPause() {

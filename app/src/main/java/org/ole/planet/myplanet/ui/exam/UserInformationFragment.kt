@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Utilities
@@ -247,7 +248,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             checkAvailableServer(settings)
             val activity = requireActivity()
             if (activity is AppCompatActivity) {
-                activity.supportFragmentManager.popBackStack()
+                NavigationHelper.popBackStack(activity.supportFragmentManager)
             }
         }
     }
