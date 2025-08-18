@@ -15,6 +15,7 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.components.SingletonComponent
+import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,7 +26,6 @@ import kotlinx.coroutines.flow.update
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import java.util.Locale
 
 object NetworkUtils {
     private val coroutineScope: CoroutineScope by lazy {
