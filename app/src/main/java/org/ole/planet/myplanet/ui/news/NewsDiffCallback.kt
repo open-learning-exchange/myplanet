@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.ui.news
 import androidx.recyclerview.widget.DiffUtil
 import org.ole.planet.myplanet.model.RealmNews
 
-class RealmNewsDiffCallback(
+class NewsDiffCallback(
     private val oldList: List<RealmNews?>,
     private val newList: List<RealmNews?>
 ) : DiffUtil.Callback() {
