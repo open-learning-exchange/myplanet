@@ -1,5 +1,3 @@
-@file:Suppress("ktlint:standard:backing-property-naming")
-
 package org.ole.planet.myplanet.utilities
 
 import android.bluetooth.BluetoothAdapter
