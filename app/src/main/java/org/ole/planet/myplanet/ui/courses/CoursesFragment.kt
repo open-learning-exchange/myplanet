@@ -179,9 +179,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun refreshCoursesData() {
-        Log.d("CoursesFragment", "=== refreshCoursesData() START ===")
-        Log.d("CoursesFragment", "isAdded: $isAdded, isFinishing: ${requireActivity().isFinishing}")
-        Log.d("CoursesFragment", "isMyCourseLib: $isMyCourseLib")
         
         if (!isAdded || requireActivity().isFinishing) return
 
@@ -191,10 +188,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
             val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
 
-            Log.d("CoursesFragment", "Raw courseList size: ${courseList.size}")
-            Log.d("CoursesFragment", "Sorted courseList size: ${sortedCourseList.size}")
-            Log.d("CoursesFragment", "Course titles: ${sortedCourseList.map { it?.courseTitle }}")
-            Log.d("CoursesFragment", "isMyCourse flags: ${sortedCourseList.map { it?.isMyCourse }}")
 
             // Recreate adapter to ensure clean state
             recyclerView.adapter = null
@@ -205,7 +198,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             adapterCourses.setRatingChangeListener(this)
             recyclerView.adapter = adapterCourses
 
-            Log.d("CoursesFragment", "Adapter created with ${adapterCourses.itemCount} items")
 
             if (isMyCourseLib) {
                 val courseIds = courseList.mapNotNull { it?.id }
@@ -214,33 +206,25 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     .equalTo("resourceOffline", false)
                     .isNotNull("resourceLocalAddress")
                     .findAll()
-                Log.d("CoursesFragment", "Resources count: ${resources?.size}")
             }
 
             checkList()
             showNoData(tvMessage, adapterCourses.itemCount, "courses")
-            Log.d("CoursesFragment", "Final adapter item count: ${adapterCourses.itemCount}")
 
         } catch (e: Exception) {
             Log.e("CoursesFragment", "Error in refreshCoursesData", e)
             e.printStackTrace()
         }
         
-        Log.d("CoursesFragment", "=== refreshCoursesData() END ===")
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        Log.d("CoursesFragment", "=== getAdapter() START ===")
-        Log.d("CoursesFragment", "isMyCourseLib in getAdapter: $isMyCourseLib")
         
         val map = getRatings(mRealm, "course", model?.id)
         val progressMap = getCourseProgress(mRealm, model?.id)
         val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
         val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
         
-        Log.d("CoursesFragment", "getAdapter - Raw courseList size: ${courseList.size}")
-        Log.d("CoursesFragment", "getAdapter - Sorted courseList size: ${sortedCourseList.size}")
-        Log.d("CoursesFragment", "getAdapter - Course titles: ${sortedCourseList.map { it?.courseTitle }}")
         
         adapterCourses = AdapterCourses(requireActivity(), sortedCourseList, map, userProfileDbHandler)
         adapterCourses.setProgressMap(progressMap)
@@ -248,8 +232,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         adapterCourses.setListener(this)
         adapterCourses.setRatingChangeListener(this)
         
-        Log.d("CoursesFragment", "getAdapter - Final adapter item count: ${adapterCourses.itemCount}")
-        Log.d("CoursesFragment", "=== getAdapter() END ===")
 
         if (isMyCourseLib) {
             val courseIds = courseList.mapNotNull { it?.id }
@@ -686,20 +668,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
     
     override fun onDataUpdated(table: String, update: TableDataUpdate) {
-        Log.d("CoursesFragment", "=== REALTIME onDataUpdated ===")
-        Log.d("CoursesFragment", "Table: $table, shouldRefreshUI: ${update.shouldRefreshUI}")
-        Log.d("CoursesFragment", "newItemsCount: ${update.newItemsCount}, updatedItemsCount: ${update.updatedItemsCount}")
         
         if (table == "courses" && update.shouldRefreshUI) {
             if (::adapterCourses.isInitialized) {
-                Log.d("CoursesFragment", "Adapter initialized, calling refreshCoursesData()")
                 refreshCoursesData()
             } else {
-                Log.d("CoursesFragment", "Adapter NOT initialized, calling getAdapter()")
                 recyclerView.adapter = getAdapter()
             }
         }
-        Log.d("CoursesFragment", "=== REALTIME onDataUpdated END ===")
     }
     
     override fun getSyncRecyclerView(): RecyclerView? {

@@ -79,9 +79,6 @@ class RealtimeSyncCoordinator {
     }
     
     fun notifyTableDataUpdated(table: String, newItemsCount: Int, updatedItemsCount: Int) {
-        Log.d("RealtimeSyncCoordinator", "=== notifyTableDataUpdated ===")
-        Log.d("RealtimeSyncCoordinator", "Table: $table, newItems: $newItemsCount, updatedItems: $updatedItemsCount")
-        Log.d("RealtimeSyncCoordinator", "Active listeners count: ${listeners.size}")
         
         val update = TableDataUpdate(
             table = table,
@@ -92,12 +89,10 @@ class RealtimeSyncCoordinator {
         
         synchronized(listeners) {
             listeners.forEach { 
-                Log.d("RealtimeSyncCoordinator", "Notifying listener: ${it.javaClass.simpleName}")
                 it.onTableDataUpdated(update) 
             }
         }
         _dataUpdateFlow.tryEmit(update)
-        Log.d("RealtimeSyncCoordinator", "=== notifyTableDataUpdated END ===")
     }
     
     fun notifyTableSyncCompleted(table: String, itemsProcessed: Int, success: Boolean) {
