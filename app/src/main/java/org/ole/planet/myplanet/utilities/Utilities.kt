@@ -16,7 +16,6 @@ import androidx.core.graphics.toColorInt
 import androidx.core.net.toUri
 import com.bumptech.glide.Glide
 import fisk.chipcloud.ChipCloudConfig
-import java.lang.ref.WeakReference
 import java.math.BigInteger
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
@@ -24,12 +23,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
 object Utilities {
-    private var contextRef: WeakReference<Context>? = null
-
-    fun setContext(ctx: Context) {
-        contextRef = WeakReference(ctx.applicationContext)
-    }
-
     val SD_PATH: String by lazy {
         context.getExternalFilesDir(null)?.let { "$it/ole/" } ?: ""
     }
@@ -89,7 +82,7 @@ object Utilities {
 
     fun loadImage(userImage: String?, imageView: ImageView) {
         if (!userImage.isNullOrEmpty()) {
-            Glide.with(context)
+            Glide.with(imageView.context)
                 .load(userImage)
                 .placeholder(R.drawable.profile)
                 .error(R.drawable.profile)
