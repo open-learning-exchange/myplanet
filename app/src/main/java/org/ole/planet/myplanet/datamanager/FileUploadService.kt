@@ -11,6 +11,7 @@ import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
+import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Call
 import retrofit2.Callback
@@ -48,7 +49,7 @@ open class FileUploadService {
             val mimeType = connection.contentType
             val body = FileUtils.fullyReadFileToBytes(f)
                 .toRequestBody("application/octet-stream".toMediaTypeOrNull())
-            val url = String.format(format, Utilities.getUrl(), id, name)
+            val url = String.format(format, UrlUtils.getUrl(), id, name)
             apiInterface?.uploadResource(getHeaderMap(mimeType, rev), url, body)?.enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                     onDataReceived(response.body(), listener)

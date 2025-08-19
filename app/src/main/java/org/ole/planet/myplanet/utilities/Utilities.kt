@@ -19,7 +19,6 @@ import fisk.chipcloud.ChipCloudConfig
 import java.math.BigInteger
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
 object Utilities {
@@ -32,20 +31,8 @@ object Utilities {
         Log.d("OLE ", "log: $message")
     }
 
-    fun getUrl(library: RealmMyLibrary?): String {
-        return getUrl(library?.resourceId, library?.resourceLocalAddress)
-    }
-
     fun isValidEmail(target: CharSequence): Boolean {
         return !target.isNullOrEmpty() && Patterns.EMAIL_ADDRESS.matcher(target).matches()
-    }
-
-    fun getUrl(id: String?, file: String?): String {
-        return "${getUrl()}/resources/$id/$file"
-    }
-
-    fun getUserImageUrl(userId: String?, imageName: String): String {
-        return "${getUrl()}/_users/$userId/$imageName"
     }
 
     @JvmStatic
@@ -106,11 +93,6 @@ object Utilities {
             return "Basic ${Base64.encodeToString(("${settings.getString("url_user", "")}:${ settings.getString("url_pwd", "") }").toByteArray(), Base64.NO_WRAP)}"
         }
 
-    fun getUrl(): String {
-        val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return UrlUtils.dbUrl(settings)
-    }
-
     val hostUrl: String
         get() {
             val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -135,32 +117,6 @@ object Utilities {
                 "$scheme://$hostIp:5000/"
             }
         }
-
-    fun getUpdateUrl(settings: SharedPreferences): String {
-        val url = UrlUtils.baseUrl(settings)
-        return "$url/versions"
-    }
-
-    fun getChecksumUrl(settings: SharedPreferences): String {
-        val url = UrlUtils.baseUrl(settings)
-        return "$url/fs/myPlanet.apk.sha256"
-    }
-
-    fun getHealthAccessUrl(settings: SharedPreferences): String {
-        val url = UrlUtils.baseUrl(settings)
-        return String.format("%s/healthaccess?p=%s", url, settings.getString("serverPin", "0000"))
-    }
-
-    fun getApkVersionUrl(settings: SharedPreferences): String {
-        val url = UrlUtils.baseUrl(settings)
-        return "$url/apkversion"
-    }
-
-    fun getApkUpdateUrl(path: String?): String {
-        val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val url = UrlUtils.baseUrl(preferences)
-        return "$url$path"
-    }
 
     fun toHex(arg: String?): String {
         return String.format("%x", BigInteger(1, arg?.toByteArray()))

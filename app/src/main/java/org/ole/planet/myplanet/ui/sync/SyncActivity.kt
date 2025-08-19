@@ -38,6 +38,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.io.File
 import java.util.ArrayList
+import org.ole.planet.myplanet.utilities.UrlUtils
 import java.util.Calendar
 import java.util.Date
 import java.util.HashMap
@@ -158,7 +159,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         prefData = SharedPrefManager(this)
         profileDbHandler = UserProfileDbHandler(this)
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
-        processedUrl = Utilities.getUrl()
+        processedUrl = UrlUtils.getUrl()
     }
 
     override fun onConfigurationIdReceived(id: String, code: String, url: String, defaultUrl: String, isAlternativeUrl: Boolean, callerActivity: String) {

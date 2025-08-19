@@ -21,7 +21,7 @@ import org.json.JSONObject
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.VersionUtils
 
 open class RealmUserModel : RealmObject() {
@@ -165,7 +165,7 @@ open class RealmUserModel : RealmObject() {
             val obj = element.asJsonObject
             val entries = obj.entrySet()
             for ((key1) in entries) {
-                userImage = Utilities.getUserImageUrl(id, key1)
+                userImage = UrlUtils.getUserImageUrl(id, key1)
                 break
             }
         }

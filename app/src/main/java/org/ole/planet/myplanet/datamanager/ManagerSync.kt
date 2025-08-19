@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecry
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.UrlUtils
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -28,7 +29,7 @@ class ManagerSync private constructor(context: Context) {
     fun login(userName: String?, password: String?, listener: SyncListener) {
         listener.onSyncStarted()
         val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
-        apiInterface?.getJsonObject("Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP), String.format("%s/_users/%s", Utilities.getUrl(), "org.couchdb.user:$userName"))
+        apiInterface?.getJsonObject("Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP), String.format("%s/_users/%s", UrlUtils.getUrl(), "org.couchdb.user:$userName"))
             ?.enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                     if (response.isSuccessful && response.body() != null) {
@@ -62,7 +63,7 @@ class ManagerSync private constructor(context: Context) {
         selector.addProperty("isUserAdmin", true)
         `object`.add("selector", selector)
         val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
-        apiInterface?.findDocs(Utilities.header, "application/json", Utilities.getUrl() + "/_users/_find", `object`)?.enqueue(object : Callback<JsonObject?> {
+        apiInterface?.findDocs(Utilities.header, "application/json", UrlUtils.getUrl() + "/_users/_find", `object`)?.enqueue(object : Callback<JsonObject?> {
             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                 if (response.body() != null) {
                     settings.edit { putString("communityLeaders", "${response.body()}") }
