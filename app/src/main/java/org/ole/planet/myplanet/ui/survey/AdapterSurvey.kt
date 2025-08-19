@@ -168,7 +168,8 @@ class AdapterSurvey(
                     else -> getNoOfSubmissionByUser(exam.id, exam.courseId, userId, mRealm)
                 }
                 tvDateCompleted.text = getRecentSubmissionDate(exam.id, exam.courseId, userId, mRealm)
-                tvDate.text = formatDate(RealmStepExam.getSurveyCreationTime(exam.id!!, mRealm)!!, "MMM dd, yyyy")
+                val creationTime = exam.id?.let { RealmStepExam.getSurveyCreationTime(it, mRealm) }
+                tvDate.text = creationTime?.let { formatDate(it, "MMM dd, yyyy") } ?: ""
             }
         }
 
