@@ -163,7 +163,8 @@ object Utilities {
     }
 
     fun toHex(arg: String?): String {
-        return String.format("%x", BigInteger(1, arg?.toByteArray()))
+        if (arg.isNullOrEmpty()) return ""
+        return String.format("%x", BigInteger(1, arg.toByteArray()))
     }
 
     fun getMimeType(url: String?): String? {
