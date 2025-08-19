@@ -44,42 +44,48 @@ class UserProfileDbHandler @Inject constructor(
         }
     }
 
-    val userModel: RealmUserModel? get() {
-        if (mRealm.isClosed) {
-            mRealm = realmService.realmInstance
+    val userModel: RealmUserModel?
+        get() {
+            if (mRealm.isClosed) {
+                return null
+            }
+            return mRealm.where(RealmUserModel::class.java)
+                .equalTo("id", settings.getString("userId", ""))
+                .findFirst()
         }
-        return mRealm.where(RealmUserModel::class.java)
-            .equalTo("id", settings.getString("userId", ""))
-            .findFirst()
-    }
 
     fun onLogin() {
-        if (mRealm.isClosed) {
-            mRealm = realmService.realmInstance
-        }
+        Realm.getDefaultConfiguration()?.let { config ->
+            Realm.getInstanceAsync(config, object : Realm.Callback() {
+                override fun onSuccess(realm: Realm) {
+                    mRealm = realm
+                    val userId = settings.getString("userId", "")
+                    realm.executeTransactionAsync({ r ->
+                        val model = r.where(RealmUserModel::class.java)
+                            .equalTo("id", userId)
+                            .findFirst()
+                        val offlineActivities = r.createObject(
+                            RealmOfflineActivity::class.java,
+                            UUID.randomUUID().toString()
+                        )
+                        offlineActivities.userId = model?.id
+                        offlineActivities.userName = model?.name
+                        offlineActivities.parentCode = model?.parentCode
+                        offlineActivities.createdOn = model?.planetCode
+                        offlineActivities.type = KEY_LOGIN
+                        offlineActivities._rev = null
+                        offlineActivities._id = null
+                        offlineActivities.description = "Member login on offline application"
+                        offlineActivities.loginTime = Date().time
+                    }, {}, { error ->
+                        error.printStackTrace()
+                    })
+                }
 
-        if (!mRealm.isInTransaction) {
-            mRealm.beginTransaction()
-        } else {
-            try {
-                mRealm.commitTransaction()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                mRealm.cancelTransaction()
-            }
-            mRealm.beginTransaction()
-        }
-        try {
-            val offlineActivities = mRealm.copyToRealm(createUser())
-            offlineActivities.type = KEY_LOGIN
-            offlineActivities._rev = null
-            offlineActivities._id = null
-            offlineActivities.description = "Member login on offline application"
-            offlineActivities.loginTime = Date().time
-            mRealm.commitTransaction()
-        } catch (e: Exception) {
-            mRealm.cancelTransaction()
-            throw e
+                override fun onError(exception: Throwable) {
+                    exception.printStackTrace()
+                }
+            })
         }
     }
 
@@ -104,16 +110,6 @@ class UserProfileDbHandler @Inject constructor(
         if (!mRealm.isClosed) {
             mRealm.close()
         }
-    }
-
-    private fun createUser(): RealmOfflineActivity {
-        val offlineActivities = mRealm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
-        val model = userModel
-        offlineActivities.userId = model?.id
-        offlineActivities.userName = model?.name
-        offlineActivities.parentCode = model?.parentCode
-        offlineActivities.createdOn = model?.planetCode
-        return offlineActivities
     }
 
     val lastVisit: Long? get() = mRealm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
