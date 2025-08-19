@@ -212,7 +212,7 @@ class AdapterJoinedMember(
     }
 
     private fun makeLeader(userModel: RealmUserModel) {
-        mRealm.executeTransaction { realm ->
+        mRealm.executeTransactionAsync({ realm ->
             val currentLeader = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
                 .equalTo("isLeader", true)
@@ -224,23 +224,29 @@ class AdapterJoinedMember(
             currentLeader?.isLeader = false
             newLeader?.isLeader = true
             teamLeaderId = newLeader?.userId
-        }
-        notifyDataSetChanged()
-        Utilities.toast(context, context.getString(R.string.leader_selected))
-        refreshList()
+        }, {
+            notifyDataSetChanged()
+            Utilities.toast(context, context.getString(R.string.leader_selected))
+            refreshList()
+        }, { error ->
+            error.printStackTrace()
+        })
     }
 
     private fun reject(userModel: RealmUserModel, position: Int) {
-        mRealm.executeTransaction {
-            val team = it.where(RealmMyTeam::class.java)
+        mRealm.executeTransactionAsync({ realm ->
+            val team = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
                 .equalTo("userId", userModel.id)
                 .findFirst()
             team?.deleteFromRealm()
-        }
-        list.removeAt(position)
-        notifyItemRemoved(position)
-        notifyItemRangeChanged(position, list.size)
+        }, {
+            list.removeAt(position)
+            notifyItemRemoved(position)
+            notifyItemRangeChanged(position, list.size)
+        }, { error ->
+            error.printStackTrace()
+        })
     }
 
     override fun getItemCount(): Int = list.size
