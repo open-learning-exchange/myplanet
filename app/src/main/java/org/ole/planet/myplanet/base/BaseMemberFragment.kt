@@ -14,7 +14,7 @@ abstract class BaseMemberFragment : BaseTeamFragment() {
     abstract val adapter: RecyclerView.Adapter<*>?
     abstract val layoutManager: RecyclerView.LayoutManager?
     private var _binding: FragmentMembersBinding? = null
-    protected val binding get() = _binding!!
+    protected val binding get() = _binding ?: throw IllegalStateException("Binding is null")
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMembersBinding.inflate(inflater, container, false)
         return binding.root

@@ -54,7 +54,7 @@ class DatabaseService(context: Context) {
                 realm.executeTransaction {
                     result = transaction(it)
                 }
-                result!!
+                return@use result ?: throw IllegalStateException("Transaction returned null")
             }
         }
     }

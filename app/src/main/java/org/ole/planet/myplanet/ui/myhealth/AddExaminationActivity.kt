@@ -108,7 +108,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
 
     private fun initExamination() {
         if (intent.hasExtra("id")) {
-            examination = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", intent.getStringExtra("id")).findFirst()!!
+            examination = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", intent.getStringExtra("id")).findFirst()
             activityAddExaminationBinding.etTemperature.setText(getString(R.string.float_placeholder, examination?.temperature))
             activityAddExaminationBinding.etPulseRate.setText(getString(R.string.number_placeholder, examination?.pulse))
             activityAddExaminationBinding.etBloodpressure.setText(getString(R.string.message_placeholder, examination?.bp))
@@ -247,7 +247,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         examination?.profileId = health?.userKey
         examination?.creatorId = health?.userKey
         examination?.gender = user?.gender
-        examination?.age = user?.dob?.let { getAge(it) }!!
+        user?.dob?.let { examination?.age = getAge(it) }
         examination?.isSelfExamination = currentUser?._id == pojo?._id
         examination?.date = Date().time
         examination?.planetCode = user?.planetCode
@@ -276,7 +276,11 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         examination?.isHasInfo = hasInfo
         pojo?.isUpdated = true
         try {
-            examination?.data = encrypt(gson.toJson(sign), user?.key!!, user?.iv!!)
+            val key = user?.key
+            val iv = user?.iv
+            if (key != null && iv != null) {
+                examination?.data = encrypt(gson.toJson(sign), key, iv)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }

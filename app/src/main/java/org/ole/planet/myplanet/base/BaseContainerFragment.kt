@@ -100,12 +100,13 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
     override fun onDownloadComplete() {
         super.onDownloadComplete()
-        if (shouldAutoOpenAfterDownload && pendingAutoOpenLibrary != null) {
-            val library = pendingAutoOpenLibrary!!
-            shouldAutoOpenAfterDownload = false
-            pendingAutoOpenLibrary = null
-            if (library.isResourceOffline() || FileUtils.checkFileExist(Utilities.getUrl(library))) {
-                ResourceOpener.openFileType(requireActivity(), library, "offline", profileDbHandler)
+        if (shouldAutoOpenAfterDownload) {
+            pendingAutoOpenLibrary?.let { library ->
+                shouldAutoOpenAfterDownload = false
+                pendingAutoOpenLibrary = null
+                if (library.isResourceOffline() || FileUtils.checkFileExist(Utilities.getUrl(library))) {
+                    ResourceOpener.openFileType(requireActivity(), library, "offline", profileDbHandler)
+                }
             }
         }
     }
@@ -121,7 +122,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 true
             }
             val userModel = UserProfileDbHandler(context).userModel
-            if (!userModel?.isGuest()!!) {
+            if (userModel?.isGuest() == false) {
                 setOnClickListener {
                     homeItemClickListener?.showRatingDialog(type, id, title, listener)
                 }
@@ -298,10 +299,11 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     private fun showResourceList(downloadedResources: List<RealmMyLibrary>?) {
+        val resources = downloadedResources ?: return
         val builderSingle = AlertDialog.Builder(ContextThemeWrapper(requireActivity(), R.style.CustomAlertDialog))
         builderSingle.setTitle(getString(R.string.select_resource_to_open))
         val arrayAdapter: ArrayAdapter<RealmMyLibrary?> = object : ArrayAdapter<RealmMyLibrary?>(
-            requireActivity(), android.R.layout.select_dialog_item, downloadedResources!!
+            requireActivity(), android.R.layout.select_dialog_item, resources
         ) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 var view = convertView

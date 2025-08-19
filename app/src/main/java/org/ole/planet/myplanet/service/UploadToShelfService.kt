@@ -258,8 +258,9 @@ class UploadToShelfService @Inject constructor(
                 try {
                     val res = apiInterface?.postDoc(Utilities.header, "application/json", "${Utilities.getUrl()}/health", serialize(pojo))?.execute()
 
-                    if (res?.body() != null && res.body()?.has("id") == true) {
-                        pojo._rev = res.body()!!["rev"].asString
+                    val body = res?.body()
+                    if (body != null && body.has("id")) {
+                        pojo._rev = body["rev"].asString
                         pojo.isUpdated = false
                     }
                 } catch (e: Exception) {
@@ -296,8 +297,9 @@ class UploadToShelfService @Inject constructor(
                         serialize(pojo)
                     )?.execute()
 
-                    if (res?.body() != null && res.body()?.has("id") == true) {
-                        pojo._rev = res.body()!!["rev"].asString
+                    val body = res?.body()
+                    if (body != null && body.has("id")) {
+                        pojo._rev = body["rev"].asString
                         pojo.isUpdated = false
                     }
                 } catch (e: Exception) {

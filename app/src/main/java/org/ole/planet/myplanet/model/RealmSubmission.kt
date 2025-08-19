@@ -116,7 +116,7 @@ open class RealmSubmission : RealmObject() {
             val user = mRealm.where(RealmUserModel::class.java).equalTo("id", sub.userId).findFirst()
             var examId = sub.parentId
             if (sub.parentId?.contains("@") == true) {
-                examId = sub.parentId!!.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
+                examId = sub.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.getOrNull(0)
             }
             val exam = mRealm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()
             if (!TextUtils.isEmpty(sub._id)) {
@@ -141,7 +141,7 @@ open class RealmSubmission : RealmObject() {
             `object`.addProperty("parentCode", prefs.getString("parentCode", ""))
             val parent = Gson().fromJson(sub.parent, JsonObject::class.java)
             `object`.add("parent", parent)
-            `object`.add("answers", RealmAnswer.serializeRealmAnswer(sub.answers!!))
+            `object`.add("answers", RealmAnswer.serializeRealmAnswer(sub.answers ?: emptyList()))
             if (exam != null && parent == null) `object`.add("parent", RealmStepExam.serializeExam(mRealm, exam))
             if (TextUtils.isEmpty(sub.user)) {
                 `object`.add("user", user?.serialize())
@@ -165,7 +165,7 @@ open class RealmSubmission : RealmObject() {
             var submission = sub
             if (submission == null || submission.status == "complete" && (submission.type == "exam" || submission.type == "survey"))
                 submission = mRealm.createObject(RealmSubmission::class.java, UUID.randomUUID().toString())
-            submission!!.lastUpdateTime = Date().time
+            submission.lastUpdateTime = Date().time
             return submission
         }
 
@@ -256,7 +256,7 @@ open class RealmSubmission : RealmObject() {
             for (sub in submissions ?: emptyList()){
                 var id = sub.parentId
                 if (checkParentId(sub.parentId)) {
-                    id = sub.parentId!!.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[0]
+                    id = sub.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.getOrNull(0)
                 }
                 val survey = mRealm.where(RealmStepExam::class.java).equalTo("id", id).findFirst()
                 if (survey != null) {

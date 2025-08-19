@@ -328,9 +328,9 @@ class MyHealthFragment : Fragment() {
         fragmentVitalSignBinding.layoutUserDetail.visibility = View.VISIBLE
         fragmentVitalSignBinding.tvMessage.visibility = View.GONE
         fragmentVitalSignBinding.txtFullName.text = getString(R.string.three_strings, userModel?.firstName, userModel?.middleName, userModel?.lastName)
-        fragmentVitalSignBinding.txtEmail.text = Utilities.checkNA(userModel?.email!!)
-        fragmentVitalSignBinding.txtLanguage.text = Utilities.checkNA(userModel?.language!!)
-        fragmentVitalSignBinding.txtDob.text = Utilities.checkNA(userModel?.dob!!)
+        fragmentVitalSignBinding.txtEmail.text = Utilities.checkNA(userModel?.email)
+        fragmentVitalSignBinding.txtLanguage.text = Utilities.checkNA(userModel?.language)
+        fragmentVitalSignBinding.txtDob.text = Utilities.checkNA(userModel?.dob)
         var mh = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
         if (mh == null) {
             mh = mRealm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()

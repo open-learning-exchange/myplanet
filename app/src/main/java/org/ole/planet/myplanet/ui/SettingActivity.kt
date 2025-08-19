@@ -199,7 +199,7 @@ class SettingActivity : AppCompatActivity() {
         }
 
         private fun deleteRecursive(fileOrDirectory: File) {
-            if (fileOrDirectory.isDirectory) for (child in fileOrDirectory.listFiles()!!) deleteRecursive(child)
+            if (fileOrDirectory.isDirectory) for (child in fileOrDirectory.listFiles().orEmpty()) deleteRecursive(child)
             fileOrDirectory.delete()
         }
 
@@ -228,16 +228,18 @@ class SettingActivity : AppCompatActivity() {
             val autoForceWeeklySync = findPreference<SwitchPreference>("force_weekly_sync")
             val autoForceMonthlySync = findPreference<SwitchPreference>("force_monthly_sync")
             val lastSyncDate = findPreference<Preference>("lastSyncDate")
-            autoSync!!.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
+            autoSync?.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
                 if (autoSync.isChecked) {
-                    if (autoForceWeeklySync!!.isChecked) {
-                        autoForceMonthlySync!!.isChecked = false
-                    } else autoForceWeeklySync.isChecked = !autoForceMonthlySync!!.isChecked
+                    if (autoForceWeeklySync?.isChecked == true) {
+                        autoForceMonthlySync?.isChecked = false
+                    } else autoForceWeeklySync?.isChecked = autoForceMonthlySync?.isChecked != true
                 }
                 true
             }
-            autoForceSync(autoSync, autoForceWeeklySync!!, autoForceMonthlySync!!)
-            autoForceSync(autoSync, autoForceMonthlySync, autoForceWeeklySync)
+            if (autoSync != null && autoForceWeeklySync != null && autoForceMonthlySync != null) {
+                autoForceSync(autoSync, autoForceWeeklySync, autoForceMonthlySync)
+                autoForceSync(autoSync, autoForceMonthlySync, autoForceWeeklySync)
+            }
             val settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val lastSynced = settings.getLong("LastSync", 0)
             if (lastSynced == 0L) {

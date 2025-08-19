@@ -419,8 +419,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         url: String,
         defaultUrl: String
     ): String {
-        val password = if (settings.getString("serverPin", "") != "") {
-            settings.getString("serverPin", "")!!
+        val storedPin = settings.getString("serverPin", "")
+        val password = if (!storedPin.isNullOrEmpty()) {
+            storedPin
         } else {
             (dialog.customView?.findViewById<View>(R.id.input_server_Password) as EditText).text.toString()
         }

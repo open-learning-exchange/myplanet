@@ -53,6 +53,6 @@ class UserListArrayAdapter(activity: Activity, val view: Int, var list: List<Rea
             holder.image?.setImageResource(R.drawable.profile)
         }
 
-        return convertViewVar!!
+        return convertViewVar ?: throw IllegalStateException("View should not be null")
     }
 }

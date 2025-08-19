@@ -65,9 +65,8 @@ object TransactionSyncManager {
             response = apiInterface?.getDocuments(header, "${Utilities.getUrl()}/$table/_all_docs")?.execute()
             val ob = response?.body()
             if (ob != null && ob.rows?.isNotEmpty() == true) {
-                val r = ob.rows!![0]
-                val jsonDoc = apiInterface.getJsonObject(header, "${Utilities.getUrl()}/$table/${r.id}")
-                    .execute().body()
+                val r = ob.rows?.firstOrNull()
+                val jsonDoc = r?.id?.let { apiInterface.getJsonObject(header, "${Utilities.getUrl()}/$table/$it") }?.execute()?.body()
                 userModel?.key = getString("key", jsonDoc)
                 userModel?.iv = getString("iv", jsonDoc)
             }
