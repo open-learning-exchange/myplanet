@@ -11,10 +11,15 @@ import org.ole.planet.myplanet.databinding.FragmentMemberDetailBinding
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 
 class MemberDetailFragment : Fragment() {
-    private lateinit var binding: FragmentMemberDetailBinding
+    private var _binding: FragmentMemberDetailBinding? = null
+    private val binding get() = _binding!!
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        binding = FragmentMemberDetailBinding.inflate(inflater, container, false)
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?,
+    ): View {
+        _binding = FragmentMemberDetailBinding.inflate(inflater, container, false)
         return binding.root
     }
 
@@ -45,6 +50,11 @@ class MemberDetailFragment : Fragment() {
         binding.btnClose.setOnClickListener {
             activity?.supportFragmentManager?.let { NavigationHelper.popBackStack(it) }
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     private fun setFieldOrHide(view: View, value: String?) {
