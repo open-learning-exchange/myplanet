@@ -47,14 +47,14 @@ class DatabaseService(context: Context) {
         }
     }
     
-    suspend fun <T> executeTransactionWithResultAsync(transaction: (Realm) -> T): T {
+    suspend fun <T> executeTransactionWithResultAsync(transaction: (Realm) -> T): T? {
         return withContext(Dispatchers.IO) {
             Realm.getDefaultInstance().use { realm ->
                 var result: T? = null
                 realm.executeTransaction {
                     result = transaction(it)
                 }
-                result!!
+                result
             }
         }
     }

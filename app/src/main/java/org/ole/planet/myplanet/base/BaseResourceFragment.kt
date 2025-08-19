@@ -133,11 +133,11 @@ abstract class BaseResourceFragment : Fragment() {
                     @Suppress("DEPRECATION")
                     intent.getParcelableExtra("download")
                 }
-                if (!download?.failed!!) {
+                if (download?.failed == false) {
                     setProgress(download)
                 } else {
                     prgDialog.dismiss()
-                    download.message?.let { showError(prgDialog, it) }
+                    download?.message?.let { showError(prgDialog, it) }
                 }
             }
         }

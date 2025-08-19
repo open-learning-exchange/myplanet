@@ -253,14 +253,14 @@ open class RealmUserModel : RealmObject() {
                                 tempData.add("roles", rolesArray)
                                 guestUser.deleteFromRealm()
                                 user = realm.createObject(RealmUserModel::class.java, id)
-                                insertIntoUsers(tempData, user!!, settings)
+                                user?.let { insertIntoUsers(tempData, it, settings) }
                             }
                         }
 
                         if (user == null) {
                             user = realm.createObject(RealmUserModel::class.java, id)
                         }
-                        insertIntoUsers(jsonDoc, user!!, settings)
+                        user?.let { insertIntoUsers(jsonDoc, it, settings) }
                     }
                 } else {
                     user = mRealm.where(RealmUserModel::class.java)
@@ -299,14 +299,14 @@ open class RealmUserModel : RealmObject() {
                             tempData.add("roles", rolesArray)
                             guestUser.deleteFromRealm()
                             user = mRealm.createObject(RealmUserModel::class.java, id)
-                            insertIntoUsers(tempData, user!!, settings)
+                            user?.let { insertIntoUsers(tempData, it, settings) }
                         }
                     }
 
                     if (user == null) {
                         user = mRealm.createObject(RealmUserModel::class.java, id)
                     }
-                    insertIntoUsers(jsonDoc, user!!, settings)
+                    user?.let { insertIntoUsers(jsonDoc, it, settings) }
                 }
                 return user
             } catch (err: Exception) {
