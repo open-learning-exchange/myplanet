@@ -31,7 +31,7 @@ class ServicesFragment : BaseTeamFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
         super.onViewCreated(view, savedInstanceState)
-        mRealm = MainApplication.service.realmInstance
+        mRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
 
         val links = mRealm.where(RealmMyTeam::class.java)?.equalTo("docType", "link")?.findAll()

@@ -14,7 +14,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
@@ -52,7 +51,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             withContext(Dispatchers.IO) {
                 try {
-                    MainApplication.service.withRealm { backgroundRealm ->
+                    databaseService.withRealm { backgroundRealm ->
                         val backgroundLibrary = backgroundRealm.where(RealmMyLibrary::class.java)
                             .equalTo("resourceId", libraryId).findFirst()
                         if (backgroundLibrary != null && !backgroundLibrary.userId?.contains(userId)!!) {
@@ -79,7 +78,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         super.onCreateView(inflater, container, savedInstanceState)
         fragmentLibraryDetailBinding = FragmentLibraryDetailBinding.inflate(inflater, container, false)
-        lRealm = MainApplication.service.realmInstance
+        lRealm = databaseService.realmInstance
         userModel = UserProfileDbHandler(requireContext()).userModel!!
         library = lRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", libraryId).findFirst()!!
         return fragmentLibraryDetailBinding.root
@@ -183,7 +182,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             fragmentScope.launch {
                 withContext(Dispatchers.IO) {
                     try {
-                        MainApplication.service.withRealm { backgroundRealm ->
+                        databaseService.withRealm { backgroundRealm ->
                             val backgroundLibrary = backgroundRealm.where(RealmMyLibrary::class.java)
                                 .equalTo("resourceId", libraryId).findFirst()
 

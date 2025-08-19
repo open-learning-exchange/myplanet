@@ -7,7 +7,6 @@ import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.MainApplication
 
 private val Realm.isOpen: Boolean
     get() = !isClosed
@@ -24,7 +23,7 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         val sParentCode = settings.getString("parentCode", "")
         val communityName = settings.getString("communityName", "")
         teamId = requireArguments().getString("id", "") ?: "$communityName@$sParentCode"
-        mRealm = MainApplication.service.realmInstance
+        mRealm = databaseService.realmInstance
         user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
 
         if (shouldQueryTeamFromRealm()) {

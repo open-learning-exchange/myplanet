@@ -35,7 +35,6 @@ import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.MainApplication
 
 @AndroidEntryPoint
 class NewsFragment : BaseNewsFragment() {
@@ -55,7 +54,7 @@ class NewsFragment : BaseNewsFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentNewsBinding = FragmentNewsBinding.inflate(inflater, container, false)
         llImage = fragmentNewsBinding.llImages
-        mRealm = MainApplication.service.realmInstance
+        mRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
         setupUI(fragmentNewsBinding.newsFragmentParentLayout, requireActivity())
         if (user?.id?.startsWith("guest") == true) {

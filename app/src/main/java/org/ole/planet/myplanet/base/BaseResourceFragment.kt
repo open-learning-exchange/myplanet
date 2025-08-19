@@ -57,7 +57,7 @@ import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadFiles
 import org.ole.planet.myplanet.utilities.Utilities
-import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.datamanager.DatabaseService
 
 @AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
@@ -75,6 +75,8 @@ abstract class BaseResourceFragment : Fragment() {
     lateinit var libraryRepository: LibraryRepository
     @Inject
     lateinit var submissionRepository: SubmissionRepository
+    @Inject
+    lateinit var databaseService: DatabaseService
     @Inject
     @AppPreferences
     lateinit var settings: SharedPreferences
@@ -332,7 +334,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = MainApplication.service.realmInstance
+        mRealm = databaseService.realmInstance
         prgDialog = getProgressDialog(requireActivity())
         editor = settings.edit()
     }

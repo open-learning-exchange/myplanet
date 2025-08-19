@@ -54,7 +54,6 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import org.ole.planet.myplanet.MainApplication
 
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
     SyncListener {
@@ -112,7 +111,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun forceDownloadNewsImages() {
-        mRealm = MainApplication.service.realmInstance
+        mRealm = databaseService.realmInstance
         Utilities.toast(activity, getString(R.string.please_select_starting_date))
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(requireActivity(), { _: DatePicker?, i: Int, i1: Int, i2: Int ->
@@ -256,7 +255,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun setUpMyLife(userId: String?) {
-        val realm = MainApplication.service.realmInstance
+        val realm = databaseService.realmInstance
         val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings)
         if (realmObjects.isEmpty()) {
             if (!realm.isInTransaction) {
@@ -327,7 +326,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         view.findViewById<View>(R.id.txtFullName).setOnClickListener {
             homeItemClickListener?.openCallFragment(UserProfileFragment())
         }
-        mRealm = MainApplication.service.realmInstance
+        mRealm = databaseService.realmInstance
         myLibraryDiv(view)
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam::class.java)
