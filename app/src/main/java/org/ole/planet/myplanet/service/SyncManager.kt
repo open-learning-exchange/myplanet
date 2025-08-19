@@ -132,7 +132,7 @@ class SyncManager @Inject constructor(
 
     private fun startFullSync() {
         try {
-            val logger = SyncTimeLogger.getInstance()
+            val logger = SyncTimeLogger
             logger.startLogging()
 
             initializeSync()
@@ -244,7 +244,7 @@ class SyncManager @Inject constructor(
 
     private fun startFastSync(syncTables: List<String>? = null) {
         try {
-            val logger = SyncTimeLogger.getInstance()
+            val logger = SyncTimeLogger
             logger.startLogging()
 
             initializeSync()
@@ -435,7 +435,7 @@ class SyncManager @Inject constructor(
         betaSync = true
         var mainRealm: Realm? = null
         try {
-            val logger = SyncTimeLogger.getInstance()
+            val logger = SyncTimeLogger
             logger.startLogging()
 
             initializeSync()
@@ -561,7 +561,7 @@ class SyncManager @Inject constructor(
 
     private suspend fun syncWithSemaphore(name: String, syncOperation: suspend () -> Unit) {
         semaphore.withPermit {
-            val logger = SyncTimeLogger.getInstance()
+            val logger = SyncTimeLogger
             logger.startProcess("${name}_sync")
             try {
                 syncOperation()
@@ -572,7 +572,7 @@ class SyncManager @Inject constructor(
     }
 
     private fun resourceTransactionSync(backgroundRealm: Realm? = null) {
-        val logger = SyncTimeLogger.getInstance()
+        val logger = SyncTimeLogger
         logger.startProcess("resource_sync")
         var processedItems = 0
 
@@ -721,7 +721,7 @@ class SyncManager @Inject constructor(
     }
 
     private fun fastResourceTransactionSync() {
-        val logger = SyncTimeLogger.getInstance()
+        val logger = SyncTimeLogger
         logger.startProcess("resource_sync")
         var processedItems = 0
 
@@ -938,7 +938,7 @@ class SyncManager @Inject constructor(
     }
 
     private fun myLibraryTransactionSync() {
-        val logger = SyncTimeLogger.getInstance()
+        val logger = SyncTimeLogger
         logger.startProcess("library_sync")
         var processedItems = 0
 
@@ -1081,7 +1081,7 @@ class SyncManager @Inject constructor(
     }
 
     private fun fastMyLibraryTransactionSync() {
-        val logger = SyncTimeLogger.getInstance()
+        val logger = SyncTimeLogger
         logger.startProcess("library_sync")
         var processedItems = 0
 
