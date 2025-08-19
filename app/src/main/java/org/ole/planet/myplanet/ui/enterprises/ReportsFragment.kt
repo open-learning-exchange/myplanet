@@ -169,8 +169,9 @@ class ReportsFragment : BaseTeamFragment() {
             .equalTo("docType", "report")
             .notEqualTo("status", "archived")
             .sort("date", Sort.DESCENDING)
-            .findAllAsync()
+            .findAll()
 
+        updatedReportsList(reportsList)
         reportsList.addChangeListener { results ->
             updatedReportsList(results)
         }
