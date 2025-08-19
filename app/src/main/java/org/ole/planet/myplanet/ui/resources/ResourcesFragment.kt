@@ -75,6 +75,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+    private var searchTextWatcher: TextWatcher? = null
 
     @Inject
     lateinit var prefManager: SharedPrefManager
@@ -278,7 +279,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun setupSearchTextListener() {
-        etSearch.addTextChangedListener(object : TextWatcher {
+        searchTextWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 adapterLibrary.setLibraryList(
@@ -290,8 +291,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 )
                 showNoData(tvMessage, adapterLibrary.itemCount, "resources")
             }
+
             override fun afterTextChanged(s: Editable) {}
-        })
+        }
+        etSearch.addTextChangedListener(searchTextWatcher)
     }
 
     private fun setupCollectionsButton() {
@@ -518,6 +521,19 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     override fun onDestroyView() {
+        etSearch.removeTextChangedListener(searchTextWatcher)
+        searchTextWatcher = null
+
+        if (confirmation?.isShowing == true) {
+            confirmation?.dismiss()
+        }
+        confirmation = null
+
+        if (customProgressDialog?.isShowing() == true) {
+            customProgressDialog?.dismiss()
+        }
+        customProgressDialog = null
+
         _binding = null
         super.onDestroyView()
     }

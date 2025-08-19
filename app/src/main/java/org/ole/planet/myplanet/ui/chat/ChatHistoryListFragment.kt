@@ -33,7 +33,6 @@ import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
@@ -69,7 +68,11 @@ class ChatHistoryListFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentChatHistoryListBinding = FragmentChatHistoryListBinding.inflate(inflater, container, false)
-        user = UserProfileDbHandler(requireContext()).userModel
+        user = databaseService.withRealm { realm ->
+            realm.where(RealmUserModel::class.java)
+                .equalTo("id", settings.getString("userId", ""))
+                .findFirst()?.let { realm.copyFromRealm(it) }
+        }
 
         return fragmentChatHistoryListBinding.root
     }
