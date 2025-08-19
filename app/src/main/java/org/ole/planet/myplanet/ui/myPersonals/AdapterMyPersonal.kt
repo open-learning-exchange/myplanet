@@ -21,7 +21,8 @@ import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
 import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
 import org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity
 import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
-import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
+import org.ole.planet.myplanet.utilities.TimeUtils
+import java.time.ZoneId
 import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterMyPersonal(private val context: Context, private val list: List<RealmMyPersonal>) : RecyclerView.Adapter<ViewHolderMyPersonal>() {
@@ -41,7 +42,11 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
     override fun onBindViewHolder(holder: ViewHolderMyPersonal, position: Int) {
         rowMyPersonalBinding.title.text = list[position].title
         rowMyPersonalBinding.description.text = list[position].description
-        rowMyPersonalBinding.date.text = getFormattedDate(list[position].date)
+        rowMyPersonalBinding.date.text = TimeUtils.format(
+            list[position].date,
+            "EEEE, MMM dd, yyyy",
+            ZoneId.of("UTC"),
+        )
         rowMyPersonalBinding.imgDelete.setOnClickListener {
             AlertDialog.Builder(context, R.style.AlertDialogTheme)
                 .setMessage(R.string.delete_record)

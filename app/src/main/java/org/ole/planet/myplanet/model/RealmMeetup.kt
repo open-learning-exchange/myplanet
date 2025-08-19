@@ -8,6 +8,7 @@ import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import java.time.ZoneId
 import org.json.JSONArray
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
@@ -86,8 +87,10 @@ open class RealmMeetup : RealmObject() {
             map["Created By"] = checkNull(meetups.creator)
             map["Category"] = checkNull(meetups.category)
             try {
-                map["Meetup Date"] = TimeUtils.getFormattedDate(meetups.startDate) +
-                        " - " + TimeUtils.getFormattedDate(meetups.endDate)
+                map["Meetup Date"] =
+                    TimeUtils.format(meetups.startDate, "EEEE, MMM dd, yyyy", ZoneId.of("UTC")) +
+                        " - " +
+                        TimeUtils.format(meetups.endDate, "EEEE, MMM dd, yyyy", ZoneId.of("UTC"))
             } catch (e: Exception) {
                 e.printStackTrace()
             }

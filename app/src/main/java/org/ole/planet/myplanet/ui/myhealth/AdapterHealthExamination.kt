@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.model.RealmMyHealthPojo
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.myhealth.AdapterHealthExamination.ViewHolderMyHealthExamination
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterHealthExamination(private val context: Context, private val list: List<RealmMyHealthPojo>?, private val mh: RealmMyHealthPojo, private val userModel: RealmUserModel?) : RecyclerView.Adapter<ViewHolderMyHealthExamination>() {
@@ -44,7 +44,9 @@ class AdapterHealthExamination(private val context: Context, private val list: L
     override fun onBindViewHolder(holder: ViewHolderMyHealthExamination, position: Int) {
             rowExaminationBinding.txtTemp.text = list?.get(position)?.temperature.toString()
             rowExaminationBinding.txtTemp.text = list?.get(position)?.let { checkEmpty(it.temperature) }
-            rowExaminationBinding.txtDate.text = list?.get(position)?.let { formatDate(it.date, "MMM dd, yyyy") }
+            rowExaminationBinding.txtDate.text = list?.get(position)?.let {
+                TimeUtils.format(it.date, "MMM dd, yyyy")
+            }
             val encrypted = userModel?.let { it1 -> list?.get(position)?.getEncryptedDataAsJson(it1) }
 
 
@@ -91,7 +93,7 @@ class AdapterHealthExamination(private val context: Context, private val list: L
         showConditions(alertExaminationBinding.tvCondition, realmExamination)
         showEncryptedData(alertExaminationBinding.tvOtherNotes, encrypted)
         val dialog = AlertDialog.Builder(context, R.style.CustomAlertDialog)
-            .setTitle(realmExamination?.let { formatDate(it.date, "MMM dd, yyyy") })
+            .setTitle(realmExamination?.let { TimeUtils.format(it.date, "MMM dd, yyyy") })
             .setView(alertExaminationBinding.root)
             .setPositiveButton("OK", null).create()
         val backgroundColor = ContextCompat.getColor(context, R.color.multi_select_grey)

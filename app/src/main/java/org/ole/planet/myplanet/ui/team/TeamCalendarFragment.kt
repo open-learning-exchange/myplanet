@@ -163,14 +163,14 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private fun setDatePickerListener(view: TextView, date: Calendar?, endDate: Calendar?) {
         val initCal = date ?: Calendar.getInstance()
         if (date != null && endDate != null) {
-            view.text = date.timeInMillis.let { it1 -> TimeUtils.formatDate(it1, "yyyy-MM-dd") }
+            view.text = date.timeInMillis.let { it1 -> TimeUtils.format(it1, "yyyy-MM-dd") }
         }
         view.setOnClickListener {
             DatePickerDialog(requireActivity(), { _, year, monthOfYear, dayOfMonth ->
                 date?.set(Calendar.YEAR, year)
                 date?.set(Calendar.MONTH, monthOfYear)
                 date?.set(Calendar.DAY_OF_MONTH, dayOfMonth)
-                view.text = date?.timeInMillis?.let { it1 -> TimeUtils.formatDate(it1, "yyyy-MM-dd") }
+                view.text = date?.timeInMillis?.let { it1 -> TimeUtils.format(it1, "yyyy-MM-dd") }
             }, initCal.get(Calendar.YEAR),
                 initCal.get(Calendar.MONTH),
                 initCal.get(Calendar.DAY_OF_MONTH)).show()

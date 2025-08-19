@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getInt
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterCourses(
@@ -204,7 +204,7 @@ class AdapterCourses(
             holder.rowCourseBinding.tvDate2.visibility = View.VISIBLE
             holder.rowCourseBinding.tvDate.visibility = View.GONE
             try {
-                holder.rowCourseBinding.tvDate2.text = formatDate(course.createdDate, "MMM dd, yyyy")
+                holder.rowCourseBinding.tvDate2.text = TimeUtils.format(course.createdDate, "MMM dd, yyyy")
             } catch (e: Exception) {
                 throw RuntimeException(e)
             }
@@ -213,7 +213,7 @@ class AdapterCourses(
             holder.rowCourseBinding.tvDate2.visibility = View.GONE
             holder.rowCourseBinding.holder.visibility = View.GONE
             try {
-                holder.rowCourseBinding.tvDate.text = formatDate(course.createdDate, "MMM dd, yyyy")
+                holder.rowCourseBinding.tvDate.text = TimeUtils.format(course.createdDate, "MMM dd, yyyy")
             } catch (e: Exception) {
                 throw RuntimeException(e)
             }

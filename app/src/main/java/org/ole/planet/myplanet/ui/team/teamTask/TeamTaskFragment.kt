@@ -35,8 +35,6 @@ import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.OnCompletedListener
 import org.ole.planet.myplanet.utilities.TimeUtils
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
 
 class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
@@ -54,7 +52,9 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             deadline?.set(Calendar.MONTH, monthOfYear)
             deadline?.set(Calendar.DAY_OF_MONTH, dayOfMonth)
             if (datePicker != null) {
-                datePicker?.text = deadline?.timeInMillis?.let { formatDateTZ(it) }
+                datePicker?.text = deadline?.timeInMillis?.let {
+                    TimeUtils.format(it, "yyyy-MM-dd HH:mm:ss")
+                }
             }
             timePicker()
         }
@@ -65,7 +65,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             deadline?.set(Calendar.MINUTE, minute)
             if (datePicker != null) {
                 datePicker?.text = deadline?.timeInMillis?.let {
-                    TimeUtils.getFormattedDateWithTime(it)
+                    TimeUtils.format(it, "EEE dd, MMMM yyyy , hh:mm a")
                 }
             }
         }, deadline!![Calendar.HOUR_OF_DAY], deadline!![Calendar.MINUTE], true)
@@ -94,7 +94,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         if (t != null) {
             alertTaskBinding.etTask.setText(t.title)
             alertTaskBinding.etDescription.setText(t.description)
-            datePicker?.text = formatDate(t.deadline)
+            datePicker?.text = TimeUtils.format(t.deadline, "EEE dd, MMMM yyyy")
             deadline = Calendar.getInstance()
             deadline?.time = Date(t.deadline)
         }

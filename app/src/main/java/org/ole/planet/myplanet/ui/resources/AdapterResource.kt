@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterResource(private val context: Context, private var libraryList: List<RealmMyLibrary?>, private var ratingMap: HashMap<String?, JsonObject>, private val realm: Realm) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -85,7 +85,9 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
                 } else {
                     String.format(Locale.getDefault(), "%.1f", libraryList[position]?.averageRating?.toDouble())
                 }
-            holder.rowLibraryBinding.tvDate.text = libraryList[position]?.createdDate?.let { formatDate(it, "MMM dd, yyyy") }
+            holder.rowLibraryBinding.tvDate.text = libraryList[position]?.createdDate?.let {
+                TimeUtils.format(it, "MMM dd, yyyy")
+            }
             displayTagCloud(holder.rowLibraryBinding.flexboxDrawable, position)
             holder.itemView.setOnClickListener { openLibrary(libraryList[position]) }
             userModel = UserProfileDbHandler(context).userModel

@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
-import org.ole.planet.myplanet.utilities.TimeUtils.currentDate
+import org.ole.planet.myplanet.utilities.TimeUtils
 
 class DashboardFragment : BaseDashboardFragment() {
     private lateinit var fragmentHomeBinding: FragmentHomeBinding
@@ -43,7 +43,8 @@ class DashboardFragment : BaseDashboardFragment() {
         user = UserProfileDbHandler(requireContext()).userModel
         onLoaded(view)
         initView(view)
-        (activity as AppCompatActivity?)?.supportActionBar?.subtitle = currentDate()
+        (activity as AppCompatActivity?)?.supportActionBar?.subtitle =
+            TimeUtils.format(System.currentTimeMillis(), "EEE dd, MMMM yyyy")
         return fragmentHomeBinding.root
     }
 

@@ -48,7 +48,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
 
@@ -231,9 +231,9 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         )
         holder.rowNewsBinding.tvDate.text =
             if (sharedTeamName.isEmpty() || teamName.isNotEmpty()) {
-                formatDate(news.time)
+                TimeUtils.format(news.time, "EEE dd, MMMM yyyy")
             } else {
-                "${formatDate(news.time)} | Shared from $sharedTeamName"
+                "${TimeUtils.format(news.time, "EEE dd, MMMM yyyy")} | Shared from $sharedTeamName"
             }
         holder.rowNewsBinding.tvEdited.visibility = if (news.isEdited) View.VISIBLE else View.GONE
     }

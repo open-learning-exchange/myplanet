@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFinanceBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.ui.enterprises.AdapterFinance.ViewHolderFinance
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import org.ole.planet.myplanet.utilities.TimeUtils
 
 class AdapterFinance(private val context: Context, private val list: RealmResults<RealmMyTeam>) : RecyclerView.Adapter<ViewHolderFinance>() {
     private lateinit var rowFinanceBinding: RowFinanceBinding
@@ -28,7 +28,7 @@ class AdapterFinance(private val context: Context, private val list: RealmResult
 
     override fun onBindViewHolder(holder: ViewHolderFinance, position: Int) {
         list[position]?.let {
-            rowFinanceBinding.date.text = formatDate(it.date, "MMM dd, yyyy")
+            rowFinanceBinding.date.text = TimeUtils.format(it.date, "MMM dd, yyyy")
             rowFinanceBinding.note.text = it.description
             if (TextUtils.equals(it.type?.lowercase(Locale.getDefault()), "debit")) {
                 rowFinanceBinding.debit.text = context.getString(R.string.number_placeholder, it.amount)

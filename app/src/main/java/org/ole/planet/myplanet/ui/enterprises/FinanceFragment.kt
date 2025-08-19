@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.databinding.FragmentFinanceBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
+import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 class FinanceFragment : BaseTeamFragment() {
@@ -40,7 +40,9 @@ class FinanceFragment : BaseTeamFragment() {
             date?.set(Calendar.MONTH, monthOfYear)
             date?.set(Calendar.DAY_OF_MONTH, dayOfMonth)
             if (date != null) {
-                addTransactionBinding.tvSelectDate.text = date?.timeInMillis?.let { formatDateTZ(it) }
+                addTransactionBinding.tvSelectDate.text = date?.timeInMillis?.let {
+                    TimeUtils.format(it, "yyyy-MM-dd HH:mm:ss")
+                }
             }
         }
 

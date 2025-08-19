@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.databinding.FragmentPlanBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 class PlanFragment : BaseTeamFragment() {
@@ -157,7 +157,7 @@ class PlanFragment : BaseTeamFragment() {
         fragmentPlanBinding.tvDate.text = getString(
             R.string.two_strings,
             getString(R.string.created_on),
-            updatedTeam.createdDate?.let { formatDate(it) }
+            updatedTeam.createdDate?.let { TimeUtils.format(it, "EEE dd, MMMM yyyy") }
         )
     }
 

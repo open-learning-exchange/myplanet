@@ -43,6 +43,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.lang.String.format
 import java.time.Instant
+import java.time.ZoneId
 import java.util.ArrayList
 import java.util.Calendar
 import java.util.LinkedHashMap
@@ -293,7 +294,11 @@ class UserProfileFragment : Fragment() {
                     val calendar = Calendar.getInstance()
                     calendar.set(year, monthOfYear, dayOfMonth)
                     val dobMillis = calendar.timeInMillis
-                    val dobFormatted = TimeUtils.getFormattedDate(dobMillis)
+                    val dobFormatted = TimeUtils.format(
+                        dobMillis,
+                        "EEEE, MMM dd, yyyy",
+                        ZoneId.of("UTC"),
+                    )
 
                     date = format(Locale.US, "%04d-%02d-%02dT00:00:00.000Z", year, monthOfYear + 1, dayOfMonth)
                     binding.dateOfBirth.text = dobFormatted

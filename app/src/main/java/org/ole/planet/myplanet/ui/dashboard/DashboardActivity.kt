@@ -93,7 +93,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.totalAvailableMemoryRatio
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NotificationUtil
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 @AndroidEntryPoint  
@@ -681,7 +681,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             dashboardViewModel.createNotificationIfNotExists(
                 realm,
                 "task",
-                "${task.title} ${formatDate(task.deadline)}",
+                "${task.title} ${TimeUtils.format(task.deadline, "EEE dd, MMMM yyyy")}",
                 task.id,
                 userId
             )

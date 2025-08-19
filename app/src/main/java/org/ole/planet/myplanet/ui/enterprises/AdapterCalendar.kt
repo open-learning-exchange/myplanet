@@ -8,7 +8,8 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowTeamCalendarBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.ui.enterprises.AdapterCalendar.ViewHolderCalendar
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import org.ole.planet.myplanet.utilities.TimeUtils
+import java.time.ZoneId
 
 class AdapterCalendar(private val context: Context, private val list: List<RealmMeetup>) : RecyclerView.Adapter<ViewHolderCalendar>() {
     private lateinit var rowTeamCalendarBinding: RowTeamCalendarBinding
@@ -22,9 +23,17 @@ class AdapterCalendar(private val context: Context, private val list: List<Realm
         rowTeamCalendarBinding.tvTitle.text = meetup.title
         rowTeamCalendarBinding.tvDescription.text = meetup.description
         if (meetup.startDate == meetup.endDate) {
-            rowTeamCalendarBinding.tvDate.text = formatDate(meetup.startDate,"")
+            rowTeamCalendarBinding.tvDate.text = TimeUtils.format(
+                meetup.startDate,
+                "EEE dd, MMMM yyyy",
+                ZoneId.of("UTC"),
+            )
         } else {
-            rowTeamCalendarBinding.tvDate.text = context.getString(R.string.date_range, formatDate(meetup.startDate, ""), formatDate(meetup.endDate, ""))
+            rowTeamCalendarBinding.tvDate.text = context.getString(
+                R.string.date_range,
+                TimeUtils.format(meetup.startDate, "EEE dd, MMMM yyyy", ZoneId.of("UTC")),
+                TimeUtils.format(meetup.endDate, "EEE dd, MMMM yyyy", ZoneId.of("UTC")),
+            )
         }
     }
 

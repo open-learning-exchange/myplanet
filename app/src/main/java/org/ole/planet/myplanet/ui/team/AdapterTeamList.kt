@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
+import java.time.ZoneId
 
 class AdapterTeamList(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm, private val fragmentManager: FragmentManager, private val uploadManager: UploadManager) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private lateinit var itemTeamListBinding: ItemTeamListBinding
@@ -57,7 +58,11 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         val user: RealmUserModel? = UserProfileDbHandler(context).userModel
 
         with(holder.binding) {
-            created.text = TimeUtils.getFormattedDate(team.createdDate)
+            created.text = TimeUtils.format(
+                team.createdDate,
+                "EEEE, MMM dd, yyyy",
+                ZoneId.of("UTC"),
+            )
             type.text = team.teamType
             type.visibility = if (team.teamType == null) View.GONE else View.VISIBLE
             name.text = team.name

@@ -8,7 +8,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.utilities.NotificationUtil.create
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import org.ole.planet.myplanet.utilities.TimeUtils
 
 class TaskNotificationWorker(private val context: Context, workerParams: WorkerParameters) : Worker(context, workerParams) {
     override fun doWork(): Result {
@@ -26,7 +26,12 @@ class TaskNotificationWorker(private val context: Context, workerParams: WorkerP
                     .findAll()
                 realm.executeTransaction {
                     for (task in tasks) {
-                        create(context, R.drawable.ole_logo, task.title, "Task expires on " + formatDate(task.deadline, ""))
+                        create(
+                            context,
+                            R.drawable.ole_logo,
+                            task.title,
+                            "Task expires on " + TimeUtils.format(task.deadline, "EEE dd, MMMM yyyy"),
+                        )
                         task.isNotified = true
                     }
                 }

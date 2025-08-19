@@ -72,7 +72,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        fragmentHomeBellBinding.cardProfileBell.txtDate.text = TimeUtils.formatDate(Date().time, "")
+        fragmentHomeBellBinding.cardProfileBell.txtDate.text =
+            TimeUtils.format(Date().time, "EEE dd, MMMM yyyy")
         fragmentHomeBellBinding.cardProfileBell.txtCommunityName.text = model?.planetCode
         setupNetworkStatusMonitoring()
         (activity as DashboardActivity?)?.supportActionBar?.hide()

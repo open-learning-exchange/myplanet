@@ -7,7 +7,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemMeetupBinding
 import org.ole.planet.myplanet.model.RealmMeetup
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import org.ole.planet.myplanet.utilities.TimeUtils
 
 class AdapterMeetup(private val list: List<RealmMeetup>) : RecyclerView.Adapter<AdapterMeetup.ViewHolderMeetup>() {
     private lateinit var itemMeetupBinding: ItemMeetupBinding
@@ -21,8 +21,8 @@ class AdapterMeetup(private val list: List<RealmMeetup>) : RecyclerView.Adapter<
         val meetup = list[position]
         itemMeetupBinding.tvTitle.text = context.getString(R.string.message_placeholder, meetup.title)
         itemMeetupBinding.tvDescription.text = context.getString(R.string.message_placeholder, meetup.description)
-        itemMeetupBinding.tvDateFrom.text = formatDate(meetup.startDate)
-        itemMeetupBinding.tvDateTo.text = formatDate(meetup.endDate)
+        itemMeetupBinding.tvDateFrom.text = TimeUtils.format(meetup.startDate, "EEE dd, MMMM yyyy")
+        itemMeetupBinding.tvDateTo.text = TimeUtils.format(meetup.endDate, "EEE dd, MMMM yyyy")
         itemMeetupBinding.tvTime.text = "${meetup.startTime} - ${meetup.endTime}"
         itemMeetupBinding.tvLocation.text = context.getString(R.string.message_placeholder, meetup.meetupLocation)
         itemMeetupBinding.tvLink.text = context.getString(R.string.message_placeholder, meetup.meetupLink)

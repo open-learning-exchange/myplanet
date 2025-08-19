@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.databinding.RowTaskBinding
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.ViewHolderTask
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import org.ole.planet.myplanet.utilities.TimeUtils
 
 class AdapterTask(private val context: Context, private val realm: Realm, private val list: List<RealmTeamTask>?, private val nonTeamMember: Boolean) : RecyclerView.Adapter<ViewHolderTask>() {
     private lateinit var rowTaskBinding: RowTaskBinding
@@ -32,10 +32,23 @@ class AdapterTask(private val context: Context, private val realm: Realm, privat
             rowTaskBinding.checkbox.text = it.title
             rowTaskBinding.checkbox.isChecked = it.completed
             if (!it.completed) {
-                rowTaskBinding.deadline.text = context.getString(R.string.deadline_colon, formatDate(it.deadline))
+                rowTaskBinding.deadline.text =
+                    context.getString(
+                        R.string.deadline_colon,
+                        TimeUtils.format(it.deadline, "EEE dd, MMMM yyyy"),
+                    )
             } else {
-                rowTaskBinding.deadline.text =context.getString(R.string.two_strings,
-                    context.getString(R.string.deadline_colon, formatDate(it.deadline)), context.getString(R.string.completed_colon, formatDate(it.deadline)))
+                rowTaskBinding.deadline.text = context.getString(
+                    R.string.two_strings,
+                    context.getString(
+                        R.string.deadline_colon,
+                        TimeUtils.format(it.deadline, "EEE dd, MMMM yyyy"),
+                    ),
+                    context.getString(
+                        R.string.completed_colon,
+                        TimeUtils.format(it.deadline, "EEE dd, MMMM yyyy"),
+                    ),
+                )
             }
             showAssignee(it)
             rowTaskBinding.icMore.setOnClickListener {
