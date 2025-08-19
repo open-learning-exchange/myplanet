@@ -858,7 +858,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         fun clearSharedPref() {
             val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val editor = settings.edit()
-            val keysToKeep = setOf(SharedPrefManager(context).firstLaunch, SharedPrefManager(context).manualConfig )
+            val keysToKeep = setOf(SharedPrefManager.FIRST_LAUNCH, SharedPrefManager.MANUAL_CONFIG)
             val tempStorage = HashMap<String, Boolean>()
             for (key in keysToKeep) {
                 tempStorage[key] = settings.getBoolean(key, false)
