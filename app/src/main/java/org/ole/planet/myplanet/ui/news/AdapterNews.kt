@@ -76,13 +76,8 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     }
 
     fun addItem(news: RealmNews?) {
-        val newList = list.toMutableList()
-        newList.add(0, news)
-        val diffCallback = NewsDiffCallback(list, newList)
-        val diffResult = DiffUtil.calculateDiff(diffCallback)
-        list.clear()
-        list.addAll(newList)
-        diffResult.dispatchUpdatesTo(this)
+        val newList = list.toMutableList().apply { add(0, news) }
+        updateList(newList)
         recyclerView?.scrollToPosition(0)
     }
 
