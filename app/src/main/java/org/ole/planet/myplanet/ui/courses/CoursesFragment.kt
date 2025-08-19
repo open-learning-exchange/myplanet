@@ -146,7 +146,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
 
-                        refreshCoursesData()
+                        // Add delay to allow database to be fully committed
+                        lifecycleScope.launch {
+                            kotlinx.coroutines.delay(500) // Small delay for database commitment
+                            refreshCoursesData()
+                        }
                         prefManager.setCoursesSynced(true)
                         Log.d("CoursesFragment", "=== SYNC COMPLETE CALLBACK FINISHED ===")
                     }
