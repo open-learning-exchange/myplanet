@@ -550,5 +550,8 @@ class ChatDetailFragment : Fragment() {
             editor.putBoolean("isAlternativeUrl", false)
             editor.apply()
         }
+        if (this::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
     }
 }
