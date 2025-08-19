@@ -78,7 +78,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     fun addItem(news: RealmNews?) {
         val newList = list.toMutableList()
         newList.add(0, news)
-        val diffCallback = RealmNewsDiffCallback(list, newList)
+        val diffCallback = NewsDiffCallback(list, newList)
         val diffResult = DiffUtil.calculateDiff(diffCallback)
         list.clear()
         list.addAll(newList)
@@ -328,7 +328,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     }
 
     fun updateList(newList: List<RealmNews?>) {
-        val diffCallback = RealmNewsDiffCallback(list, newList)
+        val diffCallback = NewsDiffCallback(list, newList)
         val diffResult = DiffUtil.calculateDiff(diffCallback)
         list.clear()
         list.addAll(newList)
