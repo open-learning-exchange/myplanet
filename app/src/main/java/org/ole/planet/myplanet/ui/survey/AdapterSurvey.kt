@@ -55,7 +55,7 @@ class AdapterSurvey(
     }
 
     fun updateDataAfterSearch(newList: List<RealmStepExam>) {
-        if (examList.isEmpty()) {
+        val sortedList = if (examList.isEmpty()) {
             sortSurveyList(false, newList)
         } else {
             when (sortType) {
@@ -64,11 +64,14 @@ class AdapterSurvey(
                 SurveySortType.TITLE -> sortSurveyListByName(isTitleAscending, newList)
             }
         }
-        notifyDataSetChanged()
+        updateData(sortedList)
     }
 
-    private fun sortSurveyList(isAscend: Boolean, list: List<RealmStepExam> = examList) {
-        examList = if (isAscend) {
+    private fun sortSurveyList(
+        isAscend: Boolean,
+        list: List<RealmStepExam> = examList,
+    ): List<RealmStepExam> {
+        return if (isAscend) {
             list.sortedBy { it.createdDate }
         } else {
             list.sortedByDescending { it.createdDate }
@@ -77,12 +80,15 @@ class AdapterSurvey(
 
     fun sortByDate(isAscend: Boolean) {
         sortType = if (isAscend) SurveySortType.DATE_ASC else SurveySortType.DATE_DESC
-        sortSurveyList(isAscend)
-        notifyDataSetChanged()
+        val sortedList = sortSurveyList(isAscend)
+        updateData(sortedList)
     }
 
-    private fun sortSurveyListByName(isAscend: Boolean, list: List<RealmStepExam> = examList) {
-        examList = if (isAscend) {
+    private fun sortSurveyListByName(
+        isAscend: Boolean,
+        list: List<RealmStepExam> = examList,
+    ): List<RealmStepExam> {
+        return if (isAscend) {
             list.sortedBy { it.name?.lowercase() }
         } else {
             list.sortedByDescending { it.name?.lowercase() }
@@ -92,8 +98,8 @@ class AdapterSurvey(
     fun toggleTitleSortOrder() {
         sortType = SurveySortType.TITLE
         isTitleAscending = !isTitleAscending
-        sortSurveyListByName(isTitleAscending)
-        notifyDataSetChanged()
+        val sortedList = sortSurveyListByName(isTitleAscending)
+        updateData(sortedList)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderSurvey {
