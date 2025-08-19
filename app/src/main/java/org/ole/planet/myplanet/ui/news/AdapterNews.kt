@@ -19,7 +19,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -51,6 +50,7 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
+import org.ole.planet.myplanet.utilities.DiffUtil
 
 class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
     private lateinit var rowNewsBinding: RowNewsBinding
@@ -78,8 +78,25 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     fun addItem(news: RealmNews?) {
         val newList = list.toMutableList()
         newList.add(0, news)
-        val diffCallback = NewsDiffCallback(list, newList)
-        val diffResult = DiffUtil.calculateDiff(diffCallback)
+        val diffResult = DiffUtil.calculateDiff(
+            list,
+            newList,
+            areItemsTheSame = { old, new ->
+                val oId = if (old?.isValid == true) old.id else null
+                val nId = if (new?.isValid == true) new.id else null
+                oId != null && oId == nId
+            },
+            areContentsTheSame = { old, new ->
+                if (old?.isValid != true || new?.isValid != true) {
+                    false
+                } else {
+                    old.id == new.id &&
+                        old.time == new.time &&
+                        old.isEdited == new.isEdited &&
+                        old.message == new.message
+                }
+            }
+        )
         list.clear()
         list.addAll(newList)
         diffResult.dispatchUpdatesTo(this)
@@ -328,8 +345,25 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     }
 
     fun updateList(newList: List<RealmNews?>) {
-        val diffCallback = NewsDiffCallback(list, newList)
-        val diffResult = DiffUtil.calculateDiff(diffCallback)
+        val diffResult = DiffUtil.calculateDiff(
+            list,
+            newList,
+            areItemsTheSame = { old, new ->
+                val oId = if (old?.isValid == true) old.id else null
+                val nId = if (new?.isValid == true) new.id else null
+                oId != null && oId == nId
+            },
+            areContentsTheSame = { old, new ->
+                if (old?.isValid != true || new?.isValid != true) {
+                    false
+                } else {
+                    old.id == new.id &&
+                        old.time == new.time &&
+                        old.isEdited == new.isEdited &&
+                        old.message == new.message
+                }
+            }
+        )
         list.clear()
         list.addAll(newList)
         diffResult.dispatchUpdatesTo(this)

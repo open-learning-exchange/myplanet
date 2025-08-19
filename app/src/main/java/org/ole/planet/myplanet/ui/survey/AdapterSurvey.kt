@@ -5,7 +5,6 @@ import android.content.SharedPreferences
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import io.realm.Realm
@@ -25,6 +24,7 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.getRecentSubmissi
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import org.ole.planet.myplanet.utilities.DiffUtil
 
 class AdapterSurvey(
     private val context: Context,
@@ -48,8 +48,12 @@ class AdapterSurvey(
     }
 
     fun updateData(newList: List<RealmStepExam>) {
-        val diffCallback = SurveyDiffCallback(examList, newList)
-        val diffResult = DiffUtil.calculateDiff(diffCallback)
+        val diffResult = DiffUtil.calculateDiff(
+            examList,
+            newList,
+            areItemsTheSame = { old, new -> old.id == new.id },
+            areContentsTheSame = { old, new -> old == new }
+        )
         examList = newList
         diffResult.dispatchUpdatesTo(this)
     }
