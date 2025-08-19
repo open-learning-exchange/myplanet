@@ -52,7 +52,6 @@ import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
@@ -116,7 +115,11 @@ class ChatDetailFragment : Fragment() {
 
     private fun initChatComponents() {
         mRealm = databaseService.realmInstance
-        user = UserProfileDbHandler(requireContext()).userModel
+        user = databaseService.withRealm { realm ->
+            realm.where(RealmUserModel::class.java)
+                .equalTo("id", settings.getString("userId", ""))
+                .findFirst()?.let { realm.copyFromRealm(it) }
+        }
         mAdapter = ChatAdapter(ArrayList(), requireContext(), fragmentChatDetailBinding.recyclerGchat)
         fragmentChatDetailBinding.recyclerGchat.apply {
             adapter = mAdapter

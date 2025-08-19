@@ -23,7 +23,6 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 object Constants {
     const val KEY_LOGIN = "isLoggedIn"
     const val DICTIONARY_URL = "http://157.245.241.39:8000/output.json"
-    @JvmField
     var shelfDataList = mutableListOf<ShelfData>()
     const val KEY_SYNC = "beta_wifi_switch"
     const val KEY_MEETUPS = "key_meetup"
@@ -35,29 +34,33 @@ object Constants {
     const val DISCLAIMER = R.string.disclaimer
     const val ABOUT = R.string.about
     const val PREFS_NAME = "OLE_PLANET"
-    private val COLOR_MAP = HashMap<Class<*>, Int>()
-    @JvmField
-    var classList = HashMap<String, Class<*>>()
-    @JvmField
-    var LABELS = HashMap<String, String>()
+    private val COLOR_MAP = mutableMapOf<Class<*>, Int>()
+    var classList = mutableMapOf<String, Class<*>>()
+    var LABELS = mutableMapOf<String, String>()
     const val KEY_NOTIFICATION_SHOWN = "notification_shown"
     const val SELECTED_LANGUAGE = "app_language"
 
     init {
         initClasses()
-        shelfDataList = ArrayList()
-        LABELS = HashMap()
-        shelfDataList.add(ShelfData("resourceIds", "resources", "resourceId"))
-        shelfDataList.add(ShelfData("meetupIds", "meetups", "meetupId"))
-        shelfDataList.add(ShelfData("courseIds", "courses", "courseId"))
-        shelfDataList.add(ShelfData("myTeamIds", "teams", "teamId"))
-        COLOR_MAP[RealmMyLibrary::class.java] = R.color.md_red_200
-        COLOR_MAP[RealmMyCourse::class.java] = R.color.md_amber_200
-        COLOR_MAP[RealmMyTeam::class.java] = R.color.md_green_200
-        COLOR_MAP[RealmMeetup::class.java] = R.color.md_purple_200
-        LABELS["Help Wanted"] = "help"
-        LABELS["Offer"] = "offer"
-        LABELS["Request for advice"] = "advice"
+        shelfDataList = mutableListOf(
+            ShelfData("resourceIds", "resources", "resourceId"),
+            ShelfData("meetupIds", "meetups", "meetupId"),
+            ShelfData("courseIds", "courses", "courseId"),
+            ShelfData("myTeamIds", "teams", "teamId")
+        )
+        COLOR_MAP.putAll(
+            mapOf(
+                RealmMyLibrary::class.java to R.color.md_red_200,
+                RealmMyCourse::class.java to R.color.md_amber_200,
+                RealmMyTeam::class.java to R.color.md_green_200,
+                RealmMeetup::class.java to R.color.md_purple_200
+            )
+        )
+        LABELS = mutableMapOf(
+            "Help Wanted" to "help",
+            "Offer" to "offer",
+            "Request for advice" to "advice"
+        )
     }
 
     private fun initClasses() {
