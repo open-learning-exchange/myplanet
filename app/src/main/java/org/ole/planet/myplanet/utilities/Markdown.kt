@@ -95,7 +95,7 @@ object Markdown {
         dialog.setContentView(view)
         dialog.window?.setBackgroundDrawable(Color.BLACK.toDrawable())
 
-        Glide.with(context)
+        Glide.with(photoView.context)
             .load(imageUrl)
             .error(R.drawable.ic_loading)
             .into(photoView)
