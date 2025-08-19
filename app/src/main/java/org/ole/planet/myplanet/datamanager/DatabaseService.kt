@@ -66,3 +66,21 @@ fun <T : RealmModel> Realm.queryList(
 ): List<T> {
     return where(clazz).apply(builder).findAll().let { copyFromRealm(it) }
 }
+
+fun <T : RealmModel, V> Realm.findCopyByField(
+    clazz: Class<T>,
+    fieldName: String,
+    value: V,
+): T? {
+    val query = where(clazz)
+    when (value) {
+        is String -> query.equalTo(fieldName, value)
+        is Boolean -> query.equalTo(fieldName, value)
+        is Int -> query.equalTo(fieldName, value)
+        is Long -> query.equalTo(fieldName, value)
+        is Float -> query.equalTo(fieldName, value)
+        is Double -> query.equalTo(fieldName, value)
+        else -> throw IllegalArgumentException("Unsupported value type")
+    }
+    return query.findFirst()?.let { copyFromRealm(it) }
+}
