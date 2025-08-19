@@ -23,8 +23,8 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getRecentSubmissionDate
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
-import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.DiffUtil
+import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
 class AdapterSurvey(
     private val context: Context,
