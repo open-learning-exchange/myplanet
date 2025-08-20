@@ -58,6 +58,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancel
 import org.ole.planet.myplanet.utilities.NotificationUtil.create
 import org.ole.planet.myplanet.utilities.SyncTimeLogger
+import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @Singleton
@@ -132,7 +133,7 @@ class SyncManager @Inject constructor(
 
     private fun startFullSync() {
         try {
-            val logger = SyncTimeLogger.getInstance()
+            val logger = SyncTimeLogger
             logger.startLogging()
 
             initializeSync()
@@ -244,7 +245,7 @@ class SyncManager @Inject constructor(
 
     private fun startFastSync(syncTables: List<String>? = null) {
         try {
-            val logger = SyncTimeLogger.getInstance()
+            val logger = SyncTimeLogger
             logger.startLogging()
 
             initializeSync()
@@ -435,7 +436,7 @@ class SyncManager @Inject constructor(
         betaSync = true
         var mainRealm: Realm? = null
         try {
-            val logger = SyncTimeLogger.getInstance()
+            val logger = SyncTimeLogger
             logger.startLogging()
 
             initializeSync()
@@ -561,7 +562,7 @@ class SyncManager @Inject constructor(
 
     private suspend fun syncWithSemaphore(name: String, syncOperation: suspend () -> Unit) {
         semaphore.withPermit {
-            val logger = SyncTimeLogger.getInstance()
+            val logger = SyncTimeLogger
             logger.startProcess("${name}_sync")
             try {
                 syncOperation()
@@ -572,7 +573,7 @@ class SyncManager @Inject constructor(
     }
 
     private fun resourceTransactionSync(backgroundRealm: Realm? = null) {
-        val logger = SyncTimeLogger.getInstance()
+        val logger = SyncTimeLogger
         logger.startProcess("resource_sync")
         var processedItems = 0
 
@@ -581,7 +582,7 @@ class SyncManager @Inject constructor(
             val newIds: MutableList<String?> = ArrayList()
             var totalRows = 0
             ApiClient.executeWithRetry {
-                apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?limit=0").execute()
+                apiInterface.getJsonObject(Utilities.header, "${UrlUtils.getUrl()}/resources/_all_docs?limit=0").execute()
             }?.let { response ->
                 response.body()?.let { body ->
                     if (body.has("total_rows")) {
@@ -600,7 +601,7 @@ class SyncManager @Inject constructor(
                 try {
                     var response: JsonObject? = null
                     ApiClient.executeWithRetry {
-                        apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip").execute()
+                        apiInterface.getJsonObject(Utilities.header, "${UrlUtils.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip").execute()
                     }?.let {
                         response = it.body()
                     }
@@ -721,7 +722,7 @@ class SyncManager @Inject constructor(
     }
 
     private fun fastResourceTransactionSync() {
-        val logger = SyncTimeLogger.getInstance()
+        val logger = SyncTimeLogger
         logger.startProcess("resource_sync")
         var processedItems = 0
 
@@ -730,7 +731,7 @@ class SyncManager @Inject constructor(
 
             var totalRows = 0
             ApiClient.executeWithRetry {
-                apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?limit=0").execute()
+                apiInterface.getJsonObject(Utilities.header, "${UrlUtils.getUrl()}/resources/_all_docs?limit=0").execute()
             }?.let { response ->
                 response.body()?.let { body ->
                     if (body.has("total_rows")) {
@@ -774,7 +775,7 @@ class SyncManager @Inject constructor(
         try {
             var response: JsonObject? = null
             ApiClient.executeWithRetry {
-                apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip").execute()
+                apiInterface.getJsonObject(Utilities.header, "${UrlUtils.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip").execute()
             }?.let {
                 response = it.body()
             }
@@ -852,7 +853,7 @@ class SyncManager @Inject constructor(
         }
 
         val allShelves = ApiClient.executeWithRetry {
-            apiInterface.getDocuments(Utilities.header, "${Utilities.getUrl()}/shelf/_all_docs").execute()
+            apiInterface.getDocuments(Utilities.header, "${UrlUtils.getUrl()}/shelf/_all_docs").execute()
         }?.body()?.rows ?: return emptyList()
 
         runBlocking {
@@ -882,7 +883,7 @@ class SyncManager @Inject constructor(
         }
 
         val response = ApiClient.executeWithRetry {
-            apiInterface.findDocs(Utilities.header, "application/json", "${Utilities.getUrl()}/shelf/_all_docs?include_docs=true", keysObject).execute()
+            apiInterface.findDocs(Utilities.header, "application/json", "${UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true", keysObject).execute()
         }?.body()
 
         response?.let { responseBody ->
@@ -938,7 +939,7 @@ class SyncManager @Inject constructor(
     }
 
     private fun myLibraryTransactionSync() {
-        val logger = SyncTimeLogger.getInstance()
+        val logger = SyncTimeLogger
         logger.startProcess("library_sync")
         var processedItems = 0
 
@@ -975,7 +976,7 @@ class SyncManager @Inject constructor(
         try {
             var shelfDoc: JsonObject? = null
             ApiClient.executeWithRetry {
-                apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/$shelfId").execute()
+                apiInterface.getJsonObject(Utilities.header, "${UrlUtils.getUrl()}/shelf/$shelfId").execute()
             }?.let {
                 shelfDoc = it.body()
             }
@@ -1034,7 +1035,7 @@ class SyncManager @Inject constructor(
 
                 var response: JsonObject? = null
                 ApiClient.executeWithRetry {
-                    apiInterface.findDocs(Utilities.header, "application/json", "${Utilities.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject).execute()
+                    apiInterface.findDocs(Utilities.header, "application/json", "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject).execute()
                 }?.let {
                     response = it.body()
                 }
@@ -1081,7 +1082,7 @@ class SyncManager @Inject constructor(
     }
 
     private fun fastMyLibraryTransactionSync() {
-        val logger = SyncTimeLogger.getInstance()
+        val logger = SyncTimeLogger
         logger.startProcess("library_sync")
         var processedItems = 0
 
@@ -1089,7 +1090,7 @@ class SyncManager @Inject constructor(
 
             var shelfResponse: DocumentResponse? = null
             ApiClient.executeWithRetry {
-                apiInterface.getDocuments(Utilities.header, "${Utilities.getUrl()}/shelf/_all_docs?include_docs=true").execute()
+                apiInterface.getDocuments(Utilities.header, "${UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true").execute()
             }?.let {
                 shelfResponse = it.body()
             }
@@ -1128,7 +1129,7 @@ class SyncManager @Inject constructor(
         try {
             var shelfDoc: JsonObject? = null
             ApiClient.executeWithRetry {
-                apiInterface.getJsonObject(Utilities.header, "${Utilities.getUrl()}/shelf/$shelfId").execute()
+                apiInterface.getJsonObject(Utilities.header, "${UrlUtils.getUrl()}/shelf/$shelfId").execute()
             }?.let {
                 shelfDoc = it.body()
             }
@@ -1217,7 +1218,7 @@ class SyncManager @Inject constructor(
 
             var response: JsonObject? = null
             ApiClient.executeWithRetry {
-                apiInterface.findDocs(Utilities.header, "application/json", "${Utilities.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject).execute()
+                apiInterface.findDocs(Utilities.header, "application/json", "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject).execute()
             }?.let {
                 response = it.body()
             }
