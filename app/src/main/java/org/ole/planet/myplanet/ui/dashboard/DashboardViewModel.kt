@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.realm.Realm
 import javax.inject.Inject
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.repository.CourseRepository
@@ -34,6 +35,16 @@ class DashboardViewModel @Inject constructor(
 
     suspend fun updateResourceNotification(userId: String?) {
         notificationRepository.updateResourceNotification(userId)
+    }
+
+    fun createNotificationIfNotExists(
+        realm: Realm,
+        type: String,
+        message: String,
+        relatedId: String?,
+        userId: String?,
+    ) {
+        notificationRepository.createNotificationIfNotExists(realm, type, message, relatedId, userId)
     }
 
     suspend fun getPendingSurveysAsync(userId: String?): List<RealmSubmission> {

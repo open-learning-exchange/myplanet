@@ -48,7 +48,7 @@ class NotificationRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun createNotificationIfNotExists(
+    override fun createNotificationIfNotExists(
         realm: Realm,
         type: String,
         message: String,
