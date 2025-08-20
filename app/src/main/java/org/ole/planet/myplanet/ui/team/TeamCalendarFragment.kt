@@ -53,6 +53,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private lateinit var calendarEventsMap: MutableMap<CalendarDay, RealmMeetup>
     private lateinit var meetupList: RealmResults<RealmMeetup>
     private val eventDates: MutableList<Calendar> = mutableListOf()
+    private var addMeetupDialog: AlertDialog? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentEnterpriseCalendarBinding = FragmentEnterpriseCalendarBinding.inflate(inflater, container, false)
@@ -75,6 +76,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
     }
 
     private fun showMeetupAlert() {
+        if (addMeetupDialog?.isShowing == true) return
         val addMeetupBinding = AddMeetupBinding.inflate(layoutInflater)
         setDatePickerListener(addMeetupBinding.tvStartDate, start, end)
         setDatePickerListener(addMeetupBinding.tvEndDate, end, null)
@@ -83,7 +85,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         if (!::clickedCalendar.isInitialized) {
             clickedCalendar = Calendar.getInstance()
         }
-        val alertDialog = AlertDialog.Builder(requireActivity()).setView(addMeetupBinding.root).create()
+        addMeetupDialog = AlertDialog.Builder(requireActivity()).setView(addMeetupBinding.root).create()
         addMeetupBinding.btnSave.setOnClickListener {
             val title = "${addMeetupBinding.etTitle.text.trim()}"
             val link = "${addMeetupBinding.etLink.text.trim()}"
@@ -135,7 +137,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
                     meetup.teamId = teamId
                     mRealm.commitTransaction()
                     Utilities.toast(activity, getString(R.string.meetup_added))
-                    alertDialog.dismiss()
+                    addMeetupDialog?.dismiss()
                     refreshCalendarView()
                 } catch (e: Exception) {
                     mRealm.cancelTransaction()
@@ -146,17 +148,17 @@ class TeamCalendarFragment : BaseTeamFragment() {
         }
 
         addMeetupBinding.btnCancel.setOnClickListener {
-            alertDialog.dismiss()
+            addMeetupDialog?.dismiss()
         }
 
-        alertDialog.setOnDismissListener {
+        addMeetupDialog?.setOnDismissListener {
             if (selectedDates.contains(clickedCalendar)) {
                 selectedDates.remove(clickedCalendar)
                 refreshCalendarView()
             }
         }
-        alertDialog.show()
-        alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
+        addMeetupDialog?.show()
+        addMeetupDialog?.window?.setBackgroundDrawableResource(R.color.card_bg)
     }
 
     private fun setDatePickerListener(view: TextView, date: Calendar?, endDate: Calendar?) {

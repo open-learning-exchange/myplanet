@@ -26,7 +26,8 @@ object RetryUtils {
                 try {
                     Thread.sleep(delayMs)
                 } catch (ie: InterruptedException) {
-                    // ignore
+                    Thread.currentThread().interrupt()
+                    return result
                 }
             }
         }
