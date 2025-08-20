@@ -17,6 +17,10 @@ import io.realm.RealmResults
 import io.realm.Sort
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.launch
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertInputBinding
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
@@ -218,9 +222,20 @@ class DiscussionListFragment : BaseTeamFragment() {
                 map["messageType"] = getEffectiveTeamType()
                 map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
                 map["name"] = getEffectiveTeamName()
-                user?.let { createNews(map, mRealm, it, imageList) }
-                fragmentDiscussionListBinding.rvDiscussion.adapter?.notifyDataSetChanged()
-                setData(news)
+                
+                lifecycleScope.launch(Dispatchers.IO) {
+                    user?.let { userModel ->
+                        databaseService.withRealmAsync { realm ->
+                            createNews(map, realm, userModel, imageList)
+                        }
+                        withContext(Dispatchers.Main) {
+                            fragmentDiscussionListBinding.rvDiscussion.adapter?.notifyDataSetChanged()
+                            setData(news)
+                            fragmentDiscussionListBinding.rvDiscussion.scrollToPosition(0)
+                        }
+                    }
+                }
+                
                 layout.editText?.text?.clear()
                 imageList.clear()
                 llImage?.removeAllViews()
