@@ -25,8 +25,8 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.SecurePrefs
-import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.UrlUtils
+import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Response
 
 object TransactionSyncManager {
