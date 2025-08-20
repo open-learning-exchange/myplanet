@@ -141,7 +141,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 updateAdapterData()
-                recyclerView.scrollToPosition(0)
             }
 
             override fun afterTextChanged(s: Editable) {}
@@ -284,7 +283,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         }
 
         updateUIState()
-        recyclerView.scrollToPosition(0)
+        recyclerView.post { recyclerView.scrollToPosition(0) }
     }
 
     private fun updateUIState() {
