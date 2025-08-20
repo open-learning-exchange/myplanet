@@ -38,7 +38,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.io.File
 import java.util.ArrayList
-import org.ole.planet.myplanet.utilities.UrlUtils
 import java.util.Calendar
 import java.util.Date
 import java.util.HashMap
@@ -76,6 +75,7 @@ import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
+import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
