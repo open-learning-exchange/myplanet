@@ -2,23 +2,17 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.realm.Realm
-import java.util.Date
-import java.util.UUID
 import javax.inject.Inject
-import org.ole.planet.myplanet.base.BaseResourceFragment
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmNotification
-import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
-    private val databaseService: DatabaseService,
+    private val notificationRepository: NotificationRepository,
     private val userRepository: UserRepository,
     private val libraryRepository: LibraryRepository,
     private val courseRepository: CourseRepository,
@@ -39,49 +33,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun updateResourceNotification(userId: String?) {
-        try {
-            databaseService.executeTransactionAsync { realm ->
-                val resourceCount = BaseResourceFragment.getLibraryList(realm, userId).size
-                if (resourceCount > 0) {
-                    val existingNotification = realm.where(RealmNotification::class.java)
-                        .equalTo("userId", userId)
-                        .equalTo("type", "resource")
-                        .findFirst()
-
-                    if (existingNotification != null) {
-                        existingNotification.message = "$resourceCount"
-                        existingNotification.relatedId = "$resourceCount"
-                    } else {
-                        createNotificationIfNotExists(realm, "resource", "$resourceCount", "$resourceCount", userId)
-                    }
-                } else {
-                    realm.where(RealmNotification::class.java)
-                        .equalTo("userId", userId)
-                        .equalTo("type", "resource")
-                        .findFirst()?.deleteFromRealm()
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    fun createNotificationIfNotExists(realm: Realm, type: String, message: String, relatedId: String?, userId: String?) {
-        val existingNotification = realm.where(RealmNotification::class.java)
-            .equalTo("userId", userId)
-            .equalTo("type", type)
-            .equalTo("relatedId", relatedId)
-            .findFirst()
-
-        if (existingNotification == null) {
-            realm.createObject(RealmNotification::class.java, "${UUID.randomUUID()}").apply {
-                this.userId = userId ?: ""
-                this.type = type
-                this.message = message
-                this.relatedId = relatedId
-                this.createdAt = Date()
-            }
-        }
+        notificationRepository.updateResourceNotification(userId)
     }
 
     suspend fun getPendingSurveysAsync(userId: String?): List<RealmSubmission> {
@@ -89,26 +41,10 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>): List<String> {
-        return databaseService.withRealmAsync { realm ->
-            val titles = mutableListOf<String>()
-            submissions.forEach { submission ->
-                val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
-                val exam = realm.where(RealmStepExam::class.java)
-                    .equalTo("id", examId)
-                    .findFirst()
-                exam?.name?.let { titles.add(it) }
-            }
-            titles
-        }
+        return notificationRepository.getSurveyTitlesFromSubmissions(submissions)
     }
 
     suspend fun getUnreadNotificationsSize(userId: String?): Int {
-        return databaseService.withRealmAsync { realm ->
-            realm.where(RealmNotification::class.java)
-                .equalTo("userId", userId)
-                .equalTo("isRead", false)
-                .count()
-                .toInt()
-        }
+        return notificationRepository.getUnreadNotificationsSize(userId)
     }
 }
