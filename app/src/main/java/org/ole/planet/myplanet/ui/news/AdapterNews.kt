@@ -78,28 +78,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     fun addItem(news: RealmNews?) {
         val newList = list.toMutableList()
         newList.add(0, news)
-        val diffResult = DiffUtil.calculateDiff(
-            list,
-            newList,
-            areItemsTheSame = { old, new ->
-                val oId = if (old?.isValid == true) old.id else null
-                val nId = if (new?.isValid == true) new.id else null
-                oId != null && oId == nId
-            },
-            areContentsTheSame = { old, new ->
-                if (old?.isValid != true || new?.isValid != true) {
-                    false
-                } else {
-                    old.id == new.id &&
-                        old.time == new.time &&
-                        old.isEdited == new.isEdited &&
-                        old.message == new.message
-                }
-            }
-        )
-        list.clear()
-        list.addAll(newList)
-        diffResult.dispatchUpdatesTo(this)
+        updateList(newList)
         recyclerView?.scrollToPosition(0)
     }
 
