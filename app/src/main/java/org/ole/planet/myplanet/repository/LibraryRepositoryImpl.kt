@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import io.realm.RealmResults
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.findCopyByField
 import org.ole.planet.myplanet.datamanager.queryList
 import org.ole.planet.myplanet.model.RealmMyLibrary
 
@@ -18,10 +19,7 @@ class LibraryRepositoryImpl @Inject constructor(
 
     override suspend fun getLibraryItemByIdAsync(id: String): RealmMyLibrary? {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmMyLibrary::class.java)
-                .equalTo("id", id)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
+            realm.findCopyByField(RealmMyLibrary::class.java, "id", id)
         }
     }
 
