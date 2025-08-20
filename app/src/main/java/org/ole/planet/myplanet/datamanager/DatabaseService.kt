@@ -24,32 +24,32 @@ class DatabaseService(context: Context) {
 
     val realmInstance: Realm
         get() = Realm.getDefaultInstance()
-    
-    fun <T> withRealm(operation: (Realm) -> T): T {
-        return Realm.getDefaultInstance().use { realm ->
-            operation(realm)
-        }
+
+    private inline fun <T> withRealmInstance(block: (Realm) -> T): T {
+        return realmInstance.use(block)
     }
-    
+
+    fun <T> withRealm(operation: (Realm) -> T): T {
+        return withRealmInstance(operation)
+    }
+
     suspend fun <T> withRealmAsync(operation: (Realm) -> T): T {
         return withContext(Dispatchers.IO) {
-            Realm.getDefaultInstance().use { realm ->
-                operation(realm)
-            }
+            withRealmInstance(operation)
         }
     }
-    
+
     suspend fun executeTransactionAsync(transaction: (Realm) -> Unit) {
         withContext(Dispatchers.IO) {
-            Realm.getDefaultInstance().use { realm ->
+            withRealmInstance { realm ->
                 realm.executeTransaction { transaction(it) }
             }
         }
     }
-    
+
     suspend fun <T> executeTransactionWithResultAsync(transaction: (Realm) -> T): T {
         return withContext(Dispatchers.IO) {
-            Realm.getDefaultInstance().use { realm ->
+            withRealmInstance { realm ->
                 var result: T? = null
                 realm.executeTransaction {
                     result = transaction(it)
