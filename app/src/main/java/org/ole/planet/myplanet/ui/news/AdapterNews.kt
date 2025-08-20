@@ -43,7 +43,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.DiffUtil
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
@@ -78,7 +78,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     fun addItem(news: RealmNews?) {
         val newList = list.toMutableList()
         newList.add(0, news)
-        val diffResult = DiffUtil.calculateDiff(
+        val diffResult = DiffUtils.calculateDiff(
             list,
             newList,
             areItemsTheSame = { old, new ->
@@ -345,7 +345,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     }
 
     fun updateList(newList: List<RealmNews?>) {
-        val diffResult = DiffUtil.calculateDiff(
+        val diffResult = DiffUtils.calculateDiff(
             list,
             newList,
             areItemsTheSame = { old, new ->
