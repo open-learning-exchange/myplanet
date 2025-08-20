@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsEx
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.UrlUtils
 
 open class RealmMyCourse : RealmObject() {
     @PrimaryKey
@@ -87,7 +87,7 @@ open class RealmMyCourse : RealmObject() {
             myMyCoursesDB?.description = JsonUtils.getString("description", myCoursesDoc)
             val description = JsonUtils.getString("description", myCoursesDoc)
             val links = extractLinks(description)
-            val baseUrl = Utilities.getUrl()
+            val baseUrl = UrlUtils.getUrl()
             for (link in links) {
                 val concatenatedLink = "$baseUrl/$link"
                 concatenatedLinks.add(concatenatedLink)
