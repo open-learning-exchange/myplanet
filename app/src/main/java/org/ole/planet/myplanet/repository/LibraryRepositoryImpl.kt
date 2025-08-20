@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.repository
 import io.realm.RealmResults
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.findCopyByField
+import org.ole.planet.myplanet.datamanager.queryList
 import org.ole.planet.myplanet.model.RealmMyLibrary
 
 class LibraryRepositoryImpl @Inject constructor(
@@ -11,28 +13,21 @@ class LibraryRepositoryImpl @Inject constructor(
 
     override suspend fun getAllLibraryItemsAsync(): List<RealmMyLibrary> {
         return databaseService.withRealmAsync { realm ->
-            realm.copyFromRealm(
-                realm.where(RealmMyLibrary::class.java).findAll()
-            )
+            realm.queryList(RealmMyLibrary::class.java)
         }
     }
 
     override suspend fun getLibraryItemByIdAsync(id: String): RealmMyLibrary? {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmMyLibrary::class.java)
-                .equalTo("id", id)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
+            realm.findCopyByField(RealmMyLibrary::class.java, "id", id)
         }
     }
 
     override suspend fun getOfflineLibraryItemsAsync(): List<RealmMyLibrary> {
         return databaseService.withRealmAsync { realm ->
-            realm.copyFromRealm(
-                realm.where(RealmMyLibrary::class.java)
-                    .equalTo("resourceOffline", true)
-                    .findAll()
-            )
+            realm.queryList(RealmMyLibrary::class.java) {
+                equalTo("resourceOffline", true)
+            }
         }
     }
 
@@ -59,13 +54,11 @@ class LibraryRepositoryImpl @Inject constructor(
 
     override suspend fun getCourseLibraryItems(courseIds: List<String>): List<RealmMyLibrary> {
         return databaseService.withRealmAsync { realm ->
-            realm.copyFromRealm(
-                realm.where(RealmMyLibrary::class.java)
-                    .`in`("courseId", courseIds.toTypedArray())
-                    .equalTo("resourceOffline", false)
-                    .isNotNull("resourceLocalAddress")
-                    .findAll()
-            )
+            realm.queryList(RealmMyLibrary::class.java) {
+                `in`("courseId", courseIds.toTypedArray())
+                equalTo("resourceOffline", false)
+                isNotNull("resourceLocalAddress")
+            }
         }
     }
 
@@ -94,12 +87,6 @@ class LibraryRepositoryImpl @Inject constructor(
     }
 
     private fun filterLibrariesNeedingUpdate(results: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {
-        val libraries = mutableListOf<RealmMyLibrary>()
-        for (lib in results) {
-            if (lib.needToUpdate()) {
-                libraries.add(lib)
-            }
-        }
-        return libraries
+        return results.filter { it.needToUpdate() }
     }
 }

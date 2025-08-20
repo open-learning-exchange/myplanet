@@ -39,7 +39,7 @@ class DashboardFragment : BaseDashboardFragment() {
         fragmentHomeBinding.cardProfile.tvAchievement.setOnClickListener {
             homeItemClickListener?.openCallFragment(AchievementFragment())
         }
-        dRealm = userRepository.getRealm()
+        dRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
         onLoaded(view)
         initView(view)
@@ -58,5 +58,10 @@ class DashboardFragment : BaseDashboardFragment() {
                 guestDialog(requireContext())
             }
         }
+    }
+
+    override fun onDestroy() {
+        dRealm.close()
+        super.onDestroy()
     }
 }

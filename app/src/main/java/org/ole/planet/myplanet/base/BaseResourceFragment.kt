@@ -28,6 +28,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
@@ -57,13 +58,12 @@ import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadFiles
 import org.ole.planet.myplanet.utilities.Utilities
-import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUserModel? = null
-    lateinit var mRealm: Realm
+    protected lateinit var mRealm: Realm
     lateinit var profileDbHandler: UserProfileDbHandler
     var editor: SharedPreferences.Editor? = null
     var lv: CheckboxListView? = null
@@ -76,9 +76,15 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var submissionRepository: SubmissionRepository
     @Inject
+    lateinit var databaseService: DatabaseService
+    @Inject
     @AppPreferences
     lateinit var settings: SharedPreferences
     private var resourceNotFoundDialog: AlertDialog? = null
+
+    protected fun isRealmInitialized(): Boolean {
+        return ::mRealm.isInitialized && !mRealm.isClosed
+    }
 
     private fun isFragmentActive(): Boolean {
         return isAdded && activity != null &&
@@ -328,7 +334,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = userRepository.getRealm()
+        mRealm = databaseService.realmInstance
         prgDialog = getProgressDialog(requireActivity())
         editor = settings.edit()
     }
@@ -394,7 +400,7 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     override fun onDestroy() {
-        if (::mRealm.isInitialized && !mRealm.isClosed) {
+        if (isRealmInitialized()) {
             mRealm.removeAllChangeListeners()
             if (mRealm.isInTransaction) {
                 mRealm.cancelTransaction()

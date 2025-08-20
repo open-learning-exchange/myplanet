@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.findCopyByField
+import org.ole.planet.myplanet.datamanager.queryList
 import org.ole.planet.myplanet.model.RealmSubmission
 
 class SubmissionRepositoryImpl @Inject constructor(
@@ -10,42 +12,33 @@ class SubmissionRepositoryImpl @Inject constructor(
 
     override suspend fun getPendingSurveysAsync(userId: String?): List<RealmSubmission> {
         return databaseService.withRealmAsync { realm ->
-            realm.copyFromRealm(
-                realm.where(RealmSubmission::class.java)
-                    .equalTo("userId", userId)
-                    .equalTo("status", "pending")
-                    .equalTo("type", "survey")
-                    .findAll()
-            )
+            realm.queryList(RealmSubmission::class.java) {
+                equalTo("userId", userId)
+                equalTo("status", "pending")
+                equalTo("type", "survey")
+            }
         }
     }
 
     override suspend fun getSubmissionById(id: String): RealmSubmission? {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmSubmission::class.java)
-                .equalTo("id", id)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
+            realm.findCopyByField(RealmSubmission::class.java, "id", id)
         }
     }
 
     override suspend fun getSubmissionsByUserId(userId: String): List<RealmSubmission> {
         return databaseService.withRealmAsync { realm ->
-            realm.copyFromRealm(
-                realm.where(RealmSubmission::class.java)
-                    .equalTo("userId", userId)
-                    .findAll()
-            )
+            realm.queryList(RealmSubmission::class.java) {
+                equalTo("userId", userId)
+            }
         }
     }
 
     override suspend fun getSubmissionsByType(type: String): List<RealmSubmission> {
         return databaseService.withRealmAsync { realm ->
-            realm.copyFromRealm(
-                realm.where(RealmSubmission::class.java)
-                    .equalTo("type", type)
-                    .findAll()
-            )
+            realm.queryList(RealmSubmission::class.java) {
+                equalTo("type", type)
+            }
         }
     }
 

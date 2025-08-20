@@ -207,13 +207,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
         mRealm.commitTransaction()
     }
 
-    override fun onDestroy() {
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
-        super.onDestroy()
-    }
-
     override fun onResume() {
         super.onResume()
         setTeamList()
@@ -363,5 +356,12 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
             fragmentTeamBinding.etSearch.visibility = View.VISIBLE
             fragmentTeamBinding.tableTitle.visibility = View.VISIBLE
         }
+    }
+
+    override fun onDestroyView() {
+        if (this::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
+        super.onDestroyView()
     }
 }

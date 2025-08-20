@@ -25,6 +25,7 @@ import io.realm.RealmResults
 import io.realm.Sort
 import java.util.Calendar
 import java.util.UUID
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.callback.SyncListener
@@ -53,7 +54,6 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import kotlinx.coroutines.launch
 
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
     SyncListener {
@@ -111,7 +111,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun forceDownloadNewsImages() {
-        mRealm = userRepository.getRealm()
+        mRealm = databaseService.realmInstance
         Utilities.toast(activity, getString(R.string.please_select_starting_date))
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(requireActivity(), { _: DatePicker?, i: Int, i1: Int, i2: Int ->
@@ -255,7 +255,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun setUpMyLife(userId: String?) {
-        val realm = userRepository.getRealm()
+        val realm = databaseService.realmInstance
         val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings)
         if (realmObjects.isEmpty()) {
             if (!realm.isInTransaction) {
@@ -326,7 +326,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         view.findViewById<View>(R.id.txtFullName).setOnClickListener {
             homeItemClickListener?.openCallFragment(UserProfileFragment())
         }
-        mRealm = userRepository.getRealm()
+        mRealm = databaseService.realmInstance
         myLibraryDiv(view)
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam::class.java)

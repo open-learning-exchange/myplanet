@@ -9,7 +9,6 @@ import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import java.util.Locale
-import org.ole.planet.myplanet.utilities.JsonParserUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 
 open class RealmExamQuestion : RealmObject() {
@@ -105,7 +104,7 @@ open class RealmExamQuestion : RealmObject() {
                 `object`.addProperty("body", que.body)
                 `object`.addProperty("type", que.type)
                 `object`.addProperty("marks", que.marks)
-                `object`.add("choices", JsonParserUtils.getStringAsJsonArray(que.choices))
+                `object`.add("choices", JsonUtils.getStringAsJsonArray(que.choices))
                 `object`.add("correctChoice", que.correctChoiceArray)
                 `object`.addProperty("hasOtherOption", que.hasOtherOption)
                 array.add(`object`)

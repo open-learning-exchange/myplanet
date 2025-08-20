@@ -38,7 +38,7 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.service.AutoSyncWorker
-import org.ole.planet.myplanet.service.NetworkConnectivityService
+import org.ole.planet.myplanet.service.NetworkMonitorWorker
 import org.ole.planet.myplanet.service.StayOnlineWorker
 import org.ole.planet.myplanet.service.TaskNotificationWorker
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -52,7 +52,6 @@ import org.ole.planet.myplanet.utilities.NetworkUtils.stopListenNetworkState
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.ThemeMode
-import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
 
 @HiltAndroidApp
@@ -237,7 +236,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
         scheduleStayOnlineWork()
         scheduleTaskNotificationWork()
-        startNetworkConnectivityService()
+        startNetworkMonitoring()
     }
 
     private fun registerExceptionHandler() {
@@ -304,14 +303,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         workManager.enqueueUniquePeriodicWork(TASK_NOTIFICATION_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, taskNotificationWork)
     }
 
-    private fun startNetworkConnectivityService() {
-        val serviceIntent = Intent(this, NetworkConnectivityService::class.java)
-        startService(serviceIntent)
+    private fun startNetworkMonitoring() {
+        NetworkMonitorWorker.start(this)
     }
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleHelper.onAttach(base))
-        Utilities.setContext(base)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
