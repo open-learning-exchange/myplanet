@@ -70,7 +70,7 @@ object ResourceOpener {
         val bundle = Bundle()
         bundle.putString("videoType", videoType)
         if (videoType == "online") {
-            bundle.putString("videoURL", "" + Utilities.getUrl(items))
+            bundle.putString("videoURL", "" + UrlUtils.getUrl(items))
             bundle.putString("Auth", "" + BaseResourceFragment.auth)
         } else if (videoType == "offline") {
             if (items.resourceRemoteAddress == null && items.resourceLocalAddress != null) {
