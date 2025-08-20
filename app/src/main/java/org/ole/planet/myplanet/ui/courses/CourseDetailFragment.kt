@@ -23,7 +23,8 @@ import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
 class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
-    private lateinit var fragmentCourseDetailBinding: FragmentCourseDetailBinding
+    private var _binding: FragmentCourseDetailBinding? = null
+    private val binding get() = _binding!!
     private lateinit var cRealm: Realm
     var courses: RealmMyCourse? = null
     var user: RealmUserModel? = null
@@ -36,11 +37,11 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentCourseDetailBinding = FragmentCourseDetailBinding.inflate(inflater, container, false)
+        _binding = FragmentCourseDetailBinding.inflate(inflater, container, false)
         cRealm = databaseService.realmInstance
         courses = cRealm.where(RealmMyCourse::class.java).equalTo("courseId", id).findFirst()
         user = UserProfileDbHandler(requireContext()).userModel
-        return fragmentCourseDetailBinding.root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -50,22 +51,22 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private fun setCourseData() {
-        setTextViewVisibility(fragmentCourseDetailBinding.subjectLevel, courses?.subjectLevel, fragmentCourseDetailBinding.ltSubjectLevel)
-        setTextViewVisibility(fragmentCourseDetailBinding.method, courses?.method, fragmentCourseDetailBinding.ltMethod)
-        setTextViewVisibility(fragmentCourseDetailBinding.gradeLevel, courses?.gradeLevel, fragmentCourseDetailBinding.ltGradeLevel)
-        setTextViewVisibility(fragmentCourseDetailBinding.language, courses?.languageOfInstruction, fragmentCourseDetailBinding.ltLanguage)
+        setTextViewVisibility(binding.subjectLevel, courses?.subjectLevel, binding.ltSubjectLevel)
+        setTextViewVisibility(binding.method, courses?.method, binding.ltMethod)
+        setTextViewVisibility(binding.gradeLevel, courses?.gradeLevel, binding.ltGradeLevel)
+        setTextViewVisibility(binding.language, courses?.languageOfInstruction, binding.ltLanguage)
         val markdownContentWithLocalPaths = prependBaseUrlToImages(
             courses?.description,
             "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/",
             600,
             350
         )
-        setMarkdownText(fragmentCourseDetailBinding.description, markdownContentWithLocalPaths)
-        fragmentCourseDetailBinding.noOfExams.text = context?.getString(R.string.number_placeholder, getNoOfExam(cRealm, id))
+        setMarkdownText(binding.description, markdownContentWithLocalPaths)
+        binding.noOfExams.text = context?.getString(R.string.number_placeholder, getNoOfExam(cRealm, id))
         val resources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("courseId", id).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll()
-        setResourceButton(resources, fragmentCourseDetailBinding.btnResources)
+        setResourceButton(resources, binding.btnResources)
         val downloadedResources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("resourceOffline", true).equalTo("courseId", id).isNotNull("resourceLocalAddress").findAll()
-        setOpenResourceButton(downloadedResources, fragmentCourseDetailBinding.btnOpen)
+        setOpenResourceButton(downloadedResources, binding.btnOpen)
         onRatingChanged()
         setStepsList()
     }
@@ -80,8 +81,8 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     private fun setStepsList() {
         val steps = getCourseSteps(cRealm, courses?.courseId)
-        fragmentCourseDetailBinding.stepsList.layoutManager = LinearLayoutManager(activity)
-        fragmentCourseDetailBinding.stepsList.adapter = AdapterSteps(requireActivity(), steps, cRealm)
+        binding.stepsList.layoutManager = LinearLayoutManager(activity)
+        binding.stepsList.adapter = AdapterSteps(requireActivity(), steps, cRealm)
     }
 
     override fun onRatingChanged() {
@@ -98,6 +99,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         if (this::cRealm.isInitialized && !cRealm.isClosed) {
             cRealm.close()
         }
+        _binding = null
         super.onDestroyView()
     }
 }

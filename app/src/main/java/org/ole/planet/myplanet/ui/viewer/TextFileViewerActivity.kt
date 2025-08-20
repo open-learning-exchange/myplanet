@@ -14,13 +14,13 @@ import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
 
 class TextFileViewerActivity : AppCompatActivity() {
-    private lateinit var activityTextFileViewerBinding: ActivityTextfileViewerBinding
+    private lateinit var binding: ActivityTextfileViewerBinding
     private var fileName: String? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        activityTextFileViewerBinding = ActivityTextfileViewerBinding.inflate(layoutInflater)
-        setContentView(activityTextFileViewerBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityTextFileViewerBinding.root)
+        binding = ActivityTextfileViewerBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
         renderTextFile()
     }
 
@@ -28,11 +28,11 @@ class TextFileViewerActivity : AppCompatActivity() {
         val textFileOpenIntent = intent
         fileName = textFileOpenIntent.getStringExtra("TOUCHED_FILE")
         if (!fileName.isNullOrEmpty()) {
-            activityTextFileViewerBinding.textFileName.text = FileUtils.nameWithoutExtension(fileName)
-            activityTextFileViewerBinding.textFileName.visibility = View.VISIBLE
+            binding.textFileName.text = FileUtils.nameWithoutExtension(fileName)
+            binding.textFileName.visibility = View.VISIBLE
         } else {
-            activityTextFileViewerBinding.textFileName.text = getString(R.string.message_placeholder, "No file selected")
-            activityTextFileViewerBinding.textFileName.visibility = View.VISIBLE
+            binding.textFileName.text = getString(R.string.message_placeholder, "No file selected")
+            binding.textFileName.visibility = View.VISIBLE
         }
         renderTextFileThread()
     }
@@ -43,7 +43,7 @@ class TextFileViewerActivity : AppCompatActivity() {
                 val file = File(basePath, "ole/$fileName")
                 val text = file.readText()
                 withContext(Dispatchers.Main) {
-                    activityTextFileViewerBinding.textFileContent.text = text
+                    binding.textFileContent.text = text
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
