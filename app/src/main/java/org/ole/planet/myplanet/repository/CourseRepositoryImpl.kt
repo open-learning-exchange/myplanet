@@ -56,4 +56,24 @@ class CourseRepositoryImpl @Inject constructor(
                 ?.deleteFromRealm()
         }
     }
+
+    override suspend fun updateMyCourseFlag(courseId: String, isMyCourse: Boolean) {
+        databaseService.executeTransactionAsync { realm ->
+            realm.where(RealmMyCourse::class.java)
+                .equalTo("courseId", courseId)
+                .findFirst()
+                ?.let { it.isMyCourse = isMyCourse }
+        }
+    }
+
+    override suspend fun updateMyCourseFlag(courseIds: List<String>, isMyCourse: Boolean) {
+        databaseService.executeTransactionAsync { realm ->
+            courseIds.forEach { id ->
+                realm.where(RealmMyCourse::class.java)
+                    .equalTo("courseId", id)
+                    .findFirst()
+                    ?.let { it.isMyCourse = isMyCourse }
+            }
+        }
+    }
 }
