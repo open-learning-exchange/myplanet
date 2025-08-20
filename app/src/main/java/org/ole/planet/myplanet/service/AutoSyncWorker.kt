@@ -20,8 +20,8 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.startDownloadUpdate
-import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.UrlUtils
+import org.ole.planet.myplanet.utilities.Utilities
 
 class AutoSyncWorker @AssistedInject constructor(
     @Assisted private val context: Context,
