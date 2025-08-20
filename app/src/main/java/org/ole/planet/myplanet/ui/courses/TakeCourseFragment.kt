@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.isStepCompleted
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -102,7 +103,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         setListeners()
         checkSurveyCompletion()
         fragmentTakeCourseBinding.backButton.setOnClickListener {
-            requireActivity().supportFragmentManager.popBackStack()
+            NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
         }
     }
 
@@ -306,7 +307,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             fragmentTakeCourseBinding.finishStep.isEnabled = true
             fragmentTakeCourseBinding.finishStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
             fragmentTakeCourseBinding.finishStep.setOnClickListener {
-                requireActivity().supportFragmentManager.popBackStack()
+                NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
             }
         }
     }
@@ -325,10 +326,10 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onDestroyView() {
         fragmentTakeCourseBinding.courseProgress.setOnSeekBarChangeListener(null)
         lifecycleScope.coroutineContext.cancelChildren()
-        super.onDestroyView()
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        super.onDestroyView()
     }
 
     private val isValidClickRight: Boolean get() = fragmentTakeCourseBinding.viewPager2.adapter != null && fragmentTakeCourseBinding.viewPager2.currentItem < fragmentTakeCourseBinding.viewPager2.adapter?.itemCount!!

@@ -14,7 +14,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
@@ -26,6 +25,7 @@ import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.FileUtils.getFileExtension
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -51,7 +51,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             withContext(Dispatchers.IO) {
                 try {
-                    MainApplication.service.withRealm { backgroundRealm ->
+                    databaseService.withRealm { backgroundRealm ->
                         val backgroundLibrary = backgroundRealm.where(RealmMyLibrary::class.java)
                             .equalTo("resourceId", libraryId).findFirst()
                         if (backgroundLibrary != null && !backgroundLibrary.userId?.contains(userId)!!) {
@@ -78,7 +78,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         super.onCreateView(inflater, container, savedInstanceState)
         fragmentLibraryDetailBinding = FragmentLibraryDetailBinding.inflate(inflater, container, false)
-        lRealm = userRepository.getRealm()
+        lRealm = databaseService.realmInstance
         userModel = UserProfileDbHandler(requireContext()).userModel!!
         library = lRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", libraryId).findFirst()!!
         return fragmentLibraryDetailBinding.root
@@ -182,7 +182,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             fragmentScope.launch {
                 withContext(Dispatchers.IO) {
                     try {
-                        MainApplication.service.withRealm { backgroundRealm ->
+                        databaseService.withRealm { backgroundRealm ->
                             val backgroundLibrary = backgroundRealm.where(RealmMyLibrary::class.java)
                                 .equalTo("resourceId", libraryId).findFirst()
 
@@ -215,7 +215,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             if (activity is AddResourceActivity) {
                 activity.finish()
             } else {
-                parentFragmentManager.popBackStack()
+                NavigationHelper.popBackStack(parentFragmentManager)
             }
         }
     }
@@ -225,7 +225,16 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         setRatings(`object`)
     }
     override fun onDestroy() {
-        super.onDestroy()
         fragmentScope.cancel()
+        if (this::lRealm.isInitialized && !lRealm.isClosed) {
+            lRealm.close()
+        }
+        try {
+            if (!mRealm.isClosed) {
+                mRealm.close()
+            }
+        } catch (_: UninitializedPropertyAccessException) {
+        }
+        super.onDestroy()
     }
 }

@@ -70,7 +70,7 @@ class AdapterJoinedMember(
             R.string.last_visit,
             lastVisitDate
         )
-        Glide.with(context)
+        Glide.with(binding.memberImage.context)
             .load(member.userImage)
             .placeholder(R.drawable.profile)
             .error(R.drawable.profile)

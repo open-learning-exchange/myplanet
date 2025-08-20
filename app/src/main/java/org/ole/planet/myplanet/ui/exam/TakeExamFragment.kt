@@ -31,11 +31,10 @@ import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.exam.ExamSubmissionUtils
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
-import org.ole.planet.myplanet.utilities.JsonParserUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
+import org.ole.planet.myplanet.utilities.JsonUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utilities.KeyboardUtils.hideSoftKeyboard
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.Utilities.toast
@@ -495,11 +494,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             currentIndex,
             questions?.size ?: 0
         )
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        mRealm.close()
     }
 
     override fun onCheckedChanged(compoundButton: CompoundButton, isChecked: Boolean) {

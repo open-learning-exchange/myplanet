@@ -73,6 +73,7 @@ import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationListener
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationsFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
@@ -81,7 +82,8 @@ import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
-import org.ole.planet.myplanet.ui.team.TeamPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.JoinRequestsPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
@@ -311,7 +313,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     result?.closeDrawer()
                 } else {
                     if (supportFragmentManager.backStackEntryCount > 1) {
-                        supportFragmentManager.popBackStack()
+                        NavigationHelper.popBackStack(supportFragmentManager)
                     } else {
                         if (!doubleBackToExitPressedOnce) {
                             doubleBackToExitPressedOnce = true
@@ -426,7 +428,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     teamName = teamObject?.name ?: "",
                     teamType = teamObject?.type ?: "",
                     isMyTeam = true,
-                    navigateToPage = TeamPage.TASKS
+                    navigateToPage = TasksPage
                 )
 
                 openCallFragment(f)
@@ -453,7 +455,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 val b = Bundle()
                 b.putString("id", teamId)
                 b.putBoolean("isMyTeam", true)
-                b.putInt("navigateToPage", TeamPage.JOIN_REQUESTS.ordinal)
+                b.putString("navigateToPage", JoinRequestsPage.id)
                 f.arguments = b
                 openCallFragment(f)
             }
@@ -570,13 +572,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
 
             try {
+                dashboardViewModel.updateResourceNotification(userId)
                 databaseService.realmInstance.use { backgroundRealm ->
                     backgroundRealm.executeTransaction { realm ->
                         val createdNotifications = createNotifications(realm, userId)
                         newNotifications.addAll(createdNotifications)
                     }
 
-                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(backgroundRealm, userId)
+                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -601,7 +604,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun createNotifications(realm: Realm, userId: String?): List<NotificationUtil.NotificationConfig> {
         val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
-        createDatabaseNotificationsFromSources(realm, userId)
+        createSurveyDatabaseNotifications(realm, userId)
+        createTaskDatabaseNotifications(realm, userId)
+        createStorageDatabaseNotifications(realm, userId)
+        createJoinRequestDatabaseNotifications(realm, userId)
+
         val unreadNotifications = realm.where(RealmNotification::class.java)
             .equalTo("userId", userId)
             .equalTo("isRead", false)
@@ -614,14 +621,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         }
         return newNotifications
-    }
-
-    private fun createDatabaseNotificationsFromSources(realm: Realm, userId: String?) {
-        dashboardViewModel.updateResourceNotification(realm, userId)
-        createSurveyDatabaseNotifications(realm, userId)
-        createTaskDatabaseNotifications(realm, userId)
-        createStorageDatabaseNotifications(realm, userId)
-        createJoinRequestDatabaseNotifications(realm, userId)
     }
 
     private fun createNotificationConfigFromDatabase(dbNotification: RealmNotification): NotificationUtil.NotificationConfig? {
@@ -654,10 +653,19 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun createSurveyDatabaseNotifications(realm: Realm, userId: String?) {
-        val pendingSurveys = dashboardViewModel.getPendingSurveys(userId)
-        val surveyTitles = dashboardViewModel.getSurveyTitlesFromSubmissions(realm, pendingSurveys)
+        val pendingSurveys = realm.where(RealmSubmission::class.java)
+            .equalTo("userId", userId)
+            .equalTo("status", "pending")
+            .equalTo("type", "survey")
+            .findAll()
 
-        surveyTitles.forEach { title ->
+        pendingSurveys.mapNotNull { submission ->
+            val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
+            realm.where(RealmStepExam::class.java)
+                .equalTo("id", examId)
+                .findFirst()
+                ?.name
+        }.forEach { title ->
             dashboardViewModel.createNotificationIfNotExists(realm, "survey", title, title, userId)
         }
     }
@@ -985,7 +993,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         profileDbHandler.onDestroy()
         realmListeners.forEach { it.removeListener() }
         realmListeners.clear()
@@ -994,6 +1001,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             unregisterReceiver(it)
             systemNotificationReceiver = null
         }
+        super.onDestroy()
     }
 
     override fun openCallFragment(f: Fragment) {

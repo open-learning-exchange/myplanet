@@ -1,9 +1,10 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
-import io.realm.Realm
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.findCopyByField
+import org.ole.planet.myplanet.datamanager.queryList
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmUserModel
 
@@ -22,33 +23,27 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getCurrentUser(): RealmUserModel? {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmUserModel::class.java).findFirst()
+            realm.where(RealmUserModel::class.java)
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }
         }
     }
 
     override suspend fun getUserById(userId: String): RealmUserModel? {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmUserModel::class.java)
-                .equalTo("id", userId)
-                .findFirst()
+            realm.findCopyByField(RealmUserModel::class.java, "id", userId)
         }
     }
 
     override suspend fun getUserByName(username: String): RealmUserModel? {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmUserModel::class.java)
-                .equalTo("name", username)
-                .findFirst()
+            realm.findCopyByField(RealmUserModel::class.java, "name", username)
         }
     }
 
     override suspend fun getAllUsers(): List<RealmUserModel> {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmUserModel::class.java).findAll()
+            realm.queryList(RealmUserModel::class.java)
         }
-    }
-
-    override fun getRealm(): Realm {
-        return databaseService.realmInstance
     }
 }

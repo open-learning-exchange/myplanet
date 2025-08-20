@@ -21,6 +21,7 @@ import org.json.JSONObject
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
+import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
 
@@ -165,7 +166,7 @@ open class RealmUserModel : RealmObject() {
             val obj = element.asJsonObject
             val entries = obj.entrySet()
             for ((key1) in entries) {
-                userImage = Utilities.getUserImageUrl(id, key1)
+                userImage = UrlUtils.getUserImageUrl(id, key1)
                 break
             }
         }
@@ -470,8 +471,8 @@ open class RealmUserModel : RealmObject() {
         }
 
         @JvmStatic
-        fun cleanupDuplicateUsers(realm: Realm) {
-            realm.executeTransaction { mRealm ->
+        fun cleanupDuplicateUsers(realm: Realm, onSuccess: () -> Unit) {
+            realm.executeTransactionAsync({ mRealm: Realm ->
                 val allUsers = mRealm.where(RealmUserModel::class.java).findAll()
                 val usersByName = allUsers.groupBy { it.name }
 
@@ -492,6 +493,9 @@ open class RealmUserModel : RealmObject() {
                         }
                     }
                 }
+            }, {
+                onSuccess.invoke()
+            }) {
             }
         }
     }

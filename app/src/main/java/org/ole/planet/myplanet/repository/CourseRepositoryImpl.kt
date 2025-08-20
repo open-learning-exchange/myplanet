@@ -2,41 +2,34 @@ package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.findCopyByField
+import org.ole.planet.myplanet.datamanager.queryList
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmUserModel
 
 class CourseRepositoryImpl @Inject constructor(
-    private val databaseService: DatabaseService
+    private val databaseService: DatabaseService,
 ) : CourseRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmMyCourse::class.java).findAll()
+            realm.queryList(RealmMyCourse::class.java)
         }
     }
 
     override suspend fun getCourseById(id: String): RealmMyCourse? {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmMyCourse::class.java)
-                .equalTo("courseId", id)
-                .findFirst()
+            realm.findCopyByField(RealmMyCourse::class.java, "courseId", id)
         }
     }
 
-    override suspend fun getEnrolledCourses(): List<RealmMyCourse> {
-        return databaseService.withRealmAsync { realm ->
-            val userId = getCurrentUserId(realm)
-            realm.where(RealmMyCourse::class.java)
-                .equalTo("userId", userId)
-                .findAll()
-        }
-    }
+    override suspend fun getEnrolledCourses(userId: String): List<RealmMyCourse> =
+        getCoursesByUserId(userId)
 
     override suspend fun getCoursesByUserId(userId: String): List<RealmMyCourse> {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmMyCourse::class.java)
-                .equalTo("userId", userId)
-                .findAll()
+            realm.queryList(RealmMyCourse::class.java) {
+                equalTo("userId", userId)
+            }
         }
     }
 
@@ -64,8 +57,23 @@ class CourseRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun getCurrentUserId(realm: io.realm.Realm): String {
-        return realm.where(RealmUserModel::class.java)
-            .findFirst()?.id ?: ""
+    override suspend fun updateMyCourseFlag(courseId: String, isMyCourse: Boolean) {
+        databaseService.executeTransactionAsync { realm ->
+            realm.where(RealmMyCourse::class.java)
+                .equalTo("courseId", courseId)
+                .findFirst()
+                ?.let { it.isMyCourse = isMyCourse }
+        }
+    }
+
+    override suspend fun updateMyCourseFlag(courseIds: List<String>, isMyCourse: Boolean) {
+        databaseService.executeTransactionAsync { realm ->
+            courseIds.forEach { id ->
+                realm.where(RealmMyCourse::class.java)
+                    .equalTo("courseId", id)
+                    .findFirst()
+                    ?.let { it.isMyCourse = isMyCourse }
+            }
+        }
     }
 }

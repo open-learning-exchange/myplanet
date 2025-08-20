@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
+import io.realm.RealmChangeListener
 import io.realm.RealmResults
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -38,6 +39,10 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     private lateinit var mRealm: Realm
     var userModel: RealmUserModel? = null
     private var feedbackList: RealmResults<RealmFeedback>? = null
+    private val feedbackChangeListener =
+        RealmChangeListener<RealmResults<RealmFeedback>> { results ->
+            updatedFeedbackList(results)
+        }
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
 
@@ -141,12 +146,10 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     private fun setupFeedbackListener() {
+        feedbackList?.removeChangeListener(feedbackChangeListener)
         feedbackList = mRealm.where(RealmFeedback::class.java)
             .equalTo("owner", userModel?.name).findAllAsync()
-
-        feedbackList?.addChangeListener { results ->
-            updatedFeedbackList(results)
-        }
+        feedbackList?.addChangeListener(feedbackChangeListener)
     }
 
     private fun refreshFeedbackData() {
@@ -194,14 +197,18 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         updateTextViewsVisibility(itemCount)
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        customProgressDialog?.dismiss()
-        customProgressDialog = null
-
+    override fun onDestroyView() {
+        feedbackList?.removeChangeListener(feedbackChangeListener)
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        super.onDestroyView()
+    }
+
+    override fun onDestroy() {
+        customProgressDialog?.dismiss()
+        customProgressDialog = null
+        super.onDestroy()
     }
 
     override fun onFeedbackSubmitted() {

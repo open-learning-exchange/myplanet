@@ -14,6 +14,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
@@ -24,6 +25,7 @@ import io.realm.RealmResults
 import io.realm.Sort
 import java.util.Calendar
 import java.util.UUID
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.callback.SyncListener
@@ -49,6 +51,7 @@ import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -108,7 +111,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun forceDownloadNewsImages() {
-        mRealm = userRepository.getRealm()
+        mRealm = databaseService.realmInstance
         Utilities.toast(activity, getString(R.string.please_select_starting_date))
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(requireActivity(), { _: DatePicker?, i: Int, i1: Int, i2: Int ->
@@ -131,7 +134,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         list.add(Constants.DICTIONARY_URL)
         if (!FileUtils.checkFileExist(Constants.DICTIONARY_URL)) {
             Utilities.toast(activity, getString(R.string.downloading_started_please_check_notification))
-            Utilities.openDownloadService(activity, list, false)
+            DownloadUtils.openDownloadService(activity, list, false)
         } else {
             Utilities.toast(activity, getString(R.string.file_already_exists))
         }
@@ -252,7 +255,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun setUpMyLife(userId: String?) {
-        val realm = userRepository.getRealm()
+        val realm = databaseService.realmInstance
         val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings)
         if (realmObjects.isEmpty()) {
             if (!realm.isInTransaction) {
@@ -323,7 +326,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         view.findViewById<View>(R.id.txtFullName).setOnClickListener {
             homeItemClickListener?.openCallFragment(UserProfileFragment())
         }
-        mRealm = userRepository.getRealm()
+        mRealm = databaseService.realmInstance
         myLibraryDiv(view)
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam::class.java)
@@ -353,7 +356,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun showResourceDownloadDialog() {
-        showDownloadDialog(getLibraryList(mRealm))
+        viewLifecycleOwner.lifecycleScope.launch {
+            showDownloadDialog(getLibraryList(mRealm))
+        }
     }
 
     override fun showUserResourceDialog() {

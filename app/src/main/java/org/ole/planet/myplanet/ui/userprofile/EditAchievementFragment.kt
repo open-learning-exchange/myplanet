@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.model.RealmAchievement.Companion.createReference
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
@@ -61,7 +62,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentEditAchievementBinding = FragmentEditAchievementBinding.inflate(inflater, container, false)
-        aRealm = userRepository.getRealm()
+        aRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
         achievementArray = JsonArray()
         achievement = aRealm.where(RealmAchievement::class.java).equalTo("_id", user?.id + "@" + user?.planetCode).findFirst()
@@ -76,7 +77,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         super.onViewCreated(view, savedInstanceState)
         val toolbar = view.findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
         toolbar.setNavigationOnClickListener {
-            requireActivity().supportFragmentManager.popBackStack()
+            NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
         }
     }
     
@@ -86,12 +87,10 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             setUserInfo()
             setAchievementInfo()
             aRealm.commitTransaction()
-            val fragmentManager = parentFragmentManager
-            fragmentManager.popBackStack()
+            NavigationHelper.popBackStack(parentFragmentManager)
         }
         fragmentEditAchievementBinding.btnCancel.setOnClickListener {
-            val fragmentManager = parentFragmentManager
-            fragmentManager.popBackStack()
+            NavigationHelper.popBackStack(parentFragmentManager)
         }
         fragmentEditAchievementBinding.btnAchievement.setOnClickListener {
             showAddAchievementAlert(null)
@@ -321,5 +320,18 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         achievement?.setAchievements(achievementArray!!)
         achievement?.setReferences(referenceArray)
         achievement?.sendToNation = fragmentEditAchievementBinding.cbSendToNation.isChecked.toString() + ""
+    }
+
+    override fun onDestroy() {
+        if (this::aRealm.isInitialized && !aRealm.isClosed) {
+            aRealm.close()
+        }
+        try {
+            if (!mRealm.isClosed) {
+                mRealm.close()
+            }
+        } catch (_: UninitializedPropertyAccessException) {
+        }
+        super.onDestroy()
     }
 }

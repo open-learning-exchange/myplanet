@@ -33,11 +33,10 @@ import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 
 @AndroidEntryPoint
 class ChatHistoryListFragment : Fragment() {
@@ -69,7 +68,11 @@ class ChatHistoryListFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentChatHistoryListBinding = FragmentChatHistoryListBinding.inflate(inflater, container, false)
-        user = UserProfileDbHandler(requireContext()).userModel
+        user = databaseService.withRealm { realm ->
+            realm.where(RealmUserModel::class.java)
+                .equalTo("id", settings.getString("userId", ""))
+                .findFirst()?.let { realm.copyFromRealm(it) }
+        }
 
         return fragmentChatHistoryListBinding.root
     }
@@ -154,6 +157,11 @@ class ChatHistoryListFragment : Fragment() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        refreshChatHistoryList()
+    }
+
     private fun startChatHistorySync() {
         val isFastSync = settings.getBoolean("fastSync", false)
         if (isFastSync && !prefManager.isChatHistorySynced()) {
@@ -217,10 +225,14 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     fun refreshChatHistoryList() {
-        val mRealm = databaseService.realmInstance
-        val list = mRealm.where(RealmChatHistory::class.java).equalTo("user", user?.name)
-            .sort("id", Sort.DESCENDING)
-            .findAll()
+        val list = databaseService.withRealm { realm ->
+            realm.copyFromRealm(
+                realm.where(RealmChatHistory::class.java)
+                    .equalTo("user", user?.name)
+                    .sort("id", Sort.DESCENDING)
+                    .findAll()
+            )
+        }
 
         val adapter = fragmentChatHistoryListBinding.recyclerView.adapter as? ChatHistoryListAdapter
         if (adapter == null) {
@@ -249,9 +261,9 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         customProgressDialog?.dismiss()
         customProgressDialog = null
+        super.onDestroy()
     }
 }
 

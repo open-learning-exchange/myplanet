@@ -48,7 +48,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryForma
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.ThemeManager
-import org.ole.planet.myplanet.utilities.Utilities.getUrl
+import org.ole.planet.myplanet.utilities.UrlUtils.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
@@ -430,7 +430,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         updateTeamDropdown()
 
         if (mAdapter == null) {
-            mAdapter = TeamListAdapter(prefData.getSavedUsers().toMutableList(), this, this)
+            mAdapter = TeamListAdapter(prefData.getSavedUsers().toMutableList(), this)
             activityLoginBinding.recyclerView.layoutManager = LinearLayoutManager(this)
             activityLoginBinding.recyclerView.adapter = mAdapter
         } else {
@@ -582,9 +582,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         if (!mRealm.isClosed) {
             mRealm.close()
         }
+        super.onDestroy()
     }
 }

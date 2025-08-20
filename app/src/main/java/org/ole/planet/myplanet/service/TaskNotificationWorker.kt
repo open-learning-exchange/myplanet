@@ -12,24 +12,25 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
 class TaskNotificationWorker(private val context: Context, workerParams: WorkerParameters) : Worker(context, workerParams) {
     override fun doWork(): Result {
-        val mRealm = DatabaseService(context).realmInstance
         val current = Calendar.getInstance().timeInMillis
         val tomorrow = Calendar.getInstance()
         tomorrow.add(Calendar.DAY_OF_YEAR, 1)
         val user = UserProfileDbHandler(context).userModel
         if (user != null) {
-            val tasks: List<RealmTeamTask> = mRealm.where(RealmTeamTask::class.java)
-                .equalTo("completed", false)
-                .equalTo("assignee", user.id)
-                .equalTo("isNotified", false)
-                .between("deadline", current, tomorrow.timeInMillis)
-                .findAll()
-            mRealm.beginTransaction()
-            for (`in` in tasks) {
-                create(context, R.drawable.ole_logo, `in`.title, "Task expires on " + formatDate(`in`.deadline, ""))
-                `in`.isNotified = true
+            DatabaseService(context).withRealm { realm ->
+                val tasks: List<RealmTeamTask> = realm.where(RealmTeamTask::class.java)
+                    .equalTo("completed", false)
+                    .equalTo("assignee", user.id)
+                    .equalTo("isNotified", false)
+                    .between("deadline", current, tomorrow.timeInMillis)
+                    .findAll()
+                realm.executeTransaction {
+                    for (task in tasks) {
+                        create(context, R.drawable.ole_logo, task.title, "Task expires on " + formatDate(task.deadline, ""))
+                        task.isNotified = true
+                    }
+                }
             }
-            mRealm.commitTransaction()
         }
         return Result.success()
     }

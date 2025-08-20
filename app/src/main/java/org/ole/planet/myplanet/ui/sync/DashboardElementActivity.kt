@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.dashboard.BellDashboardFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.rating.RatingFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
@@ -45,7 +46,6 @@ import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.NotificationUtil
 import org.ole.planet.myplanet.utilities.SecurePrefs
 import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 
 abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBackStackChangedListener {
     lateinit var navigationView: BottomNavigationView
@@ -98,7 +98,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             c++
             if(c>2){
                 c--
-                fragmentManager.popBackStack(tag, 0)
+                NavigationHelper.popBackStack(fragmentManager, tag, 0)
             }else{
                 NavigationHelper.replaceFragment(
                     fragmentManager,
@@ -115,7 +115,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 if(c>0 && c>2){
                     c=0
                 }
-                fragmentManager.popBackStack(tag, 0)
+                NavigationHelper.popBackStack(fragmentManager, tag, 0)
             } else {
                 if(c>0 && c>2){
                     c=0

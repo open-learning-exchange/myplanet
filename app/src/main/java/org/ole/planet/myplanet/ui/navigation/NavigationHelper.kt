@@ -39,5 +39,26 @@ object NavigationHelper {
             }
         }
     }
+
+    /**
+     * Pops the back stack of the provided [fragmentManager] if there are entries.
+     *
+     * @param fragmentManager manager whose back stack will be popped
+     * @param tag optional tag identifying the entry to pop to
+     * @param flags optional flags to control popping behavior
+     */
+    fun popBackStack(
+        fragmentManager: FragmentManager,
+        tag: String? = null,
+        flags: Int = 0
+    ) {
+        if (fragmentManager.backStackEntryCount > 0) {
+            if (tag == null && flags == 0) {
+                fragmentManager.popBackStack()
+            } else {
+                fragmentManager.popBackStack(tag, flags)
+            }
+        }
+    }
 }
 

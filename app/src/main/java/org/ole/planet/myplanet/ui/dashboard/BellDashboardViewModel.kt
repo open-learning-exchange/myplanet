@@ -18,24 +18,25 @@ class BellDashboardViewModel : ViewModel() {
     init {
         viewModelScope.launch {
             isNetworkConnectedFlow.collect { isConnected ->
-                updateNetworkStatus(isConnected)
+                if (isConnected) {
+                    updateNetworkStatus(NetworkStatus.Connecting)
+                } else {
+                    updateNetworkStatus(NetworkStatus.Disconnected)
+                }
             }
         }
     }
 
-    private fun updateNetworkStatus(isConnected: Boolean) {
-        viewModelScope.launch {
-            _networkStatus.value = when {
-                !isConnected -> NetworkStatus.Disconnected
-                else -> NetworkStatus.Connecting
-            }
-        }
+    private fun updateNetworkStatus(status: NetworkStatus) {
+        _networkStatus.value = status
     }
 
     suspend fun checkServerConnection(serverUrl: String): Boolean {
-        return withContext(Dispatchers.IO) {
+        val reachable = withContext(Dispatchers.IO) {
             isServerReachable(serverUrl)
         }
+        updateNetworkStatus(if (reachable) NetworkStatus.Connected else NetworkStatus.Disconnected)
+        return reachable
     }
 }
 

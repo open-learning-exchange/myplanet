@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_DOWNLOAD
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity
 import org.ole.planet.myplanet.ui.viewer.CSVViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
@@ -43,6 +44,7 @@ import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.ResourceOpener
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -81,7 +83,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
     fun getUrlsAndStartDownload(lib: List<RealmMyLibrary?>, urls: ArrayList<String>) {
         for (library in lib) {
-            val url = Utilities.getUrl(library)
+            val url = UrlUtils.getUrl(library)
             if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url)) {
                 urls.add(url)
             }
@@ -103,7 +105,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             val library = pendingAutoOpenLibrary!!
             shouldAutoOpenAfterDownload = false
             pendingAutoOpenLibrary = null
-            if (library.isResourceOffline() || FileUtils.checkFileExist(Utilities.getUrl(library))) {
+            if (library.isResourceOffline() || FileUtils.checkFileExist(UrlUtils.getUrl(library))) {
                 ResourceOpener.openFileType(requireActivity(), library, "offline", profileDbHandler)
             }
         }
@@ -171,7 +173,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             ?.mapNotNull { attachment ->
                 attachment.name?.let { name ->
                     createAttachmentDir(items.resourceId, name)
-                    Utilities.getUrl("${items.resourceId}", name)
+                    UrlUtils.getUrl("${items.resourceId}", name)
                 }
             }
             ?.toCollection(ArrayList()) ?: arrayListOf()
@@ -205,7 +207,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             items.isResourceOffline() -> ResourceOpener.openFileType(requireActivity(), items, "offline", profileDbHandler)
             FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4" -> ResourceOpener.openFileType(requireActivity(), items, "online", profileDbHandler)
             else -> {
-                val arrayList = arrayListOf(Utilities.getUrl(items))
+                val arrayList = arrayListOf(UrlUtils.getUrl(items))
                 startDownloadWithAutoOpen(arrayList, items)
                 profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
             }
@@ -355,8 +357,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     open fun handleBackPressed() {
-        val fragmentManager = parentFragmentManager
-        fragmentManager.popBackStack()
+        NavigationHelper.popBackStack(parentFragmentManager)
     }
 
     override fun onPause() {
@@ -365,7 +366,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         dismissProgressDialog()
+        super.onDestroy()
     }
 }

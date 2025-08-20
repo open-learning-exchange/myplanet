@@ -158,7 +158,7 @@ object DialogUtils {
             .setTitle(R.string.new_version_of_my_planet_available)
             .setMessage(R.string.download_first_to_continue)
             .setNeutralButton(R.string.upgrade_local) { _, _ ->
-                startDownloadUpdate(context, Utilities.getApkUpdateUrl(info?.localapkpath), progressDialog)
+                startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), progressDialog)
             }
             .setPositiveButton(R.string.upgrade) { _, _ ->
                 info?.apkpath?.let { startDownloadUpdate(context, it, progressDialog) }

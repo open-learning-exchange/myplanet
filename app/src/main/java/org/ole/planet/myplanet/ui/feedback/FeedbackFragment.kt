@@ -56,10 +56,10 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        super.onDestroy()
     }
 
     override fun onClick(view: View) {
