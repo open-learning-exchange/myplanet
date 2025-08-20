@@ -44,8 +44,8 @@ import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.ResourceOpener
 import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.UrlUtils
+import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 abstract class BaseContainerFragment : BaseResourceFragment() {
