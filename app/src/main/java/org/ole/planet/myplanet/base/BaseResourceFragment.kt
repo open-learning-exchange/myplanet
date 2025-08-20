@@ -28,6 +28,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
@@ -75,6 +76,8 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var submissionRepository: SubmissionRepository
     @Inject
+    lateinit var databaseService: DatabaseService
+    @Inject
     @AppPreferences
     lateinit var settings: SharedPreferences
     private var resourceNotFoundDialog: AlertDialog? = null
@@ -106,7 +109,7 @@ abstract class BaseResourceFragment : Fragment() {
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             this@BaseResourceFragment.lifecycleScope.launch {
-                val list = libraryRepository.getLibraryListForUserAsync(
+                val list = libraryRepository.getLibraryListForUser(
                     settings.getString("userId", "--")
                 )
                 showDownloadDialog(list)
@@ -190,7 +193,7 @@ abstract class BaseResourceFragment : Fragment() {
     fun showPendingSurveyDialog() {
         model = UserProfileDbHandler(requireContext()).userModel
         viewLifecycleOwner.lifecycleScope.launch {
-            val list = submissionRepository.getPendingSurveysAsync(model?.id)
+            val list = submissionRepository.getPendingSurveys(model?.id)
             if (list.isEmpty()) return@launch
             val exams = getExamMap(mRealm, list)
             val arrayAdapter = createSurveyAdapter(list, exams)
@@ -324,14 +327,14 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     suspend fun getLibraryList(mRealm: Realm): List<RealmMyLibrary> {
-        return libraryRepository.getLibraryListForUserAsync(
+        return libraryRepository.getLibraryListForUser(
             settings.getString("userId", "--")
         )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = userRepository.getRealm()
+        mRealm = databaseService.realmInstance
         prgDialog = getProgressDialog(requireActivity())
         editor = settings.edit()
     }

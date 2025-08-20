@@ -54,7 +54,7 @@ class NewsFragment : BaseNewsFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentNewsBinding = FragmentNewsBinding.inflate(inflater, container, false)
         llImage = fragmentNewsBinding.llImages
-        mRealm = userRepository.getRealm()
+        mRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
         setupUI(fragmentNewsBinding.newsFragmentParentLayout, requireActivity())
         if (user?.id?.startsWith("guest") == true) {

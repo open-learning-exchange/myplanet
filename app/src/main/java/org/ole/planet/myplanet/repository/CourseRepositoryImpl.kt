@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.findCopyByField
 import org.ole.planet.myplanet.datamanager.queryList
 import org.ole.planet.myplanet.model.RealmMyCourse
 
@@ -17,10 +18,7 @@ class CourseRepositoryImpl @Inject constructor(
 
     override suspend fun getCourseById(id: String): RealmMyCourse? {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmMyCourse::class.java)
-                .equalTo("courseId", id)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
+            realm.findCopyByField(RealmMyCourse::class.java, "courseId", id)
         }
     }
 
@@ -56,6 +54,26 @@ class CourseRepositoryImpl @Inject constructor(
                 .equalTo("courseId", id)
                 .findFirst()
                 ?.deleteFromRealm()
+        }
+    }
+
+    override suspend fun updateMyCourseFlag(courseId: String, isMyCourse: Boolean) {
+        databaseService.executeTransactionAsync { realm ->
+            realm.where(RealmMyCourse::class.java)
+                .equalTo("courseId", courseId)
+                .findFirst()
+                ?.let { it.isMyCourse = isMyCourse }
+        }
+    }
+
+    override suspend fun updateMyCourseFlag(courseIds: List<String>, isMyCourse: Boolean) {
+        databaseService.executeTransactionAsync { realm ->
+            courseIds.forEach { id ->
+                realm.where(RealmMyCourse::class.java)
+                    .equalTo("courseId", id)
+                    .findFirst()
+                    ?.let { it.isMyCourse = isMyCourse }
+            }
         }
     }
 }
