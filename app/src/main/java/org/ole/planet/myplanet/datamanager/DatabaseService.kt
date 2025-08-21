@@ -22,7 +22,8 @@ class DatabaseService(context: Context) {
         Realm.setDefaultConfiguration(config)
     }
 
-    private val realmInstance: Realm
+    @Deprecated("Use withRealm/withRealmAsync instead")
+    val realmInstance: Realm
         get() = Realm.getDefaultInstance()
 
     private inline fun <T> withRealmInstance(block: (Realm) -> T): T {
