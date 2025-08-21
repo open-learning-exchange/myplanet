@@ -753,12 +753,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             "survey" -> notificationManager.createSurveyNotification(
                 dbNotification.id, 
                 dbNotification.message
+            ).copy(
+                extras = mapOf("surveyId" to (dbNotification.relatedId ?: dbNotification.id))
             )
             "task" -> {
                 val parts = dbNotification.message.split(" ")
                 val taskTitle = parts.dropLast(3).joinToString(" ")
                 val deadline = parts.takeLast(3).joinToString(" ")
-                notificationManager.createTaskNotification(dbNotification.id, taskTitle, deadline)
+                notificationManager.createTaskNotification(dbNotification.id, taskTitle, deadline).copy(
+                    extras = mapOf("taskId" to (dbNotification.relatedId ?: dbNotification.id))
+                )
             }
             "resource" -> notificationManager.createResourceNotification(
                 dbNotification.id,
@@ -772,6 +776,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 dbNotification.id,
                 "New Request",
                 dbNotification.message
+            ).copy(
+                extras = mapOf("requestId" to (dbNotification.relatedId ?: dbNotification.id), "teamName" to dbNotification.message)
             )
             else -> null
         }
@@ -849,11 +855,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 val message = "$requesterName has requested to join $teamName"
 
                 dashboardViewModel.createNotificationIfNotExists(
-                    realm,
-                    "join_request",
-                    message,
-                    joinRequest._id,
-                    userId
+                    realm, "join_request", message, joinRequest._id, userId
                 )
             }
         }

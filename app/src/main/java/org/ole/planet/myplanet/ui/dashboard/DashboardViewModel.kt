@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.dashboard
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.realm.Realm
@@ -74,6 +75,7 @@ class DashboardViewModel @Inject constructor(
             .findFirst()
 
         if (existingNotification == null) {
+            Log.d("okuro", "Creating notification: type=$type, message=$message, relatedId=$relatedId, userId=$userId")
             realm.createObject(RealmNotification::class.java, "${UUID.randomUUID()}").apply {
                 this.userId = userId ?: ""
                 this.type = type

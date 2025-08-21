@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings.ACTION_INTERNAL_STORAGE_SETTINGS
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -116,10 +117,17 @@ class NotificationsFragment : Fragment() {
                 startActivity(intent)
             }
             "survey" -> {
+                Log.d("okuro", "Survey notification relatedId: ${notification.relatedId}")
                 val currentStepExam = mRealm.where(RealmStepExam::class.java).equalTo("name", notification.relatedId)
                     .findFirst()
-                if (context is OnHomeItemClickListener) {
-                    AdapterMySubmission.openSurvey(context as OnHomeItemClickListener, currentStepExam?.id, false, false, "")
+                Log.d("okuro", "Found currentStepExam: ${currentStepExam?.name}, id: ${currentStepExam?.id}")
+                
+                if (currentStepExam != null && activity is OnHomeItemClickListener) {
+                    Log.d("okuro", "Opening survey for step exam: ${currentStepExam.name}")
+                    AdapterMySubmission.openSurvey(activity as OnHomeItemClickListener, currentStepExam.id, false, false, "")
+                } else {
+                    Log.d("okuro", "Cannot open survey - currentStepExam is null or activity is not OnHomeItemClickListener")
+                    Log.d("okuro", "Activity type: ${activity?.javaClass?.simpleName}")
                 }
             }
             "task" -> {
@@ -131,9 +139,9 @@ class NotificationsFragment : Fragment() {
                 val linkJson = JSONObject(task?.link ?: "{}")
                 val teamId = linkJson.optString("teams")
                 if (teamId.isNotEmpty()) {
-                    if (context is OnHomeItemClickListener) {
+                    if (activity is OnHomeItemClickListener) {
                         val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", teamId)?.findFirst()
-
+                        Log.d("okuro", "Opening team detail for teamId: $teamId, teamName: ${teamObject?.name}")
                         val f = TeamDetailFragment.newInstance(
                             teamId = teamId,
                             teamName = teamObject?.name ?: "",
@@ -142,13 +150,13 @@ class NotificationsFragment : Fragment() {
                             navigateToPage = TasksPage
                         )
 
-                        (context as OnHomeItemClickListener).openCallFragment(f)
+                        (activity as OnHomeItemClickListener).openCallFragment(f)
                     }
                 }
             }
             "join_request" -> {
                 val joinRequestId = notification.relatedId
-                if (joinRequestId?.isNotEmpty() == true && context is OnHomeItemClickListener) {
+                if (joinRequestId?.isNotEmpty() == true && activity is OnHomeItemClickListener) {
                     val actualJoinRequestId = if (joinRequestId.startsWith("join_request_")) {
                         joinRequestId.removePrefix("join_request_")
                     } else {
@@ -160,6 +168,7 @@ class NotificationsFragment : Fragment() {
                         .findFirst()
 
                     val teamId = joinRequest?.teamId
+                    Log.d("okuro", "Opening join request for teamId: $teamId, joinRequestId: $actualJoinRequestId")
 
                     if (teamId?.isNotEmpty() == true) {
                         val f = TeamDetailFragment()
@@ -168,7 +177,7 @@ class NotificationsFragment : Fragment() {
                         b.putBoolean("isMyTeam", true)
                         b.putString("navigateToPage", JoinRequestsPage.id)
                         f.arguments = b
-                        (context as OnHomeItemClickListener).openCallFragment(f)
+                        (activity as OnHomeItemClickListener).openCallFragment(f)
                     }
                 }
             }
