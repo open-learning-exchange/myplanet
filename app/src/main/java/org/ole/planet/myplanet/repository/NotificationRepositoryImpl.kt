@@ -27,6 +27,7 @@ class NotificationRepositoryImpl @Inject constructor(
                     if (existingNotification != null) {
                         existingNotification.message = "$resourceCount"
                         existingNotification.relatedId = "$resourceCount"
+                        existingNotification.isRead = false
                     } else {
                         createNotificationIfNotExists(
                             realm,
@@ -68,6 +69,7 @@ class NotificationRepositoryImpl @Inject constructor(
                 this.message = message
                 this.relatedId = relatedId
                 this.createdAt = Date()
+                this.isRead = false
             }
         }
     }
@@ -95,6 +97,25 @@ class NotificationRepositoryImpl @Inject constructor(
                 .equalTo("isRead", false)
                 .count()
                 .toInt()
+        }
+    }
+
+    override suspend fun markNotificationAsRead(notificationId: String) {
+        databaseService.executeTransactionAsync { realm ->
+            realm.where(RealmNotification::class.java)
+                .equalTo("id", notificationId)
+                .findFirst()
+                ?.isRead = true
+        }
+    }
+
+    override suspend fun markAllNotificationsAsRead(userId: String?) {
+        databaseService.executeTransactionAsync { realm ->
+            realm.where(RealmNotification::class.java)
+                .equalTo("userId", userId)
+                .equalTo("isRead", false)
+                .findAll()
+                .forEach { it.isRead = true }
         }
     }
 }

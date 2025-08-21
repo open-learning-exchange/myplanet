@@ -17,8 +17,10 @@ import androidx.core.content.edit
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmNotification
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 
 object NotificationUtil {
@@ -469,7 +471,7 @@ object NotificationUtil {
 @AndroidEntryPoint
 class NotificationActionReceiver : BroadcastReceiver() {
     @Inject
-    lateinit var databaseService: DatabaseService
+    lateinit var notificationRepository: NotificationRepository
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
         val notificationId = intent.getStringExtra(NotificationUtil.EXTRA_NOTIFICATION_ID)
@@ -515,21 +517,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
             return
         }
 
-
         try {
-            val realm = databaseService.realmInstance
-            
-            realm.executeTransaction { r ->
-                val notification = r.where(RealmNotification::class.java)
-                    .equalTo("id", notificationId)
-                    .findFirst()
-                
-                if (notification != null) {
-                    notification.isRead = true
-                }
+            CoroutineScope(Dispatchers.IO).launch {
+                notificationRepository.markNotificationAsRead(notificationId)
             }
-
-            realm.close()
 
             android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                 val broadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
@@ -557,7 +548,6 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 }
 
             }, 200)
-            
         } catch (e: Exception) {
             e.printStackTrace()
         }

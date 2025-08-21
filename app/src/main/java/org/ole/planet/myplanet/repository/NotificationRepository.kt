@@ -7,6 +7,8 @@ interface NotificationRepository {
     suspend fun updateResourceNotification(userId: String?)
     suspend fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>): List<String>
     suspend fun getUnreadNotificationsSize(userId: String?): Int
+    suspend fun markNotificationAsRead(notificationId: String)
+    suspend fun markAllNotificationsAsRead(userId: String?)
     fun createNotificationIfNotExists(
         realm: Realm,
         type: String,
