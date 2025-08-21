@@ -22,9 +22,6 @@ class CourseRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getEnrolledCourses(userId: String): List<RealmMyCourse> =
-        getCoursesByUserId(userId)
-
     override suspend fun getCoursesByUserId(userId: String): List<RealmMyCourse> {
         return databaseService.withRealmAsync { realm ->
             realm.queryList(RealmMyCourse::class.java) {
