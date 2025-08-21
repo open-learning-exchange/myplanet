@@ -349,7 +349,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle) {}
 
     override fun onActivityDestroyed(activity: Activity) {
-        cancelAll(this)
+        // Don't cancel all notifications when activities are destroyed
+        // as this interferes with user notifications during normal navigation
     }
 
     private fun onAppForegrounded() {

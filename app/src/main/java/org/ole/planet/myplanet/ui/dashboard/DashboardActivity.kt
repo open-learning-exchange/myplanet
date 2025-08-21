@@ -21,6 +21,7 @@ import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.MenuItemCompat
@@ -134,6 +135,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         initViews()
         updateAppTitle()
         notificationManager = NotificationUtil.getInstance(this)
+        notificationManager.clearSessionTracking()
         if (handleGuestAccess()) return
         setupNavigation()
         handleInitialFragment()
@@ -560,7 +562,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val fromLogin = intent.getBooleanExtra("from_login", false)
         if (fromLogin || !notificationsShownThisSession) {
             notificationsShownThisSession = true
-            checkAndCreateNewNotifications()
+            // Add a small delay to ensure notification system is ready
+            lifecycleScope.launch {
+                kotlinx.coroutines.delay(1000) // 1 second delay
+                checkAndCreateNewNotifications()
+            }
         }
     }
 
@@ -591,14 +597,82 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         openNotificationsList(userId ?: "")
                     }
 
-                    newNotifications.forEach { config ->
-                        notificationManager.showNotification(config)
+                    // Group notifications by type to avoid flooding
+                    val groupedNotifications = newNotifications.groupBy { it.type }
+                    
+                    groupedNotifications.forEach { (type, notifications) ->
+                        when {
+                            notifications.size == 1 -> {
+                                // Show single notification as-is
+                                notificationManager.showNotification(notifications.first())
+                            }
+                            notifications.size > 1 -> {
+                                // Create summary notification for multiple notifications of same type
+                                val summaryConfig = createSummaryNotification(type, notifications.size)
+                                notificationManager.showNotification(summaryConfig)
+                            }
+                        }
                     }
 
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
             }
+        }
+    }
+
+    private fun createSummaryNotification(type: String, count: Int): NotificationUtil.NotificationConfig {
+        val summaryId = "summary_${type}"
+        
+        return when (type) {
+            "survey" -> NotificationUtil.NotificationConfig(
+                id = summaryId,
+                type = type,
+                title = "📋 New Surveys Available",
+                message = "$count new surveys are waiting for you",
+                priority = NotificationCompat.PRIORITY_HIGH,
+                category = NotificationCompat.CATEGORY_REMINDER
+            )
+            "task" -> NotificationUtil.NotificationConfig(
+                id = summaryId,
+                type = type,
+                title = "✅ New Tasks Assigned",
+                message = "$count new tasks have been assigned to you",
+                priority = NotificationCompat.PRIORITY_HIGH,
+                category = NotificationCompat.CATEGORY_REMINDER
+            )
+            "join_request" -> NotificationUtil.NotificationConfig(
+                id = summaryId,
+                type = type,
+                title = "👥 Team Join Requests",
+                message = "$count new team join requests to review",
+                priority = NotificationCompat.PRIORITY_DEFAULT,
+                category = NotificationCompat.CATEGORY_SOCIAL
+            )
+            "resource" -> NotificationUtil.NotificationConfig(
+                id = summaryId,
+                type = type,
+                title = "📚 New Resources Available",
+                message = "$count new resources have been added",
+                priority = NotificationCompat.PRIORITY_DEFAULT,
+                category = NotificationCompat.CATEGORY_RECOMMENDATION
+            )
+            "storage" -> NotificationUtil.NotificationConfig(
+                id = summaryId,
+                type = type,
+                title = "⚠️ Storage Warnings",
+                message = "$count storage warnings need attention",
+                priority = NotificationCompat.PRIORITY_DEFAULT,
+                category = NotificationCompat.CATEGORY_STATUS
+            )
+            else -> NotificationUtil.NotificationConfig(
+                id = summaryId,
+                type = type,
+                title = "📱 App Notifications",
+                message = "$count new notifications",
+                priority = NotificationCompat.PRIORITY_DEFAULT,
+                category = NotificationCompat.CATEGORY_MESSAGE
+            )
         }
     }
 
