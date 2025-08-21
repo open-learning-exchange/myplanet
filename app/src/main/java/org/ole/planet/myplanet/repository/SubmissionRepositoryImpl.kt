@@ -10,7 +10,7 @@ class SubmissionRepositoryImpl @Inject constructor(
     private val databaseService: DatabaseService,
 ) : SubmissionRepository {
 
-    override suspend fun getPendingSurveysAsync(userId: String?): List<RealmSubmission> {
+    override suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {
         return databaseService.withRealmAsync { realm ->
             realm.queryList(RealmSubmission::class.java) {
                 equalTo("userId", userId)
