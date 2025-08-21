@@ -283,7 +283,10 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         }
 
         updateUIState()
-        recyclerView.post { recyclerView.scrollToPosition(0) }
+        recyclerView.post {
+            recyclerView.stopScroll()
+            recyclerView.scrollToPosition(0)
+        }
     }
 
     private fun updateUIState() {
