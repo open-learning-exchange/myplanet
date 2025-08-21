@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import io.realm.RealmResults
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.findCopyByField
 import org.ole.planet.myplanet.datamanager.queryList
 import org.ole.planet.myplanet.model.RealmMyLibrary
 
@@ -10,22 +11,19 @@ class LibraryRepositoryImpl @Inject constructor(
     private val databaseService: DatabaseService
 ) : LibraryRepository {
 
-    override suspend fun getAllLibraryItemsAsync(): List<RealmMyLibrary> {
+    override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
         return databaseService.withRealmAsync { realm ->
             realm.queryList(RealmMyLibrary::class.java)
         }
     }
 
-    override suspend fun getLibraryItemByIdAsync(id: String): RealmMyLibrary? {
+    override suspend fun getLibraryItemById(id: String): RealmMyLibrary? {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmMyLibrary::class.java)
-                .equalTo("id", id)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
+            realm.findCopyByField(RealmMyLibrary::class.java, "id", id)
         }
     }
 
-    override suspend fun getOfflineLibraryItemsAsync(): List<RealmMyLibrary> {
+    override suspend fun getOfflineLibraryItems(): List<RealmMyLibrary> {
         return databaseService.withRealmAsync { realm ->
             realm.queryList(RealmMyLibrary::class.java) {
                 equalTo("resourceOffline", true)
@@ -33,7 +31,7 @@ class LibraryRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getLibraryListForUserAsync(userId: String?): List<RealmMyLibrary> {
+    override suspend fun getLibraryListForUser(userId: String?): List<RealmMyLibrary> {
         return databaseService.withRealmAsync { realm ->
             val results = realm.where(RealmMyLibrary::class.java)
                 .equalTo("isPrivate", false)
@@ -44,7 +42,7 @@ class LibraryRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getAllLibraryListAsync(): List<RealmMyLibrary> {
+    override suspend fun getAllLibraryList(): List<RealmMyLibrary> {
         return databaseService.withRealmAsync { realm ->
             val results = realm.where(RealmMyLibrary::class.java)
                 .equalTo("resourceOffline", false)
