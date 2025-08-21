@@ -359,6 +359,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     }
 
     override fun onDestroyView() {
+        teamList?.removeAllChangeListeners()
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
