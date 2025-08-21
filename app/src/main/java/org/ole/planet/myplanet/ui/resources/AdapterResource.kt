@@ -7,6 +7,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.JsonObject
@@ -28,7 +29,12 @@ import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterResource(private val context: Context, private var libraryList: List<RealmMyLibrary?>, private var ratingMap: HashMap<String?, JsonObject>, private val realm: Realm) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class AdapterResource(
+    private val context: Context,
+    private var libraryList: List<RealmMyLibrary?>,
+    private var ratingMap: HashMap<String?, JsonObject>,
+    private val realm: Realm
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
     private var listener: OnLibraryItemSelected? = null
     private val config: ChipCloudConfig = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
@@ -53,8 +59,7 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
     }
 
     fun setLibraryList(libraryList: List<RealmMyLibrary?>) {
-        this.libraryList = libraryList
-        notifyDataSetChanged()
+        updateList(libraryList)
     }
 
     fun setListener(listener: OnLibraryItemSelected?) {
@@ -170,26 +175,24 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
 
     fun toggleTitleSortOrder() {
         isTitleAscending = !isTitleAscending
-        sortLibraryListByTitle()
-        notifyDataSetChanged()
+        updateList(sortLibraryListByTitle())
     }
 
     fun toggleSortOrder() {
         isAscending = !isAscending
-        sortLibraryList()
-        notifyDataSetChanged()
+        updateList(sortLibraryList())
     }
 
-    private fun sortLibraryListByTitle() {
-        libraryList = if (isTitleAscending) {
+    private fun sortLibraryListByTitle(): List<RealmMyLibrary?> {
+        return if (isTitleAscending) {
             libraryList.sortedBy { it?.title?.lowercase(Locale.ROOT) }
         } else {
             libraryList.sortedByDescending { it?.title?.lowercase(Locale.ROOT) }
         }
     }
 
-    private fun sortLibraryList() {
-        libraryList = if (isAscending) {
+    private fun sortLibraryList(): List<RealmMyLibrary?> {
+        return if (isAscending) {
             libraryList.sortedBy { it?.createdDate }
         } else {
             libraryList.sortedByDescending { it?.createdDate }
@@ -198,6 +201,35 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
 
     override fun getItemCount(): Int {
         return libraryList.size
+    }
+
+    private fun updateList(newList: List<RealmMyLibrary?>) {
+        val diffResult = DiffUtil.calculateDiff(LibraryDiffCallback(libraryList, newList))
+        libraryList = newList
+        diffResult.dispatchUpdatesTo(this)
+    }
+
+    private class LibraryDiffCallback(
+        private val oldList: List<RealmMyLibrary?>,
+        private val newList: List<RealmMyLibrary?>
+    ) : DiffUtil.Callback() {
+        override fun getOldListSize(): Int = oldList.size
+
+        override fun getNewListSize(): Int = newList.size
+
+        override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            return oldList[oldItemPosition]?.id == newList[newItemPosition]?.id
+        }
+
+        override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            val oldItem = oldList[oldItemPosition]
+            val newItem = newList[newItemPosition]
+            return oldItem?.title == newItem?.title &&
+                oldItem?.description == newItem?.description &&
+                oldItem?.createdDate == newItem?.createdDate &&
+                oldItem?.averageRating == newItem?.averageRating &&
+                oldItem?.timesRated == newItem?.timesRated
+        }
     }
 
     fun setRatingMap(newRatingMap: HashMap<String?, JsonObject>) {
