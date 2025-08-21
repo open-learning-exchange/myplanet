@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import io.realm.Realm
-import io.realm.RealmModel
+import io.realm.RealmObject
 import io.realm.RealmQuery
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.findCopyByField
@@ -9,14 +9,14 @@ import org.ole.planet.myplanet.datamanager.queryList
 
 open class RealmRepository(private val databaseService: DatabaseService) {
 
-    protected suspend fun <T : RealmModel> queryList(
+    protected suspend fun <T : RealmObject> queryList(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {}
     ): List<T> = databaseService.withRealmAsync { realm ->
         realm.queryList(clazz, builder)
     }
 
-    protected suspend fun <T : RealmModel, V> findByField(
+    protected suspend fun <T : RealmObject, V> findByField(
         clazz: Class<T>,
         fieldName: String,
         value: V
@@ -24,13 +24,13 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         realm.findCopyByField(clazz, fieldName, value)
     }
 
-    protected suspend fun <T : RealmModel> save(item: T) {
+    protected suspend fun <T : RealmObject> save(item: T) {
         executeTransaction { realm ->
             realm.copyToRealmOrUpdate(item)
         }
     }
 
-    protected suspend fun <T : RealmModel, V> update(
+    protected suspend fun <T : RealmObject, V> update(
         clazz: Class<T>,
         fieldName: String,
         value: V,
@@ -51,7 +51,7 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         }
     }
 
-    protected suspend fun <T : RealmModel, V> delete(
+    protected suspend fun <T : RealmObject, V> delete(
         clazz: Class<T>,
         fieldName: String,
         value: V
