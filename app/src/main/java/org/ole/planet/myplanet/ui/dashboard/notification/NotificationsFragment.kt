@@ -92,9 +92,12 @@ class NotificationsFragment : Fragment() {
              notification.message.isNotEmpty() && notification.message != "INVALID"
         }
 
-        adapter = AdapterNotification(filteredNotifications,
+        adapter = AdapterNotification(
+            databaseService,
+            filteredNotifications,
             onMarkAsReadClick = { position ->
-                markAsRead(position) },
+                markAsRead(position)
+            },
             onNotificationClick = { notification ->
                 handleNotificationClick(notification)
             }
@@ -178,7 +181,7 @@ class NotificationsFragment : Fragment() {
         }
 
         if (!notification.isRead) {
-            markAsRead(adapter.notificationList.indexOf(notification))
+            markAsRead(adapter.currentList.indexOf(notification))
         }
     }
 
@@ -196,7 +199,7 @@ class NotificationsFragment : Fragment() {
     }
 
     private fun markAsRead(position: Int) {
-        val notification = adapter.notificationList[position]
+        val notification = adapter.currentList[position]
         val notificationId = notification.id
         mRealm.executeTransactionAsync({ realm ->
             val realmNotification = realm.where(RealmNotification::class.java)
