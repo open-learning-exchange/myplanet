@@ -11,16 +11,22 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentDisclaimerBinding
 
 class DisclaimerFragment : Fragment() {
-    private lateinit var fragmentDisclaimerBinding: FragmentDisclaimerBinding
+    private var _binding: FragmentDisclaimerBinding? = null
+    private val binding get() = _binding!!
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentDisclaimerBinding = FragmentDisclaimerBinding.inflate(inflater, container, false)
-        return fragmentDisclaimerBinding.root
+        _binding = FragmentDisclaimerBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        fragmentDisclaimerBinding.tvDisclaimer.text = HtmlCompat.fromHtml(getString(R.string.disclaimer), HtmlCompat.FROM_HTML_MODE_LEGACY)
-        fragmentDisclaimerBinding.tvDisclaimer.movementMethod = LinkMovementMethod.getInstance()
+        binding.tvDisclaimer.text = HtmlCompat.fromHtml(getString(R.string.disclaimer), HtmlCompat.FROM_HTML_MODE_LEGACY)
+        binding.tvDisclaimer.movementMethod = LinkMovementMethod.getInstance()
+    }
+
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
     }
 }

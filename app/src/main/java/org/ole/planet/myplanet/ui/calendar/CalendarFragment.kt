@@ -13,13 +13,15 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentCalendarBinding
 
 class CalendarFragment : Fragment() {
-    private lateinit var calendarBinding: FragmentCalendarBinding
+    private var _binding: FragmentCalendarBinding? = null
+    private val binding get() = _binding!!
     var listener: OnHomeItemClickListener? = null
+    
     fun addEvents() {
         val events: MutableList<CalendarDay> = ArrayList()
         val calendar = Calendar.getInstance()
         events.add(CalendarDay(calendar))
-        calendarBinding.calendarView.setCalendarDays(events)
+        binding.calendarView.setCalendarDays(events)
     }
 
     override fun onAttach(context: Context) {
@@ -28,13 +30,18 @@ class CalendarFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        calendarBinding = FragmentCalendarBinding.inflate(inflater, container, false)
-        calendarBinding.calendarView.setOnCalendarDayClickListener(object : OnCalendarDayClickListener {
+        _binding = FragmentCalendarBinding.inflate(inflater, container, false)
+        binding.calendarView.setOnCalendarDayClickListener(object : OnCalendarDayClickListener {
             override fun onClick(calendarDay: CalendarDay) {
             }
         })
         val calendar = Calendar.getInstance()
-        calendarBinding.calendarView.setDate(calendar.time)
-        return calendarBinding.root
+        binding.calendarView.setDate(calendar.time)
+        return binding.root
+    }
+
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
     }
 }

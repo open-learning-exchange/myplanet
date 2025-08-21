@@ -87,6 +87,7 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
 
     override fun onDestroy() {
         if (::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.removeAllChangeListeners()
             mRealm.close()
         }
         super.onDestroy()
