@@ -26,11 +26,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindUserRepository(impl: UserRepositoryImpl): UserRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindLibraryRepository(impl: LibraryRepositoryImpl): LibraryRepository
+    abstract fun bindCourseProgressRepository(impl: CourseProgressRepositoryImpl): CourseProgressRepository
 
     @Binds
     @Singleton
@@ -38,7 +34,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindCourseProgressRepository(impl: CourseProgressRepositoryImpl): CourseProgressRepository
+    abstract fun bindLibraryRepository(impl: LibraryRepositoryImpl): LibraryRepository
 
     @Binds
     @Singleton
@@ -51,4 +47,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindSubmissionRepository(impl: SubmissionRepositoryImpl): SubmissionRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindUserRepository(impl: UserRepositoryImpl): UserRepository
 }

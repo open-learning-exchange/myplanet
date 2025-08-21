@@ -293,6 +293,13 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         if (::myTeamsResults.isInitialized) {
             myTeamsResults.removeChangeListener(myTeamsChangeListener)
         }
+        if (isRealmInitialized()) {
+            mRealm.removeAllChangeListeners()
+            if (mRealm.isInTransaction) {
+                mRealm.cancelTransaction()
+            }
+            mRealm.close()
+        }
         super.onDestroy()
     }
 
