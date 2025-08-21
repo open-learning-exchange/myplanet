@@ -22,7 +22,7 @@ class DatabaseService(context: Context) {
         Realm.setDefaultConfiguration(config)
     }
 
-    val realmInstance: Realm
+    private val realmInstance: Realm
         get() = Realm.getDefaultInstance()
 
     private inline fun <T> withRealmInstance(block: (Realm) -> T): T {
