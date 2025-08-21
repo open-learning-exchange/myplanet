@@ -188,7 +188,12 @@ class AdapterTeamList(
                 RealmTeamLog.getVisitByTeam(mRealm, team._id)
             }
         )
-        submitList(sortedList)
+
+        // DiffUtil runs on a background thread and cannot access managed Realm objects.
+        // Convert the sorted list to unmanaged copies before submitting it so that
+        // background comparisons don't trigger Realm thread violations.
+        val detached = mRealm.copyFromRealm(sortedList)
+        submitList(detached)
     }
 
     private fun getBundle(team: RealmMyTeam): Bundle {
