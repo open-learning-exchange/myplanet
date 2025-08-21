@@ -307,22 +307,20 @@ class TeamCalendarFragment : BaseTeamFragment() {
             return
         }
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            var meetupList = mutableListOf<RealmMeetup>()
             val newDates = mutableListOf<Calendar>()
-            val realm = databaseService.realmInstance
-            try {
-                meetupList = realm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
-                val calendarInstance = Calendar.getInstance()
+            databaseService.withRealm { realm ->
+                try {
+                    val meetupList = realm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
+                    val calendarInstance = Calendar.getInstance()
 
-                for (meetup in meetupList) {
-                    val startDateMillis = meetup.startDate
-                    calendarInstance.timeInMillis = startDateMillis
-                    newDates.add(calendarInstance.clone() as Calendar)
+                    for (meetup in meetupList) {
+                        val startDateMillis = meetup.startDate
+                        calendarInstance.timeInMillis = startDateMillis
+                        newDates.add(calendarInstance.clone() as Calendar)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                realm.close()
             }
             withContext(Dispatchers.Main) {
                 if (isAdded && activity != null) {
