@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import dagger.hilt.android.AndroidEntryPoint
@@ -18,7 +19,6 @@ import io.realm.Sort
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.launch
-import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
