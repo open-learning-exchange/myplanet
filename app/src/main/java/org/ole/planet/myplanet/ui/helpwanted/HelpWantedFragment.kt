@@ -17,14 +17,15 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 
 class HelpWantedFragment : Fragment() {
-    private lateinit var fragmentHelpWantedBinding: FragmentHelpWantedBinding
+    private var _binding: FragmentHelpWantedBinding? = null
+    private val binding get() = _binding!!
     lateinit var settings: SharedPreferences
     private var manager: JsonObject? = null
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentHelpWantedBinding = FragmentHelpWantedBinding.inflate(inflater, container, false)
+        _binding = FragmentHelpWantedBinding.inflate(inflater, container, false)
         settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         if (settings.contains("user_admin")) manager = parseString(settings.getString("user_admin", "")).asJsonObject
-        return fragmentHelpWantedBinding.root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -33,14 +34,19 @@ class HelpWantedFragment : Fragment() {
         val boldEmail = "<b>" + getString(R.string.email_colon) + "</b>"
         val boldPhone = "<b>" + getString(R.string.phone_number_colon) + "</b>"
         if (manager != null) {
-            fragmentHelpWantedBinding.llData.visibility = View.VISIBLE
-            fragmentHelpWantedBinding.tvName.text = Html.fromHtml(boldName + getString("name", manager), HtmlCompat.FROM_HTML_MODE_LEGACY)
-            fragmentHelpWantedBinding.tvEmail.text = Html.fromHtml(boldEmail + getString("name", manager), HtmlCompat.FROM_HTML_MODE_LEGACY)
-            fragmentHelpWantedBinding.tvPhone.text = Html.fromHtml(boldPhone + getString("phoneNumber", manager), HtmlCompat.FROM_HTML_MODE_LEGACY)
+            binding.llData.visibility = View.VISIBLE
+            binding.tvName.text = Html.fromHtml(boldName + getString("name", manager), HtmlCompat.FROM_HTML_MODE_LEGACY)
+            binding.tvEmail.text = Html.fromHtml(boldEmail + getString("name", manager), HtmlCompat.FROM_HTML_MODE_LEGACY)
+            binding.tvPhone.text = Html.fromHtml(boldPhone + getString("phoneNumber", manager), HtmlCompat.FROM_HTML_MODE_LEGACY)
         } else {
-            fragmentHelpWantedBinding.llData.visibility = View.GONE
-            fragmentHelpWantedBinding.tvNodata.setText(R.string.no_data_available)
-            fragmentHelpWantedBinding.tvNodata.visibility = View.VISIBLE
+            binding.llData.visibility = View.GONE
+            binding.tvNodata.setText(R.string.no_data_available)
+            binding.tvNodata.visibility = View.VISIBLE
         }
+    }
+
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
     }
 }

@@ -24,7 +24,7 @@ import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 
 @AndroidEntryPoint
 class CourseProgressActivity : BaseActivity() {
-    private lateinit var activityCourseProgressBinding: ActivityCourseProgressBinding
+    private lateinit var binding: ActivityCourseProgressBinding
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     lateinit var realm: Realm
@@ -32,9 +32,9 @@ class CourseProgressActivity : BaseActivity() {
     lateinit var courseId: String
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        activityCourseProgressBinding = ActivityCourseProgressBinding.inflate(layoutInflater)
-        setContentView(activityCourseProgressBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityCourseProgressBinding.root)
+        binding = ActivityCourseProgressBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
         initActionBar()
         courseId = intent.getStringExtra("courseId").toString()
         realm = databaseService.realmInstance
@@ -45,14 +45,14 @@ class CourseProgressActivity : BaseActivity() {
         if (progress != null) {
             val maxProgress = progress["max"].asInt
             if (maxProgress != 0) {
-                activityCourseProgressBinding.progressView.setProgress((progress["current"].asInt.toDouble() / maxProgress.toDouble() * 100).toInt(), true)
+                binding.progressView.setProgress((progress["current"].asInt.toDouble() / maxProgress.toDouble() * 100).toInt(), true)
             } else {
-                activityCourseProgressBinding.progressView.setProgress(0, true)
+                binding.progressView.setProgress(0, true)
             }
         }
-        activityCourseProgressBinding.tvCourse.text = course?.courseTitle
-        activityCourseProgressBinding.tvProgress.text = getString(R.string.course_progress, courseProgress[courseId]?.get("current")?.asString, courseProgress[courseId]?.get("max")?.asString)
-        activityCourseProgressBinding.rvProgress.layoutManager = GridLayoutManager(this, 4)
+        binding.tvCourse.text = course?.courseTitle
+        binding.tvProgress.text = getString(R.string.course_progress, courseProgress[courseId]?.get("current")?.asString, courseProgress[courseId]?.get("max")?.asString)
+        binding.rvProgress.layoutManager = GridLayoutManager(this, 4)
         showProgress()
     }
 
@@ -66,7 +66,7 @@ class CourseProgressActivity : BaseActivity() {
             getExamObject(exams, ob)
             array.add(ob)
         }
-        activityCourseProgressBinding.rvProgress.adapter = AdapterProgressGrid(this, array)
+        binding.rvProgress.adapter = AdapterProgressGrid(this, array)
 
     }
 

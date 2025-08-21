@@ -368,7 +368,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         val teamType = getEffectiveTeamType()
 
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            databaseService.withRealm { r ->
+            databaseService.executeTransactionAsync { r ->
                 val log = r.createObject(RealmTeamLog::class.java, "${UUID.randomUUID()}")
                 log.teamId = getEffectiveTeamId()
                 log.user = userName

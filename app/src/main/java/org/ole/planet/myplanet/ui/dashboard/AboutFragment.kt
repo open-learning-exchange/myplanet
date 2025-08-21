@@ -12,14 +12,20 @@ import org.ole.planet.myplanet.databinding.FragmentAboutBinding
 import org.ole.planet.myplanet.utilities.Constants
 
 class AboutFragment : Fragment() {
-    private lateinit var fragmentAboutBinding: FragmentAboutBinding
+    private var _binding: FragmentAboutBinding? = null
+    private val binding get() = _binding!!
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentAboutBinding = FragmentAboutBinding.inflate(inflater, container, false)
+        _binding = FragmentAboutBinding.inflate(inflater, container, false)
         val versionString = getString(R.string.version, resources.getText(R.string.app_version))
         val aboutText = getString(Constants.ABOUT)
 
         val newAboutText: String = aboutText.replace("<h3>MyPlanet</h3>", "<h3>MyPlanet</h3>\n<h4>$versionString</h4>")
-        fragmentAboutBinding.tvDisclaimer.text = Html.fromHtml(newAboutText, HtmlCompat.FROM_HTML_MODE_LEGACY)
-        return fragmentAboutBinding.root
+        binding.tvDisclaimer.text = Html.fromHtml(newAboutText, HtmlCompat.FROM_HTML_MODE_LEGACY)
+        return binding.root
+    }
+
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
     }
 }
