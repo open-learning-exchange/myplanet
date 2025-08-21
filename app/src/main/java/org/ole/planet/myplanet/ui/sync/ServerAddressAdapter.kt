@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import org.ole.planet.myplanet.MainApplication.Companion.context
@@ -19,24 +20,50 @@ class ServerAddressAdapter(private var serverList: List<ServerAddressesModel>,
     private var lastSelectedPosition: Int = -1
 
     fun updateList(newList: List<ServerAddressesModel>) {
+        val diffCallback = object : DiffUtil.Callback() {
+            override fun getOldListSize() = serverList.size
+            override fun getNewListSize() = newList.size
+
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                return serverList[oldItemPosition].url == newList[newItemPosition].url
+            }
+
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                return serverList[oldItemPosition] == newList[newItemPosition]
+            }
+        }
+        val diffResult = DiffUtil.calculateDiff(diffCallback)
         serverList = newList
-        notifyDataSetChanged()
+        diffResult.dispatchUpdatesTo(this)
     }
 
     fun setSelectedPosition(position: Int) {
-        lastSelectedPosition = selectedPosition
+        val previous = selectedPosition
+        lastSelectedPosition = previous
         selectedPosition = position
-        notifyDataSetChanged()
+        if (previous != -1) {
+            notifyItemChanged(previous)
+        }
+        notifyItemChanged(position)
     }
 
     fun revertSelection() {
+        val current = selectedPosition
         selectedPosition = lastSelectedPosition
-        notifyDataSetChanged()
+        if (current != -1) {
+            notifyItemChanged(current)
+        }
+        if (selectedPosition != -1) {
+            notifyItemChanged(selectedPosition)
+        }
     }
 
     fun clearSelection() {
+        val current = selectedPosition
         selectedPosition = -1
-        notifyDataSetChanged()
+        if (current != -1) {
+            notifyItemChanged(current)
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {

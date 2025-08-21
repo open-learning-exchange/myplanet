@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.repository
 import org.ole.planet.myplanet.model.RealmSubmission
 
 interface SubmissionRepository {
-    suspend fun getPendingSurveysAsync(userId: String?): List<RealmSubmission>
+    suspend fun getPendingSurveys(userId: String?): List<RealmSubmission>
     suspend fun getSubmissionById(id: String): RealmSubmission?
     suspend fun getSubmissionsByUserId(userId: String): List<RealmSubmission>
     suspend fun getSubmissionsByType(type: String): List<RealmSubmission>
