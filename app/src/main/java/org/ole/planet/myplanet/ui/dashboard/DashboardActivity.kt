@@ -100,7 +100,7 @@ import org.ole.planet.myplanet.utilities.Utilities.toast
 @AndroidEntryPoint  
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
 
-    private lateinit var activityDashboardBinding: ActivityDashboardBinding
+    private lateinit var binding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
     var user: RealmUserModel? = null
     var result: Drawer? = null
@@ -152,22 +152,22 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun initViews() {
-        activityDashboardBinding = ActivityDashboardBinding.inflate(layoutInflater)
-        setContentView(activityDashboardBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityDashboardBinding.root)
-        setupUI(activityDashboardBinding.activityDashboardParentLayout, this@DashboardActivity)
-        setSupportActionBar(activityDashboardBinding.myToolbar)
+        binding = ActivityDashboardBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
+        setupUI(binding.activityDashboardParentLayout, this@DashboardActivity)
+        setSupportActionBar(binding.myToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
         supportActionBar?.setTitle(R.string.app_project_name)
-        activityDashboardBinding.myToolbar.setTitleTextColor(Color.WHITE)
-        activityDashboardBinding.myToolbar.setSubtitleTextColor(Color.WHITE)
-        navigationView = activityDashboardBinding.topBarNavigation
+        binding.myToolbar.setTitleTextColor(Color.WHITE)
+        binding.myToolbar.setSubtitleTextColor(Color.WHITE)
+        navigationView = binding.topBarNavigation
         navigationView.labelVisibilityMode = NavigationBarView.LABEL_VISIBILITY_LABELED
-        activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
+        binding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
         service = Service(this)
         tl = findViewById(R.id.tab_layout)
-        activityDashboardBinding.root.viewTreeObserver.addOnGlobalLayoutListener { topBarVisible() }
-        activityDashboardBinding.appBarBell.ivSetting.setOnClickListener {
+        binding.root.viewTreeObserver.addOnGlobalLayoutListener { topBarVisible() }
+        binding.appBarBell.ivSetting.setOnClickListener {
             startActivity(Intent(this, SettingActivity::class.java))
         }
     }
@@ -181,13 +181,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     name = profileDbHandler.userModel?.name
                 }
                 val communityName = settings.getString("communityName", "")
-                activityDashboardBinding.appBarBell.appTitleName.text = if (user?.planetCode == "") {
+                binding.appBarBell.appTitleName.text = if (user?.planetCode == "") {
                     "${getString(R.string.planet)} $communityName"
                 } else {
                     "${getString(R.string.planet)} ${user?.planetCode}"
                 }
             } else {
-                activityDashboardBinding.appBarBell.appTitleName.text = getString(R.string.app_project_name)
+                binding.appBarBell.appTitleName.text = getString(R.string.app_project_name)
             }
         } catch (err: Exception) {
             throw RuntimeException(err)
@@ -253,14 +253,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         } else {
             openCallFragment(BellDashboardFragment())
-            activityDashboardBinding.appBarBell.bellToolbar.visibility = View.VISIBLE
+            binding.appBarBell.bellToolbar.visibility = View.VISIBLE
         }
     }
 
     private fun setupToolbarActions() {
-        activityDashboardBinding.appBarBell.ivSync.setOnClickListener { logSyncInSharedPrefs() }
-        activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
-        activityDashboardBinding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
+        binding.appBarBell.ivSync.setOnClickListener { logSyncInSharedPrefs() }
+        binding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
+        binding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
             handleToolbarMenuItem(item.itemId)
             true
         }
@@ -865,7 +865,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun updateNotificationBadge(count: Int, onClickListener: View.OnClickListener) {
-        val menuItem = activityDashboardBinding.appBarBell.bellToolbar.menu.findItem(R.id.action_notifications)
+        val menuItem = binding.appBarBell.bellToolbar.menu.findItem(R.id.action_notifications)
         val actionView = MenuItemCompat.getActionView(menuItem)
         val smsCountTxt = actionView.findViewById<TextView>(R.id.notification_badge)
         smsCountTxt.text = "$count"
@@ -881,7 +881,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun hideWifi() {
-        val navMenu = activityDashboardBinding.appBarBell.bellToolbar.menu
+        val navMenu = binding.appBarBell.bellToolbar.menu
         navMenu.findItem(R.id.menu_goOnline)
             .setVisible((showBetaFeature(Constants.KEY_SYNC, this)))
     }
@@ -958,8 +958,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun UITheme() {
-        activityDashboardBinding.appBarBell.bellToolbar.visibility = View.VISIBLE
-        activityDashboardBinding.myToolbar.visibility = View.GONE
+        binding.appBarBell.bellToolbar.visibility = View.VISIBLE
+        binding.myToolbar.visibility = View.GONE
         navigationView.visibility = View.GONE
     }
 
@@ -1032,7 +1032,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         result = headerResult?.let {
             DrawerBuilder().withActivity(this).withFullscreen(true).withTranslucentStatusBar(true).withTranslucentNavigationBar(true)
                 .withSliderBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary))
-                .withToolbar(activityDashboardBinding.myToolbar)
+                .withToolbar(binding.myToolbar)
                 .withAccountHeader(it).withHeaderHeight(dimenHolder)
                 .addDrawerItems(*drawerItems).addStickyDrawerItems(*drawerItemsFooter)
                 .withOnDrawerItemClickListener { _: View?, _: Int, drawerItem: IDrawerItem<*, *>? ->
@@ -1266,7 +1266,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun showNotificationDisabledReminder() {
         val snackbar = Snackbar.make(
-            activityDashboardBinding.root,
+            binding.root,
             "Notifications are disabled. You might miss important updates.",
             Snackbar.LENGTH_LONG
         )

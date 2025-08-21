@@ -17,13 +17,13 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
 class MarkdownViewerActivity : AppCompatActivity() {
-    private lateinit var activityMarkdownViewerBinding: ActivityMarkdownViewerBinding
+    private lateinit var binding: ActivityMarkdownViewerBinding
     private var fileName: String? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        activityMarkdownViewerBinding = ActivityMarkdownViewerBinding.inflate(layoutInflater)
-        setContentView(activityMarkdownViewerBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityMarkdownViewerBinding.root)
+        binding = ActivityMarkdownViewerBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
         renderMarkdownFile()
     }
 
@@ -32,11 +32,11 @@ class MarkdownViewerActivity : AppCompatActivity() {
         fileName = markdownOpenIntent.getStringExtra("TOUCHED_FILE")
         if (!fileName.isNullOrEmpty()) {
 
-            activityMarkdownViewerBinding.markdownFileName.text = FileUtils.nameWithoutExtension(fileName)
-            activityMarkdownViewerBinding.markdownFileName.visibility = View.VISIBLE
+            binding.markdownFileName.text = FileUtils.nameWithoutExtension(fileName)
+            binding.markdownFileName.visibility = View.VISIBLE
         } else {
-            activityMarkdownViewerBinding.markdownFileName.text = getString(R.string.message_placeholder, "No file selected")
-            activityMarkdownViewerBinding.markdownFileName.visibility = View.VISIBLE
+            binding.markdownFileName.text = getString(R.string.message_placeholder, "No file selected")
+            binding.markdownFileName.visibility = View.VISIBLE
         }
         lifecycleScope.launch(Dispatchers.IO) {
             try {
@@ -45,7 +45,7 @@ class MarkdownViewerActivity : AppCompatActivity() {
                 if (markdownFile.exists()) {
                     val markdownContent = readMarkdownFile(markdownFile)
                     withContext(Dispatchers.Main) {
-                        setMarkdownText(activityMarkdownViewerBinding.markdownView, markdownContent)
+                        setMarkdownText(binding.markdownView, markdownContent)
                     }
                 } else {
                     withContext(Dispatchers.Main) {
