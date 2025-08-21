@@ -139,11 +139,10 @@ class SettingActivity : AppCompatActivity() {
             autoDownload?.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
                 if (autoDownload.isChecked == true) {
                     defaultPref.edit { putBoolean("beta_auto_download", true) }
-                    val settingActivity = requireActivity() as SettingActivity
-                    settingActivity.databaseService.withRealm { realm ->
+                    (requireActivity() as SettingActivity).databaseService.withRealm { realm ->
                         backgroundDownload(
                             downloadAllFiles(getAllLibraryList(realm)),
-                            requireContext(),
+                            requireContext()
                         )
                     }
                 } else {
