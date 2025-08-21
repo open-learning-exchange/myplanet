@@ -158,14 +158,11 @@ object NotificationUtil {
                 return false
             }
 
-            // Check if notification was already shown in this session
             if (sessionShownNotifications.contains(config.id)) {
                 return false
             }
 
             val notificationId = config.id.hashCode()
-            
-            // Check if notification is already being displayed by checking active notifications
             val activeNotifications = notificationManager.activeNotifications
             val isAlreadyShowing = activeNotifications.any { it.id == notificationId }
             
@@ -371,7 +368,6 @@ object NotificationUtil {
         fun clearNotification(notificationId: String) {
             notificationManager.cancel(notificationId.hashCode())
             activeNotifications.remove(notificationId)
-            // Don't remove from sessionShownNotifications - we want to remember it was shown this session
             saveActiveNotifications()
         }
 

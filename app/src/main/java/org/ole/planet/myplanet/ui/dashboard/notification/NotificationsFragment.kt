@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings.ACTION_INTERNAL_STORAGE_SETTINGS
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -117,17 +116,10 @@ class NotificationsFragment : Fragment() {
                 startActivity(intent)
             }
             "survey" -> {
-                Log.d("okuro", "Survey notification relatedId: ${notification.relatedId}")
                 val currentStepExam = mRealm.where(RealmStepExam::class.java).equalTo("name", notification.relatedId)
                     .findFirst()
-                Log.d("okuro", "Found currentStepExam: ${currentStepExam?.name}, id: ${currentStepExam?.id}")
-                
                 if (currentStepExam != null && activity is OnHomeItemClickListener) {
-                    Log.d("okuro", "Opening survey for step exam: ${currentStepExam.name}")
                     AdapterMySubmission.openSurvey(activity as OnHomeItemClickListener, currentStepExam.id, false, false, "")
-                } else {
-                    Log.d("okuro", "Cannot open survey - currentStepExam is null or activity is not OnHomeItemClickListener")
-                    Log.d("okuro", "Activity type: ${activity?.javaClass?.simpleName}")
                 }
             }
             "task" -> {
@@ -141,7 +133,6 @@ class NotificationsFragment : Fragment() {
                 if (teamId.isNotEmpty()) {
                     if (activity is OnHomeItemClickListener) {
                         val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", teamId)?.findFirst()
-                        Log.d("okuro", "Opening team detail for teamId: $teamId, teamName: ${teamObject?.name}")
                         val f = TeamDetailFragment.newInstance(
                             teamId = teamId,
                             teamName = teamObject?.name ?: "",
@@ -168,8 +159,6 @@ class NotificationsFragment : Fragment() {
                         .findFirst()
 
                     val teamId = joinRequest?.teamId
-                    Log.d("okuro", "Opening join request for teamId: $teamId, joinRequestId: $actualJoinRequestId")
-
                     if (teamId?.isNotEmpty() == true) {
                         val f = TeamDetailFragment()
                         val b = Bundle()

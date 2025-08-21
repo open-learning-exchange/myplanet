@@ -340,24 +340,19 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val notificationType = intent.getStringExtra("notification_type")
             val notificationId = intent.getStringExtra("notification_id")
 
-            // Clear the device notification and mark database notification as read
             notificationId?.let {
                 notificationManager.clearNotification(it)
                 markDatabaseNotificationAsRead(it)
             }
 
-            // Check if this is a summary notification
             val isSummary = notificationId?.startsWith("summary_") ?: false
-
             when {
                 isSummary -> {
-                    // For summary notifications, always go to notifications page
                     openNotificationsList(user?.id ?: "")
                 }
                 notificationType == NotificationUtil.TYPE_SURVEY -> {
                     val surveyId = intent.getStringExtra("surveyId")
                     if (surveyId != null) {
-                        // Navigate to specific survey
                         openCallFragment(SurveyFragment().apply {
                             arguments = Bundle().apply {
                                 putString("surveyId", surveyId)
@@ -370,7 +365,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 notificationType == NotificationUtil.TYPE_TASK -> {
                     val taskId = intent.getStringExtra("taskId")
                     if (taskId != null) {
-                        // Navigate to specific task
                         openMyFragment(TeamFragment().apply {
                             arguments = Bundle().apply {
                                 putString("taskId", taskId)
@@ -584,9 +578,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val fromLogin = intent.getBooleanExtra("from_login", false)
         if (fromLogin || !notificationsShownThisSession) {
             notificationsShownThisSession = true
-            // Add a small delay to ensure notification system is ready
             lifecycleScope.launch {
-                kotlinx.coroutines.delay(1000) // 1 second delay
+                kotlinx.coroutines.delay(1000)
                 checkAndCreateNewNotifications()
             }
         }
@@ -619,17 +612,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         openNotificationsList(userId ?: "")
                     }
 
-                    // Group notifications by type to avoid flooding
                     val groupedNotifications = newNotifications.groupBy { it.type }
                     
                     groupedNotifications.forEach { (type, notifications) ->
                         when {
                             notifications.size == 1 -> {
-                                // Show single notification as-is
                                 notificationManager.showNotification(notifications.first())
                             }
                             notifications.size > 1 -> {
-                                // Create summary notification for multiple notifications of same type
                                 val summaryConfig = createSummaryNotification(type, notifications.size)
                                 notificationManager.showNotification(summaryConfig)
                             }
@@ -645,9 +635,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun markDatabaseNotificationAsRead(notificationId: String) {
         try {
-            val userId = user?.id // Get userId on main thread
-            
-            // For summary notifications, mark all notifications of that type as read
+            val userId = user?.id
             if (notificationId.startsWith("summary_")) {
                 val type = notificationId.removePrefix("summary_")
                 mRealm.executeTransactionAsync { realm ->
@@ -659,7 +647,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         .forEach { it.isRead = true }
                 }
             } else {
-                // For individual notifications, mark specific notification as read
                 mRealm.executeTransactionAsync { realm ->
                     val notification = realm.where(RealmNotification::class.java)
                         .equalTo("id", notificationId)
