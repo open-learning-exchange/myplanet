@@ -27,7 +27,7 @@ open class RealmTeamTask : RealmObject() {
     var isNotified = false
 
     override fun toString(): String {
-        return title!!
+        return title.orEmpty()
     }
 
     companion object {
