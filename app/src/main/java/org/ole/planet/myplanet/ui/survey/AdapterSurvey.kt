@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getRecentSubmissionDate
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
-import org.ole.planet.myplanet.utilities.DiffUtil
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
 class AdapterSurvey(
@@ -48,7 +48,7 @@ class AdapterSurvey(
     }
 
     fun updateData(newList: List<RealmStepExam>) {
-        val diffResult = DiffUtil.calculateDiff(
+        val diffResult = DiffUtils.calculateDiff(
             examList,
             newList,
             areItemsTheSame = { old, new -> old.id == new.id },

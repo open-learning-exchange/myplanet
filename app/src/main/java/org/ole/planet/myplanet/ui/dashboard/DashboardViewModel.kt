@@ -114,8 +114,8 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    suspend fun getPendingSurveysAsync(userId: String?): List<RealmSubmission> {
-        return submissionRepository.getPendingSurveysAsync(userId)
+    suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {
+        return submissionRepository.getPendingSurveys(userId)
     }
 
     suspend fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>): List<String> {
