@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.UrlUtils
 
 open class RealmNews : RealmObject() {
     @PrimaryKey
@@ -141,7 +141,7 @@ open class RealmNews : RealmObject() {
             val message = JsonUtils.getString("message", doc)
             news?.message = message
             val links = extractLinks(message)
-            val baseUrl = Utilities.getUrl()
+            val baseUrl = UrlUtils.getUrl()
             for (link in links) {
                 val concatenatedLink = "$baseUrl/$link"
                 concatenatedLinks.add(concatenatedLink)

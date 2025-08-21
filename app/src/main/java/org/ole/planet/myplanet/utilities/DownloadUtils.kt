@@ -128,7 +128,7 @@ object DownloadUtils {
     fun downloadAllFiles(dbMyLibrary: List<RealmMyLibrary?>): ArrayList<String> {
         val urls = ArrayList<String>()
         for (i in dbMyLibrary.indices) {
-            urls.add(Utilities.getUrl(dbMyLibrary[i]))
+            urls.add(UrlUtils.getUrl(dbMyLibrary[i]))
         }
         return urls
     }
@@ -137,7 +137,7 @@ object DownloadUtils {
     fun downloadFiles(dbMyLibrary: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>): ArrayList<String> {
         val urls = ArrayList<String>()
         for (i in selectedItems.indices) {
-            urls.add(Utilities.getUrl(dbMyLibrary[selectedItems[i]]))
+            urls.add(UrlUtils.getUrl(dbMyLibrary[selectedItems[i]]))
         }
         return urls
     }

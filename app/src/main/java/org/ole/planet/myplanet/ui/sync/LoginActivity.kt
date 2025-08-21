@@ -48,7 +48,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryForma
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.ThemeManager
-import org.ole.planet.myplanet.utilities.Utilities.getUrl
+import org.ole.planet.myplanet.utilities.UrlUtils.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {

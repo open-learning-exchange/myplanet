@@ -80,12 +80,8 @@ class CoursesViewModel @Inject constructor(
 
     suspend fun addCoursesToMyList(courses: List<RealmMyCourse>) {
         try {
-            courses.forEach { course ->
-                val updatedCourse = course.apply {
-                    isMyCourse = true
-                }
-                courseRepository.saveCourse(updatedCourse)
-            }
+            val courseIds = courses.mapNotNull { it.courseId }
+            courseRepository.updateMyCourseFlag(courseIds, true)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -93,12 +89,8 @@ class CoursesViewModel @Inject constructor(
 
     suspend fun removeCoursesFromMyList(courses: List<RealmMyCourse>) {
         try {
-            courses.forEach { course ->
-                val updatedCourse = course.apply {
-                    isMyCourse = false
-                }
-                courseRepository.saveCourse(updatedCourse)
-            }
+            val courseIds = courses.mapNotNull { it.courseId }
+            courseRepository.updateMyCourseFlag(courseIds, false)
         } catch (e: Exception) {
             e.printStackTrace()
         }
