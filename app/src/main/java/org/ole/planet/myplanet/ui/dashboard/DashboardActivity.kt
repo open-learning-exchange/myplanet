@@ -340,37 +340,59 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val notificationType = intent.getStringExtra("notification_type")
             val notificationId = intent.getStringExtra("notification_id")
 
+            // Clear the device notification and mark database notification as read
             notificationId?.let {
-                notificationManager.clearNotification("${notificationType}_$it")
+                notificationManager.clearNotification(it)
+                markDatabaseNotificationAsRead(it)
             }
 
-            when (notificationType) {
-                NotificationUtil.TYPE_SURVEY -> {
+            // Check if this is a summary notification
+            val isSummary = notificationId?.startsWith("summary_") ?: false
+
+            when {
+                isSummary -> {
+                    // For summary notifications, always go to notifications page
+                    openNotificationsList(user?.id ?: "")
+                }
+                notificationType == NotificationUtil.TYPE_SURVEY -> {
                     val surveyId = intent.getStringExtra("surveyId")
-                    openCallFragment(SurveyFragment().apply {
-                        arguments = Bundle().apply {
-                            surveyId?.let { putString("surveyId", it) }
-                        }
-                    })
+                    if (surveyId != null) {
+                        // Navigate to specific survey
+                        openCallFragment(SurveyFragment().apply {
+                            arguments = Bundle().apply {
+                                putString("surveyId", surveyId)
+                            }
+                        })
+                    } else {
+                        openNotificationsList(user?.id ?: "")
+                    }
                 }
-                NotificationUtil.TYPE_TASK -> {
+                notificationType == NotificationUtil.TYPE_TASK -> {
                     val taskId = intent.getStringExtra("taskId")
-                    openMyFragment(TeamFragment().apply {
-                        arguments = Bundle().apply {
-                            taskId?.let { putString("taskId", it) }
-                        }
-                    })
+                    if (taskId != null) {
+                        // Navigate to specific task
+                        openMyFragment(TeamFragment().apply {
+                            arguments = Bundle().apply {
+                                putString("taskId", taskId)
+                            }
+                        })
+                    } else {
+                        openNotificationsList(user?.id ?: "")
+                    }
                 }
-                NotificationUtil.TYPE_STORAGE -> {
+                notificationType == NotificationUtil.TYPE_STORAGE -> {
                     startActivity(Intent(this, SettingActivity::class.java))
                 }
-                NotificationUtil.TYPE_JOIN_REQUEST -> {
-                    val teamName = intent.getStringExtra("teamName")
-                    openMyFragment(TeamFragment().apply {
-                        arguments = Bundle().apply {
-                            teamName?.let { putString("teamName", it) }
-                        }
-                    })
+                notificationType == NotificationUtil.TYPE_JOIN_REQUEST -> {
+                    val requestId = intent.getStringExtra("requestId")
+                    if (requestId != null) {
+                        handleJoinRequestNavigation(requestId)
+                    } else {
+                        openNotificationsList(user?.id ?: "")
+                    }
+                }
+                notificationType == NotificationUtil.TYPE_RESOURCE -> {
+                    openMyFragment(ResourcesFragment())
                 }
                 else -> {
                     openNotificationsList(user?.id ?: "")
@@ -618,6 +640,35 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     e.printStackTrace()
                 }
             }
+        }
+    }
+
+    private fun markDatabaseNotificationAsRead(notificationId: String) {
+        try {
+            val userId = user?.id // Get userId on main thread
+            
+            // For summary notifications, mark all notifications of that type as read
+            if (notificationId.startsWith("summary_")) {
+                val type = notificationId.removePrefix("summary_")
+                mRealm.executeTransactionAsync { realm ->
+                    realm.where(RealmNotification::class.java)
+                        .equalTo("userId", userId)
+                        .equalTo("type", type)
+                        .equalTo("isRead", false)
+                        .findAll()
+                        .forEach { it.isRead = true }
+                }
+            } else {
+                // For individual notifications, mark specific notification as read
+                mRealm.executeTransactionAsync { realm ->
+                    val notification = realm.where(RealmNotification::class.java)
+                        .equalTo("id", notificationId)
+                        .findFirst()
+                    notification?.isRead = true
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
