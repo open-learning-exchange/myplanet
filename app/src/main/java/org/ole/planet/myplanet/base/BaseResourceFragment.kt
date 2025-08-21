@@ -18,14 +18,17 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
@@ -51,6 +54,7 @@ import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.getProgressDialog
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
+import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadFiles
 import org.ole.planet.myplanet.utilities.Utilities
@@ -59,7 +63,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUserModel? = null
-    lateinit var mRealm: Realm
+    protected lateinit var mRealm: Realm
     lateinit var profileDbHandler: UserProfileDbHandler
     var editor: SharedPreferences.Editor? = null
     var lv: CheckboxListView? = null
@@ -72,9 +76,15 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var submissionRepository: SubmissionRepository
     @Inject
+    lateinit var databaseService: DatabaseService
+    @Inject
     @AppPreferences
     lateinit var settings: SharedPreferences
     private var resourceNotFoundDialog: AlertDialog? = null
+
+    protected fun isRealmInitialized(): Boolean {
+        return ::mRealm.isInitialized && !mRealm.isClosed
+    }
 
     private fun isFragmentActive(): Boolean {
         return isAdded && activity != null &&
@@ -98,10 +108,12 @@ abstract class BaseResourceFragment : Fragment() {
 
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            val list = libraryRepository.getLibraryListForUser(
-                settings.getString("userId", "--")
-            )
-            showDownloadDialog(list)
+            this@BaseResourceFragment.lifecycleScope.launch {
+                val list = libraryRepository.getLibraryListForUser(
+                    settings.getString("userId", "--")
+                )
+                showDownloadDialog(list)
+            }
         }
     }
 
@@ -180,16 +192,16 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun showPendingSurveyDialog() {
         model = UserProfileDbHandler(requireContext()).userModel
-        val list: List<RealmSubmission> = submissionRepository.getPendingSurveys(model?.id)
-        if (list.isEmpty()) {
-            return
+        viewLifecycleOwner.lifecycleScope.launch {
+            val list = submissionRepository.getPendingSurveys(model?.id)
+            if (list.isEmpty()) return@launch
+            val exams = getExamMap(mRealm, list)
+            val arrayAdapter = createSurveyAdapter(list, exams)
+            AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
+                .setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
+                    AdapterMySubmission.openSurvey(homeItemClickListener, list[i].id, true, false, "")
+                }.setPositiveButton(R.string.dismiss, null).show()
         }
-        val exams = getExamMap(mRealm, list)
-        val arrayAdapter = createSurveyAdapter(list, exams)
-        AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
-            .setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
-                AdapterMySubmission.openSurvey(homeItemClickListener, list[i].id, true, false, "")
-            }.setPositiveButton(R.string.dismiss, null).show()
     }
 
     private fun createSurveyAdapter(
@@ -246,7 +258,7 @@ abstract class BaseResourceFragment : Fragment() {
                 if (urls.isNotEmpty()) {
                     try {
                         showProgressDialog()
-                        Utilities.openDownloadService(activity, urls, false)
+                        DownloadUtils.openDownloadService(activity, urls, false)
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
@@ -314,7 +326,7 @@ abstract class BaseResourceFragment : Fragment() {
         bManager.registerReceiver(resourceNotFoundReceiver, resourceNotFoundFilter)
     }
 
-    fun getLibraryList(mRealm: Realm): List<RealmMyLibrary> {
+    suspend fun getLibraryList(mRealm: Realm): List<RealmMyLibrary> {
         return libraryRepository.getLibraryListForUser(
             settings.getString("userId", "--")
         )
@@ -322,7 +334,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = userRepository.getRealm()
+        mRealm = databaseService.realmInstance
         prgDialog = getProgressDialog(requireActivity())
         editor = settings.edit()
     }
@@ -387,6 +399,17 @@ abstract class BaseResourceFragment : Fragment() {
         Utilities.toast(activity, getString(R.string.added_to_my_library))
     }
 
+    override fun onDestroy() {
+        if (isRealmInitialized()) {
+            mRealm.removeAllChangeListeners()
+            if (mRealm.isInTransaction) {
+                mRealm.cancelTransaction()
+            }
+            mRealm.close()
+        }
+        super.onDestroy()
+    }
+
     companion object {
         var auth = ""
 
@@ -402,7 +425,7 @@ abstract class BaseResourceFragment : Fragment() {
             Service(context).isPlanetAvailable(object : PlanetAvailableListener {
                 override fun isAvailable() {
                     if (urls.isNotEmpty()) {
-                        Utilities.openDownloadService(context, urls, false)
+                        DownloadUtils.openDownloadService(context, urls, false)
                     }
                 }
 

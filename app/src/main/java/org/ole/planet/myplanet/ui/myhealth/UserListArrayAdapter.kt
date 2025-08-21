@@ -43,7 +43,7 @@ class UserListArrayAdapter(activity: Activity, val view: Int, var list: List<Rea
 
         if (!TextUtils.isEmpty(um?.userImage)) {
             holder.image?.let {
-                Glide.with(context)
+                Glide.with(it.context)
                     .load(um?.userImage)
                     .placeholder(R.drawable.profile)
                     .error(R.drawable.profile)

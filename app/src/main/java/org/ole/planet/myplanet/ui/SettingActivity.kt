@@ -21,7 +21,6 @@ import androidx.preference.Preference.OnPreferenceClickListener
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -160,7 +159,6 @@ class SettingActivity : AppCompatActivity() {
         }
 
         private fun clearDataButtonInit() {
-            val mRealm = (requireActivity() as SettingActivity).databaseService.realmInstance
             val preference = findPreference<Preference>("reset_app")
             if (preference != null) {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {
@@ -180,13 +178,19 @@ class SettingActivity : AppCompatActivity() {
                 prefFreeUp.onPreferenceClickListener = OnPreferenceClickListener {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure_want_to_delete_all_the_files)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            mRealm.executeTransactionAsync({ realm: Realm ->
-                                val libraries = realm.where(RealmMyLibrary::class.java).findAll()
-                                for (library in libraries) library.resourceOffline = false }, {
-                                val f = File(Utilities.SD_PATH)
-                                deleteRecursive(f)
-                                Utilities.toast(requireActivity(), R.string.data_cleared.toString()) }) {
-                                Utilities.toast(requireActivity(), R.string.unable_to_clear_files.toString())
+                            (requireActivity() as SettingActivity).databaseService.withRealm { realm ->
+                                realm.executeTransactionAsync({ bgRealm ->
+                                    val libraries = bgRealm.where(RealmMyLibrary::class.java).findAll()
+                                    for (library in libraries) {
+                                        library.resourceOffline = false
+                                    }
+                                }, {
+                                    val f = File(Utilities.SD_PATH)
+                                    deleteRecursive(f)
+                                    Utilities.toast(requireActivity(), R.string.data_cleared.toString())
+                                }) {
+                                    Utilities.toast(requireActivity(), R.string.unable_to_clear_files.toString())
+                                }
                             }
                         }.setNegativeButton("No", null).show()
                     false
@@ -244,10 +248,10 @@ class SettingActivity : AppCompatActivity() {
         }
 
         override fun onDestroy() {
-            super.onDestroy()
             if (this::profileDbHandler.isInitialized) {
                 profileDbHandler.onDestroy()
             }
+            super.onDestroy()
         }
 
         companion object {

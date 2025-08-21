@@ -14,13 +14,13 @@ import android.widget.RadioButton
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Utilities
@@ -247,7 +248,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             checkAvailableServer(settings)
             val activity = requireActivity()
             if (activity is AppCompatActivity) {
-                activity.supportFragmentManager.popBackStack()
+                NavigationHelper.popBackStack(activity.supportFragmentManager)
             }
         }
     }
@@ -257,7 +258,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
-        CoroutineScope(Dispatchers.IO).launch {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
             val alternativeAvailable =
                 mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
@@ -312,6 +313,13 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         dpd.setTitle(getString(R.string.select_date_of_birth))
         dpd.datePicker.maxDate = now.timeInMillis
         dpd.show()
+    }
+
+    override fun onDestroyView() {
+        if (this::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
+        super.onDestroyView()
     }
 
     override val key: String

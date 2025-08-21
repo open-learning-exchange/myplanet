@@ -3,49 +3,62 @@ package org.ole.planet.myplanet.repository
 import io.realm.RealmResults
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.findCopyByField
+import org.ole.planet.myplanet.datamanager.queryList
 import org.ole.planet.myplanet.model.RealmMyLibrary
 
 class LibraryRepositoryImpl @Inject constructor(
     private val databaseService: DatabaseService
 ) : LibraryRepository {
 
-    override suspend fun getAllLibraryItemsAsync(): List<RealmMyLibrary> {
+    override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmMyLibrary::class.java).findAll()
+            realm.queryList(RealmMyLibrary::class.java)
         }
     }
 
-    override suspend fun getLibraryItemByIdAsync(id: String): RealmMyLibrary? {
+    override suspend fun getLibraryItemById(id: String): RealmMyLibrary? {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmMyLibrary::class.java)
-                .equalTo("id", id)
-                .findFirst()
+            realm.findCopyByField(RealmMyLibrary::class.java, "id", id)
         }
     }
 
-    override suspend fun getOfflineLibraryItemsAsync(): List<RealmMyLibrary> {
+    override suspend fun getOfflineLibraryItems(): List<RealmMyLibrary> {
         return databaseService.withRealmAsync { realm ->
-            realm.where(RealmMyLibrary::class.java)
-                .equalTo("resourceOffline", true)
-                .findAll()
+            realm.queryList(RealmMyLibrary::class.java) {
+                equalTo("resourceOffline", true)
+            }
         }
     }
 
-    override suspend fun getLibraryListForUserAsync(userId: String?): List<RealmMyLibrary> {
+    override suspend fun getLibraryListForUser(userId: String?): List<RealmMyLibrary> {
         return databaseService.withRealmAsync { realm ->
             val results = realm.where(RealmMyLibrary::class.java)
                 .equalTo("isPrivate", false)
                 .findAll()
-            filterLibrariesNeedingUpdate(results).filter { it.userId?.contains(userId) == true }
+            val filteredList =
+                filterLibrariesNeedingUpdate(results).filter { it.userId?.contains(userId) == true }
+            realm.copyFromRealm(filteredList)
         }
     }
 
-    override suspend fun getAllLibraryListAsync(): List<RealmMyLibrary> {
+    override suspend fun getAllLibraryList(): List<RealmMyLibrary> {
         return databaseService.withRealmAsync { realm ->
             val results = realm.where(RealmMyLibrary::class.java)
                 .equalTo("resourceOffline", false)
                 .findAll()
-            filterLibrariesNeedingUpdate(results)
+            val filteredList = filterLibrariesNeedingUpdate(results)
+            realm.copyFromRealm(filteredList)
+        }
+    }
+
+    override suspend fun getCourseLibraryItems(courseIds: List<String>): List<RealmMyLibrary> {
+        return databaseService.withRealmAsync { realm ->
+            realm.queryList(RealmMyLibrary::class.java) {
+                `in`("courseId", courseIds.toTypedArray())
+                equalTo("resourceOffline", false)
+                isNotNull("resourceLocalAddress")
+            }
         }
     }
 
@@ -74,42 +87,6 @@ class LibraryRepositoryImpl @Inject constructor(
     }
 
     private fun filterLibrariesNeedingUpdate(results: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {
-        val libraries = mutableListOf<RealmMyLibrary>()
-        for (lib in results) {
-            if (lib.needToUpdate()) {
-                libraries.add(lib)
-            }
-        }
-        return libraries
-    }
-
-    override fun getAllLibraryItems(): List<RealmMyLibrary> {
-        return databaseService.realmInstance.where(RealmMyLibrary::class.java).findAll()
-    }
-
-    override fun getLibraryItemById(id: String): RealmMyLibrary? {
-        return databaseService.realmInstance.where(RealmMyLibrary::class.java)
-            .equalTo("id", id)
-            .findFirst()
-    }
-
-    override fun getOfflineLibraryItems(): List<RealmMyLibrary> {
-        return databaseService.realmInstance.where(RealmMyLibrary::class.java)
-            .equalTo("resourceOffline", true)
-            .findAll()
-    }
-
-    override fun getLibraryListForUser(userId: String?): List<RealmMyLibrary> {
-        val results = databaseService.realmInstance.where(RealmMyLibrary::class.java)
-            .equalTo("isPrivate", false)
-            .findAll()
-        return filterLibrariesNeedingUpdate(results).filter { it.userId?.contains(userId) == true }
-    }
-
-    override fun getAllLibraryList(): List<RealmMyLibrary> {
-        val results = databaseService.realmInstance.where(RealmMyLibrary::class.java)
-            .equalTo("resourceOffline", false)
-            .findAll()
-        return filterLibrariesNeedingUpdate(results)
+        return results.filter { it.needToUpdate() }
     }
 }

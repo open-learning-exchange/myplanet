@@ -52,7 +52,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentCourseStepBinding = FragmentCourseStepBinding.inflate(inflater, container, false)
-        cRealm = userRepository.getRealm()
+        cRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
         fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
         fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
@@ -79,10 +79,10 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         if (this::cRealm.isInitialized && !cRealm.isClosed) {
             cRealm.close()
         }
+        super.onDestroy()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

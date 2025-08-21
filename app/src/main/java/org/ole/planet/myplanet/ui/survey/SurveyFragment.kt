@@ -181,8 +181,13 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     private fun setupListeners() {
         addNewSurvey.setOnClickListener {}
 
+        var isSpinnerInitialized = false
         spn.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
+                if (!isSpinnerInitialized) {
+                    isSpinnerInitialized = true
+                    return
+                }
                 when (i) {
                     0 -> adapter.sortByDate(false)
                     1 -> adapter.sortByDate(true)
@@ -290,11 +295,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
 
     private fun <T> safeCastList(items: List<Any?>, clazz: Class<T>): List<T> {
         return items.mapNotNull { it?.takeIf(clazz::isInstance)?.let(clazz::cast) }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        mRealm.close()
     }
 
     companion object {

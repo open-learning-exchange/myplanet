@@ -15,7 +15,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.service.UploadManager
 
-class SyncTimeLogger private constructor() {
+object SyncTimeLogger {
     private val processTimes = ConcurrentHashMap<String, Long>()
     private val processItemCounts = ConcurrentHashMap<String, Int>()
     private var startTime: Long = 0
@@ -149,19 +149,4 @@ class SyncTimeLogger private constructor() {
         }
     }
 
-    companion object {
-        private var instance: SyncTimeLogger? = null
-
-        @JvmStatic
-        fun getInstance(): SyncTimeLogger {
-            if (instance == null) {
-                synchronized(SyncTimeLogger::class.java) {
-                    if (instance == null) {
-                        instance = SyncTimeLogger()
-                    }
-                }
-            }
-            return instance!!
-        }
-    }
 }

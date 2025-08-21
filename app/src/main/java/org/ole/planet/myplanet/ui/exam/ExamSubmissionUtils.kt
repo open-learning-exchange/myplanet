@@ -21,21 +21,44 @@ object ExamSubmissionUtils {
         index: Int,
         total: Int
     ): Boolean {
-        var isCorrect = true
-        realm.executeTransaction { r ->
-            val answer = createOrRetrieveAnswer(r, submission, question)
-            populateAnswer(answer, question, ans, listAns, otherText, otherVisible)
-            if (type == "exam") {
-                isCorrect = ExamAnswerUtils.checkCorrectAnswer(ans, listAns, question)
-                answer.isPassed = isCorrect
-                answer.grade = 1
-                if (!isCorrect) {
-                    answer.mistakes = (answer.mistakes ?: 0) + 1
-                }
-            }
-            updateSubmissionStatus(submission, index, total, type)
+        val submissionId = try {
+            submission?.id
+        } catch (e: IllegalStateException) {
+            null
         }
-        return if (type == "exam") isCorrect else true
+        
+        val questionId = question.id
+        realm.executeTransactionAsync { r ->
+            val realmSubmission = if (submissionId != null) {
+                r.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
+            } else {
+                r.where(RealmSubmission::class.java)
+                    .equalTo("status", "pending")
+                    .findAll().lastOrNull()
+            }
+            
+            val realmQuestion = r.where(RealmExamQuestion::class.java).equalTo("id", questionId).findFirst()
+            
+            if (realmSubmission != null && realmQuestion != null) {
+                val answer = createOrRetrieveAnswer(r, realmSubmission, realmQuestion)
+                populateAnswer(answer, realmQuestion, ans, listAns, otherText, otherVisible)
+                if (type == "exam") {
+                    val isCorrect = ExamAnswerUtils.checkCorrectAnswer(ans, listAns, realmQuestion)
+                    answer.isPassed = isCorrect
+                    answer.grade = 1
+                    if (!isCorrect) {
+                        answer.mistakes = answer.mistakes + 1
+                    }
+                }
+                updateSubmissionStatus(realmSubmission, index, total, type)
+            }
+        }
+
+        return if (type == "exam") {
+            ExamAnswerUtils.checkCorrectAnswer(ans, listAns, question)
+        } else {
+            true
+        }
     }
 
     private fun createOrRetrieveAnswer(

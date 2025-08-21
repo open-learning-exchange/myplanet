@@ -28,16 +28,16 @@ import org.ole.planet.myplanet.utilities.Utilities
 class NewsDetailActivity : BaseActivity() {
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
-    private lateinit var activityNewsDetailBinding: ActivityNewsDetailBinding
+    private lateinit var binding: ActivityNewsDetailBinding
     var news: RealmNews? = null
     lateinit var realm: Realm
     private val gson = Gson()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        activityNewsDetailBinding = ActivityNewsDetailBinding.inflate(layoutInflater)
-        setContentView(activityNewsDetailBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityNewsDetailBinding.root)
-        setSupportActionBar(activityNewsDetailBinding.toolbar)
+        binding = ActivityNewsDetailBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
+        setSupportActionBar(binding.toolbar)
         initActionBar()
         realm = databaseService.realmInstance
         val id = intent.getStringExtra("newsId")
@@ -83,8 +83,8 @@ class NewsDetailActivity : BaseActivity() {
             "\n",
             "<div/><br/><div style=\" word-wrap: break-word;page-break-after: always;  word-spacing: 2px;\" >"
         )
-        activityNewsDetailBinding.tvDetail.settings.layoutAlgorithm = WebSettings.LayoutAlgorithm.SINGLE_COLUMN
-        activityNewsDetailBinding.tvDetail.loadDataWithBaseURL(
+        binding.tvDetail.settings.layoutAlgorithm = WebSettings.LayoutAlgorithm.SINGLE_COLUMN
+        binding.tvDetail.loadDataWithBaseURL(
             null,
             "<html><body><div style=\" word-wrap: break-word;  word-spacing: 2px;\" >$msg</div></body></html>",
             "text/html",
@@ -97,9 +97,9 @@ class NewsDetailActivity : BaseActivity() {
         var msg: String? = news?.message
         try {
             val imgObject = gson.fromJson(news?.imageUrls?.get(0), JsonObject::class.java)
-            activityNewsDetailBinding.img.visibility = View.VISIBLE
+            binding.img.visibility = View.VISIBLE
             Glide.with(this@NewsDetailActivity)
-                .load(File(JsonUtils.getString("imageUrl", imgObject))).into(activityNewsDetailBinding.img)
+                .load(File(JsonUtils.getString("imageUrl", imgObject))).into(binding.img)
             news?.imageUrls?.forEach {
                 val imageObject = gson.fromJson(it, JsonObject::class.java)
                 msg += "<br/><img width=\"50%\" src=\"file://" + JsonUtils.getString(
@@ -121,11 +121,19 @@ class NewsDetailActivity : BaseActivity() {
             if (library != null) {
                 Glide.with(this)
                     .load(File(Utilities.SD_PATH, library.id + "/" + library.resourceLocalAddress))
-                    .into(activityNewsDetailBinding.img)
-                activityNewsDetailBinding.img.visibility = View.VISIBLE
+                    .into(binding.img)
+                binding.img.visibility = View.VISIBLE
                 return
             }
         }
-        activityNewsDetailBinding.img.visibility = View.GONE
+        binding.img.visibility = View.GONE
+    }
+
+    override fun onDestroy() {
+        if (::realm.isInitialized && !realm.isClosed) {
+            realm.removeAllChangeListeners()
+            realm.close()
+        }
+        super.onDestroy()
     }
 }

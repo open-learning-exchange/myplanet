@@ -24,7 +24,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class FeedbackFragment : DialogFragment(), View.OnClickListener {
-    private lateinit var fragmentFeedbackBinding: FragmentFeedbackBinding
+    private var _binding: FragmentFeedbackBinding? = null
+    private val binding get() = _binding!!
     private lateinit var mRealm: Realm
     @Inject
     lateinit var databaseService: DatabaseService
@@ -46,20 +47,25 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentFeedbackBinding = FragmentFeedbackBinding.inflate(inflater, container, false)
+        _binding = FragmentFeedbackBinding.inflate(inflater, container, false)
         mRealm = databaseService.realmInstance
         model = UserProfileDbHandler(requireContext()).userModel
         user = model?.name
-        fragmentFeedbackBinding.btnSubmit.setOnClickListener(this)
-        fragmentFeedbackBinding.btnCancel.setOnClickListener(this)
-        return fragmentFeedbackBinding.root
+        binding.btnSubmit.setOnClickListener(this)
+        binding.btnCancel.setOnClickListener(this)
+        return binding.root
+    }
+
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        super.onDestroy()
     }
 
     override fun onClick(view: View) {
@@ -72,19 +78,19 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     }
 
     private fun validateAndSaveData() {
-        val message = fragmentFeedbackBinding.etMessage.text.toString().trim { it <= ' ' }
+        val message = binding.etMessage.text.toString().trim { it <= ' ' }
         if (message.isEmpty()) {
-            fragmentFeedbackBinding.tlMessage.error = getString(R.string.please_enter_feedback)
+            binding.tlMessage.error = getString(R.string.please_enter_feedback)
             return
         }
-        val rbUrgent = requireView().findViewById<RadioButton>(fragmentFeedbackBinding.rgUrgent.checkedRadioButtonId)
-        val rbType = requireView().findViewById<RadioButton>(fragmentFeedbackBinding.rgType.checkedRadioButtonId)
+        val rbUrgent = requireView().findViewById<RadioButton>(binding.rgUrgent.checkedRadioButtonId)
+        val rbType = requireView().findViewById<RadioButton>(binding.rgType.checkedRadioButtonId)
         if (rbUrgent == null) {
-            fragmentFeedbackBinding.tlUrgent.error = getString(R.string.feedback_priority_is_required)
+            binding.tlUrgent.error = getString(R.string.feedback_priority_is_required)
             return
         }
         if (rbType == null) {
-            fragmentFeedbackBinding.tlType.error = getString(R.string.feedback_type_is_required)
+            binding.tlType.error = getString(R.string.feedback_type_is_required)
             return
         }
         val urgent = rbUrgent.text.toString()
@@ -117,9 +123,9 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     }
 
     private fun clearError() {
-        fragmentFeedbackBinding.tlUrgent.error = ""
-        fragmentFeedbackBinding.tlType.error = ""
-        fragmentFeedbackBinding.tlMessage.error = ""
+        binding.tlUrgent.error = ""
+        binding.tlType.error = ""
+        binding.tlMessage.error = ""
     }
 
     private fun saveData(realm: Realm, urgent: String, type: String, message: String) {

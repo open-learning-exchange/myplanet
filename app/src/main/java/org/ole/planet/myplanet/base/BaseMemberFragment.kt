@@ -28,7 +28,7 @@ abstract class BaseMemberFragment : BaseTeamFragment() {
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
         _binding = null
+        super.onDestroyView()
     }
 }

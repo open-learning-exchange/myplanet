@@ -3,30 +3,30 @@ package org.ole.planet.myplanet.ui.courses
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.util.Calendar
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmRating
-import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.repository.CourseProgressRepository
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.RatingRepository
+import org.ole.planet.myplanet.repository.SearchRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
 @HiltViewModel
 class CoursesViewModel @Inject constructor(
-    private val databaseService: DatabaseService,
     private val courseRepository: CourseRepository,
     private val libraryRepository: LibraryRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val ratingRepository: RatingRepository,
+    private val courseProgressRepository: CourseProgressRepository,
+    private val searchRepository: SearchRepository
 ) : ViewModel() {
 
     private val _coursesState = MutableStateFlow<CoursesUiState>(CoursesUiState.Loading)
@@ -64,8 +64,8 @@ class CoursesViewModel @Inject constructor(
                     courses
                 }
                 
-                val ratings = getRatings("course", userId)
-                val progress = getCourseProgress(userId)
+                val ratings = ratingRepository.getRatings("course", userId)
+                val progress = courseProgressRepository.getCourseProgress(userId)
                 
                 _coursesState.value = CoursesUiState.Success(
                     courses = filteredCourses,
@@ -80,12 +80,8 @@ class CoursesViewModel @Inject constructor(
 
     suspend fun addCoursesToMyList(courses: List<RealmMyCourse>) {
         try {
-            courses.forEach { course ->
-                val updatedCourse = course.apply {
-                    isMyCourse = true
-                }
-                courseRepository.saveCourse(updatedCourse)
-            }
+            val courseIds = courses.mapNotNull { it.courseId }
+            courseRepository.updateMyCourseFlag(courseIds, true)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -93,12 +89,8 @@ class CoursesViewModel @Inject constructor(
 
     suspend fun removeCoursesFromMyList(courses: List<RealmMyCourse>) {
         try {
-            courses.forEach { course ->
-                val updatedCourse = course.apply {
-                    isMyCourse = false
-                }
-                courseRepository.saveCourse(updatedCourse)
-            }
+            val courseIds = courses.mapNotNull { it.courseId }
+            courseRepository.updateMyCourseFlag(courseIds, false)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -106,46 +98,13 @@ class CoursesViewModel @Inject constructor(
 
     suspend fun getCourseLibraryItems(courseIds: List<String>): List<RealmMyLibrary> {
         return try {
-            databaseService.withRealmAsync { realm ->
-                realm.where(RealmMyLibrary::class.java)
-                    .`in`("courseId", courseIds.toTypedArray())
-                    .equalTo("resourceOffline", false)
-                    .isNotNull("resourceLocalAddress")
-                    .findAll()
-            }
+            libraryRepository.getCourseLibraryItems(courseIds)
         } catch (e: Exception) {
             emptyList()
         }
     }
 
-    private suspend fun getRatings(type: String, userId: String?): Map<String, Int> {
-        return try {
-            databaseService.withRealmAsync { realm ->
-                val ratings = realm.where(RealmRating::class.java)
-                    .equalTo("type", type)
-                    .equalTo("userId", userId)
-                    .findAll()
-                
-                ratings.associate { (it.item ?: "") to (it.rate?.toInt() ?: 0) }
-            }
-        } catch (e: Exception) {
-            emptyMap()
-        }
-    }
-
-    private suspend fun getCourseProgress(userId: String?): Map<String, RealmCourseProgress> {
-        return try {
-            databaseService.withRealmAsync { realm ->
-                val progressList = realm.where(RealmCourseProgress::class.java)
-                    .equalTo("userId", userId)
-                    .findAll()
-                
-                progressList.associate { (it.courseId ?: "") to it }
-            }
-        } catch (e: Exception) {
-            emptyMap()
-        }
-    }
+    // Ratings and course progress retrieval are handled by repositories
 
     suspend fun saveSearchActivity(
         userId: String?,
@@ -157,27 +116,15 @@ class CoursesViewModel @Inject constructor(
         subjectLevel: String
     ) {
         try {
-            databaseService.executeTransactionAsync { realm ->
-                val activity = realm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
-                activity.user = userId ?: ""
-                activity.time = Calendar.getInstance().timeInMillis
-                activity.createdOn = userPlanetCode ?: ""
-                activity.parentCode = userParentCode ?: ""
-                activity.text = searchText
-                activity.type = "courses"
-                
-                // Create filter object
-                val filter = com.google.gson.JsonObject()
-                val tagsArray = com.google.gson.JsonArray()
-                tags.forEach { tag ->
-                    tagsArray.add(tag.name)
-                }
-                filter.add("tags", tagsArray)
-                filter.addProperty("doc.gradeLevel", gradeLevel)
-                filter.addProperty("doc.subjectLevel", subjectLevel)
-                
-                activity.filter = com.google.gson.Gson().toJson(filter)
-            }
+            searchRepository.saveSearchActivity(
+                userId,
+                userPlanetCode,
+                userParentCode,
+                searchText,
+                tags,
+                gradeLevel,
+                subjectLevel
+            )
         } catch (e: Exception) {
             e.printStackTrace()
         }

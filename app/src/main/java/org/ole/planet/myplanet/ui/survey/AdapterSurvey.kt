@@ -5,11 +5,9 @@ import android.content.SharedPreferences
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import io.realm.Realm
-import java.util.Collections
 import java.util.UUID
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
@@ -25,6 +23,7 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getRecentSubmissionDate
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
 class AdapterSurvey(
@@ -49,8 +48,12 @@ class AdapterSurvey(
     }
 
     fun updateData(newList: List<RealmStepExam>) {
-        val diffCallback = SurveyDiffCallback(examList, newList)
-        val diffResult = DiffUtil.calculateDiff(diffCallback)
+        val diffResult = DiffUtils.calculateDiff(
+            examList,
+            newList,
+            areItemsTheSame = { old, new -> old.id == new.id },
+            areContentsTheSame = { old, new -> old == new }
+        )
         examList = newList
         diffResult.dispatchUpdatesTo(this)
     }
@@ -69,19 +72,15 @@ class AdapterSurvey(
     }
 
     private fun sortSurveyList(isAscend: Boolean, list: List<RealmStepExam> = examList) {
-        val list = list.toList()
-        Collections.sort(list) { survey1, survey2 ->
-            if (isAscend) {
-                survey1?.createdDate!!.compareTo(survey2?.createdDate!!)
-            } else {
-                survey2?.createdDate!!.compareTo(survey1?.createdDate!!)
-            }
+        examList = if (isAscend) {
+            list.sortedBy { it.createdDate }
+        } else {
+            list.sortedByDescending { it.createdDate }
         }
-        examList = list
     }
 
     fun sortByDate(isAscend: Boolean) {
-        sortType = if (isAscend) SurveySortType.DATE_DESC else SurveySortType.DATE_ASC
+        sortType = if (isAscend) SurveySortType.DATE_ASC else SurveySortType.DATE_DESC
         sortSurveyList(isAscend)
         notifyDataSetChanged()
     }
@@ -221,19 +220,21 @@ class AdapterSurvey(
             }
 
             val adoptionId = "${UUID.randomUUID()}"
+            val examId = exam.id
+            val userId = userModel?.id
 
-            mRealm.executeTransaction { realm ->
+            mRealm.executeTransactionAsync({ realm ->
                 val existingAdoption = realm.where(RealmSubmission::class.java)
-                    .equalTo("userId", userModel?.id)
-                    .equalTo("parentId", exam.id)
+                    .equalTo("userId", userId)
+                    .equalTo("parentId", examId)
                     .equalTo("status", "")
                     .findFirst()
 
                 if (existingAdoption == null) {
                     realm.createObject(RealmSubmission::class.java, adoptionId).apply {
-                        parentId = exam.id
+                        parentId = examId
                         parent = parentJsonString
-                        userId = userModel?.id
+                        this.userId = userId
                         user = userJsonString
                         type = "survey"
                         status = ""
@@ -251,30 +252,19 @@ class AdapterSurvey(
                         }
                     }
                 }
-            }
+            }, {
+                adoptedSurveyIds.add("$examId")
+                val position = examList.indexOfFirst { it.id == examId }
+                if (position != -1) {
+                    notifyItemChanged(position)
+                }
 
-            adoptedSurveyIds.add("${exam.id}")
-
-            val position = examList.indexOfFirst { it.id == exam.id }
-            if (position != -1) {
-                notifyItemChanged(position)
-            }
-
-            Snackbar.make(binding.root, context.getString(R.string.survey_adopted_successfully), Snackbar.LENGTH_LONG).show()
-            surveyAdoptListener.onSurveyAdopted()
+                Snackbar.make(binding.root, context.getString(R.string.survey_adopted_successfully), Snackbar.LENGTH_LONG).show()
+                surveyAdoptListener.onSurveyAdopted()
+            }, {
+                Snackbar.make(binding.root, context.getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
+            })
         }
-    }
-}
-
-class SurveyDiffCallback(private val oldList: List<RealmStepExam>, private val newList: List<RealmStepExam>) : DiffUtil.Callback() {
-    override fun getOldListSize(): Int = oldList.size
-    override fun getNewListSize(): Int = newList.size
-    override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-        return oldList[oldItemPosition].id == newList[newItemPosition].id
-    }
-
-    override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-        return oldList[oldItemPosition] == newList[newItemPosition]
     }
 }
 

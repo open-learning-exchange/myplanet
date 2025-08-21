@@ -15,7 +15,6 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import dagger.hilt.android.HiltAndroidApp
-import io.realm.Realm
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Date
@@ -33,12 +32,13 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.callback.TeamPageListener
+import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.service.AutoSyncWorker
-import org.ole.planet.myplanet.service.NetworkConnectivityService
+import org.ole.planet.myplanet.service.NetworkMonitorWorker
 import org.ole.planet.myplanet.service.StayOnlineWorker
 import org.ole.planet.myplanet.service.TaskNotificationWorker
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -46,13 +46,12 @@ import org.ole.planet.myplanet.utilities.ANRWatchdog
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.LocaleHelper
-import org.ole.planet.myplanet.utilities.NetworkUtils.initialize
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NetworkUtils.startListenNetworkState
+import org.ole.planet.myplanet.utilities.NetworkUtils.stopListenNetworkState
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.ThemeMode
-import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
 
 @HiltAndroidApp
@@ -69,12 +68,14 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     @DefaultPreferences
     lateinit var defaultPreferences: SharedPreferences
 
+    @Inject
+    lateinit var apiClient: ApiClient
+
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
         lateinit var context: Context
-        lateinit var mRealm: Realm
         lateinit var service: DatabaseService
         var preferences: SharedPreferences? = null
         var syncFailedCount = 0
@@ -199,14 +200,13 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     private fun initApp() {
         context = this
-        initialize(applicationScope)
         startListenNetworkState()
     }
 
     private fun setupPreferences() {
         preferences = appPreferences
         service = databaseService
-        mRealm = service.realmInstance
+        service.withRealm { }
         defaultPref = defaultPreferences
     }
 
@@ -236,7 +236,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
         scheduleStayOnlineWork()
         scheduleTaskNotificationWork()
-        startNetworkConnectivityService()
+        startNetworkMonitoring()
     }
 
     private fun registerExceptionHandler() {
@@ -265,7 +265,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                             isServerReachable(serverUrl)
                         }
                         if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
-                            backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)), applicationContext)
+                            service.withRealm { realm ->
+                                backgroundDownload(
+                                    downloadAllFiles(getAllLibraryList(realm)),
+                                    applicationContext
+                                )
+                            }
                         }
                     }
                 }
@@ -298,14 +303,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         workManager.enqueueUniquePeriodicWork(TASK_NOTIFICATION_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, taskNotificationWork)
     }
 
-    private fun startNetworkConnectivityService() {
-        val serviceIntent = Intent(this, NetworkConnectivityService::class.java)
-        startService(serviceIntent)
+    private fun startNetworkMonitoring() {
+        NetworkMonitorWorker.start(this)
     }
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleHelper.onAttach(base))
-        Utilities.setContext(base)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -375,6 +378,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
         super.onTerminate()
         onAppClosed()
+        stopListenNetworkState()
         applicationScope.cancel()
     }
 }

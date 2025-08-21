@@ -67,7 +67,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class UserProfileFragment : Fragment() {
-    private lateinit var fragmentUserProfileBinding: FragmentUserProfileBinding
+    private var _binding: FragmentUserProfileBinding? = null
+    private val binding get() = _binding!!
     private lateinit var rowStatBinding: RowStatBinding
     private lateinit var handler: UserProfileDbHandler
     private lateinit var settings: SharedPreferences
@@ -86,10 +87,10 @@ class UserProfileFragment : Fragment() {
     private lateinit var requestCameraLauncher: ActivityResultLauncher<String>
 
     override fun onDestroy() {
-        super.onDestroy()
         if (this::mRealm.isInitialized) {
             mRealm.close()
         }
+        super.onDestroy()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -102,14 +103,14 @@ class UserProfileFragment : Fragment() {
                 val path = FileUtils.getRealPathFromURI(requireActivity(), url)
                 photoURI = path?.toUri()
                 startIntent(photoURI)
-                fragmentUserProfileBinding.image.setImageURI(url)
+                binding.image.setImageURI(url)
             }
         }
 
         captureImageLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
             if (isSuccess) {
                 startIntent(photoURI)
-                fragmentUserProfileBinding.image.setImageURI(photoURI)
+                binding.image.setImageURI(photoURI)
             }
         }
 
@@ -140,41 +141,41 @@ class UserProfileFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentUserProfileBinding = FragmentUserProfileBinding.inflate(inflater, container, false)
+        _binding = FragmentUserProfileBinding.inflate(inflater, container, false)
         initializeDependencies()
-        fragmentUserProfileBinding.btProfilePic.setOnClickListener { searchForPhoto() }
+        binding.btProfilePic.setOnClickListener { searchForPhoto() }
         model = handler.userModel
 
         setupProfile()
         loadProfileImage()
 
-        fragmentUserProfileBinding.btEditProfile.setOnClickListener { openEditProfileDialog() }
+        binding.btEditProfile.setOnClickListener { openEditProfileDialog() }
         configureGuestView()
         setupStatsRecycler()
 
-        return fragmentUserProfileBinding.root
+        return binding.root
     }
 
     private fun initializeDependencies() {
         settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         handler = UserProfileDbHandler(requireContext())
         mRealm = databaseService.realmInstance
-        fragmentUserProfileBinding.rvStat.layoutManager = LinearLayoutManager(activity)
-        fragmentUserProfileBinding.rvStat.isNestedScrollingEnabled = false
+        binding.rvStat.layoutManager = LinearLayoutManager(activity)
+        binding.rvStat.isNestedScrollingEnabled = false
     }
 
     private fun setupProfile() {
-        fragmentUserProfileBinding.txtName.text = if (!model?.firstName.isNullOrEmpty() && !model?.lastName.isNullOrEmpty()) {
+        binding.txtName.text = if (!model?.firstName.isNullOrEmpty() && !model?.lastName.isNullOrEmpty()) {
             "${model?.firstName} ${model?.lastName}"
         } else {
             model?.name ?: ""
         }
-        fragmentUserProfileBinding.txtEmail.text = getString(R.string.two_strings, getString(R.string.email_colon), Utilities.checkNA(model?.email))
+        binding.txtEmail.text = getString(R.string.two_strings, getString(R.string.email_colon), Utilities.checkNA(model?.email))
         val dob = if (TextUtils.isEmpty(model?.dob)) getString(R.string.n_a) else TimeUtils.getFormattedDate(model?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-        fragmentUserProfileBinding.txtDob.text = getString(R.string.two_strings, getString(R.string.date_of_birth), dob)
-        fragmentUserProfileBinding.txtGender.text = getString(R.string.gender_colon, Utilities.checkNA(model?.gender))
-        fragmentUserProfileBinding.txtLanguage.text = getString(R.string.two_strings, getString(R.string.language_colon), Utilities.checkNA(model?.language))
-        fragmentUserProfileBinding.txtLevel.text = getString(R.string.level_colon, Utilities.checkNA(model?.level))
+        binding.txtDob.text = getString(R.string.two_strings, getString(R.string.date_of_birth), dob)
+        binding.txtGender.text = getString(R.string.gender_colon, Utilities.checkNA(model?.gender))
+        binding.txtLanguage.text = getString(R.string.two_strings, getString(R.string.language_colon), Utilities.checkNA(model?.language))
+        binding.txtLevel.text = getString(R.string.level_colon, Utilities.checkNA(model?.level))
     }
 
     private fun loadProfileImage() {
@@ -184,7 +185,7 @@ class UserProfileFragment : Fragment() {
                 .apply(RequestOptions().placeholder(R.drawable.profile).error(R.drawable.profile))
                 .listener(object : RequestListener<Drawable> {
                     override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>, isFirstResource: Boolean): Boolean {
-                        fragmentUserProfileBinding.image.setImageResource(R.drawable.profile)
+                        binding.image.setImageResource(R.drawable.profile)
                         return false
                     }
 
@@ -193,7 +194,7 @@ class UserProfileFragment : Fragment() {
                     }
 
                 })
-                .into(fragmentUserProfileBinding.image)
+                .into(binding.image)
         }
     }
 
@@ -369,8 +370,8 @@ class UserProfileFragment : Fragment() {
     }
     private fun configureGuestView() {
         if (model?.id?.startsWith("guest") == true) {
-            fragmentUserProfileBinding.btEditProfile.visibility = View.GONE
-            fragmentUserProfileBinding.btProfilePic.visibility = View.GONE
+            binding.btEditProfile.visibility = View.GONE
+            binding.btProfilePic.visibility = View.GONE
         }
     }
 
@@ -387,7 +388,7 @@ class UserProfileFragment : Fragment() {
     private fun setupStatsRecycler() {
         val map = createStatsMap()
         val keys = LinkedList(map.keys)
-        fragmentUserProfileBinding.rvStat.adapter = object : RecyclerView.Adapter<ViewHolderRowStat>() {
+        binding.rvStat.adapter = object : RecyclerView.Adapter<ViewHolderRowStat>() {
             override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderRowStat {
                 rowStatBinding = RowStatBinding.inflate(LayoutInflater.from(activity), parent, false)
                 return ViewHolderRowStat(rowStatBinding)
@@ -473,15 +474,20 @@ class UserProfileFragment : Fragment() {
 
     private fun updateUIWithUserData(model: RealmUserModel?) {
         model?.let {
-            fragmentUserProfileBinding.txtName.text = String.format("%s %s %s", it.firstName, it.middleName, it.lastName)
-            fragmentUserProfileBinding.txtEmail.text = getString(R.string.two_strings, getString(R.string.email_colon), Utilities.checkNA(it.email))
+            binding.txtName.text = String.format("%s %s %s", it.firstName, it.middleName, it.lastName)
+            binding.txtEmail.text = getString(R.string.two_strings, getString(R.string.email_colon), Utilities.checkNA(it.email))
             val dob = if (TextUtils.isEmpty(it.dob)) "N/A" else TimeUtils.getFormattedDate(it.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-            fragmentUserProfileBinding.txtDob.text = getString(R.string.two_strings, getString(R.string.date_of_birth), dob)
-            fragmentUserProfileBinding.txtGender.text = getString(R.string.gender_colon, Utilities.checkNA(it.gender))
-            fragmentUserProfileBinding.txtLanguage.text = getString(R.string.two_strings, getString(R.string.language_colon), Utilities.checkNA(it.language))
-            fragmentUserProfileBinding.txtLevel.text = getString(R.string.level_colon, Utilities.checkNA(it.level))
+            binding.txtDob.text = getString(R.string.two_strings, getString(R.string.date_of_birth), dob)
+            binding.txtGender.text = getString(R.string.gender_colon, Utilities.checkNA(it.gender))
+            binding.txtLanguage.text = getString(R.string.two_strings, getString(R.string.language_colon), Utilities.checkNA(it.language))
+            binding.txtLevel.text = getString(R.string.level_colon, Utilities.checkNA(it.level))
         }
     }
 
     inner class ViewHolderRowStat(rowStatBinding: RowStatBinding) : RecyclerView.ViewHolder(rowStatBinding.root)
+
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
+    }
 }

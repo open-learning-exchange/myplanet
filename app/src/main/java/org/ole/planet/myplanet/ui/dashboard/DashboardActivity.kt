@@ -73,6 +73,7 @@ import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationListener
 import org.ole.planet.myplanet.ui.dashboard.notification.NotificationsFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
@@ -81,7 +82,8 @@ import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.ui.sync.DashboardElementActivity
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.team.TeamFragment
-import org.ole.planet.myplanet.ui.team.TeamPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.JoinRequestsPage
+import org.ole.planet.myplanet.ui.team.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
@@ -97,7 +99,7 @@ import org.ole.planet.myplanet.utilities.Utilities.toast
 @AndroidEntryPoint  
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
 
-    private lateinit var activityDashboardBinding: ActivityDashboardBinding
+    private lateinit var binding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
     var user: RealmUserModel? = null
     var result: Drawer? = null
@@ -148,22 +150,22 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun initViews() {
-        activityDashboardBinding = ActivityDashboardBinding.inflate(layoutInflater)
-        setContentView(activityDashboardBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityDashboardBinding.root)
-        setupUI(activityDashboardBinding.activityDashboardParentLayout, this@DashboardActivity)
-        setSupportActionBar(activityDashboardBinding.myToolbar)
+        binding = ActivityDashboardBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
+        setupUI(binding.activityDashboardParentLayout, this@DashboardActivity)
+        setSupportActionBar(binding.myToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
         supportActionBar?.setTitle(R.string.app_project_name)
-        activityDashboardBinding.myToolbar.setTitleTextColor(Color.WHITE)
-        activityDashboardBinding.myToolbar.setSubtitleTextColor(Color.WHITE)
-        navigationView = activityDashboardBinding.topBarNavigation
+        binding.myToolbar.setTitleTextColor(Color.WHITE)
+        binding.myToolbar.setSubtitleTextColor(Color.WHITE)
+        navigationView = binding.topBarNavigation
         navigationView.labelVisibilityMode = NavigationBarView.LABEL_VISIBILITY_LABELED
-        activityDashboardBinding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
+        binding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
         service = Service(this)
         tl = findViewById(R.id.tab_layout)
-        activityDashboardBinding.root.viewTreeObserver.addOnGlobalLayoutListener { topBarVisible() }
-        activityDashboardBinding.appBarBell.ivSetting.setOnClickListener {
+        binding.root.viewTreeObserver.addOnGlobalLayoutListener { topBarVisible() }
+        binding.appBarBell.ivSetting.setOnClickListener {
             startActivity(Intent(this, SettingActivity::class.java))
         }
     }
@@ -177,13 +179,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     name = profileDbHandler.userModel?.name
                 }
                 val communityName = settings.getString("communityName", "")
-                activityDashboardBinding.appBarBell.appTitleName.text = if (user?.planetCode == "") {
+                binding.appBarBell.appTitleName.text = if (user?.planetCode == "") {
                     "${getString(R.string.planet)} $communityName"
                 } else {
                     "${getString(R.string.planet)} ${user?.planetCode}"
                 }
             } else {
-                activityDashboardBinding.appBarBell.appTitleName.text = getString(R.string.app_project_name)
+                binding.appBarBell.appTitleName.text = getString(R.string.app_project_name)
             }
         } catch (err: Exception) {
             throw RuntimeException(err)
@@ -249,14 +251,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         } else {
             openCallFragment(BellDashboardFragment())
-            activityDashboardBinding.appBarBell.bellToolbar.visibility = View.VISIBLE
+            binding.appBarBell.bellToolbar.visibility = View.VISIBLE
         }
     }
 
     private fun setupToolbarActions() {
-        activityDashboardBinding.appBarBell.ivSync.setOnClickListener { logSyncInSharedPrefs() }
-        activityDashboardBinding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
-        activityDashboardBinding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
+        binding.appBarBell.ivSync.setOnClickListener { logSyncInSharedPrefs() }
+        binding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
+        binding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
             handleToolbarMenuItem(item.itemId)
             true
         }
@@ -311,7 +313,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     result?.closeDrawer()
                 } else {
                     if (supportFragmentManager.backStackEntryCount > 1) {
-                        supportFragmentManager.popBackStack()
+                        NavigationHelper.popBackStack(supportFragmentManager)
                     } else {
                         if (!doubleBackToExitPressedOnce) {
                             doubleBackToExitPressedOnce = true
@@ -426,7 +428,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     teamName = teamObject?.name ?: "",
                     teamType = teamObject?.type ?: "",
                     isMyTeam = true,
-                    navigateToPage = TeamPage.TASKS
+                    navigateToPage = TasksPage
                 )
 
                 openCallFragment(f)
@@ -453,7 +455,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 val b = Bundle()
                 b.putString("id", teamId)
                 b.putBoolean("isMyTeam", true)
-                b.putInt("navigateToPage", TeamPage.JOIN_REQUESTS.ordinal)
+                b.putString("navigateToPage", JoinRequestsPage.id)
                 f.arguments = b
                 openCallFragment(f)
             }
@@ -570,13 +572,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
 
             try {
+                dashboardViewModel.updateResourceNotification(userId)
                 databaseService.realmInstance.use { backgroundRealm ->
                     backgroundRealm.executeTransaction { realm ->
                         val createdNotifications = createNotifications(realm, userId)
                         newNotifications.addAll(createdNotifications)
                     }
 
-                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(backgroundRealm, userId)
+                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -601,7 +604,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun createNotifications(realm: Realm, userId: String?): List<NotificationUtil.NotificationConfig> {
         val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
-        createDatabaseNotificationsFromSources(realm, userId)
+        createSurveyDatabaseNotifications(realm, userId)
+        createTaskDatabaseNotifications(realm, userId)
+        createStorageDatabaseNotifications(realm, userId)
+        createJoinRequestDatabaseNotifications(realm, userId)
+
         val unreadNotifications = realm.where(RealmNotification::class.java)
             .equalTo("userId", userId)
             .equalTo("isRead", false)
@@ -614,14 +621,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         }
         return newNotifications
-    }
-
-    private fun createDatabaseNotificationsFromSources(realm: Realm, userId: String?) {
-        dashboardViewModel.updateResourceNotification(realm, userId)
-        createSurveyDatabaseNotifications(realm, userId)
-        createTaskDatabaseNotifications(realm, userId)
-        createStorageDatabaseNotifications(realm, userId)
-        createJoinRequestDatabaseNotifications(realm, userId)
     }
 
     private fun createNotificationConfigFromDatabase(dbNotification: RealmNotification): NotificationUtil.NotificationConfig? {
@@ -654,10 +653,19 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun createSurveyDatabaseNotifications(realm: Realm, userId: String?) {
-        val pendingSurveys = dashboardViewModel.getPendingSurveys(userId)
-        val surveyTitles = dashboardViewModel.getSurveyTitlesFromSubmissions(realm, pendingSurveys)
+        val pendingSurveys = realm.where(RealmSubmission::class.java)
+            .equalTo("userId", userId)
+            .equalTo("status", "pending")
+            .equalTo("type", "survey")
+            .findAll()
 
-        surveyTitles.forEach { title ->
+        pendingSurveys.mapNotNull { submission ->
+            val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
+            realm.where(RealmStepExam::class.java)
+                .equalTo("id", examId)
+                .findFirst()
+                ?.name
+        }.forEach { title ->
             dashboardViewModel.createNotificationIfNotExists(realm, "survey", title, title, userId)
         }
     }
@@ -743,7 +751,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun updateNotificationBadge(count: Int, onClickListener: View.OnClickListener) {
-        val menuItem = activityDashboardBinding.appBarBell.bellToolbar.menu.findItem(R.id.action_notifications)
+        val menuItem = binding.appBarBell.bellToolbar.menu.findItem(R.id.action_notifications)
         val actionView = MenuItemCompat.getActionView(menuItem)
         val smsCountTxt = actionView.findViewById<TextView>(R.id.notification_badge)
         smsCountTxt.text = "$count"
@@ -759,7 +767,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun hideWifi() {
-        val navMenu = activityDashboardBinding.appBarBell.bellToolbar.menu
+        val navMenu = binding.appBarBell.bellToolbar.menu
         navMenu.findItem(R.id.menu_goOnline)
             .setVisible((showBetaFeature(Constants.KEY_SYNC, this)))
     }
@@ -836,8 +844,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun UITheme() {
-        activityDashboardBinding.appBarBell.bellToolbar.visibility = View.VISIBLE
-        activityDashboardBinding.myToolbar.visibility = View.GONE
+        binding.appBarBell.bellToolbar.visibility = View.VISIBLE
+        binding.myToolbar.visibility = View.GONE
         navigationView.visibility = View.GONE
     }
 
@@ -910,7 +918,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         result = headerResult?.let {
             DrawerBuilder().withActivity(this).withFullscreen(true).withTranslucentStatusBar(true).withTranslucentNavigationBar(true)
                 .withSliderBackgroundColor(ContextCompat.getColor(this, R.color.colorPrimary))
-                .withToolbar(activityDashboardBinding.myToolbar)
+                .withToolbar(binding.myToolbar)
                 .withAccountHeader(it).withHeaderHeight(dimenHolder)
                 .addDrawerItems(*drawerItems).addStickyDrawerItems(*drawerItemsFooter)
                 .withOnDrawerItemClickListener { _: View?, _: Int, drawerItem: IDrawerItem<*, *>? ->
@@ -985,7 +993,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         profileDbHandler.onDestroy()
         realmListeners.forEach { it.removeListener() }
         realmListeners.clear()
@@ -994,6 +1001,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             unregisterReceiver(it)
             systemNotificationReceiver = null
         }
+        super.onDestroy()
     }
 
     override fun openCallFragment(f: Fragment) {
@@ -1144,7 +1152,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun showNotificationDisabledReminder() {
         val snackbar = Snackbar.make(
-            activityDashboardBinding.root,
+            binding.root,
             "Notifications are disabled. You might miss important updates.",
             Snackbar.LENGTH_LONG
         )

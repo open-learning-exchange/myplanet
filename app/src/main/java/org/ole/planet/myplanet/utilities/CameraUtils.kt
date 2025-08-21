@@ -22,6 +22,7 @@ import androidx.core.content.ContextCompat
 import java.io.File
 import java.io.FileOutputStream
 import java.util.Date
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import org.ole.planet.myplanet.MainApplication.Companion.context
 
@@ -31,6 +32,7 @@ object CameraUtils {
     private var imageReader: ImageReader? = null
     private var backgroundHandler: Handler
     private var backgroundThread: HandlerThread = HandlerThread("CameraBackground")
+    private var sessionExecutor: ExecutorService? = null
 
     @JvmStatic
     fun capturePhoto(callback: ImageCaptureCallback) {
@@ -79,6 +81,8 @@ object CameraUtils {
         cameraDevice = null
         imageReader?.close()
         imageReader = null
+        sessionExecutor?.shutdown()
+        sessionExecutor = null
     }
 
     @JvmStatic
@@ -91,9 +95,9 @@ object CameraUtils {
         val filename = "${pictureFileDir.path}${File.separator}$photoFile"
         val mainPicture = File(filename)
         try {
-            val fos = FileOutputStream(mainPicture)
-            fos.write(data)
-            fos.close()
+            FileOutputStream(mainPicture).use { fos ->
+                fos.write(data)
+            }
             callback.onImageCapture(mainPicture.absolutePath)
         } catch (error: Exception) {
             error.printStackTrace()
@@ -135,7 +139,7 @@ object CameraUtils {
             captureRequestBuilder.addTarget(surface)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 val outputConfigurations = listOf(OutputConfiguration(surface))
-                val executor = Executors.newSingleThreadExecutor()
+                val executor = sessionExecutor ?: Executors.newSingleThreadExecutor().also { sessionExecutor = it }
                 val stateCallback = object : CameraCaptureSession.StateCallback() {
                     override fun onConfigured(session: CameraCaptureSession) {
                         if (cameraDevice == null) return
