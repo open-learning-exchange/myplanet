@@ -2,6 +2,9 @@ package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.findCopyByField
+import org.ole.planet.myplanet.datamanager.queryList
+import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 
 class SubmissionRepositoryImpl @Inject constructor(
@@ -13,6 +16,22 @@ class SubmissionRepositoryImpl @Inject constructor(
             equalTo("userId", userId)
             equalTo("status", "pending")
             equalTo("type", "survey")
+        }
+    }
+
+    override suspend fun getSurveyTitlesFromSubmissions(
+        submissions: List<RealmSubmission>
+    ): List<String> {
+        return databaseService.withRealmAsync { realm ->
+            val titles = mutableListOf<String>()
+            submissions.forEach { submission ->
+                val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
+                val exam = realm.where(RealmStepExam::class.java)
+                    .equalTo("id", examId)
+                    .findFirst()
+                exam?.name?.let { titles.add(it) }
+            }
+            titles
         }
     }
 
