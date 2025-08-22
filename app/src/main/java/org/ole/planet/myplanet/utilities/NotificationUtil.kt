@@ -517,19 +517,17 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
 
         try {
-            val realm = databaseService.realmInstance
-            
-            realm.executeTransaction { r ->
-                val notification = r.where(RealmNotification::class.java)
-                    .equalTo("id", notificationId)
-                    .findFirst()
-                
-                if (notification != null) {
-                    notification.isRead = true
+            databaseService.withRealm { realm ->
+                realm.executeTransaction { r ->
+                    val notification = r.where(RealmNotification::class.java)
+                        .equalTo("id", notificationId)
+                        .findFirst()
+
+                    if (notification != null) {
+                        notification.isRead = true
+                    }
                 }
             }
-
-            realm.close()
 
             android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                 val broadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
