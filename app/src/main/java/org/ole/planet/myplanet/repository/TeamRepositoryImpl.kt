@@ -7,11 +7,11 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 
 class TeamRepositoryImpl @Inject constructor(
-    private val databaseService: DatabaseService,
-) : TeamRepository {
+    databaseService: DatabaseService,
+) : RealmRepository(databaseService), TeamRepository {
 
     override suspend fun getTeamResources(teamId: String): List<RealmMyLibrary> {
-        return databaseService.withRealmAsync { realm ->
+        return withRealm { realm ->
             val resourceIds = RealmMyTeam.getResourceIds(teamId, realm)
             if (resourceIds.isEmpty()) emptyList() else
                 realm.queryList(RealmMyLibrary::class.java) {
