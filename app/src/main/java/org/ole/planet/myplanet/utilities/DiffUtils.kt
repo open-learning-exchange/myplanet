@@ -27,7 +27,7 @@ object DiffUtils {
             override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int) =
                 areContentsTheSame(oldList[oldItemPosition], newList[newItemPosition])
         }
-        return RecyclerDiffUtil.calculateDiff(callback)
+        return RecyclerDiffUtil.calculateDiff(callback, true)
     }
 }
 
