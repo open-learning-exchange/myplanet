@@ -16,9 +16,6 @@ class CourseRepositoryImpl @Inject constructor(
         return findByField(RealmMyCourse::class.java, "courseId", id)
     }
 
-    override suspend fun getEnrolledCourses(userId: String): List<RealmMyCourse> =
-        getCoursesByUserId(userId)
-
     override suspend fun getCoursesByUserId(userId: String): List<RealmMyCourse> {
         return queryList(RealmMyCourse::class.java) {
             equalTo("userId", userId)
