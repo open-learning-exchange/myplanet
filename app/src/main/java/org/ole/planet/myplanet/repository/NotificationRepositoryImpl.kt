@@ -18,4 +18,3 @@ class NotificationRepositoryImpl @Inject constructor(
         }
     }
 }
-
