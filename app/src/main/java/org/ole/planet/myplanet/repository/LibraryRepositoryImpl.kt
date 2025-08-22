@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.repository
 
-import io.realm.RealmResults
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.queryList
 import org.ole.planet.myplanet.model.RealmMyLibrary
 
 class LibraryRepositoryImpl @Inject constructor(
@@ -24,23 +24,20 @@ class LibraryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getLibraryListForUser(userId: String?): List<RealmMyLibrary> {
+        if (userId == null) return emptyList()
         return withRealm { realm ->
-            val results = realm.where(RealmMyLibrary::class.java)
-                .equalTo("isPrivate", false)
-                .findAll()
-            val filteredList =
-                filterLibrariesNeedingUpdate(results).filter { it.userId?.contains(userId) == true }
-            realm.copyFromRealm(filteredList)
+            realm.queryList(RealmMyLibrary::class.java) {
+                equalTo("isPrivate", false)
+                contains("userId", userId)
+            }
         }
     }
 
     override suspend fun getAllLibraryList(): List<RealmMyLibrary> {
         return withRealm { realm ->
-            val results = realm.where(RealmMyLibrary::class.java)
-                .equalTo("resourceOffline", false)
-                .findAll()
-            val filteredList = filterLibrariesNeedingUpdate(results)
-            realm.copyFromRealm(filteredList)
+            realm.queryList(RealmMyLibrary::class.java) {
+                equalTo("resourceOffline", false)
+            }
         }
     }
 
@@ -62,9 +59,5 @@ class LibraryRepositoryImpl @Inject constructor(
 
     override suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit) {
         update(RealmMyLibrary::class.java, "id", id, updater)
-    }
-
-    private fun filterLibrariesNeedingUpdate(results: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {
-        return results.filter { it.needToUpdate() }
     }
 }
