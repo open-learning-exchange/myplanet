@@ -24,6 +24,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDialogFragment
@@ -258,21 +259,27 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
-            val alternativeAvailable =
-                mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val primaryAvailable = withTimeoutOrNull(15000) {
+                    MainApplication.isServerReachable(mapping.primaryUrl)
+                } ?: false
+                
+                val alternativeAvailable = withTimeoutOrNull(15000) {
+                    mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
+                } ?: false
 
-            if (!primaryAvailable && alternativeAvailable) {
-                mapping.alternativeUrl.let { alternativeUrl ->
-                    val uri = updateUrl.toUri()
-                    val editor = settings.edit()
+                if (!primaryAvailable && alternativeAvailable) {
+                    mapping.alternativeUrl?.let { alternativeUrl ->
+                        val uri = updateUrl.toUri()
+                        val editor = settings.edit()
 
-                    serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
+                        serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
+                    }
                 }
-            }
 
-            withContext(Dispatchers.Main) {
+                uploadSubmissions()
+            } catch (_: Exception) {
                 uploadSubmissions()
             }
         }
