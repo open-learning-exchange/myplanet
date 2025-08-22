@@ -62,7 +62,7 @@ fun SyncActivity.onChangeServerUrl() {
     if (selected is RealmCommunity && selected.isValid) {
         serverUrl.setText(selected.localDomain)
         protocolCheckIn.check(R.id.radio_https)
-        settings.getString("serverProtocol", getString(R.string.https_protocol))
+        editor.putString("serverProtocol", getString(R.string.https_protocol)).apply()
         serverPassword.setText(if (selected.weight == 0) "1983" else "")
         serverPassword.isEnabled = selected.weight != 0
     }

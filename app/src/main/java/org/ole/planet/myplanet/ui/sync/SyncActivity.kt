@@ -1,10 +1,12 @@
 package org.ole.planet.myplanet.ui.sync
 
 import android.Manifest
+import android.content.ComponentName
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
@@ -74,6 +76,7 @@ import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
+import org.ole.planet.myplanet.ui.onBoarding.OnBoardingActivity
 import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
@@ -217,6 +220,18 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         clearSharedPref()
 
                         delay(500)
+                        val pm = packageManager
+                        val componentName = ComponentName(this@SyncActivity, OnBoardingActivity::class.java)
+                        pm.setComponentEnabledSetting(
+                            componentName,
+                            PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                            PackageManager.DONT_KILL_APP
+                        )
+                        pm.setComponentEnabledSetting(
+                            componentName,
+                            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                            PackageManager.DONT_KILL_APP
+                        )
                         restartApp()
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -875,10 +890,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
 
         fun restartApp() {
-            val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
-            val mainIntent = Intent.makeRestartActivityTask(intent?.component)
-            context.startActivity(mainIntent)
-            Runtime.getRuntime().exit(0)
+            val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            if (launchIntent != null) {
+                val mainIntent = Intent.makeRestartActivityTask(launchIntent.component)
+                context.startActivity(mainIntent)
+                Runtime.getRuntime().exit(0)
+            } else {
+                val fallback = Intent(context, OnBoardingActivity::class.java)
+                fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                context.startActivity(fallback)
+            }
         }
     }
 }
