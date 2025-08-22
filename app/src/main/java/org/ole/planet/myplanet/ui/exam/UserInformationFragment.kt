@@ -18,6 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
+import kotlinx.coroutines.CoroutineScope
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
@@ -258,7 +259,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         val serverUrlMapper = ServerUrlMapper()
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
-        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+        CoroutineScope(Dispatchers.IO).launch {
             val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
             val alternativeAvailable =
                 mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
