@@ -54,7 +54,7 @@ class DashboardViewModel @Inject constructor(
 
     private fun loadSurveyWarning(userId: String?) {
         viewModelScope.launch {
-            val count = submissionRepository.getSurveyCountByUser(userId)
+            val count = submissionRepository.getSubmissionCountByUser(userId)
             _surveyWarning.value = count == 0
         }
     }
