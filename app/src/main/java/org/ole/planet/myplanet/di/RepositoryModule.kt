@@ -17,6 +17,8 @@ import org.ole.planet.myplanet.repository.SearchRepository
 import org.ole.planet.myplanet.repository.SearchRepositoryImpl
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.SubmissionRepositoryImpl
+import org.ole.planet.myplanet.repository.TeamRepository
+import org.ole.planet.myplanet.repository.TeamRepositoryImpl
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserRepositoryImpl
 
@@ -47,6 +49,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindSubmissionRepository(impl: SubmissionRepositoryImpl): SubmissionRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindTeamRepository(impl: TeamRepositoryImpl): TeamRepository
 
     @Binds
     @Singleton
