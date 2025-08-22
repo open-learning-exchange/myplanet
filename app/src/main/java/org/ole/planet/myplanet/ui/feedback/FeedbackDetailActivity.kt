@@ -130,6 +130,13 @@ class FeedbackDetailActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
+    override fun onDestroy() {
+        if (::realm.isInitialized && !realm.isClosed) {
+            realm.close()
+        }
+        super.onDestroy()
+    }
+
     inner class RvFeedbackAdapter(private val replyList: List<FeedbackReply>?, var context: Context) : RecyclerView.Adapter<ReplyViewHolder>() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReplyViewHolder {
             rowFeedbackReplyBinding = RowFeedbackReplyBinding.inflate(layoutInflater, parent, false)
