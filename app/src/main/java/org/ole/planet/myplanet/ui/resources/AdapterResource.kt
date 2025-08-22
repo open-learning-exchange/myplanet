@@ -207,9 +207,10 @@ class AdapterResource(
         val diffResult = DiffUtils.calculateDiff(
             libraryList,
             newList,
-            areItemsTheSame = { old, new -> old?.id == new?.id },
+            areItemsTheSame = { old, new -> old?.resourceId == new?.resourceId },
             areContentsTheSame = { old, new ->
-                old?.title == new?.title &&
+                old?.resourceId == new?.resourceId &&
+                    old?.title == new?.title &&
                     old?.description == new?.description &&
                     old?.createdDate == new?.createdDate &&
                     old?.averageRating == new?.averageRating &&
