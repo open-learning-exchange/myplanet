@@ -11,13 +11,13 @@ import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import io.realm.Realm
-import java.util.Collections
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnCourseItemSelected
@@ -72,46 +72,70 @@ class AdapterCourses(
         return courseList
     }
 
+    private fun dispatchDiff(newList: List<RealmMyCourse?>) {
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize() = courseList.size
+
+            override fun getNewListSize() = newList.size
+
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                return courseList[oldItemPosition]?.id == newList[newItemPosition]?.id
+            }
+
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                val oldItem = courseList[oldItemPosition]
+                val newItem = newList[newItemPosition]
+                return oldItem?.courseTitle == newItem?.courseTitle &&
+                        oldItem?.description == newItem?.description &&
+                        oldItem?.gradeLevel == newItem?.gradeLevel &&
+                        oldItem?.subjectLevel == newItem?.subjectLevel &&
+                        oldItem?.createdDate == newItem?.createdDate &&
+                        oldItem?.isMyCourse == newItem?.isMyCourse &&
+                        oldItem?.getNumberOfSteps() == newItem?.getNumberOfSteps()
+            }
+        })
+        courseList = newList
+        diffResult.dispatchUpdatesTo(this)
+    }
+
     fun setOriginalCourseList(courseList: List<RealmMyCourse?>){
-        this.courseList = courseList
-        notifyDataSetChanged()
+        dispatchDiff(courseList)
     }
 
     fun setCourseList(courseList: List<RealmMyCourse?>) {
-        this.courseList = courseList
-        notifyDataSetChanged()
+        dispatchDiff(courseList)
     }
 
-    private fun sortCourseListByTitle() {
-        Collections.sort(courseList) { course1: RealmMyCourse?, course2: RealmMyCourse? ->
+    private fun sortCourseListByTitle(list: List<RealmMyCourse?>): List<RealmMyCourse?> {
+        return list.sortedWith { course1: RealmMyCourse?, course2: RealmMyCourse? ->
             if (isTitleAscending) {
-                return@sort course1!!.courseTitle!!.compareTo(course2!!.courseTitle!!, ignoreCase = true)
+                course1?.courseTitle?.compareTo(course2?.courseTitle ?: "", ignoreCase = true) ?: 0
             } else {
-                return@sort course2!!.courseTitle!!.compareTo(course1!!.courseTitle!!, ignoreCase = true)
+                course2?.courseTitle?.compareTo(course1?.courseTitle ?: "", ignoreCase = true) ?: 0
             }
         }
     }
 
-    private fun sortCourseList() {
-        Collections.sort(courseList) { course1, course2 ->
+    private fun sortCourseList(list: List<RealmMyCourse?>): List<RealmMyCourse?> {
+        return list.sortedWith { course1, course2 ->
             if (isAscending) {
-                course1?.createdDate!!.compareTo(course2?.createdDate!!)
+                course1?.createdDate?.compareTo(course2?.createdDate ?: 0) ?: 0
             } else {
-                course2?.createdDate!!.compareTo(course1?.createdDate!!)
+                course2?.createdDate?.compareTo(course1?.createdDate ?: 0) ?: 0
             }
         }
     }
 
     fun toggleTitleSortOrder() {
         isTitleAscending = !isTitleAscending
-        sortCourseListByTitle()
-        notifyDataSetChanged()
+        val sortedList = sortCourseListByTitle(courseList)
+        dispatchDiff(sortedList)
     }
 
     fun toggleSortOrder() {
         isAscending = !isAscending
-        sortCourseList()
-        notifyDataSetChanged()
+        val sortedList = sortCourseList(courseList)
+        dispatchDiff(sortedList)
     }
 
     fun setProgressMap(progressMap: HashMap<String?, JsonObject>?) {
@@ -359,15 +383,14 @@ class AdapterCourses(
     }
 
     fun updateCourseList(newCourseList: List<RealmMyCourse?>) {
-        this.courseList = newCourseList
         selectedItems.clear()
-        notifyDataSetChanged()
+        dispatchDiff(newCourseList)
     }
 
     fun setRatingMap(newRatingMap: HashMap<String?, JsonObject>) {
         this.map.clear()
         this.map.putAll(newRatingMap)
-        notifyDataSetChanged()
+        notifyItemRangeChanged(0, courseList.size)
     }
 
     internal inner class ViewHoldercourse(val rowCourseBinding: RowCourseBinding) :
