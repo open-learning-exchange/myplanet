@@ -54,9 +54,7 @@ class DashboardViewModel @Inject constructor(
 
     private fun loadSurveyWarning(userId: String?) {
         viewModelScope.launch {
-            val count = databaseService.withRealmAsync { realm ->
-                RealmSubmission.getNoOfSurveySubmissionByUser(userId, realm)
-            }
+            val count = submissionRepository.getSurveyCountByUser(userId)
             _surveyWarning.value = count == 0
         }
     }
