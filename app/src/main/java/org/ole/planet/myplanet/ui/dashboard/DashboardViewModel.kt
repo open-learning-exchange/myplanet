@@ -14,7 +14,6 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNotification
-import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
@@ -119,17 +118,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>): List<String> {
-        return databaseService.withRealmAsync { realm ->
-            val titles = mutableListOf<String>()
-            submissions.forEach { submission ->
-                val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
-                val exam = realm.where(RealmStepExam::class.java)
-                    .equalTo("id", examId)
-                    .findFirst()
-                exam?.name?.let { titles.add(it) }
-            }
-            titles
-        }
+        return submissionRepository.getSurveyTitlesFromSubmissions(submissions)
     }
 
     suspend fun getUnreadNotificationsSize(userId: String?): Int {
