@@ -36,7 +36,6 @@ class AdapterTeamList(
     private val fragmentManager: FragmentManager,
     private val uploadManager: UploadManager
 ) : ListAdapter<RealmMyTeam, AdapterTeamList.ViewHolderTeam>(DIFF_CALLBACK) {
-    private lateinit var itemTeamListBinding: ItemTeamListBinding
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
     private lateinit var prefData: SharedPrefManager
@@ -50,9 +49,9 @@ class AdapterTeamList(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTeam {
-        itemTeamListBinding = ItemTeamListBinding.inflate(LayoutInflater.from(context), parent, false)
+        val binding = ItemTeamListBinding.inflate(LayoutInflater.from(context), parent, false)
         prefData = SharedPrefManager(context)
-        return ViewHolderTeam(itemTeamListBinding)
+        return ViewHolderTeam(binding)
     }
 
     init {
@@ -211,7 +210,7 @@ class AdapterTeamList(
     class ViewHolderTeam(val binding: ItemTeamListBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
-        val DIFF_CALLBACK = object : DiffUtil.ItemCallback<RealmMyTeam>() {
+        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<RealmMyTeam>() {
             override fun areItemsTheSame(oldItem: RealmMyTeam, newItem: RealmMyTeam): Boolean {
                 return oldItem._id == newItem._id
             }
