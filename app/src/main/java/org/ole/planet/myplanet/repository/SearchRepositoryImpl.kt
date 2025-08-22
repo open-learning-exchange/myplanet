@@ -34,11 +34,7 @@ class SearchRepositoryImpl @Inject constructor(
             activity.type = "courses"
 
             val filter = JsonObject()
-            val tagsArray = JsonArray()
-            tags.forEach { tag ->
-                tagsArray.add(tag.name)
-            }
-            filter.add("tags", tagsArray)
+            filter.add("tags", tags.map(RealmTag::name).fold(JsonArray()) { array, n -> array.apply { add(n) } })
             filter.addProperty("doc.gradeLevel", gradeLevel)
             filter.addProperty("doc.subjectLevel", subjectLevel)
 
