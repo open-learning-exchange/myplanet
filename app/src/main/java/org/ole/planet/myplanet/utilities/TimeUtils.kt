@@ -127,7 +127,12 @@ object TimeUtils {
 
     fun parseDate(dateString: String): Long? =
         try {
-            val localDate = LocalDate.parse(dateString, dateOnlyFormatter)
+            val localDate = try {
+                LocalDate.parse(dateString, dateOnlyFormatter)
+            } catch (_: Exception) {
+                val fallbackFormatter = DateTimeFormatter.ofPattern("dd, MMMM yyyy", defaultLocale)
+                LocalDate.parse(dateString, fallbackFormatter)
+            }
             localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         } catch (e: Exception) {
             e.printStackTrace()
