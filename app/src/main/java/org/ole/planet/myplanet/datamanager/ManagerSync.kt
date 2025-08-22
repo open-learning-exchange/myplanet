@@ -24,7 +24,6 @@ import retrofit2.Response
 class ManagerSync private constructor(context: Context) {
     private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val dbService: DatabaseService = DatabaseService(context)
-    private val mRealm: Realm = dbService.realmInstance
 
     fun login(userName: String?, password: String?, listener: SyncListener) {
         listener.onSyncStarted()
@@ -39,7 +38,9 @@ class ManagerSync private constructor(context: Context) {
                             val derivedKey = jsonDoc["derived_key"].asString
                             val salt = jsonDoc["salt"].asString
                             if (androidDecrypter(userName, password, derivedKey, salt)) {
-                                checkManagerAndInsert(jsonDoc, mRealm, listener)
+                                dbService.withRealm { realm ->
+                                    checkManagerAndInsert(jsonDoc, realm, listener)
+                                }
                             } else {
                                 listener.onSyncFailed("Name or password is incorrect.")
                             }

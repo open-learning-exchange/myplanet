@@ -139,7 +139,12 @@ class SettingActivity : AppCompatActivity() {
             autoDownload?.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
                 if (autoDownload.isChecked == true) {
                     defaultPref.edit { putBoolean("beta_auto_download", true) }
-                    backgroundDownload(downloadAllFiles(getAllLibraryList((requireActivity() as SettingActivity).databaseService.realmInstance)), requireContext())
+                    (requireActivity() as SettingActivity).databaseService.withRealm { realm ->
+                        backgroundDownload(
+                            downloadAllFiles(getAllLibraryList(realm)),
+                            requireContext()
+                        )
+                    }
                 } else {
                     defaultPref.edit { putBoolean("beta_auto_download", false) }
                 }

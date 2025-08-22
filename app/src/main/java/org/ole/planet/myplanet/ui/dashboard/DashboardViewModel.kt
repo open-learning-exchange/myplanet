@@ -1,15 +1,19 @@
 package org.ole.planet.myplanet.ui.dashboard
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.realm.Realm
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNotification
-import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
@@ -24,6 +28,11 @@ class DashboardViewModel @Inject constructor(
     private val courseRepository: CourseRepository,
     private val submissionRepository: SubmissionRepository
 ) : ViewModel() {
+    private val _surveyWarning = MutableStateFlow(false)
+    val surveyWarning: StateFlow<Boolean> = _surveyWarning.asStateFlow()
+
+    private val _unreadNotifications = MutableStateFlow(0)
+    val unreadNotifications: StateFlow<Int> = _unreadNotifications.asStateFlow()
     fun calculateIndividualProgress(voiceCount: Int, hasUnfinishedSurvey: Boolean): Int {
         val earnedDollarsVoice = minOf(voiceCount, 5) * 2
         val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
@@ -36,6 +45,26 @@ class DashboardViewModel @Inject constructor(
         val earnedDollarsSurvey = if (!hasUnfinishedSurvey) 1 else 0
         val total = earnedDollarsVoice + earnedDollarsSurvey
         return total.coerceAtMost(11)
+    }
+
+    fun loadDashboardData(userId: String?) {
+        loadSurveyWarning(userId)
+        loadUnreadNotifications(userId)
+    }
+
+    private fun loadSurveyWarning(userId: String?) {
+        viewModelScope.launch {
+            val count = databaseService.withRealmAsync { realm ->
+                RealmSubmission.getNoOfSurveySubmissionByUser(userId, realm)
+            }
+            _surveyWarning.value = count == 0
+        }
+    }
+
+    private fun loadUnreadNotifications(userId: String?) {
+        viewModelScope.launch {
+            _unreadNotifications.value = getUnreadNotificationsSize(userId)
+        }
     }
 
     suspend fun updateResourceNotification(userId: String?) {
@@ -89,17 +118,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>): List<String> {
-        return databaseService.withRealmAsync { realm ->
-            val titles = mutableListOf<String>()
-            submissions.forEach { submission ->
-                val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
-                val exam = realm.where(RealmStepExam::class.java)
-                    .equalTo("id", examId)
-                    .findFirst()
-                exam?.name?.let { titles.add(it) }
-            }
-            titles
-        }
+        return submissionRepository.getSurveyTitlesFromSubmissions(submissions)
     }
 
     suspend fun getUnreadNotificationsSize(userId: String?): Int {
