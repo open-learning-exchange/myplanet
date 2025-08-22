@@ -178,19 +178,16 @@ class AdapterJoinedMember(
     }
 
     private fun getNextOfKin(): RealmUserModel? {
-        val members: List<RealmMyTeam> = mRealm.where(RealmMyTeam::class.java)
+        val successor = mRealm.where(RealmMyTeam::class.java)
             .equalTo("teamId", teamId)
             .equalTo("isLeader", false)
-            .notEqualTo("status","archived")
+            .notEqualTo("status", "archived")
             .sort("createdDate", Sort.DESCENDING)
-            .findAll()
-        val successor =  if (members.isNotEmpty()) members?.first() else null
-        if(successor==null){
-            return null
-        }
-        else{
-            val user= mRealm.where(RealmUserModel::class.java).equalTo("id", successor.userId).findFirst()
-            return user
+            .findFirst()
+        return successor?.let {
+            mRealm.where(RealmUserModel::class.java)
+                .equalTo("id", it.userId)
+                .findFirst()
         }
     }
 

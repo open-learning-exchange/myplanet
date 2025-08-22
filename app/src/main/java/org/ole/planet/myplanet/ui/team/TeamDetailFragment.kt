@@ -346,6 +346,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         } else{
             fragmentTeamDetailBinding.btnLeave.visibility = View.VISIBLE
         }
+        syncTeamActivities(requireContext(), uploadManager)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
