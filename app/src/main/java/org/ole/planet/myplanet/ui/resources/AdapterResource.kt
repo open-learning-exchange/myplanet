@@ -175,28 +175,22 @@ class AdapterResource(
 
     fun toggleTitleSortOrder() {
         isTitleAscending = !isTitleAscending
-        updateList(sortLibraryListByTitle())
+        if (isTitleAscending) {
+            libraryList = libraryList.sortedBy { it?.title?.lowercase(Locale.ROOT) ?: "" }
+        } else {
+            libraryList = libraryList.sortedByDescending { it?.title?.lowercase(Locale.ROOT) ?: "" }
+        }
+        notifyDataSetChanged()
     }
 
     fun toggleSortOrder() {
         isAscending = !isAscending
-        updateList(sortLibraryList())
-    }
-
-    private fun sortLibraryListByTitle(): List<RealmMyLibrary?> {
-        return if (isTitleAscending) {
-            libraryList.sortedBy { it?.title?.lowercase(Locale.ROOT) }
+        if (isAscending) {
+            libraryList = libraryList.sortedBy { it?.createdDate }
         } else {
-            libraryList.sortedByDescending { it?.title?.lowercase(Locale.ROOT) }
+            libraryList = libraryList.sortedByDescending { it?.createdDate }
         }
-    }
-
-    private fun sortLibraryList(): List<RealmMyLibrary?> {
-        return if (isAscending) {
-            libraryList.sortedBy { it?.createdDate }
-        } else {
-            libraryList.sortedByDescending { it?.createdDate }
-        }
+        notifyDataSetChanged()
     }
 
     override fun getItemCount(): Int {
