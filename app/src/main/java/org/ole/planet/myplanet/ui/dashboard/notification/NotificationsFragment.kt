@@ -88,13 +88,9 @@ class NotificationsFragment : Fragment() {
             fragmentNotificationsBinding.emptyData.visibility = View.VISIBLE
         }
 
-        val filteredNotifications = notifications.filter { notification ->
-             notification.message.isNotEmpty() && notification.message != "INVALID"
-        }
-
         adapter = AdapterNotification(
             databaseService,
-            filteredNotifications,
+            notifications,
             onMarkAsReadClick = { position ->
                 markAsRead(position)
             },
@@ -195,7 +191,10 @@ class NotificationsFragment : Fragment() {
             "all" -> {}
         }
 
-        return query.sort("createdAt", Sort.DESCENDING).findAll().toList()
+        val results = query.sort("createdAt", Sort.DESCENDING).findAll()
+        return mRealm.copyFromRealm(results).filter {
+            it.message.isNotEmpty() && it.message != "INVALID"
+        }
     }
 
     private fun markAsRead(position: Int) {
@@ -208,7 +207,12 @@ class NotificationsFragment : Fragment() {
             realmNotification?.isRead = true
         }, {
             activity?.runOnUiThread {
-                adapter.notifyItemChanged(position)
+                adapter.updateNotifications(
+                    loadNotifications(
+                        userId,
+                        fragmentNotificationsBinding.status.selectedItem.toString().lowercase()
+                    )
+                )
                 updateUnreadCount()
                 updateMarkAllAsReadButtonVisibility()
             }
