@@ -12,6 +12,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.toColorInt
 import androidx.fragment.app.FragmentManager
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
 import org.ole.planet.myplanet.R
@@ -27,11 +29,15 @@ import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-class AdapterTeamList(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm, private val fragmentManager: FragmentManager, private val uploadManager: UploadManager) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
-    private lateinit var itemTeamListBinding: ItemTeamListBinding
+class AdapterTeamList(
+    private val context: Context,
+    private val list: List<RealmMyTeam>,
+    private val mRealm: Realm,
+    private val fragmentManager: FragmentManager,
+    private val uploadManager: UploadManager
+) : ListAdapter<RealmMyTeam, AdapterTeamList.ViewHolderTeam>(DIFF_CALLBACK) {
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
-    private var filteredList: List<RealmMyTeam> = emptyList()
     private lateinit var prefData: SharedPrefManager
 
     interface OnClickTeamItem {
@@ -43,9 +49,9 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTeam {
-        itemTeamListBinding = ItemTeamListBinding.inflate(LayoutInflater.from(context), parent, false)
+        val binding = ItemTeamListBinding.inflate(LayoutInflater.from(context), parent, false)
         prefData = SharedPrefManager(context)
-        return ViewHolderTeam(itemTeamListBinding)
+        return ViewHolderTeam(binding)
     }
 
     init {
@@ -53,7 +59,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
     }
 
     override fun onBindViewHolder(holder: ViewHolderTeam, position: Int) {
-        val team = filteredList[position]
+        val team = getItem(position)
         val user: RealmUserModel? = UserProfileDbHandler(context).userModel
 
         with(holder.binding) {
@@ -170,16 +176,23 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         val userId = user?.id
 
         val validTeams = list.filter { it.status?.isNotEmpty() == true }
-        filteredList = validTeams.sortedWith(compareByDescending<RealmMyTeam> { team ->
-            when {
-                userId != null && RealmMyTeam.isTeamLeader(team._id, userId, mRealm) -> 3
-                team.isMyTeam(userId, mRealm) -> 2
-                else -> 1
+        val sortedList = validTeams.sortedWith(
+            compareByDescending<RealmMyTeam> { team ->
+                when {
+                    userId != null && RealmMyTeam.isTeamLeader(team._id, userId, mRealm) -> 3
+                    team.isMyTeam(userId, mRealm) -> 2
+                    else -> 1
+                }
+            }.thenByDescending { team ->
+                RealmTeamLog.getVisitByTeam(mRealm, team._id)
             }
-        }.thenByDescending { team ->
-            RealmTeamLog.getVisitByTeam(mRealm, team._id)
-        })
-        notifyDataSetChanged()
+        )
+
+        // DiffUtil runs on a background thread and cannot access managed Realm objects.
+        // Convert the sorted list to unmanaged copies before submitting it so that
+        // background comparisons don't trigger Realm thread violations.
+        val detached = mRealm.copyFromRealm(sortedList)
+        submitList(detached)
     }
 
     private fun getBundle(team: RealmMyTeam): Bundle {
@@ -194,7 +207,20 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         this.type = type
     }
 
-    override fun getItemCount(): Int = filteredList.size
-
     class ViewHolderTeam(val binding: ItemTeamListBinding) : RecyclerView.ViewHolder(binding.root)
+
+    companion object {
+        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<RealmMyTeam>() {
+            override fun areItemsTheSame(oldItem: RealmMyTeam, newItem: RealmMyTeam): Boolean {
+                return oldItem._id == newItem._id
+            }
+
+            override fun areContentsTheSame(oldItem: RealmMyTeam, newItem: RealmMyTeam): Boolean {
+                return oldItem.name == newItem.name &&
+                    oldItem.teamType == newItem.teamType &&
+                    oldItem.status == newItem.status &&
+                    oldItem.updatedDate == newItem.updatedDate
+            }
+        }
+    }
 }
