@@ -15,9 +15,11 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
 
+import org.ole.planet.myplanet.di.AppPreferences
+
 class UserProfileRepositoryImpl @Inject constructor(
     private val databaseService: DatabaseService,
-    private val sharedPreferences: SharedPreferences,
+    @AppPreferences private val sharedPreferences: SharedPreferences,
     @ApplicationContext private val context: Context
 ) : UserProfileRepository {
 
