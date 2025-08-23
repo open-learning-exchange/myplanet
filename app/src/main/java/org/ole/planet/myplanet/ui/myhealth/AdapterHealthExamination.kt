@@ -13,30 +13,26 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import io.realm.Realm
 import java.util.Date
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertExaminationBinding
 import org.ole.planet.myplanet.databinding.RowExaminationBinding
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.MyHealthRepository
 import org.ole.planet.myplanet.ui.myhealth.AdapterHealthExamination.ViewHolderMyHealthExamination
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterHealthExamination(
-    private val context: Context,
-    private val list: List<RealmMyHealthPojo>?,
-    private val mh: RealmMyHealthPojo,
-    private val userModel: RealmUserModel?,
-    private val repository: MyHealthRepository
-) : RecyclerView.Adapter<ViewHolderMyHealthExamination>() {
+class AdapterHealthExamination(private val context: Context, private val list: List<RealmMyHealthPojo>?, private val mh: RealmMyHealthPojo, private val userModel: RealmUserModel?) : RecyclerView.Adapter<ViewHolderMyHealthExamination>() {
     private lateinit var rowExaminationBinding: RowExaminationBinding
+    private lateinit var mRealm: Realm
+    fun setmRealm(mRealm: Realm?) {
+        if (mRealm != null) {
+            this.mRealm = mRealm
+        }
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyHealthExamination {
         rowExaminationBinding = RowExaminationBinding.inflate(
@@ -54,14 +50,10 @@ class AdapterHealthExamination(
 
         val createdBy = getString("createdBy", encrypted)
         if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel?.id)) {
-            CoroutineScope(Dispatchers.IO).launch {
-                val model = repository.getUserModel(createdBy)
-                val name: String = model?.getFullName() ?: createdBy.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[1]
-                withContext(Dispatchers.Main) {
-                    rowExaminationBinding.txtDate.text = context.getString(R.string.two_strings, rowExaminationBinding.txtDate.text, name).trimIndent()
-                    holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_50))
-                }
-            }
+            val model = mRealm.where(RealmUserModel::class.java).equalTo("id", createdBy).findFirst()
+            val name: String = model?.getFullName() ?: createdBy.split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()[1]
+            rowExaminationBinding.txtDate.text = context.getString(R.string.two_strings, rowExaminationBinding.txtDate.text, name).trimIndent()
+            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_50))
         } else {
             rowExaminationBinding.txtDate.text = context.getString(R.string.self_examination, rowExaminationBinding.txtDate.text)
             holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_green_50))

@@ -3,16 +3,22 @@ package org.ole.planet.myplanet.ui.news
 import android.content.Context
 import android.view.MenuItem
 import android.view.View
+import androidx.lifecycle.coroutineScope
 import fisk.chipcloud.ChipCloud
-import io.realm.Realm
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
 
-class NewsLabelManager(private val context: Context, private val realm: Realm, private val currentUser: RealmUserModel?) {
+class NewsLabelManager(
+    private val context: Context,
+    private val newsRepository: NewsRepository,
+    private val currentUser: RealmUserModel?
+) {
     fun setupAddLabelMenu(binding: RowNewsBinding, news: RealmNews?) {
         binding.btnAddLabel.setOnClickListener {
             val usedLabels = news?.labels?.toSet() ?: emptySet()
@@ -25,12 +31,14 @@ class NewsLabelManager(private val context: Context, private val realm: Realm, p
             }
             menu.setOnMenuItemClickListener { menuItem: MenuItem ->
                 val selectedLabel = Constants.LABELS[menuItem.title]
-                if (selectedLabel != null && !news?.labels?.contains(selectedLabel)!!) {
-                    if (!realm.isInTransaction) realm.beginTransaction()
-                    news.labels?.add(selectedLabel)
-                    Utilities.toast(context, context.getString(R.string.label_added))
-                    realm.commitTransaction()
-                    showChips(binding, news)
+                if (selectedLabel != null && news?.labels?.contains(selectedLabel) == false) {
+                    binding.root.context as? androidx.lifecycle.LifecycleOwner
+                    val lifecycleOwner = binding.root.context as androidx.lifecycle.LifecycleOwner
+                    lifecycleOwner.lifecycle.coroutineScope.launch {
+                        newsRepository.addLabelToNews(news.id, selectedLabel)
+                        Utilities.toast(context, context.getString(R.string.label_added))
+                        showChips(binding, news)
+                    }
                     false
                 }
                 true
@@ -53,10 +61,14 @@ class NewsLabelManager(private val context: Context, private val realm: Realm, p
 
             if (isOwner) {
                 chipCloud.setDeleteListener { _: Int, labelText: String? ->
-                    if (!realm.isInTransaction) realm.beginTransaction()
-                    news.labels?.remove(Constants.LABELS[labelText])
-                    realm.commitTransaction()
-                    showChips(binding, news)
+                    val lifecycleOwner = binding.root.context as androidx.lifecycle.LifecycleOwner
+                    lifecycleOwner.lifecycle.coroutineScope.launch {
+                        val labelToRemove = Constants.LABELS[labelText]
+                        if (labelToRemove != null) {
+                            newsRepository.removeLabelFromNews(news.id, labelToRemove)
+                            showChips(binding, news)
+                        }
+                    }
                 }
             }
         }
@@ -78,4 +90,3 @@ class NewsLabelManager(private val context: Context, private val realm: Realm, p
         return ""
     }
 }
-
