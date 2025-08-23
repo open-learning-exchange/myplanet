@@ -8,8 +8,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Realm
 import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSelectedMyPersonal
@@ -24,46 +24,33 @@ import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterMyPersonal(private val context: Context, private val list: List<RealmMyPersonal>) : RecyclerView.Adapter<ViewHolderMyPersonal>() {
+class AdapterMyPersonal(private val context: Context) : ListAdapter<RealmMyPersonal, ViewHolderMyPersonal>(MyPersonalDiffCallback()) {
     private lateinit var rowMyPersonalBinding: RowMyPersonalBinding
-    private var realm: Realm? = null
     private var listener: OnSelectedMyPersonal? = null
     fun setListener(listener: OnSelectedMyPersonal?) {
         this.listener = listener
-    }
-    fun setRealm(realm: Realm?) {
-        this.realm = realm
     }
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyPersonal {
         rowMyPersonalBinding = RowMyPersonalBinding.inflate(LayoutInflater.from(context), parent, false)
         return ViewHolderMyPersonal(rowMyPersonalBinding)
     }
     override fun onBindViewHolder(holder: ViewHolderMyPersonal, position: Int) {
-        rowMyPersonalBinding.title.text = list[position].title
-        rowMyPersonalBinding.description.text = list[position].description
-        rowMyPersonalBinding.date.text = getFormattedDate(list[position].date)
+        val personal = getItem(position)
+        rowMyPersonalBinding.title.text = personal.title
+        rowMyPersonalBinding.description.text = personal.description
+        rowMyPersonalBinding.date.text = getFormattedDate(personal.date)
         rowMyPersonalBinding.imgDelete.setOnClickListener {
-            AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                .setMessage(R.string.delete_record)
-                .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                    if (!realm?.isInTransaction!!) realm?.beginTransaction()
-                    val personal = realm?.where(RealmMyPersonal::class.java)
-                        ?.equalTo("_id", list[position]._id)?.findFirst()
-                    personal?.deleteFromRealm()
-                    realm?.commitTransaction()
-                    notifyDataSetChanged()
-                    listener?.onAddedResource()
-                }.setNegativeButton(R.string.cancel, null).show()
+            listener?.onDelete(personal)
         }
         rowMyPersonalBinding.imgEdit.setOnClickListener {
-            editPersonal(list[position])
+            editPersonal(personal)
         }
         holder.itemView.setOnClickListener {
-            openResource(list[position].path)
+            openResource(personal.path)
         }
         rowMyPersonalBinding.imgUpload.setOnClickListener {
             if (listener != null) {
-                listener?.onUpload(list[position])
+                listener?.onUpload(personal)
             }
         }
     }
@@ -92,32 +79,7 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
         context.startActivity(i)
     }
     private fun editPersonal(personal: RealmMyPersonal) {
-        val alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(context))
-        alertMyPersonalBinding.etDescription.setText(personal.description)
-        alertMyPersonalBinding.etTitle.setText(personal.title)
-        AlertDialog.Builder(context, R.style.AlertDialogTheme)
-            .setTitle(R.string.edit_personal)
-            .setIcon(R.drawable.ic_edit)
-            .setView(alertMyPersonalBinding.root)
-            .setPositiveButton(R.string.button_submit) {_: DialogInterface?, _: Int ->
-                val title = alertMyPersonalBinding.etDescription.text.toString().trim { it <= ' ' }
-                val desc = alertMyPersonalBinding.etTitle.text.toString().trim { it <= ' ' }
-                if (title.isEmpty()) {
-                    Utilities.toast(context, R.string.please_enter_title.toString())
-                    return@setPositiveButton
-                }
-                if (!realm?.isInTransaction!!) realm?.beginTransaction()
-                personal.description = desc
-                personal.title = title
-                realm?.commitTransaction()
-                notifyDataSetChanged()
-                listener?.onAddedResource()
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
-    }
-    override fun getItemCount(): Int {
-        return list.size
+        listener?.onEdit(personal)
     }
     class ViewHolderMyPersonal(rowMyPersonalBinding: RowMyPersonalBinding) : RecyclerView.ViewHolder(rowMyPersonalBinding.root)
 }
