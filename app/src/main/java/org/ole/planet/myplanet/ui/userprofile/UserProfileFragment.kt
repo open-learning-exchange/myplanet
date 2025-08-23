@@ -40,7 +40,6 @@ import com.bumptech.glide.request.RequestOptions
 import com.bumptech.glide.request.target.Target
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import java.lang.String.format
 import java.time.Instant
 import java.util.ArrayList
@@ -57,9 +56,8 @@ import org.ole.planet.myplanet.R.array.subject_level
 import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
 import org.ole.planet.myplanet.databinding.RowStatBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.repository.UserProfileRepository
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
@@ -70,11 +68,9 @@ class UserProfileFragment : Fragment() {
     private var _binding: FragmentUserProfileBinding? = null
     private val binding get() = _binding!!
     private lateinit var rowStatBinding: RowStatBinding
-    private lateinit var handler: UserProfileDbHandler
     private lateinit var settings: SharedPreferences
     @Inject
-    lateinit var databaseService: DatabaseService
-    private lateinit var mRealm: Realm
+    lateinit var userProfileRepository: UserProfileRepository
     private var model: RealmUserModel? = null
     private var imageUrl = ""
     private lateinit var pickImageLauncher: ActivityResultLauncher<Intent>
@@ -86,13 +82,6 @@ class UserProfileFragment : Fragment() {
     private lateinit var captureImageLauncher: ActivityResultLauncher<Uri>
     private lateinit var requestCameraLauncher: ActivityResultLauncher<String>
 
-    override fun onDestroy() {
-        if (this::mRealm.isInitialized) {
-            mRealm.close()
-        }
-        super.onDestroy()
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -102,14 +91,12 @@ class UserProfileFragment : Fragment() {
 
                 val path = FileUtils.getRealPathFromURI(requireActivity(), url)
                 photoURI = path?.toUri()
-                startIntent(photoURI)
                 binding.image.setImageURI(url)
             }
         }
 
         captureImageLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
             if (isSuccess) {
-                startIntent(photoURI)
                 binding.image.setImageURI(photoURI)
             }
         }
@@ -142,9 +129,11 @@ class UserProfileFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentUserProfileBinding.inflate(inflater, container, false)
-        initializeDependencies()
+        settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        binding.rvStat.layoutManager = LinearLayoutManager(activity)
+        binding.rvStat.isNestedScrollingEnabled = false
         binding.btProfilePic.setOnClickListener { searchForPhoto() }
-        model = handler.userModel
+        model = userProfileRepository.getProfile()
 
         setupProfile()
         loadProfileImage()
@@ -154,14 +143,6 @@ class UserProfileFragment : Fragment() {
         setupStatsRecycler()
 
         return binding.root
-    }
-
-    private fun initializeDependencies() {
-        settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        handler = UserProfileDbHandler(requireContext())
-        mRealm = databaseService.realmInstance
-        binding.rvStat.layoutManager = LinearLayoutManager(activity)
-        binding.rvStat.isNestedScrollingEnabled = false
     }
 
     private fun setupProfile() {
@@ -319,24 +300,23 @@ class UserProfileFragment : Fragment() {
                 binding.rbFemale.isChecked -> "female"
                 else -> selectedGender
             }
-            val realm = databaseService.realmInstance
             val userId = settings.getString("userId", "")
-            RealmUserModel.updateUserDetails(
-                realm,
-                userId,
-                binding.firstName.text.toString(),
-                binding.lastName.text.toString(),
-                binding.middleName.text.toString(),
-                binding.email.text.toString(),
-                binding.phoneNumber.text.toString(),
-                selectedLevel,
-                selectedLanguage.takeUnless { it == getString(R.string.language) },
-                selectedGender,
-                date?: model?.dob
-            ) {
-                updateUIWithUserData(model)
+            val updatedProfileData = model?.copy(
+                firstName = binding.firstName.text.toString(),
+                lastName = binding.lastName.text.toString(),
+                middleName = binding.middleName.text.toString(),
+                email = binding.email.text.toString(),
+                phoneNumber = binding.phoneNumber.text.toString(),
+                level = selectedLevel,
+                language = selectedLanguage.takeUnless { it == getString(R.string.language) },
+                gender = selectedGender,
+                dob = date ?: model?.dob
+            )
+            updatedProfileData?.let {
+                userProfileRepository.updateProfile(it)
+                updateUIWithUserData(it)
             }
-            realm.close()
+
             dialog.dismiss()
         }
     }
@@ -377,18 +357,8 @@ class UserProfileFragment : Fragment() {
         }
     }
 
-    private fun createStatsMap(): LinkedHashMap<String, String?> {
-        return linkedMapOf(
-            getString(R.string.community_name) to Utilities.checkNA(model?.planetCode),
-            getString(R.string.last_login) to handler.lastVisit?.let { Utilities.getRelativeTime(it) },
-            getString(R.string.total_visits_overall) to handler.offlineVisits.toString(),
-            getString(R.string.most_opened_resource) to Utilities.checkNA(handler.maxOpenedResource),
-            getString(R.string.number_of_resources_opened) to Utilities.checkNA(handler.numberOfResourceOpen)
-        )
-    }
-
     private fun setupStatsRecycler() {
-        val map = createStatsMap()
+        val map = userProfileRepository.getStats()
         val keys = LinkedList(map.keys)
         binding.rvStat.adapter = object : RecyclerView.Adapter<ViewHolderRowStat>() {
             override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderRowStat {
@@ -458,20 +428,6 @@ class UserProfileFragment : Fragment() {
         }
         photoURI = requireActivity().contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
         photoURI?.let { captureImageLauncher.launch(it) }
-    }
-
-    private fun startIntent(uri: Uri?) {
-        var path: String? = null
-        path = uri?.toString()
-
-        mRealm.let {
-            if (!it.isInTransaction) {
-                it.beginTransaction()
-            }
-            model?.userImage = path
-            model?.isUpdated = true
-            it.commitTransaction()
-        }
     }
 
     private fun updateUIWithUserData(model: RealmUserModel?) {
