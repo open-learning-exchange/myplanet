@@ -14,13 +14,12 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayout.OnTabSelectedListener
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.RealmResults
-import java.util.Date
-import java.util.UUID
-import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseNewsFragment
@@ -32,10 +31,10 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getResourceIds
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getUsers
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamLog.Companion.getVisitCount
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.news.AdapterNews
@@ -45,12 +44,15 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.Utilities
 
+import javax.inject.Inject
+
 @AndroidEntryPoint
 class MyTeamsDetailFragment : BaseNewsFragment() {
     private lateinit var fragmentMyTeamsDetailBinding: FragmentMyTeamsDetailBinding
     lateinit var tvDescription: TextView
     var user: RealmUserModel? = null
-    
+    @Inject
+    lateinit var newsRepository: NewsRepository
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     var teamId: String? = null
@@ -74,9 +76,8 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         fragmentMyTeamsDetailBinding = FragmentMyTeamsDetailBinding.inflate(inflater, container, false)
         val v: View = fragmentMyTeamsDetailBinding.root
         initializeViews(v)
-        mRealm = databaseService.realmInstance
-        user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
-        team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+        user = userProfileDbHandler.userModel
+        team = newsRepository.getTeam(teamId)
         return fragmentMyTeamsDetailBinding.root
     }
 
@@ -118,8 +119,10 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
                 map["message"] = msg
                 map["messageType"] = team?.teamType!!
                 map["messagePlanetCode"] = team?.teamPlanetCode!!
-                createNews(map, mRealm, user, imageList)
-                rvDiscussion.adapter?.notifyItemInserted(0)
+                lifecycleScope.launch {
+                    user?.let { newsRepository.createNews(map, it, ArrayList(imageList)) }
+                    rvDiscussion.adapter?.notifyItemInserted(0)
+                }
             }.setNegativeButton(R.string.cancel, null).create()
         dialog.show()
     }
@@ -138,55 +141,45 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
     }
 
     private fun setTeamList() {
-        val users: List<RealmUserModel> = getUsers(teamId, mRealm, "")
-        createTeamLog()
-        val reqUsers = getRequestedTeamList(team?.requests)
-        val realmNewsList: List<RealmNews> = mRealm.where(RealmNews::class.java)
-            .isEmpty("replyTo").equalTo("viewableBy", "teams")
-            .equalTo("viewableId", team?._id).findAll()
-        rvDiscussion.layoutManager = LinearLayoutManager(activity)
-        showRecyclerView(realmNewsList)
-        listContent.visibility = View.GONE
-        val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
-        libraries = mRealm.where(RealmMyLibrary::class.java).`in`("id", getResourceIds(teamId, mRealm).toTypedArray<String>()).findAll()
-        tabLayout.getTabAt(1)?.setText(String.format(getString(R.string.joined_members_colon) + " (%s)", users.size))
-        tabLayout.getTabAt(3)?.setText(String.format(getString(R.string.courses_colon) + " (%s)", courses.size))
-        tabLayout.getTabAt(2)?.setText(String.format(getString(R.string.requested_members_colon) + " (%s)", reqUsers.size))
-        tabLayout.getTabAt(4)?.setText(String.format(getString(R.string.resources_colon) + " (%s)", libraries?.size))
-        if (!isMyTeam) {
-            try {
-                (tabLayout.getChildAt(0) as ViewGroup).getChildAt(0).visibility = View.GONE
-                (tabLayout.getChildAt(4) as ViewGroup).getChildAt(0).visibility = View.GONE
-                tabLayout.getTabAt(1)?.select()
-            } catch (e: Exception) {
-                e.printStackTrace()
+        lifecycleScope.launch {
+            val users: List<RealmUserModel> = newsRepository.getUsers(teamId)
+            createTeamLog()
+            val reqUsers = getRequestedTeamList(team?.requests)
+            val realmNewsList: List<RealmNews> = newsRepository.getNewsByTeam(teamId)
+            rvDiscussion.layoutManager = LinearLayoutManager(activity)
+            showRecyclerView(realmNewsList)
+            listContent.visibility = View.GONE
+            val courses = newsRepository.getCoursesByTeam(teamId)
+            libraries = newsRepository.getResourcesByTeam(teamId)
+            tabLayout.getTabAt(1)?.text = String.format(getString(R.string.joined_members_colon) + " (%s)", users.size)
+            tabLayout.getTabAt(3)?.text = String.format(getString(R.string.courses_colon) + " (%s)", courses.size)
+            tabLayout.getTabAt(2)?.text = String.format(getString(R.string.requested_members_colon) + " (%s)", reqUsers.size)
+            tabLayout.getTabAt(4)?.text = String.format(getString(R.string.resources_colon) + " (%s)", libraries?.size)
+            if (!isMyTeam) {
+                try {
+                    (tabLayout.getChildAt(0) as ViewGroup).getChildAt(0).visibility = View.GONE
+                    (tabLayout.getChildAt(4) as ViewGroup).getChildAt(0).visibility = View.GONE
+                    tabLayout.getTabAt(1)?.select()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
+            setTabListener(users, courses, reqUsers)
         }
-        setTabListener(users, courses, reqUsers)
     }
 
     private fun createTeamLog() {
-        if (!mRealm.isInTransaction) {
-            mRealm.beginTransaction()
+        lifecycleScope.launch {
+            newsRepository.createTeamLog(teamId, user)
         }
-        val log = mRealm.createObject(RealmTeamLog::class.java, "${UUID.randomUUID()}")
-        log.teamId = teamId
-        log.user = user?.name
-        log.createdOn = user?.planetCode
-        log.type = "teamVisit"
-        log.teamType = team?.teamType
-        log.parentCode = user?.parentCode
-        log.time = Date().time
-        mRealm.commitTransaction()
     }
 
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
         adapterNews = activity?.let {
             realmNewsList?.let { it1 ->
-                AdapterNews(it, it1.toMutableList(), user, null, team?.name.toString(), teamId, userProfileDbHandler)
+                AdapterNews(it, it1.toMutableList(), user, null, team?.name.toString(), teamId, userProfileDbHandler, newsRepository, viewLifecycleOwner)
             }
         }
-        adapterNews?.setmRealm(mRealm)
         adapterNews?.setListener(this)
         rvDiscussion.adapter = adapterNews
         llRv.visibility = View.VISIBLE
@@ -245,21 +238,23 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
     private fun setListContent(tab: TabLayout.Tab, s: String, data: List<RealmUserModel>) {
         listContent.visibility = View.VISIBLE
         llRv.visibility = View.GONE
-        tab.setText(s)
+        tab.text = s
         listContent.adapter = object : ArrayAdapter<RealmUserModel?>(requireActivity(), android.R.layout.simple_list_item_1, data) {
             override fun getView(position: Int, viewConverted: View?, parent: ViewGroup): View {
                 var convertView = viewConverted
                 if (convertView == null) {
-                    convertView = LayoutInflater.from(activity)
-                        .inflate(android.R.layout.simple_list_item_1, parent, false)
+                    convertView = LayoutInflater.from(activity).inflate(android.R.layout.simple_list_item_1, parent, false)
                 }
                 val tv = convertView!!.findViewById<TextView>(android.R.id.text1)
-                val formattedText = getString(R.string.visit_count, getItem(position)?.name ?: "", getVisitCount(mRealm, getItem(position)?.name, teamId), getString(R.string.visits))
-                tv.text = formattedText
+                lifecycleScope.launch {
+                    val visitCount = newsRepository.getVisitCount(getItem(position)?.name, teamId)
+                    val formattedText = getString(R.string.visit_count, getItem(position)?.name ?: "", visitCount, getString(R.string.visits))
+                    tv.text = formattedText
+                }
                 return convertView
             }
         }
-        listContent.onItemClickListener = AdapterView.OnItemClickListener { _: AdapterView<*>?, _: View?, i: Int, _: Long ->
+        listContent.onItemClickListener = AdapterView.OnItemClickListener { _, _, i, _ ->
             openFragment(data[i].id, UserDetailFragment())
         }
     }

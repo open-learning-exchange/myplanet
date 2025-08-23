@@ -19,17 +19,17 @@ import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Case
-import io.realm.Realm
+import androidx.lifecycle.lifecycleScope
+import com.google.gson.Gson
+import com.google.gson.JsonObject
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.RealmList
-import io.realm.Sort
-import java.io.File
-import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.news.AdapterNews.OnNewsItemClickListener
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
@@ -38,17 +38,17 @@ import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 
+import javax.inject.Inject
+
 @AndroidEntryPoint
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private lateinit var activityReplyBinding: ActivityReplyBinding
-    lateinit var mRealm: Realm
     @Inject
-    lateinit var databaseService: DatabaseService
+    lateinit var newsRepository: NewsRepository
     var id: String? = null
     private lateinit var newsAdapter: AdapterNews
     private val gson = Gson()
     var user: RealmUserModel? = null
-    
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var imageList: RealmList<String>
@@ -62,11 +62,10 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         EdgeToEdgeUtil.setupEdgeToEdge(this, activityReplyBinding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
-        mRealm = databaseService.realmInstance
         title = "Reply"
         imageList = RealmList()
         id = intent.getStringExtra("id")
-        user = UserProfileDbHandler(this).userModel
+        user = userProfileDbHandler.userModel
         activityReplyBinding.rvReply.layoutManager = LinearLayoutManager(this)
         activityReplyBinding.rvReply.isNestedScrollingEnabled = false
         showData(id)
@@ -81,21 +80,22 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     }
 
     private fun showData(id: String?) {
-        val news = mRealm.where(RealmNews::class.java).equalTo("id", id).findFirst()
-        val list: List<RealmNews?> = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING).equalTo("replyTo", id, Case.INSENSITIVE).findAll()
-        newsAdapter = AdapterNews(this, list.toMutableList(), user, news, "", null, userProfileDbHandler)
-        newsAdapter.setListener(this)
-        newsAdapter.setmRealm(mRealm)
-        newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
-        newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
-        activityReplyBinding.rvReply.adapter = newsAdapter
+        lifecycleScope.launch {
+            val news = newsRepository.getNews(id)
+            val list = newsRepository.getReplies(id)
+            newsAdapter = AdapterNews(this@ReplyActivity, list.toMutableList(), user, news, "", null, userProfileDbHandler, newsRepository, this@ReplyActivity)
+            newsAdapter.setListener(this@ReplyActivity)
+            newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
+            newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
+            activityReplyBinding.rvReply.adapter = newsAdapter
+        }
     }
 
     override fun onResume() {
         super.onResume()
         refreshData()
-
     }
+
     private fun refreshData() {
         id?.let { showData(it) }
     }

@@ -10,26 +10,26 @@ import android.widget.LinearLayout
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Case
-import io.realm.RealmChangeListener
-import io.realm.RealmResults
-import io.realm.Sort
-import javax.inject.Inject
+import androidx.lifecycle.lifecycleScope
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCommunityBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.news.ReplyActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 
+import javax.inject.Inject
+
 @AndroidEntryPoint
 class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickListener {
     private lateinit var fragmentCommunityBinding: FragmentCommunityBinding
-    private var newList: RealmResults<RealmNews>? = null
-    private var newsListChangeListener: RealmChangeListener<RealmResults<RealmNews>>? = null
-    
+    @Inject
+    lateinit var newsRepository: NewsRepository
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     override fun addImage(llImage: LinearLayout?) {}
@@ -46,31 +46,25 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
     var user: RealmUserModel? = null
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentCommunityBinding = FragmentCommunityBinding.inflate(inflater, container, false)
-        newList = mRealm.where(RealmNews::class.java).equalTo("docType", "message", Case.INSENSITIVE)
-            .equalTo("viewableBy", "community", Case.INSENSITIVE)
-            .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE).isEmpty("replyTo")
-            .sort("time", Sort.DESCENDING).findAll()
-        newsListChangeListener = RealmChangeListener { results ->
-            updatedNewsList(results)
-        }
-        newList?.addChangeListener(newsListChangeListener!!)
         return fragmentCommunityBinding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        mRealm = databaseService.realmInstance
-        user = UserProfileDbHandler(requireActivity()).userModel
+        user = userProfileDbHandler.userModel
         fragmentCommunityBinding.btnLibrary.setOnClickListener {
             homeItemClickListener?.openCallFragment(ResourcesFragment())
         }
-        newList = mRealm.where(RealmNews::class.java).equalTo("docType", "message", Case.INSENSITIVE)
-            .equalTo("viewableBy", "community", Case.INSENSITIVE)
-            .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE).isEmpty("replyTo")
-            .sort("time", Sort.DESCENDING).findAll()
         val orientation = resources.configuration.orientation
         changeLayoutManager(orientation)
-        updatedNewsList(newList)
+        fetchAndDisplayNews()
+    }
+
+    private fun fetchAndDisplayNews() {
+        lifecycleScope.launch {
+            val newsList = newsRepository.getNews(user?.id, user?.planetCode, user?.parentCode)
+            updatedNewsList(newsList)
+        }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -87,22 +81,17 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
         }
     }
 
-    private fun updatedNewsList(updatedList: RealmResults<RealmNews>?) {
+    private fun updatedNewsList(updatedList: List<RealmNews?>) {
         activity?.runOnUiThread {
-            val updatedListAsMutable: MutableList<RealmNews?> = updatedList?.toMutableList() ?: mutableListOf()
-            val adapter = activity?.let { AdapterNews(it, updatedListAsMutable, user, null, "", null, userProfileDbHandler) }
+            val updatedListAsMutable: MutableList<RealmNews?> = updatedList.toMutableList()
+            val adapter = activity?.let {
+                AdapterNews(it, updatedListAsMutable, user, null, "", null, userProfileDbHandler, newsRepository, viewLifecycleOwner)
+            }
             adapter?.setListener(this)
             adapter?.setFromLogin(requireArguments().getBoolean("fromLogin", false))
-            adapter?.setmRealm(mRealm)
             fragmentCommunityBinding.rvCommunity.adapter = adapter
             fragmentCommunityBinding.llEditDelete.visibility = if (user?.isManager() == true) View.VISIBLE else View.GONE
             adapter?.notifyDataSetChanged()
         }
-    }
-
-    override fun onDestroy() {
-        newList?.removeAllChangeListeners()
-        newsListChangeListener = null
-        super.onDestroy()
     }
 }

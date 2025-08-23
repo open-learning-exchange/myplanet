@@ -28,6 +28,7 @@ import com.github.chrisbanes.photoview.PhotoView
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.realm.RealmList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -284,9 +285,11 @@ class AdapterNews(
                     holder,
                 ) { h, updatedNews, position ->
                     lifecycleOwner.lifecycleScope.launch {
-                        val replies = newsRepository.getReplies(updatedNews.id)
-                        showReplyButton(h, updatedNews, position, replies)
-                        notifyItemChanged(position)
+                        updatedNews?.let {
+                            val replies = newsRepository.getReplies(it.id)
+                            showReplyButton(h, it, position, replies)
+                            notifyItemChanged(position)
+                        }
                     }
                 }
             }
@@ -485,8 +488,10 @@ class AdapterNews(
                     viewHolder,
                 ) { h, news, i ->
                     lifecycleOwner.lifecycleScope.launch {
-                        val reps = newsRepository.getReplies(news.id)
-                        showReplyButton(h, news, i, reps)
+                        news?.let {
+                            val reps = newsRepository.getReplies(it.id)
+                            showReplyButton(h, it, i, reps)
+                        }
                     }
                 }
             }

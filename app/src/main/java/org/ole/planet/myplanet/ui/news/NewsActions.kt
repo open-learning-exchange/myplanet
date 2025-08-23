@@ -10,12 +10,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
 import com.google.gson.JsonArray
-import io.realm.Realm
 import io.realm.RealmList
+import kotlinx.coroutines.runBlocking
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
@@ -48,7 +48,7 @@ object NewsActions {
         isEdit: Boolean,
         components: EditDialogComponents,
         news: RealmNews?,
-        realm: Realm,
+        newsRepository: NewsRepository,
         currentUser: RealmUserModel?,
         imageList: RealmList<String>?,
         listener: AdapterNews.OnNewsItemClickListener?
@@ -58,10 +58,12 @@ object NewsActions {
             components.inputLayout.error = dialog.context.getString(R.string.please_enter_message)
             return
         }
-        if (isEdit) {
-            editPost(realm, s, news)
-        } else {
-            postReply(realm, s, news, currentUser, imageList)
+        runBlocking {
+            if (isEdit) {
+                editPost(newsRepository, s, news)
+            } else {
+                postReply(newsRepository, s, news, currentUser, imageList)
+            }
         }
         dialog.dismiss()
         listener?.clearImages()
@@ -70,7 +72,7 @@ object NewsActions {
 
     fun showEditAlert(
         context: Context,
-        realm: Realm,
+        newsRepository: NewsRepository,
         id: String?,
         isEdit: Boolean,
         currentUser: RealmUserModel?,
@@ -84,8 +86,10 @@ object NewsActions {
         message.text = context.getString(if (isEdit) R.string.edit_post else R.string.reply)
         val icon = components.view.findViewById<ImageView>(R.id.alert_icon)
         icon.setImageResource(R.drawable.ic_edit)
-
-        val news = realm.where(RealmNews::class.java).equalTo("id", id).findFirst()
+        var news: RealmNews?
+        runBlocking {
+            news = newsRepository.getNews(id)
+        }
         if (isEdit) {
             components.editText.setText(context.getString(R.string.message_placeholder, news?.message))
         }
@@ -96,19 +100,18 @@ object NewsActions {
             .create()
         dialog.show()
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            handlePositiveButton(dialog, isEdit, components, news, realm, currentUser, imageList, listener)
+            handlePositiveButton(dialog, isEdit, components, news, newsRepository, currentUser, imageList, listener)
             updateReplyButton(viewHolder,news,viewHolder.bindingAdapterPosition)
         }
     }
 
-    private fun postReply(
-        realm: Realm,
+    private suspend fun postReply(
+        newsRepository: NewsRepository,
         s: String?,
         news: RealmNews?,
         currentUser: RealmUserModel?,
         imageList: RealmList<String>?
     ) {
-        if (!realm.isInTransaction) realm.beginTransaction()
         val map = HashMap<String?, String>()
         map["message"] = s ?: ""
         map["viewableBy"] = news?.viewableBy ?: ""
@@ -117,14 +120,14 @@ object NewsActions {
         map["messageType"] = news?.messageType ?: ""
         map["messagePlanetCode"] = news?.messagePlanetCode ?: ""
         map["viewIn"] = news?.viewIn ?: ""
-        currentUser?.let { createNews(map, realm, it, imageList, true) }
+        if (currentUser != null) {
+            newsRepository.createNews(map, currentUser, imageList)
+        }
     }
 
-    private fun editPost(realm: Realm, s: String, news: RealmNews?) {
+    private suspend fun editPost(newsRepository: NewsRepository, s: String, news: RealmNews?) {
         if (s.isEmpty()) return
-        if (!realm.isInTransaction) realm.beginTransaction()
-        news?.updateMessage(s)
-        realm.commitTransaction()
+        news?.let { newsRepository.updateNews(it.id, s) }
     }
 
     fun showMemberDetails(

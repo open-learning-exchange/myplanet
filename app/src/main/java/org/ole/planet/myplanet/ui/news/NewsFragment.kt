@@ -106,7 +106,9 @@ class NewsFragment : BaseNewsFragment() {
             map["messagePlanetCode"] = user?.planetCode ?: ""
 
             lifecycleScope.launch {
-                val n = user?.let { it1 -> newsRepository.createNews(map, it1, imageList) }
+                val n = user?.let { it1 ->
+                    newsRepository.createNews(map, it1, ArrayList(imageList))
+                }
                 imageList.clear()
                 llImage?.removeAllViews()
                 adapterNews?.addItem(n)
