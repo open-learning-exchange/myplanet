@@ -138,22 +138,29 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                         alertCreateTeamBinding.etName.error = getString(R.string.please_enter_a_name)
                     } else -> {
                         if (team == null) {
-                            createTeam(name,
-                                if (alertCreateTeamBinding.spnTeamType.selectedItemPosition == 0) "local" else "sync", map,
+                            createTeam(
+                                name,
+                                if (alertCreateTeamBinding.spnTeamType.selectedItemPosition == 0) "local" else "sync",
+                                map,
                                 alertCreateTeamBinding.switchPublic.isChecked
                             )
                         } else {
-                            if (!team.realm.isInTransaction) {
-                                team.realm.beginTransaction()
+                            // The team instance passed from the adapter may be an unmanaged copy.
+                            // Re-query the managed object and update it inside a Realm transaction.
+                            mRealm.executeTransaction { realm ->
+                                realm.where(RealmMyTeam::class.java)
+                                    .equalTo("_id", team._id)
+                                    .findFirst()
+                                    ?.apply {
+                                        this.name = name
+                                        services = "${alertCreateTeamBinding.etServices.text}"
+                                        rules = "${alertCreateTeamBinding.etRules.text}"
+                                        limit = 12
+                                        description = "${alertCreateTeamBinding.etDescription.text}"
+                                        createdBy = userId
+                                        updated = true
+                                    }
                             }
-                            team.name = name
-                            team.services = "${alertCreateTeamBinding.etServices.text}"
-                            team.rules = "${alertCreateTeamBinding.etRules.text}"
-                            team.limit = 12
-                            team.description = "${alertCreateTeamBinding.etDescription.text}"
-                            team.createdBy = userId
-                            team.updated = true
-                            team.realm.commitTransaction()
                         }
                         fragmentTeamBinding.etSearch.visibility = View.VISIBLE
                         fragmentTeamBinding.tableTitle.visibility = View.VISIBLE
