@@ -84,7 +84,12 @@ object TimeUtils {
         return try {
             if (stringDate.isNullOrBlank() || pattern.isNullOrBlank()) return "N/A"
             val formatter = DateTimeFormatter.ofPattern(pattern, defaultLocale).withZone(utcZone)
-            val instant = LocalDate.parse(stringDate, formatter).atStartOfDay(utcZone).toInstant()
+            val instant = if (stringDate.contains("T")) {
+                Instant.from(formatter.parse(stringDate))
+            } else {
+                val dateOnlyFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", defaultLocale)
+                LocalDate.parse(stringDate, dateOnlyFormatter).atStartOfDay(utcZone).toInstant()
+            }
             getFormattedDate(instant.toEpochMilli())
         } catch (e: Exception) {
             e.printStackTrace()
@@ -122,8 +127,25 @@ object TimeUtils {
 
     fun parseDate(dateString: String): Long? =
         try {
-            val localDate = LocalDate.parse(dateString, dateOnlyFormatter)
+            val localDate = try {
+                LocalDate.parse(dateString, dateOnlyFormatter)
+            } catch (_: Exception) {
+                val fallbackFormatter = DateTimeFormatter.ofPattern("dd, MMMM yyyy", defaultLocale)
+                LocalDate.parse(dateString, fallbackFormatter)
+            }
             localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+
+    fun parseInstantFromString(dateString: String): Instant? =
+        try {
+            if (dateString.contains("T")) {
+                Instant.parse(dateString)
+            } else {
+                Instant.parse("${dateString}T00:00:00.000Z")
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             null

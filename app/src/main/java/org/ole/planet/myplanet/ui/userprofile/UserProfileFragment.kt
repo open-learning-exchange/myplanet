@@ -282,9 +282,11 @@ class UserProfileFragment : Fragment() {
             var dobPrevious = Calendar.getInstance()
             val previousSelectedDate = date ?: model?.dob
             if(!previousSelectedDate.isNullOrEmpty()){
-                val instant = Instant.parse(previousSelectedDate)
-                dobPrevious = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
-                    timeInMillis = instant.toEpochMilli()
+                val instant = TimeUtils.parseInstantFromString(previousSelectedDate)
+                instant?.let {
+                    dobPrevious = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                        timeInMillis = it.toEpochMilli()
+                    }
                 }
             }
 
