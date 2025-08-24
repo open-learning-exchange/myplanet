@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 class AdapterJoinedMember(
     private val context: Context,
@@ -226,7 +226,7 @@ class AdapterJoinedMember(
             teamLeaderId = newLeader?.userId
         }, Realm.Transaction.OnSuccess {
             notifyDataSetChanged()
-            Utilities.toast(context, context.getString(R.string.leader_selected))
+            context.toast(context.getString(R.string.leader_selected))
         })
         refreshList()
     }

@@ -38,7 +38,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
@@ -217,10 +217,10 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                     model.isUpdated = true
                 }
             }, {
-                Utilities.toast(MainApplication.context, getString(R.string.user_profile_updated))
+                MainApplication.context.toast(getString(R.string.user_profile_updated))
                 if (isAdded) dialog?.dismiss()
             }) {
-                Utilities.toast(MainApplication.context, getString(R.string.unable_to_update_user))
+                MainApplication.context.toast(getString(R.string.unable_to_update_user))
                 if (isAdded) dialog?.dismiss()
             }
         } else {
@@ -244,7 +244,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         if (safeTeamId == "") {
             return
         } else {
-            Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
+            activity?.toast(getString(R.string.thank_you_for_taking_this_survey))
             val settings = MainApplication.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
             checkAvailableServer(settings)
             val activity = requireActivity()

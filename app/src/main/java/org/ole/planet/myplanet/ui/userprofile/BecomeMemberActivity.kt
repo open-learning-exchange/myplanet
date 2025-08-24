@@ -25,8 +25,9 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
+import org.ole.planet.myplanet.utilities.isValidEmail
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 class BecomeMemberActivity : BaseActivity() {
@@ -102,12 +103,12 @@ class BecomeMemberActivity : BaseActivity() {
                 activityBecomeMemberBinding.etRePassword.error = getString(R.string.password_doesn_t_match)
                 false
             }
-            info.email.isNotEmpty() && !Utilities.isValidEmail(info.email) -> {
+            info.email.isNotEmpty() && !info.email.isValidEmail() -> {
                 activityBecomeMemberBinding.etEmail.error = getString(R.string.invalid_email)
                 false
             }
             info.gender == null -> {
-                Utilities.toast(this, getString(R.string.please_select_gender))
+                this.toast(getString(R.string.please_select_gender))
                 false
             }
             else -> true
@@ -148,7 +149,7 @@ class BecomeMemberActivity : BaseActivity() {
 
         Service(this).becomeMember(realm, obj, object : Service.CreateUserCallback {
             override fun onSuccess(success: String) {
-                runOnUiThread { Utilities.toast(this@BecomeMemberActivity, success) }
+                runOnUiThread { this@BecomeMemberActivity.toast(success) }
             }
         }, object : SecurityDataCallback {
             override fun onSecurityDataUpdated() {

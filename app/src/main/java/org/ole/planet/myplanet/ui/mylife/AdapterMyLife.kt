@@ -35,7 +35,7 @@ import org.ole.planet.myplanet.ui.references.ReferenceFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 class AdapterMyLife(private val context: Context, private val myLifeList: List<RealmMyLife>, private var mRealm: Realm, private val mDragStartListener: OnStartDragListener) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), ItemTouchHelperAdapter {
     private val hide = 0.5f
@@ -87,10 +87,10 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
             Handler(Looper.getMainLooper()).post {
                 if (isVisible) {
                     changeVisibility(holder, R.drawable.ic_visibility, hide)
-                    Utilities.toast(context, myLifeList[position].title + context.getString(R.string.is_now_hidden))
+                    context.toast(myLifeList[position].title + context.getString(R.string.is_now_hidden))
                 } else {
                     changeVisibility(holder, R.drawable.ic_visibility_off, show)
-                    Utilities.toast(context, myLifeList[position].title + context.getString(R.string.is_now_shown))
+                    context.toast(myLifeList[position].title + context.getString(R.string.is_now_shown))
                 }
             } }) { }
     }

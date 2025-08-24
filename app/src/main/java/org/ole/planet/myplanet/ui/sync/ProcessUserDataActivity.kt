@@ -343,7 +343,7 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
             try {
                 val apiInterface = client?.create(ApiInterface::class.java)
                 val userDocUrl = "${getUrl()}/tablet_users/org.couchdb.user:$name"
-                val response = apiInterface?.getJsonObject(Utilities.header, userDocUrl)?.execute()
+                val response = apiInterface?.getJsonObject(userDocUrl)?.execute()
 
                 if (response?.isSuccessful == true && response.body() != null) {
                     val userDoc = response.body()

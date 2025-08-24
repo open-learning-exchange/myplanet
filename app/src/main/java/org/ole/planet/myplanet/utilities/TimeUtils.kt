@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utilities
 
+import android.text.format.DateUtils
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -7,6 +8,13 @@ import java.time.Period
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+
+fun Long.getRelativeTime(): String {
+    val timeNow = System.currentTimeMillis()
+    return if (this < timeNow) {
+        DateUtils.getRelativeTimeSpanString(this, timeNow, 0).toString()
+    } else "Just now"
+}
 
 object TimeUtils {
     private val defaultLocale: Locale

@@ -101,12 +101,12 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
             mRealm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
                 saveData(realm, urgent, type, argumentArray)
             }, Realm.Transaction.OnSuccess {
-                Utilities.toast(activity, R.string.feedback_saved.toString())
+                activity?.toast(R.string.feedback_saved.toString())
             })
         } else mRealm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
             saveData(realm, urgent, type, message)
         }, Realm.Transaction.OnSuccess {
-            Utilities.toast(activity, R.string.feedback_saved.toString())
+            activity?.toast(R.string.feedback_saved.toString())
         })
         Toast.makeText(activity, R.string.thank_you_your_feedback_has_been_submitted, Toast.LENGTH_SHORT).show()
         if (mListener != null) {

@@ -44,7 +44,7 @@ import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.getCloudConfig
 
 class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDateSetListener {
     private lateinit var fragmentEditAchievementBinding: FragmentEditAchievementBinding
@@ -107,7 +107,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     }
 
     private fun showAchievementAndInfo() {
-        val config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
+        val config = getCloudConfig().selectMode(ChipCloud.SelectMode.single)
         fragmentEditAchievementBinding.llAttachment.removeAllViews()
         for (e in achievementArray!!) {
             editAttachmentBinding = EditAttachementBinding.inflate(LayoutInflater.from(activity))

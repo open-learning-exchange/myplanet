@@ -10,7 +10,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.AuthHelper
-import org.ole.planet.myplanet.utilities.Utilities.toast
+import org.ole.planet.myplanet.utilities.toast
 
 fun LoginActivity.showGuestLoginDialog() {
     MainApplication.service.withRealm { realm ->
@@ -61,7 +61,7 @@ fun LoginActivity.showGuestLoginDialog() {
                     } else {
                         val model = RealmUserModel.createGuestUser(username, loginRealm, settings)?.let { loginRealm.copyFromRealm(it) }
                         if (model == null) {
-                            toast(this, getString(R.string.unable_to_login))
+                            this.toast(getString(R.string.unable_to_login))
                         } else {
                             saveUsers(username, "", "guest")
                             saveUserInfoPref(settings, "", model)

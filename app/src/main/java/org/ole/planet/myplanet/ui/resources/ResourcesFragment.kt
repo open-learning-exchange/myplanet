@@ -53,7 +53,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.getCloudConfig
 
 @AndroidEntryPoint
 class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSelected,
@@ -207,7 +207,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
         userModel = profileDbHandler.userModel
         searchTags = ArrayList()
-        config = Utilities.getCloudConfig().showClose(R.color.black_overlay)
+        config = getCloudConfig().showClose(R.color.black_overlay)
 
         initializeViews()
         setupEventListeners()

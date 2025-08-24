@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 class NewsDetailActivity : BaseActivity() {
@@ -43,7 +43,7 @@ class NewsDetailActivity : BaseActivity() {
         val id = intent.getStringExtra("newsId")
         news = realm.where(RealmNews::class.java).equalTo("id", id).findFirst()
         if (news == null) {
-            Utilities.toast(this, getString(R.string.new_not_available))
+            this.toast(getString(R.string.new_not_available))
             finish()
             return
         }

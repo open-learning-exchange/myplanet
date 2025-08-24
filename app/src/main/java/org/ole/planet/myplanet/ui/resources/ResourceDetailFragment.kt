@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.FileUtils.getFileExtension
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var _binding: FragmentLibraryDetailBinding? = null
@@ -69,7 +69,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             withContext(Dispatchers.Main) {
                 binding.btnDownload.setImageResource(R.drawable.ic_play)
                 if (!library.userId?.contains(profileDbHandler.userModel?.id)!!) {
-                    Utilities.toast(activity, getString(R.string.added_to_my_library))
+                    activity?.toast(getString(R.string.added_to_my_library))
                     binding.btnRemove.setImageResource(R.drawable.close_x)
                 }
             }
@@ -204,7 +204,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                     }
                 }
                 withContext(Dispatchers.Main) {
-                    Utilities.toast(activity, getString(R.string.resources) + " " +
+                    activity?.toast(getString(R.string.resources) + " " +
                             if (isAdd) getString(R.string.added_to_my_library)
                             else getString(R.string.removed_from_mylibrary))
                     setLibraryData()

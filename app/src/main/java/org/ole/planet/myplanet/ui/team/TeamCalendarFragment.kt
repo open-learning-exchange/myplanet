@@ -40,7 +40,7 @@ import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.mymeetup.AdapterMeetup
 import org.ole.planet.myplanet.utilities.TimeUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 class TeamCalendarFragment : BaseTeamFragment() {
     private lateinit var fragmentEnterpriseCalendarBinding: FragmentEnterpriseCalendarBinding
@@ -92,11 +92,11 @@ class TeamCalendarFragment : BaseTeamFragment() {
             val description = "${addMeetupBinding.etDescription.text.trim()}"
             val location = "${addMeetupBinding.etLocation.text.trim()}"
             if (title.isEmpty()) {
-                Utilities.toast(activity, getString(R.string.title_is_required))
+                activity?.toast(getString(R.string.title_is_required))
             } else if (description.isEmpty()) {
-                Utilities.toast(activity, getString(R.string.description_is_required))
+                activity?.toast(getString(R.string.description_is_required))
             } else if (!link.isValidWebLink() && link.isNotEmpty()) {
-                Utilities.toast(activity, getString(R.string.invalid_url))
+                activity?.toast(getString(R.string.invalid_url))
             } else {
                 try {
                     if (!mRealm.isInTransaction) {
@@ -136,13 +136,13 @@ class TeamCalendarFragment : BaseTeamFragment() {
                     meetup.link = Gson().toJson(ob)
                     meetup.teamId = teamId
                     mRealm.commitTransaction()
-                    Utilities.toast(activity, getString(R.string.meetup_added))
+                    activity?.toast(getString(R.string.meetup_added))
                     addMeetupDialog?.dismiss()
                     refreshCalendarView()
                 } catch (e: Exception) {
                     mRealm.cancelTransaction()
                     e.printStackTrace()
-                    Utilities.toast(activity, getString(R.string.meetup_not_added))
+                    activity?.toast(getString(R.string.meetup_not_added))
                 }
             }
         }

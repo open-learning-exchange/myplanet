@@ -41,7 +41,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnClickListener {
@@ -275,7 +275,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             currentCourse?.setUserId(userModel?.id)
             onAdd(mRealm, "courses", userModel?.id, courseId)
         }
-        Utilities.toast(activity, "course ${(if (currentCourse?.userId?.contains(userModel?.id) == true) {
+        activity?.toast("course ${(if (currentCourse?.userId?.contains(userModel?.id) == true) {
             getString(R.string.added_to)
         } else {
             getString(R.string.removed_from)

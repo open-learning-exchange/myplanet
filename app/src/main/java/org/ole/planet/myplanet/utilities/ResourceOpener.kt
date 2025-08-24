@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.ui.viewer.MarkdownViewerActivity
 import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
 import org.ole.planet.myplanet.ui.viewer.TextFileViewerActivity
 import org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity
+import org.ole.planet.myplanet.utilities.toast
 
 object ResourceOpener {
     fun openIntent(activity: Activity, items: RealmMyLibrary, typeClass: Class<*>) {
@@ -53,7 +54,7 @@ object ResourceOpener {
     fun checkFileExtension(activity: Activity, items: RealmMyLibrary) {
         val filenameArray = items.resourceLocalAddress?.split(".")?.toTypedArray()
         val extension = filenameArray?.get(filenameArray.size - 1)
-        val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
+        val mimetype = FileUtils.getMimeType(items.resourceLocalAddress)
 
         if (mimetype != null) {
             when {
@@ -88,9 +89,9 @@ object ResourceOpener {
     }
 
     fun openFileType(activity: Activity, items: RealmMyLibrary, videoType: String, profileDbHandler: UserProfileDbHandler) {
-        val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
+        val mimetype = FileUtils.getMimeType(items.resourceLocalAddress)
         if (mimetype == null) {
-            Utilities.toast(activity, activity.getString(R.string.unable_to_open_resource))
+            activity.toast(activity.getString(R.string.unable_to_open_resource))
             return
         }
         profileDbHandler.setResourceOpenCount(items, UserProfileDbHandler.KEY_RESOURCE_OPEN)

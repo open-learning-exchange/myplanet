@@ -47,7 +47,8 @@ import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.ThemeManager
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.getRelativeTime
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 class SettingActivity : AppCompatActivity() {
@@ -192,9 +193,9 @@ class SettingActivity : AppCompatActivity() {
                                 }, {
                                     val f = File(Utilities.SD_PATH)
                                     deleteRecursive(f)
-                                    Utilities.toast(requireActivity(), R.string.data_cleared.toString())
+                                     requireActivity().toast(R.string.data_cleared.toString())
                                 }) {
-                                    Utilities.toast(requireActivity(), R.string.unable_to_clear_files.toString())
+                                     requireActivity().toast(R.string.unable_to_clear_files.toString())
                                 }
                             }
                         }.setNegativeButton("No", null).show()
@@ -248,7 +249,7 @@ class SettingActivity : AppCompatActivity() {
             if (lastSynced == 0L) {
                 lastSyncDate?.setTitle(R.string.last_synced_never)
             } else if (lastSyncDate != null) {
-                lastSyncDate.title = getString(R.string.last_synced_colon) + Utilities.getRelativeTime(lastSynced)
+                lastSyncDate.title = getString(R.string.last_synced_colon) + lastSynced.getRelativeTime()
             }
         }
 

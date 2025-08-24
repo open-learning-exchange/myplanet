@@ -26,14 +26,14 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.SecurePrefs
 import org.ole.planet.myplanet.utilities.UrlUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toHex
 import retrofit2.Response
 
 object TransactionSyncManager {
     fun authenticate(): Boolean {
         val apiInterface = client?.create(ApiInterface::class.java)
         try {
-            val response: Response<DocumentResponse>? = apiInterface?.getDocuments(Utilities.header, "${UrlUtils.getUrl()}/tablet_users/_all_docs")?.execute()
+            val response: Response<DocumentResponse>? = apiInterface?.getDocuments("${UrlUtils.getUrl()}/tablet_users/_all_docs")?.execute()
             if (response != null) {
                 return response.code() == 200
             }
@@ -45,29 +45,26 @@ object TransactionSyncManager {
 
     fun syncAllHealthData(mRealm: Realm, settings: SharedPreferences, listener: SyncListener) {
         listener.onSyncStarted()
-        val userName = SecurePrefs.getUserName(MainApplication.context, settings) ?: ""
-        val password = SecurePrefs.getPassword(MainApplication.context, settings) ?: ""
-        val header = "Basic ${Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)}"
         mRealm.executeTransactionAsync({ realm: Realm ->
             val users = realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll()
             for (userModel in users) {
-                syncHealthData(userModel, header)
+                syncHealthData(userModel)
             }
         }, { listener.onSyncComplete() }) { error: Throwable ->
             error.message?.let { listener.onSyncFailed(it) }
         }
     }
 
-    private fun syncHealthData(userModel: RealmUserModel?, header: String) {
-        val table = "userdb-${userModel?.planetCode?.let { Utilities.toHex(it) }}-${userModel?.name?.let { Utilities.toHex(it) }}"
+    private fun syncHealthData(userModel: RealmUserModel?) {
+        val table = "userdb-${userModel?.planetCode?.toHex()}-${userModel?.name?.toHex()}"
         val apiInterface = client?.create(ApiInterface::class.java)
         val response: Response<DocumentResponse>?
         try {
-            response = apiInterface?.getDocuments(header, "${UrlUtils.getUrl()}/$table/_all_docs")?.execute()
+            response = apiInterface?.getDocuments("${UrlUtils.getUrl()}/$table/_all_docs")?.execute()
             val ob = response?.body()
             if (ob != null && ob.rows?.isNotEmpty() == true) {
                 val r = ob.rows!![0]
-                val jsonDoc = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/$table/${r.id}")
+                val jsonDoc = apiInterface.getJsonObject("${UrlUtils.getUrl()}/$table/${r.id}")
                     .execute().body()
                 userModel?.key = getString("key", jsonDoc)
                 userModel?.iv = getString("iv", jsonDoc)
@@ -80,14 +77,10 @@ object TransactionSyncManager {
     fun syncKeyIv(mRealm: Realm, settings: SharedPreferences, listener: SyncListener) {
         listener.onSyncStarted()
         val model = UserProfileDbHandler(MainApplication.context).userModel
-        val userName = SecurePrefs.getUserName(MainApplication.context, settings) ?: ""
-        val password = SecurePrefs.getPassword(MainApplication.context, settings) ?: ""
-//        val table = "userdb-" + model?.planetCode?.let { Utilities.toHex(it) } + "-" + model?.name?.let { Utilities.toHex(it) }
-        val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
         val id = model?.id
         mRealm.executeTransactionAsync({ realm: Realm ->
             val userModel = realm.where(RealmUserModel::class.java).equalTo("id", id).findFirst()
-            syncHealthData(userModel, header)
+            syncHealthData(userModel)
         }, { listener.onSyncComplete() }) { error: Throwable ->
             error.message?.let { listener.onSyncFailed(it) }
         }
@@ -96,7 +89,7 @@ object TransactionSyncManager {
     fun syncDb(realm: Realm, table: String) {
         realm.executeTransactionAsync { mRealm: Realm ->
             val apiInterface = client?.create(ApiInterface::class.java)
-            val allDocs = apiInterface?.getJsonObject(Utilities.header, UrlUtils.getUrl() + "/" + table + "/_all_docs?include_doc=false")
+            val allDocs = apiInterface?.getJsonObject(UrlUtils.getUrl() + "/" + table + "/_all_docs?include_doc=false")
             try {
                 val all = allDocs?.execute()
                 val rows = getJsonArray("rows", all?.body())
@@ -107,7 +100,7 @@ object TransactionSyncManager {
                     if (i == rows.size() - 1 || keys.size == 1000) {
                         val obj = JsonObject()
                         obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
-                        val response = apiInterface?.findDocs(Utilities.header, "application/json", UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj)?.execute()
+                        val response = apiInterface?.findDocs("application/json", UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj)?.execute()
                         if (response?.body() != null) {
                             val arr = getJsonArray("rows", response.body())
                             if (table == "chat_history") {

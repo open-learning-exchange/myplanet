@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.databinding.FragmentAddLinkBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.ui.team.AdapterTeam
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedListener {
@@ -44,7 +44,7 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
         adapter.setTeamSelectedListener(object : AdapterTeam.OnTeamSelectedListener {
             override fun onSelectedTeam(team: RealmMyTeam) {
                 this@AddLinkFragment.selectedTeam = team
-                Utilities.toast(requireActivity(), "Selected ${team.name}")
+                requireActivity().toast("Selected ${team.name}")
             }
         })
 
@@ -77,11 +77,11 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
             val type = fragmentAddLinkBinding.spnLink.selectedItem.toString()
             val title = fragmentAddLinkBinding.etName.text.toString()
             if (title.isEmpty()) {
-                Utilities.toast(requireActivity(), getString(R.string.title_is_required))
+                requireActivity().toast(getString(R.string.title_is_required))
                 return@setOnClickListener
             }
             if (selectedTeam == null) {
-                Utilities.toast(requireActivity(), getString(R.string.please_select_link_item_from_list))
+                requireActivity().toast(getString(R.string.please_select_link_item_from_list))
                 return@setOnClickListener
             }
 

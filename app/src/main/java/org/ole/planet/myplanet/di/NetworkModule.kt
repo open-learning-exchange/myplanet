@@ -45,8 +45,14 @@ object NetworkModule {
             .create()
     }
 
-    private fun buildOkHttpClient(connect: Long, read: Long, write: Long): OkHttpClient {
+    private fun buildOkHttpClient(
+        connect: Long,
+        read: Long,
+        write: Long,
+        authInterceptor: AuthInterceptor
+    ): OkHttpClient {
         return OkHttpClient.Builder()
+            .addInterceptor(authInterceptor)
             .connectTimeout(connect, TimeUnit.SECONDS)
             .readTimeout(read, TimeUnit.SECONDS)
             .writeTimeout(write, TimeUnit.SECONDS)
@@ -56,15 +62,15 @@ object NetworkModule {
     @Provides
     @Singleton
     @StandardHttpClient
-    fun provideStandardOkHttpClient(): OkHttpClient {
-        return buildOkHttpClient(10, 10, 10)
+    fun provideStandardOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
+        return buildOkHttpClient(10, 10, 10, authInterceptor)
     }
 
     @Provides
     @Singleton
     @EnhancedHttpClient
-    fun provideEnhancedOkHttpClient(): OkHttpClient {
-        return buildOkHttpClient(60, 120, 60)
+    fun provideEnhancedOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
+        return buildOkHttpClient(60, 120, 60, authInterceptor)
     }
 
     @Provides

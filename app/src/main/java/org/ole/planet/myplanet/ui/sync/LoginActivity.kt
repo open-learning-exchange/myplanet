@@ -49,7 +49,7 @@ import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.ThemeManager
 import org.ole.planet.myplanet.utilities.UrlUtils.getUrl
-import org.ole.planet.myplanet.utilities.Utilities.toast
+import org.ole.planet.myplanet.utilities.toast
 
 class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     private lateinit var binding: ActivityLoginBinding
@@ -124,7 +124,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             if (getUrl() != "/db") {
                 FeedbackFragment().show(supportFragmentManager, "")
             } else {
-                toast(this, getString(R.string.please_enter_server_url_first))
+                this.toast(getString(R.string.please_enter_server_url_first))
                 settingDialog()
             }
         }
@@ -152,7 +152,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 if (System.currentTimeMillis() - backPressedTime < backPressedInterval) {
                     finish()
                 } else {
-                    toast(this@LoginActivity, getString(R.string.press_back_again_to_exit))
+                        this@LoginActivity.toast(getString(R.string.press_back_again_to_exit))
                     backPressedTime = System.currentTimeMillis()
                 }
             }
@@ -193,7 +193,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                     }
                 }
             } else {
-                toast(this, getString(R.string.please_enter_server_url_first))
+                this.toast(getString(R.string.please_enter_server_url_first))
                 settingDialog()
             }
         }
@@ -205,7 +205,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 binding.inputName.setText(R.string.empty_text)
                 becomeAMember()
             } else {
-                toast(this, getString(R.string.please_enter_server_url_first))
+                this.toast(getString(R.string.please_enter_server_url_first))
                 settingDialog()
             }
         }
@@ -220,7 +220,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 binding.inputName.setText(R.string.empty_text)
                 showGuestLoginDialog()
             } else {
-                toast(this, getString(R.string.please_enter_server_url_first))
+                this.toast(getString(R.string.please_enter_server_url_first))
                 settingDialog()
             }
         }
@@ -251,7 +251,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                     currentDialog = dialog
                     service.getMinApk(this, url, serverPin, this, "LoginActivity")
                 } else {
-                    toast(this, getString(R.string.please_enter_server_url_first))
+                    this.toast(getString(R.string.please_enter_server_url_first))
                     settingDialog()
                 }
             }
@@ -269,7 +269,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             setUpLanguageButton()
             if (NetworkUtils.isNetworkConnected) {
                 service.syncPlanetServers { success: String? ->
-                    toast(this, success)
+                    this.toast(success)
                 }
             }
             binding.inputName.addTextChangedListener(object : TextWatcher {
@@ -459,7 +459,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             if (user.source == "guest"){
                 val model = RealmUserModel.createGuestUser(user.name, mRealm, settings)?.let { mRealm.copyFromRealm(it) }
                 if (model == null) {
-                    toast(this, getString(R.string.unable_to_login))
+                    this.toast(getString(R.string.unable_to_login))
                 } else {
                     saveUserInfoPref(settings, "", model)
                     onLogin()
@@ -484,7 +484,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
             dialog.dismiss()
             val model = RealmUserModel.createGuestUser(username, mRealm, settings)?.let { mRealm.copyFromRealm(it) }
             if (model == null) {
-                toast(this, getString(R.string.unable_to_login))
+                this.toast(getString(R.string.unable_to_login))
             } else {
                 saveUserInfoPref(settings, "", model)
                 onLogin()
@@ -551,7 +551,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         if (getUrl().isNotEmpty()) {
             startActivity(Intent(this, BecomeMemberActivity::class.java))
         } else {
-            toast(this, getString(R.string.please_enter_server_url_first))
+            this.toast(getString(R.string.please_enter_server_url_first))
             settingDialog()
         }
     }

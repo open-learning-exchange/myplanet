@@ -50,7 +50,7 @@ import org.ole.planet.myplanet.ui.team.TeamPageConfig.TeamPage
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
@@ -296,7 +296,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
             AlertDialog.Builder(requireContext()).setMessage(R.string.confirm_exit)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     team?.leave(user, mRealm)
-                    Utilities.toast(activity, getString(R.string.left_team))
+                    activity?.toast(getString(R.string.left_team))
                     val lastPageId = team?._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
                     setupViewPager(false, lastPageId)
                     fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE

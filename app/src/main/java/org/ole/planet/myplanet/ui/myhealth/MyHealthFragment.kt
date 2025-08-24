@@ -56,7 +56,8 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.checkNA
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 class MyHealthFragment : Fragment() {
@@ -329,9 +330,9 @@ class MyHealthFragment : Fragment() {
         binding.layoutUserDetail.visibility = View.VISIBLE
         binding.tvMessage.visibility = View.GONE
         binding.txtFullName.text = getString(R.string.three_strings, userModel?.firstName, userModel?.middleName, userModel?.lastName)
-        binding.txtEmail.text = Utilities.checkNA(userModel?.email!!)
-        binding.txtLanguage.text = Utilities.checkNA(userModel?.language!!)
-        binding.txtDob.text = Utilities.checkNA(userModel?.dob!!)
+        binding.txtEmail.text = userModel?.email.checkNA()
+        binding.txtLanguage.text = userModel?.language.checkNA()
+        binding.txtDob.text = userModel?.dob.checkNA()
         var mh = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
         if (mh == null) {
             mh = mRealm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
@@ -342,17 +343,17 @@ class MyHealthFragment : Fragment() {
                 binding.rvRecords.adapter = null
                 binding.tvNoRecords.visibility = View.VISIBLE
                 binding.tvDataPlaceholder.visibility = View.GONE
-                Utilities.toast(activity, getString(R.string.health_record_not_available))
+                activity?.toast(getString(R.string.health_record_not_available))
                 return
             }
             val myHealths = mm.profile
-            binding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes)
-            binding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds)
-            binding.txtBirthPlace.text = Utilities.checkNA(userModel?.birthPlace)
+            binding.txtOtherNeed.text = myHealths?.notes.checkNA()
+            binding.txtSpecialNeeds.text = myHealths?.specialNeeds.checkNA()
+            binding.txtBirthPlace.text = userModel?.birthPlace.checkNA()
             binding.txtEmergencyContact.text = getString(R.string.emergency_contact_details,
-                Utilities.checkNA(myHealths?.emergencyContactName),
-                Utilities.checkNA(myHealths?.emergencyContactType),
-                Utilities.checkNA(myHealths?.emergencyContact)).trimIndent()
+                myHealths?.emergencyContactName.checkNA(),
+                myHealths?.emergencyContactType.checkNA(),
+                myHealths?.emergencyContact.checkNA()).trimIndent()
 
             val list = getExaminations(mm)
 

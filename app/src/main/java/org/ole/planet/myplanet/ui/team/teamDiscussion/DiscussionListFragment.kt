@@ -36,7 +36,7 @@ import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 class DiscussionListFragment : BaseTeamFragment() {
@@ -212,7 +212,7 @@ class DiscussionListFragment : BaseTeamFragment() {
             .setPositiveButton(getString(R.string.save)) { _: DialogInterface?, _: Int ->
                 val msg = "${layout.editText?.text}".trim { it <= ' ' }
                 if (msg.isEmpty()) {
-                    Utilities.toast(activity, getString(R.string.message_is_required))
+                    activity?.toast(getString(R.string.message_is_required))
                     return@setPositiveButton
                 }
                 val map = HashMap<String?, String>()

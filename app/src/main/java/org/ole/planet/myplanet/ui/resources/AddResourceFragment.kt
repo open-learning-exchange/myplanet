@@ -45,7 +45,7 @@ import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.myPersonals.MyPersonalsFragment
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 class AddResourceFragment : BottomSheetDialogFragment() {
@@ -84,7 +84,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             if (uri != null) {
                 handleUri(uri, REQUEST_FILE_SELECTION)
             } else {
-                Utilities.toast(activity, "no file selected")
+                activity?.toast("no file selected")
             }
         }
         audioRecorderService = AudioRecorderService()
@@ -109,7 +109,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                         .setNegativeButton(R.string.cancel) { dialog, _ -> dialog.dismiss() }
                         .show()
                 } else {
-                    Utilities.toast(requireContext(), "camera permission is required.")
+                    requireContext().toast("camera permission is required.")
                 }
             }
         }
@@ -186,7 +186,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             }
 
             override fun onError(error: String?) {
-                Utilities.toast(activity, error)
+                activity?.toast(error)
             }
         })
     }
@@ -245,7 +245,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         if (!path.isNullOrEmpty()) {
             addResource(path)
         } else {
-            Utilities.toast(activity, getString(R.string.invalid_resource_url))
+            activity?.toast(getString(R.string.invalid_resource_url))
         }
     }
 
@@ -281,7 +281,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                 .setPositiveButton("Save") { _: DialogInterface?, _: Int ->
                     val title = etTitle.text.toString().trim { it <= ' ' }
                     if (title.isEmpty()) {
-                        Utilities.toast(context, R.string.title_is_required.toString())
+                        context.toast(R.string.title_is_required.toString())
                         return@setPositiveButton
                     }
                     val desc = etDesc.text.toString().trim { it <= ' ' }
@@ -296,7 +296,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                             myPersonal.description = desc
                         },
                         Realm.Transaction.OnSuccess {
-                            Utilities.toast(MainApplication.context, context.getString(R.string.resource_saved_to_my_personal))
+                            MainApplication.context.toast(context.getString(R.string.resource_saved_to_my_personal))
                         })
                     if (type == 1) {
                         myPersonalsFragment?.refreshFragment()

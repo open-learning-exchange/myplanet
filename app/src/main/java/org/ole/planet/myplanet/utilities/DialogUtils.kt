@@ -169,7 +169,7 @@ object DialogUtils {
     fun startDownloadUpdate(context: Context, path: String, progressDialog: CustomProgressDialog?) {
         Service(MainApplication.context).checkCheckSum(object : Service.ChecksumCallback {
             override fun onMatch() {
-                Utilities.toast(MainApplication.context, context.getString(R.string.apk_already_exists))
+                MainApplication.context.toast(context.getString(R.string.apk_already_exists))
                 FileUtils.installApk(context, path)
             }
 

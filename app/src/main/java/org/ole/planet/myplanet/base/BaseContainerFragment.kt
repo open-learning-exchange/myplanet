@@ -45,7 +45,7 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.ResourceOpener
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.UrlUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 abstract class BaseContainerFragment : BaseResourceFragment() {
@@ -217,7 +217,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private fun checkFileExtension(items: RealmMyLibrary) {
         val filenameArray = items.resourceLocalAddress?.split("\\.".toRegex())?.toTypedArray()
         val extension = filenameArray?.get(filenameArray.size - 1)
-        val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
+        val mimetype = FileUtils.getMimeType(items.resourceLocalAddress)
 
         if (mimetype != null) {
             if (mimetype.contains("image")) {
@@ -264,7 +264,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         val apkFile = items.resourceLocalAddress?.let { File(directory, it) }
         if (apkFile != null) {
             if (!apkFile.exists()) {
-                Utilities.toast(activity,"APK file not found")
+                activity?.toast("APK file not found")
                 return
             }
         }
@@ -282,7 +282,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 requestInstallPermission()
             }
         } else {
-            Utilities.toast(activity,"No app to handle the installation")
+            activity?.toast("No app to handle the installation")
         }
     }
 

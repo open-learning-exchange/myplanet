@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.insertReports
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 class ReportsFragment : BaseTeamFragment() {
     private lateinit var fragmentReportsBinding: FragmentReportsBinding
@@ -200,13 +200,13 @@ class ReportsFragment : BaseTeamFragment() {
                         requireContext().contentResolver.openOutputStream(uri)?.use { outputStream ->
                             outputStream.write("$csvBuilder".toByteArray())
                         }
-                        Utilities.toast(requireContext(), getString(R.string.csv_file_saved_successfully))
+                        requireContext().toast(getString(R.string.csv_file_saved_successfully))
                     } catch (e: IOException) {
                         e.printStackTrace()
-                        Utilities.toast(requireContext(), getString(R.string.failed_to_save_csv_file))
+                        requireContext().toast(getString(R.string.failed_to_save_csv_file))
                     }
                 } else {
-                    Utilities.toast(requireContext(), getString(R.string.export_cancelled))
+                    requireContext().toast(getString(R.string.export_cancelled))
                 }
             }
         }

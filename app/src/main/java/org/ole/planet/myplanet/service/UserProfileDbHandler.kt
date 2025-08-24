@@ -23,7 +23,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 class UserProfileDbHandler @Inject constructor(
     @ApplicationContext private val context: Context,
     private val realmService: DatabaseService,
-    @AppPreferences private val settings: SharedPreferences
+    @AppPreferences private val settings: SharedPreferences,
+    private val sharedPrefManager: SharedPrefManager
 ) {
     var mRealm: Realm
     private val fullName: String
@@ -32,12 +33,13 @@ class UserProfileDbHandler @Inject constructor(
     constructor(context: Context) : this(
         context,
         DatabaseService(context),
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE),
+        SharedPrefManager(context)
     )
 
     init {
         try {
-            fullName = Utilities.getUserName(settings)
+            fullName = sharedPrefManager.getUserName()
             mRealm = realmService.realmInstance
         } catch (e: IllegalArgumentException) {
             throw e

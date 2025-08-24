@@ -35,7 +35,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.Utilities.toast
+import org.ole.planet.myplanet.utilities.toast
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
     var subjects: MutableSet<String> = mutableSetOf()
@@ -119,12 +119,12 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                     .equalTo("resourceId", `object`.resourceId).findFirst()
                 createFromResource(myObject, mRealm, model?.id)
                 onAdd(mRealm, "resources", profileDbHandler.userModel?.id, myObject?.resourceId)
-                toast(activity, getString(R.string.added_to_my_library))
+                activity?.toast(getString(R.string.added_to_my_library))
             } else {
                 val myObject = getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
                 createMyCourse(myObject, mRealm, model?.id)
                 onAdd(mRealm, "courses", profileDbHandler.userModel?.id, myObject?.courseId)
-                toast(activity, getString(R.string.added_to_my_courses))
+                activity?.toast(getString(R.string.added_to_my_courses))
             }
         }
         recyclerView.adapter = getAdapter()

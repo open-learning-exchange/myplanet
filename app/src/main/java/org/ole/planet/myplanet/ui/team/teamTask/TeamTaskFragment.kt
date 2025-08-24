@@ -37,7 +37,7 @@ import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.OnCompletedListener
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     private lateinit var fragmentTeamTaskBinding: FragmentTeamTaskBinding
@@ -123,9 +123,9 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             val task = alertTaskBinding.etTask.text.toString()
             val desc = alertTaskBinding.etDescription.text.toString()
             if (task.isEmpty()) {
-                Utilities.toast(activity, getString(R.string.task_title_is_required))
+                activity?.toast(getString(R.string.task_title_is_required))
             } else if (deadline == null) {
-                Utilities.toast(activity, getString(R.string.deadline_is_required))
+                activity?.toast(getString(R.string.deadline_is_required))
             } else {
                 createOrUpdateTask(task, desc, t)
                 setAdapter()
@@ -161,7 +161,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             fragmentTeamTaskBinding.rvTask.adapter?.notifyDataSetChanged()
             showNoData(fragmentTeamTaskBinding.tvNodata, fragmentTeamTaskBinding.rvTask.adapter?.itemCount, "tasks")
         }
-        Utilities.toast(activity, String.format(getString(R.string.task_s_successfully), if (isCreate) getString(R.string.added) else getString(R.string.updated)))
+        activity?.toast(String.format(getString(R.string.task_s_successfully), if (isCreate) getString(R.string.added) else getString(R.string.updated)))
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -253,7 +253,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             mRealm.beginTransaction()
         }
         task?.deleteFromRealm()
-        Utilities.toast(activity, getString(R.string.task_deleted_successfully))
+        activity?.toast(getString(R.string.task_deleted_successfully))
         mRealm.commitTransaction()
         setAdapter()
         showNoData(fragmentTeamTaskBinding.tvNodata, fragmentTeamTaskBinding.rvTask.adapter?.itemCount, "tasks")
@@ -284,7 +284,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                     mRealm.beginTransaction()
                 }
                 realmTeamTask?.assignee = userId
-                Utilities.toast(activity, getString(R.string.assign_task_to) + " " + user.name)
+                activity?.toast(getString(R.string.assign_task_to) + " " + user.name)
                 mRealm.commitTransaction()
                 adapter.notifyDataSetChanged()
                 setAdapter()

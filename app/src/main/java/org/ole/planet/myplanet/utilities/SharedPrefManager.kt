@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.utilities
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Base64
+import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -95,6 +97,39 @@ class SharedPrefManager @Inject constructor(@ApplicationContext context: Context
         editor.putString(TEAM_NAME, teamName)
         editor.apply()
     }
+
+    fun getUserName(): String {
+        return pref.getString("name", "") ?: ""
+    }
+
+    val header: String
+        get() {
+            return "Basic ${Base64.encodeToString(("${pref.getString("url_user", "")}:${pref.getString("url_pwd", "")}").toByteArray(), Base64.NO_WRAP)}"
+        }
+
+    val hostUrl: String
+        get() {
+            var scheme = pref.getString("url_Scheme", "")
+            var hostIp = pref.getString("url_Host", "")
+            val isAlternativeUrl = pref.getBoolean("isAlternativeUrl", false)
+            val alternativeUrl = pref.getString("processedAlternativeUrl", "")
+
+            if (isAlternativeUrl && !alternativeUrl.isNullOrEmpty()) {
+                try {
+                    val uri = alternativeUrl.toUri()
+                    hostIp = uri.host ?: hostIp
+                    scheme = uri.scheme ?: scheme
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            return if (hostIp?.endsWith(".org") == true || hostIp?.endsWith(".gt") == true) {
+                "$scheme://$hostIp/ml/"
+            } else {
+                "$scheme://$hostIp:5000/"
+            }
+        }
 
     private fun isSynced(key: SyncKey): Boolean {
         return pref.getBoolean(key.key, false)

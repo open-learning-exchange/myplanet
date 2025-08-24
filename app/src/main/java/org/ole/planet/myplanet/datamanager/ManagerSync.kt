@@ -64,7 +64,7 @@ class ManagerSync private constructor(context: Context) {
         selector.addProperty("isUserAdmin", true)
         `object`.add("selector", selector)
         val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
-        apiInterface?.findDocs(Utilities.header, "application/json", UrlUtils.getUrl() + "/_users/_find", `object`)?.enqueue(object : Callback<JsonObject?> {
+        apiInterface?.findDocs("application/json", UrlUtils.getUrl() + "/_users/_find", `object`)?.enqueue(object : Callback<JsonObject?> {
             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                 if (response.body() != null) {
                     settings.edit { putString("communityLeaders", "${response.body()}") }

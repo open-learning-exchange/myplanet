@@ -43,7 +43,7 @@ import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.UserDetailFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 class MyTeamsDetailFragment : BaseNewsFragment() {
@@ -109,7 +109,7 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
             .setPositiveButton(R.string.save) { _: DialogInterface?, _: Int ->
                 val msg = "${alertInputBinding.tlInput.editText?.text}".trim { it <= ' ' }
                 if (msg.isEmpty()) {
-                    Utilities.toast(activity, R.string.message_is_required.toString())
+                    activity?.toast(R.string.message_is_required.toString())
                     return@setPositiveButton
                 }
                 val map = HashMap<String?, String>()

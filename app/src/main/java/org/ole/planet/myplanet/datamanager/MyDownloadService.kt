@@ -36,7 +36,6 @@ import org.ole.planet.myplanet.utilities.FileUtils.availableExternalMemorySize
 import org.ole.planet.myplanet.utilities.FileUtils.externalMemoryAvailable
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getSDPathFromUrl
-import org.ole.planet.myplanet.utilities.Utilities.header
 import retrofit2.Call
 
 class MyDownloadService : Service() {
@@ -106,7 +105,7 @@ class MyDownloadService : Service() {
     private fun initDownload(url: String, fromSync: Boolean) {
         val retrofitInterface = ApiClient.client?.create(ApiInterface::class.java)
         try {
-            request = retrofitInterface?.downloadFile(header, url)
+            request = retrofitInterface?.downloadFile(url)
             val response = request?.clone()?.execute()
 
             when {

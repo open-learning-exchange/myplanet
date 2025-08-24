@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 class DictionaryActivity : BaseActivity() {
@@ -38,7 +38,7 @@ class DictionaryActivity : BaseActivity() {
         } else {
             val list = ArrayList<String>()
             list.add(Constants.DICTIONARY_URL)
-            Utilities.toast(this, getString(R.string.downloading_started_please_check_notificati))
+            this.toast(getString(R.string.downloading_started_please_check_notificati))
             DownloadUtils.openDownloadService(this, list, false)
         }
     }
@@ -85,7 +85,7 @@ class DictionaryActivity : BaseActivity() {
                     HtmlCompat.FROM_HTML_MODE_LEGACY
                 )
             } else {
-                Utilities.toast(this, getString(R.string.word_not_available_in_our_database))
+                this.toast(getString(R.string.word_not_available_in_our_database))
             }
         }
     }

@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utilities.UrlUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 class AutoSyncWorker @AssistedInject constructor(
     @Assisted private val context: Context,
@@ -44,7 +44,7 @@ class AutoSyncWorker @AssistedInject constructor(
         val syncInterval = preferences.getInt("autoSyncInterval", 60 * 60)
         if (currentTime - lastSync > syncInterval * 1000) {
             if (isAppInForeground(context)) {
-                Utilities.toast(context, "Syncing started...")
+                context.toast("Syncing started...")
             }
             Service(context).checkVersion(this, preferences)
         }

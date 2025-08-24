@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 class RatingFragment : DialogFragment() {
@@ -106,7 +106,7 @@ class RatingFragment : DialogFragment() {
             model = realm.where(RealmUserModel::class.java).equalTo("id", settings.getString("userId", "")).findFirst()
             setData(model, ratingObject, comment, rating)
         }, Realm.Transaction.OnSuccess {
-            Utilities.toast(activity, "Thank you, your rating is submitted.")
+            activity?.toast("Thank you, your rating is submitted.")
             if (ratingListener != null) ratingListener?.onRatingChanged()
             dismiss()
         })

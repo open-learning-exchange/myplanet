@@ -30,7 +30,7 @@ import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.LocaleHelper
-import org.ole.planet.myplanet.utilities.Utilities.toast
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 class AddResourceActivity : AppCompatActivity() {
@@ -106,7 +106,7 @@ class AddResourceActivity : AppCompatActivity() {
                 .equalTo("resourceId", id).findFirst()
             createFromResource(myObject, mRealm, userModel?.id)
             onAdd(mRealm, "resources", userModel?.id, id)
-            toast(this@AddResourceActivity, getString(R.string.added_to_my_library))
+            this@AddResourceActivity.toast(getString(R.string.added_to_my_library))
             navigateToResourceDetail(myObject?.resourceId)
         })
     }
@@ -167,11 +167,11 @@ class AddResourceActivity : AppCompatActivity() {
             return false
         }
         if (levels?.isEmpty() == true) {
-            toast(this, getString(R.string.level_is_required))
+            this.toast(getString(R.string.level_is_required))
             return false
         }
         if (subjects?.isEmpty() == true) {
-            toast(this, getString(R.string.subject_is_required))
+            this.toast(getString(R.string.subject_is_required))
             return false
         }
         return true

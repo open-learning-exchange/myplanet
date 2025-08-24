@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.getRelativeTime
 
 @AndroidEntryPoint
 class UserDetailFragment : Fragment() {
@@ -68,7 +68,7 @@ class UserDetailFragment : Fragment() {
                 override fun getItemCount() = list.size
             }
         } ?: run {
-            Utilities.toast(activity, getString(R.string.user_not_available_in_our_database))
+            activity?.toast(getString(R.string.user_not_available_in_our_database))
         }
     }
 
@@ -81,7 +81,7 @@ class UserDetailFragment : Fragment() {
         list.add(Detail("Language", user.language!!))
         list.add(Detail("Level", user.level!!))
         list.add(Detail("Number of Visits", db!!.offlineVisits.toString() + ""))
-        list.add(Detail("Last Login", Utilities.getRelativeTime(db.lastVisit!!)))
+        list.add(Detail("Last Login", db.lastVisit!!.getRelativeTime()))
         return list
     }
 

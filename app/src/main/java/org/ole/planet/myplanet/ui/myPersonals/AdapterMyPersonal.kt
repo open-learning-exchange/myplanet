@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
 import org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity
 import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 class AdapterMyPersonal(private val context: Context, private val list: List<RealmMyPersonal>) : RecyclerView.Adapter<ViewHolderMyPersonal>() {
     private lateinit var rowMyPersonalBinding: RowMyPersonalBinding
@@ -103,7 +103,7 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
                 val title = alertMyPersonalBinding.etDescription.text.toString().trim { it <= ' ' }
                 val desc = alertMyPersonalBinding.etTitle.text.toString().trim { it <= ' ' }
                 if (title.isEmpty()) {
-                    Utilities.toast(context, R.string.please_enter_title.toString())
+                    context.toast(R.string.please_enter_title.toString())
                     return@setPositiveButton
                 }
                 if (!realm?.isInTransaction!!) realm?.beginTransaction()

@@ -30,7 +30,7 @@ import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
     fun handleClick(id: String?, title: String?, f: Fragment, v: TextView) {
@@ -71,7 +71,7 @@ open class BaseDashboardFragmentPlugin : BaseContainerFragment() {
                     "myPersonals" -> openIfLoggedIn { listener.openCallFragment(MyPersonalsFragment()) }
                     "Help Wanted" -> listener.openCallFragment(HelpWantedFragment())
                     "myHealth" -> openIfLoggedIn { listener.openCallFragment(MyHealthFragment()) }
-                    else -> Utilities.toast(activity, getString(R.string.feature_not_available))
+                    else -> activity?.toast(getString(R.string.feature_not_available))
                 }
             }
         }

@@ -18,7 +18,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 abstract class PermissionActivity : AppCompatActivity() {
     fun checkPermission(strPermission: String?): Boolean {
@@ -28,7 +28,7 @@ abstract class PermissionActivity : AppCompatActivity() {
 
     fun checkUsagesPermission() {
         if (!getUsagesPermission(this)) {
-            Utilities.toast(this, getString(R.string.please_allow_usages_permission_to_myplanet_app))
+            toast(getString(R.string.please_allow_usages_permission_to_myplanet_app))
             startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
         }
     }
@@ -477,16 +477,16 @@ abstract class PermissionActivity : AppCompatActivity() {
     }
 
     open fun onNotificationPermissionGranted() {
-        Utilities.toast(this, "Notifications enabled! You'll receive important updates.")
+        toast("Notifications enabled! You'll receive important updates.")
     }
 
     open fun onNotificationPermissionDenied() {
-        Utilities.toast(this, "You can enable notifications later in Settings to receive important updates.")
+        toast("You can enable notifications later in Settings to receive important updates.")
     }
 
     open fun onNotificationPermissionChanged(isEnabled: Boolean) {
         if (!isEnabled) {
-            Utilities.toast(this, "Notifications are disabled. You can enable them in Settings to receive important updates.")
+            toast("Notifications are disabled. You can enable them in Settings to receive important updates.")
         }
     }
 

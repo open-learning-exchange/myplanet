@@ -52,22 +52,6 @@ open class RealmCourseProgress : RealmObject() {
             return map
         }
 
-//        @JvmStatic
-//        fun getPassedCourses(mRealm: Realm, userId: String?): List<RealmSubmission> {
-//            val progresses = mRealm.where(RealmCourseProgress::class.java).equalTo("userId", userId).equalTo("passed", true).findAll()
-//            val list: MutableList<RealmSubmission> = ArrayList()
-//            for (progress in progresses) {
-//                Utilities.log("Course id  certified " + progress.courseId)
-//                val sub = progress.courseId?.let {
-//                    mRealm.where(RealmSubmission::class.java)
-//                        .contains("parentId", it).equalTo("userId", userId)
-//                        .sort("lastUpdateTime", Sort.DESCENDING).findFirst()
-//                }
-//                if (sub != null) list.add(sub)
-//            }
-//            return list
-//        }
-
         @JvmStatic
         fun getCurrentProgress(steps: List<RealmCourseStep?>?, mRealm: Realm, userId: String?, courseId: String?): Int {
             var i = 0

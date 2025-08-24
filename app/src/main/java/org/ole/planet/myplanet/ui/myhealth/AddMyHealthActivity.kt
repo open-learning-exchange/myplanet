@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.decrypt
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.encrypt
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 class AddMyHealthActivity : AppCompatActivity() {
@@ -59,7 +59,7 @@ class AddMyHealthActivity : AppCompatActivity() {
         iv = userModelB?.iv
         findViewById<View>(R.id.btn_submit).setOnClickListener {
             createMyHealth()
-            Utilities.toast(this@AddMyHealthActivity, getString(R.string.my_health_saved_successfully))
+            this@AddMyHealthActivity.toast(getString(R.string.my_health_saved_successfully))
         }
 
         val contactTypes = resources.getStringArray(R.array.contact_type)

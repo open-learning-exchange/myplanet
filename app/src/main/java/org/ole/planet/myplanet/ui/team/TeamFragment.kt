@@ -29,7 +29,7 @@ import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
@@ -134,7 +134,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                 map["rules"] = alertCreateTeamBinding.etRules.text.toString()
                 when {
                     name.isEmpty() -> {
-                        Utilities.toast(activity, getString(R.string.name_is_required))
+                        activity?.toast(getString(R.string.name_is_required))
                         alertCreateTeamBinding.etName.error = getString(R.string.please_enter_a_name)
                     } else -> {
                         if (team == null) {
@@ -157,7 +157,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                         }
                         fragmentTeamBinding.etSearch.visibility = View.VISIBLE
                         fragmentTeamBinding.tableTitle.visibility = View.VISIBLE
-                        Utilities.toast(activity, getString(R.string.team_created))
+                        activity?.toast(getString(R.string.team_created))
                         setTeamList()
                         // dialog won't close by default
                         dialog.dismiss()

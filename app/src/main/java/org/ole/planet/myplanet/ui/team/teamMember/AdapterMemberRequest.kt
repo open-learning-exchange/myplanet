@@ -13,7 +13,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 class AdapterMemberRequest(private val context: Context, private val list: MutableList<RealmUserModel>, private val mRealm: Realm, private val currentUser: RealmUserModel, private val listener: MemberChangeListener, private val uploadManager: UploadManager) : RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser>() {
     private lateinit var rowMemberRequestBinding: RowMemberRequestBinding
@@ -105,7 +105,7 @@ class AdapterMemberRequest(private val context: Context, private val list: Mutab
         }, { error ->
             list.add(position, userModel)
             notifyItemInserted(position)
-            Utilities.toast(context, context.getString(R.string.request_failed_please_retry))
+            context.toast(context.getString(R.string.request_failed_please_retry))
         })
     }
 

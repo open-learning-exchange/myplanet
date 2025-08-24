@@ -57,7 +57,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showError
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadFiles
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
@@ -101,8 +101,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     private fun showNotConnectedToast() {
         if (isFragmentActive()) {
-            Utilities.toast(requireActivity(),
-                getString(R.string.device_not_connected_to_planet))
+            requireActivity().toast(getString(R.string.device_not_connected_to_planet))
         }
     }
 
@@ -184,7 +183,7 @@ abstract class BaseResourceFragment : Fragment() {
             override fun notAvailable() {
                 if (!isAdded) return
                 activity?.let {
-                    Utilities.toast(it, getString(R.string.planet_not_available))
+                    it.toast(getString(R.string.planet_not_available))
                 }
             }
         })
@@ -355,12 +354,12 @@ abstract class BaseResourceFragment : Fragment() {
             model?.id?.let { `object`.resourceId?.let { it1 ->
                 onRemove(mRealm, "resources", it, it1)
             } }
-            Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+            activity?.toast(getString(R.string.removed_from_mylibrary))
         } else {
             val myObject = getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
             myObject?.removeUserId(model?.id)
             model?.id?.let { `object`.courseId?.let { it1 -> onRemove(mRealm, "courses", it, it1) } }
-            Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+            activity?.toast(getString(R.string.removed_from_mycourse))
         }
     }
 
@@ -383,7 +382,7 @@ abstract class BaseResourceFragment : Fragment() {
                 RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.userModel?.id, item.resourceId)
             }
         }
-        Utilities.toast(activity, getString(R.string.added_to_my_library))
+        activity?.toast(getString(R.string.added_to_my_library))
     }
 
     fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
@@ -396,7 +395,7 @@ abstract class BaseResourceFragment : Fragment() {
                 RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.userModel?.id, libraryItem.resourceId)
             }
         }
-        Utilities.toast(activity, getString(R.string.added_to_my_library))
+        activity?.toast(getString(R.string.added_to_my_library))
     }
 
     override fun onDestroy() {

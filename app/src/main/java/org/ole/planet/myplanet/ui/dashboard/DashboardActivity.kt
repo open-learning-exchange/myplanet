@@ -94,7 +94,7 @@ import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NotificationUtil
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import org.ole.planet.myplanet.utilities.Utilities.toast
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint  
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
@@ -775,7 +775,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun checkUser() {
         user = UserProfileDbHandler(this).userModel
         if (user == null) {
-            toast(this, getString(R.string.session_expired))
+            this.toast(getString(R.string.session_expired))
             logout()
             return
         }

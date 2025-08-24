@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.utilities.DialogUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
@@ -99,7 +99,7 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
         if (personal != null) {
             uploadManager.uploadMyPersonal(personal) { s: String? ->
                 if (s != null) {
-                    Utilities.toast(activity, s)
+                    activity?.toast(s)
                 }
                 pg.dismiss()
             }

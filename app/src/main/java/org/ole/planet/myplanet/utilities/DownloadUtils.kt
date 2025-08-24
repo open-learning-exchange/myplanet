@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DownloadWorker
 import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.utilities.toast
 
 object DownloadUtils {
     private const val DOWNLOAD_CHANNEL = "DownloadChannel"
@@ -169,7 +170,7 @@ object DownloadUtils {
 
     private fun handleForegroundServiceNotAllowed(context: Context, urlsKey: String, fromSync: Boolean) {
         if (!fromSync) {
-            Utilities.toast(context, context.getString(R.string.download_in_background))
+            context.toast(context.getString(R.string.download_in_background))
         }
         startDownloadWork(context, urlsKey, fromSync)
     }

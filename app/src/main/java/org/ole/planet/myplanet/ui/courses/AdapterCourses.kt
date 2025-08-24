@@ -33,7 +33,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getInt
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.getCloudConfig
 
 class AdapterCourses(
     private val context: Context,
@@ -57,7 +57,7 @@ class AdapterCourses(
         if (context is OnHomeItemClickListener) {
             homeItemClickListener = context
         }
-        config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
+        config = getCloudConfig().selectMode(ChipCloud.SelectMode.single)
     }
 
     fun setmRealm(mRealm: Realm?) {
@@ -266,12 +266,23 @@ class AdapterCourses(
                 holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
                     holder.rowCourseBinding.checkbox.contentDescription =
                         context.getString(R.string.select_res_course, course.courseTitle)
-                    Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, courseList)
+                    handleCheck((view as CheckBox).isChecked, position)
                     listener?.onSelectedListChange(selectedItems)
                 }
             }
         } else {
             holder.rowCourseBinding.checkbox.visibility = View.GONE
+        }
+    }
+
+    private fun handleCheck(b: Boolean, i: Int) {
+        val item = courseList[i]
+        if (b) {
+            if (!selectedItems.contains(item)) {
+                selectedItems.add(item)
+            }
+        } else {
+            selectedItems.remove(item)
         }
     }
 

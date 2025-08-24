@@ -5,6 +5,7 @@ import android.content.Intent
 import android.text.style.ClickableSpan
 import android.view.View
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity
+import org.ole.planet.myplanet.utilities.toast
 
 class CustomClickableSpan(private val url: String, private val title: String, private val context: Context) : ClickableSpan() {
     override fun onClick(widget: View) {
@@ -18,7 +19,7 @@ class CustomClickableSpan(private val url: String, private val title: String, pr
             webViewIntent.putExtra("link", link)
             context.startActivity(webViewIntent)
         } else {
-            Utilities.toast(context, "Invalid link")
+            context.toast("Invalid link")
         }
     }
 }

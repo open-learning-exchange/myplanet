@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 class PlanFragment : BaseTeamFragment() {
     private lateinit var fragmentPlanBinding: FragmentPlanBinding
@@ -99,7 +99,7 @@ class PlanFragment : BaseTeamFragment() {
     private fun handleSaveButtonClick(binding: AlertCreateTeamBinding, activity: FragmentActivity, context: Context, realm: Realm, team: RealmMyTeam, dialog: AlertDialog) {
         val name = binding.etName.text.toString().trim()
         if (name.isEmpty()) {
-            Utilities.toast(activity, context.getString(R.string.name_is_required))
+            activity.toast(context.getString(R.string.name_is_required))
             binding.etName.error = context.getString(R.string.please_enter_a_name)
             return
         }
@@ -123,12 +123,12 @@ class PlanFragment : BaseTeamFragment() {
         }, {
             activity.runOnUiThread {
                 updateUIWithTeamData(team)
-                Utilities.toast(activity, context.getString(R.string.added_successfully))
+                activity.toast(context.getString(R.string.added_successfully))
                 dialog.dismiss()
             }
         }, {
             activity.runOnUiThread {
-                Utilities.toast(activity, context.getString(R.string.failed_to_add_please_retry))
+                activity.toast(context.getString(R.string.failed_to_add_please_retry))
             }
         })
     }

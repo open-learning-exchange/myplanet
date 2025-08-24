@@ -30,7 +30,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityExoPlayerVideoBinding
 import org.ole.planet.myplanet.utilities.AuthSessionUpdater
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback {
@@ -89,7 +89,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     }
 
     override fun onError(s: String) {
-        runOnUiThread { Utilities.toast(this, getString(R.string.connection_failed_reason) + s) }
+        runOnUiThread { this.toast(getString(R.string.connection_failed_reason) + s) }
     }
 
     override fun onStart() {

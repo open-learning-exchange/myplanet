@@ -53,7 +53,7 @@ import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
     SyncListener {
@@ -112,7 +112,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
 
     override fun forceDownloadNewsImages() {
         mRealm = databaseService.realmInstance
-        Utilities.toast(activity, getString(R.string.please_select_starting_date))
+        activity?.toast(getString(R.string.please_select_starting_date))
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(requireActivity(), { _: DatePicker?, i: Int, i1: Int, i2: Int ->
             now[Calendar.YEAR] = i
@@ -133,10 +133,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         val list = ArrayList<String>()
         list.add(Constants.DICTIONARY_URL)
         if (!FileUtils.checkFileExist(Constants.DICTIONARY_URL)) {
-            Utilities.toast(activity, getString(R.string.downloading_started_please_check_notification))
+            activity?.toast(getString(R.string.downloading_started_please_check_notification))
             DownloadUtils.openDownloadService(activity, list, false)
         } else {
-            Utilities.toast(activity, getString(R.string.file_already_exists))
+            activity?.toast(getString(R.string.file_already_exists))
         }
     }
 
@@ -422,7 +422,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
             .equalTo("completed", false)
             .greaterThan("deadline", Calendar.getInstance().timeInMillis).findAll()
         if (tasks.isEmpty()) {
-            Utilities.toast(requireContext(), getString(R.string.no_due_tasks))
+            requireContext().toast(getString(R.string.no_due_tasks))
             return
         }
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_expandable_list_item_1, tasks)

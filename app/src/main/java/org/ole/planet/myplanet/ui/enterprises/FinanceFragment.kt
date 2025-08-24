@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 class FinanceFragment : BaseTeamFragment() {
     private lateinit var fragmentFinanceBinding: FragmentFinanceBinding
@@ -205,16 +205,16 @@ class FinanceFragment : BaseTeamFragment() {
                 val note = "${addTransactionBinding.tlNote.editText?.text}".trim { it <= ' ' }
                 val amount = "${addTransactionBinding.tlAmount.editText?.text}".trim { it <= ' ' }
                 if (note.isEmpty()) {
-                    Utilities.toast(activity, getString(R.string.note_is_required))
+                    activity?.toast(getString(R.string.note_is_required))
                 } else if (amount.isEmpty()) {
-                    Utilities.toast(activity, getString(R.string.amount_is_required))
+                    activity?.toast(getString(R.string.amount_is_required))
                 } else if (date == null) {
-                    Utilities.toast(activity, getString(R.string.date_is_required))
+                    activity?.toast(getString(R.string.date_is_required))
                 } else {
                     mRealm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
                         createTransactionObject(realm, type, note, amount, date)
                     }, Realm.Transaction.OnSuccess {
-                        Utilities.toast(activity, getString(R.string.transaction_added))
+                        activity?.toast(getString(R.string.transaction_added))
                         adapterFinance?.notifyDataSetChanged()
                         showNoData(fragmentFinanceBinding.tvNodata, adapterFinance?.itemCount, "finances")
                     })

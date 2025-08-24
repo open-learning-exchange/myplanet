@@ -10,7 +10,8 @@ import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.getCloudConfig
+import org.ole.planet.myplanet.utilities.toast
 
 class NewsLabelManager(private val context: Context, private val realm: Realm, private val currentUser: RealmUserModel?) {
     fun setupAddLabelMenu(binding: RowNewsBinding, news: RealmNews?) {
@@ -28,7 +29,7 @@ class NewsLabelManager(private val context: Context, private val realm: Realm, p
                 if (selectedLabel != null && !news?.labels?.contains(selectedLabel)!!) {
                     if (!realm.isInTransaction) realm.beginTransaction()
                     news.labels?.add(selectedLabel)
-                    Utilities.toast(context, context.getString(R.string.label_added))
+                    context.toast(context.getString(R.string.label_added))
                     realm.commitTransaction()
                     showChips(binding, news)
                     false
@@ -44,7 +45,7 @@ class NewsLabelManager(private val context: Context, private val realm: Realm, p
         binding.fbChips.removeAllViews()
 
         for (label in news.labels ?: emptyList()) {
-            val chipConfig = Utilities.getCloudConfig().apply {
+            val chipConfig = getCloudConfig().apply {
                 selectMode(if (isOwner) ChipCloud.SelectMode.close else ChipCloud.SelectMode.none)
             }
 

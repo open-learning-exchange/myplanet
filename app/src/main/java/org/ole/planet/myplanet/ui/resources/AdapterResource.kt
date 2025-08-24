@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.getCloudConfig
 
 class AdapterResource(
     private val context: Context,
@@ -37,7 +37,7 @@ class AdapterResource(
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
     private var listener: OnLibraryItemSelected? = null
-    private val config: ChipCloudConfig = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
+    private val config: ChipCloudConfig = getCloudConfig().selectMode(ChipCloud.SelectMode.single)
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
     private var isAscending = true
@@ -121,13 +121,24 @@ class AdapterResource(
                 holder.rowLibraryBinding.checkbox.setOnClickListener { view: View ->
                     holder.rowLibraryBinding.checkbox.contentDescription =
                         context.getString(R.string.select_res_course, libraryList[position]?.title)
-                    Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, libraryList)
+                    handleCheck((view as CheckBox).isChecked, position)
                     if (listener != null) listener?.onSelectedListChange(selectedItems)
                 }
             }
             else{
                 holder.rowLibraryBinding.checkbox.visibility = View.GONE
             }
+        }
+    }
+
+    private fun handleCheck(b: Boolean, i: Int) {
+        val item = libraryList[i]
+        if (b) {
+            if (!selectedItems.contains(item)) {
+                selectedItems.add(item)
+            }
+        } else {
+            selectedItems.remove(item)
         }
     }
 

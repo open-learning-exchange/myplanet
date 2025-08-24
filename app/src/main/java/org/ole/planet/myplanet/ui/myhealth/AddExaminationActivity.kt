@@ -39,7 +39,8 @@ import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.JsonUtils.getBoolean
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.getAge
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.getCloudConfig
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
@@ -61,7 +62,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     private var examination: RealmMyHealthPojo? = null
     private val gson = Gson()
     private fun initViews() {
-        config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close)
+        config = getCloudConfig().selectMode(ChipCloud.SelectMode.close)
         binding.btnAddDiag.setOnClickListener {
             customDiag?.add("${binding.etOtherDiag.text}")
             binding.etOtherDiag.setText(R.string.empty_text)
@@ -281,7 +282,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             e.printStackTrace()
         }
         mRealm.commitTransaction()
-        Utilities.toast(this, getString(R.string.added_successfully))
+        this.toast(getString(R.string.added_successfully))
         super.finish()
     }
 
@@ -321,21 +322,21 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             if (!isValidTemp) {
                 binding.etTemperature.error = getString(R.string.invalid_input_must_be_between_30_and_40)
                 scrollToView(binding.etTemperature)
-                Utilities.toast(this, getString(R.string.invalid_input_must_be_between_30_and_40))
+                this.toast(getString(R.string.invalid_input_must_be_between_30_and_40))
             }
             if (!isValidPulse) {
                 binding.etPulseRate.error = getString(R.string.invalid_input_must_be_between_40_and_120)
-                Utilities.toast(this, getString(R.string.invalid_input_must_be_between_40_and_120))
+                this.toast(getString(R.string.invalid_input_must_be_between_40_and_120))
                 scrollToView(binding.etPulseRate)
             }
             if (!isValidHeight) {
                 binding.etHeight.error = getString(R.string.invalid_input_must_be_between_1_and_250)
-                Utilities.toast(this, getString(R.string.invalid_input_must_be_between_1_and_250))
+                this.toast(getString(R.string.invalid_input_must_be_between_1_and_250))
                 scrollToView(binding.etHeight)
             }
             if (!isValidWeight) {
                 binding.etWeight.error = getString(R.string.invalid_input_must_be_between_1_and_150)
-                Utilities.toast(this, getString(R.string.invalid_input_must_be_between_1_and_150))
+                this.toast(getString(R.string.invalid_input_must_be_between_1_and_150))
                 scrollToView(binding.etWeight)
             }
             return isValidTemp && isValidHeight && isValidPulse && isValidWeight
@@ -369,7 +370,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             pojo?.data = encrypt(gson.toJson(health), user?.key, user?.iv)
         } catch (e: Exception) {
             e.printStackTrace()
-            Utilities.toast(this, getString(R.string.unable_to_add_health_record))
+            this.toast(getString(R.string.unable_to_add_health_record))
         }
     }
 

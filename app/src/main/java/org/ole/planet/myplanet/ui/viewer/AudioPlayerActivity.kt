@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAudioPlayerBinding
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 class AudioPlayerActivity : AppCompatActivity() {
 
@@ -94,7 +94,7 @@ class AudioPlayerActivity : AppCompatActivity() {
 
                 player.addListener(object : Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {
-                        Utilities.toast(this@AudioPlayerActivity, "Unable to play audio.")
+                        this@AudioPlayerActivity.toast("Unable to play audio.")
                     }
 
                     override fun onPlaybackStateChanged(playbackState: Int) {
@@ -105,7 +105,7 @@ class AudioPlayerActivity : AppCompatActivity() {
                 })
             }
         } catch (e: Exception) {
-            Utilities.toast(this, "Unable to play audio.")
+            this.toast("Unable to play audio.")
         }
     }
 

@@ -73,7 +73,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
 
     private suspend fun downloadFile(url: String, index: Int, total: Int): Boolean {
         return try {
-            val response = apiInterface.downloadFile(Utilities.header, url)?.execute()
+            val response = apiInterface.downloadFile(url)?.execute()
 
             when {
                 response == null -> false

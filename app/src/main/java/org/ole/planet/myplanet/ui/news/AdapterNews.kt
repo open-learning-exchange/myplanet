@@ -49,7 +49,7 @@ import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.loadImage
 import org.ole.planet.myplanet.utilities.makeExpandable
 
 class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
@@ -224,11 +224,11 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         if (userModel != null && currentUser != null) {
             holder.rowNewsBinding.tvName.text =
                 if (userFullName.isNullOrEmpty()) news.userName else userFullName
-            Utilities.loadImage(userModel.userImage, holder.rowNewsBinding.imgUser)
+            holder.rowNewsBinding.imgUser.loadImage(userModel.userImage)
             showHideButtons(news, holder)
         } else {
             holder.rowNewsBinding.tvName.text = news.userName
-            Utilities.loadImage(null, holder.rowNewsBinding.imgUser)
+            holder.rowNewsBinding.imgUser.loadImage(null)
         }
         return userModel
     }
@@ -536,7 +536,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     news?.sharedBy = currentUser?.id
                     news?.viewIn = gson.toJson(array)
                     mRealm.commitTransaction()
-                    Utilities.toast(context, context.getString(R.string.shared_to_community))
+                    context.toast(context.getString(R.string.shared_to_community))
                     viewHolder.rowNewsBinding.btnShare.visibility = View.GONE
                 }
                 .setNegativeButton(R.string.cancel, null)

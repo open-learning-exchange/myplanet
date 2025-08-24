@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.NotificationUtil.create
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompleteListener, OnPageErrorListener, AudioRecordListener {
@@ -88,13 +88,13 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
     override fun onPageError(page: Int, t: Throwable) {}
 
     override fun onRecordStarted() {
-        Utilities.toast(this, getString(R.string.recording_started))
+        this.toast(getString(R.string.recording_started))
         create(this, R.drawable.ic_mic, "Recording Audio", getString(R.string.ole_is_recording_audio))
         binding.fabRecord.setImageResource(R.drawable.ic_stop)
     }
 
     override fun onRecordStopped(outputFile: String?) {
-        Utilities.toast(this, getString(R.string.recording_stopped))
+        this.toast(getString(R.string.recording_stopped))
         cancelAll(this)
         updateTranslation(outputFile)
         AddResourceFragment.showAlert(this, outputFile, databaseService)
@@ -106,7 +106,7 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             library.translationAudioPath = outputFile
             mRealm.commitTransaction()
-            Utilities.toast(this, getString(R.string.audio_file_saved_in_database))
+            this.toast(getString(R.string.audio_file_saved_in_database))
         }
     }
 
@@ -129,7 +129,7 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
 
     override fun onError(error: String?) {
         cancelAll(this)
-        Utilities.toast(this, error)
+        this.toast(error)
         binding.fabRecord.setImageResource(R.drawable.ic_mic)
     }
 }

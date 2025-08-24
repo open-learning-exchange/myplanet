@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 @AndroidEntryPoint
 class SendSurveyFragment : BaseDialogFragment() {
@@ -67,7 +67,7 @@ class SendSurveyFragment : BaseDialogFragment() {
                 val u = users[i]
                 createSurveySubmission(u.id)
             }
-            Utilities.toast(activity, getString(R.string.survey_sent_to_users))
+            activity?.toast(getString(R.string.survey_sent_to_users))
             dismiss()
         }
     }

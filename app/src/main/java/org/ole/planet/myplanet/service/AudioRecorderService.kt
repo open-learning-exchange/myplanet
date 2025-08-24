@@ -22,7 +22,7 @@ import java.util.UUID
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.toast
 
 class AudioRecorderService {
     private var outputFile: String? = null
@@ -128,7 +128,7 @@ class AudioRecorderService {
                             .setNegativeButton(R.string.cancel) { dialog, _ -> dialog.dismiss() }
                             .show()
                     } else {
-                        Utilities.toast(context, "Microphone permission is required to record audio.")
+                        context.toast("Microphone permission is required to record audio.")
                     }
                 }
             }

@@ -95,7 +95,7 @@ import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.ServerConfigUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
-import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
+import org.ole.planet.myplanet.utilities.getRelativeTime
 
 @AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
@@ -335,7 +335,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         return if (lastSynced == 0L) {
             " Never Synced"
         } else {
-            getRelativeTime(lastSynced)
+            lastSynced.getRelativeTime()
         }
     }
 
@@ -606,7 +606,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 lblLastSyncDate.text = getString(R.string.last_synced_never)
             } else {
                 val lastSyncMillis = settings.getLong(getString(R.string.last_syncs), 0)
-                var relativeTime = getRelativeTime(lastSyncMillis)
+                var relativeTime = lastSyncMillis.getRelativeTime()
 
                 if (relativeTime.matches(Regex("^\\d{1,2} seconds ago$"))) {
                     relativeTime = getString(R.string.a_few_seconds_ago)
@@ -750,7 +750,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
         editor.putLong("lastUsageUploaded", Date().time).apply()
         if (::lblLastSyncDate.isInitialized) {
-            lblLastSyncDate.text = getString(R.string.message_placeholder, "${getString(R.string.last_sync, getRelativeTime(Date().time))} >>")
+            lblLastSyncDate.text = getString(R.string.message_placeholder, "${getString(R.string.last_sync, Date().time.getRelativeTime())} >>")
         }
         syncFailed = false
     }
@@ -781,7 +781,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onError(msg: String, blockSync: Boolean) {
-        Utilities.toast(this, msg)
+        this.toast(msg)
         if (msg.startsWith("Config")) {
             settingDialog()
         }
