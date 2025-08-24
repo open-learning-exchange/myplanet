@@ -8,24 +8,30 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Realm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowTaskBinding
 import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.ViewHolderTask
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
-class AdapterTask(private val context: Context, private val realm: Realm, private val list: List<RealmTeamTask>?, private val nonTeamMember: Boolean) : RecyclerView.Adapter<ViewHolderTask>() {
+class AdapterTask(private val context: Context, private val list: List<RealmTeamTask>?, private val nonTeamMember: Boolean) : RecyclerView.Adapter<ViewHolderTask>() {
     private lateinit var rowTaskBinding: RowTaskBinding
     private var listener: OnCompletedListener? = null
+    private var userMap: Map<String, String?> = emptyMap()
+
     fun setListener(listener: OnCompletedListener?) {
         this.listener = listener
     }
 
+    fun setUsers(userMap: Map<String, String?>) {
+        this.userMap = userMap
+        notifyDataSetChanged()
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTask {
         rowTaskBinding = RowTaskBinding.inflate(LayoutInflater.from(context), parent, false)
-        return ViewHolderTask(rowTaskBinding) }
+        return ViewHolderTask(rowTaskBinding)
+    }
 
     override fun onBindViewHolder(holder: ViewHolderTask, position: Int) {
         list?.get(position)?.let {
@@ -34,8 +40,11 @@ class AdapterTask(private val context: Context, private val realm: Realm, privat
             if (!it.completed) {
                 rowTaskBinding.deadline.text = context.getString(R.string.deadline_colon, formatDate(it.deadline))
             } else {
-                rowTaskBinding.deadline.text =context.getString(R.string.two_strings,
-                    context.getString(R.string.deadline_colon, formatDate(it.deadline)), context.getString(R.string.completed_colon, formatDate(it.deadline)))
+                rowTaskBinding.deadline.text = context.getString(
+                    R.string.two_strings,
+                    context.getString(R.string.deadline_colon, formatDate(it.deadline)),
+                    context.getString(R.string.completed_colon, formatDate(it.completedTime))
+                )
             }
             showAssignee(it)
             rowTaskBinding.icMore.setOnClickListener {
@@ -48,15 +57,14 @@ class AdapterTask(private val context: Context, private val realm: Realm, privat
                 listener?.onDelete(list[position])
             }
             holder.itemView.setOnClickListener {
-                val alertDialog = AlertDialog.Builder(context, R.style.AlertDialogTheme)
+                AlertDialog.Builder(context, R.style.AlertDialogTheme)
                     .setTitle(list[position].title)
                     .setMessage(list[position].description)
                     .setNegativeButton("Cancel") { dialog, _ ->
                         dialog.dismiss()
                     }
                     .create()
-
-                alertDialog.show()
+                    .show()
             }
             if (nonTeamMember) {
                 rowTaskBinding.editTask.visibility = View.GONE
@@ -74,12 +82,15 @@ class AdapterTask(private val context: Context, private val realm: Realm, privat
 
     private fun showAssignee(realmTeamTask: RealmTeamTask) {
         if (!TextUtils.isEmpty(realmTeamTask.assignee)) {
-            val model = realm.where(RealmUserModel::class.java).equalTo("id", realmTeamTask.assignee).findFirst()
-            if (model != null) {
-                rowTaskBinding.assignee.text = context.getString(R.string.assigned_to_colon, model.name)
+            val userName = userMap[realmTeamTask.assignee]
+            if (userName != null) {
+                rowTaskBinding.assignee.text = context.getString(R.string.assigned_to_colon, userName)
+            } else {
+                rowTaskBinding.assignee.setText(R.string.no_assignee)
             }
         } else {
-            rowTaskBinding.assignee.setText(R.string.no_assignee) }
+            rowTaskBinding.assignee.setText(R.string.no_assignee)
+        }
     }
 
     override fun getItemCount(): Int {
