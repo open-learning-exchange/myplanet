@@ -2,13 +2,13 @@ package org.ole.planet.myplanet.model
 
 import android.content.Context
 import com.google.gson.JsonObject
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
 import java.util.Date
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 
-open class RealmMyPersonal : RealmObject() {
+class RealmMyPersonal : RealmObject {
     @PrimaryKey
     var id: String? = null
     var _id: String? = null

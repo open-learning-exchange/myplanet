@@ -4,11 +4,11 @@ import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.realm.RealmList
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.types.RealmList
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
 
-open class RealmAnswer : RealmObject() {
+class RealmAnswer : RealmObject {
     @PrimaryKey
     var id: String? = null
     var value: String? = null

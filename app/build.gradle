@@ -1,9 +1,11 @@
+plugins {
+    id("io.realm.kotlin")
+}
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-kapt'
 apply plugin: 'kotlinx-serialization'
 apply plugin: 'dagger.hilt.android.plugin'
-apply plugin: 'realm-android'
 android {
     compileSdk = 36
     defaultConfig {
@@ -174,7 +176,7 @@ repositories {
     maven { url = uri("https://maven.google.com") }
 }
 
-dependencies {
+  dependencies {
     testImplementation 'junit:junit:4.13.2'
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
     implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
@@ -256,11 +258,10 @@ dependencies {
     implementation "io.noties.markwon:ext-tables:$markwon_version"
     implementation(platform("org.jetbrains.kotlin:kotlin-bom:2.2.10"))
 
-    implementation 'com.github.chrisbanes:PhotoView:2.3.0'
-}
-realm {
-    syncEnabled = true
-}
+      implementation 'com.github.chrisbanes:PhotoView:2.3.0'
+      implementation("io.realm.kotlin:library-base:3.0.0")
+  }
+
 kapt {
     correctErrorTypes = true
     useBuildCache = true

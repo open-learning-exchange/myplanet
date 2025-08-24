@@ -6,11 +6,11 @@ import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import io.realm.Realm
-import io.realm.RealmList
-import io.realm.RealmObject
-import io.realm.RealmResults
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.Realm
+import io.realm.kotlin.types.RealmList
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.query.RealmResults
+import io.realm.kotlin.types.annotations.PrimaryKey
 import java.util.Date
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,7 +30,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.UrlUtils.getUrl
 
-open class RealmMyTeam : RealmObject() {
+class RealmMyTeam : RealmObject {
     @PrimaryKey
     var _id: String? = null
     var _rev: String? = null

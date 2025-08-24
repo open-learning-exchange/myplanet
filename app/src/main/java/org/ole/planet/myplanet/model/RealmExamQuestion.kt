@@ -3,15 +3,15 @@ package org.ole.planet.myplanet.model
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.realm.Realm
-import io.realm.RealmList
-import io.realm.RealmObject
-import io.realm.RealmResults
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.Realm
+import io.realm.kotlin.types.RealmList
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.query.RealmResults
+import io.realm.kotlin.types.annotations.PrimaryKey
 import java.util.Locale
 import org.ole.planet.myplanet.utilities.JsonUtils
 
-open class RealmExamQuestion : RealmObject() {
+class RealmExamQuestion : RealmObject {
     @PrimaryKey
     var id: String? = null
     var header: String? = null

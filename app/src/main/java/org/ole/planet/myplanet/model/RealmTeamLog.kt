@@ -3,14 +3,14 @@ package org.ole.planet.myplanet.model
 import android.content.Context
 import android.text.TextUtils
 import com.google.gson.JsonObject
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.Realm
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
 import java.util.Calendar
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 
-open class RealmTeamLog : RealmObject() {
+class RealmTeamLog : RealmObject {
     @PrimaryKey
     var id: String? = null
     var _id: String? = null

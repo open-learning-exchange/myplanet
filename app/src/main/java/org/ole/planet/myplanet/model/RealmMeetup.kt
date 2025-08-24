@@ -5,14 +5,14 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Case
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.Realm
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
 import org.json.JSONArray
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-open class RealmMeetup : RealmObject() {
+class RealmMeetup : RealmObject {
     @PrimaryKey
     var id: String? = null
     var userId: String? = null

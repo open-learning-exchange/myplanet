@@ -6,11 +6,11 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import io.realm.Case
-import io.realm.Realm
-import io.realm.RealmList
-import io.realm.RealmObject
+import io.realm.kotlin.Realm
+import io.realm.kotlin.types.RealmList
+import io.realm.kotlin.types.RealmObject
 import io.realm.Sort
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.types.annotations.PrimaryKey
 import java.io.IOException
 import java.util.Date
 import java.util.UUID
@@ -24,7 +24,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
-open class RealmSubmission : RealmObject() {
+class RealmSubmission : RealmObject {
     @PrimaryKey
     var id: String? = null
     var _id: String? = null
@@ -327,6 +327,6 @@ open class RealmSubmission : RealmObject() {
     }
 }
 
-open class RealmMembershipDoc : RealmObject() {
+class RealmMembershipDoc : RealmObject {
     var teamId: String? = null
 }

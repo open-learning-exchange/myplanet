@@ -1,11 +1,11 @@
 package org.ole.planet.myplanet.model
 
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.Realm
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
 import java.util.UUID
 
-open class RealmUserChallengeActions : RealmObject() {
+class RealmUserChallengeActions : RealmObject {
     @PrimaryKey
     var id: String = UUID.randomUUID().toString()
     var userId: String? = null

@@ -1,13 +1,13 @@
 package org.ole.planet.myplanet.model
 
 import android.content.SharedPreferences
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.Realm
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
 import java.util.concurrent.Executors
 import org.ole.planet.myplanet.MainApplication
 
-open class RealmMyLife : RealmObject {
+class RealmMyLife : RealmObject {
     @PrimaryKey
     var _id: String? = null
     var imageId: String? = null

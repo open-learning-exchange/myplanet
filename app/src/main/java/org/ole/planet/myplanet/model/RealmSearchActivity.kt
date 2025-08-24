@@ -2,13 +2,13 @@ package org.ole.planet.myplanet.model
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.VersionUtils
 
-open class RealmSearchActivity(
+class RealmSearchActivity(
     @PrimaryKey
     var id: String = "",
     var _id: String = "",
@@ -20,7 +20,7 @@ open class RealmSearchActivity(
     var filter: String = "",
     var createdOn: String = "",
     var parentCode: String = ""
-) : RealmObject() {
+) : RealmObject {
     fun serialize(): JsonObject {
         val obj = JsonObject()
         obj.addProperty("text", text)

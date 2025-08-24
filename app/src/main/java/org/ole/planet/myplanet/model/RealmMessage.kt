@@ -3,11 +3,11 @@ package org.ole.planet.myplanet.model
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import io.realm.RealmList
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.types.RealmList
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
 
-open class RealmMessage : RealmObject() {
+class RealmMessage : RealmObject {
     @PrimaryKey
     var id: String? = null
     var message: String? = null

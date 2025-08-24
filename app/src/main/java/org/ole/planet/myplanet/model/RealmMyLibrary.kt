@@ -5,10 +5,10 @@ import android.content.SharedPreferences
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
-import io.realm.Realm
-import io.realm.RealmList
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.Realm
+import io.realm.kotlin.types.RealmList
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
 import java.util.Calendar
 import java.util.Date
 import java.util.UUID
@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 
-open class RealmMyLibrary : RealmObject() {
+class RealmMyLibrary : RealmObject {
     @PrimaryKey
     var id: String? = null
     var _id: String? = null
@@ -371,7 +371,7 @@ open class RealmMyLibrary : RealmObject() {
     }
 }
 
-open class RealmAttachment : RealmObject() {
+class RealmAttachment : RealmObject {
     @PrimaryKey
     var id: String? = null
     var name: String? = null

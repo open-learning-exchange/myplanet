@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.utilities
 
 import android.content.Context
 import android.widget.Toast
-import io.realm.Realm
+import io.realm.kotlin.Realm
 import java.text.Normalizer
 import java.util.regex.Pattern
 import org.ole.planet.myplanet.R

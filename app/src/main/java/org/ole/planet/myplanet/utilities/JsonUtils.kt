@@ -5,7 +5,7 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser.parseString
-import io.realm.RealmList
+import io.realm.kotlin.types.RealmList
 
 object JsonUtils {
     @JvmStatic

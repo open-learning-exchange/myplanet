@@ -7,10 +7,10 @@ import androidx.core.net.toUri
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import io.realm.Realm
-import io.realm.RealmList
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.Realm
+import io.realm.kotlin.types.RealmList
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
 import java.io.File
 import java.io.InputStream
 import java.util.Locale
@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
 
-open class RealmUserModel : RealmObject() {
+open class RealmUserModel : RealmObject {
     @PrimaryKey
     var id: String? = null
     var _id: String? = null

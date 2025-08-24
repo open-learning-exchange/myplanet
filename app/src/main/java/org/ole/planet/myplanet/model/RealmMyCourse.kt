@@ -8,11 +8,11 @@ import androidx.core.content.edit
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.realm.Realm
-import io.realm.RealmList
-import io.realm.RealmObject
-import io.realm.RealmResults
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.Realm
+import io.realm.kotlin.types.RealmList
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.query.RealmResults
+import io.realm.kotlin.types.annotations.PrimaryKey
 import io.realm.kotlin.where
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
 
-open class RealmMyCourse : RealmObject() {
+class RealmMyCourse : RealmObject {
     @PrimaryKey
     var id: String? = null
     var userId: RealmList<String>? = null

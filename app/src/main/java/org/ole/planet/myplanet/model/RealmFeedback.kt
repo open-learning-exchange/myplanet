@@ -6,13 +6,13 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.stream.JsonReader
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.Realm
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
 import java.io.StringReader
 import org.ole.planet.myplanet.utilities.JsonUtils
 
-open class RealmFeedback : RealmObject() {
+class RealmFeedback : RealmObject {
     @PrimaryKey
     var id: String? = null
     var _id: String? = null

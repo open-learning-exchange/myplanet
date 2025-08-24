@@ -2,13 +2,13 @@ package org.ole.planet.myplanet.model
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.realm.Realm
-import io.realm.RealmList
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.Realm
+import io.realm.kotlin.types.RealmList
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
 import org.ole.planet.myplanet.utilities.JsonUtils
 
-open class RealmTag : RealmObject() {
+class RealmTag : RealmObject {
     @PrimaryKey
     var id: String? = null
     var _id: String? = null

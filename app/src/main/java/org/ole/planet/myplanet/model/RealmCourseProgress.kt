@@ -1,15 +1,15 @@
 package org.ole.planet.myplanet.model
 
 import com.google.gson.JsonObject
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.Realm
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getCourseSteps
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourseByUserId
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
 import org.ole.planet.myplanet.utilities.JsonUtils
 
-open class RealmCourseProgress : RealmObject() {
+class RealmCourseProgress : RealmObject {
     @PrimaryKey
     var id: String? = null
     var _id: String? = null

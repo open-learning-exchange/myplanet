@@ -1,9 +1,9 @@
 package org.ole.planet.myplanet.model
 
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
 
-open class RealmDictionary(
+class RealmDictionary(
     @PrimaryKey var id: String = "",
     var word: String = "",
     var meaning: String = "",
@@ -13,4 +13,4 @@ open class RealmDictionary(
     var definition: String = "",
     var language: String = "",
     var antonym: String = ""
-) : RealmObject()
+) : RealmObject

@@ -1,16 +1,16 @@
 package org.ole.planet.myplanet.model
 
 import com.google.gson.JsonObject
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import io.realm.kotlin.Realm
+import io.realm.kotlin.types.RealmObject
+import io.realm.kotlin.types.annotations.PrimaryKey
 import java.util.Date
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.utilities.NetworkUtils
 
-open class RealmCourseActivity : RealmObject() {
+class RealmCourseActivity : RealmObject {
     @PrimaryKey
     var id: String? = null
     var _id: String? = null
