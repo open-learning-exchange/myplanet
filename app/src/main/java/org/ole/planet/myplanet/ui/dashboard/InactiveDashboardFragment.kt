@@ -9,12 +9,18 @@ import org.ole.planet.myplanet.databinding.FragmentInActiveDashboardBinding
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 
 class InactiveDashboardFragment : Fragment() {
-    private lateinit var binding: FragmentInActiveDashboardBinding
+    private var _binding: FragmentInActiveDashboardBinding? = null
+    private val binding get() = _binding!!
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        binding = FragmentInActiveDashboardBinding.inflate(inflater, container, false)
+        _binding = FragmentInActiveDashboardBinding.inflate(inflater, container, false)
         binding.btnFeedback.setOnClickListener {
             FeedbackFragment().show(childFragmentManager, "")
         }
         return binding.root
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }
