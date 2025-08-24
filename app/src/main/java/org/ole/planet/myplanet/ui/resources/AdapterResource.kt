@@ -7,7 +7,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.JsonObject
@@ -25,6 +24,7 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
@@ -204,32 +204,20 @@ class AdapterResource(
     }
 
     private fun updateList(newList: List<RealmMyLibrary?>) {
-        val diffResult = DiffUtil.calculateDiff(LibraryDiffCallback(libraryList, newList))
+        val diffResult = DiffUtils.calculateDiff(
+            libraryList,
+            newList,
+            areItemsTheSame = { old, new -> old?.id == new?.id },
+            areContentsTheSame = { old, new ->
+                old?.title == new?.title &&
+                    old?.description == new?.description &&
+                    old?.createdDate == new?.createdDate &&
+                    old?.averageRating == new?.averageRating &&
+                    old?.timesRated == new?.timesRated
+            }
+        )
         libraryList = newList
         diffResult.dispatchUpdatesTo(this)
-    }
-
-    private class LibraryDiffCallback(
-        private val oldList: List<RealmMyLibrary?>,
-        private val newList: List<RealmMyLibrary?>
-    ) : DiffUtil.Callback() {
-        override fun getOldListSize(): Int = oldList.size
-
-        override fun getNewListSize(): Int = newList.size
-
-        override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-            return oldList[oldItemPosition]?.id == newList[newItemPosition]?.id
-        }
-
-        override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-            val oldItem = oldList[oldItemPosition]
-            val newItem = newList[newItemPosition]
-            return oldItem?.title == newItem?.title &&
-                oldItem?.description == newItem?.description &&
-                oldItem?.createdDate == newItem?.createdDate &&
-                oldItem?.averageRating == newItem?.averageRating &&
-                oldItem?.timesRated == newItem?.timesRated
-        }
     }
 
     fun setRatingMap(newRatingMap: HashMap<String?, JsonObject>) {

@@ -11,9 +11,9 @@ import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 
 class SearchRepositoryImpl @Inject constructor(
-    private val databaseService: DatabaseService,
+    databaseService: DatabaseService,
     private val gson: Gson
-) : SearchRepository {
+) : RealmRepository(databaseService), SearchRepository {
 
     override suspend fun saveSearchActivity(
         userId: String?,
@@ -24,7 +24,7 @@ class SearchRepositoryImpl @Inject constructor(
         gradeLevel: String,
         subjectLevel: String
     ) {
-        databaseService.executeTransactionAsync { realm ->
+        executeTransaction { realm ->
             val activity = realm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
             activity.user = userId ?: ""
             activity.time = Calendar.getInstance().timeInMillis
