@@ -4,6 +4,7 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.applyEqualTo
 import org.ole.planet.myplanet.datamanager.findCopyByField
 import org.ole.planet.myplanet.datamanager.queryList
 
@@ -16,7 +17,7 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         realm.queryList(clazz, builder)
     }
 
-    protected suspend fun <T : RealmObject, V> findByField(
+    protected suspend fun <T : RealmObject, V : Any> findByField(
         clazz: Class<T>,
         fieldName: String,
         value: V
@@ -30,44 +31,28 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         }
     }
 
-    protected suspend fun <T : RealmObject, V> update(
+    protected suspend fun <T : RealmObject, V : Any> update(
         clazz: Class<T>,
         fieldName: String,
         value: V,
         updater: (T) -> Unit
     ) {
         executeTransaction { realm ->
-            val query = realm.where(clazz)
-            when (value) {
-                is String -> query.equalTo(fieldName, value)
-                is Boolean -> query.equalTo(fieldName, value)
-                is Int -> query.equalTo(fieldName, value)
-                is Long -> query.equalTo(fieldName, value)
-                is Float -> query.equalTo(fieldName, value)
-                is Double -> query.equalTo(fieldName, value)
-                else -> throw IllegalArgumentException("Unsupported value type")
-            }
-            query.findFirst()?.let { updater(it) }
+            realm.where(clazz)
+                .applyEqualTo(fieldName, value)
+                .findFirst()?.let { updater(it) }
         }
     }
 
-    protected suspend fun <T : RealmObject, V> delete(
+    protected suspend fun <T : RealmObject, V : Any> delete(
         clazz: Class<T>,
         fieldName: String,
         value: V
     ) {
         executeTransaction { realm ->
-            val query = realm.where(clazz)
-            when (value) {
-                is String -> query.equalTo(fieldName, value)
-                is Boolean -> query.equalTo(fieldName, value)
-                is Int -> query.equalTo(fieldName, value)
-                is Long -> query.equalTo(fieldName, value)
-                is Float -> query.equalTo(fieldName, value)
-                is Double -> query.equalTo(fieldName, value)
-                else -> throw IllegalArgumentException("Unsupported value type")
-            }
-            query.findFirst()?.deleteFromRealm()
+            realm.where(clazz)
+                .applyEqualTo(fieldName, value)
+                .findFirst()?.deleteFromRealm()
         }
     }
 

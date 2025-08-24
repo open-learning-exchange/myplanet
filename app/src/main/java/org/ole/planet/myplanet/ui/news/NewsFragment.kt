@@ -83,6 +83,7 @@ class NewsFragment : BaseNewsFragment() {
             .findAllAsync()
 
         updatedNewsList?.addChangeListener { results ->
+            if (_binding == null) return@addChangeListener
             filteredNewsList = filterNewsList(results)
             updateLabelSpinner()
             labelFilteredList = applyLabelFilter(filteredNewsList)
@@ -331,6 +332,7 @@ class NewsFragment : BaseNewsFragment() {
     }
     
     private fun updateLabelSpinner() {
+        val binding = _binding ?: return
         val labels = collectAllLabels(filteredNewsList)
         val themedContext = androidx.appcompat.view.ContextThemeWrapper(requireContext(), R.style.ResourcePopupMenu)
         val adapter = ArrayAdapter(themedContext, android.R.layout.simple_spinner_item, labels)
@@ -423,6 +425,7 @@ class NewsFragment : BaseNewsFragment() {
     }
 
     override fun onDestroyView() {
+        updatedNewsList?.removeAllChangeListeners()
         _binding = null
         super.onDestroyView()
     }
