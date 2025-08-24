@@ -42,7 +42,6 @@
         android:layout_height="match_parent">
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_task"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
         <TextView

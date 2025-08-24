@@ -17,7 +17,6 @@
         android:textColor="@color/md_white_1000"
         android:padding="10dp"/>
     <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-        android:id="@+id/scrollView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:fillViewport="true">
@@ -53,7 +52,6 @@
                     android:textColorHint="@color/hint_color">
 
                     <EditText
-                        android:id="@+id/et_link"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="Link"
@@ -69,7 +67,6 @@
                     android:textColorHint="@color/hint_color">
 
                     <EditText
-                        android:id="@+id/et_location"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/location"
@@ -112,7 +109,6 @@
                         android:text="@string/start_date"
                         android:textColor="@color/daynight_textColor" />
                     <TextView
-                        android:id="@+id/tv_start_date"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:padding="@dimen/padding_normal"
@@ -134,7 +130,6 @@
                         android:text="@string/start_time"
                         android:textColor="@color/daynight_textColor" />
                     <TextView
-                        android:id="@+id/tv_start_time"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:padding="@dimen/padding_normal"
@@ -161,7 +156,6 @@
                         android:text="@string/end_date"
                         android:textColor="@color/daynight_textColor" />
                     <TextView
-                        android:id="@+id/tv_end_date"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:padding="@dimen/padding_normal"
@@ -183,7 +177,6 @@
                         android:text="@string/end_time"
                         android:textColor="@color/daynight_textColor" />
                     <TextView
-                        android:id="@+id/tv_end_time"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:padding="@dimen/padding_normal"
@@ -199,27 +192,23 @@
                 android:text="@string/recurring_frequency"
                 android:textColor="@color/daynight_textColor" />
             <RadioGroup
-                android:id="@+id/rg_recuring"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
                 <RadioButton
-                    android:id="@+id/rb_daily"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/daily"
                     android:textColor="@color/daynight_textColor"
                     android:buttonTint="@color/daynight_textColor" />
                 <RadioButton
-                    android:id="@+id/rb_weekly"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/weekly"
                     android:textColor="@color/daynight_textColor"
                     android:buttonTint="@color/daynight_textColor" />
                 <RadioButton
-                    android:id="@+id/rb_none"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/none"

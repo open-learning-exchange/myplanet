@@ -27,7 +27,6 @@
                 android:padding="@dimen/padding_small">
 
                 <Button
-                    android:id="@+id/btnnew_patient"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:gravity="center"
@@ -35,7 +34,6 @@
                     android:theme="@style/BlueButton"
                     android:visibility="visible" />
                 <Button
-                    android:id="@+id/add_new_record"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="right"
@@ -45,7 +43,6 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/layout_user_detail"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:orientation="vertical"
@@ -58,7 +55,6 @@
                     android:visibility="gone">
 
                     <ImageView
-                        android:id="@+id/imageView3"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -75,7 +71,6 @@
                         android:textStyle="bold"
                         android:textColor="@color/daynight_textColor" />
                     <ImageView
-                        android:id="@+id/imageView2"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -89,7 +84,6 @@
                     android:background="@color/secondary_bg">
 
                     <ImageView
-                        android:id="@+id/user_image"
                         android:layout_width="@dimen/user_image_size"
                         android:layout_height="@dimen/user_image_size"
                         android:padding="@dimen/padding_normal"
@@ -118,7 +112,6 @@
                                     android:textColor="@color/daynight_textColor"
                                     android:textStyle="bold" />
                                 <TextView
-                                    android:id="@+id/txt_full_name"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
@@ -167,7 +160,6 @@
                                     android:textColor="@color/daynight_textColor"
                                     android:textStyle="bold" />
                                 <TextView
-                                    android:id="@+id/txt_language"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
@@ -221,7 +213,6 @@
                                     android:textColor="@color/daynight_textColor"
                                     android:textStyle="bold" />
                                 <TextView
-                                    android:id="@+id/txt_birth_place"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
@@ -243,7 +234,6 @@
                                     android:textColor="@color/daynight_textColor"
                                     android:textStyle="bold" />
                                 <TextView
-                                    android:id="@+id/txt_emergency_contact"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_small"
@@ -269,7 +259,6 @@
                                 android:textColor="@color/daynight_textColor"
                                 android:textStyle="bold" />
                             <TextView
-                                android:id="@+id/txt_special_needs"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:padding="@dimen/padding_small"
@@ -294,7 +283,6 @@
                                 android:textColor="@color/daynight_textColor"
                                 android:textStyle="bold" />
                             <TextView
-                                android:id="@+id/txt_other_need"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:padding="@dimen/padding_small"
@@ -310,15 +298,13 @@
 
                     <include layout="@layout/row_examination" />
                     <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/rv_records"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_weight="1"
                         android:scrollbars="horizontal" />
                 </LinearLayout>
                 <TextView
-                        android:id="@+id/tv_data_placeholder"
-                        android:layout_width="match_parent"
+                    android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/your_health_data_will_appear_here_as_you_continue_tracking_it"
                         android:textColor="@color/daynight_textColor"
@@ -326,8 +312,7 @@
                         android:padding="@dimen/padding_normal"
                         android:visibility="gone" />
                 <TextView
-                        android:id="@+id/tv_no_records"
-                        android:layout_width="match_parent"
+                    android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/no_health_records_available"
                         android:textColor="@color/daynight_textColor"
@@ -348,7 +333,6 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
         <com.github.clans.fab.FloatingActionButton
-            android:id="@+id/update_health"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"

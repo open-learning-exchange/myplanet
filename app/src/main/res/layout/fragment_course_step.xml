@@ -32,7 +32,6 @@
                 android:textAllCaps="false"
                 android:theme="@style/AccentButton" />
             <Button
-                android:id="@+id/btn_take_test"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/take_test"

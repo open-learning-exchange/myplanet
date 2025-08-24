@@ -19,26 +19,22 @@
             android:textColor="@color/daynight_textColor"
             android:textSize="@dimen/text_size_large" />
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tl_urgent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal">
 
             <RadioGroup
-                android:id="@+id/rg_urgent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
                 <RadioButton
-                    android:id="@+id/urgent_yes"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/yes"
                     android:textColor="@color/daynight_textColor"
                     android:buttonTint="@color/daynight_textColor" />
                 <RadioButton
-                    android:id="@+id/urgent_no"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/no"
@@ -55,33 +51,28 @@
             android:textColor="@color/daynight_textColor"
             android:textSize="@dimen/text_size_large" />
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tl_type"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal">
 
             <RadioGroup
-                android:id="@+id/rg_type"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
                 <RadioButton
-                    android:id="@+id/type_question"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/question"
                     android:textColor="@color/daynight_textColor"
                     android:buttonTint="@color/daynight_textColor" />
                 <RadioButton
-                    android:id="@+id/type_bug"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/bug"
                     android:textColor="@color/daynight_textColor"
                     android:buttonTint="@color/daynight_textColor" />
                 <RadioButton
-                    android:id="@+id/type_suggestion"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/suggestion"
@@ -91,7 +82,6 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tl_message"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:labelFor="@+id/et_message"

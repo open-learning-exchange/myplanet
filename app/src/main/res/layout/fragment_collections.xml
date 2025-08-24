@@ -17,7 +17,6 @@
             android:layout_height="wrap_content">
 
             <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tl_filter"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
@@ -27,7 +26,6 @@
                 android:textColorHint="@color/daynight_textColor">
 
                 <EditText
-                    android:id="@+id/et_filter"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/filter_collections"
@@ -37,7 +35,6 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/switch_many"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
@@ -48,13 +45,11 @@
         </LinearLayout>
 
         <ExpandableListView
-            android:id="@+id/list_tags"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
             android:padding="@dimen/padding_normal" />
         <Button
-            android:id="@+id/btn_ok"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="right"

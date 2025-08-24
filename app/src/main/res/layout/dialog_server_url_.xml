@@ -157,7 +157,6 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/ltDeviceName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
@@ -165,7 +164,6 @@
             app:layout_constraintTop_toBottomOf="@+id/ltIntervalLabel">
 
             <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/til_device_name"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -211,7 +209,6 @@
             android:textColor="@color/daynight_textColor"
             app:switchPadding="20dp" />
         <androidx.appcompat.widget.SwitchCompat
-            android:id="@+id/switch_server_url"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:checked="false"

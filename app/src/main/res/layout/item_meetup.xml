@@ -94,7 +94,6 @@
             app:layout_constraintTop_toBottomOf="@+id/ltDateFrom">
 
             <TextView
-                android:id="@+id/dateTo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/date_to_colon"
@@ -117,7 +116,6 @@
             app:layout_constraintTop_toBottomOf="@+id/ltDateTo">
 
             <TextView
-                android:id="@+id/Time"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/time_colon"
@@ -140,7 +138,6 @@
             app:layout_constraintTop_toBottomOf="@+id/ltTime">
 
             <TextView
-                android:id="@+id/location"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/location_colon"
@@ -163,7 +160,6 @@
             app:layout_constraintTop_toBottomOf="@+id/ltLocation">
 
             <TextView
-                android:id="@+id/Link"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Link: "
@@ -188,7 +184,6 @@
             app:layout_constraintTop_toBottomOf="@+id/ltLink">
 
             <TextView
-                android:id="@+id/recurring"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/recurring_colon"
@@ -202,7 +197,6 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/ltCreator"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="4dp"
@@ -211,7 +205,6 @@
             app:layout_constraintTop_toBottomOf="@+id/ltRecurring">
 
             <TextView
-                android:id="@+id/creator"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/created_by_colon"

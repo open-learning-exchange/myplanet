@@ -28,7 +28,6 @@
         app:layout_constraintTop_toBottomOf="@+id/tvEdit">
 
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/ltFirstName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
@@ -59,7 +58,6 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/ltMiddleName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
@@ -90,7 +88,6 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/ltLastName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
@@ -132,7 +129,6 @@
         app:layout_constraintTop_toBottomOf="@+id/lt1">
 
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/ltEmail"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1.2"
@@ -160,7 +156,6 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/ltPhoneNumber"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -198,7 +193,6 @@
         app:layout_constraintTop_toBottomOf="@id/lt2">
 
         <TextView
-            android:id="@+id/tvBirthTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="4dp"
@@ -285,7 +279,6 @@
             android:orientation="vertical">
 
             <TextView
-                android:id="@+id/languageTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/language"
@@ -308,7 +301,6 @@
             android:layout_marginStart="8dp">
 
             <TextView
-                android:id="@+id/levelTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/gender"

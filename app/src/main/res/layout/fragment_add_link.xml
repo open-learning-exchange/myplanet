@@ -17,7 +17,6 @@
             android:orientation="horizontal">
 
             <ImageView
-                android:id="@+id/ic_back"
                 android:layout_width="@dimen/_40dp"
                 android:layout_height="@dimen/_40dp"
                 android:layout_gravity="center_vertical"
@@ -54,7 +53,6 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_list"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:minHeight="200dp" />

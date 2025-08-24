@@ -6,7 +6,6 @@
     tools:context=".ui.userprofile.UserDetailFragment">
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_user_detail"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 

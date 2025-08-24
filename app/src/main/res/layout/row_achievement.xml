@@ -9,7 +9,6 @@
     android:padding="@dimen/padding_normal">
 
     <LinearLayout
-        android:id="@+id/ll_row"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:gravity="start">
@@ -32,7 +31,6 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/ll_desc"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
@@ -46,7 +44,6 @@
             android:layout_height="wrap_content"
             android:textColor="@color/hint_color" />
         <com.google.android.flexbox.FlexboxLayout
-            android:id="@+id/flexbox_resources"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:flexWrap="wrap" />

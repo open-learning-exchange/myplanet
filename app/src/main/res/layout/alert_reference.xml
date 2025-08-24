@@ -5,7 +5,6 @@
     android:orientation="vertical">
 
     <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tl_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="@dimen/padding_normal"
@@ -27,7 +26,6 @@
         android:textColorHint="@color/hint_color">
 
         <EditText
-            android:id="@+id/et_relationship"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/relationship"

@@ -33,7 +33,6 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <androidx.appcompat.widget.AppCompatCheckBox
-                android:id="@+id/check_use_phone"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="8dp"
@@ -234,7 +233,6 @@
                     android:textSize="16sp"
                     android:textStyle="bold" />
                 <RadioGroup
-                    android:id="@+id/rb_gender"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
@@ -280,7 +278,6 @@
                     android:textColor="@color/daynight_textColor">
 
                     <Spinner
-                        android:id="@+id/spn_level"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:entries="@array/level"
@@ -319,7 +316,6 @@
     </androidx.core.widget.NestedScrollView>
 
     <ProgressBar
-        android:id="@+id/pbar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"

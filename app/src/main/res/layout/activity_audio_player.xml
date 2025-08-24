@@ -54,7 +54,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
     <FrameLayout
-        android:id="@+id/playerContainer"
         android:layout_width="0dp"
         android:layout_height="120dp"
         android:layout_marginBottom="@dimen/_50dp"
@@ -63,7 +62,6 @@
         app:layout_constraintEnd_toEndOf="parent">
 
         <ImageView
-            android:id="@+id/backgroundImage"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:scaleType="centerCrop"

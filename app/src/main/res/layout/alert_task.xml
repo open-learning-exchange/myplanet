@@ -13,7 +13,6 @@
         android:textColorHint="@color/hint_color">
 
         <EditText
-            android:id="@+id/et_task"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/task"
@@ -30,7 +29,6 @@
         android:textColor="@color/daynight_textColor" />
 
     <TextView
-        android:id="@+id/tv_pick"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="@dimen/padding_normal"

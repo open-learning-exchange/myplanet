@@ -22,7 +22,6 @@
                 android:layout_height="wrap_content">
 
                 <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tl_title"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -46,7 +45,6 @@
                     android:textColorHint="@color/hint_color">
 
                     <EditText
-                        android:id="@+id/et_author"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/author"
@@ -94,7 +92,6 @@
                 android:layout_height="wrap_content">
 
                 <Spinner
-                    android:id="@+id/spn_lang"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
@@ -113,7 +110,6 @@
                     android:textColorHint="@color/hint_color">
 
                     <EditText
-                        android:id="@+id/et_publisher"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/publisher"
@@ -129,7 +125,6 @@
                     android:textColorHint="@color/hint_color">
 
                     <EditText
-                        android:id="@+id/et_link_to_license"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:textColor="@color/daynight_textColor"
@@ -143,7 +138,6 @@
                 android:layout_height="wrap_content">
 
                 <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tl_subjects"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
@@ -151,7 +145,6 @@
                     android:padding="@dimen/padding_normal">
 
                     <TextView
-                        android:id="@+id/tv_subject"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
@@ -163,7 +156,6 @@
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tl_levels"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
@@ -171,7 +163,6 @@
                     android:padding="@dimen/padding_normal">
 
                     <TextView
-                        android:id="@+id/tv_levels"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
@@ -183,7 +174,6 @@
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <Spinner
-                    android:id="@+id/spn_open_with"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
@@ -200,7 +190,6 @@
                 android:layout_height="wrap_content">
 
                 <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tl_resource_for"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
@@ -208,7 +197,6 @@
                     android:padding="@dimen/padding_normal">
 
                     <TextView
-                        android:id="@+id/tv_resource_for"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/resource_for"
@@ -219,7 +207,6 @@
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <Spinner
-                    android:id="@+id/spn_media"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
@@ -229,7 +216,6 @@
                     android:padding="@dimen/padding_large"
                     android:theme="@style/ResourcePopupMenu" />
                 <Spinner
-                    android:id="@+id/spn_resource_type"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
@@ -245,7 +231,6 @@
                 android:layout_height="wrap_content">
 
                 <TextView
-                    android:id="@+id/tv_added_by"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
@@ -262,7 +247,6 @@
                     android:textColorHint="@color/hint_color">
 
                     <EditText
-                        android:id="@+id/et_open_which"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/open_which_file"
@@ -277,7 +261,6 @@
                 android:padding="@dimen/padding_normal">
 
                 <TextView
-                    android:id="@+id/file_url"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
@@ -292,7 +275,6 @@
                     android:text="@string/choose_file"
                     android:visibility="gone" />
                 <CheckBox
-                    android:id="@+id/cb_downloadable"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"

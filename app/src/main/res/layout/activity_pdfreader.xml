@@ -39,7 +39,6 @@
         android:layout_margin="@dimen/padding_large">
 
         <com.github.clans.fab.FloatingActionButton
-            android:id="@+id/fab_record"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_mic"
@@ -47,7 +46,6 @@
             app:fab_label="Record Audio" />
 
         <com.github.clans.fab.FloatingActionButton
-            android:id="@+id/fab_play"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_play_white"

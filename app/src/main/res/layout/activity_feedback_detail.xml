@@ -20,7 +20,6 @@
             android:textColor="@color/daynight_textColor"
             android:textSize="@dimen/text_size_mid" />
         <TextView
-            android:id="@+id/tv_date"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:padding="@dimen/padding_normal"
@@ -41,14 +40,12 @@
                 android:textColor="@color/daynight_textColor"
                 android:backgroundTint="@color/daynight_textColor" />
             <Button
-                android:id="@+id/reply_feedback"
                 style="@style/PrimaryButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/reply" />
             <Button
-                android:id="@+id/close_feedback"
                 style="@style/PrimaryButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -57,7 +54,6 @@
         </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_feedback_reply"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
     </LinearLayout>

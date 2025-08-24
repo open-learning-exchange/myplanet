@@ -116,7 +116,6 @@
                 android:layout_height="wrap_content">
 
                 <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/et_birthplace"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -147,13 +146,11 @@
                         android:padding="2dp"
                         app:tint="@color/daynight_textColor" />
                     <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/et_birthdate_layout"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:textColorHint="@color/hint_color">
 
                         <EditText
-                            android:id="@+id/et_birthdate"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:hint="@string/birth_date"
@@ -201,7 +198,6 @@
                 android:layout_height="wrap_content">
 
                 <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/et_emergency"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -216,7 +212,6 @@
                         android:textColor="@color/daynight_textColor" />
                 </com.google.android.material.textfield.TextInputLayout>
                 <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/et_contact"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -233,7 +228,6 @@
             </LinearLayout>
 
             <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/et_special_need"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textColorHint="@color/hint_color">
@@ -249,7 +243,6 @@
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/et_other_need"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textColorHint="@color/hint_color">

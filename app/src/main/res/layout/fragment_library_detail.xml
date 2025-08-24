@@ -32,7 +32,6 @@
                     android:padding="8dp">
 
                     <ImageButton
-                        android:id="@+id/btn_back"
                         style="@style/YellowButtons"
                         android:layout_width="@dimen/_50dp"
                         android:layout_height="@dimen/_50dp"
@@ -53,7 +52,6 @@
                         android:textColor="@color/md_white_1000"
                         android:textStyle="bold" />
                     <ImageButton
-                        android:id="@+id/btn_download"
                         style="@style/YellowButtons"
                         android:layout_width="@dimen/_50dp"
                         android:layout_height="@dimen/_50dp"
@@ -166,7 +164,6 @@
                                     android:text="@string/author"
                                     android:textColor="@color/daynight_textColor" />
                                 <TextView
-                                    android:id="@+id/tv_author"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_normal"
@@ -185,7 +182,6 @@
                                     android:text="@string/published_by"
                                     android:textColor="@color/daynight_textColor" />
                                 <TextView
-                                    android:id="@+id/tv_published"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_normal"
@@ -204,7 +200,6 @@
                                     android:text="@string/media"
                                     android:textColor="@color/daynight_textColor" />
                                 <TextView
-                                    android:id="@+id/tv_media"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_normal"
@@ -223,7 +218,6 @@
                                     android:text="@string/language_with_colon"
                                     android:textColor="@color/daynight_textColor" />
                                 <TextView
-                                    android:id="@+id/tv_language"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_normal"
@@ -261,7 +255,6 @@
                                     android:text="@string/license"
                                     android:textColor="@color/daynight_textColor"/>
                                 <TextView
-                                    android:id="@+id/tv_license"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_normal"
@@ -280,7 +273,6 @@
                                     android:text="@string/resource_colon"
                                     android:textColor="@color/daynight_textColor" />
                                 <TextView
-                                    android:id="@+id/tv_resource"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:padding="@dimen/padding_normal"

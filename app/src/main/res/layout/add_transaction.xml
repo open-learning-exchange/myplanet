@@ -6,7 +6,6 @@
 
 
     <Spinner
-        android:id="@+id/spn_type"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:entries="@array/transaction_type"
@@ -14,7 +13,6 @@
 
 
     <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tl_note"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="@dimen/padding_normal">
@@ -27,7 +25,6 @@
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tl_amount"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="@dimen/padding_normal">
@@ -51,7 +48,6 @@
 
 
     <TextView
-        android:id="@+id/tv_select_date"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="@string/select_date"

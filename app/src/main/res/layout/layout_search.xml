@@ -17,13 +17,11 @@
         android:visibility="gone">
 
         <EditText
-            android:id="@+id/et_tags"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/filter_labels"
             android:visibility="gone" />
         <com.google.android.flexbox.FlexboxLayout
-            android:id="@+id/flexbox_tags"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"

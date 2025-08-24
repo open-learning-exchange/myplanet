@@ -39,7 +39,6 @@
                 android:theme="@style/PrimaryButton" />
 
             <Button
-                android:id="@+id/send_survey"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"

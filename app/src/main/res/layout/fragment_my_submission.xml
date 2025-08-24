@@ -56,7 +56,6 @@
             android:padding="10dp">
 
             <RadioGroup
-                android:id="@+id/rg_submission"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="@drawable/submission_toggle"
@@ -65,7 +64,6 @@
                 android:padding="10dp">
 
                 <RadioButton
-                    android:id="@+id/rb_exam"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="5dp"
@@ -78,7 +76,6 @@
                     android:textColor="@color/toggle_text_color"
                     android:textSize="18sp" />
                 <RadioButton
-                    android:id="@+id/rb_survey"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="5dp"
@@ -93,8 +90,7 @@
             </RadioGroup>
 
             <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tl_search"
-                    android:layout_width="match_parent"
+                android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
                     android:textColorHint="@color/hint_color">
@@ -135,7 +131,6 @@
                 android:textColor="@color/daynight_textColor"
                 android:textSize="18sp" />
             <TextView
-                android:id="@+id/submitted_by"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -152,7 +147,6 @@
         </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_mysurvey"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
     </LinearLayout>

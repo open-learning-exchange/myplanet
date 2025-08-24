@@ -32,7 +32,6 @@
         android:text="@string/menu_courses" />
 
     <com.google.android.material.tabs.TabItem
-        android:id="@+id/menu_teams"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:icon="@drawable/team"
@@ -46,7 +45,6 @@
         android:text="@string/enterprises" />
 
     <com.google.android.material.tabs.TabItem
-        android:id="@+id/menu_community"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:icon="@drawable/survey"

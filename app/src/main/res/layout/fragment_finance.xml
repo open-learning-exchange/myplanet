@@ -7,7 +7,6 @@
     tools:context=".ui.enterprises.FinanceFragment">
 
     <LinearLayout
-        android:id="@+id/data_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
@@ -20,7 +19,6 @@
             android:paddingRight="@dimen/padding_normal">
 
             <LinearLayout
-                android:id="@+id/llFromDate"
                 android:orientation="horizontal"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -58,7 +56,6 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/llToDate"
                 android:orientation="horizontal"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -96,7 +93,6 @@
             </LinearLayout>
 
             <Button
-                android:id="@+id/btn_reset"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
@@ -118,7 +114,6 @@
             android:paddingRight="@dimen/padding_normal">
 
             <TextView
-                android:id="@+id/balance_caution"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -136,7 +131,6 @@
             android:paddingRight="@dimen/padding_normal">
 
             <LinearLayout
-                android:id="@+id/ll_date"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1">
@@ -152,7 +146,6 @@
                     android:textSize="@dimen/text_size_mid"
                     android:textStyle="bold" />
                 <ImageView
-                    android:id="@+id/img_date"
                     android:layout_width="@dimen/icon_size_mid"
                     android:layout_height="@dimen/icon_size_mid"
                     android:layout_gravity="center"
@@ -228,7 +221,6 @@
                 android:textColor="@color/bg_white"
                 android:textSize="@dimen/text_size_mid" />
             <TextView
-                android:id="@+id/tv_credit"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -237,7 +229,6 @@
                 android:textColor="@color/bg_white"
                 android:textSize="@dimen/text_size_mid" />
             <TextView
-                android:id="@+id/tv_debit"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -246,7 +237,6 @@
                 android:textColor="@color/bg_white"
                 android:textSize="@dimen/text_size_mid" />
             <TextView
-                android:id="@+id/tv_balance"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
@@ -260,7 +250,6 @@
         </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rv_finance"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:padding="@dimen/padding_normal" />
@@ -276,7 +265,6 @@
         android:visibility="gone"
         android:textColor="@color/daynight_textColor" />
     <com.github.clans.fab.FloatingActionButton
-        android:id="@+id/add_transaction"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|right"

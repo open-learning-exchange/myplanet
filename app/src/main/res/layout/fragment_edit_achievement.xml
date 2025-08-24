@@ -157,7 +157,6 @@
                         android:textColorHint="@color/hint_color">
 
                         <EditText
-                            android:id="@+id/et_purpose"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_gravity="center"
@@ -174,7 +173,6 @@
                         android:textColorHint="@color/hint_color">
 
                         <EditText
-                            android:id="@+id/et_goals"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_gravity="center"
@@ -191,7 +189,6 @@
                         android:textColorHint="@color/hint_color">
 
                         <EditText
-                            android:id="@+id/et_achievement"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_gravity="center"
@@ -209,7 +206,6 @@
                         android:textColor="@color/daynight_textColor"
                         android:visibility="invisible"/>
                     <LinearLayout
-                        android:id="@+id/ll_attachment"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical" />
@@ -219,7 +215,6 @@
                         android:layout_gravity= "right">
 
                         <Button
-                            android:id="@+id/btn_achievement"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:padding="@dimen/padding_normal"
@@ -236,7 +231,6 @@
                         android:textColor="@color/daynight_textColor"
                         android:visibility="invisible"/>
                     <LinearLayout
-                        android:id="@+id/ll_other_info"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical" />
@@ -246,7 +240,6 @@
                         android:layout_gravity="right">
 
                         <Button
-                            android:id="@+id/btn_other"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:padding="@dimen/padding_normal"
@@ -256,7 +249,6 @@
                     </LinearLayout>
 
                     <CheckBox
-                        android:id="@+id/cb_send_to_nation"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
@@ -271,7 +263,6 @@
                         android:layout_gravity="right">
 
                         <Button
-                            android:id="@+id/btn_update"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:contentDescription="@string/button_update"

@@ -31,7 +31,6 @@
             android:gravity="center">
 
             <LinearLayout
-                android:id="@+id/ll_capture_image"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
@@ -60,7 +59,6 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/ll_record_video"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
@@ -89,7 +87,6 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/ll_record_audio"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
@@ -118,7 +115,6 @@
             </LinearLayout>
 
             <LinearLayout
-                android:id="@+id/ll_draft"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"

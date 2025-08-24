@@ -26,7 +26,6 @@
             app:layout_constraintTop_toTopOf="parent">
 
             <LinearLayout
-                android:id="@+id/lyt"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="6"
@@ -196,7 +195,6 @@
                                 app:layout_constraintTop_toBottomOf="@+id/btn_signin">
 
                                 <Button
-                                    android:id="@+id/btn_guest_login"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_gravity="center"
@@ -207,7 +205,6 @@
                                     android:textSize="14sp"
                                     android:theme="@style/PrimaryFlatButton" />
                                 <Button
-                                    android:id="@+id/become_member"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_gravity="center"
@@ -227,7 +224,6 @@
                                     android:textColor="@color/daynight_textColor"
                                     android:theme="@style/PrimaryFlatButton" />
                                 <Button
-                                    android:id="@+id/open_community"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:layout_gravity="center"

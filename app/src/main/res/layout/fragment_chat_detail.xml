@@ -9,7 +9,6 @@
     tools:context=".ui.chat.ChatDetailFragment">
 
     <View
-        android:id="@+id/hView"
         android:layout_width="1dp"
         android:layout_height="0dp"
         android:background="#e0e0e0"
@@ -31,7 +30,6 @@
     </TableLayout>
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recycler_gchat"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="4dp"
@@ -72,7 +70,6 @@
         app:layout_constraintStart_toStartOf="parent">
 
         <EditText
-            android:id="@+id/edit_gchat_message"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
@@ -86,7 +83,6 @@
             android:textColorHint="@color/hint_color"
             tools:ignore="Autofill" />
         <pl.droidsonroids.gif.GifImageView
-            android:id="@+id/image_gchat_loading"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:layout_centerVertical="true"

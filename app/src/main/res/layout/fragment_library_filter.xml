@@ -21,7 +21,6 @@
             android:gravity="right">
 
             <ImageView
-                android:id="@+id/iv_close"
                 android:layout_width="@dimen/_40dp"
                 android:layout_height="@dimen/_40dp"
                 android:layout_gravity="right"
@@ -31,7 +30,6 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/subjects_layout"
             android:layout_width="370dp"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
@@ -52,7 +50,6 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/expandable_layout_subjects"
             android:layout_width="370dp"
             android:layout_height="wrap_content"
             android:visibility="gone"
@@ -67,7 +64,6 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/languages_layout"
             android:layout_width="370dp"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
@@ -88,7 +84,6 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/expandable_layout_languages"
             android:layout_width="370dp"
             android:layout_height="wrap_content"
             android:visibility="gone"
@@ -103,7 +98,6 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/mediums_layout"
             android:layout_width="370dp"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
@@ -124,7 +118,6 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/expandable_layout_mediums"
             android:layout_width="370dp"
             android:layout_height="wrap_content"
             android:visibility="gone"
@@ -139,7 +132,6 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/levels_layout"
             android:layout_width="370dp"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
@@ -160,7 +152,6 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/expandable_layout_levels"
             android:layout_width="370dp"
             android:layout_height="wrap_content"
             android:visibility="gone"

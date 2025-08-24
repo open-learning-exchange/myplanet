@@ -44,7 +44,6 @@
             android:layout_gravity="right">
 
             <ImageView
-                android:id="@+id/img_upload"
                 android:layout_width="30dp"
                 android:layout_height="30dp"
                 android:layout_gravity="center"
@@ -54,7 +53,6 @@
                 app:tint="@color/daynight_textColor"
                 app:srcCompat="@drawable/ic_file_upload" />
             <ImageView
-                android:id="@+id/img_edit"
                 android:layout_width="30dp"
                 android:layout_height="30dp"
                 android:layout_gravity="center"
@@ -64,7 +62,6 @@
                 app:tint="@color/daynight_textColor"
                 app:srcCompat="@drawable/ic_edit" />
             <ImageView
-                android:id="@+id/img_delete"
                 android:layout_width="30dp"
                 android:layout_height="30dp"
                 android:layout_gravity="center"

@@ -25,13 +25,11 @@
                 android:layout_gravity="end">
 
                 <Button
-                    android:id="@+id/btn_open"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/open_resource"
                     android:theme="@style/AccentButton" />
                 <Button
-                    android:id="@+id/btn_resources"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="10dp"
@@ -52,7 +50,6 @@
                     android:padding="@dimen/padding_normal">
 
                     <LinearLayout
-                        android:id="@+id/ll_rating"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center">
@@ -103,7 +100,6 @@
                                 android:textSize="@dimen/text_size_large"
                                 android:textStyle="bold" />
                             <TextView
-                                android:id="@+id/average"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="@string/average"
@@ -124,7 +120,6 @@
                             android:text="@string/subject_level_colon"
                             android:textColor="@color/daynight_textColor" />
                         <TextView
-                            android:id="@+id/subject_level"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:padding="@dimen/padding_normal"
@@ -144,7 +139,6 @@
                             android:text="@string/grade_level_colon"
                             android:textColor="@color/daynight_textColor" />
                         <TextView
-                            android:id="@+id/grade_level"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:padding="@dimen/padding_normal"
@@ -203,7 +197,6 @@
                             android:text="@string/number_of_exams"
                             android:textColor="@color/daynight_textColor" />
                         <TextView
-                            android:id="@+id/no_of_exams"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:padding="@dimen/padding_normal"
@@ -233,7 +226,6 @@
                 </LinearLayout>
 
                 <LinearLayout
-                    android:id="@+id/course_steps_layout"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_gravity="top"
@@ -249,7 +241,6 @@
                         android:text="@string/course_steps"
                         android:textColor="@color/daynight_textColor" />
                     <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/steps_list"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content" />
                 </LinearLayout>

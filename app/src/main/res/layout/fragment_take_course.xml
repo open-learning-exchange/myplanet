@@ -26,7 +26,6 @@
                 android:background="?attr/selectableItemBackground"
                 android:clickable="true" />
             <TextView
-                android:id="@+id/tv_course_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:paddingLeft="16dp"
@@ -57,7 +56,6 @@
                     android:padding="8dp">
 
                     <TextView
-                        android:id="@+id/tv_step"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center_vertical"
@@ -124,7 +122,6 @@
                     android:background="@color/card_bg" />
 
                 <LinearLayout
-                    android:id="@+id/ll_progress"
                     android:layout_width="match_parent"
                     android:layout_height="?attr/actionBarSize"
                     android:background="@color/colorPrimary"
@@ -132,7 +129,6 @@
                     android:visibility="gone">
 
                     <androidx.appcompat.widget.AppCompatSeekBar
-                        android:id="@+id/course_progress"
                         style="@style/Seekbar"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -142,7 +138,6 @@
                         android:padding="8dp" />
 
                     <TextView
-                        android:id="@+id/tv_percentage_complete"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"

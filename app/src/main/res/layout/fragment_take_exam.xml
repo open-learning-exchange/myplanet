@@ -45,7 +45,6 @@
                         app:layout_constraintTop_toTopOf="parent"
                         app:tint="@color/md_black_1000" />
                     <TextView
-                        android:id="@+id/tv_question_count"
                         android:layout_width="wrap_content"
                         android:layout_height="?attr/actionBarSize"
                         android:layout_gravity="center"
@@ -79,7 +78,6 @@
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
                 <androidx.core.widget.NestedScrollView
-                    android:id="@+id/container"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_margin="@dimen/padding_large"
@@ -106,7 +104,6 @@
                                 android:textColor="@color/daynight_textColor"
                                 android:textSize="18sp" />
                             <TextView
-                                android:id="@+id/tv_body"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:padding="@dimen/padding_normal"
@@ -115,14 +112,12 @@
                         </LinearLayout>
 
                         <RadioGroup
-                            android:id="@+id/group_choices"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_gravity="center_vertical"
                             android:orientation="vertical"
                             android:visibility="gone" />
                         <LinearLayout
-                            android:id="@+id/ll_checkbox"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_gravity="center"
@@ -139,7 +134,6 @@
                     android:padding="@dimen/padding_small">
 
                     <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tl_answer"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
@@ -148,7 +142,6 @@
                         android:textColorHint="@color/hint_color">
 
                         <EditText
-                            android:id="@+id/et_answer"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_gravity="center_vertical"

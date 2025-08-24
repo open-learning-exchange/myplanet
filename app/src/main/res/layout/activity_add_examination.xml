@@ -18,7 +18,6 @@
             android:orientation="vertical">
 
             <TextView
-                android:id="@+id/lblNewRecord"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
@@ -38,7 +37,6 @@
                     android:textColorHint="@color/hint_color">
 
                     <EditText
-                        android:id="@+id/et_temperature"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/body_temperature"
@@ -96,7 +94,6 @@
                     android:textColorHint="@color/hint_color">
 
                     <EditText
-                        android:id="@+id/et_height"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/height"
@@ -148,7 +145,6 @@
                     android:textColorHint="@color/hint_color">
 
                     <EditText
-                        android:id="@+id/et_hearing"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/hearing"
@@ -158,7 +154,6 @@
             </LinearLayout>
 
             <TextView
-                android:id="@+id/lblCondition"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:padding="@dimen/padding_normal"
@@ -172,7 +167,6 @@
                 android:textColorHint="@color/hint_color">
 
                 <EditText
-                    android:id="@+id/et_observation"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/observation"
@@ -188,7 +182,6 @@
                 android:textColor="@color/colorPrimaryWhite"
                 android:textSize="@dimen/text_size_small" />
             <com.google.android.flexbox.FlexboxLayout
-                android:id="@+id/container_checkbox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="@dimen/padding_normal"
@@ -198,7 +191,6 @@
                 android:padding="@dimen/padding_normal"
                 app:flexWrap="wrap" />
             <com.google.android.flexbox.FlexboxLayout
-                android:id="@+id/container_other_diagnosis"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="@dimen/padding_normal"
@@ -217,7 +209,6 @@
                     android:textColorHint="@color/hint_color">
 
                     <EditText
-                        android:id="@+id/et_other_diag"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/other_diagnosis"
@@ -227,7 +218,6 @@
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <ImageButton
-                    android:id="@+id/btn_add_diag"
                     android:layout_width="@dimen/_50dp"
                     android:layout_height="@dimen/_50dp"
                     android:src="@drawable/ic_send" />
@@ -240,7 +230,6 @@
                 android:textColorHint="@color/hint_color">
 
                 <EditText
-                    android:id="@+id/et_diag"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/diagnosis_note"
@@ -255,7 +244,6 @@
                 android:textColorHint="@color/hint_color">
 
                 <EditText
-                    android:id="@+id/et_treatments"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/treatments"
@@ -270,7 +258,6 @@
                 android:textColorHint="@color/hint_color">
 
                 <EditText
-                    android:id="@+id/et_medications"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/medications"
@@ -285,7 +272,6 @@
                 android:textColorHint="@color/hint_color">
 
                 <EditText
-                    android:id="@+id/et_immunization"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/immunization"
@@ -300,7 +286,6 @@
                 android:textColorHint="@color/hint_color">
 
                 <EditText
-                    android:id="@+id/et_allergies"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/allergies"
@@ -315,7 +300,6 @@
                 android:textColorHint="@color/hint_color">
 
                 <EditText
-                    android:id="@+id/et_xray"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/xray"
@@ -330,7 +314,6 @@
                 android:textColorHint="@color/hint_color">
 
                 <EditText
-                    android:id="@+id/et_labtest"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/labtest"
@@ -345,7 +328,6 @@
                 android:textColorHint="@color/hint_color">
 
                 <EditText
-                    android:id="@+id/et_referrals"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/referrals"

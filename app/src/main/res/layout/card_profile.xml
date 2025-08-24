@@ -12,7 +12,6 @@
         android:orientation="vertical">
 
         <LinearLayout
-            android:id="@+id/ll_user"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@color/colorPrimary"
@@ -54,7 +53,6 @@
                 android:orientation="vertical">
                 <!-- TODO: change back color to md_black_1000 -->
                 <TextView
-                    android:id="@+id/tv_submission"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_normal"
@@ -77,7 +75,6 @@
                     android:textColor="@color/disable_color"
                     android:textSize="18sp" />
                 <TextView
-                    android:id="@+id/tv_news"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_normal"
@@ -85,7 +82,6 @@
                     android:textColor="@color/md_black_1000"
                     android:textSize="18sp" />
                 <TextView
-                    android:id="@+id/tv_achievement"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:padding="@dimen/padding_normal"
@@ -97,7 +93,6 @@
                     android:layout_height="wrap_content">
 
                     <TextView
-                        android:id="@+id/tv_surveys"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
@@ -107,7 +102,6 @@
                         android:textColor="@color/md_black_1000"
                         android:textSize="18sp" />
                     <ImageView
-                        android:id="@+id/img_survey_warn"
                         android:layout_width="20dp"
                         android:layout_height="20dp"
                         android:layout_gravity="center"

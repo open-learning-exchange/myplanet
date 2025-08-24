@@ -28,7 +28,6 @@
             app:todayLabelColor="@color/mainColor"
             app:type="many_days_picker" />
         <TextView
-            android:id="@+id/meetup"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/_10dp"

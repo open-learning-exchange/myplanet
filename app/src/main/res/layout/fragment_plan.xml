@@ -24,7 +24,6 @@
             android:textColor="@color/daynight_textColor"
             android:textSize="@dimen/text_size_large" />
         <Button
-            android:id="@+id/btn_add_plan"
             style="@style/YellowButtons"
             android:background="@drawable/buttonyellow"
             android:layout_width="wrap_content"

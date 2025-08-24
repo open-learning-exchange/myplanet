@@ -28,7 +28,6 @@
                 android:textSize="@dimen/text_size_large"
                 android:textStyle="bold" />
             <TextView
-                android:id="@+id/tv_date_completed"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
@@ -59,7 +58,6 @@
                     android:textSize="@dimen/text_size_mid"
                     android:visibility="gone" />
                 <TextView
-                    android:id="@+id/tv_no_submissions"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:textColor="@color/text_highlight_color"
@@ -80,7 +78,6 @@
                 android:text="@string/send_survey"
                 android:theme="@style/AccentButton" />
             <Button
-                android:id="@+id/start_survey"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/take_survey"
