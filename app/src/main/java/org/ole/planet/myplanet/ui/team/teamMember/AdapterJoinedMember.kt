@@ -232,16 +232,18 @@ class AdapterJoinedMember(
     }
 
     private fun reject(userModel: RealmUserModel, position: Int) {
-        mRealm.executeTransaction {
-            val team = it.where(RealmMyTeam::class.java)
+        val userId = userModel.id
+        mRealm.executeTransactionAsync({ realm ->
+            val team = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
-                .equalTo("userId", userModel.id)
+                .equalTo("userId", userId)
                 .findFirst()
             team?.deleteFromRealm()
-        }
-        list.removeAt(position)
-        notifyItemRemoved(position)
-        notifyItemRangeChanged(position, list.size)
+        }, Realm.Transaction.OnSuccess {
+            list.removeAt(position)
+            notifyItemRemoved(position)
+            notifyItemRangeChanged(position, list.size)
+        })
     }
 
     override fun getItemCount(): Int = list.size
