@@ -28,6 +28,7 @@ import com.github.chrisbanes.photoview.PhotoView
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.realm.RealmList
 import java.io.File
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
