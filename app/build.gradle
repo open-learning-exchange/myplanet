@@ -10,8 +10,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2952
-        versionName = "0.29.52"
+        versionCode = 2953
+        versionName = "0.29.53"
         ndkVersion = '26.3.11579264'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
@@ -152,20 +152,20 @@ android {
 }
 
 tasks.register('generateVersionsXml') {
-    def versionName = android.defaultConfig.versionName
+    def versionNameProvider = project.provider { android.defaultConfig.versionName }
+    def versionsXmlFile = file('src/main/res/values/versions.xml')
+
+    inputs.property("versionName", versionNameProvider)
+    outputs.file(versionsXmlFile)
+
     doLast {
-        def versionsXmlFile = file('src/main/res/values/versions.xml')
         versionsXmlFile.text = """<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_version">$versionName</string>
+    <string name="app_version">${versionNameProvider.get()}</string>
 </resources>"""
     }
 }
 preBuild.dependsOn generateVersionsXml
-
-tasks.named('generateVersionsXml').configure {
-    notCompatibleWithConfigurationCache("not supported due to internal project references")
-}
 
 repositories {
     mavenCentral()
