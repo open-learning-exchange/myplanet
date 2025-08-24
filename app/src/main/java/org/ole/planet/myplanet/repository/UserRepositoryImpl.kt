@@ -8,7 +8,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 
 class UserRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @AppPreferences private val preferences: SharedPreferences,
+    @AppPreferences private val preferences: SharedPreferences
 ) : RealmRepository(databaseService), UserRepository {
 
     override suspend fun getUserProfile(): String? {
