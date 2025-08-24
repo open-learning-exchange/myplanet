@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import io.realm.Case
-import io.realm.Realm
 import io.realm.Sort
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
