@@ -4,8 +4,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
+import org.ole.planet.myplanet.utilities.DiffUtils
 import com.google.android.material.button.MaterialButton
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
@@ -20,19 +20,12 @@ class ServerAddressAdapter(private var serverList: List<ServerAddressesModel>,
     private var lastSelectedPosition: Int = -1
 
     fun updateList(newList: List<ServerAddressesModel>) {
-        val diffCallback = object : DiffUtil.Callback() {
-            override fun getOldListSize() = serverList.size
-            override fun getNewListSize() = newList.size
-
-            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                return serverList[oldItemPosition].url == newList[newItemPosition].url
-            }
-
-            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                return serverList[oldItemPosition] == newList[newItemPosition]
-            }
-        }
-        val diffResult = DiffUtil.calculateDiff(diffCallback)
+        val diffResult = DiffUtils.calculateDiff(
+            serverList,
+            newList,
+            areItemsTheSame = { old, new -> old.url == new.url },
+            areContentsTheSame = { old, new -> old == new }
+        )
         serverList = newList
         diffResult.dispatchUpdatesTo(this)
     }

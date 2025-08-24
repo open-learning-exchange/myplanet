@@ -5,7 +5,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyCourse
 
 class CourseRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
+    databaseService: DatabaseService
 ) : RealmRepository(databaseService), CourseRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
