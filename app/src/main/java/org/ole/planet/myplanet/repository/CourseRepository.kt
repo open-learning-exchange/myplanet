@@ -15,4 +15,6 @@ interface CourseRepository {
     suspend fun updateMyCourseFlag(courseIds: List<String>, isMyCourse: Boolean) {
         courseIds.forEach { updateMyCourseFlag(it, isMyCourse) }
     }
+
+    suspend fun saveSearchActivity(activity: org.ole.planet.myplanet.model.RealmSearchActivity)
 }
