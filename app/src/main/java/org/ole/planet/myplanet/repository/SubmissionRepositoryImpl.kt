@@ -8,7 +8,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 
 class SubmissionRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
+    databaseService: DatabaseService
 ) : RealmRepository(databaseService), SubmissionRepository {
 
     override suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {
@@ -17,6 +17,14 @@ class SubmissionRepositoryImpl @Inject constructor(
             equalTo("status", "pending")
             equalTo("type", "survey")
         }
+    }
+
+    override suspend fun getSubmissionCountByUser(userId: String?): Int {
+        return queryList(RealmSubmission::class.java) {
+            equalTo("userId", userId)
+            equalTo("type", "survey")
+            equalTo("status", "pending")
+        }.size
     }
 
     override suspend fun getSurveyTitlesFromSubmissions(
