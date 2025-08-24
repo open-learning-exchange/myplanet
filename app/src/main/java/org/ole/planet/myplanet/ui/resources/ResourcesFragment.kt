@@ -26,6 +26,7 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
@@ -40,11 +41,11 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getArrayList
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getLevels
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.getSubjects
-import org.ole.planet.myplanet.model.RealmRating.Companion.getRatings
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.ResourceRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -81,6 +82,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     @Inject
     lateinit var syncManager: SyncManager
+
+    @Inject
+    lateinit var resourceRepository: ResourceRepository
 
     private val serverUrlMapper = ServerUrlMapper()
     private val serverUrl: String
@@ -168,35 +172,40 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private fun refreshResourcesData() {
         if (!isAdded || requireActivity().isFinishing) return
 
-        try {
-            map = getRatings(mRealm, "resource", model?.id)
-            val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-            adapterLibrary.setLibraryList(libraryList)
-            adapterLibrary.setRatingMap(map!!)
-            adapterLibrary.notifyDataSetChanged()
-            checkList()
-            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+        lifecycleScope.launch {
+            try {
+                map = resourceRepository.getRatings("resource", model?.id, userModel?.id)
+                val libraryList: List<RealmMyLibrary?> = resourceRepository.getLibraryList()
+                if(this@ResourcesFragment.isAdded) {
+                    adapterLibrary.setLibraryList(libraryList)
+                    adapterLibrary.setRatingMap(map!!)
+                    adapterLibrary.notifyDataSetChanged()
+                    checkList()
+                    showNoData(tvMessage, adapterLibrary.itemCount, "resources")
 
-            if (searchTags.isNotEmpty() || etSearch.text?.isNotEmpty() == true) {
-                adapterLibrary.setLibraryList(
-                    applyFilter(
-                        filterLibraryByTag(
-                            etSearch.text.toString().trim(), searchTags
+                    if (searchTags.isNotEmpty() || etSearch.text?.isNotEmpty() == true) {
+                        adapterLibrary.setLibraryList(
+                            applyFilter(
+                                filterLibraryByTag(
+                                    etSearch.text.toString().trim(), searchTags
+                                )
+                            )
                         )
-                    )
-                )
-                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+                        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        map = getRatings(mRealm, "resource", model?.id)
-        val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-        adapterLibrary = AdapterResource(requireActivity(), libraryList, map!!, mRealm)
+        lifecycleScope.launch {
+            map = resourceRepository.getRatings("resource", model?.id, userModel?.id)
+        }
+        val libraryList: List<RealmMyLibrary?> = runBlocking { resourceRepository.getLibraryList() }
+        adapterLibrary = AdapterResource(requireActivity(), libraryList, map!!, resourceRepository)
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
         return adapterLibrary
@@ -545,22 +554,25 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     private fun saveSearchActivity() {
         if (filterApplied()) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            val activity = mRealm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
-            activity.user = model?.name!!
-            activity.time = Calendar.getInstance().timeInMillis
-            activity.createdOn = model?.planetCode!!
-            activity.parentCode = model?.parentCode!!
-            activity.text = "${etSearch.text}"
-            activity.type = "resources"
-            val filter = JsonObject()
-            filter.add("tags", getTagsArray(searchTags))
-            filter.add("subjects", getJsonArrayFromList(subjects))
-            filter.add("language", getJsonArrayFromList(languages))
-            filter.add("level", getJsonArrayFromList(levels))
-            filter.add("mediaType", getJsonArrayFromList(mediums))
-            activity.filter = Gson().toJson(filter)
-            mRealm.commitTransaction()
+            val activity = RealmSearchActivity().apply {
+                this._id = UUID.randomUUID().toString()
+                this.user = model?.name!!
+                this.time = Calendar.getInstance().timeInMillis
+                this.createdOn = model?.planetCode!!
+                this.parentCode = model?.parentCode!!
+                this.text = "${etSearch.text}"
+                this.type = "resources"
+                val filter = JsonObject()
+                filter.add("tags", getTagsArray(searchTags))
+                filter.add("subjects", getJsonArrayFromList(subjects))
+                filter.add("language", getJsonArrayFromList(languages))
+                filter.add("level", getJsonArrayFromList(levels))
+                filter.add("mediaType", getJsonArrayFromList(mediums))
+                this.filter = Gson().toJson(filter)
+            }
+            lifecycleScope.launch {
+                resourceRepository.saveSearchActivity(activity)
+            }
         }
     }
 
