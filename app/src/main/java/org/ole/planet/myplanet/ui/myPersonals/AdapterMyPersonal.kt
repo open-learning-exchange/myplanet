@@ -26,13 +26,9 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 class AdapterMyPersonal(private val context: Context, private val list: List<RealmMyPersonal>) : RecyclerView.Adapter<ViewHolderMyPersonal>() {
     private lateinit var rowMyPersonalBinding: RowMyPersonalBinding
-    private var realm: Realm? = null
     private var listener: OnSelectedMyPersonal? = null
     fun setListener(listener: OnSelectedMyPersonal?) {
         this.listener = listener
-    }
-    fun setRealm(realm: Realm?) {
-        this.realm = realm
     }
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyPersonal {
         rowMyPersonalBinding = RowMyPersonalBinding.inflate(LayoutInflater.from(context), parent, false)
@@ -43,20 +39,10 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
         rowMyPersonalBinding.description.text = list[position].description
         rowMyPersonalBinding.date.text = getFormattedDate(list[position].date)
         rowMyPersonalBinding.imgDelete.setOnClickListener {
-            AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                .setMessage(R.string.delete_record)
-                .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                    if (!realm?.isInTransaction!!) realm?.beginTransaction()
-                    val personal = realm?.where(RealmMyPersonal::class.java)
-                        ?.equalTo("_id", list[position]._id)?.findFirst()
-                    personal?.deleteFromRealm()
-                    realm?.commitTransaction()
-                    notifyDataSetChanged()
-                    listener?.onAddedResource()
-                }.setNegativeButton(R.string.cancel, null).show()
+            listener?.onDelete(list[position])
         }
         rowMyPersonalBinding.imgEdit.setOnClickListener {
-            editPersonal(list[position])
+            listener?.onEdit(list[position])
         }
         holder.itemView.setOnClickListener {
             openResource(list[position].path)
@@ -90,31 +76,6 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
         val i = Intent(context, VideoPlayerActivity::class.java).putExtra("TOUCHED_FILE", path)
         i.putExtras(b)
         context.startActivity(i)
-    }
-    private fun editPersonal(personal: RealmMyPersonal) {
-        val alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(context))
-        alertMyPersonalBinding.etDescription.setText(personal.description)
-        alertMyPersonalBinding.etTitle.setText(personal.title)
-        AlertDialog.Builder(context, R.style.AlertDialogTheme)
-            .setTitle(R.string.edit_personal)
-            .setIcon(R.drawable.ic_edit)
-            .setView(alertMyPersonalBinding.root)
-            .setPositiveButton(R.string.button_submit) {_: DialogInterface?, _: Int ->
-                val title = alertMyPersonalBinding.etDescription.text.toString().trim { it <= ' ' }
-                val desc = alertMyPersonalBinding.etTitle.text.toString().trim { it <= ' ' }
-                if (title.isEmpty()) {
-                    Utilities.toast(context, R.string.please_enter_title.toString())
-                    return@setPositiveButton
-                }
-                if (!realm?.isInTransaction!!) realm?.beginTransaction()
-                personal.description = desc
-                personal.title = title
-                realm?.commitTransaction()
-                notifyDataSetChanged()
-                listener?.onAddedResource()
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
     }
     override fun getItemCount(): Int {
         return list.size
