@@ -58,6 +58,7 @@ open class RealmUserModel : RealmObject() {
     var isUpdated = false
     var isShowTopbar = false
     var isArchived = false
+    var otherUserProfiles: RealmList<String>? = null
 
     fun serialize(): JsonObject {
         val jsonObject = JsonObject()
@@ -187,6 +188,52 @@ open class RealmUserModel : RealmObject() {
         val hasGuestId = _id?.startsWith("guest_") == true
         val hasGuestRole = rolesList?.any { it?.lowercase() == "guest" } == true
         return hasGuestId || (hasGuestRole && rolesList?.any { it?.lowercase() == "learner" } != true)
+    }
+
+    fun copy(
+        firstName: String? = this.firstName,
+        lastName: String? = this.lastName,
+        middleName: String? = this.middleName,
+        email: String? = this.email,
+        phoneNumber: String? = this.phoneNumber,
+        level: String? = this.level,
+        language: String? = this.language,
+        gender: String? = this.gender,
+        dob: String? = this.dob
+    ): RealmUserModel {
+        val newUser = RealmUserModel()
+        newUser.id = this.id
+        newUser._id = this._id
+        newUser._rev = this._rev
+        newUser.name = this.name
+        newUser.rolesList = this.rolesList
+        newUser.userAdmin = this.userAdmin
+        newUser.joinDate = this.joinDate
+        newUser.planetCode = this.planetCode
+        newUser.parentCode = this.parentCode
+        newUser.password_scheme = this.password_scheme
+        newUser.iterations = this.iterations
+        newUser.derived_key = this.derived_key
+        newUser.salt = this.salt
+        newUser.age = this.age
+        newUser.birthPlace = this.birthPlace
+        newUser.userImage = this.userImage
+        newUser.key = this.key
+        newUser.iv = this.iv
+        newUser.password = this.password
+        newUser.isUpdated = true
+        newUser.isShowTopbar = this.isShowTopbar
+        newUser.isArchived = this.isArchived
+        newUser.firstName = firstName
+        newUser.lastName = lastName
+        newUser.middleName = middleName
+        newUser.email = email
+        newUser.phoneNumber = phoneNumber
+        newUser.level = level
+        newUser.language = language
+        newUser.gender = gender
+        newUser.dob = dob
+        return newUser
     }
 
     override fun toString(): String {
