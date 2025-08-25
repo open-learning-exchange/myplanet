@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.utilities
 
 import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
@@ -22,9 +21,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
 object Utilities {
-    val SD_PATH: String by lazy {
-        context.getExternalFilesDir(null)?.let { "$it/ole/" } ?: ""
-    }
 
     @JvmStatic
     fun log(message: String) {
@@ -125,21 +121,5 @@ object Utilities {
     fun getMimeType(url: String?): String? {
         val extension = FileUtils.getFileExtension(url)
         return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
-    }
-
-    fun openPlayStore() {
-        val appPackageName = context.packageName
-        val intent = Intent(Intent.ACTION_VIEW, "market://details?id=$appPackageName".toUri()).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        try {
-            context.startActivity(intent)
-        } catch (e: android.content.ActivityNotFoundException) {
-            val webIntent = Intent(Intent.ACTION_VIEW,
-                "https://play.google.com/store/apps/details?id=$appPackageName".toUri()).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(webIntent)
-        }
     }
 }

@@ -23,6 +23,10 @@ import java.util.UUID
 import org.ole.planet.myplanet.MainApplication.Companion.context
 
 object FileUtils {
+    val SD_PATH: String by lazy {
+        context.getExternalFilesDir(null)?.let { "${it}/ole/" } ?: ""
+    }
+
     @JvmStatic
     @Throws(IOException::class)
     fun fullyReadFileToBytes(f: File): ByteArray = f.readBytes()
@@ -200,7 +204,7 @@ object FileUtils {
     @JvmStatic
     fun openOleFolder(): Intent {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
-        val uri = Utilities.SD_PATH.toUri()  // Ensure org.ole.planet.myplanet.utilities.Utilities.SD_PATH is the correct path
+        val uri = SD_PATH.toUri()
         intent.setDataAndType(uri, "*/*")
         return Intent.createChooser(intent, "Open folder")
     }
