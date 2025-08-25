@@ -90,7 +90,7 @@ import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
-import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
+import org.ole.planet.myplanet.utilities.NotificationUtils.cancelAll
 import org.ole.planet.myplanet.utilities.ServerConfigUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.UrlUtils
