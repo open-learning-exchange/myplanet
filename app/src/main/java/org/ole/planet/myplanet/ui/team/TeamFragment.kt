@@ -117,7 +117,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                             alertCreateTeamBinding.switchPublic.isChecked
                         )
                     } else {
-                        updateTeam(team._id, name, description, services, rules)
+                        updateTeam(team._id ?: "", name, description, services, rules)
                     }
                     dialog.dismiss()
                 }
@@ -129,7 +129,19 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private fun createTeam(name: String, description: String, teamType: String, services: String, rules: String, isPublic: Boolean) {
         lifecycleScope.launch {
             user?.let {
-                teamRepository.createTeam(name, description, type ?: "team", teamType, services, rules, isPublic, it._id, it.parentCode, it.planetCode, it.id)
+                teamRepository.createTeam(
+                    name,
+                    description,
+                    type ?: "team",
+                    teamType,
+                    services,
+                    rules,
+                    isPublic,
+                    it._id ?: "",
+                    it.parentCode ?: "",
+                    it.planetCode ?: "",
+                    it.id ?: ""
+                )
                 Utilities.toast(activity, getString(R.string.team_created))
                 loadTeams()
             }
@@ -172,7 +184,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     }
 
     private fun setTeamList() {
-        adapterTeamList = AdapterTeamList(requireActivity(), teamList, childFragmentManager, uploadManager)
+        adapterTeamList = AdapterTeamList(requireActivity(), teamList, childFragmentManager, uploadManager, teamRepository)
         adapterTeamList.setType(type)
         adapterTeamList.setTeamListener(this)
         fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
@@ -182,23 +194,27 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     private fun sortAndSetAdapter() {
         lifecycleScope.launch {
-            val sortedList = teamList.sortedWith(compareByDescending<RealmMyTeam> { team ->
-                user?.id?.let { userId ->
-                    when {
-                        teamRepository.isTeamLeader(team._id, userId) -> 3
-                        teamRepository.isMyTeam(team._id, userId) -> 2
-                        else -> 1
-                    }
+            val userId = user?.id ?: ""
+            val teamData = teamList.map { team ->
+                val teamId = team._id.orEmpty()
+                val priority = when {
+                    teamRepository.isTeamLeader(teamId, userId) -> 3
+                    teamRepository.isMyTeam(teamId, userId) -> 2
+                    else -> 1
                 }
-            }.thenByDescending { team ->
-                teamRepository.getVisitCountForTeam(team._id)
-            })
+                val visits = teamRepository.getVisitCountForTeam(teamId)
+                Triple(team, priority, visits)
+            }
+            val sortedList = teamData.sortedWith(
+                compareByDescending<Triple<RealmMyTeam, Int, Long>> { it.second }
+                    .thenByDescending { it.third }
+            ).map { it.first }
             updateAdapter(sortedList)
         }
     }
 
     private fun updateAdapter(list: List<RealmMyTeam>) {
-        adapterTeamList = AdapterTeamList(requireActivity(), list, childFragmentManager, uploadManager)
+        adapterTeamList = AdapterTeamList(requireActivity(), list, childFragmentManager, uploadManager, teamRepository)
         adapterTeamList.setTeamListener(this)
         fragmentTeamBinding.rvTeamList.adapter = adapterTeamList
         listContentDescription(conditionApplied)

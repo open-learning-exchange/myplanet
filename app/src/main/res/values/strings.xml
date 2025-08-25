@@ -911,6 +911,7 @@
     <string name="please_enter_a_name">Please enter a name</string>
     <string name="name_is_required">Name is required</string>
     <string name="team_created">Team Created</string>
+    <string name="team_updated">Team updated</string>
     <string name="please_select_gender">Please select gender</string>
     <string name="please_enter_a_username">Please enter a username</string>
     <string name="invalid_username">Invalid username</string>

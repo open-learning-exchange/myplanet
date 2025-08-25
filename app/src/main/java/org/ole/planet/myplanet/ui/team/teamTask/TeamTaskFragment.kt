@@ -171,9 +171,9 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             adapterTask.setListener(this)
             fragmentTeamTaskBinding.rvTask.adapter = adapterTask
             lifecycleScope.launch {
-                val users = teamRepository.getJoinedMembers(teamId)
-                val userMap = users.associateBy({ it.id }, { it.name })
-                adapterTask.setUsers(userMap)
+              val users = teamRepository.getJoinedMembers(teamId)
+              val userMap = users.associate { u -> u.id.orEmpty() to u.name }
+              adapterTask.setUsers(userMap)
             }
         }
     }
@@ -227,7 +227,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                     val user = selectedItem as RealmUserModel
                     lifecycleScope.launch {
                         realmTeamTask?._id?.let {
-                            teamRepository.assignTask(it, user.id)
+                              teamRepository.assignTask(it, user.id.orEmpty())
                             Utilities.toast(activity, getString(R.string.assign_task_to) + " " + user.name)
                             loadTasks()
                         }

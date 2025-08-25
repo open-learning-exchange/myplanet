@@ -7,6 +7,7 @@ import io.realm.Sort
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
+import org.json.JSONArray
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.queryList
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -153,9 +154,9 @@ class TeamRepositoryImpl @Inject constructor(
     override suspend fun hasPendingRequest(teamId: String, userId: String): Boolean {
         return withRealm { realm ->
             realm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("userId", userId)
-                .findFirst()?.requested ?: false
+                .equalTo("_id", teamId)
+                .findFirst()
+                ?.requested(userId, realm) ?: false
         }
     }
 
@@ -172,12 +173,20 @@ class TeamRepositoryImpl @Inject constructor(
 
     override suspend fun requestToJoin(teamId: String, userId: String, teamType: String) {
         withRealm { realm ->
-            realm.executeTransaction {
-                val team = it.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+            realm.executeTransaction { r ->
+                val team = r.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
                 team?.let {
-                    val request = it.requests.find { r -> r == userId }
-                    if(request == null) {
-                        it.requests.add(userId)
+                    val array = JSONArray(it.requests ?: "[]")
+                    var exists = false
+                    for (i in 0 until array.length()) {
+                        if (array.optString(i) == userId) {
+                            exists = true
+                            break
+                        }
+                    }
+                    if (!exists) {
+                        array.put(userId)
+                        it.requests = array.toString()
                     }
                 }
             }
