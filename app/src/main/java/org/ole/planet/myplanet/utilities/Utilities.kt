@@ -79,14 +79,6 @@ object Utilities {
         }
     }
 
-    fun <T> handleCheck(b: Boolean, i: Int, selectedItems: MutableList<T?>, list: List<T?>) {
-        if (b) {
-            selectedItems.add(list[i])
-        } else if (selectedItems.contains(list[i])) {
-            selectedItems.remove(list[i])
-        }
-    }
-
     val header: String
         get() {
             val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
