@@ -77,7 +77,7 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
         viewLifecycleOwner.lifecycleScope.launch {
             val existing = teamRepository.getTeamResources(teamId)
             val existingIds = existing.mapNotNull { it._id }
-            val availableLibraries = libraryRepository.getAllLibraryItems()
+            val availableLibraries = resourceRepository.getAllLibraryItems()
                 .filter { it._id !in existingIds }
 
             val titleView = TextView(safeActivity).apply {

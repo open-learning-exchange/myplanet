@@ -16,8 +16,8 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.repository.CourseRepository
-import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.NotificationRepository
+import org.ole.planet.myplanet.repository.ResourceRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 class DashboardViewModel @Inject constructor(
     private val databaseService: DatabaseService,
     private val userRepository: UserRepository,
-    private val libraryRepository: LibraryRepository,
+    private val resourceRepository: ResourceRepository,
     private val courseRepository: CourseRepository,
     private val submissionRepository: SubmissionRepository,
     private val notificationRepository: NotificationRepository
