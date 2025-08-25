@@ -15,11 +15,9 @@ import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
-import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemTeamListBinding
-import org.ole.planet.myplanet.di.RepositoryModule
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamRepository
@@ -34,15 +32,13 @@ class AdapterTeamList(
     private val context: Context,
     private val list: List<RealmMyTeam>,
     private val fragmentManager: FragmentManager,
-    private val uploadManager: UploadManager
+    private val uploadManager: UploadManager,
+    private val teamRepository: TeamRepository
 ) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private lateinit var itemTeamListBinding: ItemTeamListBinding
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
     private lateinit var prefData: SharedPrefManager
-    private val teamRepository: TeamRepository = EntryPointAccessors.fromApplication(
-        context.applicationContext, RepositoryModule.TeamRepositoryEntryPoint::class.java
-    ).teamRepository
 
     interface OnClickTeamItem {
         fun onEditTeam(team: RealmMyTeam)
@@ -64,8 +60,9 @@ class AdapterTeamList(
         val lifecycleOwner = context as LifecycleOwner
 
         lifecycleOwner.lifecycleScope.launch {
-            val isMyTeam = user?.id?.let { teamRepository.isMyTeam(team._id, it) } ?: false
-            val visitCount = teamRepository.getVisitCountForTeam(team._id)
+            val teamId = team._id.orEmpty()
+            val isMyTeam = user?.id?.let { teamRepository.isMyTeam(teamId, it) } ?: false
+            val visitCount = teamRepository.getVisitCountForTeam(teamId)
 
             with(holder.binding) {
                 created.text = TimeUtils.getFormattedDate(team.createdDate)
@@ -78,12 +75,12 @@ class AdapterTeamList(
 
                 root.setOnClickListener {
                     val activity = context as? AppCompatActivity ?: return@setOnClickListener
-                    val fragment = TeamDetailFragment.newInstance(
-                        teamId = team._id,
-                        teamName = team.name,
-                        teamType = team.type,
-                        isMyTeam = isMyTeam
-                    )
+                      val fragment = TeamDetailFragment.newInstance(
+                          teamId = teamId,
+                          teamName = team.name.orEmpty(),
+                          teamType = team.type.orEmpty(),
+                          isMyTeam = isMyTeam
+                      )
                     NavigationHelper.replaceFragment(
                         activity.supportFragmentManager,
                         R.id.fragment_container,
@@ -111,8 +108,9 @@ class AdapterTeamList(
         val lifecycleOwner = context as LifecycleOwner
         lifecycleOwner.lifecycleScope.launch {
             name.setTypeface(null, if (isMyTeam) Typeface.BOLD else Typeface.NORMAL)
-            val teamLeaderId = teamRepository.getTeamLeaderId(team._id)
-            val hasPendingRequest = user?.id?.let { teamRepository.hasPendingRequest(team._id, it) } ?: false
+              val teamId = team._id.orEmpty()
+              val teamLeaderId = teamRepository.getTeamLeaderId(teamId)
+              val hasPendingRequest = user?.id?.let { teamRepository.hasPendingRequest(teamId, it) } ?: false
 
             when {
                 user?.isGuest() == true -> joinLeave.visibility = View.GONE
@@ -158,24 +156,25 @@ class AdapterTeamList(
     private fun handleJoinLeaveClick(isMyTeam: Boolean, team: RealmMyTeam, user: RealmUserModel?) {
         val lifecycleOwner = context as LifecycleOwner
         lifecycleOwner.lifecycleScope.launch {
-            val isLeader = user?.id?.let { teamRepository.isTeamLeader(team._id, it) } ?: false
+              val teamId = team._id.orEmpty()
+              val isLeader = user?.id?.let { teamRepository.isTeamLeader(teamId, it) } ?: false
             if (isMyTeam) {
                 if (isLeader) {
                     teamListener?.onEditTeam(team)
                 } else {
                     AlertDialog.Builder(context, R.style.CustomAlertDialog).setMessage(R.string.confirm_exit)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            lifecycleScope.launch {
-                                user?.id?.let { teamRepository.leaveTeam(team._id, it) }
-                                notifyDataSetChanged() // Or use a callback to the fragment to reload
-                            }
+                              lifecycleOwner.lifecycleScope.launch {
+                                  user?.id?.let { teamRepository.leaveTeam(teamId, it) }
+                                  notifyDataSetChanged() // Or use a callback to the fragment to reload
+                              }
                         }.setNegativeButton(R.string.no, null).show()
                 }
             } else {
-                lifecycleScope.launch {
-                    user?.id?.let { teamRepository.requestToJoin(team._id, it, team.teamType ?: "local") }
-                    notifyDataSetChanged() // Or use a callback
-                }
+                  lifecycleOwner.lifecycleScope.launch {
+                      user?.id?.let { teamRepository.requestToJoin(teamId, it, team.teamType ?: "local") }
+                      notifyDataSetChanged() // Or use a callback
+                  }
             }
             // syncTeamActivities(context, uploadManager) // This needs to be handled in the repository or fragment
         }
