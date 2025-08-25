@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.repository.CourseProgressRepository
 import org.ole.planet.myplanet.repository.CourseRepository
-import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.ResourceRepository
 import org.ole.planet.myplanet.repository.RatingRepository
 import org.ole.planet.myplanet.repository.SearchRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 @HiltViewModel
 class CoursesViewModel @Inject constructor(
     private val courseRepository: CourseRepository,
-    private val libraryRepository: LibraryRepository,
+    private val resourceRepository: ResourceRepository,
     private val userRepository: UserRepository,
     private val ratingRepository: RatingRepository,
     private val courseProgressRepository: CourseProgressRepository,
@@ -98,7 +98,7 @@ class CoursesViewModel @Inject constructor(
 
     suspend fun getCourseLibraryItems(courseIds: List<String>): List<RealmMyLibrary> {
         return try {
-            libraryRepository.getCourseLibraryItems(courseIds)
+            resourceRepository.getCourseLibraryItems(courseIds)
         } catch (e: Exception) {
             emptyList()
         }

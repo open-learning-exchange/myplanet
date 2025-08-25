@@ -1,6 +1,9 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmSearchActivity
+import org.ole.planet.myplanet.model.RealmTag
 
 interface ResourceRepository {
     suspend fun getAllLibraryItems(): List<RealmMyLibrary>

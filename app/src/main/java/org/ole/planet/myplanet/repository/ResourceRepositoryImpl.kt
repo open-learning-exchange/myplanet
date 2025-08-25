@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import javax.inject.Inject
 import com.google.gson.JsonObject
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -67,11 +66,19 @@ class ResourceRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getRatings(type: String, modelId: String?, userId: String?): HashMap<String?, JsonObject>? {
-        return RealmRating.getRatings(realm, type, modelId, userId)
+        return withRealm { realmInstance ->
+            if (modelId != null) {
+                RealmRating.getRatingsById(realmInstance, type, modelId, userId)?.let {
+                    hashMapOf(modelId to it)
+                }
+            } else {
+                RealmRating.getRatings(realmInstance, type, userId)
+            }
+        }
     }
 
     override suspend fun getLibraryList(): List<RealmMyLibrary?> {
-        return getList(RealmMyLibrary::class.java)
+        return queryList(RealmMyLibrary::class.java) as List<RealmMyLibrary?>
     }
 
     override suspend fun saveSearchActivity(activity: RealmSearchActivity) {
@@ -86,6 +93,6 @@ class ResourceRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getParentTag(tagId: String?): RealmTag? {
-        return findByField(RealmTag::class.java, "id", tagId)
+        return tagId?.let { findByField(RealmTag::class.java, "id", it) }
     }
 }
