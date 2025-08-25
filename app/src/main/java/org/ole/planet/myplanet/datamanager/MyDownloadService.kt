@@ -21,8 +21,6 @@ import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -166,41 +164,43 @@ class MyDownloadService : Service() {
     @Throws(IOException::class)
     private fun downloadFile(body: ResponseBody, url: String) {
         val fileSize = body.contentLength()
-        val bis: InputStream = BufferedInputStream(body.byteStream(), 1024 * 8)
         outputFile = getSDPathFromUrl(url)
-        val output: OutputStream = FileOutputStream(outputFile)
         var total: Long = 0
         val startTime = System.currentTimeMillis()
         var timeCount = 1
 
         try {
-            while (true) {
-                val readCount = bis.read(data)
-                if (readCount == -1) break
+            BufferedInputStream(body.byteStream(), 1024 * 8).use { bis ->
+                FileOutputStream(outputFile).use { output ->
+                    while (true) {
+                        val readCount = bis.read(data)
+                        if (readCount == -1) break
 
-                if (readCount > 0) {
-                    total += readCount
-                    totalFileSize = (fileSize / 1024.0).toInt()
-                    val current = (total / 1024.0).roundToInt().toDouble()
-                    val progress = (total * 100 / fileSize).toInt()
-                    val currentTime = System.currentTimeMillis() - startTime
+                        if (readCount > 0) {
+                            total += readCount
+                            totalFileSize = (fileSize / 1024.0).toInt()
+                            val current = (total / 1024.0).roundToInt().toDouble()
+                            val progress = (total * 100 / fileSize).toInt()
+                            val currentTime = System.currentTimeMillis() - startTime
 
-                    val download = Download().apply {
-                        fileName = getFileNameFromUrl(url)
-                        totalFileSize = this@MyDownloadService.totalFileSize
+                            val download = Download().apply {
+                                fileName = getFileNameFromUrl(url)
+                                totalFileSize = this@MyDownloadService.totalFileSize
+                            }
+
+                            if (currentTime > 1000 * timeCount) {
+                                download.currentFileSize = current.toInt()
+                                download.progress = progress
+                                sendNotification(download)
+                                timeCount++
+                            }
+                            output.write(data, 0, readCount)
+                        }
                     }
-
-                    if (currentTime > 1000 * timeCount) {
-                        download.currentFileSize = current.toInt()
-                        download.progress = progress
-                        sendNotification(download)
-                        timeCount++
-                    }
-                    output.write(data, 0, readCount)
                 }
             }
         } finally {
-            closeStreams(output, bis, url)
+            onDownloadComplete(url)
         }
     }
 
@@ -216,14 +216,6 @@ class MyDownloadService : Service() {
             }
             else -> false
         }
-    }
-
-    @Throws(IOException::class)
-    private fun closeStreams(output: OutputStream, bis: InputStream, url: String) {
-        output.flush()
-        output.close()
-        bis.close()
-        onDownloadComplete(url)
     }
 
     private fun sendNotification(download: Download) {
