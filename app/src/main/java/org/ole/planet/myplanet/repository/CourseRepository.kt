@@ -11,4 +11,8 @@ interface CourseRepository {
     suspend fun saveCourse(course: RealmMyCourse)
     suspend fun updateCourse(id: String, updater: (RealmMyCourse) -> Unit)
     suspend fun deleteCourse(id: String)
+    suspend fun updateMyCourseFlag(courseId: String, isMyCourse: Boolean)
+    suspend fun updateMyCourseFlag(courseIds: List<String>, isMyCourse: Boolean) {
+        courseIds.forEach { updateMyCourseFlag(it, isMyCourse) }
+    }
 }

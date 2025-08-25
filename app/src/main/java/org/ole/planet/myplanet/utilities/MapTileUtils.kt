@@ -15,13 +15,12 @@ object MapTileUtils {
         val assetManager = context.assets
         try {
             for (s in tiles) {
-                var out: OutputStream
-                val `in`: InputStream = assetManager.open(s)
                 val outFile = File(Environment.getExternalStorageDirectory().toString() + "/osmdroid", s)
-                out = FileOutputStream(outFile)
-                copyFile(`in`, out)
-                out.close()
-                `in`.close()
+                assetManager.open(s).use { input ->
+                    FileOutputStream(outFile).use { out ->
+                        copyFile(input, out)
+                    }
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()

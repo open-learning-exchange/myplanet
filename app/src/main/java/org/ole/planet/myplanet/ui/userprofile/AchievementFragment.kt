@@ -38,7 +38,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.UrlUtils
 
 @AndroidEntryPoint
 class AchievementFragment : BaseContainerFragment() {
@@ -69,7 +69,7 @@ class AchievementFragment : BaseContainerFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentAchievementBinding = FragmentAchievementBinding.inflate(inflater, container, false)
-        aRealm = userRepository.getRealm()
+        aRealm = databaseService.realmInstance
         user = UserProfileDbHandler(MainApplication.context).userModel
         fragmentAchievementBinding.btnEdit.setOnClickListener {
             if (listener != null) listener?.openCallFragment(EditAchievementFragment())
@@ -250,7 +250,7 @@ class AchievementFragment : BaseContainerFragment() {
             if (lib.isResourceOffline()) {
                 openResource(lib)
             } else {
-                startDownload(arrayListOf(Utilities.getUrl(lib)))
+                startDownload(arrayListOf(UrlUtils.getUrl(lib)))
             }
         }
         return btnBinding.root
@@ -276,6 +276,7 @@ class AchievementFragment : BaseContainerFragment() {
         customProgressDialog?.dismiss()
         customProgressDialog = null
         if (this::aRealm.isInitialized && !aRealm.isClosed) {
+            aRealm.removeAllChangeListeners()
             aRealm.close()
         }
         try {

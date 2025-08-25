@@ -93,6 +93,7 @@ import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.ServerConfigUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 
@@ -158,7 +159,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         prefData = SharedPrefManager(this)
         profileDbHandler = UserProfileDbHandler(this)
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
-        processedUrl = Utilities.getUrl()
+        processedUrl = UrlUtils.getUrl()
     }
 
     override fun onConfigurationIdReceived(id: String, code: String, url: String, defaultUrl: String, isAlternativeUrl: Boolean, callerActivity: String) {
@@ -858,7 +859,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         fun clearSharedPref() {
             val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val editor = settings.edit()
-            val keysToKeep = setOf(SharedPrefManager(context).firstLaunch, SharedPrefManager(context).manualConfig )
+            val keysToKeep = setOf(SharedPrefManager.FIRST_LAUNCH, SharedPrefManager.MANUAL_CONFIG)
             val tempStorage = HashMap<String, Boolean>()
             for (key in keysToKeep) {
                 tempStorage[key] = settings.getBoolean(key, false)

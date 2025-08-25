@@ -14,7 +14,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
@@ -31,7 +30,8 @@ import org.ole.planet.myplanet.utilities.FileUtils.getFileExtension
 import org.ole.planet.myplanet.utilities.Utilities
 
 class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
-    private lateinit var fragmentLibraryDetailBinding: FragmentLibraryDetailBinding
+    private var _binding: FragmentLibraryDetailBinding? = null
+    private val binding get() = _binding!!
     private var libraryId: String? = null
     private lateinit var lRealm: Realm
     private lateinit var library: RealmMyLibrary
@@ -52,7 +52,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             withContext(Dispatchers.IO) {
                 try {
-                    MainApplication.service.withRealm { backgroundRealm ->
+                    databaseService.withRealm { backgroundRealm ->
                         val backgroundLibrary = backgroundRealm.where(RealmMyLibrary::class.java)
                             .equalTo("resourceId", libraryId).findFirst()
                         if (backgroundLibrary != null && !backgroundLibrary.userId?.contains(userId)!!) {
@@ -67,10 +67,10 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 }
             }
             withContext(Dispatchers.Main) {
-                fragmentLibraryDetailBinding.btnDownload.setImageResource(R.drawable.ic_play)
+                binding.btnDownload.setImageResource(R.drawable.ic_play)
                 if (!library.userId?.contains(profileDbHandler.userModel?.id)!!) {
                     Utilities.toast(activity, getString(R.string.added_to_my_library))
-                    fragmentLibraryDetailBinding.btnRemove.setImageResource(R.drawable.close_x)
+                    binding.btnRemove.setImageResource(R.drawable.close_x)
                 }
             }
         }
@@ -78,11 +78,11 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         super.onCreateView(inflater, container, savedInstanceState)
-        fragmentLibraryDetailBinding = FragmentLibraryDetailBinding.inflate(inflater, container, false)
-        lRealm = userRepository.getRealm()
+        _binding = FragmentLibraryDetailBinding.inflate(inflater, container, false)
+        lRealm = databaseService.realmInstance
         userModel = UserProfileDbHandler(requireContext()).userModel!!
         library = lRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", libraryId).findFirst()!!
-        return fragmentLibraryDetailBinding.root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -92,7 +92,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private fun setLibraryData() {
-        with(fragmentLibraryDetailBinding) {
+        with(binding) {
             tvTitle.text = library.title
             timesRated.text = requireContext().getString(R.string.num_total, library.timesRated)
             setTextViewVisibility(tvAuthor, llAuthor, library.author)
@@ -125,21 +125,21 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private fun setupDownloadButton() {
-        fragmentLibraryDetailBinding.btnDownload.visibility = if (TextUtils.isEmpty(library.resourceLocalAddress)) View.GONE else View.VISIBLE
-        fragmentLibraryDetailBinding.btnDownload.setImageResource(
+        binding.btnDownload.visibility = if (TextUtils.isEmpty(library.resourceLocalAddress)) View.GONE else View.VISIBLE
+        binding.btnDownload.setImageResource(
             if (!library.resourceOffline || library.isResourceOffline()) {
                 R.drawable.ic_eye
             } else {
                 R.drawable.ic_download
             })
-        fragmentLibraryDetailBinding.btnDownload.contentDescription =
+        binding.btnDownload.contentDescription =
             if (!library.resourceOffline || library.isResourceOffline()) {
                 getString(R.string.view)
             } else {
                 getString(R.string.download)
             }
         if (getFileExtension(library.resourceLocalAddress) == "mp4") {
-            fragmentLibraryDetailBinding.btnDownload.setImageResource(R.drawable.ic_play)
+            binding.btnDownload.setImageResource(R.drawable.ic_play)
         }
     }
 
@@ -153,7 +153,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private fun setClickListeners() {
-        fragmentLibraryDetailBinding.btnDownload.setOnClickListener {
+        binding.btnDownload.setOnClickListener {
             if (TextUtils.isEmpty(library.resourceLocalAddress)) {
                 Toast.makeText(activity, getString(R.string.link_not_available), Toast.LENGTH_LONG).show()
                 return@setOnClickListener
@@ -162,28 +162,28 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         }
         val isAdd = !library.userId?.contains(profileDbHandler.userModel?.id)!!
         if (userModel?.isGuest() != true) {
-            fragmentLibraryDetailBinding.btnRemove.setImageResource(
+            binding.btnRemove.setImageResource(
                 if (isAdd) {
                     R.drawable.ic_add_library
                 } else {
                     R.drawable.close_x
                 }
             )
-            fragmentLibraryDetailBinding.btnRemove.contentDescription =
+            binding.btnRemove.contentDescription =
                 if (isAdd) {
                     getString(R.string.add_to_mylib)
                 } else {
                     getString(R.string.btn_remove_lib)
                 }
         } else {
-            fragmentLibraryDetailBinding.btnRemove.visibility = View.GONE
+            binding.btnRemove.visibility = View.GONE
         }
-        fragmentLibraryDetailBinding.btnRemove.setOnClickListener {
+        binding.btnRemove.setOnClickListener {
             val userId = profileDbHandler.userModel?.id
             fragmentScope.launch {
                 withContext(Dispatchers.IO) {
                     try {
-                        MainApplication.service.withRealm { backgroundRealm ->
+                        databaseService.withRealm { backgroundRealm ->
                             val backgroundLibrary = backgroundRealm.where(RealmMyLibrary::class.java)
                                 .equalTo("resourceId", libraryId).findFirst()
 
@@ -211,7 +211,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 }
             }
         }
-        fragmentLibraryDetailBinding.btnBack.setOnClickListener {
+        binding.btnBack.setOnClickListener {
             val activity = requireActivity()
             if (activity is AddResourceActivity) {
                 activity.finish()
@@ -237,5 +237,10 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         } catch (_: UninitializedPropertyAccessException) {
         }
         super.onDestroy()
+    }
+
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
     }
 }

@@ -192,7 +192,6 @@ class AdapterJoinedMember(
             val user= mRealm.where(RealmUserModel::class.java).equalTo("id", successor.userId).findFirst()
             return user
         }
-        return null
     }
 
     private fun refreshList() {
@@ -212,35 +211,39 @@ class AdapterJoinedMember(
     }
 
     private fun makeLeader(userModel: RealmUserModel) {
-        mRealm.executeTransaction { realm ->
+        val userId = userModel.id
+        mRealm.executeTransactionAsync({ realm ->
             val currentLeader = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
                 .equalTo("isLeader", true)
                 .findFirst()
             val newLeader = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
-                .equalTo("userId", userModel.id)
+                .equalTo("userId", userId)
                 .findFirst()
             currentLeader?.isLeader = false
             newLeader?.isLeader = true
             teamLeaderId = newLeader?.userId
-        }
-        notifyDataSetChanged()
-        Utilities.toast(context, context.getString(R.string.leader_selected))
+        }, Realm.Transaction.OnSuccess {
+            notifyDataSetChanged()
+            Utilities.toast(context, context.getString(R.string.leader_selected))
+        })
         refreshList()
     }
 
     private fun reject(userModel: RealmUserModel, position: Int) {
-        mRealm.executeTransaction {
-            val team = it.where(RealmMyTeam::class.java)
+        val userId = userModel.id
+        mRealm.executeTransactionAsync({ realm ->
+            val team = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
-                .equalTo("userId", userModel.id)
+                .equalTo("userId", userId)
                 .findFirst()
             team?.deleteFromRealm()
-        }
-        list.removeAt(position)
-        notifyItemRemoved(position)
-        notifyItemRangeChanged(position, list.size)
+        }, Realm.Transaction.OnSuccess {
+            list.removeAt(position)
+            notifyItemRemoved(position)
+            notifyItemRangeChanged(position, list.size)
+        })
     }
 
     override fun getItemCount(): Int = list.size
