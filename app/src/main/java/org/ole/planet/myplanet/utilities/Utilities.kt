@@ -10,15 +10,12 @@ import android.util.Base64
 import android.util.Log
 import android.util.Patterns
 import android.webkit.MimeTypeMap
-import android.widget.ImageView
 import android.widget.Toast
 import androidx.core.graphics.toColorInt
 import androidx.core.net.toUri
-import com.bumptech.glide.Glide
 import fisk.chipcloud.ChipCloudConfig
 import java.math.BigInteger
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
 object Utilities {
@@ -65,18 +62,6 @@ object Utilities {
 
     fun getUserName(settings: SharedPreferences): String {
         return settings.getString("name", "") ?: ""
-    }
-
-    fun loadImage(userImage: String?, imageView: ImageView) {
-        if (!userImage.isNullOrEmpty()) {
-            Glide.with(imageView.context)
-                .load(userImage)
-                .placeholder(R.drawable.profile)
-                .error(R.drawable.profile)
-                .into(imageView)
-        } else {
-            imageView.setImageResource(R.drawable.ole_logo)
-        }
     }
 
     fun <T> handleCheck(b: Boolean, i: Int, selectedItems: MutableList<T?>, list: List<T?>) {
