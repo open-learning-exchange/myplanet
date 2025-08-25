@@ -5,7 +5,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.components.ActivityComponent
-import org.ole.planet.myplanet.utilities.AuthSessionUpdater
+import org.ole.planet.myplanet.datamanager.auth.AuthSessionUpdater
 
 @Module
 @InstallIn(ActivityComponent::class)
