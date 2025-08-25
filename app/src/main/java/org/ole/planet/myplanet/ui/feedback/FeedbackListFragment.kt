@@ -13,6 +13,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmChangeListener
 import io.realm.RealmResults
+import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -148,8 +149,16 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     private fun setupFeedbackListener() {
         feedbackList?.removeChangeListener(feedbackChangeListener)
-        feedbackList = mRealm.where(RealmFeedback::class.java)
-            .equalTo("owner", userModel?.name).findAllAsync()
+        feedbackList = if (userModel?.isManager() == true) {
+            mRealm.where(RealmFeedback::class.java)
+                .sort("openTime", Sort.DESCENDING)
+                .findAllAsync()
+        } else {
+            mRealm.where(RealmFeedback::class.java)
+                .equalTo("owner", userModel?.name)
+                .sort("openTime", Sort.DESCENDING)
+                .findAllAsync()
+        }
         feedbackList?.addChangeListener(feedbackChangeListener)
     }
 
@@ -157,11 +166,15 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         if (!isAdded || requireActivity().isFinishing) return
 
         try {
-            var list: List<RealmFeedback>? = mRealm.where(RealmFeedback::class.java)
-                .equalTo("owner", userModel?.name).findAll()
-
-            if (userModel?.isManager() == true) {
-                list = mRealm.where(RealmFeedback::class.java).findAll()
+            val list: List<RealmFeedback>? = if (userModel?.isManager() == true) {
+                mRealm.where(RealmFeedback::class.java)
+                    .sort("openTime", Sort.DESCENDING)
+                    .findAll()
+            } else {
+                mRealm.where(RealmFeedback::class.java)
+                    .equalTo("owner", userModel?.name)
+                    .sort("openTime", Sort.DESCENDING)
+                    .findAll()
             }
 
             val adapterFeedback = AdapterFeedback(requireActivity(), list)
@@ -186,13 +199,20 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     private fun loadInitialFeedbackData() {
-        var list: List<RealmFeedback>? = mRealm.where(RealmFeedback::class.java)
-            .equalTo("owner", userModel?.name).findAll()
-        if (userModel?.isManager() == true) list = mRealm.where(RealmFeedback::class.java).findAll()
+        val list: List<RealmFeedback>? = if (userModel?.isManager() == true) {
+            mRealm.where(RealmFeedback::class.java)
+                .sort("openTime", Sort.DESCENDING)
+                .findAll()
+        } else {
+            mRealm.where(RealmFeedback::class.java)
+                .equalTo("owner", userModel?.name)
+                .sort("openTime", Sort.DESCENDING)
+                .findAll()
+        }
         val adapterFeedback = AdapterFeedback(requireActivity(), list)
         binding.rvFeedback.adapter = adapterFeedback
 
-        val itemCount = feedbackList?.size ?: 0
+        val itemCount = list?.size ?: 0
         showNoData(binding.tvMessage, itemCount, "feedback")
 
         updateTextViewsVisibility(itemCount)
@@ -217,10 +237,15 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         mRealm.executeTransactionAsync(
             Realm.Transaction { },
             Realm.Transaction.OnSuccess {
-                var updatedList = mRealm.where(RealmFeedback::class.java)
-                    .equalTo("owner", userModel?.name).findAll()
-                if (userModel?.isManager() == true) {
-                    updatedList = mRealm.where(RealmFeedback::class.java).findAll()
+                val updatedList = if (userModel?.isManager() == true) {
+                    mRealm.where(RealmFeedback::class.java)
+                        .sort("openTime", Sort.DESCENDING)
+                        .findAll()
+                } else {
+                    mRealm.where(RealmFeedback::class.java)
+                        .equalTo("owner", userModel?.name)
+                        .sort("openTime", Sort.DESCENDING)
+                        .findAll()
                 }
                 updatedFeedbackList(updatedList)
             })
@@ -231,6 +256,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
             val adapterFeedback = updatedList?.let { AdapterFeedback(requireActivity(), it) }
             binding.rvFeedback.adapter = adapterFeedback
             adapterFeedback?.notifyDataSetChanged()
+            binding.rvFeedback.scrollToPosition(0)
 
             val itemCount = updatedList?.size ?: 0
             showNoData(binding.tvMessage, itemCount, "feedback")
