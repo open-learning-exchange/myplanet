@@ -1,14 +1,15 @@
 package org.ole.planet.myplanet.ui.community
 
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import io.realm.RealmResults
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentServicesBinding
@@ -31,7 +32,7 @@ class ServicesFragment : BaseTeamFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
         super.onViewCreated(view, savedInstanceState)
-        mRealm = userRepository.getRealm()
+        mRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
 
         val links = mRealm.where(RealmMyTeam::class.java)?.equalTo("docType", "link")?.findAll()
@@ -39,11 +40,12 @@ class ServicesFragment : BaseTeamFragment() {
         fragmentServicesBinding.fab.setOnClickListener {
             val bottomSheetDialog: BottomSheetDialogFragment = AddLinkFragment()
             bottomSheetDialog.show(childFragmentManager, "")
-            Handler(Looper.getMainLooper()).postDelayed({
+            viewLifecycleOwner.lifecycleScope.launch {
+                delay(1000)
                 bottomSheetDialog.dialog?.setOnDismissListener {
                     setRecyclerView(links)
                 }
-            }, 1000)
+            }
         }
 
         if (links?.size == 0) {

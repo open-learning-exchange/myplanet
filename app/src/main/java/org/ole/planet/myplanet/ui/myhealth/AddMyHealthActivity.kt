@@ -30,7 +30,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class AddMyHealthActivity : AppCompatActivity() {
-    private lateinit var activityAddMyHealthBinding: ActivityAddMyHealthBinding
+    private lateinit var binding: ActivityAddMyHealthBinding
     @Inject
     lateinit var databaseService: DatabaseService
     lateinit var realm: Realm
@@ -43,9 +43,9 @@ class AddMyHealthActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        activityAddMyHealthBinding = ActivityAddMyHealthBinding.inflate(layoutInflater)
-        setContentView(activityAddMyHealthBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityAddMyHealthBinding.root)
+        binding = ActivityAddMyHealthBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         realm = databaseService.realmInstance
@@ -71,30 +71,30 @@ class AddMyHealthActivity : AppCompatActivity() {
             val now = Calendar.getInstance()
             val dpd = DatePickerDialog(this, { _, year, month, dayOfMonth ->
                 val selectedDate = String.format(Locale.US, "%04d-%02d-%02d", year, month + 1, dayOfMonth)
-                activityAddMyHealthBinding.etBirthdateLayout.editText?.setText(selectedDate)
+                binding.etBirthdateLayout.editText?.setText(selectedDate)
             }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH))
             dpd.datePicker.maxDate = System.currentTimeMillis()
             dpd.show()
         }
-        activityAddMyHealthBinding.etBirthdateLayout.editText?.setOnClickListener(datePickerClickListener)
+        binding.etBirthdateLayout.editText?.setOnClickListener(datePickerClickListener)
         findViewById<ImageView>(R.id.iv_date_picker).setOnClickListener(datePickerClickListener)
     }
 
     private fun createMyHealth() {
         if (!realm.isInTransaction) realm.beginTransaction()
         val health = RealmMyHealthProfile()
-        userModelB?.firstName = "${activityAddMyHealthBinding.etFname.editText?.text}".trim { it <= ' ' }
-        userModelB?.middleName = "${activityAddMyHealthBinding.etMname.editText?.text}".trim { it <= ' ' }
-        userModelB?.lastName = "${activityAddMyHealthBinding.etLname.editText?.text}".trim { it <= ' ' }
-        userModelB?.email = "${activityAddMyHealthBinding.etEmail.editText?.text}".trim { it <= ' ' }
-        userModelB?.dob = "${activityAddMyHealthBinding.etBirthdateLayout.editText?.text}".trim { it <= ' ' }
-        userModelB?.birthPlace = "${activityAddMyHealthBinding.etBirthplace.editText?.text}".trim { it <= ' ' }
-        userModelB?.phoneNumber = "${activityAddMyHealthBinding.etPhone.editText?.text}".trim { it <= ' ' }
-        health.emergencyContactName = "${activityAddMyHealthBinding.etEmergency.editText?.text}".trim { it <= ' ' }
-        health.emergencyContact = "${activityAddMyHealthBinding.etContact.editText?.text}".trim { it <= ' ' }
-        health.emergencyContactType = "${activityAddMyHealthBinding.spnContactType.selectedItem}"
-        health.specialNeeds = "${activityAddMyHealthBinding.etSpecialNeed.editText?.text}".trim { it <= ' ' }
-        health.notes = "${activityAddMyHealthBinding.etOtherNeed.editText?.text}".trim { it <= ' ' }
+        userModelB?.firstName = "${binding.etFname.editText?.text}".trim { it <= ' ' }
+        userModelB?.middleName = "${binding.etMname.editText?.text}".trim { it <= ' ' }
+        userModelB?.lastName = "${binding.etLname.editText?.text}".trim { it <= ' ' }
+        userModelB?.email = "${binding.etEmail.editText?.text}".trim { it <= ' ' }
+        userModelB?.dob = "${binding.etBirthdateLayout.editText?.text}".trim { it <= ' ' }
+        userModelB?.birthPlace = "${binding.etBirthplace.editText?.text}".trim { it <= ' ' }
+        userModelB?.phoneNumber = "${binding.etPhone.editText?.text}".trim { it <= ' ' }
+        health.emergencyContactName = "${binding.etEmergency.editText?.text}".trim { it <= ' ' }
+        health.emergencyContact = "${binding.etContact.editText?.text}".trim { it <= ' ' }
+        health.emergencyContactType = "${binding.spnContactType.selectedItem}"
+        health.specialNeeds = "${binding.etSpecialNeed.editText?.text}".trim { it <= ' ' }
+        health.notes = "${binding.etOtherNeed.editText?.text}".trim { it <= ' ' }
         if (myHealth == null) {
             myHealth = RealmMyHealth()
         }
@@ -127,18 +127,18 @@ class AddMyHealthActivity : AppCompatActivity() {
                 RealmMyHealth::class.java
             )
             val health = myHealth?.profile
-            activityAddMyHealthBinding.etEmergency.editText?.setText(health?.emergencyContactName)
-            activityAddMyHealthBinding.etSpecialNeed.editText?.setText(health?.specialNeeds)
-            activityAddMyHealthBinding.etOtherNeed.editText?.setText(health?.notes)
+            binding.etEmergency.editText?.setText(health?.emergencyContactName)
+            binding.etSpecialNeed.editText?.setText(health?.specialNeeds)
+            binding.etOtherNeed.editText?.setText(health?.notes)
         }
         if (userModelB != null) {
-            activityAddMyHealthBinding.etFname.editText?.setText(userModelB?.firstName)
-            activityAddMyHealthBinding.etMname.editText?.setText(userModelB?.middleName)
-            activityAddMyHealthBinding.etLname.editText?.setText(userModelB?.lastName)
-            activityAddMyHealthBinding.etEmail.editText?.setText(userModelB?.email)
-            activityAddMyHealthBinding.etPhone.editText?.setText(userModelB?.phoneNumber)
-            activityAddMyHealthBinding.etBirthdateLayout.editText?.setText(userModelB?.dob)
-            activityAddMyHealthBinding.etBirthplace.editText?.setText(userModelB?.birthPlace)
+            binding.etFname.editText?.setText(userModelB?.firstName)
+            binding.etMname.editText?.setText(userModelB?.middleName)
+            binding.etLname.editText?.setText(userModelB?.lastName)
+            binding.etEmail.editText?.setText(userModelB?.email)
+            binding.etPhone.editText?.setText(userModelB?.phoneNumber)
+            binding.etBirthdateLayout.editText?.setText(userModelB?.dob)
+            binding.etBirthplace.editText?.setText(userModelB?.birthPlace)
         }
     }
 

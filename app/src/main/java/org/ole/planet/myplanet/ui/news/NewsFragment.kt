@@ -38,7 +38,8 @@ import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 
 @AndroidEntryPoint
 class NewsFragment : BaseNewsFragment() {
-    private lateinit var fragmentNewsBinding: FragmentNewsBinding
+    private var _binding: FragmentNewsBinding? = null
+    private val binding get() = _binding!!
     var user: RealmUserModel? = null
     
     @Inject
@@ -52,29 +53,29 @@ class NewsFragment : BaseNewsFragment() {
     private var selectedLabel: String = "All"
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentNewsBinding = FragmentNewsBinding.inflate(inflater, container, false)
-        llImage = fragmentNewsBinding.llImages
-        mRealm = userRepository.getRealm()
+        _binding = FragmentNewsBinding.inflate(inflater, container, false)
+        llImage = binding.llImages
+        mRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
-        setupUI(fragmentNewsBinding.newsFragmentParentLayout, requireActivity())
+        setupUI(binding.newsFragmentParentLayout, requireActivity())
         if (user?.id?.startsWith("guest") == true) {
-            fragmentNewsBinding.btnNewVoice.visibility = View.GONE
+            binding.btnNewVoice.visibility = View.GONE
         }
-        fragmentNewsBinding.btnNewVoice.setOnClickListener {
-            fragmentNewsBinding.llAddNews.visibility = if (fragmentNewsBinding.llAddNews.isVisible) {
+        binding.btnNewVoice.setOnClickListener {
+            binding.llAddNews.visibility = if (binding.llAddNews.isVisible) {
                 View.GONE
             } else {
                 View.VISIBLE
             }
-            fragmentNewsBinding.btnNewVoice.text = if (fragmentNewsBinding.llAddNews.isVisible) {
+            binding.btnNewVoice.text = if (binding.llAddNews.isVisible) {
                 getString(R.string.hide_new_voice)
             } else {
                 getString(R.string.new_voice)
             }
         }
         if (requireArguments().getBoolean("fromLogin")) {
-            fragmentNewsBinding.btnNewVoice.visibility = View.GONE
-            fragmentNewsBinding.llAddNews.visibility = View.GONE
+            binding.btnNewVoice.visibility = View.GONE
+            binding.llAddNews.visibility = View.GONE
         }
 
         updatedNewsList = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING)
@@ -82,6 +83,7 @@ class NewsFragment : BaseNewsFragment() {
             .findAllAsync()
 
         updatedNewsList?.addChangeListener { results ->
+            if (_binding == null) return@addChangeListener
             filteredNewsList = filterNewsList(results)
             updateLabelSpinner()
             labelFilteredList = applyLabelFilter(filteredNewsList)
@@ -89,11 +91,11 @@ class NewsFragment : BaseNewsFragment() {
             setData(searchFilteredList)
         }
         
-        etSearch = fragmentNewsBinding.root.findViewById(R.id.et_search)
+        etSearch = binding.root.findViewById(R.id.et_search)
         setupSearchTextListener()
         setupLabelFilter()
         
-        return fragmentNewsBinding.root
+        return binding.root
     }
 
     private fun filterNewsList(results: RealmResults<RealmNews>): List<RealmNews?> {
@@ -129,13 +131,13 @@ class NewsFragment : BaseNewsFragment() {
         labelFilteredList = applyLabelFilter(filteredNewsList)
         searchFilteredList = applySearchFilter(labelFilteredList)
         setData(searchFilteredList)
-        fragmentNewsBinding.btnSubmit.setOnClickListener {
-            val message = fragmentNewsBinding.etMessage.text.toString().trim { it <= ' ' }
+        binding.btnSubmit.setOnClickListener {
+            val message = binding.etMessage.text.toString().trim { it <= ' ' }
             if (message.isEmpty()) {
-                fragmentNewsBinding.tlMessage.error = getString(R.string.please_enter_message)
+                binding.tlMessage.error = getString(R.string.please_enter_message)
                 return@setOnClickListener
             }
-            fragmentNewsBinding.etMessage.setText(R.string.empty_text)
+            binding.etMessage.setText(R.string.empty_text)
             val map = HashMap<String?, String>()
             map["message"] = message
             map["viewInId"] = "${user?.planetCode ?: ""}@${user?.parentCode ?: ""}"
@@ -153,12 +155,12 @@ class NewsFragment : BaseNewsFragment() {
             setData(searchFilteredList)
         }
 
-        fragmentNewsBinding.addNewsImage.setOnClickListener {
-            llImage = fragmentNewsBinding.llImages
+        binding.addNewsImage.setOnClickListener {
+            llImage = binding.llImages
             val openFolderIntent = openOleFolder()
             openFolderLauncher.launch(openFolderIntent)
         }
-        fragmentNewsBinding.addNewsImage.visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, requireActivity())) View.VISIBLE else View.GONE
+        binding.addNewsImage.visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, requireActivity())) View.VISIBLE else View.GONE
     }
 
     private val newsList: List<RealmNews?> get() {
@@ -190,8 +192,8 @@ class NewsFragment : BaseNewsFragment() {
     override fun setData(list: List<RealmNews?>?) {
         if (!isAdded || list == null) return
 
-        if (fragmentNewsBinding.rvNews.adapter == null) {
-            changeLayoutManager(resources.configuration.orientation, fragmentNewsBinding.rvNews)
+        if (binding.rvNews.adapter == null) {
+            changeLayoutManager(resources.configuration.orientation, binding.rvNews)
             val resourceIds: MutableList<String> = ArrayList()
             list.forEach { news ->
                 if ((news?.imagesArray?.size() ?: 0) > 0) {
@@ -217,13 +219,13 @@ class NewsFragment : BaseNewsFragment() {
             adapterNews?.setListener(this)
             adapterNews?.registerAdapterDataObserver(observer)
 
-            fragmentNewsBinding.rvNews.adapter = adapterNews
+            binding.rvNews.adapter = adapterNews
         } else {
-            (fragmentNewsBinding.rvNews.adapter as? AdapterNews)?.updateList(list)
+            (binding.rvNews.adapter as? AdapterNews)?.updateList(list)
         }
-        adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount, "news") }
-        fragmentNewsBinding.llAddNews.visibility = View.GONE
-        fragmentNewsBinding.btnNewVoice.text = getString(R.string.new_voice)
+        adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
+        binding.llAddNews.visibility = View.GONE
+        binding.btnNewVoice.text = getString(R.string.new_voice)
     }
 
     override fun onNewsItemClick(news: RealmNews?) {
@@ -254,20 +256,20 @@ class NewsFragment : BaseNewsFragment() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         val orientation = newConfig.orientation
-        changeLayoutManager(orientation, fragmentNewsBinding.rvNews)
+        changeLayoutManager(orientation, binding.rvNews)
     }
 
     private val observer: AdapterDataObserver = object : AdapterDataObserver() {
         override fun onChanged() {
-            adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount, "news") }
+            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
         }
 
         override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-            adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount, "news") }
+            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
         }
 
         override fun onItemRangeRemoved(positionStart: Int, itemCount: Int) {
-            adapterNews?.let { showNoData(fragmentNewsBinding.tvMessage, it.itemCount, "news") }
+            adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
         }
     }
     private fun getSortDate(news: RealmNews?): Long {
@@ -317,9 +319,9 @@ class NewsFragment : BaseNewsFragment() {
     private fun setupLabelFilter() {
         updateLabelSpinner()
 
-        fragmentNewsBinding.filterByLabel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+        binding.filterByLabel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val labels = (fragmentNewsBinding.filterByLabel.adapter as ArrayAdapter<String>)
+                val labels = (binding.filterByLabel.adapter as ArrayAdapter<String>)
                 selectedLabel = labels.getItem(position) ?: "All"
                 labelFilteredList = applyLabelFilter(filteredNewsList)
                 searchFilteredList = applySearchFilter(labelFilteredList)
@@ -330,18 +332,19 @@ class NewsFragment : BaseNewsFragment() {
     }
     
     private fun updateLabelSpinner() {
+        val binding = _binding ?: return
         val labels = collectAllLabels(filteredNewsList)
         val themedContext = androidx.appcompat.view.ContextThemeWrapper(requireContext(), R.style.ResourcePopupMenu)
         val adapter = ArrayAdapter(themedContext, android.R.layout.simple_spinner_item, labels)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        fragmentNewsBinding.filterByLabel.adapter = adapter
+        binding.filterByLabel.adapter = adapter
 
         val position = labels.indexOf(selectedLabel)
         if (position >= 0) {
-            fragmentNewsBinding.filterByLabel.setSelection(position)
+            binding.filterByLabel.setSelection(position)
         } else {
             selectedLabel = "All"
-            fragmentNewsBinding.filterByLabel.setSelection(0)
+            binding.filterByLabel.setSelection(0)
         }
     }
     
@@ -419,5 +422,11 @@ class NewsFragment : BaseNewsFragment() {
             }
         }
         return ""
+    }
+
+    override fun onDestroyView() {
+        updatedNewsList?.removeAllChangeListeners()
+        _binding = null
+        super.onDestroyView()
     }
 }

@@ -25,7 +25,8 @@ import org.ole.planet.myplanet.utilities.KeyboardUtils
 
 @AndroidEntryPoint
 class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagItem, CompoundButton.OnCheckedChangeListener {
-    private lateinit var fragmentCollectionsBinding: FragmentCollectionsBinding
+    private var _binding: FragmentCollectionsBinding? = null
+    private val binding get() = _binding!!
     @Inject
     lateinit var databaseService: DatabaseService
     private lateinit var mRealm: Realm
@@ -43,10 +44,10 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentCollectionsBinding = FragmentCollectionsBinding.inflate(inflater, container, false)
+        _binding = FragmentCollectionsBinding.inflate(inflater, container, false)
         mRealm = databaseService.realmInstance
         KeyboardUtils.hideSoftKeyboard(requireActivity())
-        return fragmentCollectionsBinding.root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -56,11 +57,11 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
     }
 
     private fun setListeners() {
-        fragmentCollectionsBinding.btnOk.setOnClickListener {
+        binding.btnOk.setOnClickListener {
             listener?.onOkClicked(selectedItemsList)
             dismiss()
         }
-        fragmentCollectionsBinding.etFilter.addTextChangedListener(object : TextWatcher {
+        binding.etFilter.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(charSequence: CharSequence?, start: Int, before: Int, count: Int) {
                 charSequence?.let { filterTags(it.toString()) }
@@ -90,12 +91,12 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
         val allTags = mRealm.where(RealmTag::class.java).findAll()
         val childMap = HashMap<String, List<RealmTag>>()
         allTags.forEach { t -> createChildMap(childMap, t) }
-        fragmentCollectionsBinding.listTags.setGroupIndicator(null)
+        binding.listTags.setGroupIndicator(null)
         adapter = TagExpandableAdapter(list, childMap, selectedItemsList)
         adapter.setSelectMultiple(true)
         adapter.setClickListener(this)
-        fragmentCollectionsBinding.listTags.setAdapter(adapter)
-        fragmentCollectionsBinding.btnOk.visibility = View.VISIBLE
+        binding.listTags.setAdapter(adapter)
+        binding.btnOk.visibility = View.VISIBLE
     }
 
     private fun createChildMap(childMap: HashMap<String, List<RealmTag>>, t: RealmTag) {
@@ -126,14 +127,15 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
         MainApplication.isCollectionSwitchOn = b
         adapter.setSelectMultiple(b)
         adapter.setTagList(list)
-        fragmentCollectionsBinding.listTags.setAdapter(adapter)
-        fragmentCollectionsBinding.btnOk.visibility = if (b) View.VISIBLE else View.GONE
+        binding.listTags.setAdapter(adapter)
+        binding.btnOk.visibility = if (b) View.VISIBLE else View.GONE
     }
 
     override fun onDestroyView() {
         if (::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        _binding = null
         super.onDestroyView()
     }
 
@@ -153,4 +155,5 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
     fun setListener(listener: TagClickListener) {
         this.listener = listener
     }
+
 }

@@ -28,7 +28,6 @@ import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
 object NetworkUtils {
-
     private val coroutineScope: CoroutineScope by lazy {
         val entryPoint = EntryPointAccessors.fromApplication(context, NetworkUtilsEntryPoint::class.java)
         entryPoint.applicationScope()
@@ -127,32 +126,27 @@ object NetworkUtils {
         else -> false
     }
 
-    @JvmStatic
     fun isWifiEnabled(): Boolean {
         val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
         return wifiManager.isWifiEnabled
     }
 
-    @JvmStatic
     fun isWifiConnected(): Boolean {
         val network = connectivityManager.activeNetwork
         val capabilities = connectivityManager.getNetworkCapabilities(network)
         return capabilities != null && capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
     }
 
-    @JvmStatic
     fun isWifiBluetoothEnabled(): Boolean {
         return isBluetoothEnabled() || isWifiEnabled()
     }
 
-    @JvmStatic
     fun isBluetoothEnabled(): Boolean {
         val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         val adapter: BluetoothAdapter? = bluetoothManager.adapter
         return adapter != null && adapter.isEnabled
     }
 
-    @JvmStatic
     fun getCurrentNetworkId(context: Context): Int {
         var ssid = -1
         val connManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -168,14 +162,12 @@ object NetworkUtils {
         return ssid
     }
 
-    @JvmStatic
     fun getUniqueIdentifier(): String {
         val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
         val buildId = Build.ID
         return androidId + "_" + buildId
     }
 
-    @JvmStatic
     fun getDeviceName(): String {
         val manufacturer = Build.MANUFACTURER
         val model = Build.MODEL
@@ -186,7 +178,6 @@ object NetworkUtils {
         }
     }
 
-    @JvmStatic
     fun getCustomDeviceName(context: Context): String {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getString("customDeviceName", "") ?: ""

@@ -21,7 +21,6 @@ import androidx.preference.Preference.OnPreferenceClickListener
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SwitchPreference
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
@@ -140,7 +139,12 @@ class SettingActivity : AppCompatActivity() {
             autoDownload?.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
                 if (autoDownload.isChecked == true) {
                     defaultPref.edit { putBoolean("beta_auto_download", true) }
-                    backgroundDownload(downloadAllFiles(getAllLibraryList((requireActivity() as SettingActivity).databaseService.realmInstance)), requireContext())
+                    (requireActivity() as SettingActivity).databaseService.withRealm { realm ->
+                        backgroundDownload(
+                            downloadAllFiles(getAllLibraryList(realm)),
+                            requireContext()
+                        )
+                    }
                 } else {
                     defaultPref.edit { putBoolean("beta_auto_download", false) }
                 }

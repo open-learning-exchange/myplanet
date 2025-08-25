@@ -104,4 +104,11 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
             }
         }
     }
+
+    override fun onDestroy() {
+        if (this::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
+        super.onDestroy()
+    }
 }

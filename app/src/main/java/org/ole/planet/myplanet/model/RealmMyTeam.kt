@@ -28,7 +28,7 @@ import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.DownloadUtils.openDownloadService
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
-import org.ole.planet.myplanet.utilities.Utilities.getUrl
+import org.ole.planet.myplanet.utilities.UrlUtils.getUrl
 
 open class RealmMyTeam : RealmObject() {
     @PrimaryKey

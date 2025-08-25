@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.startDownloadUpdate
+import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 class AutoSyncWorker @AssistedInject constructor(
@@ -63,7 +64,7 @@ class AutoSyncWorker @AssistedInject constructor(
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
-        startDownloadUpdate(context, Utilities.getApkUpdateUrl(info?.localapkpath), null)
+        startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), null)
     }
 
     override fun onCheckingVersion() {}

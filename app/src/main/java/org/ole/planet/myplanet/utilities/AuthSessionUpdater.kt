@@ -89,7 +89,7 @@ class AuthSessionUpdater @Inject constructor(
 
     private fun getSessionUrl(): URL? {
         return try {
-            val pref = Utilities.getUrl()
+            val pref = UrlUtils.getUrl()
             val urlString = "$pref/_session"
             val serverUrl = URL(urlString)
             serverUrl

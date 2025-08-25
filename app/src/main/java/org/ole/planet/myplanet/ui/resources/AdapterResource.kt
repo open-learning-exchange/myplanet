@@ -24,11 +24,17 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterResource(private val context: Context, private var libraryList: List<RealmMyLibrary?>, private var ratingMap: HashMap<String?, JsonObject>, private val realm: Realm) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class AdapterResource(
+    private val context: Context,
+    private var libraryList: List<RealmMyLibrary?>,
+    private var ratingMap: HashMap<String?, JsonObject>,
+    private val realm: Realm
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
     private var listener: OnLibraryItemSelected? = null
     private val config: ChipCloudConfig = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
@@ -53,8 +59,7 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
     }
 
     fun setLibraryList(libraryList: List<RealmMyLibrary?>) {
-        this.libraryList = libraryList
-        notifyDataSetChanged()
+        updateList(libraryList)
     }
 
     fun setListener(listener: OnLibraryItemSelected?) {
@@ -170,26 +175,24 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
 
     fun toggleTitleSortOrder() {
         isTitleAscending = !isTitleAscending
-        sortLibraryListByTitle()
-        notifyDataSetChanged()
+        updateList(sortLibraryListByTitle())
     }
 
     fun toggleSortOrder() {
         isAscending = !isAscending
-        sortLibraryList()
-        notifyDataSetChanged()
+        updateList(sortLibraryList())
     }
 
-    private fun sortLibraryListByTitle() {
-        libraryList = if (isTitleAscending) {
+    private fun sortLibraryListByTitle(): List<RealmMyLibrary?> {
+        return if (isTitleAscending) {
             libraryList.sortedBy { it?.title?.lowercase(Locale.ROOT) }
         } else {
             libraryList.sortedByDescending { it?.title?.lowercase(Locale.ROOT) }
         }
     }
 
-    private fun sortLibraryList() {
-        libraryList = if (isAscending) {
+    private fun sortLibraryList(): List<RealmMyLibrary?> {
+        return if (isAscending) {
             libraryList.sortedBy { it?.createdDate }
         } else {
             libraryList.sortedByDescending { it?.createdDate }
@@ -198,6 +201,23 @@ class AdapterResource(private val context: Context, private var libraryList: Lis
 
     override fun getItemCount(): Int {
         return libraryList.size
+    }
+
+    private fun updateList(newList: List<RealmMyLibrary?>) {
+        val diffResult = DiffUtils.calculateDiff(
+            libraryList,
+            newList,
+            areItemsTheSame = { old, new -> old?.id == new?.id },
+            areContentsTheSame = { old, new ->
+                old?.title == new?.title &&
+                    old?.description == new?.description &&
+                    old?.createdDate == new?.createdDate &&
+                    old?.averageRating == new?.averageRating &&
+                    old?.timesRated == new?.timesRated
+            }
+        )
+        libraryList = newList
+        diffResult.dispatchUpdatesTo(this)
     }
 
     fun setRatingMap(newRatingMap: HashMap<String?, JsonObject>) {

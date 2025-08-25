@@ -7,4 +7,3 @@ interface OnFilterListener {
 
     fun getSelectedFilter(): Map<String, Set<String>>
 }
-

@@ -18,7 +18,8 @@ import org.ole.planet.myplanet.ui.dictionary.DictionaryActivity
 import org.ole.planet.myplanet.ui.map.OfflineMapActivity
 
 class ReferenceFragment : Fragment() {
-    private lateinit var fragmentReferenceBinding: FragmentReferenceBinding
+    private var _binding: FragmentReferenceBinding? = null
+    private val binding get() = _binding!!
     private lateinit var rowReferenceBinding: RowReferenceBinding
     private var homeItemClickListener: OnHomeItemClickListener? = null
 
@@ -28,18 +29,18 @@ class ReferenceFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentReferenceBinding = FragmentReferenceBinding.inflate(inflater, container, false)
+        _binding = FragmentReferenceBinding.inflate(inflater, container, false)
         val list = listOf(
             Reference(getString(R.string.maps), android.R.drawable.ic_dialog_map),
             Reference(getString(R.string.engilsh_dictionary), R.drawable.ic_dictionary)
         )
-        fragmentReferenceBinding.rvReferences.layoutManager = GridLayoutManager(activity, 3)
+        binding.rvReferences.layoutManager = GridLayoutManager(activity, 3)
         setRecyclerAdapter(list)
-        return fragmentReferenceBinding.root
+        return binding.root
     }
 
     private fun setRecyclerAdapter(list: List<Reference>) {
-        fragmentReferenceBinding.rvReferences.adapter = object : RecyclerView.Adapter<ViewHolderReference>() {
+        binding.rvReferences.adapter = object : RecyclerView.Adapter<ViewHolderReference>() {
             override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderReference {
                 rowReferenceBinding = RowReferenceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
                 return ViewHolderReference(rowReferenceBinding.root)
@@ -62,4 +63,9 @@ class ReferenceFragment : Fragment() {
     }
 
     class ViewHolderReference(itemView: View) : RecyclerView.ViewHolder(itemView)
+
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
+    }
 }

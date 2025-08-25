@@ -95,9 +95,9 @@ object CameraUtils {
         val filename = "${pictureFileDir.path}${File.separator}$photoFile"
         val mainPicture = File(filename)
         try {
-            val fos = FileOutputStream(mainPicture)
-            fos.write(data)
-            fos.close()
+            FileOutputStream(mainPicture).use { fos ->
+                fos.write(data)
+            }
             callback.onImageCapture(mainPicture.absolutePath)
         } catch (error: Exception) {
             error.printStackTrace()

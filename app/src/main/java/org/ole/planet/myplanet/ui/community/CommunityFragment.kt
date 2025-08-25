@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Case
+import io.realm.RealmChangeListener
 import io.realm.RealmResults
 import io.realm.Sort
 import javax.inject.Inject
@@ -27,6 +28,7 @@ import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickListener {
     private lateinit var fragmentCommunityBinding: FragmentCommunityBinding
     private var newList: RealmResults<RealmNews>? = null
+    private var newsListChangeListener: RealmChangeListener<RealmResults<RealmNews>>? = null
     
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
@@ -48,16 +50,16 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
             .equalTo("viewableBy", "community", Case.INSENSITIVE)
             .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE).isEmpty("replyTo")
             .sort("time", Sort.DESCENDING).findAll()
-
-        newList?.addChangeListener { results ->
+        newsListChangeListener = RealmChangeListener { results ->
             updatedNewsList(results)
         }
+        newList?.addChangeListener(newsListChangeListener!!)
         return fragmentCommunityBinding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        mRealm = userRepository.getRealm()
+        mRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
         fragmentCommunityBinding.btnLibrary.setOnClickListener {
             homeItemClickListener?.openCallFragment(ResourcesFragment())
@@ -96,5 +98,11 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
             fragmentCommunityBinding.llEditDelete.visibility = if (user?.isManager() == true) View.VISIBLE else View.GONE
             adapter?.notifyDataSetChanged()
         }
+    }
+
+    override fun onDestroy() {
+        newList?.removeAllChangeListeners()
+        newsListChangeListener = null
+        super.onDestroy()
     }
 }

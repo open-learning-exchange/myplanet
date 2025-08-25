@@ -17,12 +17,12 @@ import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
 
 class CSVViewerActivity : AppCompatActivity() {
-    private lateinit var activityCsvViewerBinding: ActivityCsvviewerBinding
+    private lateinit var binding: ActivityCsvviewerBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        activityCsvViewerBinding = ActivityCsvviewerBinding.inflate(layoutInflater)
-        setContentView(activityCsvViewerBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityCsvViewerBinding.root)
+        binding = ActivityCsvviewerBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
         renderCSVFile()
     }
 
@@ -30,11 +30,11 @@ class CSVViewerActivity : AppCompatActivity() {
         val csvFileOpenIntent = intent
         val fileName = csvFileOpenIntent.getStringExtra("TOUCHED_FILE")
         if (!fileName.isNullOrEmpty()) {
-            activityCsvViewerBinding.csvFileName.text = FileUtils.nameWithoutExtension(fileName)
-            activityCsvViewerBinding.csvFileName.visibility = View.VISIBLE
+            binding.csvFileName.text = FileUtils.nameWithoutExtension(fileName)
+            binding.csvFileName.visibility = View.VISIBLE
         } else {
-            activityCsvViewerBinding.csvFileName.text = getString(R.string.message_placeholder, "No file selected")
-            activityCsvViewerBinding.csvFileName.visibility = View.VISIBLE
+            binding.csvFileName.text = getString(R.string.message_placeholder, "No file selected")
+            binding.csvFileName.visibility = View.VISIBLE
         }
 
         try {
@@ -59,7 +59,7 @@ class CSVViewerActivity : AppCompatActivity() {
                     start, spannableContent.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
                 )
             }
-            activityCsvViewerBinding.csvFileContent.text = spannableContent
+            binding.csvFileContent.text = spannableContent
         } catch (e: Exception) {
             e.printStackTrace()
         }
