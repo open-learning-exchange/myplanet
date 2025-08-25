@@ -46,4 +46,8 @@ class CourseRepositoryImpl @Inject constructor(
                 .forEach { it.isMyCourse = isMyCourse }
         }
     }
+
+    override suspend fun saveSearchActivity(activity: org.ole.planet.myplanet.model.RealmSearchActivity) {
+        save(activity)
+    }
 }
