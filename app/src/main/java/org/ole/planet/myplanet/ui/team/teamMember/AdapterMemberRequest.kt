@@ -54,7 +54,7 @@ class AdapterMemberRequest(private val context: Context, private val list: Mutab
                 btnAccept.isEnabled = false
             }
 
-            if(isGuestUser() || !isTeamLeader()){
+            if(isGuestUser()){
                 btnReject.isEnabled = false
                 btnAccept.isEnabled = false
             }
@@ -66,10 +66,6 @@ class AdapterMemberRequest(private val context: Context, private val list: Mutab
 
     private fun isGuestUser() = currentUser.id?.startsWith("guest") == true
 
-    fun isTeamLeader(): Boolean {
-        if(teamId==null)return false
-        return team.userId == currentUser._id
-    }
 
     private fun handleClick(holder: RecyclerView.ViewHolder, isAccepted: Boolean) {
         val adapterPosition = holder.bindingAdapterPosition
