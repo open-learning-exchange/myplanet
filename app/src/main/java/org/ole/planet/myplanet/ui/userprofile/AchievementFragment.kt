@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.UrlUtils
+import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class AchievementFragment : BaseContainerFragment() {
