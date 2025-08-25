@@ -5,11 +5,11 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
-import org.ole.planet.myplanet.utilities.DiffUtils
 import com.google.android.material.button.MaterialButton
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.ServerAddressesModel
+import org.ole.planet.myplanet.utilities.DiffUtils
 
 class ServerAddressAdapter(private var serverList: List<ServerAddressesModel>,
     private val onItemClick: (ServerAddressesModel) -> Unit,
