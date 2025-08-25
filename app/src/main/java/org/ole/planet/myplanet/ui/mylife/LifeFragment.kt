@@ -20,7 +20,7 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     private lateinit var adapterMyLife: AdapterMyLife
     private var mItemTouchHelper: ItemTouchHelper? = null
     private var _binding: FragmentLifeBinding? = null
-    private val binding get() = _binding!!
+    private val binding get() = checkNotNull(_binding)
     override fun getLayout(): Int = R.layout.fragment_life
 
     override fun onCreateView(

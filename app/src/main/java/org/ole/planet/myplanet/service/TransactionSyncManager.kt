@@ -66,11 +66,13 @@ object TransactionSyncManager {
             response = apiInterface?.getDocuments(header, "${UrlUtils.getUrl()}/$table/_all_docs")?.execute()
             val ob = response?.body()
             if (ob != null && ob.rows?.isNotEmpty() == true) {
-                val r = ob.rows!![0]
-                val jsonDoc = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/$table/${r.id}")
-                    .execute().body()
-                userModel?.key = getString("key", jsonDoc)
-                userModel?.iv = getString("iv", jsonDoc)
+                val r = ob.rows?.firstOrNull()
+                r?.id?.let { id ->
+                    val jsonDoc = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/$table/$id")
+                        .execute().body()
+                    userModel?.key = getString("key", jsonDoc)
+                    userModel?.iv = getString("iv", jsonDoc)
+                }
             }
         } catch (e: IOException) {
             e.printStackTrace()

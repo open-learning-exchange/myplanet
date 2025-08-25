@@ -161,8 +161,8 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     private fun showUserInfoDialog() {
-        if (!isMySurvey && !exam?.isFromNation!!) {
-            UserInformationFragment.getInstance(sub?.id, teamId, !isMySurvey && !exam?.isFromNation!!).show(childFragmentManager, "")
+        if (!isMySurvey && exam?.isFromNation != true) {
+            UserInformationFragment.getInstance(sub?.id, teamId, !isMySurvey && exam?.isFromNation != true).show(childFragmentManager, "")
         } else {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             sub?.status = "complete"
