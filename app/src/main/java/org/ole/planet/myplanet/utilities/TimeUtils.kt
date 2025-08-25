@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utilities
 
+import android.text.format.DateUtils
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -30,6 +31,13 @@ object TimeUtils {
 
     private val dateOnlyFormatter by lazy {
         DateTimeFormatter.ofPattern("EEE dd, MMMM yyyy", defaultLocale).withZone(ZoneId.systemDefault())
+    }
+
+    fun getRelativeTime(timestamp: Long): String {
+        val timeNow = System.currentTimeMillis()
+        return if (timestamp < timeNow) {
+            DateUtils.getRelativeTimeSpanString(timestamp, timeNow, 0).toString()
+        } else "Just now"
     }
 
     fun getFormattedDate(date: Long?): String =

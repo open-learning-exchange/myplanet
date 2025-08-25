@@ -5,7 +5,6 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
-import android.text.format.DateUtils
 import android.util.Base64
 import android.util.Log
 import android.util.Patterns
@@ -54,13 +53,6 @@ object Utilities {
 
     fun checkNA(s: String?): String {
         return if (s.isNullOrEmpty()) "N/A" else s
-    }
-
-    fun getRelativeTime(timestamp: Long): String {
-        val timeNow = System.currentTimeMillis()
-        return if (timestamp < timeNow) {
-            DateUtils.getRelativeTimeSpanString(timestamp, timeNow, 0).toString()
-        } else "Just now"
     }
 
     fun getUserName(settings: SharedPreferences): String {
