@@ -48,7 +48,7 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
         fragmentCommunityBinding = FragmentCommunityBinding.inflate(inflater, container, false)
         newList = mRealm.where(RealmNews::class.java).equalTo("docType", "message", Case.INSENSITIVE)
             .equalTo("viewableBy", "community", Case.INSENSITIVE)
-            .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE).isEmpty("replyTo")
+            .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE)
             .sort("time", Sort.DESCENDING).findAll()
         newsListChangeListener = RealmChangeListener { results ->
             updatedNewsList(results)
@@ -66,7 +66,7 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
         }
         newList = mRealm.where(RealmNews::class.java).equalTo("docType", "message", Case.INSENSITIVE)
             .equalTo("viewableBy", "community", Case.INSENSITIVE)
-            .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE).isEmpty("replyTo")
+            .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE)
             .sort("time", Sort.DESCENDING).findAll()
         val orientation = resources.configuration.orientation
         changeLayoutManager(orientation)

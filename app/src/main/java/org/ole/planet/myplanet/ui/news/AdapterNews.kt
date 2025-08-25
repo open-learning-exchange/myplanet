@@ -234,8 +234,15 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     }
 
     private fun setMessageAndDate(holder: ViewHolderNews, news: RealmNews, sharedTeamName: String) {
+        var message = news.message ?: ""
+        if (!news.replyTo.isNullOrEmpty()) {
+            val parent = mRealm.where(RealmNews::class.java).equalTo("id", news.replyTo, Case.INSENSITIVE).findFirst()
+            val parentUser = parent?.userName ?: ""
+            val prefix = if (parentUser.isNotEmpty()) "Reply to $parentUser:\n" else "Reply:\n"
+            message = prefix + message
+        }
         val markdownContentWithLocalPaths = prependBaseUrlToImages(
-            news.message,
+            message,
             "file://" + context.getExternalFilesDir(null) + "/ole/",
             600,
             350
