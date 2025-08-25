@@ -231,19 +231,26 @@ class NotificationsFragment : Fragment() {
 
     private fun markAsReadById(notificationId: String) {
         Log.d("okuro", "Marking notification as read by ID: $notificationId")
-        mRealm.executeTransactionAsync({ realm ->
+        mRealm.executeTransaction { realm ->
             val realmNotification = realm.where(RealmNotification::class.java)
                 .equalTo("id", notificationId)
                 .findFirst()
             realmNotification?.isRead = true
-        }, {
-            activity?.runOnUiThread {
-                // Refresh the entire list since we don't have a position
-                refreshNotificationsList()
-            }
-        }, { error ->
-            Log.e("okuro", "Failed to mark notification as read: $notificationId", error)
-        })
+        }
+        val currentList = adapter.currentList.toMutableList()
+        val index = currentList.indexOfFirst { it.id == notificationId }
+        if (index != -1) {
+            val notification = currentList[index]
+            val updatedNotification = mRealm.copyFromRealm(notification)
+            updatedNotification.isRead = true
+            currentList[index] = updatedNotification
+            adapter.submitList(currentList)
+            adapter.notifyItemChanged(index)
+            updateUnreadCount()
+            updateMarkAllAsReadButtonVisibility()
+        } else {
+            refreshNotificationsList()
+        }
     }
 
     private fun markAllAsRead() {
