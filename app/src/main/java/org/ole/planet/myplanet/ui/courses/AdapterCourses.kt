@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getInt
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+import org.ole.planet.myplanet.utilities.SelectionUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -259,7 +260,7 @@ class AdapterCourses(
                 holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
                     holder.rowCourseBinding.checkbox.contentDescription =
                         context.getString(R.string.select_res_course, course.courseTitle)
-                    Utilities.handleCheck((view as CheckBox).isChecked, position, selectedItems, courseList)
+                    SelectionUtils.handleCheck((view as CheckBox).isChecked, position, selectedItems, courseList)
                     listener?.onSelectedListChange(selectedItems)
                 }
             }
