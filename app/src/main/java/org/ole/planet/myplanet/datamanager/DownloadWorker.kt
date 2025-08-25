@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getSDPathFromUrl
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.UrlUtils
 
 class DownloadWorker(val context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -73,7 +73,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
 
     private suspend fun downloadFile(url: String, index: Int, total: Int): Boolean {
         return try {
-            val response = apiInterface.downloadFile(Utilities.header, url)?.execute()
+            val response = apiInterface.downloadFile(UrlUtils.header, url)?.execute()
 
             when {
                 response == null -> false

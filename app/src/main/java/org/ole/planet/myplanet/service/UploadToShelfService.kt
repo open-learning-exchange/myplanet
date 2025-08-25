@@ -257,7 +257,7 @@ class UploadToShelfService @Inject constructor(
             val myHealths: List<RealmMyHealthPojo> = realm.where(RealmMyHealthPojo::class.java).equalTo("isUpdated", true).notEqualTo("userId", "").findAll()
             myHealths.forEachIndexed { index, pojo ->
                 try {
-                    val res = apiInterface?.postDoc(Utilities.header, "application/json", "${UrlUtils.getUrl()}/health", serialize(pojo))?.execute()
+                    val res = apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/health", serialize(pojo))?.execute()
 
                     if (res?.body() != null && res.body()?.has("id") == true) {
                         pojo._rev = res.body()!!["rev"].asString
@@ -291,7 +291,7 @@ class UploadToShelfService @Inject constructor(
             myHealths.forEach { pojo ->
                 try {
                     val res = apiInterface?.postDoc(
-                        Utilities.header,
+                        UrlUtils.header,
                         "application/json",
                         "${UrlUtils.getUrl()}/health",
                         serialize(pojo)
@@ -336,10 +336,10 @@ class UploadToShelfService @Inject constructor(
                     unmanagedUsers.forEach { model ->
                         try {
                             if (model.id?.startsWith("guest") == true) return@forEach
-                            val jsonDoc = apiInterface?.getJsonObject(Utilities.header, "${UrlUtils.getUrl()}/shelf/${model._id}")?.execute()?.body()
+                            val jsonDoc = apiInterface?.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${model._id}")?.execute()?.body()
                             val `object` = getShelfData(backgroundRealm, model.id, jsonDoc)
                             `object`.addProperty("_rev", getString("_rev", jsonDoc))
-                            apiInterface?.putDoc(Utilities.header, "application/json", "${UrlUtils.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}", `object`)?.execute()
+                            apiInterface?.putDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}", `object`)?.execute()
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
@@ -373,12 +373,12 @@ class UploadToShelfService @Inject constructor(
                     if (model.id?.startsWith("guest") == true) return@executeTransactionAsync
 
                     val shelfUrl = "${UrlUtils.getUrl()}/shelf/${model._id}"
-                    val jsonDoc = apiInterface?.getJsonObject(Utilities.header, shelfUrl)?.execute()?.body()
+                    val jsonDoc = apiInterface?.getJsonObject(UrlUtils.header, shelfUrl)?.execute()?.body()
                     val shelfObject = getShelfData(realm, model.id, jsonDoc)
                     shelfObject.addProperty("_rev", getString("_rev", jsonDoc))
 
                     val targetUrl = "${UrlUtils.getUrl()}/shelf/${sharedPreferences.getString("userId", "")}" 
-                    apiInterface?.putDoc(Utilities.header, "application/json", targetUrl, shelfObject)?.execute()?.body()
+                    apiInterface?.putDoc(UrlUtils.header, "application/json", targetUrl, shelfObject)?.execute()?.body()
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }

@@ -8,7 +8,7 @@ import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.model.ChatModel
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.UrlUtils
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -16,7 +16,7 @@ import retrofit2.Response
 @Singleton
 class ChatApiHelper @Inject constructor(private val apiInterface: ApiInterface) {
     fun fetchAiProviders(result: (Map<String, Boolean>?) -> Unit) {
-        apiInterface.checkAiProviders("${Utilities.hostUrl}checkProviders/")?.enqueue(object : Callback<ResponseBody> {
+        apiInterface.checkAiProviders("${UrlUtils.hostUrl}checkProviders/")?.enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                 if (response.isSuccessful && response.body() != null) {
                     try {
@@ -40,6 +40,6 @@ class ChatApiHelper @Inject constructor(private val apiInterface: ApiInterface) 
     }
 
     fun sendChatRequest(content: RequestBody, callback: Callback<ChatModel>) {
-        apiInterface.chatGpt(Utilities.hostUrl, content)?.enqueue(callback)
+        apiInterface.chatGpt(UrlUtils.hostUrl, content)?.enqueue(callback)
     }
 }
