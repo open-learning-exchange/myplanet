@@ -5,7 +5,6 @@ import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import java.util.regex.Pattern
@@ -15,13 +14,19 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.utilities.DiffUtils as DiffUtilExtensions
 
 class AdapterNotification(
     private val databaseService: DatabaseService,
     notifications: List<RealmNotification>,
     private val onMarkAsReadClick: (Int) -> Unit,
     private val onNotificationClick: (RealmNotification) -> Unit
-) : ListAdapter<RealmNotification, AdapterNotification.ViewHolderNotifications>(DIFF_CALLBACK) {
+) : ListAdapter<RealmNotification, AdapterNotification.ViewHolderNotifications>(
+    DiffUtilExtensions.itemCallback(
+        areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
+        areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+    )
+) {
 
     init {
         submitList(notifications)
@@ -130,15 +135,4 @@ class AdapterNotification(
         }
     }
 
-    companion object {
-        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<RealmNotification>() {
-            override fun areItemsTheSame(oldItem: RealmNotification, newItem: RealmNotification): Boolean {
-                return oldItem.id == newItem.id
-            }
-
-            override fun areContentsTheSame(oldItem: RealmNotification, newItem: RealmNotification): Boolean {
-                return oldItem == newItem
-            }
-        }
-    }
 }
