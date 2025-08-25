@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
+import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
@@ -106,7 +107,7 @@ class OptimizedSyncStrategy @Inject constructor(
         ApiClient.executeWithRetry {
             apiInterface.getJsonObject(
                 Utilities.header,
-                "${Utilities.getUrl()}/resources/_all_docs?limit=0"
+                "${UrlUtils.getUrl()}/resources/_all_docs?limit=0"
             ).execute()
         }?.let { response ->
             response.body()?.let { body ->
@@ -159,7 +160,7 @@ class OptimizedSyncStrategy @Inject constructor(
             val response = ApiClient.executeWithRetry {
                 apiInterface.getJsonObject(
                     Utilities.header,
-                    "${Utilities.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip"
+                    "${UrlUtils.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip"
                 ).execute()
             }?.body() ?: return 0
             
@@ -236,7 +237,7 @@ class OptimizedSyncStrategy @Inject constructor(
             val response = ApiClient.executeWithRetry {
                 apiInterface.getJsonObject(
                     Utilities.header,
-                    "${Utilities.getUrl()}/$table/_all_docs?limit=0"
+                    "${UrlUtils.getUrl()}/$table/_all_docs?limit=0"
                 ).execute()
             }?.body()
             

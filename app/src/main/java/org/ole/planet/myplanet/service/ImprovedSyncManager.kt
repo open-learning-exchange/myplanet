@@ -118,7 +118,7 @@ class ImprovedSyncManager @Inject constructor(
     }
     
     private suspend fun performSync(syncMode: SyncMode, syncTables: List<String>?) {
-        val logger = SyncTimeLogger.getInstance()
+        val logger = SyncTimeLogger
         logger.startLogging()
         
         initializeSync()
