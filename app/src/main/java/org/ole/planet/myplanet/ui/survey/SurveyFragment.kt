@@ -50,6 +50,9 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     
     @Inject
     lateinit var syncManager: SyncManager
+
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
@@ -60,11 +63,10 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         super.onCreate(savedInstanceState)
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
-        profileDbHandler = UserProfileDbHandler(requireContext())
-        val userProfileModel = profileDbHandler.userModel
-        adapter = AdapterSurvey(requireActivity(), mRealm, userProfileModel?.id, isTeam, teamId, this, settings)
+        val userProfileModel = userProfileDbHandler.userModel
+        adapter = AdapterSurvey(requireActivity(), mRealm, userProfileModel?.id, isTeam, teamId, this, settings, userProfileDbHandler)
         prefManager = SharedPrefManager(requireContext())
-        
+
         startExamSync()
     }
 
