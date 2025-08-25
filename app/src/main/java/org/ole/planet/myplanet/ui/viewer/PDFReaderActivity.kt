@@ -23,8 +23,8 @@ import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
-import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
-import org.ole.planet.myplanet.utilities.NotificationUtil.create
+import org.ole.planet.myplanet.utilities.NotificationUtils.cancelAll
+import org.ole.planet.myplanet.utilities.NotificationUtils.create
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint

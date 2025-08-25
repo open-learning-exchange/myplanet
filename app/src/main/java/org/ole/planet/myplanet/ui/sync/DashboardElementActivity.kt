@@ -43,7 +43,7 @@ import org.ole.planet.myplanet.ui.team.TeamFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
-import org.ole.planet.myplanet.utilities.NotificationUtil
+import org.ole.planet.myplanet.utilities.NotificationUtils
 import org.ole.planet.myplanet.utilities.SecurePrefs
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
@@ -231,7 +231,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
             SecurePrefs.clearCredentials(this@DashboardElementActivity)
             settings.edit { putBoolean(Constants.KEY_LOGIN, false) }
             settings.edit { putBoolean(Constants.KEY_NOTIFICATION_SHOWN, false) }
-            NotificationUtil.cancelAll(this@DashboardElementActivity)
+            NotificationUtils.cancelAll(this@DashboardElementActivity)
             
             val loginScreen = Intent(this@DashboardElementActivity, LoginActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
