@@ -11,7 +11,6 @@ import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.JsonObject
@@ -29,6 +28,7 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getInt
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
@@ -73,27 +73,20 @@ class AdapterCourses(
     }
 
     private fun dispatchDiff(newList: List<RealmMyCourse?>) {
-        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
-            override fun getOldListSize() = courseList.size
-
-            override fun getNewListSize() = newList.size
-
-            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                return courseList[oldItemPosition]?.id == newList[newItemPosition]?.id
+        val diffResult = DiffUtils.calculateDiff(
+            courseList,
+            newList,
+            areItemsTheSame = { old, new -> old?.id == new?.id },
+            areContentsTheSame = { old, new ->
+                old?.courseTitle == new?.courseTitle &&
+                    old?.description == new?.description &&
+                    old?.gradeLevel == new?.gradeLevel &&
+                    old?.subjectLevel == new?.subjectLevel &&
+                    old?.createdDate == new?.createdDate &&
+                    old?.isMyCourse == new?.isMyCourse &&
+                    old?.getNumberOfSteps() == new?.getNumberOfSteps()
             }
-
-            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                val oldItem = courseList[oldItemPosition]
-                val newItem = newList[newItemPosition]
-                return oldItem?.courseTitle == newItem?.courseTitle &&
-                        oldItem?.description == newItem?.description &&
-                        oldItem?.gradeLevel == newItem?.gradeLevel &&
-                        oldItem?.subjectLevel == newItem?.subjectLevel &&
-                        oldItem?.createdDate == newItem?.createdDate &&
-                        oldItem?.isMyCourse == newItem?.isMyCourse &&
-                        oldItem?.getNumberOfSteps() == newItem?.getNumberOfSteps()
-            }
-        })
+        )
         courseList = newList
         diffResult.dispatchUpdatesTo(this)
     }

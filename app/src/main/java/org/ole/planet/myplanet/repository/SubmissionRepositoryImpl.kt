@@ -2,13 +2,12 @@ package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.datamanager.findCopyByField
 import org.ole.planet.myplanet.datamanager.queryList
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 
 class SubmissionRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
+    databaseService: DatabaseService
 ) : RealmRepository(databaseService), SubmissionRepository {
 
     override suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {
