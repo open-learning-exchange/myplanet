@@ -42,7 +42,6 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.lang.String.format
-import java.time.Instant
 import java.util.ArrayList
 import java.util.Calendar
 import java.util.LinkedHashMap
@@ -282,9 +281,11 @@ class UserProfileFragment : Fragment() {
             var dobPrevious = Calendar.getInstance()
             val previousSelectedDate = date ?: model?.dob
             if(!previousSelectedDate.isNullOrEmpty()){
-                val instant = Instant.parse(previousSelectedDate)
-                dobPrevious = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
-                    timeInMillis = instant.toEpochMilli()
+                val instant = TimeUtils.parseInstantFromString(previousSelectedDate)
+                instant?.let {
+                    dobPrevious = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                        timeInMillis = it.toEpochMilli()
+                    }
                 }
             }
 

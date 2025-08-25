@@ -22,6 +22,7 @@ class DatabaseService(context: Context) {
         Realm.setDefaultConfiguration(config)
     }
 
+    @Deprecated("Use withRealm/withRealmAsync instead")
     val realmInstance: Realm
         get() = Realm.getDefaultInstance()
 
@@ -67,20 +68,25 @@ fun <T : RealmModel> Realm.queryList(
     return where(clazz).apply(builder).findAll().let { copyFromRealm(it) }
 }
 
-fun <T : RealmModel, V> Realm.findCopyByField(
+fun <T : RealmModel, V : Any> Realm.findCopyByField(
     clazz: Class<T>,
     fieldName: String,
     value: V,
 ): T? {
-    val query = where(clazz)
-    when (value) {
-        is String -> query.equalTo(fieldName, value)
-        is Boolean -> query.equalTo(fieldName, value)
-        is Int -> query.equalTo(fieldName, value)
-        is Long -> query.equalTo(fieldName, value)
-        is Float -> query.equalTo(fieldName, value)
-        is Double -> query.equalTo(fieldName, value)
+    return where(clazz)
+        .applyEqualTo(fieldName, value)
+        .findFirst()
+        ?.let { copyFromRealm(it) }
+}
+
+fun <T : RealmModel> RealmQuery<T>.applyEqualTo(field: String, value: Any): RealmQuery<T> {
+    return when (value) {
+        is String -> equalTo(field, value)
+        is Boolean -> equalTo(field, value)
+        is Int -> equalTo(field, value)
+        is Long -> equalTo(field, value)
+        is Float -> equalTo(field, value)
+        is Double -> equalTo(field, value)
         else -> throw IllegalArgumentException("Unsupported value type")
     }
-    return query.findFirst()?.let { copyFromRealm(it) }
 }

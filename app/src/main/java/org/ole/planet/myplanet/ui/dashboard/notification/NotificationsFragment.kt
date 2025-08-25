@@ -89,13 +89,12 @@ class NotificationsFragment : Fragment() {
             fragmentNotificationsBinding.emptyData.visibility = View.VISIBLE
         }
 
-        val filteredNotifications = notifications.filter { notification ->
-             notification.message.isNotEmpty() && notification.message != "INVALID"
-        }
-
-        adapter = AdapterNotification(filteredNotifications,
+        adapter = AdapterNotification(
+            databaseService,
+            notifications,
             onMarkAsReadClick = { position ->
-                markAsRead(position) },
+                markAsRead(position)
+            },
             onNotificationClick = { notification ->
                 handleNotificationClick(notification)
             }
@@ -178,7 +177,7 @@ class NotificationsFragment : Fragment() {
 
         // Always try to mark as read when clicking a notification
         if (!notification.isRead) {
-            val position = adapter.notificationList.indexOf(notification)
+            val position = adapter.currentList.indexOf(notification)
             Log.d("okuro", "Marking notification as read - position: $position, notificationId: ${notification.id}")
             if (position >= 0) {
                 markAsRead(position)
@@ -202,11 +201,14 @@ class NotificationsFragment : Fragment() {
             "all" -> {}
         }
 
-        return query.sort("createdAt", Sort.DESCENDING).findAll().toList()
+        val results = query.sort("createdAt", Sort.DESCENDING).findAll()
+        return mRealm.copyFromRealm(results).filter {
+            it.message.isNotEmpty() && it.message != "INVALID"
+        }
     }
 
     private fun markAsRead(position: Int) {
-        val notification = adapter.notificationList[position]
+        val notification = adapter.currentList[position]
         val notificationId = notification.id
         mRealm.executeTransactionAsync({ realm ->
             val realmNotification = realm.where(RealmNotification::class.java)
@@ -215,7 +217,12 @@ class NotificationsFragment : Fragment() {
             realmNotification?.isRead = true
         }, {
             activity?.runOnUiThread {
-                adapter.notifyItemChanged(position)
+                adapter.updateNotifications(
+                    loadNotifications(
+                        userId,
+                        fragmentNotificationsBinding.status.selectedItem.toString().lowercase()
+                    )
+                )
                 updateUnreadCount()
                 updateMarkAllAsReadButtonVisibility()
             }

@@ -14,10 +14,10 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNotification
-import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
@@ -27,7 +27,8 @@ class DashboardViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val libraryRepository: LibraryRepository,
     private val courseRepository: CourseRepository,
-    private val submissionRepository: SubmissionRepository
+    private val submissionRepository: SubmissionRepository,
+    private val notificationRepository: NotificationRepository
 ) : ViewModel() {
     private val _surveyWarning = MutableStateFlow(false)
     val surveyWarning: StateFlow<Boolean> = _surveyWarning.asStateFlow()
@@ -55,16 +56,14 @@ class DashboardViewModel @Inject constructor(
 
     private fun loadSurveyWarning(userId: String?) {
         viewModelScope.launch {
-            val count = databaseService.withRealmAsync { realm ->
-                RealmSubmission.getNoOfSurveySubmissionByUser(userId, realm)
-            }
+            val count = submissionRepository.getSubmissionCountByUser(userId)
             _surveyWarning.value = count == 0
         }
     }
 
     private fun loadUnreadNotifications(userId: String?) {
         viewModelScope.launch {
-            _unreadNotifications.value = getUnreadNotificationsSize(userId)
+            _unreadNotifications.value = notificationRepository.getUnreadCount(userId)
         }
     }
 
@@ -119,26 +118,10 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>): List<String> {
-        return databaseService.withRealmAsync { realm ->
-            val titles = mutableListOf<String>()
-            submissions.forEach { submission ->
-                val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
-                val exam = realm.where(RealmStepExam::class.java)
-                    .equalTo("id", examId)
-                    .findFirst()
-                exam?.name?.let { titles.add(it) }
-            }
-            titles
-        }
+        return submissionRepository.getSurveyTitlesFromSubmissions(submissions)
     }
 
     suspend fun getUnreadNotificationsSize(userId: String?): Int {
-        return databaseService.withRealmAsync { realm ->
-            realm.where(RealmNotification::class.java)
-                .equalTo("userId", userId)
-                .equalTo("isRead", false)
-                .count()
-                .toInt()
-        }
+        return notificationRepository.getUnreadCount(userId)
     }
 }

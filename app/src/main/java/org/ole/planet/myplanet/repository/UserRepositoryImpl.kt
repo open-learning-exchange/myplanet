@@ -3,15 +3,13 @@ package org.ole.planet.myplanet.repository
 import android.content.SharedPreferences
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.datamanager.findCopyByField
-import org.ole.planet.myplanet.datamanager.queryList
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmUserModel
 
 class UserRepositoryImpl @Inject constructor(
-    private val databaseService: DatabaseService,
-    @AppPreferences private val preferences: SharedPreferences,
-) : UserRepository {
+    databaseService: DatabaseService,
+    @AppPreferences private val preferences: SharedPreferences
+) : RealmRepository(databaseService), UserRepository {
 
     override suspend fun getUserProfile(): String? {
         return preferences.getString("user_profile", null)
@@ -22,7 +20,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getCurrentUser(): RealmUserModel? {
-        return databaseService.withRealmAsync { realm ->
+        return withRealm { realm ->
             realm.where(RealmUserModel::class.java)
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }
@@ -30,20 +28,14 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getUserById(userId: String): RealmUserModel? {
-        return databaseService.withRealmAsync { realm ->
-            realm.findCopyByField(RealmUserModel::class.java, "id", userId)
-        }
+        return findByField(RealmUserModel::class.java, "id", userId)
     }
 
     override suspend fun getUserByName(username: String): RealmUserModel? {
-        return databaseService.withRealmAsync { realm ->
-            realm.findCopyByField(RealmUserModel::class.java, "name", username)
-        }
+        return findByField(RealmUserModel::class.java, "name", username)
     }
 
     override suspend fun getAllUsers(): List<RealmUserModel> {
-        return databaseService.withRealmAsync { realm ->
-            realm.queryList(RealmUserModel::class.java)
-        }
+        return queryList(RealmUserModel::class.java)
     }
 }
