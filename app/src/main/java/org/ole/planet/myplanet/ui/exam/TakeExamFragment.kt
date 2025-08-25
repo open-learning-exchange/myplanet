@@ -174,14 +174,10 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             }
 
             currentIndex = 0
-            if (isTeam == true && teamId != null) {
+            if (isTeam && teamId != null) {
                 addTeamInformation(realm)
             }
-        }, {
-            // Success callback - runs on main thread
-            // Continue with UI operations after transaction completes
-        }, { error ->
-            // Error callback - runs on main thread
+        }, {}, { error ->
             error.printStackTrace()
         })
     }

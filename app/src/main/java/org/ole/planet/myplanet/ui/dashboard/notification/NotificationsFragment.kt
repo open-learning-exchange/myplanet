@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings.ACTION_INTERNAL_STORAGE_SETTINGS
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -175,19 +174,13 @@ class NotificationsFragment : Fragment() {
             }
         }
 
-        // Always try to mark as read when clicking a notification
         if (!notification.isRead) {
             val position = adapter.currentList.indexOf(notification)
-            Log.d("okuro", "Marking notification as read - position: $position, notificationId: ${notification.id}")
             if (position >= 0) {
                 markAsRead(position)
             } else {
-                Log.w("okuro", "Could not find notification position in adapter list")
-                // Try marking as read by ID directly
                 markAsReadById(notification.id)
             }
-        } else {
-            Log.d("okuro", "Notification already marked as read: ${notification.id}")
         }
     }
 
@@ -230,7 +223,6 @@ class NotificationsFragment : Fragment() {
     }
 
     private fun markAsReadById(notificationId: String) {
-        Log.d("okuro", "Marking notification as read by ID: $notificationId")
         mRealm.executeTransaction { realm ->
             val realmNotification = realm.where(RealmNotification::class.java)
                 .equalTo("id", notificationId)
