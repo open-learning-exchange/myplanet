@@ -1,14 +1,13 @@
 package org.ole.planet.myplanet.repository
 
-import javax.inject.Inject
-import org.ole.planet.myplanet.datamanager.DatabaseService
-
 import io.realm.Realm
 import io.realm.RealmChangeListener
 import io.realm.RealmResults
+import javax.inject.Inject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUserModel
 
