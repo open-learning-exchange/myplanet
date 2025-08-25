@@ -1,12 +1,16 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonObject
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmRating
+import org.ole.planet.myplanet.model.RealmSearchActivity
+import org.ole.planet.myplanet.model.RealmTag
 
-class LibraryRepositoryImpl @Inject constructor(
+class ResourceRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
-) : RealmRepository(databaseService), LibraryRepository {
+) : RealmRepository(databaseService), ResourceRepository {
 
     override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
         return queryList(RealmMyLibrary::class.java)
@@ -59,5 +63,36 @@ class LibraryRepositoryImpl @Inject constructor(
 
     private fun filterLibrariesNeedingUpdate(results: Collection<RealmMyLibrary>): List<RealmMyLibrary> {
         return results.filter { it.needToUpdate() }
+    }
+
+    override suspend fun getRatings(type: String, modelId: String?, userId: String?): HashMap<String?, JsonObject>? {
+        return withRealm { realmInstance ->
+            if (modelId != null) {
+                RealmRating.getRatingsById(realmInstance, type, modelId, userId)?.let {
+                    hashMapOf(modelId to it)
+                }
+            } else {
+                RealmRating.getRatings(realmInstance, type, userId)
+            }
+        }
+    }
+
+    override suspend fun getLibraryList(): List<RealmMyLibrary?> {
+        return queryList(RealmMyLibrary::class.java) as List<RealmMyLibrary?>
+    }
+
+    override suspend fun saveSearchActivity(activity: RealmSearchActivity) {
+        save(activity)
+    }
+
+    override suspend fun getResourceTags(resourceId: String?): List<RealmTag> {
+        return queryList(RealmTag::class.java) {
+            equalTo("db", "resources")
+            equalTo("linkId", resourceId)
+        }
+    }
+
+    override suspend fun getParentTag(tagId: String?): RealmTag? {
+        return tagId?.let { findByField(RealmTag::class.java, "id", it) }
     }
 }

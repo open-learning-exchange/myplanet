@@ -44,7 +44,7 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.ResourceRepository
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -72,7 +72,7 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var userRepository: UserRepository
     @Inject
-    lateinit var libraryRepository: LibraryRepository
+    lateinit var resourceRepository: ResourceRepository
     @Inject
     lateinit var submissionRepository: SubmissionRepository
     @Inject
@@ -109,7 +109,7 @@ abstract class BaseResourceFragment : Fragment() {
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             this@BaseResourceFragment.lifecycleScope.launch {
-                val list = libraryRepository.getLibraryListForUser(
+                val list = resourceRepository.getLibraryListForUser(
                     settings.getString("userId", "--")
                 )
                 showDownloadDialog(list)
@@ -327,7 +327,7 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     suspend fun getLibraryList(mRealm: Realm): List<RealmMyLibrary> {
-        return libraryRepository.getLibraryListForUser(
+        return resourceRepository.getLibraryListForUser(
             settings.getString("userId", "--")
         )
     }
