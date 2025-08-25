@@ -14,7 +14,6 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import io.realm.Realm
-import io.realm.Sort
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -89,10 +88,8 @@ class AdapterJoinedMember(
 
         holder.itemView.setOnClickListener {
             val activity = it.context as AppCompatActivity
-            val userName = if ("${member.firstName} ${member.lastName}".trim().isBlank()) {
+            val userName = "${member.firstName} ${member.lastName}".trim().ifBlank {
                 member.name
-            } else {
-                "${member.firstName} ${member.lastName}".trim()
             }
             val fragment = MemberDetailFragment.newInstance(
                 userName.toString(),
@@ -108,8 +105,7 @@ class AdapterJoinedMember(
             )
             NavigationHelper.replaceFragment(
                 activity.supportFragmentManager,
-                R.id.fragment_container,
-                fragment,
+                R.id.fragment_container, fragment,
                 addToBackStack = true
             )
         }
@@ -182,15 +178,30 @@ class AdapterJoinedMember(
             .equalTo("teamId", teamId)
             .equalTo("isLeader", false)
             .notEqualTo("status","archived")
-            .sort("createdDate", Sort.DESCENDING)
             .findAll()
-        val successor =  if (members.isNotEmpty()) members?.first() else null
-        if(successor==null){
+        
+        if (members.isEmpty()) {
             return null
         }
-        else{
-            val user= mRealm.where(RealmUserModel::class.java).equalTo("id", successor.userId).findFirst()
-            return user
+
+        var successorTeamMember: RealmMyTeam? = null
+        var maxVisitCount: Long = -1
+        
+        for (member in members) {
+            val user = mRealm.where(RealmUserModel::class.java).equalTo("id", member.userId).findFirst()
+            if (user != null) {
+                val visitCount = RealmTeamLog.getVisitCount(mRealm, user.name, teamId)
+                if (visitCount > maxVisitCount) {
+                    maxVisitCount = visitCount
+                    successorTeamMember = member
+                }
+            }
+        }
+        
+        return if (successorTeamMember != null) {
+            mRealm.where(RealmUserModel::class.java).equalTo("id", successorTeamMember.userId).findFirst()
+        } else {
+            null
         }
     }
 
