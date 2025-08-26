@@ -7,7 +7,7 @@ import java.util.Calendar
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.utilities.NotificationUtil.create
+import org.ole.planet.myplanet.utilities.NotificationUtils.create
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 
 class TaskNotificationWorker(private val context: Context, workerParams: WorkerParameters) : Worker(context, workerParams) {
