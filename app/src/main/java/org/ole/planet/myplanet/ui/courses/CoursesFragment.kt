@@ -44,7 +44,6 @@ import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -91,9 +90,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
-
-    @Inject
-    lateinit var courseRepository: CourseRepository
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -247,6 +243,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     .findAll()
                 courseLib = "courses"
             }
+            checkList()
         }
     }
 
@@ -254,7 +251,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (isMyCourseLib) {
             btnRemove.visibility = View.VISIBLE
             btnArchive.visibility = View.VISIBLE
-            checkList()
         } else {
             btnRemove.visibility = View.GONE
             btnArchive.visibility = View.GONE
@@ -368,10 +364,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             if ((selectedItems?.size ?: 0) > 0) {
                 confirmation = createAlertDialog()
                 confirmation.show()
-                addToMyList()
+                val courseIds = selectedItems?.mapNotNull { it?.courseId }
+                lifecycleScope.launch {
+                    if (courseIds != null) {
+                        courseRepository.updateMyCourseFlag(courseIds, true)
+                    }
+                }
                 selectedItems?.clear()
                 tvAddToLib.isEnabled = false
-                checkList()
             }
         }
         etSearch = requireView().findViewById(R.id.et_search)
@@ -386,7 +386,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         setupSpinners()
         setupSelectAll()
-        checkList()
     }
 
     private fun setupSpinners() {
@@ -514,12 +513,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             .setNegativeButton(R.string.ok) { dialog: DialogInterface, _: Int ->
                 dialog.cancel()
-                val newFragment = CoursesFragment()
-                recreateFragment(newFragment)
+                loadData()
             }
             .setOnDismissListener {
-                val newFragment = CoursesFragment()
-                recreateFragment(newFragment)
+                loadData()
             }
 
         return builder.create()
