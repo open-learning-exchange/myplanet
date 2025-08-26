@@ -87,7 +87,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     @Inject
     lateinit var syncManager: SyncManager
-
+    @Inject
+    lateinit var courseRepository: CourseRepository
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     private val serverUrl: String
