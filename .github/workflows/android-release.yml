@@ -66,8 +66,8 @@ jobs:
           mkdir -p sign
           cp app/build/outputs/bundle/${FLAVOR}Release/app-${FLAVOR}-release.aab sign/.
           cp app/build/outputs/apk/${FLAVOR}/release/app-${FLAVOR}-release-unsigned.apk sign/.
-          echo ANDROID_VERSION_NAME=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle) >> $GITHUB_ENV
-          echo ANDROID_VERSION_CODE=$(grep versionCode app/build.gradle | sed 's/[^0-9]//g') >> $GITHUB_ENV
+          echo ANDROID_VERSION_NAME=$(grep -oP 'versionName = "\K[^\"]+' app/build.gradle.kts) >> $GITHUB_ENV
+          echo ANDROID_VERSION_CODE=$(grep versionCode app/build.gradle.kts | sed 's/[^0-9]//g') >> $GITHUB_ENV
 
       - name: sign release APK and AAB
         uses: dogi/sign-android-release@v5.1
