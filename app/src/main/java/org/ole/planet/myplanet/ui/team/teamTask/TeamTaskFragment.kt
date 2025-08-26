@@ -305,7 +305,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         teamTaskList = null
         list = null
         fragmentTeamTaskBinding.rvTask.adapter = null
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
+        if (isRealmInitialized()) {
             mRealm.close()
         }
         super.onDestroyView()
