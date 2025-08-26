@@ -238,7 +238,7 @@ dependencies {
     implementation("de.rtner:PBKDF2:1.1.4")
     implementation("org.osmdroid:osmdroid-android:6.1.20")
     implementation("org.jetbrains:annotations:26.0.2")
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:${rootProject.ext['kotlin_version']}")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("pl.droidsonroids.gif:android-gif-drawable:1.2.29")

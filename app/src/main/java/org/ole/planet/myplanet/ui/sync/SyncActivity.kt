@@ -75,7 +75,6 @@ import org.ole.planet.myplanet.service.TransactionSyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
-import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -94,6 +93,7 @@ import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
 import org.ole.planet.myplanet.utilities.ServerConfigUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 
