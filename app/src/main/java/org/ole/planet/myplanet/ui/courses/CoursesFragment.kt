@@ -30,6 +30,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import android.util.Log
+import kotlinx.coroutines.delay
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
@@ -146,9 +147,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
 
-                        // Add delay to allow database to be fully committed
                         lifecycleScope.launch {
-                            kotlinx.coroutines.delay(500) // Small delay for database commitment
+                            delay(1500)
                             refreshCoursesData()
                         }
                         prefManager.setCoursesSynced(true)
