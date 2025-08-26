@@ -92,7 +92,7 @@ import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils.totalAvailableMemoryRatio
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
-import org.ole.planet.myplanet.utilities.NotificationUtil
+import org.ole.planet.myplanet.utilities.NotificationUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
@@ -114,7 +114,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private val realmListeners = mutableListOf<RealmListener>()
     private val dashboardViewModel: DashboardViewModel by viewModels()
     private lateinit var challengeHelper: ChallengeHelper
-    private lateinit var notificationManager: NotificationUtil.NotificationManager
+    private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
     private var lastNotificationCheckTime = 0L
     private val notificationCheckThrottleMs = 5000L
@@ -133,7 +133,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         checkUser()
         initViews()
         updateAppTitle()
-        notificationManager = NotificationUtil.getInstance(this)
+        notificationManager = NotificationUtils.getInstance(this)
         if (handleGuestAccess()) return
         setupNavigation()
         handleInitialFragment()
@@ -343,7 +343,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
 
             when (notificationType) {
-                NotificationUtil.TYPE_SURVEY -> {
+                NotificationUtils.TYPE_SURVEY -> {
                     val surveyId = intent.getStringExtra("surveyId")
                     openCallFragment(SurveyFragment().apply {
                         arguments = Bundle().apply {
@@ -351,7 +351,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         }
                     })
                 }
-                NotificationUtil.TYPE_TASK -> {
+                NotificationUtils.TYPE_TASK -> {
                     val taskId = intent.getStringExtra("taskId")
                     openMyFragment(TeamFragment().apply {
                         arguments = Bundle().apply {
@@ -359,10 +359,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         }
                     })
                 }
-                NotificationUtil.TYPE_STORAGE -> {
+                NotificationUtils.TYPE_STORAGE -> {
                     startActivity(Intent(this, SettingActivity::class.java))
                 }
-                NotificationUtil.TYPE_JOIN_REQUEST -> {
+                NotificationUtils.TYPE_JOIN_REQUEST -> {
                     val teamName = intent.getStringExtra("teamName")
                     openMyFragment(TeamFragment().apply {
                         arguments = Bundle().apply {
@@ -384,16 +384,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val relatedId = intent.getStringExtra("related_id")
             
             when (notificationType) {
-                NotificationUtil.TYPE_SURVEY -> {
+                NotificationUtils.TYPE_SURVEY -> {
                     handleSurveyNavigation(relatedId)
                 }
-                NotificationUtil.TYPE_TASK -> {
+                NotificationUtils.TYPE_TASK -> {
                     handleTaskNavigation(relatedId)
                 }
-                NotificationUtil.TYPE_JOIN_REQUEST -> {
+                NotificationUtils.TYPE_JOIN_REQUEST -> {
                     handleJoinRequestNavigation(relatedId)
                 }
-                NotificationUtil.TYPE_RESOURCE -> {
+                NotificationUtils.TYPE_RESOURCE -> {
                     openCallFragment(ResourcesFragment(), "Resources")
                 }
             }
@@ -569,7 +569,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         lifecycleScope.launch(Dispatchers.IO) {
             var unreadCount = 0
-            val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
+            val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
 
             try {
                 dashboardViewModel.updateResourceNotification(userId)
@@ -602,8 +602,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun createNotifications(realm: Realm, userId: String?): List<NotificationUtil.NotificationConfig> {
-        val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
+    private fun createNotifications(realm: Realm, userId: String?): List<NotificationUtils.NotificationConfig> {
+        val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
         createSurveyDatabaseNotifications(realm, userId)
         createTaskDatabaseNotifications(realm, userId)
         createStorageDatabaseNotifications(realm, userId)
@@ -623,7 +623,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         return newNotifications
     }
 
-    private fun createNotificationConfigFromDatabase(dbNotification: RealmNotification): NotificationUtil.NotificationConfig? {
+    private fun createNotificationConfigFromDatabase(dbNotification: RealmNotification): NotificationUtils.NotificationConfig? {
         return when (dbNotification.type.lowercase()) {
             "survey" -> notificationManager.createSurveyNotification(
                 dbNotification.id, 

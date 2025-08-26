@@ -28,7 +28,7 @@ import javax.inject.Inject
 import javax.inject.Provider
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityExoPlayerVideoBinding
-import org.ole.planet.myplanet.utilities.AuthSessionUpdater
+import org.ole.planet.myplanet.datamanager.auth.AuthSessionUpdater
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils

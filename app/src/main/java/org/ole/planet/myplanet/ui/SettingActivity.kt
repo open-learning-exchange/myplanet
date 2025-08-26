@@ -47,6 +47,7 @@ import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.ThemeManager
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -190,7 +191,7 @@ class SettingActivity : AppCompatActivity() {
                                         library.resourceOffline = false
                                     }
                                 }, {
-                                    val f = File(Utilities.SD_PATH)
+                                    val f = File(FileUtils.SD_PATH)
                                     deleteRecursive(f)
                                     Utilities.toast(requireActivity(), R.string.data_cleared.toString())
                                 }) {
