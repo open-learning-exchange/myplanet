@@ -27,7 +27,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
@@ -70,7 +69,6 @@ class ChatDetailFragment : Fragment() {
     private var currentID: String = ""
     private var aiName: String = ""
     private var aiModel: String = ""
-    private lateinit var mRealm: Realm
     var user: RealmUserModel? = null
     private var newsId: String? = null
     @Inject
@@ -115,7 +113,6 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun initChatComponents() {
-        mRealm = databaseService.realmInstance
         user = databaseService.withRealm { realm ->
             realm.where(RealmUserModel::class.java)
                 .equalTo("id", settings.getString("userId", ""))
@@ -420,14 +417,14 @@ class ChatDetailFragment : Fragment() {
 
     private fun getLatestRev(id: String): String? {
         return try {
-            mRealm.refresh()
-            val realmChatHistory = mRealm.where(RealmChatHistory::class.java)
-                .equalTo("_id", id)
-                .findAll()
-                .maxByOrNull { rev -> rev._rev!!.split("-")[0].toIntOrNull() ?: 0 }
-
-            val rev = realmChatHistory?._rev
-            rev
+            databaseService.withRealm { realm ->
+                realm.refresh()
+                realm.where(RealmChatHistory::class.java)
+                    .equalTo("_id", id)
+                    .findAll()
+                    .maxByOrNull { rev -> rev._rev!!.split("-")[0].toIntOrNull() ?: 0 }
+                    ?._rev
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -486,17 +483,19 @@ class ChatDetailFragment : Fragment() {
     private fun saveNewChat(query: String, chatResponse: String, responseBody: ChatModel) {
         val jsonObject = buildChatHistoryObject(query, chatResponse, responseBody)
 
-        mRealm.executeTransactionAsync({ realm ->
-            RealmChatHistory.insert(realm, jsonObject)
-        }, {
-            if (isAdded && activity is DashboardActivity) {
-                (activity as DashboardActivity).refreshChatHistoryList()
-            }
-        }, {
-            if (isAdded) {
-                Snackbar.make(binding.root, getString(R.string.failed_to_save_chat), Snackbar.LENGTH_LONG).show()
-            }
-        })
+        databaseService.withRealm { realm ->
+            realm.executeTransactionAsync({ bgRealm ->
+                RealmChatHistory.insert(bgRealm, jsonObject)
+            }, {
+                if (isAdded && activity is DashboardActivity) {
+                    (activity as DashboardActivity).refreshChatHistoryList()
+                }
+            }, {
+                if (isAdded) {
+                    Snackbar.make(binding.root, getString(R.string.failed_to_save_chat), Snackbar.LENGTH_LONG).show()
+                }
+            })
+        }
     }
 
     private fun buildChatHistoryObject(query: String, chatResponse: String, responseBody: ChatModel): JsonObject =
@@ -529,13 +528,11 @@ class ChatDetailFragment : Fragment() {
     private fun continueConversationRealm(id: String, query: String, chatResponse: String) {
         databaseService.withRealm { realm ->
             try {
-                addConversationToChatHistory(realm, id, query, chatResponse, _rev)
-                realm.commitTransaction()
+                realm.executeTransaction { bgRealm ->
+                    addConversationToChatHistory(bgRealm, id, query, chatResponse, _rev)
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
-                if (realm.isInTransaction) {
-                    realm.cancelTransaction()
-                }
             }
         }
     }
@@ -551,9 +548,6 @@ class ChatDetailFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        if (::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
         val editor = settings.edit()
         if (settings.getBoolean("isAlternativeUrl", false)) {
             editor.putString("alternativeUrl", "")
