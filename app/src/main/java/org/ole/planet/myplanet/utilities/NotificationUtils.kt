@@ -492,7 +492,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
             NotificationUtils.ACTION_MARK_AS_READ -> {
                 markNotificationAsRead(context, notificationId)
                 notificationId?.let {
-                    NotificationUtil.getInstance(context).clearNotification(it)
+                    NotificationUtils.getInstance(context).clearNotification(it)
                 }
             }
             
@@ -503,7 +503,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 }
                 context.startActivity(storageIntent)
                 notificationId?.let {
-                    NotificationUtil.getInstance(context).clearNotification(it)
+                    NotificationUtils.getInstance(context).clearNotification(it)
                 }
             }
             
@@ -521,7 +521,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 }
                 context.startActivity(dashboardIntent)
                 notificationId?.let {
-                    NotificationUtil.getInstance(context).clearNotification(it)
+                    NotificationUtils.getInstance(context).clearNotification(it)
                 }
             }
         }
