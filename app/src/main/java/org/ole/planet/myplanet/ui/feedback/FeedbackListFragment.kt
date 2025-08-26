@@ -6,13 +6,15 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -23,7 +25,6 @@ import org.ole.planet.myplanet.databinding.FragmentFeedbackListBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment.OnFeedbackSubmittedListener
@@ -42,9 +43,9 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     @Inject
     @AppPreferences
     lateinit var settings: SharedPreferences
-    @Inject
-    lateinit var feedbackRepository: FeedbackRepository
     private val serverUrlMapper = ServerUrlMapper()
+
+    private val viewModel: FeedbackListViewModel by viewModels()
     
     @Inject
     lateinit var syncManager: SyncManager
@@ -137,7 +138,16 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.rvFeedback.layoutManager = LinearLayoutManager(activity)
+
         onFeedbackSubmitted()
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.feedbackList.collect { feedbackList ->
+                    updatedFeedbackList(feedbackList)
+                }
+            }
+        }
     }
 
     override fun onDestroyView() {
@@ -152,11 +162,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     override fun onFeedbackSubmitted() {
-        lifecycleScope.launch {
-            feedbackRepository.getFeedback(userModel).collectLatest { feedbackList ->
-                updatedFeedbackList(feedbackList)
-            }
-        }
+        viewModel.loadFeedback(userModel)
     }
 
     private fun updatedFeedbackList(updatedList: List<RealmFeedback>?) {
