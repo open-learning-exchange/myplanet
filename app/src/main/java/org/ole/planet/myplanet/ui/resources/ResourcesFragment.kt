@@ -196,11 +196,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        lifecycleScope.launch {
-            map = resourceRepository.getRatings("resource", model?.id, userModel?.id)
+        map = runBlocking(Dispatchers.IO) {
+            resourceRepository.getRatings("resource", model?.id, userModel?.id)
         }
         val libraryList: List<RealmMyLibrary?> = runBlocking { resourceRepository.getLibraryList() }
-        adapterLibrary = AdapterResource(requireActivity(), libraryList, map!!, resourceRepository)
+        adapterLibrary = AdapterResource(requireActivity(), libraryList, map ?: hashMapOf(), resourceRepository)
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
         return adapterLibrary
