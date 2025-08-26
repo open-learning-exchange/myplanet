@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmCourseProgress
@@ -40,7 +41,7 @@ class CoursesViewModel @Inject constructor(
         data class Success(
             val courses: List<RealmMyCourse>,
             val ratings: Map<String, Int>,
-            val progress: Map<String, RealmCourseProgress>
+            val progress: Map<String, JsonObject>
         ) : CoursesUiState()
         data class Error(val message: String) : CoursesUiState()
     }

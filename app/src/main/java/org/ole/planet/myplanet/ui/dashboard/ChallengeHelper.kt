@@ -39,8 +39,9 @@ class ChallengeHelper(
         val allUniqueDates = fetchVoiceDates(startTime, endTime, null)
 
         val courseId = "4e6b78800b6ad18b4e8b0e1e38a98cac"
-        val courseData = MyProgressFragment.fetchCourseData(realm, user?.id)
-        val progress = MyProgressFragment.getCourseProgress(courseData, courseId)
+        //        val courseData = MyProgressFragment.fetchCourseData(realm, user?.id)
+        //        val progress = MyProgressFragment.getCourseProgress(courseData, courseId)
+        val progress = JsonObject()
         val courseName = realm.where(RealmMyCourse::class.java)
             .equalTo("courseId", courseId)
             .findFirst()?.courseTitle
