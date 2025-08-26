@@ -5,10 +5,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import io.realm.Realm
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentHomeBinding
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSurveySubmissionByUser
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.news.NewsFragment
@@ -19,6 +23,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utilities.TimeUtils.currentDate
 
 class DashboardFragment : BaseDashboardFragment() {
+    private val viewModel: DashboardViewModel by viewModels()
     private lateinit var fragmentHomeBinding: FragmentHomeBinding
     private lateinit var dRealm: Realm
     var user: RealmUserModel? = null
@@ -49,8 +54,15 @@ class DashboardFragment : BaseDashboardFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val noOfSurvey = getNoOfSurveySubmissionByUser(settings?.getString("userId", "--"), dRealm)
-        fragmentHomeBinding.cardProfile.imgSurveyWarn.visibility = if (noOfSurvey == 0) View.VISIBLE else View.GONE
+        viewModel.loadDashboardData(settings?.getString("userId", "--"))
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.surveyWarning.collect { show ->
+                    fragmentHomeBinding.cardProfile.imgSurveyWarn.visibility =
+                        if (show) View.VISIBLE else View.GONE
+                }
+            }
+        }
         fragmentHomeBinding.addResource.setOnClickListener {
             if (user?.id?.startsWith("guest") == false) {
                 AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))

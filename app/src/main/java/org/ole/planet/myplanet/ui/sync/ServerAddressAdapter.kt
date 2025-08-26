@@ -9,6 +9,7 @@ import com.google.android.material.button.MaterialButton
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.ServerAddressesModel
+import org.ole.planet.myplanet.utilities.DiffUtils
 
 class ServerAddressAdapter(private var serverList: List<ServerAddressesModel>,
     private val onItemClick: (ServerAddressesModel) -> Unit,
@@ -19,24 +20,43 @@ class ServerAddressAdapter(private var serverList: List<ServerAddressesModel>,
     private var lastSelectedPosition: Int = -1
 
     fun updateList(newList: List<ServerAddressesModel>) {
+        val diffResult = DiffUtils.calculateDiff(
+            serverList,
+            newList,
+            areItemsTheSame = { old, new -> old.url == new.url },
+            areContentsTheSame = { old, new -> old == new }
+        )
         serverList = newList
-        notifyDataSetChanged()
+        diffResult.dispatchUpdatesTo(this)
     }
 
     fun setSelectedPosition(position: Int) {
-        lastSelectedPosition = selectedPosition
+        val previous = selectedPosition
+        lastSelectedPosition = previous
         selectedPosition = position
-        notifyDataSetChanged()
+        if (previous != -1) {
+            notifyItemChanged(previous)
+        }
+        notifyItemChanged(position)
     }
 
     fun revertSelection() {
+        val current = selectedPosition
         selectedPosition = lastSelectedPosition
-        notifyDataSetChanged()
+        if (current != -1) {
+            notifyItemChanged(current)
+        }
+        if (selectedPosition != -1) {
+            notifyItemChanged(selectedPosition)
+        }
     }
 
     fun clearSelection() {
+        val current = selectedPosition
         selectedPosition = -1
-        notifyDataSetChanged()
+        if (current != -1) {
+            notifyItemChanged(current)
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {

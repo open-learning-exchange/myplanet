@@ -5,35 +5,45 @@ import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import java.util.regex.Pattern
-import org.ole.planet.myplanet.MainApplication.Companion.service
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNotificationsBinding
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.utilities.DiffUtils as DiffUtilExtensions
 
 class AdapterNotification(
-    var notificationList: List<RealmNotification>,
+    private val databaseService: DatabaseService,
+    notifications: List<RealmNotification>,
     private val onMarkAsReadClick: (Int) -> Unit,
     private val onNotificationClick: (RealmNotification) -> Unit
-) : RecyclerView.Adapter<AdapterNotification.ViewHolderNotifications>() {
+) : ListAdapter<RealmNotification, AdapterNotification.ViewHolderNotifications>(
+    DiffUtilExtensions.itemCallback(
+        areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
+        areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+    )
+) {
+
+    init {
+        submitList(notifications)
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderNotifications {
         val rowNotificationsBinding = RowNotificationsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolderNotifications(rowNotificationsBinding)
     }
 
     override fun onBindViewHolder(holder: ViewHolderNotifications, position: Int) {
-        val notification = notificationList[position]
+        val notification = getItem(position)
         holder.bind(notification, position)
     }
 
-    override fun getItemCount(): Int = notificationList.size
-
     fun updateNotifications(newNotifications: List<RealmNotification>) {
-        notificationList = newNotifications
-        notifyDataSetChanged()
+        submitList(newNotifications)
     }
 
     inner class ViewHolderNotifications(private val rowNotificationsBinding: RowNotificationsBinding) :
@@ -92,7 +102,7 @@ class AdapterNotification(
                 }
                 "join_request" -> {
                     val teamId = notification.relatedId
-                    val teamName = service.withRealm { realm ->
+                    val teamName = databaseService.withRealm { realm ->
                         realm.where(RealmMyTeam::class.java)
                             .equalTo("_id", teamId)
                             .findFirst()?.name
@@ -109,7 +119,7 @@ class AdapterNotification(
         }
 
         private fun formatTaskNotification(context: Context, taskTitle: String, dateValue: String): String {
-            return service.withRealm { realm ->
+            return databaseService.withRealm { realm ->
                 val taskObj = realm.where(RealmTeamTask::class.java)
                     .equalTo("title", taskTitle)
                     .findFirst()
@@ -124,4 +134,5 @@ class AdapterNotification(
             }
         }
     }
+
 }

@@ -5,7 +5,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
-import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -19,6 +18,10 @@ import org.ole.planet.myplanet.ui.viewer.TextFileViewerActivity
 import org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity
 
 object ResourceOpener {
+    private fun resourcePath(item: RealmMyLibrary): String {
+        return "${item.id}/${item.resourceLocalAddress}"
+    }
+
     fun openIntent(activity: Activity, items: RealmMyLibrary, typeClass: Class<*>) {
         val fileOpenIntent = Intent(activity, typeClass)
         if (items.resourceLocalAddress?.contains("ole/audio") == true ||
@@ -26,7 +29,7 @@ object ResourceOpener {
             fileOpenIntent.putExtra("TOUCHED_FILE", items.resourceLocalAddress)
             fileOpenIntent.putExtra("RESOURCE_TITLE", items.title)
         } else {
-            fileOpenIntent.putExtra("TOUCHED_FILE", items.id + "/" + items.resourceLocalAddress)
+            fileOpenIntent.putExtra("TOUCHED_FILE", resourcePath(items))
             fileOpenIntent.putExtra("RESOURCE_TITLE", items.title)
         }
         activity.startActivity(fileOpenIntent)
@@ -34,7 +37,7 @@ object ResourceOpener {
 
     fun openPdf(activity: Activity, item: RealmMyLibrary) {
         val fileOpenIntent = Intent(activity, PDFReaderActivity::class.java)
-        fileOpenIntent.putExtra("TOUCHED_FILE", item.id + "/" + item.resourceLocalAddress)
+        fileOpenIntent.putExtra("TOUCHED_FILE", resourcePath(item))
         fileOpenIntent.putExtra("resourceId", item.id)
         activity.startActivity(fileOpenIntent)
     }
@@ -70,15 +73,15 @@ object ResourceOpener {
         val bundle = Bundle()
         bundle.putString("videoType", videoType)
         if (videoType == "online") {
-            bundle.putString("videoURL", "" + UrlUtils.getUrl(items))
-            bundle.putString("Auth", "" + BaseResourceFragment.auth)
+            bundle.putString("videoURL", "${UrlUtils.getUrl(items)}")
+            bundle.putString("Auth", "${BaseResourceFragment.auth}")
         } else if (videoType == "offline") {
             if (items.resourceRemoteAddress == null && items.resourceLocalAddress != null) {
                 bundle.putString("videoURL", items.resourceLocalAddress)
             } else {
                 bundle.putString(
                     "videoURL",
-                    "" + Uri.fromFile(File("" + FileUtils.getSDPathFromUrl(items.resourceRemoteAddress)))
+                    Uri.fromFile(FileUtils.getSDPathFromUrl(items.resourceRemoteAddress)).toString()
                 )
             }
             bundle.putString("Auth", "")
@@ -88,7 +91,7 @@ object ResourceOpener {
     }
 
     fun openFileType(activity: Activity, items: RealmMyLibrary, videoType: String, profileDbHandler: UserProfileDbHandler) {
-        val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
+        val mimetype = Utilities.getMimeType(resourcePath(items))
         if (mimetype == null) {
             Utilities.toast(activity, activity.getString(R.string.unable_to_open_resource))
             return

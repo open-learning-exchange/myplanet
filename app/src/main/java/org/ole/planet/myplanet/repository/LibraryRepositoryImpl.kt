@@ -1,92 +1,63 @@
 package org.ole.planet.myplanet.repository
 
-import io.realm.RealmResults
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.datamanager.findCopyByField
-import org.ole.planet.myplanet.datamanager.queryList
 import org.ole.planet.myplanet.model.RealmMyLibrary
 
 class LibraryRepositoryImpl @Inject constructor(
-    private val databaseService: DatabaseService
-) : LibraryRepository {
+    databaseService: DatabaseService
+) : RealmRepository(databaseService), LibraryRepository {
 
-    override suspend fun getAllLibraryItemsAsync(): List<RealmMyLibrary> {
-        return databaseService.withRealmAsync { realm ->
-            realm.queryList(RealmMyLibrary::class.java)
+    override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
+        return queryList(RealmMyLibrary::class.java)
+    }
+
+    override suspend fun getLibraryItemById(id: String): RealmMyLibrary? {
+        return findByField(RealmMyLibrary::class.java, "id", id)
+    }
+
+    override suspend fun getOfflineLibraryItems(): List<RealmMyLibrary> {
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("resourceOffline", true)
         }
     }
 
-    override suspend fun getLibraryItemByIdAsync(id: String): RealmMyLibrary? {
-        return databaseService.withRealmAsync { realm ->
-            realm.findCopyByField(RealmMyLibrary::class.java, "id", id)
+    override suspend fun getLibraryListForUser(userId: String?): List<RealmMyLibrary> {
+        val results = queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", false)
         }
+        return filterLibrariesNeedingUpdate(results)
+            .filter { it.userId?.contains(userId) == true }
     }
 
-    override suspend fun getOfflineLibraryItemsAsync(): List<RealmMyLibrary> {
-        return databaseService.withRealmAsync { realm ->
-            realm.queryList(RealmMyLibrary::class.java) {
-                equalTo("resourceOffline", true)
-            }
+    override suspend fun getAllLibraryList(): List<RealmMyLibrary> {
+        val results = queryList(RealmMyLibrary::class.java) {
+            equalTo("resourceOffline", false)
         }
-    }
-
-    override suspend fun getLibraryListForUserAsync(userId: String?): List<RealmMyLibrary> {
-        return databaseService.withRealmAsync { realm ->
-            val results = realm.where(RealmMyLibrary::class.java)
-                .equalTo("isPrivate", false)
-                .findAll()
-            val filteredList =
-                filterLibrariesNeedingUpdate(results).filter { it.userId?.contains(userId) == true }
-            realm.copyFromRealm(filteredList)
-        }
-    }
-
-    override suspend fun getAllLibraryListAsync(): List<RealmMyLibrary> {
-        return databaseService.withRealmAsync { realm ->
-            val results = realm.where(RealmMyLibrary::class.java)
-                .equalTo("resourceOffline", false)
-                .findAll()
-            val filteredList = filterLibrariesNeedingUpdate(results)
-            realm.copyFromRealm(filteredList)
-        }
+        return filterLibrariesNeedingUpdate(results)
     }
 
     override suspend fun getCourseLibraryItems(courseIds: List<String>): List<RealmMyLibrary> {
-        return databaseService.withRealmAsync { realm ->
-            realm.queryList(RealmMyLibrary::class.java) {
-                `in`("courseId", courseIds.toTypedArray())
-                equalTo("resourceOffline", false)
-                isNotNull("resourceLocalAddress")
-            }
+        return queryList(RealmMyLibrary::class.java) {
+            `in`("courseId", courseIds.toTypedArray())
+            equalTo("resourceOffline", false)
+            isNotNull("resourceLocalAddress")
         }
     }
 
     override suspend fun saveLibraryItem(item: RealmMyLibrary) {
-        databaseService.executeTransactionAsync { realm ->
-            realm.copyToRealmOrUpdate(item)
-        }
+        save(item)
     }
 
     override suspend fun deleteLibraryItem(id: String) {
-        databaseService.executeTransactionAsync { realm ->
-            realm.where(RealmMyLibrary::class.java)
-                .equalTo("id", id)
-                .findFirst()
-                ?.deleteFromRealm()
-        }
+        delete(RealmMyLibrary::class.java, "id", id)
     }
 
     override suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit) {
-        databaseService.executeTransactionAsync { realm ->
-            realm.where(RealmMyLibrary::class.java)
-                .equalTo("id", id)
-                .findFirst()
-                ?.let { updater(it) }
-        }
+        update(RealmMyLibrary::class.java, "id", id, updater)
     }
 
-    private fun filterLibrariesNeedingUpdate(results: RealmResults<RealmMyLibrary>): List<RealmMyLibrary> {
+    private fun filterLibrariesNeedingUpdate(results: Collection<RealmMyLibrary>): List<RealmMyLibrary> {
         return results.filter { it.needToUpdate() }
     }
 }

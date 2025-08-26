@@ -2,78 +2,48 @@ package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.datamanager.findCopyByField
-import org.ole.planet.myplanet.datamanager.queryList
 import org.ole.planet.myplanet.model.RealmMyCourse
 
 class CourseRepositoryImpl @Inject constructor(
-    private val databaseService: DatabaseService,
-) : CourseRepository {
+    databaseService: DatabaseService
+) : RealmRepository(databaseService), CourseRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
-        return databaseService.withRealmAsync { realm ->
-            realm.queryList(RealmMyCourse::class.java)
-        }
+        return queryList(RealmMyCourse::class.java)
     }
 
     override suspend fun getCourseById(id: String): RealmMyCourse? {
-        return databaseService.withRealmAsync { realm ->
-            realm.findCopyByField(RealmMyCourse::class.java, "courseId", id)
-        }
+        return findByField(RealmMyCourse::class.java, "courseId", id)
     }
 
-    override suspend fun getEnrolledCourses(userId: String): List<RealmMyCourse> =
-        getCoursesByUserId(userId)
-
     override suspend fun getCoursesByUserId(userId: String): List<RealmMyCourse> {
-        return databaseService.withRealmAsync { realm ->
-            realm.queryList(RealmMyCourse::class.java) {
-                equalTo("userId", userId)
-            }
+        return queryList(RealmMyCourse::class.java) {
+            equalTo("userId", userId)
         }
     }
 
     override suspend fun saveCourse(course: RealmMyCourse) {
-        databaseService.executeTransactionAsync { realm ->
-            realm.copyToRealmOrUpdate(course)
-        }
+        save(course)
     }
 
     override suspend fun updateCourse(id: String, updater: (RealmMyCourse) -> Unit) {
-        databaseService.executeTransactionAsync { realm ->
-            realm.where(RealmMyCourse::class.java)
-                .equalTo("courseId", id)
-                .findFirst()
-                ?.let { updater(it) }
-        }
+        update(RealmMyCourse::class.java, "courseId", id, updater)
     }
 
     override suspend fun deleteCourse(id: String) {
-        databaseService.executeTransactionAsync { realm ->
-            realm.where(RealmMyCourse::class.java)
-                .equalTo("courseId", id)
-                .findFirst()
-                ?.deleteFromRealm()
-        }
+        delete(RealmMyCourse::class.java, "courseId", id)
     }
 
     override suspend fun updateMyCourseFlag(courseId: String, isMyCourse: Boolean) {
-        databaseService.executeTransactionAsync { realm ->
-            realm.where(RealmMyCourse::class.java)
-                .equalTo("courseId", courseId)
-                .findFirst()
-                ?.let { it.isMyCourse = isMyCourse }
-        }
+        update(RealmMyCourse::class.java, "courseId", courseId) { it.isMyCourse = isMyCourse }
     }
 
     override suspend fun updateMyCourseFlag(courseIds: List<String>, isMyCourse: Boolean) {
-        databaseService.executeTransactionAsync { realm ->
-            courseIds.forEach { id ->
-                realm.where(RealmMyCourse::class.java)
-                    .equalTo("courseId", id)
-                    .findFirst()
-                    ?.let { it.isMyCourse = isMyCourse }
-            }
+        executeTransaction { realm ->
+            realm.where(RealmMyCourse::class.java)
+                .`in`("courseId", courseIds.toTypedArray())
+                .findAll()
+                .forEach { it.isMyCourse = isMyCourse }
         }
     }
 }

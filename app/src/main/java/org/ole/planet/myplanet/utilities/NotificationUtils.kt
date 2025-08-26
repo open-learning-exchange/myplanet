@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 
-object NotificationUtil {
+object NotificationUtils {
     const val CHANNEL_GENERAL = "general_notifications"
     const val CHANNEL_SURVEYS = "survey_notifications"
     const val CHANNEL_TASKS = "task_notifications"
@@ -472,16 +472,16 @@ class NotificationActionReceiver : BroadcastReceiver() {
     lateinit var databaseService: DatabaseService
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
-        val notificationId = intent.getStringExtra(NotificationUtil.EXTRA_NOTIFICATION_ID)
+        val notificationId = intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_ID)
         
         when (action) {
-            NotificationUtil.ACTION_MARK_AS_READ -> {
+            NotificationUtils.ACTION_MARK_AS_READ -> {
                 markNotificationAsRead(context, notificationId)
                 val notificationManager = NotificationManagerCompat.from(context)
                 notificationManager.cancel(notificationId.hashCode())
             }
             
-            NotificationUtil.ACTION_STORAGE_SETTINGS -> {
+            NotificationUtils.ACTION_STORAGE_SETTINGS -> {
                 markNotificationAsRead(context, notificationId)
                 val storageIntent = Intent(Settings.ACTION_INTERNAL_STORAGE_SETTINGS).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -491,10 +491,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 notificationManager.cancel(notificationId.hashCode())
             }
             
-            NotificationUtil.ACTION_OPEN_NOTIFICATION -> {
+            NotificationUtils.ACTION_OPEN_NOTIFICATION -> {
                 markNotificationAsRead(context, notificationId)
-                val notificationType = intent.getStringExtra(NotificationUtil.EXTRA_NOTIFICATION_TYPE)
-                val relatedId = intent.getStringExtra(NotificationUtil.EXTRA_RELATED_ID)
+                val notificationType = intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_TYPE)
+                val relatedId = intent.getStringExtra(NotificationUtils.EXTRA_RELATED_ID)
                 
                 val dashboardIntent = Intent(context, DashboardActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -517,19 +517,17 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
 
         try {
-            val realm = databaseService.realmInstance
-            
-            realm.executeTransaction { r ->
-                val notification = r.where(RealmNotification::class.java)
-                    .equalTo("id", notificationId)
-                    .findFirst()
-                
-                if (notification != null) {
-                    notification.isRead = true
+            databaseService.withRealm { realm ->
+                realm.executeTransaction { r ->
+                    val notification = r.where(RealmNotification::class.java)
+                        .equalTo("id", notificationId)
+                        .findFirst()
+
+                    if (notification != null) {
+                        notification.isRead = true
+                    }
                 }
             }
-
-            realm.close()
 
             android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                 val broadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")

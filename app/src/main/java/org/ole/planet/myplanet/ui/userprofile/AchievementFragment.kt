@@ -39,7 +39,6 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.UrlUtils
-import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class AchievementFragment : BaseContainerFragment() {
@@ -277,6 +276,7 @@ class AchievementFragment : BaseContainerFragment() {
         customProgressDialog?.dismiss()
         customProgressDialog = null
         if (this::aRealm.isInitialized && !aRealm.isClosed) {
+            aRealm.removeAllChangeListeners()
             aRealm.close()
         }
         try {
