@@ -100,7 +100,7 @@ class RatingFragment : DialogFragment() {
 
         lifecycleScope.launch {
             val ratingObject = previousRating ?: RealmRating().apply {
-                _id = UUID.randomUUID().toString()
+                id = UUID.randomUUID().toString()
             }
             model = ratingRepository.getUserModel(userId)
             setData(model, ratingObject, comment, rating)
