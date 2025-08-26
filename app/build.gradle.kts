@@ -99,68 +99,68 @@ android {
         }
     }
 
-    val planetLearningUrl = project.findProperty("PLANET_LEARNING_URL") as String? ?: ""
-    val planetLearningPin = project.findProperty("PLANET_LEARNING_PIN") as String? ?: ""
-    val planetGuatemalaUrl = project.findProperty("PLANET_GUATEMALA_URL") as String? ?: ""
-    val planetGuatemalaPin = project.findProperty("PLANET_GUATEMALA_PIN") as String? ?: ""
-    val planetSanPabloUrl = project.findProperty("PLANET_SANPABLO_URL") as String? ?: ""
-    val planetSanPabloPin = project.findProperty("PLANET_SANPABLO_PIN") as String? ?: ""
-    val planetSanPabloCloneUrl = project.findProperty("PLANET_SANPABLO_CLONE_URL") as String? ?: ""
-    val planetSanPabloClonePin = project.findProperty("PLANET_SANPABLO_CLONE_PIN") as String? ?: ""
-    val planetEarthUrl = project.findProperty("PLANET_EARTH_URL") as String? ?: ""
-    val planetEarthPin = project.findProperty("PLANET_EARTH_PIN") as String? ?: ""
-    val planetSomaliaUrl = project.findProperty("PLANET_SOMALIA_URL") as String? ?: ""
-    val planetSomaliaPin = project.findProperty("PLANET_SOMALIA_PIN") as String? ?: ""
-    val planetViUrl = project.findProperty("PLANET_VI_URL") as String? ?: ""
-    val planetViPin = project.findProperty("PLANET_VI_PIN") as String? ?: ""
-    val planetXelaUrl = project.findProperty("PLANET_XELA_URL") as String? ?: ""
-    val planetXelaPin = project.findProperty("PLANET_XELA_PIN") as String? ?: ""
-    val planetUriurUrl = project.findProperty("PLANET_URIUR_URL") as String? ?: ""
-    val planetUriurPin = project.findProperty("PLANET_URIUR_PIN") as String? ?: ""
-    val planetUriurCloneUrl = project.findProperty("PLANET_URIUR_CLONE_URL") as String? ?: ""
-    val planetUriurClonePin = project.findProperty("PLANET_URIUR_CLONE_PIN") as String? ?: ""
-    val planetRuiruUrl = project.findProperty("PLANET_RUIRU_URL") as String? ?: ""
-    val planetRuiruPin = project.findProperty("PLANET_RUIRU_PIN") as String? ?: ""
-    val planetEmbakasiUrl = project.findProperty("PLANET_EMBAKASI_URL") as String? ?: ""
-    val planetEmbakasiPin = project.findProperty("PLANET_EMBAKASI_PIN") as String? ?: ""
-    val planetEmbakasiCloneUrl = project.findProperty("PLANET_EMBAKASI_CLONE_URL") as String? ?: ""
-    val planetEmbakasiClonePin = project.findProperty("PLANET_EMBAKASI_CLONE_PIN") as String? ?: ""
-    val planetCambridgeUrl = project.findProperty("PLANET_CAMBRIDGE_URL") as String? ?: ""
-    val planetCambridgePin = project.findProperty("PLANET_CAMBRIDGE_PIN") as String? ?: ""
-    // val planetEgdirbmacUrl = project.findProperty("PLANET_EGDIRBMAC_URL") as String? ?: ""
-    // val planetEgdirbmacPin = project.findProperty("PLANET_EGDIRBMAC_PIN") as String? ?: ""
+    val planetLearningUrl = project.findProperty("PLANET_LEARNING_URL") as? String ?: ""
+    val planetLearningPin = project.findProperty("PLANET_LEARNING_PIN") as? String ?: ""
+    val planetGuatemalaUrl = project.findProperty("PLANET_GUATEMALA_URL") as? String ?: ""
+    val planetGuatemalaPin = project.findProperty("PLANET_GUATEMALA_PIN") as? String ?: ""
+    val planetSanPabloUrl = project.findProperty("PLANET_SANPABLO_URL") as? String ?: ""
+    val planetSanPabloPin = project.findProperty("PLANET_SANPABLO_PIN") as? String ?: ""
+    val planetSanPabloCloneUrl = project.findProperty("PLANET_SANPABLO_CLONE_URL") as? String ?: ""
+    val planetSanPabloClonePin = project.findProperty("PLANET_SANPABLO_CLONE_PIN") as? String ?: ""
+    val planetEarthUrl = project.findProperty("PLANET_EARTH_URL") as? String ?: ""
+    val planetEarthPin = project.findProperty("PLANET_EARTH_PIN") as? String ?: ""
+    val planetSomaliaUrl = project.findProperty("PLANET_SOMALIA_URL") as? String ?: ""
+    val planetSomaliaPin = project.findProperty("PLANET_SOMALIA_PIN") as? String ?: ""
+    val planetViUrl = project.findProperty("PLANET_VI_URL") as? String ?: ""
+    val planetViPin = project.findProperty("PLANET_VI_PIN") as? String ?: ""
+    val planetXelaUrl = project.findProperty("PLANET_XELA_URL") as? String ?: ""
+    val planetXelaPin = project.findProperty("PLANET_XELA_PIN") as? String ?: ""
+    val planetUriurUrl = project.findProperty("PLANET_URIUR_URL") as? String ?: ""
+    val planetUriurPin = project.findProperty("PLANET_URIUR_PIN") as? String ?: ""
+    val planetUriurCloneUrl = project.findProperty("PLANET_URIUR_CLONE_URL") as? String ?: ""
+    val planetUriurClonePin = project.findProperty("PLANET_URIUR_CLONE_PIN") as? String ?: ""
+    val planetRuiruUrl = project.findProperty("PLANET_RUIRU_URL") as? String ?: ""
+    val planetRuiruPin = project.findProperty("PLANET_RUIRU_PIN") as? String ?: ""
+    val planetEmbakasiUrl = project.findProperty("PLANET_EMBAKASI_URL") as? String ?: ""
+    val planetEmbakasiPin = project.findProperty("PLANET_EMBAKASI_PIN") as? String ?: ""
+    val planetEmbakasiCloneUrl = project.findProperty("PLANET_EMBAKASI_CLONE_URL") as? String ?: ""
+    val planetEmbakasiClonePin = project.findProperty("PLANET_EMBAKASI_CLONE_PIN") as? String ?: ""
+    val planetCambridgeUrl = project.findProperty("PLANET_CAMBRIDGE_URL") as? String ?: ""
+    val planetCambridgePin = project.findProperty("PLANET_CAMBRIDGE_PIN") as? String ?: ""
+    // val planetEgdirbmacUrl = project.findProperty("PLANET_EGDIRBMAC_URL") as? String ?: ""
+    // val planetEgdirbmacPin = project.findProperty("PLANET_EGDIRBMAC_PIN") as? String ?: ""
 
-    buildTypes.forEach {
-        it.buildConfigField("String", "PLANET_LEARNING_URL", "\"$planetLearningUrl\"")
-        it.buildConfigField("String", "PLANET_LEARNING_PIN", "\"$planetLearningPin\"")
-        it.buildConfigField("String", "PLANET_GUATEMALA_URL", "\"$planetGuatemalaUrl\"")
-        it.buildConfigField("String", "PLANET_GUATEMALA_PIN", "\"$planetGuatemalaPin\"")
-        it.buildConfigField("String", "PLANET_SANPABLO_URL", "\"$planetSanPabloUrl\"")
-        it.buildConfigField("String", "PLANET_SANPABLO_PIN", "\"$planetSanPabloPin\"")
-        it.buildConfigField("String", "PLANET_SANPABLO_CLONE_URL", "\"$planetSanPabloCloneUrl\"")
-        it.buildConfigField("String", "PLANET_SANPABLO_CLONE_PIN", "\"$planetSanPabloClonePin\"")
-        it.buildConfigField("String", "PLANET_EARTH_URL", "\"$planetEarthUrl\"")
-        it.buildConfigField("String", "PLANET_EARTH_PIN", "\"$planetEarthPin\"")
-        it.buildConfigField("String", "PLANET_SOMALIA_URL", "\"$planetSomaliaUrl\"")
-        it.buildConfigField("String", "PLANET_SOMALIA_PIN", "\"$planetSomaliaPin\"")
-        it.buildConfigField("String", "PLANET_VI_URL", "\"$planetViUrl\"")
-        it.buildConfigField("String", "PLANET_VI_PIN", "\"$planetViPin\"")
-        it.buildConfigField("String", "PLANET_XELA_URL", "\"$planetXelaUrl\"")
-        it.buildConfigField("String", "PLANET_XELA_PIN", "\"$planetXelaPin\"")
-        it.buildConfigField("String", "PLANET_URIUR_URL", "\"$planetUriurUrl\"")
-        it.buildConfigField("String", "PLANET_URIUR_PIN", "\"$planetUriurPin\"")
-        it.buildConfigField("String", "PLANET_URIUR_CLONE_URL", "\"$planetUriurCloneUrl\"")
-        it.buildConfigField("String", "PLANET_URIUR_CLONE_PIN", "\"$planetUriurClonePin\"")
-        it.buildConfigField("String", "PLANET_RUIRU_URL", "\"$planetRuiruUrl\"")
-        it.buildConfigField("String", "PLANET_RUIRU_PIN", "\"$planetRuiruPin\"")
-        it.buildConfigField("String", "PLANET_EMBAKASI_URL", "\"$planetEmbakasiUrl\"")
-        it.buildConfigField("String", "PLANET_EMBAKASI_PIN", "\"$planetEmbakasiPin\"")
-        it.buildConfigField("String", "PLANET_EMBAKASI_CLONE_URL", "\"$planetEmbakasiCloneUrl\"")
-        it.buildConfigField("String", "PLANET_EMBAKASI_CLONE_PIN", "\"$planetEmbakasiClonePin\"")
-        it.buildConfigField("String", "PLANET_CAMBRIDGE_URL", "\"$planetCambridgeUrl\"")
-        it.buildConfigField("String", "PLANET_CAMBRIDGE_PIN", "\"$planetCambridgePin\"")
-        // it.buildConfigField("String", "PLANET_EGDIRBMAC_URL", "\"$planetEgdirbmacUrl\"")
-        // it.buildConfigField("String", "PLANET_EGDIRBMAC_PIN", "\"$planetEgdirbmacPin\"")
+    buildTypes.all {
+        buildConfigField("String", "PLANET_LEARNING_URL", "\"$planetLearningUrl\"")
+        buildConfigField("String", "PLANET_LEARNING_PIN", "\"$planetLearningPin\"")
+        buildConfigField("String", "PLANET_GUATEMALA_URL", "\"$planetGuatemalaUrl\"")
+        buildConfigField("String", "PLANET_GUATEMALA_PIN", "\"$planetGuatemalaPin\"")
+        buildConfigField("String", "PLANET_SANPABLO_URL", "\"$planetSanPabloUrl\"")
+        buildConfigField("String", "PLANET_SANPABLO_PIN", "\"$planetSanPabloPin\"")
+        buildConfigField("String", "PLANET_SANPABLO_CLONE_URL", "\"$planetSanPabloCloneUrl\"")
+        buildConfigField("String", "PLANET_SANPABLO_CLONE_PIN", "\"$planetSanPabloClonePin\"")
+        buildConfigField("String", "PLANET_EARTH_URL", "\"$planetEarthUrl\"")
+        buildConfigField("String", "PLANET_EARTH_PIN", "\"$planetEarthPin\"")
+        buildConfigField("String", "PLANET_SOMALIA_URL", "\"$planetSomaliaUrl\"")
+        buildConfigField("String", "PLANET_SOMALIA_PIN", "\"$planetSomaliaPin\"")
+        buildConfigField("String", "PLANET_VI_URL", "\"$planetViUrl\"")
+        buildConfigField("String", "PLANET_VI_PIN", "\"$planetViPin\"")
+        buildConfigField("String", "PLANET_XELA_URL", "\"$planetXelaUrl\"")
+        buildConfigField("String", "PLANET_XELA_PIN", "\"$planetXelaPin\"")
+        buildConfigField("String", "PLANET_URIUR_URL", "\"$planetUriurUrl\"")
+        buildConfigField("String", "PLANET_URIUR_PIN", "\"$planetUriurPin\"")
+        buildConfigField("String", "PLANET_URIUR_CLONE_URL", "\"$planetUriurCloneUrl\"")
+        buildConfigField("String", "PLANET_URIUR_CLONE_PIN", "\"$planetUriurClonePin\"")
+        buildConfigField("String", "PLANET_RUIRU_URL", "\"$planetRuiruUrl\"")
+        buildConfigField("String", "PLANET_RUIRU_PIN", "\"$planetRuiruPin\"")
+        buildConfigField("String", "PLANET_EMBAKASI_URL", "\"$planetEmbakasiUrl\"")
+        buildConfigField("String", "PLANET_EMBAKASI_PIN", "\"$planetEmbakasiPin\"")
+        buildConfigField("String", "PLANET_EMBAKASI_CLONE_URL", "\"$planetEmbakasiCloneUrl\"")
+        buildConfigField("String", "PLANET_EMBAKASI_CLONE_PIN", "\"$planetEmbakasiClonePin\"")
+        buildConfigField("String", "PLANET_CAMBRIDGE_URL", "\"$planetCambridgeUrl\"")
+        buildConfigField("String", "PLANET_CAMBRIDGE_PIN", "\"$planetCambridgePin\"")
+        // buildConfigField("String", "PLANET_EGDIRBMAC_URL", "\"$planetEgdirbmacUrl\"")
+        // buildConfigField("String", "PLANET_EGDIRBMAC_PIN", "\"$planetEgdirbmacPin\"")
     }
 }
 
