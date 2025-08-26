@@ -21,12 +21,18 @@ import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.SubmissionRepositoryImpl
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.TeamRepositoryImpl
+import org.ole.planet.myplanet.repository.MyLifeRepository
+import org.ole.planet.myplanet.repository.MyLifeRepositoryImpl
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserRepositoryImpl
 
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindMyLifeRepository(impl: MyLifeRepositoryImpl): MyLifeRepository
 
     @Binds
     @Singleton
