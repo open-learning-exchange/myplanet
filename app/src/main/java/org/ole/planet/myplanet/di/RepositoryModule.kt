@@ -9,6 +9,8 @@ import org.ole.planet.myplanet.repository.CourseProgressRepository
 import org.ole.planet.myplanet.repository.CourseProgressRepositoryImpl
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.CourseRepositoryImpl
+import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.FeedbackRepositoryImpl
 import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.LibraryRepositoryImpl
 import org.ole.planet.myplanet.repository.NotificationRepository
@@ -27,6 +29,10 @@ import org.ole.planet.myplanet.repository.UserRepositoryImpl
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindFeedbackRepository(impl: FeedbackRepositoryImpl): FeedbackRepository
 
     @Binds
     @Singleton

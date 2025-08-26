@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.utilities
+package org.ole.planet.myplanet.datamanager.auth
 
 import android.content.SharedPreferences
 import java.io.DataOutputStream
@@ -15,6 +15,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.utilities.UrlUtils
 
 class AuthSessionUpdater @Inject constructor(
     private val callback: AuthCallback,
