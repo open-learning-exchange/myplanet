@@ -36,7 +36,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.availableExternalMemorySize
 import org.ole.planet.myplanet.utilities.FileUtils.externalMemoryAvailable
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getSDPathFromUrl
-import org.ole.planet.myplanet.utilities.Utilities.header
+import org.ole.planet.myplanet.utilities.UrlUtils.header
 import retrofit2.Call
 
 class MyDownloadService : Service() {
