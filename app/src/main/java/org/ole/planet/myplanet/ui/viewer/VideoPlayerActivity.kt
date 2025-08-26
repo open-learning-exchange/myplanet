@@ -30,6 +30,8 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityExoPlayerVideoBinding
 import org.ole.planet.myplanet.datamanager.auth.AuthSessionUpdater
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
+import org.ole.planet.myplanet.utilities.DownloadUtils
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -38,6 +40,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     private var exoPlayer: ExoPlayer? = null
     private var auth: String = ""
     private var videoURL: String = ""
+    private var videoType: String? = null
     private var playWhenReady = true
     private var currentPosition = 0L
     private var isActivityVisible = false
@@ -60,7 +63,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
 
         val extras = intent.extras
-        val videoType = extras?.getString("videoType")
+        videoType = extras?.getString("videoType")
         videoURL = extras?.getString("videoURL") ?: ""
         auth = extras?.getString("Auth") ?: ""
 
@@ -85,7 +88,16 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     override fun setAuthSession(responseHeader: Map<String, List<String>>) {
         val headerAuth = responseHeader["Set-Cookie"]?.get(0)?.split(";") ?: return
         auth = headerAuth[0]
-        runOnUiThread { streamVideoFromUrl(videoURL, auth) }
+        runOnUiThread {
+            streamVideoFromUrl(videoURL, auth)
+            if (videoType == "online" && !FileUtils.checkFileExist(videoURL)) {
+                try {
+                    DownloadUtils.openDownloadService(this, arrayListOf(videoURL), false)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
     }
 
     override fun onError(s: String) {
@@ -102,7 +114,16 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         isActivityVisible = true
         if (exoPlayer == null) {
             when {
-                videoURL.startsWith("http") -> streamVideoFromUrl(videoURL, auth)
+                videoURL.startsWith("http") -> {
+                    streamVideoFromUrl(videoURL, auth)
+                    if (videoType == "online" && !FileUtils.checkFileExist(videoURL)) {
+                        try {
+                            DownloadUtils.openDownloadService(this, arrayListOf(videoURL), false)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
                 else -> prepareExoPlayerFromFileUri(videoURL)
             }
         }
