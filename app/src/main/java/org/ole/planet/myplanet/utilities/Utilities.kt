@@ -60,14 +60,6 @@ object Utilities {
         return settings.getString("name", "") ?: ""
     }
 
-    fun <T> handleCheck(b: Boolean, i: Int, selectedItems: MutableList<T?>, list: List<T?>) {
-        if (b) {
-            selectedItems.add(list[i])
-        } else if (selectedItems.contains(list[i])) {
-            selectedItems.remove(list[i])
-        }
-    }
-
     fun toHex(arg: String?): String {
         return arg?.toByteArray()?.let { String.format("%x", BigInteger(1, it)) } ?: ""
     }
