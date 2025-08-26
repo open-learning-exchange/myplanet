@@ -93,7 +93,7 @@ import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils.totalAvailableMemoryRatio
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
-import org.ole.planet.myplanet.utilities.NotificationUtil
+import org.ole.planet.myplanet.utilities.NotificationUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
@@ -115,7 +115,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private val realmListeners = mutableListOf<RealmListener>()
     private val dashboardViewModel: DashboardViewModel by viewModels()
     private lateinit var challengeHelper: ChallengeHelper
-    private lateinit var notificationManager: NotificationUtil.NotificationManager
+    private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
     private var lastNotificationCheckTime = 0L
     private val notificationCheckThrottleMs = 5000L
@@ -134,8 +134,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         checkUser()
         initViews()
         updateAppTitle()
-        notificationManager = NotificationUtil.getInstance(this)
-        notificationManager.clearSessionTracking()
+        notificationManager = NotificationUtils.getInstance(this)
         if (handleGuestAccess()) return
         setupNavigation()
         handleInitialFragment()
@@ -345,12 +344,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 markDatabaseNotificationAsRead(it)
             }
 
-            val isSummary = notificationId?.startsWith("summary_") ?: false
-            when {
-                isSummary -> {
-                    openNotificationsList(user?.id ?: "")
-                }
-                notificationType == NotificationUtil.TYPE_SURVEY -> {
+            when (notificationType) {
+                NotificationUtils.TYPE_SURVEY -> {
                     val surveyId = intent.getStringExtra("surveyId")
                     if (surveyId != null) {
                         openCallFragment(SurveyFragment().apply {
@@ -362,7 +357,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         openNotificationsList(user?.id ?: "")
                     }
                 }
-                notificationType == NotificationUtil.TYPE_TASK -> {
+                NotificationUtils.TYPE_TASK -> {
                     val taskId = intent.getStringExtra("taskId")
                     if (taskId != null) {
                         openMyFragment(TeamFragment().apply {
@@ -374,19 +369,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         openNotificationsList(user?.id ?: "")
                     }
                 }
-                notificationType == NotificationUtil.TYPE_STORAGE -> {
+                NotificationUtils.TYPE_STORAGE -> {
                     startActivity(Intent(this, SettingActivity::class.java))
                 }
-                notificationType == NotificationUtil.TYPE_JOIN_REQUEST -> {
-                    val requestId = intent.getStringExtra("requestId")
-                    if (requestId != null) {
-                        handleJoinRequestNavigation(requestId)
-                    } else {
-                        openNotificationsList(user?.id ?: "")
-                    }
-                }
-                notificationType == NotificationUtil.TYPE_RESOURCE -> {
-                    openMyFragment(ResourcesFragment())
+                NotificationUtils.TYPE_JOIN_REQUEST -> {
+                    val teamName = intent.getStringExtra("teamName")
+                    openMyFragment(TeamFragment().apply {
+                        arguments = Bundle().apply {
+                            teamName?.let { putString("teamName", it) }
+                        }
+                    })
                 }
                 else -> {
                     openNotificationsList(user?.id ?: "")
@@ -402,16 +394,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val relatedId = intent.getStringExtra("related_id")
             
             when (notificationType) {
-                NotificationUtil.TYPE_SURVEY -> {
+                NotificationUtils.TYPE_SURVEY -> {
                     handleSurveyNavigation(relatedId)
                 }
-                NotificationUtil.TYPE_TASK -> {
+                NotificationUtils.TYPE_TASK -> {
                     handleTaskNavigation(relatedId)
                 }
-                NotificationUtil.TYPE_JOIN_REQUEST -> {
+                NotificationUtils.TYPE_JOIN_REQUEST -> {
                     handleJoinRequestNavigation(relatedId)
                 }
-                NotificationUtil.TYPE_RESOURCE -> {
+                NotificationUtils.TYPE_RESOURCE -> {
                     openCallFragment(ResourcesFragment(), "Resources")
                 }
             }
@@ -590,7 +582,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         lifecycleScope.launch(Dispatchers.IO) {
             var unreadCount = 0
-            val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
+            val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
 
             try {
                 dashboardViewModel.updateResourceNotification(userId)
@@ -659,11 +651,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun createSummaryNotification(type: String, count: Int): NotificationUtil.NotificationConfig {
+    private fun createSummaryNotification(type: String, count: Int): NotificationUtils.NotificationConfig {
         val summaryId = "summary_${type}"
         
         return when (type) {
-            "survey" -> NotificationUtil.NotificationConfig(
+            "survey" -> NotificationUtils.NotificationConfig(
                 id = summaryId,
                 type = type,
                 title = "📋 New Surveys Available",
@@ -671,7 +663,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 priority = NotificationCompat.PRIORITY_HIGH,
                 category = NotificationCompat.CATEGORY_REMINDER
             )
-            "task" -> NotificationUtil.NotificationConfig(
+            "task" -> NotificationUtils.NotificationConfig(
                 id = summaryId,
                 type = type,
                 title = "✅ New Tasks Assigned",
@@ -679,7 +671,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 priority = NotificationCompat.PRIORITY_HIGH,
                 category = NotificationCompat.CATEGORY_REMINDER
             )
-            "join_request" -> NotificationUtil.NotificationConfig(
+            "join_request" -> NotificationUtils.NotificationConfig(
                 id = summaryId,
                 type = type,
                 title = "👥 Team Join Requests",
@@ -687,7 +679,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 priority = NotificationCompat.PRIORITY_DEFAULT,
                 category = NotificationCompat.CATEGORY_SOCIAL
             )
-            "resource" -> NotificationUtil.NotificationConfig(
+            "resource" -> NotificationUtils.NotificationConfig(
                 id = summaryId,
                 type = type,
                 title = "📚 New Resources Available",
@@ -695,7 +687,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 priority = NotificationCompat.PRIORITY_DEFAULT,
                 category = NotificationCompat.CATEGORY_RECOMMENDATION
             )
-            "storage" -> NotificationUtil.NotificationConfig(
+            "storage" -> NotificationUtils.NotificationConfig(
                 id = summaryId,
                 type = type,
                 title = "⚠️ Storage Warnings",
@@ -703,7 +695,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 priority = NotificationCompat.PRIORITY_DEFAULT,
                 category = NotificationCompat.CATEGORY_STATUS
             )
-            else -> NotificationUtil.NotificationConfig(
+            else -> NotificationUtils.NotificationConfig(
                 id = summaryId,
                 type = type,
                 title = "📱 App Notifications",
@@ -714,8 +706,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun createNotifications(realm: Realm, userId: String?): List<NotificationUtil.NotificationConfig> {
-        val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
+    private fun createNotifications(realm: Realm, userId: String?): List<NotificationUtils.NotificationConfig> {
+        val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
         createSurveyDatabaseNotifications(realm, userId)
         createTaskDatabaseNotifications(realm, userId)
         createStorageDatabaseNotifications(realm, userId)
@@ -735,7 +727,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         return newNotifications
     }
 
-    private fun createNotificationConfigFromDatabase(dbNotification: RealmNotification): NotificationUtil.NotificationConfig? {
+    private fun createNotificationConfigFromDatabase(dbNotification: RealmNotification): NotificationUtils.NotificationConfig? {
         return when (dbNotification.type.lowercase()) {
             "survey" -> notificationManager.createSurveyNotification(
                 dbNotification.id, 
