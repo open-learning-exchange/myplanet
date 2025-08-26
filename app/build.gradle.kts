@@ -1,6 +1,5 @@
 import org.gradle.api.JavaVersion
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import java.util.Properties
 
 val kotlin_version: String by project
 
@@ -14,6 +13,41 @@ plugins {
 }
 
 android {
+    val serverPropertyKeys = listOf(
+        "PLANET_LEARNING_URL",
+        "PLANET_LEARNING_PIN",
+        "PLANET_GUATEMALA_URL",
+        "PLANET_GUATEMALA_PIN",
+        "PLANET_SANPABLO_URL",
+        "PLANET_SANPABLO_PIN",
+        "PLANET_SANPABLO_CLONE_URL",
+        "PLANET_SANPABLO_CLONE_PIN",
+        "PLANET_EARTH_URL",
+        "PLANET_EARTH_PIN",
+        "PLANET_SOMALIA_URL",
+        "PLANET_SOMALIA_PIN",
+        "PLANET_VI_URL",
+        "PLANET_VI_PIN",
+        "PLANET_XELA_URL",
+        "PLANET_XELA_PIN",
+        "PLANET_URIUR_URL",
+        "PLANET_URIUR_PIN",
+        "PLANET_URIUR_CLONE_URL",
+        "PLANET_URIUR_CLONE_PIN",
+        "PLANET_RUIRU_URL",
+        "PLANET_RUIRU_PIN",
+        "PLANET_EMBAKASI_URL",
+        "PLANET_EMBAKASI_PIN",
+        "PLANET_EMBAKASI_CLONE_URL",
+        "PLANET_EMBAKASI_CLONE_PIN",
+        "PLANET_CAMBRIDGE_URL",
+        "PLANET_CAMBRIDGE_PIN"
+    )
+
+    val serverProperties = serverPropertyKeys.associateWith { key ->
+        project.findProperty(key)?.toString() ?: ""
+    }
+
     compileSdk = 36
 
     defaultConfig {
@@ -26,6 +60,10 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled = true
+
+        serverProperties.forEach { (name, value) ->
+            buildConfigField("String", name, "\"$value\"")
+        }
     }
 
     configurations.configureEach {
@@ -97,40 +135,6 @@ android {
     bundle {
         language {
             enableSplit = false
-        }
-    }
-
-    val gradleProperties = java.util.Properties()
-    val gradlePropertiesFile = project.rootProject.file("gradle.properties")
-    if (gradlePropertiesFile.exists()) {
-        gradleProperties.load(gradlePropertiesFile.inputStream())
-    }
-
-    val planets = listOf(
-        "LEARNING",
-        "GUATEMALA",
-        "SANPABLO",
-        "SANPABLO_CLONE",
-        "EARTH",
-        "SOMALIA",
-        "VI",
-        "XELA",
-        "URIUR",
-        "URIUR_CLONE",
-        "RUIRU",
-        "EMBAKASI",
-        "EMBAKASI_CLONE",
-        "CAMBRIDGE"
-    )
-
-    buildTypes.forEach { buildType ->
-        planets.forEach { planetName ->
-            val urlKey = "PLANET_${planetName}_URL"
-            val pinKey = "PLANET_${planetName}_PIN"
-            val url = gradleProperties.getProperty(urlKey, "")
-            val pin = gradleProperties.getProperty(pinKey, "")
-            buildType.buildConfigField("String", urlKey, "\"$url\"")
-            buildType.buildConfigField("String", pinKey, "\"$pin\"")
         }
     }
 }
