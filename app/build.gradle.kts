@@ -99,31 +99,37 @@ android {
         }
     }
 
-    data class Planet(val name: String, val urlKey: String, val pinKey: String)
+    val gradleProperties = java.util.Properties()
+    val gradlePropertiesFile = project.rootProject.file("gradle.properties")
+    if (gradlePropertiesFile.exists()) {
+        gradleProperties.load(gradlePropertiesFile.inputStream())
+    }
 
     val planets = listOf(
-        Planet("LEARNING", "PLANET_LEARNING_URL", "PLANET_LEARNING_PIN"),
-        Planet("GUATEMALA", "PLANET_GUATEMALA_URL", "PLANET_GUATEMALA_PIN"),
-        Planet("SANPABLO", "PLANET_SANPABLO_URL", "PLANET_SANPABLO_PIN"),
-        Planet("SANPABLO_CLONE", "PLANET_SANPABLO_CLONE_URL", "PLANET_SANPABLO_CLONE_PIN"),
-        Planet("EARTH", "PLANET_EARTH_URL", "PLANET_EARTH_PIN"),
-        Planet("SOMALIA", "PLANET_SOMALIA_URL", "PLANET_SOMALIA_PIN"),
-        Planet("VI", "PLANET_VI_URL", "PLANET_VI_PIN"),
-        Planet("XELA", "PLANET_XELA_URL", "PLANET_XELA_PIN"),
-        Planet("URIUR", "PLANET_URIUR_URL", "PLANET_URIUR_PIN"),
-        Planet("URIUR_CLONE", "PLANET_URIUR_CLONE_URL", "PLANET_URIUR_CLONE_PIN"),
-        Planet("RUIRU", "PLANET_RUIRU_URL", "PLANET_RUIRU_PIN"),
-        Planet("EMBAKASI", "PLANET_EMBAKASI_URL", "PLANET_EMBAKASI_PIN"),
-        Planet("EMBAKASI_CLONE", "PLANET_EMBAKASI_CLONE_URL", "PLANET_EMBAKASI_CLONE_PIN"),
-        Planet("CAMBRIDGE", "PLANET_CAMBRIDGE_URL", "PLANET_CAMBRIDGE_PIN")
+        "LEARNING",
+        "GUATEMALA",
+        "SANPABLO",
+        "SANPABLO_CLONE",
+        "EARTH",
+        "SOMALIA",
+        "VI",
+        "XELA",
+        "URIUR",
+        "URIUR_CLONE",
+        "RUIRU",
+        "EMBAKASI",
+        "EMBAKASI_CLONE",
+        "CAMBRIDGE"
     )
 
     buildTypes.forEach { buildType ->
-        planets.forEach { planet ->
-            val url = providers.gradleProperty(planet.urlKey).orNull ?: ""
-            val pin = providers.gradleProperty(planet.pinKey).orNull ?: ""
-            buildType.buildConfigField("String", planet.urlKey, "\"$url\"")
-            buildType.buildConfigField("String", planet.pinKey, "\"$pin\"")
+        planets.forEach { planetName ->
+            val urlKey = "PLANET_${planetName}_URL"
+            val pinKey = "PLANET_${planetName}_PIN"
+            val url = gradleProperties.getProperty(urlKey, "")
+            val pin = gradleProperties.getProperty(pinKey, "")
+            buildType.buildConfigField("String", urlKey, "\"$url\"")
+            buildType.buildConfigField("String", pinKey, "\"$pin\"")
         }
     }
 }
