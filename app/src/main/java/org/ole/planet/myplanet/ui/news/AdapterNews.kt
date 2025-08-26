@@ -49,6 +49,7 @@ import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
+import org.ole.planet.myplanet.utilities.ImageUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
 
@@ -224,11 +225,11 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         if (userModel != null && currentUser != null) {
             holder.rowNewsBinding.tvName.text =
                 if (userFullName.isNullOrEmpty()) news.userName else userFullName
-            Utilities.loadImage(userModel.userImage, holder.rowNewsBinding.imgUser)
+            ImageUtils.loadImage(userModel.userImage, holder.rowNewsBinding.imgUser)
             showHideButtons(news, holder)
         } else {
             holder.rowNewsBinding.tvName.text = news.userName
-            Utilities.loadImage(null, holder.rowNewsBinding.imgUser)
+            ImageUtils.loadImage(null, holder.rowNewsBinding.imgUser)
         }
         return userModel
     }
