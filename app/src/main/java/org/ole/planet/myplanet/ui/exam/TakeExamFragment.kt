@@ -44,6 +44,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private var isCertified = false
     var container: NestedScrollView? = null
     private val gson = Gson()
+    private var submissionId: String? = null
     override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTakeExamBinding = FragmentTakeExamBinding.inflate(inflater, parent, false)
         listAns = HashMap()
@@ -68,6 +69,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             q = q.equalTo("status", "pending")
         }
         sub = q.findFirst() as RealmSubmission?
+        submissionId = sub?.id
         val courseId = exam?.courseId
         isCertified = isCourseCertified(mRealm, courseId)
         if ((questions?.size ?: 0) > 0) {
@@ -163,6 +165,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private fun createSubmission() {
         mRealm.executeTransactionAsync({ realm ->
             sub = createSubmission(null, realm)
+            submissionId = sub?.id
             setParentId()
             sub?.userId = user?.id
             sub?.status = "pending"
@@ -262,15 +265,26 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         listAns?.clear()
 
         val currentQuestion = questions?.get(currentIndex)
-        val savedAnswer = sub?.answers?.find { it.questionId == currentQuestion?.id }
+        if (submissionId == null) return
+        
+        // Use a fresh realm instance to avoid closed realm issues
+        val freshRealm = databaseService.realmInstance
+        try {
+            val freshSub = freshRealm.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
+            if (freshSub == null || !freshSub.isValid) return
+            
+            val savedAnswer = freshSub.answers?.find { it.questionId == currentQuestion?.id }
 
-        if (savedAnswer != null) {
-            when {
-                currentQuestion?.type.equals("select", ignoreCase = true) -> loadSelectSavedAnswer(savedAnswer)
-                currentQuestion?.type.equals("selectMultiple", ignoreCase = true) -> loadSelectMultipleSavedAnswer(savedAnswer)
-                currentQuestion?.type.equals("input", ignoreCase = true) ||
-                        currentQuestion?.type.equals("textarea", ignoreCase = true) -> loadTextSavedAnswer(savedAnswer)
+            if (savedAnswer != null) {
+                when {
+                    currentQuestion?.type.equals("select", ignoreCase = true) -> loadSelectSavedAnswer(savedAnswer)
+                    currentQuestion?.type.equals("selectMultiple", ignoreCase = true) -> loadSelectMultipleSavedAnswer(savedAnswer)
+                    currentQuestion?.type.equals("input", ignoreCase = true) ||
+                            currentQuestion?.type.equals("textarea", ignoreCase = true) -> loadTextSavedAnswer(savedAnswer)
+                }
             }
+        } finally {
+            freshRealm.close()
         }
     }
 
@@ -474,23 +488,35 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
     private fun updateAnsDb(): Boolean {
         val currentQuestion = questions?.get(currentIndex) ?: return true
+        if (submissionId == null) return true
+        
         val otherText = if (fragmentTakeExamBinding.etAnswer.isVisible) {
             fragmentTakeExamBinding.etAnswer.text.toString()
         } else {
             null
         }
-        return ExamSubmissionUtils.saveAnswer(
-            mRealm,
-            sub,
-            currentQuestion,
-            ans,
-            listAns,
-            otherText,
-            fragmentTakeExamBinding.etAnswer.isVisible,
-            type ?: "exam",
-            currentIndex,
-            questions?.size ?: 0
-        )
+        
+        // Use a fresh realm instance to avoid closed realm issues
+        val freshRealm = databaseService.realmInstance
+        try {
+            val freshSub = freshRealm.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
+            if (freshSub == null || !freshSub.isValid) return true
+            
+            return ExamSubmissionUtils.saveAnswer(
+                freshRealm,
+                freshSub,
+                currentQuestion,
+                ans,
+                listAns,
+                otherText,
+                fragmentTakeExamBinding.etAnswer.isVisible,
+                type ?: "exam",
+                currentIndex,
+                questions?.size ?: 0
+            )
+        } finally {
+            freshRealm.close()
+        }
     }
 
     override fun onCheckedChanged(compoundButton: CompoundButton, isChecked: Boolean) {
