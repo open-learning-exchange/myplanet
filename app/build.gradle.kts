@@ -19,8 +19,8 @@ android {
         applicationId = "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2961
-        versionName = "0.29.61"
+        versionCode = 2975
+        versionName = "0.29.75"
         ndkVersion = "26.3.11579264"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
