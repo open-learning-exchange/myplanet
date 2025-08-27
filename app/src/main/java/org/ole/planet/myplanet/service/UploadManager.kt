@@ -199,10 +199,10 @@ class UploadManager @Inject constructor(
         `object`.addProperty("title", getString("fileName", imgObject))
         `object`.addProperty("createdDate", Date().time)
         `object`.addProperty("filename", getString("fileName", imgObject))
-        `object`.addProperty("addedBy", user!!.id)
         `object`.addProperty("private", true)
-        `object`.addProperty("resideOn", user.parentCode)
-        `object`.addProperty("sourcePlanet", user.planetCode)
+        user?.id?.let { `object`.addProperty("addedBy", it) }
+        user?.parentCode?.let { `object`.addProperty("resideOn", it) }
+        user?.planetCode?.let { `object`.addProperty("sourcePlanet", it) }
         val object1 = JsonObject()
         `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
         `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
@@ -320,7 +320,7 @@ class UploadManager @Inject constructor(
                             sub.uploaded = true
                             sub._rev = rev
                             sub._id = id
-                            uploadAttachment(id, rev, sub, listener!!)
+                            listener?.let { uploadAttachment(id, rev, sub, it) }
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -363,7 +363,7 @@ class UploadManager @Inject constructor(
                         val id = getString("id", `object`)
                         sub._rev = rev
                         sub._id = id
-                        uploadAttachment(id, rev, sub, listener!!)
+                        listener?.let { uploadAttachment(id, rev, sub, it) }
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()

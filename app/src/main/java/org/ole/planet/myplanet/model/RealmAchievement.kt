@@ -46,7 +46,7 @@ open class RealmAchievement : RealmObject() {
         achievements = RealmList()
         for (el in ac) {
             val achievement = Gson().toJson(el)
-            if (!achievements?.contains(achievement)!!) {
+            if (achievements?.contains(achievement) != true) {
                 achievements?.add(achievement)
             }
         }
@@ -57,7 +57,7 @@ open class RealmAchievement : RealmObject() {
         if (of == null) return
         for (el in of) {
             val e = Gson().toJson(el)
-            if (!references?.contains(e)!!) {
+            if (references?.contains(e) != true) {
                 references?.add(e)
             }
         }

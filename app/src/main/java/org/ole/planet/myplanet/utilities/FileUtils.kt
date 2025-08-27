@@ -112,7 +112,7 @@ object FileUtils {
 
     @JvmStatic
     fun installApk(activity: Context, file: String?) {
-        if (!file?.endsWith("apk")!!) return
+        if (file?.endsWith("apk") != true) return
         val toInstall = File(file)
         if (!toInstall.exists()) return
         try {
