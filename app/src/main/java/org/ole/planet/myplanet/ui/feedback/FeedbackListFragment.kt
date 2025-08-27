@@ -50,6 +50,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     lateinit var syncManager: SyncManager
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
+    private lateinit var adapterFeedback: AdapterFeedback
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -136,7 +137,9 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        adapterFeedback = AdapterFeedback()
         binding.rvFeedback.layoutManager = LinearLayoutManager(activity)
+        binding.rvFeedback.adapter = adapterFeedback
         onFeedbackSubmitted()
     }
 
@@ -160,9 +163,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     private fun updatedFeedbackList(updatedList: List<RealmFeedback>?) {
-        val adapterFeedback = updatedList?.let { AdapterFeedback(requireActivity(), it) }
-        binding.rvFeedback.adapter = adapterFeedback
-        adapterFeedback?.notifyDataSetChanged()
+        adapterFeedback.submitList(updatedList)
         val itemCount = updatedList?.size ?: 0
         showNoData(binding.tvMessage, itemCount, "feedback")
         updateTextViewsVisibility(itemCount)
