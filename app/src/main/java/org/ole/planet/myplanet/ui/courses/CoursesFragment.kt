@@ -29,7 +29,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import android.util.Log
 import kotlinx.coroutines.delay
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
@@ -143,18 +142,16 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             override fun onSyncComplete() {
                 activity?.runOnUiThread {
                     if (isAdded) {
-                        Log.d("CoursesFragment", "=== SYNC COMPLETE CALLBACK ===")
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
 
                         lifecycleScope.launch {
-                            delay(3000) // Increased delay to ensure all DB transactions complete
+                            delay(3000)
                             withContext(Dispatchers.Main) {
                                 refreshCoursesData()
                             }
                         }
                         prefManager.setCoursesSynced(true)
-                        Log.d("CoursesFragment", "=== SYNC COMPLETE CALLBACK FINISHED ===")
                     }
                 }
             }
@@ -181,34 +178,15 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun refreshCoursesData() {
-        Log.d("CoursesFragment", "=== refreshCoursesData() START ===")
-        Log.d("CoursesFragment", "isAdded: $isAdded, isFinishing: ${requireActivity().isFinishing}")
-        Log.d("CoursesFragment", "isMyCourseLib: $isMyCourseLib")
-        Log.d("CoursesFragment", "Thread: ${Thread.currentThread().name}")
-        
         if (!isAdded || requireActivity().isFinishing) return
 
         try {
-            // Ensure we're getting fresh data from the database
             mRealm.refresh()
-            
             val map = getRatings(mRealm, "course", model?.id)
             val progressMap = getCourseProgress(mRealm, model?.id)
-            
-            // Get all courses from database for debugging
-            val allCourses = mRealm.where(RealmMyCourse::class.java).findAll()
-            Log.d("CoursesFragment", "Total courses in database: ${allCourses.size}")
-            Log.d("CoursesFragment", "All course titles: ${allCourses.map { it.courseTitle }}")
-            
             val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
             val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
 
-            Log.d("CoursesFragment", "Filtered courseList size: ${courseList.size}")
-            Log.d("CoursesFragment", "Sorted courseList size: ${sortedCourseList.size}")
-            Log.d("CoursesFragment", "Course titles: ${sortedCourseList.map { it?.courseTitle }}")
-            Log.d("CoursesFragment", "isMyCourse flags: ${sortedCourseList.map { it?.isMyCourse }}")
-
-            // Recreate adapter to ensure clean state
             recyclerView.adapter = null
             adapterCourses = AdapterCourses(requireActivity(), sortedCourseList, map, userProfileDbHandler)
             adapterCourses.setProgressMap(progressMap)
@@ -217,8 +195,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             adapterCourses.setRatingChangeListener(this)
             recyclerView.adapter = adapterCourses
 
-            Log.d("CoursesFragment", "Adapter created with ${adapterCourses.itemCount} items")
-
             if (isMyCourseLib) {
                 val courseIds = courseList.mapNotNull { it?.id }
                 resources = mRealm.where(RealmMyLibrary::class.java)
@@ -226,51 +202,26 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     .equalTo("resourceOffline", false)
                     .isNotNull("resourceLocalAddress")
                     .findAll()
-                Log.d("CoursesFragment", "Resources count: ${resources?.size}")
             }
-
             checkList()
             showNoData(tvMessage, adapterCourses.itemCount, "courses")
-            Log.d("CoursesFragment", "Final adapter item count: ${adapterCourses.itemCount}")
-
         } catch (e: Exception) {
-            Log.e("CoursesFragment", "Error in refreshCoursesData", e)
             e.printStackTrace()
         }
-        
-        Log.d("CoursesFragment", "=== refreshCoursesData() END ===")
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        Log.d("CoursesFragment", "=== getAdapter() START ===")
-        Log.d("CoursesFragment", "isMyCourseLib in getAdapter: $isMyCourseLib")
-        Log.d("CoursesFragment", "getAdapter Thread: ${Thread.currentThread().name}")
-        
-        // Ensure we're getting fresh data from the database
         mRealm.refresh()
         
         val map = getRatings(mRealm, "course", model?.id)
         val progressMap = getCourseProgress(mRealm, model?.id)
-        
-        // Get all courses from database for debugging
-        val allCourses = mRealm.where(RealmMyCourse::class.java).findAll()
-        Log.d("CoursesFragment", "getAdapter - Total courses in database: ${allCourses.size}")
-        
         val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
         val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
-        
-        Log.d("CoursesFragment", "getAdapter - Filtered courseList size: ${courseList.size}")
-        Log.d("CoursesFragment", "getAdapter - Sorted courseList size: ${sortedCourseList.size}")
-        Log.d("CoursesFragment", "getAdapter - Course titles: ${sortedCourseList.map { it?.courseTitle }}")
-        
         adapterCourses = AdapterCourses(requireActivity(), sortedCourseList, map, userProfileDbHandler)
         adapterCourses.setProgressMap(progressMap)
         adapterCourses.setmRealm(mRealm)
         adapterCourses.setListener(this)
         adapterCourses.setRatingChangeListener(this)
-        
-        Log.d("CoursesFragment", "getAdapter - Final adapter item count: ${adapterCourses.itemCount}")
-        Log.d("CoursesFragment", "=== getAdapter() END ===")
 
         if (isMyCourseLib) {
             val courseIds = courseList.mapNotNull { it?.id }
@@ -324,7 +275,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 val query = s.toString().trim()
                 if (query.isEmpty()) {
                     val courseList = filterCourseByTag(query, searchTags)
-                    val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
+                    val sortedCourseList = courseList.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
                     adapterCourses.setOriginalCourseList(sortedCourseList)
                 }
                 else {
@@ -707,20 +658,13 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
     
     override fun onDataUpdated(table: String, update: TableDataUpdate) {
-        Log.d("CoursesFragment", "=== REALTIME onDataUpdated ===")
-        Log.d("CoursesFragment", "Table: $table, shouldRefreshUI: ${update.shouldRefreshUI}")
-        Log.d("CoursesFragment", "newItemsCount: ${update.newItemsCount}, updatedItemsCount: ${update.updatedItemsCount}")
-        
         if (table == "courses" && update.shouldRefreshUI) {
             if (::adapterCourses.isInitialized) {
-                Log.d("CoursesFragment", "Adapter initialized, calling refreshCoursesData()")
                 refreshCoursesData()
             } else {
-                Log.d("CoursesFragment", "Adapter NOT initialized, calling getAdapter()")
                 recyclerView.adapter = getAdapter()
             }
         }
-        Log.d("CoursesFragment", "=== REALTIME onDataUpdated END ===")
     }
     
     override fun getSyncRecyclerView(): RecyclerView? {
