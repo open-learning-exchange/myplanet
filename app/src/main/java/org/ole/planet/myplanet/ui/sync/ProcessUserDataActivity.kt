@@ -373,26 +373,27 @@ abstract class ProcessUserDataActivity : PermissionActivity(), SuccessListener {
 
     private fun updateRealmUserSecurityData(name: String, userId: String?, rev: String?, derivedKey: String?, salt: String?, passwordScheme: String?, iterations: String?, securityCallback: SecurityDataCallback? = null) {
         try {
-            val realm = databaseService.realmInstance
-            realm.executeTransactionAsync({ transactionRealm ->
-                val user = transactionRealm.where(RealmUserModel::class.java)
-                    .equalTo("name", name)
-                    .findFirst()
+            databaseService.withRealm { realm ->
+                realm.executeTransactionAsync({ transactionRealm ->
+                    val user = transactionRealm.where(RealmUserModel::class.java)
+                        .equalTo("name", name)
+                        .findFirst()
 
-                if (user != null) {
-                    user._id = userId
-                    user._rev = rev
-                    user.derived_key = derivedKey
-                    user.salt = salt
-                    user.password_scheme = passwordScheme
-                    user.iterations = iterations
-                    user.isUpdated = false
+                    if (user != null) {
+                        user._id = userId
+                        user._rev = rev
+                        user.derived_key = derivedKey
+                        user.salt = salt
+                        user.password_scheme = passwordScheme
+                        user.iterations = iterations
+                        user.isUpdated = false
+                    }
+                }, {
+                    securityCallback?.onSecurityDataUpdated()
+                }) { error ->
+                    error.printStackTrace()
+                    securityCallback?.onSecurityDataUpdated()
                 }
-            }, {
-                securityCallback?.onSecurityDataUpdated()
-            }) { error ->
-                error.printStackTrace()
-                securityCallback?.onSecurityDataUpdated()
             }
         } catch (e: Exception) {
             e.printStackTrace()
