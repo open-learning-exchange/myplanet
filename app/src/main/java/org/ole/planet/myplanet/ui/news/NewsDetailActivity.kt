@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -73,7 +74,7 @@ class NewsDetailActivity : BaseActivity() {
                 val library = realm.where(RealmMyLibrary::class.java).equalTo("_id", resourceId).findFirst()
                 msg = msg?.replace(
                     markDown,
-                    "<img style=\"float: right; padding: 10px 10px 10px 10px;\"  width=\"200px\" src=\"file://" + Utilities.SD_PATH + "/" + library?.id + "/" + library?.resourceLocalAddress + "\"/>",
+                    "<img style=\"float: right; padding: 10px 10px 10px 10px;\"  width=\"200px\" src=\"file://" + FileUtils.SD_PATH + "/" + library?.id + "/" + library?.resourceLocalAddress + "\"/>",
                     false
                 )
             }
@@ -120,7 +121,7 @@ class NewsDetailActivity : BaseActivity() {
                 realm.where(RealmMyLibrary::class.java).equalTo("_id", resourceId).findFirst()
             if (library != null) {
                 Glide.with(this)
-                    .load(File(Utilities.SD_PATH, library.id + "/" + library.resourceLocalAddress))
+                    .load(File(FileUtils.SD_PATH, library.id + "/" + library.resourceLocalAddress))
                     .into(binding.img)
                 binding.img.visibility = View.VISIBLE
                 return

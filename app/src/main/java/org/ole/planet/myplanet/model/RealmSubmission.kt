@@ -22,7 +22,6 @@ import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
-import org.ole.planet.myplanet.utilities.Utilities
 
 open class RealmSubmission : RealmObject() {
     @PrimaryKey
@@ -175,9 +174,9 @@ open class RealmSubmission : RealmObject() {
         fun continueResultUpload(sub: RealmSubmission, apiInterface: ApiInterface?, realm: Realm, context: Context) {
             if (!TextUtils.isEmpty(sub.userId) && sub.userId?.startsWith("guest") == true) return
             val `object`: JsonObject? = if (TextUtils.isEmpty(sub._id)) {
-                apiInterface?.postDoc(Utilities.header, "application/json", UrlUtils.getUrl() + "/submissions", serializeExamResult(realm, sub, context))?.execute()?.body()
+                apiInterface?.postDoc(UrlUtils.header, "application/json", UrlUtils.getUrl() + "/submissions", serializeExamResult(realm, sub, context))?.execute()?.body()
             } else {
-                apiInterface?.putDoc(Utilities.header, "application/json", UrlUtils.getUrl() + "/submissions/" + sub._id, serializeExamResult(realm, sub, context))?.execute()?.body()
+                apiInterface?.putDoc(UrlUtils.header, "application/json", UrlUtils.getUrl() + "/submissions/" + sub._id, serializeExamResult(realm, sub, context))?.execute()?.body()
             }
             if (`object` != null) {
                 sub._id = JsonUtils.getString("id", `object`)

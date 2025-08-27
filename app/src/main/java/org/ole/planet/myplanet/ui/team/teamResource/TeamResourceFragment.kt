@@ -29,24 +29,25 @@ import org.ole.planet.myplanet.utilities.CheckboxListView
 
 @AndroidEntryPoint
 class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdateListner {
-    private lateinit var fragmentTeamResourceBinding: FragmentTeamResourceBinding
+    private var _binding: FragmentTeamResourceBinding? = null
+    private val binding get() = _binding!!
     private lateinit var adapterLibrary: AdapterTeamResource
 
     @Inject
     lateinit var teamRepository: TeamRepository
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentTeamResourceBinding = FragmentTeamResourceBinding.inflate(inflater, container, false)
-        return fragmentTeamResourceBinding.root
+        _binding = FragmentTeamResourceBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         showLibraryList()
         if (!isMember()) {
-            fragmentTeamResourceBinding.fabAddResource.visibility = View.GONE
+            binding.fabAddResource.visibility = View.GONE
         }
-        fragmentTeamResourceBinding.fabAddResource.setOnClickListener { showResourceListDialog() }
+        binding.fabAddResource.setOnClickListener { showResourceListDialog() }
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
@@ -64,8 +65,8 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
             adapterLibrary = settings?.let {
                 AdapterTeamResource(safeActivity, libraries, mRealm, teamId, it, this@TeamResourceFragment)
             }!!
-            fragmentTeamResourceBinding.rvResource.layoutManager = GridLayoutManager(safeActivity, 3)
-            fragmentTeamResourceBinding.rvResource.adapter = adapterLibrary
+            binding.rvResource.layoutManager = GridLayoutManager(safeActivity, 3)
+            binding.rvResource.adapter = adapterLibrary
             checkAndShowNoData()
         }
     }
@@ -132,7 +133,7 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
     }
 
     fun checkAndShowNoData() {
-        showNoData(fragmentTeamResourceBinding.tvNodata, adapterLibrary.itemCount, "teamResources")
+        showNoData(binding.tvNodata, adapterLibrary.itemCount, "teamResources")
     }
 
     override fun onResourceListUpdated() {
@@ -141,5 +142,10 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
 
     override fun onAddDocument() {
         showResourceListDialog()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

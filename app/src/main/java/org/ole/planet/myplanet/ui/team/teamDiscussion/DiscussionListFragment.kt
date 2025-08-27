@@ -255,6 +255,15 @@ class DiscussionListFragment : BaseTeamFragment() {
         showRecyclerView(list)
     }
 
+    override fun onDestroyView() {
+        updatedNewsList?.removeAllChangeListeners()
+        updatedNewsList = null
+        if (isRealmInitialized()) {
+            mRealm.close()
+        }
+        super.onDestroyView()
+    }
+
     private fun shouldQueryTeamFromRealm(): Boolean {
         val hasDirectData = requireArguments().containsKey("teamName") &&
                 requireArguments().containsKey("teamType") &&

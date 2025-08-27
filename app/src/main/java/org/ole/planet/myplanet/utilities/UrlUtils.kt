@@ -2,11 +2,44 @@ package org.ole.planet.myplanet.utilities
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Base64
+import androidx.core.net.toUri
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
 object UrlUtils {
+    val header: String
+        get() {
+            val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val credentials = "${settings.getString("url_user", "")}:${settings.getString("url_pwd", "")}".toByteArray()
+            return "Basic ${Base64.encodeToString(credentials, Base64.NO_WRAP)}"
+        }
+
+    val hostUrl: String
+        get() {
+            val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            var scheme = settings.getString("url_Scheme", "")
+            var hostIp = settings.getString("url_Host", "")
+            val isAlternativeUrl = settings.getBoolean("isAlternativeUrl", false)
+            val alternativeUrl = settings.getString("processedAlternativeUrl", "")
+
+            if (isAlternativeUrl && !alternativeUrl.isNullOrEmpty()) {
+                try {
+                    val uri = alternativeUrl.toUri()
+                    hostIp = uri.host ?: hostIp
+                    scheme = uri.scheme ?: scheme
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            return if (hostIp?.endsWith(".org") == true || hostIp?.endsWith(".gt") == true) {
+                "$scheme://$hostIp/ml/"
+            } else {
+                "$scheme://$hostIp:5000/"
+            }
+        }
     fun baseUrl(settings: SharedPreferences): String {
         var url = if (settings.getBoolean("isAlternativeUrl", false)) {
             settings.getString("processedAlternativeUrl", "")
