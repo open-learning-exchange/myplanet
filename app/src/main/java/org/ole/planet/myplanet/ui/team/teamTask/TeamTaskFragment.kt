@@ -299,4 +299,15 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             adapterTask.notifyDataSetChanged()
         }
     }
+
+    override fun onDestroyView() {
+        teamTaskList?.removeAllChangeListeners()
+        teamTaskList = null
+        list = null
+        fragmentTeamTaskBinding.rvTask.adapter = null
+        if (isRealmInitialized()) {
+            mRealm.close()
+        }
+        super.onDestroyView()
+    }
 }
