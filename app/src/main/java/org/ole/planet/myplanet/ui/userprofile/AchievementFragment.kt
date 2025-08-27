@@ -42,7 +42,8 @@ import org.ole.planet.myplanet.utilities.UrlUtils
 
 @AndroidEntryPoint
 class AchievementFragment : BaseContainerFragment() {
-    private lateinit var fragmentAchievementBinding: FragmentAchievementBinding
+    private var _binding: FragmentAchievementBinding? = null
+    private val binding get() = _binding!!
     private lateinit var aRealm: Realm
     var user: RealmUserModel? = null
     var listener: OnHomeItemClickListener? = null
@@ -68,13 +69,18 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentAchievementBinding = FragmentAchievementBinding.inflate(inflater, container, false)
+        _binding = FragmentAchievementBinding.inflate(inflater, container, false)
         aRealm = databaseService.realmInstance
         user = UserProfileDbHandler(MainApplication.context).userModel
-        fragmentAchievementBinding.btnEdit.setOnClickListener {
+        binding.btnEdit.setOnClickListener {
             if (listener != null) listener?.openCallFragment(EditAchievementFragment())
         }
-        return fragmentAchievementBinding.root
+        return binding.root
+    }
+
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
     }
 
     private fun startAchievementSync() {
@@ -123,7 +129,7 @@ class AchievementFragment : BaseContainerFragment() {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
-                        Snackbar.make(fragmentAchievementBinding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
+                        Snackbar.make(binding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
                             .setAction("Retry") { startAchievementSync() }
                             .show()
                     }
@@ -168,8 +174,8 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun setupUserData() {
-        fragmentAchievementBinding.tvFirstName.text = user?.firstName
-        fragmentAchievementBinding.tvName.text =
+        binding.tvFirstName.text = user?.firstName
+        binding.tvName.text =
             String.format("%s %s %s", user?.firstName, user?.middleName, user?.lastName)
     }
 
@@ -189,13 +195,13 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun setupAchievementHeader(a: RealmAchievement) {
-        fragmentAchievementBinding.tvGoals.text = a.goals
-        fragmentAchievementBinding.tvPurpose.text = a.purpose
-        fragmentAchievementBinding.tvAchievementHeader.text = a.achievementsHeader
+        binding.tvGoals.text = a.goals
+        binding.tvPurpose.text = a.purpose
+        binding.tvAchievementHeader.text = a.achievementsHeader
     }
 
     private fun populateAchievements() {
-        fragmentAchievementBinding.llAchievement.removeAllViews()
+        binding.llAchievement.removeAllViews()
         achievement?.achievements?.forEach { json ->
             val element = Gson().fromJson(json, JsonElement::class.java)
             val view = if (element is JsonObject) createAchievementView(element) else null
@@ -204,7 +210,7 @@ class AchievementFragment : BaseContainerFragment() {
                 if (it.parent != null) {
                     (it.parent as ViewGroup).removeView(it)
                 }
-                fragmentAchievementBinding.llAchievement.addView(it)
+                binding.llAchievement.addView(it)
             }
         }
     }
@@ -257,8 +263,8 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun setupReferences() {
-        fragmentAchievementBinding.rvOtherInfo.layoutManager = LinearLayoutManager(MainApplication.context)
-        fragmentAchievementBinding.rvOtherInfo.adapter =
+        binding.rvOtherInfo.layoutManager = LinearLayoutManager(MainApplication.context)
+        binding.rvOtherInfo.adapter =
             AdapterOtherInfo(MainApplication.context, achievement?.references ?: RealmList())
     }
 
