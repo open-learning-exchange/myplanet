@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import io.realm.Realm
 import io.realm.RealmChangeListener
 import io.realm.RealmResults
 import javax.inject.Inject
@@ -18,26 +19,25 @@ class FeedbackRepositoryImpl @Inject constructor(
     private val databaseService: DatabaseService,
 ) : FeedbackRepository {
     override fun getFeedback(userModel: RealmUserModel?): Flow<List<RealmFeedback>> =
-        databaseService.withRealm { realm ->
-            callbackFlow {
-                val feedbackList: RealmResults<RealmFeedback> =
-                    if (userModel?.isManager() == true) {
-                        realm.where(RealmFeedback::class.java).findAllAsync()
-                    } else {
-                        realm.where(RealmFeedback::class.java).equalTo("owner", userModel?.name)
-                            .findAllAsync()
-                    }
-
-                val listener = RealmChangeListener<RealmResults<RealmFeedback>> { results ->
-                    trySend(realm.copyFromRealm(results))
+        callbackFlow {
+            val realm = Realm.getDefaultInstance()
+            val feedbackList: RealmResults<RealmFeedback> =
+                if (userModel?.isManager() == true) {
+                    realm.where(RealmFeedback::class.java).findAllAsync()
+                } else {
+                    realm.where(RealmFeedback::class.java).equalTo("owner", userModel?.name)
+                        .findAllAsync()
                 }
 
-                feedbackList.addChangeListener(listener)
+            val listener = RealmChangeListener<RealmResults<RealmFeedback>> { results ->
+                trySend(realm.copyFromRealm(results))
+            }
 
-                awaitClose {
-                    feedbackList.removeChangeListener(listener)
-                    realm.close()
-                }
+            feedbackList.addChangeListener(listener)
+
+            awaitClose {
+                feedbackList.removeChangeListener(listener)
+                realm.close()
             }
         }
 }
