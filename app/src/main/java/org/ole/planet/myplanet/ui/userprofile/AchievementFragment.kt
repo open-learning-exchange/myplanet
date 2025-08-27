@@ -84,6 +84,9 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     override fun onDestroyView() {
+        if (::realtimeSyncListener.isInitialized) {
+            syncCoordinator.removeListener(realtimeSyncListener)
+        }
         _binding = null
         super.onDestroyView()
     }
@@ -297,12 +300,6 @@ class AchievementFragment : BaseContainerFragment() {
         return libraries
     }
 
-    override fun onDestroyView() {
-        if (::realtimeSyncListener.isInitialized) {
-            syncCoordinator.removeListener(realtimeSyncListener)
-        }
-        super.onDestroyView()
-    }
 
     override fun onDestroy() {
         customProgressDialog?.dismiss()

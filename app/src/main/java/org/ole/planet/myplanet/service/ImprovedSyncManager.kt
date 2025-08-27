@@ -31,7 +31,7 @@ import org.ole.planet.myplanet.service.sync.SyncErrorRecovery
 import org.ole.planet.myplanet.service.sync.SyncMode
 import org.ole.planet.myplanet.service.sync.SyncPerformanceMonitor
 import org.ole.planet.myplanet.service.sync.SyncStrategy
-import org.ole.planet.myplanet.utilities.NotificationUtil
+import org.ole.planet.myplanet.utilities.NotificationUtils
 import org.ole.planet.myplanet.utilities.SyncTimeLogger
 import java.util.Date
 import javax.inject.Inject
@@ -118,7 +118,7 @@ class ImprovedSyncManager @Inject constructor(
     }
     
     private suspend fun performSync(syncMode: SyncMode, syncTables: List<String>?) {
-        val logger = SyncTimeLogger.getInstance()
+        val logger = SyncTimeLogger
         logger.startLogging()
         
         initializeSync()
@@ -214,7 +214,7 @@ class ImprovedSyncManager @Inject constructor(
     
     private fun initializeSync() {
         isSyncing = true
-        NotificationUtil.create(
+        NotificationUtils.create(
             context,
             org.ole.planet.myplanet.R.mipmap.ic_launcher,
             "Syncing data",
@@ -225,7 +225,7 @@ class ImprovedSyncManager @Inject constructor(
     private fun cleanup() {
         isSyncing = false
         settings.edit { putLong("LastSync", Date().time) }
-        NotificationUtil.cancel(context, 111)
+        NotificationUtils.cancel(context, 111)
         listener?.onSyncComplete()
     }
     

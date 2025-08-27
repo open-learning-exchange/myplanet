@@ -148,8 +148,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                         customProgressDialog = null
 
                         lifecycleScope.launch {
-                            delay(1500)
-                            refreshCoursesData()
+                            delay(3000) // Increased delay to ensure all DB transactions complete
+                            withContext(Dispatchers.Main) {
+                                refreshCoursesData()
+                            }
                         }
                         prefManager.setCoursesSynced(true)
                         Log.d("CoursesFragment", "=== SYNC COMPLETE CALLBACK FINISHED ===")
@@ -182,16 +184,26 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         Log.d("CoursesFragment", "=== refreshCoursesData() START ===")
         Log.d("CoursesFragment", "isAdded: $isAdded, isFinishing: ${requireActivity().isFinishing}")
         Log.d("CoursesFragment", "isMyCourseLib: $isMyCourseLib")
+        Log.d("CoursesFragment", "Thread: ${Thread.currentThread().name}")
         
         if (!isAdded || requireActivity().isFinishing) return
 
         try {
+            // Ensure we're getting fresh data from the database
+            mRealm.refresh()
+            
             val map = getRatings(mRealm, "course", model?.id)
             val progressMap = getCourseProgress(mRealm, model?.id)
+            
+            // Get all courses from database for debugging
+            val allCourses = mRealm.where(RealmMyCourse::class.java).findAll()
+            Log.d("CoursesFragment", "Total courses in database: ${allCourses.size}")
+            Log.d("CoursesFragment", "All course titles: ${allCourses.map { it.courseTitle }}")
+            
             val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
             val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
 
-            Log.d("CoursesFragment", "Raw courseList size: ${courseList.size}")
+            Log.d("CoursesFragment", "Filtered courseList size: ${courseList.size}")
             Log.d("CoursesFragment", "Sorted courseList size: ${sortedCourseList.size}")
             Log.d("CoursesFragment", "Course titles: ${sortedCourseList.map { it?.courseTitle }}")
             Log.d("CoursesFragment", "isMyCourse flags: ${sortedCourseList.map { it?.isMyCourse }}")
@@ -232,13 +244,22 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     override fun getAdapter(): RecyclerView.Adapter<*> {
         Log.d("CoursesFragment", "=== getAdapter() START ===")
         Log.d("CoursesFragment", "isMyCourseLib in getAdapter: $isMyCourseLib")
+        Log.d("CoursesFragment", "getAdapter Thread: ${Thread.currentThread().name}")
+        
+        // Ensure we're getting fresh data from the database
+        mRealm.refresh()
         
         val map = getRatings(mRealm, "course", model?.id)
         val progressMap = getCourseProgress(mRealm, model?.id)
+        
+        // Get all courses from database for debugging
+        val allCourses = mRealm.where(RealmMyCourse::class.java).findAll()
+        Log.d("CoursesFragment", "getAdapter - Total courses in database: ${allCourses.size}")
+        
         val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
         val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
         
-        Log.d("CoursesFragment", "getAdapter - Raw courseList size: ${courseList.size}")
+        Log.d("CoursesFragment", "getAdapter - Filtered courseList size: ${courseList.size}")
         Log.d("CoursesFragment", "getAdapter - Sorted courseList size: ${sortedCourseList.size}")
         Log.d("CoursesFragment", "getAdapter - Course titles: ${sortedCourseList.map { it?.courseTitle }}")
         
