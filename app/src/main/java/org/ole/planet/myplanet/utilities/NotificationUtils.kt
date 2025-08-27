@@ -103,7 +103,7 @@ object NotificationUtils {
         private val notificationManager = NotificationManagerCompat.from(context)
         private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         private val activeNotifications = mutableSetOf<String>()
-        private val currentSessionNotifications = mutableSetOf<String>()
+        private val sessionShownNotifications = mutableSetOf<String>()
 
         init {
             loadActiveNotifications()
@@ -158,10 +158,20 @@ object NotificationUtils {
                 return false
             }
 
+            if (sessionShownNotifications.contains(config.id)) {
+                return false
+            }
+
+            val notificationId = config.id.hashCode()
+            val activeNotifications = notificationManager.activeNotifications
+            val isAlreadyShowing = activeNotifications.any { it.id == notificationId }
+            
+            if (isAlreadyShowing) {
+                return false
+            }
+
             try {
                 val notification = buildNotification(config)
-                val notificationId = config.id.hashCode()
-
                 notificationManager.notify(notificationId, notification)
                 markNotificationAsShown(config.id)
                 return true
@@ -350,8 +360,8 @@ object NotificationUtils {
         }
 
         private fun markNotificationAsShown(notificationId: String) {
-            currentSessionNotifications.add(notificationId)
             activeNotifications.add(notificationId)
+            sessionShownNotifications.add(notificationId)
             saveActiveNotifications()
         }
 
@@ -359,6 +369,10 @@ object NotificationUtils {
             notificationManager.cancel(notificationId.hashCode())
             activeNotifications.remove(notificationId)
             saveActiveNotifications()
+        }
+
+        fun clearSessionTracking() {
+            sessionShownNotifications.clear()
         }
 
         private fun loadActiveNotifications() {
@@ -477,8 +491,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
         when (action) {
             NotificationUtils.ACTION_MARK_AS_READ -> {
                 markNotificationAsRead(context, notificationId)
-                val notificationManager = NotificationManagerCompat.from(context)
-                notificationManager.cancel(notificationId.hashCode())
+                notificationId?.let {
+                    NotificationUtils.getInstance(context).clearNotification(it)
+                }
             }
             
             NotificationUtils.ACTION_STORAGE_SETTINGS -> {
@@ -487,8 +502,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 }
                 context.startActivity(storageIntent)
-                val notificationManager = NotificationManagerCompat.from(context)
-                notificationManager.cancel(notificationId.hashCode())
+                notificationId?.let {
+                    NotificationUtils.getInstance(context).clearNotification(it)
+                }
             }
             
             NotificationUtils.ACTION_OPEN_NOTIFICATION -> {
@@ -504,8 +520,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     putExtra("auto_navigate", true)
                 }
                 context.startActivity(dashboardIntent)
-                val notificationManager = NotificationManagerCompat.from(context)
-                notificationManager.cancel(notificationId.hashCode())
+                notificationId?.let {
+                    NotificationUtils.getInstance(context).clearNotification(it)
+                }
             }
         }
     }
