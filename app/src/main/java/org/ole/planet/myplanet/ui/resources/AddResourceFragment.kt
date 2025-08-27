@@ -285,19 +285,28 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                         return@setPositiveButton
                     }
                     val desc = etDesc.text.toString().trim { it <= ' ' }
-                    val realm = databaseService.realmInstance
-                    realm.executeTransactionAsync(
-                        Realm.Transaction { realm1: Realm -> val myPersonal = realm1.createObject(RealmMyPersonal::class.java, UUID.randomUUID().toString())
-                            myPersonal.title = title
-                            myPersonal.userId = userId
-                            myPersonal.userName = userName
-                            myPersonal.path = path
-                            myPersonal.date = Date().time
-                            myPersonal.description = desc
-                        },
-                        Realm.Transaction.OnSuccess {
-                            Utilities.toast(MainApplication.context, context.getString(R.string.resource_saved_to_my_personal))
-                        })
+                    databaseService.withRealm { realm ->
+                        realm.executeTransactionAsync(
+                            Realm.Transaction { realm1: Realm ->
+                                val myPersonal = realm1.createObject(
+                                    RealmMyPersonal::class.java,
+                                    UUID.randomUUID().toString()
+                                )
+                                myPersonal.title = title
+                                myPersonal.userId = userId
+                                myPersonal.userName = userName
+                                myPersonal.path = path
+                                myPersonal.date = Date().time
+                                myPersonal.description = desc
+                            },
+                            Realm.Transaction.OnSuccess {
+                                Utilities.toast(
+                                    MainApplication.context,
+                                    context.getString(R.string.resource_saved_to_my_personal)
+                                )
+                            }
+                        )
+                    }
                     if (type == 1) {
                         myPersonalsFragment?.refreshFragment()
                     }
