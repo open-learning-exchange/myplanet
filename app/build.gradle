@@ -179,16 +179,11 @@ android {
     }
 }
 
-// Task to create 16KB aligned APKs automatically
 tasks.register('align16KBAPKs', Exec) {
     def outputsDir = layout.buildDirectory.dir("outputs/apk").get().asFile
-    
-    // Find the zipalign tool
     def sdkDir = android.sdkDirectory
     def buildToolsVersion = android.buildToolsVersion
     def zipalign = new File(sdkDir, "build-tools/${buildToolsVersion}/zipalign")
-    
-    // Script to align all APKs
     def alignScript = layout.buildDirectory.file("align_apks.sh").get().asFile
     
     doFirst {
@@ -206,7 +201,6 @@ done
     commandLine "bash", alignScript.absolutePath
 }
 
-// Automatically run alignment after assembling  
 afterEvaluate {
     tasks.matching { it.name.startsWith('assemble') }.configureEach {
         finalizedBy tasks.align16KBAPKs
