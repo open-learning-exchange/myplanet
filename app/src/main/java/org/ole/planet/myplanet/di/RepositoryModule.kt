@@ -15,6 +15,8 @@ import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.LibraryRepositoryImpl
 import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.NotificationRepositoryImpl
+import org.ole.planet.myplanet.repository.ServerAvailabilityRepository
+import org.ole.planet.myplanet.repository.ServerAvailabilityRepositoryImpl
 import org.ole.planet.myplanet.repository.RatingRepository
 import org.ole.planet.myplanet.repository.RatingRepositoryImpl
 import org.ole.planet.myplanet.repository.SearchRepository
@@ -69,4 +71,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindNotificationRepository(impl: NotificationRepositoryImpl): NotificationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindServerAvailabilityRepository(
+        impl: ServerAvailabilityRepositoryImpl
+    ): ServerAvailabilityRepository
 }
