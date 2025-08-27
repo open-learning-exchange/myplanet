@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
+    
+    <!-- Trusted Planet server domains with HTTP allowed -->
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Official Planet domains -->
+        <domain includeSubdomains="true">planet.learning.ole.org</domain>
+        <domain includeSubdomains="true">planet.earth.ole.org</domain>
+        <domain includeSubdomains="true">planet.somalia.ole.org</domain>
+        <domain includeSubdomains="true">planet.vi.ole.org</domain>
+        <domain includeSubdomains="true">planet.guatemala.ole.org</domain>
+        <domain includeSubdomains="true">planet.gt</domain>
+        <domain includeSubdomains="true">sanpablo.planet.gt</domain>
+        <domain includeSubdomains="true">uriur.planet.gt</domain>
+        <domain includeSubdomains="true">embakasi.planet.gt</domain>
+        
+        <!-- Local network IP ranges for Planet servers -->
+        <domain>192.168.48.253</domain>  <!-- San Pablo -->
+        <domain>10.82.1.31</domain>      <!-- Xela -->
+        <domain>192.168.1.68</domain>    <!-- Uriur -->
+        <domain>192.168.100.178</domain> <!-- Ruiru -->
+        <domain>192.168.1.202</domain>   <!-- Embakasi -->
+        <domain>192.168.68.126</domain>  <!-- Cambridge -->
+        
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </domain-config>
+    
+    <!-- Block cleartext for known malicious or untrusted domains -->
+    <domain-config cleartextTrafficPermitted="false">
+        <!-- Add any domains you want to force HTTPS -->
+        <domain includeSubdomains="true">example-malicious.com</domain>
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </domain-config>
+    
+    <!-- Debug overrides for development -->
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system"/>
+            <!-- Add user-added CAs for debugging -->
+            <certificates src="user"/>
+        </trust-anchors>
+    </debug-overrides>
+</network-security-config>
