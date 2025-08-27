@@ -272,4 +272,13 @@ class FinanceFragment : BaseTeamFragment() {
             }
         }
     }
+
+    override fun onDestroyView() {
+        list?.removeAllChangeListeners()
+        list = null
+        if (isRealmInitialized()) {
+            mRealm.close()
+        }
+        super.onDestroyView()
+    }
 }
