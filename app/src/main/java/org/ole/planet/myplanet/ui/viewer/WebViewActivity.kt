@@ -232,29 +232,27 @@ class WebViewActivity : AppCompatActivity() {
     
     private fun isTrustedPlanetServer(host: String?): Boolean {
         if (host == null) return false
-        
-        val trustedDomains = listOf(
-            "planet.learning.ole.org",
-            "planet.earth.ole.org", 
-            "planet.somalia.ole.org",
-            "planet.vi.ole.org",
-            "planet.guatemala.ole.org",
-            "planet.gt",
-            "sanpablo.planet.gt",
-            "uriur.planet.gt", 
-            "embakasi.planet.gt"
+
+        val trustedUrls = listOfNotNull(
+            BuildConfig.PLANET_LEARNING_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_GUATEMALA_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_SANPABLO_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_SANPABLO_CLONE_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_EARTH_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_SOMALIA_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_VI_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_XELA_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_URIUR_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_URIUR_CLONE_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_RUIRU_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_EMBAKASI_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_EMBAKASI_CLONE_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_CAMBRIDGE_URL.takeIf { it.isNotEmpty() }
         )
-        
-        val trustedIPs = listOf(
-            "192.168.48.253",  // San Pablo
-            "10.82.1.31",      // Xela
-            "192.168.1.68",    // Uriur
-            "192.168.100.178", // Ruiru
-            "192.168.1.202",   // Embakasi
-            "192.168.68.126"   // Cambridge
-        )
-        
-        return trustedDomains.any { host.endsWith(it) } || trustedIPs.contains(host)
+
+        return trustedUrls.any { url ->
+            host == url || host.endsWith(".$url")
+        }
     }
 
     private fun setListeners() {
