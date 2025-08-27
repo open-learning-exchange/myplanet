@@ -18,7 +18,7 @@ android {
         multiDexEnabled = true
         
         ndk {
-            abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'
+            debugSymbolLevel = 'SYMBOL_TABLE'
         }
     }
     configurations.configureEach {
@@ -64,6 +64,27 @@ android {
         }
         jniLibs {
             useLegacyPackaging = false
+        }
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
+        }
+    }
+
+    androidComponents {
+        onVariants(selector().all()) { variant ->
+            variant.packaging.jniLibs.keepDebugSymbols.add("**/*.so")
+        }
+    }
+    
+    splits {
+        abi {
+            enable = true
+            reset()
+            include 'arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'
+            universalApk = false
         }
     }
 
@@ -158,6 +179,40 @@ android {
     }
 }
 
+// Task to create 16KB aligned APKs automatically
+tasks.register('align16KBAPKs', Exec) {
+    def outputsDir = layout.buildDirectory.dir("outputs/apk").get().asFile
+    
+    // Find the zipalign tool
+    def sdkDir = android.sdkDirectory
+    def buildToolsVersion = android.buildToolsVersion
+    def zipalign = new File(sdkDir, "build-tools/${buildToolsVersion}/zipalign")
+    
+    // Script to align all APKs
+    def alignScript = layout.buildDirectory.file("align_apks.sh").get().asFile
+    
+    doFirst {
+        alignScript.parentFile.mkdirs()
+        alignScript.text = """#!/bin/bash
+find "${outputsDir}" -name "*.apk" ! -name "*-16k-aligned.apk" -type f | while read apk; do
+    aligned="\${apk%.apk}-16k-aligned.apk"
+    echo "Aligning \$apk to \$aligned"
+    "${zipalign}" -f -p 16384 "\$apk" "\$aligned"
+done
+"""
+        alignScript.setExecutable(true)
+    }
+    
+    commandLine "bash", alignScript.absolutePath
+}
+
+// Automatically run alignment after assembling  
+afterEvaluate {
+    tasks.matching { it.name.startsWith('assemble') }.configureEach {
+        finalizedBy tasks.align16KBAPKs
+    }
+}
+
 tasks.register('generateVersionsXml') {
     def versionNameProvider = project.provider { android.defaultConfig.versionName }
     def versionsXmlFile = file('src/main/res/values/versions.xml')
@@ -205,7 +260,9 @@ dependencies {
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
     implementation 'com.github.jeancsanchez:jcplayer:2.7.2'
     implementation 'com.github.clans:fab:1.6.4'
-    implementation 'com.github.mhiew:pdfium-android:1.9.2'
+    implementation('com.github.mhiew:pdfium-android:1.9.2') {
+        exclude group: 'com.github.barteksc', module: 'pdfium-android'
+    }
     implementation 'com.applandeo:material-calendar-view:1.9.2'
     implementation 'com.afollestad.material-dialogs:commons:0.9.6.0'
     implementation 'com.borax12.materialdaterangepicker:library:2.0'
