@@ -14,7 +14,6 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import io.realm.Realm
-import io.realm.Sort
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -70,7 +69,7 @@ class AdapterJoinedMember(
             R.string.last_visit,
             lastVisitDate
         )
-        Glide.with(context)
+        Glide.with(binding.memberImage.context)
             .load(member.userImage)
             .placeholder(R.drawable.profile)
             .error(R.drawable.profile)
@@ -89,10 +88,8 @@ class AdapterJoinedMember(
 
         holder.itemView.setOnClickListener {
             val activity = it.context as AppCompatActivity
-            val userName = if ("${member.firstName} ${member.lastName}".trim().isBlank()) {
+            val userName = "${member.firstName} ${member.lastName}".trim().ifBlank {
                 member.name
-            } else {
-                "${member.firstName} ${member.lastName}".trim()
             }
             val fragment = MemberDetailFragment.newInstance(
                 userName.toString(),
@@ -108,8 +105,7 @@ class AdapterJoinedMember(
             )
             NavigationHelper.replaceFragment(
                 activity.supportFragmentManager,
-                R.id.fragment_container,
-                fragment,
+                R.id.fragment_container, fragment,
                 addToBackStack = true
             )
         }
@@ -182,17 +178,31 @@ class AdapterJoinedMember(
             .equalTo("teamId", teamId)
             .equalTo("isLeader", false)
             .notEqualTo("status","archived")
-            .sort("createdDate", Sort.DESCENDING)
             .findAll()
-        val successor =  if (members.isNotEmpty()) members?.first() else null
-        if(successor==null){
+        
+        if (members.isEmpty()) {
             return null
         }
-        else{
-            val user= mRealm.where(RealmUserModel::class.java).equalTo("id", successor.userId).findFirst()
-            return user
+
+        var successorTeamMember: RealmMyTeam? = null
+        var maxVisitCount: Long = -1
+        
+        for (member in members) {
+            val user = mRealm.where(RealmUserModel::class.java).equalTo("id", member.userId).findFirst()
+            if (user != null) {
+                val visitCount = RealmTeamLog.getVisitCount(mRealm, user.name, teamId)
+                if (visitCount > maxVisitCount) {
+                    maxVisitCount = visitCount
+                    successorTeamMember = member
+                }
+            }
         }
-        return null
+        
+        return if (successorTeamMember != null) {
+            mRealm.where(RealmUserModel::class.java).equalTo("id", successorTeamMember.userId).findFirst()
+        } else {
+            null
+        }
     }
 
     private fun refreshList() {
@@ -212,35 +222,39 @@ class AdapterJoinedMember(
     }
 
     private fun makeLeader(userModel: RealmUserModel) {
-        mRealm.executeTransaction { realm ->
+        val userId = userModel.id
+        mRealm.executeTransactionAsync({ realm ->
             val currentLeader = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
                 .equalTo("isLeader", true)
                 .findFirst()
             val newLeader = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
-                .equalTo("userId", userModel.id)
+                .equalTo("userId", userId)
                 .findFirst()
             currentLeader?.isLeader = false
             newLeader?.isLeader = true
             teamLeaderId = newLeader?.userId
-        }
-        notifyDataSetChanged()
-        Utilities.toast(context, context.getString(R.string.leader_selected))
+        }, Realm.Transaction.OnSuccess {
+            notifyDataSetChanged()
+            Utilities.toast(context, context.getString(R.string.leader_selected))
+        })
         refreshList()
     }
 
     private fun reject(userModel: RealmUserModel, position: Int) {
-        mRealm.executeTransaction {
-            val team = it.where(RealmMyTeam::class.java)
+        val userId = userModel.id
+        mRealm.executeTransactionAsync({ realm ->
+            val team = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
-                .equalTo("userId", userModel.id)
+                .equalTo("userId", userId)
                 .findFirst()
             team?.deleteFromRealm()
-        }
-        list.removeAt(position)
-        notifyItemRemoved(position)
-        notifyItemRangeChanged(position, list.size)
+        }, Realm.Transaction.OnSuccess {
+            list.removeAt(position)
+            notifyItemRemoved(position)
+            notifyItemRangeChanged(position, list.size)
+        })
     }
 
     override fun getItemCount(): Int = list.size

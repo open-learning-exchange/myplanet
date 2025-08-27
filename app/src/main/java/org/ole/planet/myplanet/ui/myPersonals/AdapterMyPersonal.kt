@@ -46,7 +46,7 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
             AlertDialog.Builder(context, R.style.AlertDialogTheme)
                 .setMessage(R.string.delete_record)
                 .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                    if (!realm?.isInTransaction!!) realm?.beginTransaction()
+                    if (realm?.isInTransaction != true) realm?.beginTransaction()
                     val personal = realm?.where(RealmMyPersonal::class.java)
                         ?.equalTo("_id", list[position]._id)?.findFirst()
                     personal?.deleteFromRealm()

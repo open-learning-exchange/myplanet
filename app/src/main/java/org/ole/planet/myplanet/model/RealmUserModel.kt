@@ -21,6 +21,7 @@ import org.json.JSONObject
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
+import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
 
@@ -165,7 +166,7 @@ open class RealmUserModel : RealmObject() {
             val obj = element.asJsonObject
             val entries = obj.entrySet()
             for ((key1) in entries) {
-                userImage = Utilities.getUserImageUrl(id, key1)
+                userImage = UrlUtils.getUserImageUrl(id, key1)
                 break
             }
         }
@@ -253,14 +254,14 @@ open class RealmUserModel : RealmObject() {
                                 tempData.add("roles", rolesArray)
                                 guestUser.deleteFromRealm()
                                 user = realm.createObject(RealmUserModel::class.java, id)
-                                insertIntoUsers(tempData, user!!, settings)
+                                user?.let { insertIntoUsers(tempData, it, settings) }
                             }
                         }
 
                         if (user == null) {
                             user = realm.createObject(RealmUserModel::class.java, id)
                         }
-                        insertIntoUsers(jsonDoc, user!!, settings)
+                        user?.let { insertIntoUsers(jsonDoc, it, settings) }
                     }
                 } else {
                     user = mRealm.where(RealmUserModel::class.java)
@@ -299,14 +300,14 @@ open class RealmUserModel : RealmObject() {
                             tempData.add("roles", rolesArray)
                             guestUser.deleteFromRealm()
                             user = mRealm.createObject(RealmUserModel::class.java, id)
-                            insertIntoUsers(tempData, user!!, settings)
+                            user?.let { insertIntoUsers(tempData, it, settings) }
                         }
                     }
 
                     if (user == null) {
                         user = mRealm.createObject(RealmUserModel::class.java, id)
                     }
-                    insertIntoUsers(jsonDoc, user!!, settings)
+                    user?.let { insertIntoUsers(jsonDoc, it, settings) }
                 }
                 return user
             } catch (err: Exception) {

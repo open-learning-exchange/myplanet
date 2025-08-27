@@ -76,10 +76,20 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
     private val serverUrlMapper = ServerUrlMapper()
-    private val teamLastPage = mutableMapOf<String, Int>()
+    private val teamLastPage = mutableMapOf<String, String>()
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
     private var pageConfigs: List<TeamPageConfig> = emptyList()
+
+    private fun pageIndexById(pageId: String?): Int? {
+        pageId ?: return null
+        val idx = pageConfigs.indexOfFirst { it.id == pageId }
+        return if (idx >= 0) idx else null
+    }
+
+    private fun selectPage(pageId: String?, smoothScroll: Boolean = false) {
+        pageIndexById(pageId)?.let { fragmentTeamDetailBinding.viewPager2.setCurrentItem(it, smoothScroll) }
+    }
 
     private fun buildPages(isMyTeam: Boolean): List<TeamPageConfig> {
         val isEnterprise = team?.type == "enterprise"
@@ -117,7 +127,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         val teamId = requireArguments().getString("id" ) ?: ""
         val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
         val user = UserProfileDbHandler(requireContext()).userModel
-        mRealm = userRepository.getRealm()
+        mRealm = databaseService.realmInstance
 
         if (shouldQueryRealm(teamId)) {
             if (teamId.isNotEmpty()) {
@@ -201,18 +211,9 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     private fun setupTeamDetails(isMyTeam: Boolean, user: RealmUserModel?) {
         fragmentTeamDetailBinding.root.post {
             if (isAdded && !requireActivity().isFinishing) {
-                val last = team?._id?.let { teamLastPage[it] } ?: arguments?.getInt("navigateToPage", 0) ?: 0
-                setupViewPager(isMyTeam, last)
-            }
-        }
-
-        val pageId = arguments?.getString("navigateToPage")
-        if (!pageId.isNullOrEmpty()) {
-            fragmentTeamDetailBinding.root.post {
-                val index = pageConfigs.indexOfFirst { it.id == pageId }
-                if (index >= 0 && index < (fragmentTeamDetailBinding.viewPager2.adapter?.itemCount ?: 0)) {
-                    fragmentTeamDetailBinding.viewPager2.currentItem = index
-                }
+                val targetPageId = arguments?.getString("navigateToPage")
+                    ?: team?._id?.let { teamLastPage[it] }
+                setupViewPager(isMyTeam, targetPageId)
             }
         }
 
@@ -230,7 +231,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         }
     }
 
-    private fun setupViewPager(isMyTeam: Boolean, restorePage: Int = 0) {
+    private fun setupViewPager(isMyTeam: Boolean, restorePageId: String? = null) {
         pageConfigs = buildPages(isMyTeam)
         fragmentTeamDetailBinding.viewPager2.isSaveEnabled = true
         fragmentTeamDetailBinding.viewPager2.id = View.generateViewId()
@@ -244,12 +245,16 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
             tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
         }.attach()
 
-        fragmentTeamDetailBinding.viewPager2.setCurrentItem(restorePage, false)
+        selectPage(restorePageId, false)
 
         fragmentTeamDetailBinding.viewPager2.registerOnPageChangeCallback(
             object : ViewPager2.OnPageChangeCallback() {
                 override fun onPageSelected(position: Int) {
-                    team?._id?.let { teamLastPage[it] = position }
+                    team?._id?.let { teamId ->
+                        pageConfigs.getOrNull(position)?.id?.let { pageId ->
+                            teamLastPage[teamId] = pageId
+                        }
+                    }
                 }
             }
         )
@@ -297,18 +302,15 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     team?.leave(user, mRealm)
                     Utilities.toast(activity, getString(R.string.left_team))
-                    val last = team?._id?.let { teamLastPage[it] } ?: arguments?.getInt("navigateToPage", 0) ?: 0
-                    setupViewPager(false, last)
+                    val lastPageId = team?._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
+                    setupViewPager(false, lastPageId)
                     fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
                 }.setNegativeButton(R.string.no, null).show()
         }
 
         fragmentTeamDetailBinding.btnAddDoc.setOnClickListener {
             MainApplication.showDownload = true
-            val documentsIndex = pageConfigs.indexOf(DocumentsPage)
-            if (documentsIndex != -1) {
-                fragmentTeamDetailBinding.viewPager2.currentItem = documentsIndex
-            }
+            selectPage(DocumentsPage.id)
             MainApplication.showDownload = false
             MainApplication.listener?.onAddDocument()
         }
@@ -325,8 +327,8 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                 val updatedTeam = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
                 if (updatedTeam != null) {
                     team = updatedTeam
-                    val last = team?._id?.let { teamLastPage[it] } ?: arguments?.getInt("navigateToPage", 0) ?: 0
-                    setupViewPager(isMyTeam, last)
+                    val lastPageId = team?._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
+                    setupViewPager(isMyTeam, lastPageId)
 
                     fragmentTeamDetailBinding.title.text = getEffectiveTeamName()
                     fragmentTeamDetailBinding.subtitle.text = getEffectiveTeamType()
@@ -372,9 +374,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         val teamType = getEffectiveTeamType()
 
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            val realm = userRepository.getRealm()
-
-            realm.executeTransaction { r ->
+            databaseService.executeTransactionAsync { r ->
                 val log = r.createObject(RealmTeamLog::class.java, "${UUID.randomUUID()}")
                 log.teamId = getEffectiveTeamId()
                 log.user = userName
@@ -384,8 +384,6 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                 log.parentCode = userParentCode
                 log.time = Date().time
             }
-
-            realm.close()
         }
     }
 

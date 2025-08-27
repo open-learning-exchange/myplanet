@@ -7,18 +7,13 @@ import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.LayoutInflater
 import android.view.View
-import android.widget.Button
-import android.widget.CheckBox
-import android.widget.EditText
-import android.widget.ImageButton
-import android.widget.TextView
+import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
-import com.github.clans.fab.FloatingActionButton
-import com.google.android.flexbox.FlexboxLayout
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -41,6 +36,7 @@ import org.ole.planet.myplanet.callback.OnLibraryItemSelected
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TagClickListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
+import org.ole.planet.myplanet.databinding.FragmentMyLibraryBinding
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -53,7 +49,6 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
@@ -66,24 +61,23 @@ import org.ole.planet.myplanet.utilities.Utilities
 @AndroidEntryPoint
 class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSelected,
     ChipDeletedListener, TagClickListener, OnFilterListener, RealtimeSyncMixin {
-    private lateinit var tvAddToLib: TextView
-    private lateinit var tvSelected: TextView
-    private lateinit var etSearch: EditText
-    private lateinit var etTags: EditText
-    private lateinit var flexBoxTags: FlexboxLayout
+    private var _binding: FragmentMyLibraryBinding? = null
+    private val binding get() = _binding!!
+    private val tvAddToLib get() = binding.tvAdd
+    private val tvSelected get() = binding.tvSelected
+    private val etSearch get() = binding.layoutSearch.etSearch
+    private val flexBoxTags get() = binding.layoutSearch.flexboxTags
+    private val clearTags get() = binding.btnClearTags
+    private val selectAll get() = binding.selectAll
+    private val filter get() = binding.filter
     private lateinit var searchTags: MutableList<RealmTag>
     private lateinit var config: ChipCloudConfig
-    private lateinit var clearTags: Button
-    private lateinit var orderByTitle: Button
-    private lateinit var orderByDate: Button
-    private lateinit var selectAll: CheckBox
-    private lateinit var filter: ImageButton
     private lateinit var adapterLibrary: AdapterResource
-    private lateinit var addResourceButton: FloatingActionButton
     var userModel: RealmUserModel ?= null
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
+    private var searchTextWatcher: TextWatcher? = null
 
     @Inject
     lateinit var prefManager: SharedPrefManager
@@ -105,6 +99,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun getLayout(): Int {
         return R.layout.fragment_my_library
+    }
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        val view = super.onCreateView(inflater, container, savedInstanceState)
+        _binding = view?.let { FragmentMyLibraryBinding.bind(it) }
+        return view
     }
 
     private fun startResourcesSync() {
@@ -210,11 +210,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         isMyCourseLib = arguments?.getBoolean("isMyCourseLib", false) ?: false
-        userModel = UserProfileDbHandler(requireContext()).userModel
+        userModel = profileDbHandler.userModel
         searchTags = ArrayList()
         config = Utilities.getCloudConfig().showClose(R.color.black_overlay)
 
-        initializeViews(view)
+        initializeViews()
         setupEventListeners()
         initArrays()
         hideButton()
@@ -223,11 +223,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         showNoData(tvMessage, adapterLibrary.itemCount, "resources")
         clearTagsButton()
-        setupUI(view.findViewById(R.id.my_library_parent_layout), requireActivity())
+        setupUI(binding.myLibraryParentLayout, requireActivity())
         changeButtonStatus()
         additionalSetup()
 
-        tvFragmentInfo = view.findViewById(R.id.tv_fragment_info)
+        tvFragmentInfo = binding.tvFragmentInfo
         if (isMyCourseLib) tvFragmentInfo.setText(R.string.txt_myLibrary)
         checkList()
         
@@ -235,17 +235,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         realtimeSyncHelper.setupRealtimeSync()
     }
 
-    private fun initializeViews(view: View) {
-        tvAddToLib = view.findViewById(R.id.tv_add)
-        etSearch = view.findViewById(R.id.et_search)
-        etTags = view.findViewById(R.id.et_tags)
-        clearTags = view.findViewById(R.id.btn_clear_tags)
-        tvSelected = view.findViewById(R.id.tv_selected)
-        flexBoxTags = view.findViewById(R.id.flexbox_tags)
-        selectAll = view.findViewById(R.id.selectAll)
-        filter = view.findViewById(R.id.filter)
-        addResourceButton = view.findViewById(R.id.addResource)
-
+    private fun initializeViews() {
         if (tvSelected.text.isNullOrEmpty()) {
             tvSelected.visibility = View.GONE
         } else {
@@ -296,7 +286,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun setupSearchTextListener() {
-        etSearch.addTextChangedListener(object : TextWatcher {
+        searchTextWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 adapterLibrary.setLibraryList(
@@ -308,12 +298,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 )
                 showNoData(tvMessage, adapterLibrary.itemCount, "resources")
             }
+
             override fun afterTextChanged(s: Editable) {}
-        })
+        }
+        etSearch.addTextChangedListener(searchTextWatcher)
     }
 
     private fun setupCollectionsButton() {
-        requireView().findViewById<View>(R.id.btn_collections).setOnClickListener {
+        binding.btnCollections.setOnClickListener {
             val f = CollectionsFragment.getInstance(searchTags, "resources")
             f.setListener(this@ResourcesFragment)
             f.show(childFragmentManager, "")
@@ -336,7 +328,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun setupAddResourceButtonListener() {
-        addResourceButton.setOnClickListener {
+        binding.addResource.setOnClickListener {
             if (userModel?.id?.startsWith("guest") == false) {
                 AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
             } else {
@@ -370,8 +362,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             etSearch.visibility = View.GONE
             tvAddToLib.visibility = View.GONE
             tvSelected.visibility = View.GONE
-            requireView().findViewById<View>(R.id.btn_collections).visibility = View.GONE
-            requireView().findViewById<View>(R.id.filter).visibility = View.GONE
+            binding.btnCollections.visibility = View.GONE
+            filter.visibility = View.GONE
             clearTags.visibility = View.GONE
             tvDelete?.visibility = View.GONE
         }
@@ -535,6 +527,28 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         saveSearchActivity()
     }
 
+    override fun onDestroyView() {
+        etSearch.removeTextChangedListener(searchTextWatcher)
+        searchTextWatcher = null
+
+        if (confirmation?.isShowing == true) {
+            confirmation?.dismiss()
+        }
+        confirmation = null
+
+        if (customProgressDialog?.isShowing() == true) {
+            customProgressDialog?.dismiss()
+        }
+        customProgressDialog = null
+
+        if (::realtimeSyncHelper.isInitialized) {
+            realtimeSyncHelper.cleanup()
+        }
+
+        _binding = null
+        super.onDestroyView()
+    }
+
     private fun filterApplied(): Boolean {
         return !(subjects.isEmpty() && languages.isEmpty()
                 && mediums.isEmpty() && levels.isEmpty()
@@ -586,20 +600,18 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun additionalSetup() {
-        val bottomSheet = requireView().findViewById<View>(R.id.card_filter)
-        requireView().findViewById<View>(R.id.filter).setOnClickListener {
+        val bottomSheet = binding.cardFilter
+        filter.setOnClickListener {
             bottomSheet.visibility = if (bottomSheet.isVisible) View.GONE else View.VISIBLE
         }
-        orderByDate = requireView().findViewById(R.id.order_by_date_button)
-        orderByTitle = requireView().findViewById(R.id.order_by_title_button)
-        requireView().findViewById<View>(R.id.filterCategories).setOnClickListener {
+        binding.filterCategories.setOnClickListener {
             val f = ResourcesFilterFragment()
             f.setListener(this)
             f.show(childFragmentManager, "")
             bottomSheet.visibility = View.GONE
         }
-        orderByDate.setOnClickListener { adapterLibrary.toggleSortOrder() }
-        orderByTitle.setOnClickListener { adapterLibrary.toggleTitleSortOrder() }
+        binding.orderByDateButton.setOnClickListener { adapterLibrary.toggleSortOrder() }
+        binding.orderByTitleButton.setOnClickListener { adapterLibrary.toggleTitleSortOrder() }
     }
     
     override fun getWatchedTables(): List<String> {
@@ -616,10 +628,4 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         return if (::recyclerView.isInitialized) recyclerView else null
     }
     
-    override fun onDestroyView() {
-        if (::realtimeSyncHelper.isInitialized) {
-            realtimeSyncHelper.cleanup()
-        }
-        super.onDestroyView()
-    }
 }

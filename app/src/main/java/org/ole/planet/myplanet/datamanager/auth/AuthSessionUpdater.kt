@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.utilities
+package org.ole.planet.myplanet.datamanager.auth
 
 import android.content.SharedPreferences
 import java.io.DataOutputStream
@@ -15,6 +15,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.utilities.UrlUtils
 
 class AuthSessionUpdater @Inject constructor(
     private val callback: AuthCallback,
@@ -89,7 +90,7 @@ class AuthSessionUpdater @Inject constructor(
 
     private fun getSessionUrl(): URL? {
         return try {
-            val pref = Utilities.getUrl()
+            val pref = UrlUtils.getUrl()
             val urlString = "$pref/_session"
             val serverUrl = URL(urlString)
             serverUrl
