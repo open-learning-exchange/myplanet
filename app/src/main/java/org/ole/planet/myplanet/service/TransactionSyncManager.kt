@@ -33,7 +33,7 @@ object TransactionSyncManager {
     fun authenticate(): Boolean {
         val apiInterface = client?.create(ApiInterface::class.java)
         try {
-            val response: Response<DocumentResponse>? = apiInterface?.getDocuments(Utilities.header, "${UrlUtils.getUrl()}/tablet_users/_all_docs")?.execute()
+            val response: Response<DocumentResponse>? = apiInterface?.getDocuments(UrlUtils.header, "${UrlUtils.getUrl()}/tablet_users/_all_docs")?.execute()
             if (response != null) {
                 return response.code() == 200
             }
@@ -66,11 +66,13 @@ object TransactionSyncManager {
             response = apiInterface?.getDocuments(header, "${UrlUtils.getUrl()}/$table/_all_docs")?.execute()
             val ob = response?.body()
             if (ob != null && ob.rows?.isNotEmpty() == true) {
-                val r = ob.rows!![0]
-                val jsonDoc = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/$table/${r.id}")
-                    .execute().body()
-                userModel?.key = getString("key", jsonDoc)
-                userModel?.iv = getString("iv", jsonDoc)
+                val r = ob.rows?.firstOrNull()
+                r?.id?.let { id ->
+                    val jsonDoc = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/$table/$id")
+                        .execute().body()
+                    userModel?.key = getString("key", jsonDoc)
+                    userModel?.iv = getString("iv", jsonDoc)
+                }
             }
         } catch (e: IOException) {
             e.printStackTrace()
@@ -96,7 +98,7 @@ object TransactionSyncManager {
     fun syncDb(realm: Realm, table: String) {
         realm.executeTransactionAsync { mRealm: Realm ->
             val apiInterface = client?.create(ApiInterface::class.java)
-            val allDocs = apiInterface?.getJsonObject(Utilities.header, UrlUtils.getUrl() + "/" + table + "/_all_docs?include_doc=false")
+            val allDocs = apiInterface?.getJsonObject(UrlUtils.header, UrlUtils.getUrl() + "/" + table + "/_all_docs?include_doc=false")
             try {
                 val all = allDocs?.execute()
                 val rows = getJsonArray("rows", all?.body())
@@ -107,7 +109,7 @@ object TransactionSyncManager {
                     if (i == rows.size() - 1 || keys.size == 1000) {
                         val obj = JsonObject()
                         obj.add("keys", Gson().fromJson(Gson().toJson(keys), JsonArray::class.java))
-                        val response = apiInterface?.findDocs(Utilities.header, "application/json", UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj)?.execute()
+                        val response = apiInterface?.findDocs(UrlUtils.header, "application/json", UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true", obj)?.execute()
                         if (response?.body() != null) {
                             val arr = getJsonArray("rows", response.body())
                             if (table == "chat_history") {

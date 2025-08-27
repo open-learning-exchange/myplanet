@@ -10,12 +10,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
-import io.realm.RealmChangeListener
-import io.realm.RealmResults
-import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -23,10 +20,10 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.FragmentFeedbackListBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment.OnFeedbackSubmittedListener
@@ -38,13 +35,7 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     private var _binding: FragmentFeedbackListBinding? = null
     private val binding get() = _binding!!
-    private lateinit var mRealm: Realm
     var userModel: RealmUserModel? = null
-    private var feedbackList: RealmResults<RealmFeedback>? = null
-    private val feedbackChangeListener =
-        RealmChangeListener<RealmResults<RealmFeedback>> { results ->
-            updatedFeedbackList(results)
-        }
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
 
@@ -52,13 +43,14 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     @AppPreferences
     lateinit var settings: SharedPreferences
     @Inject
-    lateinit var databaseService: DatabaseService
+    lateinit var feedbackRepository: FeedbackRepository
     private val serverUrlMapper = ServerUrlMapper()
     
     @Inject
     lateinit var syncManager: SyncManager
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
+    private lateinit var adapterFeedback: AdapterFeedback
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,7 +61,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentFeedbackListBinding.inflate(inflater, container, false)
-        mRealm = databaseService.realmInstance
         userModel = UserProfileDbHandler(requireContext()).userModel
 
         binding.fab.setOnClickListener {
@@ -79,8 +70,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
                 feedbackFragment.show(childFragmentManager, "")
             }
         }
-
-        setupFeedbackListener()
 
         return binding.root
     }
@@ -120,8 +109,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
-                        refreshFeedbackData()
-
+                        onFeedbackSubmitted()
                         prefManager.setFeedbackSynced(true)
                     }
                 }
@@ -147,82 +135,15 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         }
     }
 
-    private fun setupFeedbackListener() {
-        feedbackList?.removeChangeListener(feedbackChangeListener)
-        feedbackList = if (userModel?.isManager() == true) {
-            mRealm.where(RealmFeedback::class.java)
-                .sort("openTime", Sort.DESCENDING)
-                .findAllAsync()
-        } else {
-            mRealm.where(RealmFeedback::class.java)
-                .equalTo("owner", userModel?.name)
-                .sort("openTime", Sort.DESCENDING)
-                .findAllAsync()
-        }
-        feedbackList?.addChangeListener(feedbackChangeListener)
-    }
-
-    private fun refreshFeedbackData() {
-        if (!isAdded || requireActivity().isFinishing) return
-
-        try {
-            val list: List<RealmFeedback>? = if (userModel?.isManager() == true) {
-                mRealm.where(RealmFeedback::class.java)
-                    .sort("openTime", Sort.DESCENDING)
-                    .findAll()
-            } else {
-                mRealm.where(RealmFeedback::class.java)
-                    .equalTo("owner", userModel?.name)
-                    .sort("openTime", Sort.DESCENDING)
-                    .findAll()
-            }
-
-            val adapterFeedback = AdapterFeedback(requireActivity(), list)
-            binding.rvFeedback.adapter = adapterFeedback
-
-            val itemCount = list?.size ?: 0
-            showNoData(binding.tvMessage, itemCount, "feedback")
-            updateTextViewsVisibility(itemCount)
-
-            setupFeedbackListener()
-
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        adapterFeedback = AdapterFeedback()
         binding.rvFeedback.layoutManager = LinearLayoutManager(activity)
-
-        loadInitialFeedbackData()
-    }
-
-    private fun loadInitialFeedbackData() {
-        val list: List<RealmFeedback>? = if (userModel?.isManager() == true) {
-            mRealm.where(RealmFeedback::class.java)
-                .sort("openTime", Sort.DESCENDING)
-                .findAll()
-        } else {
-            mRealm.where(RealmFeedback::class.java)
-                .equalTo("owner", userModel?.name)
-                .sort("openTime", Sort.DESCENDING)
-                .findAll()
-        }
-        val adapterFeedback = AdapterFeedback(requireActivity(), list)
         binding.rvFeedback.adapter = adapterFeedback
-
-        val itemCount = list?.size ?: 0
-        showNoData(binding.tvMessage, itemCount, "feedback")
-
-        updateTextViewsVisibility(itemCount)
+        onFeedbackSubmitted()
     }
 
     override fun onDestroyView() {
-        feedbackList?.removeChangeListener(feedbackChangeListener)
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
         _binding = null
         super.onDestroyView()
     }
@@ -234,34 +155,18 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     }
 
     override fun onFeedbackSubmitted() {
-        mRealm.executeTransactionAsync(
-            Realm.Transaction { },
-            Realm.Transaction.OnSuccess {
-                val updatedList = if (userModel?.isManager() == true) {
-                    mRealm.where(RealmFeedback::class.java)
-                        .sort("openTime", Sort.DESCENDING)
-                        .findAll()
-                } else {
-                    mRealm.where(RealmFeedback::class.java)
-                        .equalTo("owner", userModel?.name)
-                        .sort("openTime", Sort.DESCENDING)
-                        .findAll()
-                }
-                updatedFeedbackList(updatedList)
-            })
+        lifecycleScope.launch {
+            feedbackRepository.getFeedback(userModel).collectLatest { feedbackList ->
+                updatedFeedbackList(feedbackList)
+            }
+        }
     }
 
-    private fun updatedFeedbackList(updatedList: RealmResults<RealmFeedback>?) {
-        activity?.runOnUiThread {
-            val adapterFeedback = updatedList?.let { AdapterFeedback(requireActivity(), it) }
-            binding.rvFeedback.adapter = adapterFeedback
-            adapterFeedback?.notifyDataSetChanged()
-            binding.rvFeedback.scrollToPosition(0)
-
-            val itemCount = updatedList?.size ?: 0
-            showNoData(binding.tvMessage, itemCount, "feedback")
-            updateTextViewsVisibility(itemCount)
-        }
+    private fun updatedFeedbackList(updatedList: List<RealmFeedback>?) {
+        adapterFeedback.submitList(updatedList)
+        val itemCount = updatedList?.size ?: 0
+        showNoData(binding.tvMessage, itemCount, "feedback")
+        updateTextViewsVisibility(itemCount)
     }
 
     private fun updateTextViewsVisibility(itemCount: Int) {
@@ -272,5 +177,4 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         binding.tvStatus.visibility = visibility
         binding.tvOpenDate.visibility = visibility
     }
-
 }

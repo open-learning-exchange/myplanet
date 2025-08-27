@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 
-object NotificationUtil {
+object NotificationUtils {
     const val CHANNEL_GENERAL = "general_notifications"
     const val CHANNEL_SURVEYS = "survey_notifications"
     const val CHANNEL_TASKS = "task_notifications"
@@ -103,7 +103,7 @@ object NotificationUtil {
         private val notificationManager = NotificationManagerCompat.from(context)
         private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         private val activeNotifications = mutableSetOf<String>()
-        private val currentSessionNotifications = mutableSetOf<String>()
+        private val sessionShownNotifications = mutableSetOf<String>()
 
         init {
             loadActiveNotifications()
@@ -158,10 +158,20 @@ object NotificationUtil {
                 return false
             }
 
+            if (sessionShownNotifications.contains(config.id)) {
+                return false
+            }
+
+            val notificationId = config.id.hashCode()
+            val activeNotifications = notificationManager.activeNotifications
+            val isAlreadyShowing = activeNotifications.any { it.id == notificationId }
+            
+            if (isAlreadyShowing) {
+                return false
+            }
+
             try {
                 val notification = buildNotification(config)
-                val notificationId = config.id.hashCode()
-
                 notificationManager.notify(notificationId, notification)
                 markNotificationAsShown(config.id)
                 return true
@@ -350,8 +360,8 @@ object NotificationUtil {
         }
 
         private fun markNotificationAsShown(notificationId: String) {
-            currentSessionNotifications.add(notificationId)
             activeNotifications.add(notificationId)
+            sessionShownNotifications.add(notificationId)
             saveActiveNotifications()
         }
 
@@ -359,6 +369,10 @@ object NotificationUtil {
             notificationManager.cancel(notificationId.hashCode())
             activeNotifications.remove(notificationId)
             saveActiveNotifications()
+        }
+
+        fun clearSessionTracking() {
+            sessionShownNotifications.clear()
         }
 
         private fun loadActiveNotifications() {
@@ -472,29 +486,31 @@ class NotificationActionReceiver : BroadcastReceiver() {
     lateinit var databaseService: DatabaseService
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
-        val notificationId = intent.getStringExtra(NotificationUtil.EXTRA_NOTIFICATION_ID)
+        val notificationId = intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_ID)
         
         when (action) {
-            NotificationUtil.ACTION_MARK_AS_READ -> {
+            NotificationUtils.ACTION_MARK_AS_READ -> {
                 markNotificationAsRead(context, notificationId)
-                val notificationManager = NotificationManagerCompat.from(context)
-                notificationManager.cancel(notificationId.hashCode())
+                notificationId?.let {
+                    NotificationUtils.getInstance(context).clearNotification(it)
+                }
             }
             
-            NotificationUtil.ACTION_STORAGE_SETTINGS -> {
+            NotificationUtils.ACTION_STORAGE_SETTINGS -> {
                 markNotificationAsRead(context, notificationId)
                 val storageIntent = Intent(Settings.ACTION_INTERNAL_STORAGE_SETTINGS).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK
                 }
                 context.startActivity(storageIntent)
-                val notificationManager = NotificationManagerCompat.from(context)
-                notificationManager.cancel(notificationId.hashCode())
+                notificationId?.let {
+                    NotificationUtils.getInstance(context).clearNotification(it)
+                }
             }
             
-            NotificationUtil.ACTION_OPEN_NOTIFICATION -> {
+            NotificationUtils.ACTION_OPEN_NOTIFICATION -> {
                 markNotificationAsRead(context, notificationId)
-                val notificationType = intent.getStringExtra(NotificationUtil.EXTRA_NOTIFICATION_TYPE)
-                val relatedId = intent.getStringExtra(NotificationUtil.EXTRA_RELATED_ID)
+                val notificationType = intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_TYPE)
+                val relatedId = intent.getStringExtra(NotificationUtils.EXTRA_RELATED_ID)
                 
                 val dashboardIntent = Intent(context, DashboardActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -504,8 +520,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     putExtra("auto_navigate", true)
                 }
                 context.startActivity(dashboardIntent)
-                val notificationManager = NotificationManagerCompat.from(context)
-                notificationManager.cancel(notificationId.hashCode())
+                notificationId?.let {
+                    NotificationUtils.getInstance(context).clearNotification(it)
+                }
             }
         }
     }

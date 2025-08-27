@@ -75,7 +75,7 @@ open class RealmNews : RealmObject() {
         this.editedTime = Date().time
     }
     fun addLabel(label: String?) {
-        if (label != null && !labels?.contains(label)!!) {
+        if (label != null && labels?.contains(label) != true) {
             labels?.add(label)
         }
     }

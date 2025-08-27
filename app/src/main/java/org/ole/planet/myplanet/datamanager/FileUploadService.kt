@@ -12,7 +12,6 @@ import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
-import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -79,7 +78,7 @@ open class FileUploadService {
         @JvmStatic
         fun getHeaderMap(mimeType: String, rev: String): Map<String, String> {
             val hashMap: MutableMap<String, String> = HashMap()
-            hashMap["Authorization"] = Utilities.header
+            hashMap["Authorization"] = UrlUtils.header
             hashMap["Content-Type"] = mimeType
             hashMap["If-Match"] = rev
             return hashMap

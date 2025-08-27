@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getSDPathFromUrl
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.UrlUtils
 
 class DownloadWorker(val context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -73,7 +73,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
 
     private suspend fun downloadFile(url: String, index: Int, total: Int): Boolean {
         return try {
-            val response = apiInterface.downloadFile(Utilities.header, url)?.execute()
+            val response = apiInterface.downloadFile(UrlUtils.header, url)?.execute()
 
             when {
                 response == null -> false
@@ -96,34 +96,30 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
 
     private fun downloadFileBody(body: ResponseBody, url: String, index: Int, total: Int) {
         val fileSize = body.contentLength()
-        val bis = BufferedInputStream(body.byteStream(), 1024 * 8)
         val outputFile = getSDPathFromUrl(url)
-        val output = FileOutputStream(outputFile)
         val data = ByteArray(1024 * 4)
         var totalBytes: Long = 0
 
-        try {
-            while (true) {
-                val readCount = bis.read(data)
-                if (readCount == -1) break
+        BufferedInputStream(body.byteStream(), 1024 * 8).use { bis ->
+            FileOutputStream(outputFile).use { output ->
+                while (true) {
+                    val readCount = bis.read(data)
+                    if (readCount == -1) break
 
-                if (readCount > 0) {
-                    totalBytes += readCount
-                    output.write(data, 0, readCount)
+                    if (readCount > 0) {
+                        totalBytes += readCount
+                        output.write(data, 0, readCount)
 
-                    if (totalBytes % (1024 * 100) == 0L) {
-                        val progress = if (fileSize > 0) {
-                            (totalBytes * 100 / fileSize).toInt()
-                        } else 0
+                        if (totalBytes % (1024 * 100) == 0L) {
+                            val progress = if (fileSize > 0) {
+                                (totalBytes * 100 / fileSize).toInt()
+                            } else 0
 
-                        showProgressNotification(index, total, "Downloading ${getFileNameFromUrl(url)} ($progress%)")
+                            showProgressNotification(index, total, "Downloading ${getFileNameFromUrl(url)} ($progress%)")
+                        }
                     }
                 }
             }
-        } finally {
-            output.flush()
-            output.close()
-            bis.close()
         }
         DownloadUtils.updateResourceOfflineStatus(url)
     }
