@@ -65,7 +65,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             deadline?.set(Calendar.MINUTE, minute)
             if (datePicker != null) {
                 datePicker?.text = deadline?.timeInMillis?.let {
-                    TimeUtils.getFormatedDateWithTime(it)
+                    TimeUtils.getFormattedDateWithTime(it)
                 }
             }
         }, deadline!![Calendar.HOUR_OF_DAY], deadline!![Calendar.MINUTE], true)
@@ -298,5 +298,16 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             fragmentTeamTaskBinding.rvTask.adapter = adapterTask
             adapterTask.notifyDataSetChanged()
         }
+    }
+
+    override fun onDestroyView() {
+        teamTaskList?.removeAllChangeListeners()
+        teamTaskList = null
+        list = null
+        fragmentTeamTaskBinding.rvTask.adapter = null
+        if (isRealmInitialized()) {
+            mRealm.close()
+        }
+        super.onDestroyView()
     }
 }

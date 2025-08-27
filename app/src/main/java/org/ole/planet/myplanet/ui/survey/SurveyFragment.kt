@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.ui.survey
 
-import android.content.Context.MODE_PRIVATE
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -15,6 +13,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -28,12 +28,12 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.CustomSpinner
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
+@AndroidEntryPoint
 class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListener {
     private lateinit var addNewSurvey: FloatingActionButton
     private lateinit var spn: CustomSpinner
@@ -46,8 +46,10 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     lateinit var rbAdoptSurvey: RadioButton
     lateinit var rgSurvey: RadioGroup
     lateinit var prefManager: SharedPrefManager
-    lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
+    
+    @Inject
+    lateinit var syncManager: SyncManager
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
@@ -60,10 +62,9 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         teamId = arguments?.getString("teamId", null)
         profileDbHandler = UserProfileDbHandler(requireContext())
         val userProfileModel = profileDbHandler.userModel
-        adapter = AdapterSurvey(requireActivity(), mRealm, userProfileModel?.id, isTeam, teamId, this)
+        adapter = AdapterSurvey(requireActivity(), mRealm, userProfileModel?.id, isTeam, teamId, this, settings)
         prefManager = SharedPrefManager(requireContext())
-        settings = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-
+        
         startExamSync()
     }
 
@@ -86,7 +87,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     }
 
     private fun startSyncManager() {
-        SyncManager.instance?.start(object : SyncListener {
+        syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
@@ -180,11 +181,16 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     private fun setupListeners() {
         addNewSurvey.setOnClickListener {}
 
+        var isSpinnerInitialized = false
         spn.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(adapterView: AdapterView<*>?, view: View?, i: Int, l: Long) {
+                if (!isSpinnerInitialized) {
+                    isSpinnerInitialized = true
+                    return
+                }
                 when (i) {
-                    0 -> adapter.SortByDate(false)
-                    1 -> adapter.SortByDate(true)
+                    0 -> adapter.sortByDate(false)
+                    1 -> adapter.sortByDate(true)
                     2 -> adapter.toggleTitleSortOrder()
                 }
             }
@@ -289,11 +295,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
 
     private fun <T> safeCastList(items: List<Any?>, clazz: Class<T>): List<T> {
         return items.mapNotNull { it?.takeIf(clazz::isInstance)?.let(clazz::cast) }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        mRealm.close()
     }
 
     companion object {

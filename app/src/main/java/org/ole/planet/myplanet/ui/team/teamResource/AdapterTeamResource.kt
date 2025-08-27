@@ -6,13 +6,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.snackbar.Snackbar
 import io.realm.Realm
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getTeamLeader
-import org.ole.planet.myplanet.ui.team.teamResource.ResourceUpdateListner
 
 class AdapterTeamResource(
     private val context: Context,
@@ -48,7 +49,7 @@ class AdapterTeamResource(
         }
 
         holder.rowTeamResourceBinding.ivRemove.setOnClickListener {
-            removeResource(resource, position)
+            removeResource(resource, position, holder.itemView)
         }
 
         val isLeader = settings.getString("userId", "--").equals(teamLeader, ignoreCase = true)
@@ -64,26 +65,32 @@ class AdapterTeamResource(
         return list.size
     }
 
-    fun removeResource(resource: RealmMyLibrary, position: Int) {
+    fun removeResource(resource: RealmMyLibrary, position: Int, view: View? = null) {
         if (position < 0 || position >= list.size) return
 
-        val itemToDelete = mRealm.where(RealmMyTeam::class.java)
-            .equalTo("resourceId", resource.id)
-            .findFirst()
+        val resourceId = resource.id
 
-        if (itemToDelete != null) {
-            mRealm.executeTransaction {
-                itemToDelete.resourceId = ""
-                itemToDelete.updated = true
+        mRealm.executeTransactionAsync({ realm ->
+            val itemToDelete = realm.where(RealmMyTeam::class.java)
+                .equalTo("resourceId", resourceId)
+                .findFirst()
+
+            itemToDelete?.let {
+                it.resourceId = ""
+                it.updated = true
             }
-        }
+        }, {
+            list.removeAt(position)
+            notifyItemRemoved(position)
 
-        list.removeAt(position)
-        notifyItemRemoved(position)
-
-        if (list.isEmpty()) {
-            updateListener.onResourceListUpdated()
-        }
+            if (list.isEmpty()) {
+                updateListener.onResourceListUpdated()
+            }
+        }, {
+            view?.let {
+                Snackbar.make(it, context.getString(R.string.failed_to_remove_resource), Snackbar.LENGTH_LONG).show()
+            }
+        })
     }
 
     class ViewHolderTeamResource(val rowTeamResourceBinding: RowTeamResourceBinding) : RecyclerView.ViewHolder(rowTeamResourceBinding.root)

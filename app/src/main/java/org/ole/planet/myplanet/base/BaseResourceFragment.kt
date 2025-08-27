@@ -18,18 +18,21 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmResults
-import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.MyDownloadService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.getMyCourse
@@ -41,28 +44,47 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.utilities.CheckboxListView
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DialogUtils.getProgressDialog
 import org.ole.planet.myplanet.utilities.DialogUtils.showError
+import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadFiles
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUserModel? = null
-    lateinit var mRealm: Realm
+    protected lateinit var mRealm: Realm
     lateinit var profileDbHandler: UserProfileDbHandler
     var editor: SharedPreferences.Editor? = null
     var lv: CheckboxListView? = null
     var convertView: View? = null
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
+    @Inject
+    lateinit var userRepository: UserRepository
+    @Inject
+    lateinit var libraryRepository: LibraryRepository
+    @Inject
+    lateinit var submissionRepository: SubmissionRepository
+    @Inject
+    lateinit var databaseService: DatabaseService
+    @Inject
+    @AppPreferences
+    lateinit var settings: SharedPreferences
     private var resourceNotFoundDialog: AlertDialog? = null
+
+    protected fun isRealmInitialized(): Boolean {
+        return ::mRealm.isInitialized && !mRealm.isClosed
+    }
 
     private fun isFragmentActive(): Boolean {
         return isAdded && activity != null &&
@@ -86,7 +108,12 @@ abstract class BaseResourceFragment : Fragment() {
 
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            showDownloadDialog(getLibraryList(DatabaseService(context).realmInstance))
+            this@BaseResourceFragment.lifecycleScope.launch {
+                val list = libraryRepository.getLibraryListForUser(
+                    settings.getString("userId", "--")
+                )
+                showDownloadDialog(list)
+            }
         }
     }
 
@@ -95,7 +122,7 @@ abstract class BaseResourceFragment : Fragment() {
             AlertDialog.Builder(requireContext()).setMessage(R.string.do_you_want_to_stay_online)
                 .setPositiveButton(R.string.yes, null)
                 .setNegativeButton(R.string.no) { _: DialogInterface?, _: Int ->
-                    val wifi = MainApplication.context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+                    val wifi = requireContext().applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
                     wifi.setWifiEnabled(false)
                 }.show()
         }
@@ -109,11 +136,11 @@ abstract class BaseResourceFragment : Fragment() {
                     @Suppress("DEPRECATION")
                     intent.getParcelableExtra("download")
                 }
-                if (!download?.failed!!) {
+                if (download?.failed == false) {
                     setProgress(download)
                 } else {
                     prgDialog.dismiss()
-                    download.message?.let { showError(prgDialog, it) }
+                    download?.message?.let { showError(prgDialog, it) }
                 }
             }
         }
@@ -121,7 +148,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
         if (!isAdded) return
-        Service(MainApplication.context).isPlanetAvailable(object : PlanetAvailableListener {
+        Service(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 if (!isAdded) return
                 if (dbMyLibrary.isEmpty()) {
@@ -165,19 +192,16 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun showPendingSurveyDialog() {
         model = UserProfileDbHandler(requireContext()).userModel
-        val list: List<RealmSubmission> = mRealm.where(RealmSubmission::class.java)
-            .equalTo("userId", model?.id)
-            .equalTo("status", "pending").equalTo("type", "survey")
-            .findAll()
-        if (list.isEmpty()) {
-            return
+        viewLifecycleOwner.lifecycleScope.launch {
+            val list = submissionRepository.getPendingSurveys(model?.id)
+            if (list.isEmpty()) return@launch
+            val exams = getExamMap(mRealm, list)
+            val arrayAdapter = createSurveyAdapter(list, exams)
+            AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
+                .setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
+                    AdapterMySubmission.openSurvey(homeItemClickListener, list[i].id, true, false, "")
+                }.setPositiveButton(R.string.dismiss, null).show()
         }
-        val exams = getExamMap(mRealm, list)
-        val arrayAdapter = createSurveyAdapter(list, exams)
-        AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
-            .setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
-                AdapterMySubmission.openSurvey(homeItemClickListener, list[i].id, true, false, "")
-            }.setPositiveButton(R.string.dismiss, null).show()
     }
 
     private fun createSurveyAdapter(
@@ -234,7 +258,7 @@ abstract class BaseResourceFragment : Fragment() {
                 if (urls.isNotEmpty()) {
                     try {
                         showProgressDialog()
-                        Utilities.openDownloadService(activity, urls, false)
+                        DownloadUtils.openDownloadService(activity, urls, false)
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
@@ -264,7 +288,7 @@ abstract class BaseResourceFragment : Fragment() {
         }
         prgDialog.setNegativeButton("disabling", isVisible = false){ prgDialog.dismiss() }
 
-        if (settings?.getBoolean("isAlternativeUrl", false) == true) {
+        if (settings.getBoolean("isAlternativeUrl", false)) {
             editor?.putString("alternativeUrl", "")
             editor?.putString("processedAlternativeUrl", "")
             editor?.putBoolean("isAlternativeUrl", false)
@@ -302,16 +326,17 @@ abstract class BaseResourceFragment : Fragment() {
         bManager.registerReceiver(resourceNotFoundReceiver, resourceNotFoundFilter)
     }
 
-    fun getLibraryList(mRealm: Realm): List<RealmMyLibrary> {
-        return getLibraryList(mRealm, settings?.getString("userId", "--"))
+    suspend fun getLibraryList(mRealm: Realm): List<RealmMyLibrary> {
+        return libraryRepository.getLibraryListForUser(
+            settings.getString("userId", "--")
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = databaseService.realmInstance
         prgDialog = getProgressDialog(requireActivity())
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        editor = settings?.edit()
+        editor = settings.edit()
     }
 
     override fun onPause() {
@@ -374,8 +399,18 @@ abstract class BaseResourceFragment : Fragment() {
         Utilities.toast(activity, getString(R.string.added_to_my_library))
     }
 
+    override fun onDestroy() {
+        if (isRealmInitialized()) {
+            mRealm.removeAllChangeListeners()
+            if (mRealm.isInTransaction) {
+                mRealm.cancelTransaction()
+            }
+            mRealm.close()
+        }
+        super.onDestroy()
+    }
+
     companion object {
-        var settings: SharedPreferences? = null
         var auth = ""
 
         fun getAllLibraryList(mRealm: Realm): List<RealmMyLibrary> {
@@ -386,11 +421,11 @@ abstract class BaseResourceFragment : Fragment() {
             return libList
         }
 
-        fun backgroundDownload(urls: ArrayList<String>) {
+        fun backgroundDownload(urls: ArrayList<String>, context: Context) {
             Service(context).isPlanetAvailable(object : PlanetAvailableListener {
                 override fun isAvailable() {
                     if (urls.isNotEmpty()) {
-                        Utilities.openDownloadService(context, urls, false)
+                        DownloadUtils.openDownloadService(context, urls, false)
                     }
                 }
 

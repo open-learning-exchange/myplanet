@@ -11,16 +11,16 @@ import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
-import io.realm.Realm
+import dagger.hilt.android.HiltAndroidApp
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Date
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -32,9 +32,13 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.callback.TeamPageListener
+import org.ole.planet.myplanet.datamanager.ApiClient
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.service.AutoSyncWorker
+import org.ole.planet.myplanet.service.NetworkMonitorWorker
 import org.ole.planet.myplanet.service.StayOnlineWorker
 import org.ole.planet.myplanet.service.TaskNotificationWorker
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -42,22 +46,36 @@ import org.ole.planet.myplanet.utilities.ANRWatchdog
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.LocaleHelper
-import org.ole.planet.myplanet.utilities.NetworkUtils.initialize
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.NetworkUtils.startListenNetworkState
-import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
+import org.ole.planet.myplanet.utilities.NetworkUtils.stopListenNetworkState
+import org.ole.planet.myplanet.utilities.NotificationUtils.cancelAll
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.ThemeMode
-import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils.getVersionName
 
+@HiltAndroidApp
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
+
+    @Inject
+    lateinit var databaseService: DatabaseService
+
+    @Inject
+    @AppPreferences
+    lateinit var appPreferences: SharedPreferences
+
+    @Inject
+    @DefaultPreferences
+    lateinit var defaultPreferences: SharedPreferences
+
+    @Inject
+    lateinit var apiClient: ApiClient
+
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
         lateinit var context: Context
-        lateinit var mRealm: Realm
         lateinit var service: DatabaseService
         var preferences: SharedPreferences? = null
         var syncFailedCount = 0
@@ -76,33 +94,24 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         lateinit var defaultPref: SharedPreferences
 
-        fun createLog(type: String, error: String) {
+        fun createLog(type: String, error: String = "") {
             applicationScope.launch(Dispatchers.IO) {
-                val realm = Realm.getDefaultInstance()
                 val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-                try {
+                service.withRealm { realm ->
                     realm.executeTransaction { r ->
                         val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
                         val model = UserProfileDbHandler(context).userModel
                         log.parentCode = settings.getString("parentCode", "")
                         log.createdOn = settings.getString("planetCode", "")
-                        if (model != null) {
-                            log.userId = model.id
-                        }
+                        model?.let { log.userId = it.id }
                         log.time = "${Date().time}"
                         log.page = ""
                         log.version = getVersionName(context)
-                        if (type == "File Not Found" || type == "anr" || type == "sync summary") {
-                            log.type = type
+                        log.type = type
+                        if (error.isNotEmpty()) {
                             log.error = error
-                        } else {
-                            log.type = type
                         }
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                } finally {
-                    realm.close()
                 }
             }
         }
@@ -161,35 +170,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
         fun handleUncaughtException(e: Throwable) {
             e.printStackTrace()
-            applicationScope.launch(Dispatchers.IO) {
-                try {
-                    val realm = Realm.getDefaultInstance()
-                    try {
-                        realm.executeTransaction { r ->
-                            val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
-                            val model = UserProfileDbHandler(context).userModel
-                            if (model != null) {
-                                log.parentCode = model.parentCode
-                                log.createdOn = model.planetCode
-                                log.userId = model.id
-                            }
-                            log.time = "${Date().time}"
-                            log.page = ""
-                            log.version = getVersionName(context)
-                            log.type = RealmApkLog.ERROR_TYPE_CRASH
-                            log.setError(e)
-                        }
-                    } finally {
-                        realm.close()
-                    }
-                } catch (ex: Exception) {
-                    ex.printStackTrace()
-                }
-            }
+            createLog(RealmApkLog.ERROR_TYPE_CRASH, e.stackTraceToString())
 
-            val homeIntent = Intent(Intent.ACTION_MAIN)
-            homeIntent.addCategory(Intent.CATEGORY_HOME)
-            homeIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+            val homeIntent = Intent(Intent.ACTION_MAIN).apply {
+                addCategory(Intent.CATEGORY_HOME)
+                flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+            }
             context.startActivity(homeIntent)
         }
     }
@@ -201,19 +187,36 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onCreate() {
         super.onCreate()
+        initApp()
+        setupPreferences()
+        setupStrictMode()
+        setupAnrWatchdog()
+        scheduleWorkersOnStart()
+        registerExceptionHandler()
+        setupLifecycleCallbacks()
+        configureTheme()
+        observeNetworkForDownloads()
+    }
+
+    private fun initApp() {
         context = this
-        initialize(applicationScope)
         startListenNetworkState()
+    }
 
-        preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        service = DatabaseService(context)
-        mRealm = service.realmInstance
-        defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
+    private fun setupPreferences() {
+        preferences = appPreferences
+        service = databaseService
+        service.withRealm { }
+        defaultPref = defaultPreferences
+    }
 
+    private fun setupStrictMode() {
         val builder = VmPolicy.Builder()
         StrictMode.setVmPolicy(builder.build())
         builder.detectFileUriExposure()
+    }
 
+    private fun setupAnrWatchdog() {
         anrWatchdog = ANRWatchdog(timeout = 5000L, listener = object : ANRWatchdog.ANRListener {
             override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
                 applicationScope.launch {
@@ -222,7 +225,9 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             }
         })
         anrWatchdog.start()
+    }
 
+    private fun scheduleWorkersOnStart() {
         if (preferences?.getBoolean("autoSync", false) == true && preferences?.contains("autoSyncInterval") == true) {
             val syncInterval = preferences?.getInt("autoSyncInterval", 60 * 60)
             scheduleAutoSyncWork(syncInterval)
@@ -231,16 +236,26 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
         scheduleStayOnlineWork()
         scheduleTaskNotificationWork()
+        startNetworkMonitoring()
+    }
 
+    private fun registerExceptionHandler() {
         Thread.setDefaultUncaughtExceptionHandler { _: Thread?, e: Throwable ->
             handleUncaughtException(e)
         }
+    }
+
+    private fun setupLifecycleCallbacks() {
         registerActivityLifecycleCallbacks(this)
         onAppStarted()
+    }
 
+    private fun configureTheme() {
         val savedThemeMode = getCurrentThemeMode()
         applyThemeMode(savedThemeMode)
+    }
 
+    private fun observeNetworkForDownloads() {
         isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
                 val serverUrl = preferences?.getString("serverURL", "")
@@ -249,9 +264,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                         val canReachServer = withContext(Dispatchers.IO) {
                             isServerReachable(serverUrl)
                         }
-                        if (canReachServer) {
-                            if (defaultPref.getBoolean("beta_auto_download", false)) {
-                                backgroundDownload(downloadAllFiles(getAllLibraryList(mRealm)))
+                        if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
+                            service.withRealm { realm ->
+                                backgroundDownload(
+                                    downloadAllFiles(getAllLibraryList(realm)),
+                                    applicationContext
+                                )
                             }
                         }
                     }
@@ -285,9 +303,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         workManager.enqueueUniquePeriodicWork(TASK_NOTIFICATION_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, taskNotificationWork)
     }
 
+    private fun startNetworkMonitoring() {
+        NetworkMonitorWorker.start(this)
+    }
+
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleHelper.onAttach(base))
-        Utilities.setContext(base)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -327,9 +348,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle) {}
 
-    override fun onActivityDestroyed(activity: Activity) {
-        cancelAll(this)
-    }
+    override fun onActivityDestroyed(activity: Activity) {}
 
     private fun onAppForegrounded() {
         if (isFirstLaunch) {
@@ -357,6 +376,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         }
         super.onTerminate()
         onAppClosed()
+        stopListenNetworkState()
         applicationScope.cancel()
     }
 }

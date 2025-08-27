@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.text.TextUtils
@@ -23,10 +22,10 @@ import androidx.appcompat.view.ContextThemeWrapper
 import androidx.appcompat.widget.AppCompatRatingBar
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
-import org.ole.planet.myplanet.BuildConfig
 import com.google.gson.JsonObject
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
-import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity.Companion.hasInstallPermission
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -34,26 +33,27 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_DOWNLOAD
-import org.ole.planet.myplanet.service.UserProfileDbHandler.Companion.KEY_RESOURCE_OPEN
-import org.ole.planet.myplanet.ui.courses.AdapterCourses
-import org.ole.planet.myplanet.utilities.CourseRatingUtils
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity
 import org.ole.planet.myplanet.ui.viewer.CSVViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
 import org.ole.planet.myplanet.ui.viewer.MarkdownViewerActivity
 import org.ole.planet.myplanet.ui.viewer.TextFileViewerActivity
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity
+import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.ResourceOpener
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 abstract class BaseContainerFragment : BaseResourceFragment() {
     private var timesRated: TextView? = null
     var rating: TextView? = null
     private var ratingBar: AppCompatRatingBar? = null
     private val installUnknownSourcesRequestCode = 112
-    var hasInstallPermission = hasInstallPermission(MainApplication.context)
+    private var hasInstallPermissionValue = false
     private var currentLibrary: RealmMyLibrary? = null
     private var installApkLauncher: ActivityResultLauncher<Intent>? = null
     lateinit var prefData: SharedPrefManager
@@ -62,6 +62,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         profileDbHandler = UserProfileDbHandler(requireActivity())
+        hasInstallPermissionValue = hasInstallPermission(requireContext())
         if (!BuildConfig.LITE) {
             installApkLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
                 if (result.resultCode == Activity.RESULT_OK) {
@@ -82,7 +83,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
     fun getUrlsAndStartDownload(lib: List<RealmMyLibrary?>, urls: ArrayList<String>) {
         for (library in lib) {
-            val url = Utilities.getUrl(library)
+            val url = UrlUtils.getUrl(library)
             if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url)) {
                 urls.add(url)
             }
@@ -104,7 +105,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             val library = pendingAutoOpenLibrary!!
             shouldAutoOpenAfterDownload = false
             pendingAutoOpenLibrary = null
-            if (library.isResourceOffline() || FileUtils.checkFileExist(Utilities.getUrl(library))) {
+            if (library.isResourceOffline() || FileUtils.checkFileExist(UrlUtils.getUrl(library))) {
                 ResourceOpener.openFileType(requireActivity(), library, "offline", profileDbHandler)
             }
         }
@@ -172,7 +173,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             ?.mapNotNull { attachment ->
                 attachment.name?.let { name ->
                     createAttachmentDir(items.resourceId, name)
-                    Utilities.getUrl("${items.resourceId}", name)
+                    UrlUtils.getUrl("${items.resourceId}", name)
                 }
             }
             ?.toCollection(ArrayList()) ?: arrayListOf()
@@ -206,7 +207,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             items.isResourceOffline() -> ResourceOpener.openFileType(requireActivity(), items, "offline", profileDbHandler)
             FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4" -> ResourceOpener.openFileType(requireActivity(), items, "online", profileDbHandler)
             else -> {
-                val arrayList = arrayListOf(Utilities.getUrl(items))
+                val arrayList = arrayListOf(UrlUtils.getUrl(items))
                 startDownloadWithAutoOpen(arrayList, items)
                 profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
             }
@@ -254,7 +255,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private fun installApk(items: RealmMyLibrary) {
         if (BuildConfig.LITE) return
         currentLibrary = items
-        val directory = File(MainApplication.context.getExternalFilesDir(null).toString() + "/ole" + "/" + items.id)
+        val directory = File(requireContext().getExternalFilesDir(null).toString() + "/ole" + "/" + items.id)
         if (!directory.exists()) {
             if (!directory.mkdirs()) {
                 throw RuntimeException("Failed to create directory: " + directory.absolutePath)
@@ -268,14 +269,14 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
         }
         val uri = apkFile?.let {
-            FileProvider.getUriForFile(MainApplication.context, "${MainApplication.context.packageName}.fileprovider", it)
+            FileProvider.getUriForFile(requireContext(), "${requireContext().packageName}.fileprovider", it)
         }
         val intent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(uri, "application/vnd.android.package-archive")
             flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK
         }
         if (intent.resolveActivity(requireActivity().packageManager) != null) {
-            if (hasInstallPermission(MainApplication.context)) {
+            if (hasInstallPermission(requireContext())) {
                 startActivity(intent)
             } else {
                 requestInstallPermission()
@@ -288,7 +289,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private fun requestInstallPermission() {
         if (BuildConfig.LITE) return
         val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
-        intent.data = ("package:" + MainApplication.context.packageName).toUri()
+        intent.data = ("package:" + requireContext().packageName).toUri()
         installApkLauncher?.launch(intent)
     }
 
@@ -356,8 +357,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     open fun handleBackPressed() {
-        val fragmentManager = parentFragmentManager
-        fragmentManager.popBackStack()
+        NavigationHelper.popBackStack(parentFragmentManager)
     }
 
     override fun onPause() {
@@ -366,7 +366,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         dismissProgressDialog()
+        super.onDestroy()
     }
 }

@@ -6,9 +6,9 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.widget.ArrayAdapter
-import androidx.core.content.edit
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.util.Calendar
 import java.util.Locale
@@ -17,24 +17,23 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.LoginActivity
+import org.ole.planet.myplanet.utilities.AuthHelper
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils.CustomProgressDialog
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.VersionUtils
-import org.ole.planet.myplanet.utilities.AuthHelper
 
+@AndroidEntryPoint
 class BecomeMemberActivity : BaseActivity() {
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
     var guest: Boolean = false
-
-
+    
     private data class MemberInfo(
         val username: String,
         var password: String,
@@ -165,9 +164,9 @@ class BecomeMemberActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         activityBecomeMemberBinding = ActivityBecomeMemberBinding.inflate(layoutInflater)
         setContentView(activityBecomeMemberBinding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityBecomeMemberBinding.root)
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        val mRealm: Realm = DatabaseService(this).realmInstance
         val languages = resources.getStringArray(R.array.language)
         val lnAadapter = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, languages)
         activityBecomeMemberBinding.spnLang.adapter = lnAadapter
@@ -202,17 +201,29 @@ class BecomeMemberActivity : BaseActivity() {
         }
     }
 
-    private fun autoLoginNewMember(username: String, password: String) {
-        val intent = Intent(this, LoginActivity::class.java)
-        intent.putExtra("username", username)
-        intent.putExtra("password", password)
-        intent.putExtra("auto_login", true)
-        if (guest) {
-            intent.putExtra("guest", guest)
+    override fun onDestroy() {
+        if (!mRealm.isClosed) {
+            mRealm.close()
         }
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
-        startActivity(intent)
-        finish()
+        super.onDestroy()
+    }
+
+    private fun autoLoginNewMember(username: String, password: String) {
+        val mRealm = databaseService.realmInstance
+        RealmUserModel.cleanupDuplicateUsers(mRealm) {
+            mRealm.close()
+
+            val intent = Intent(this, LoginActivity::class.java)
+            intent.putExtra("username", username)
+            intent.putExtra("password", password)
+            intent.putExtra("auto_login", true)
+            if (guest) {
+                intent.putExtra("guest", guest)
+            }
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(intent)
+            finish()
+        }
     }
 
     private fun setupTextWatchers(mRealm: Realm) {

@@ -16,10 +16,9 @@ import java.util.Date
 import java.util.UUID
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.UrlUtils
 
 open class RealmNews : RealmObject() {
     @PrimaryKey
@@ -76,7 +75,7 @@ open class RealmNews : RealmObject() {
         this.editedTime = Date().time
     }
     fun addLabel(label: String?) {
-        if (label != null && !labels?.contains(label)!!) {
+        if (label != null && labels?.contains(label) != true) {
             labels?.add(label)
         }
     }
@@ -113,7 +112,6 @@ open class RealmNews : RealmObject() {
 
     companion object {
         private val gson = Gson()
-        val newsDataList: MutableList<Array<String>> = mutableListOf()
         private val concatenatedLinks = ArrayList<String>()
 
         @JvmStatic
@@ -143,7 +141,7 @@ open class RealmNews : RealmObject() {
             val message = JsonUtils.getString("message", doc)
             news?.message = message
             val links = extractLinks(message)
-            val baseUrl = Utilities.getUrl()
+            val baseUrl = UrlUtils.getUrl()
             for (link in links) {
                 val concatenatedLink = "$baseUrl/$link"
                 concatenatedLinks.add(concatenatedLink)
@@ -166,61 +164,6 @@ open class RealmNews : RealmObject() {
             news?.sharedBy = JsonUtils.getString("sharedBy", newsObj)
 
             saveConcatenatedLinksToPrefs()
-
-            val csvRow = arrayOf(
-                JsonUtils.getString("_id", doc),
-                JsonUtils.getString("_rev", doc),
-                JsonUtils.getString("viewableBy", doc),
-                JsonUtils.getString("docType", doc),
-                JsonUtils.getString("avatar", doc),
-                JsonUtils.getLong("updatedDate", doc).toString(),
-                JsonUtils.getString("viewableId", doc),
-                JsonUtils.getString("createdOn", doc),
-                JsonUtils.getString("messageType", doc),
-                JsonUtils.getString("messagePlanetCode", doc),
-                JsonUtils.getString("replyTo", doc),
-                JsonUtils.getString("parentCode", doc),
-                JsonUtils.getString("user", doc),
-                JsonUtils.getString("time", doc),
-                JsonUtils.getString("message", doc),
-                JsonUtils.getString("images", doc),
-                JsonUtils.getString("labels", doc),
-                JsonUtils.getString("viewIn", doc),
-                JsonUtils.getBoolean("chat", doc).toString(),
-                JsonUtils.getString("news", doc),
-                JsonUtils.getString("sharedBy", doc).toString()
-            )
-            newsDataList.add(csvRow)
-        }
-
-        fun newsWriteCsv() {
-            CsvUtils.writeCsv(
-                "${context.getExternalFilesDir(null)}/ole/news.csv",
-                arrayOf(
-                    "_id",
-                    "_rev",
-                    "viewableBy",
-                    "docType",
-                    "avatar",
-                    "updatedDate",
-                    "viewableId",
-                    "createdOn",
-                    "messageType",
-                    "messagePlanetCode",
-                    "replyTo",
-                    "parentCode",
-                    "user",
-                    "time",
-                    "message",
-                    "images",
-                    "labels",
-                    "viewIn",
-                    "chat",
-                    "news",
-                    "sharedBy"
-                ),
-                newsDataList
-            )
         }
 
         @JvmStatic

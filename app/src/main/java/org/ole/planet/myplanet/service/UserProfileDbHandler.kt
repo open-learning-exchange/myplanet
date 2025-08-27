@@ -2,14 +2,16 @@ package org.ole.planet.myplanet.service
 
 import android.content.Context
 import android.content.SharedPreferences
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import javax.inject.Inject
+import javax.inject.Singleton
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmResourceActivity
@@ -17,17 +19,24 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities
 
-class UserProfileDbHandler(context: Context) {
-    private val settings: SharedPreferences
+@Singleton
+class UserProfileDbHandler @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val realmService: DatabaseService,
+    @AppPreferences private val settings: SharedPreferences
+) {
     var mRealm: Realm
-    private val realmService: DatabaseService
     private val fullName: String
+
+    // Backward compatibility constructor
+    constructor(context: Context) : this(
+        context,
+        DatabaseService(context),
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    )
 
     init {
         try {
-            val validContext = context.applicationContext ?: throw IllegalArgumentException("Invalid context provided")
-            realmService = DatabaseService(validContext)
-            settings = validContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             fullName = Utilities.getUserName(settings)
             mRealm = realmService.realmInstance
         } catch (e: IllegalArgumentException) {
@@ -119,15 +128,16 @@ class UserProfileDbHandler(context: Context) {
     }
 
     fun getLastVisit(m: RealmUserModel): String {
-        val realm = Realm.getDefaultInstance()
-        val lastLogoutTimestamp = realm.where(RealmOfflineActivity::class.java)
-            .equalTo("userName", m.name)
-            .max("loginTime") as Long?
-        return if (lastLogoutTimestamp != null) {
-            val date = Date(lastLogoutTimestamp)
-            SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(date)
-        } else {
-            "No logout record found"
+        return realmService.withRealm { realm ->
+            val lastLogoutTimestamp = realm.where(RealmOfflineActivity::class.java)
+                .equalTo("userName", m.name)
+                .max("loginTime") as Long?
+            if (lastLogoutTimestamp != null) {
+                val date = Date(lastLogoutTimestamp)
+                SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(date)
+            } else {
+                "No logout record found"
+            }
         }
     }
 

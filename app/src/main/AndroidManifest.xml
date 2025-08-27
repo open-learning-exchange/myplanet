@@ -148,5 +148,14 @@
                 android:name="androidx.work.WorkManagerInitializer"
                 android:value="androidx.startup" />
         </provider>
+
+        <receiver android:name=".utilities.NotificationActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="mark_as_read" />
+                <action android:name="open_notification" />
+                <action android:name="storage_settings" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

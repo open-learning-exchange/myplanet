@@ -3,20 +3,24 @@ package org.ole.planet.myplanet.ui.viewer
 import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import java.io.BufferedReader
+import androidx.lifecycle.lifecycleScope
 import java.io.File
-import java.io.FileReader
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityTextfileViewerBinding
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
 
 class TextFileViewerActivity : AppCompatActivity() {
-    private lateinit var activityTextFileViewerBinding: ActivityTextfileViewerBinding
+    private lateinit var binding: ActivityTextfileViewerBinding
     private var fileName: String? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        activityTextFileViewerBinding = ActivityTextfileViewerBinding.inflate(layoutInflater)
-        setContentView(activityTextFileViewerBinding.root)
+        binding = ActivityTextfileViewerBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
         renderTextFile()
     }
 
@@ -24,34 +28,26 @@ class TextFileViewerActivity : AppCompatActivity() {
         val textFileOpenIntent = intent
         fileName = textFileOpenIntent.getStringExtra("TOUCHED_FILE")
         if (!fileName.isNullOrEmpty()) {
-            activityTextFileViewerBinding.textFileName.text = FileUtils.nameWithoutExtension(fileName)
-            activityTextFileViewerBinding.textFileName.visibility = View.VISIBLE
+            binding.textFileName.text = FileUtils.nameWithoutExtension(fileName)
+            binding.textFileName.visibility = View.VISIBLE
         } else {
-            activityTextFileViewerBinding.textFileName.text = getString(R.string.message_placeholder, "No file selected")
-            activityTextFileViewerBinding.textFileName.visibility = View.VISIBLE
+            binding.textFileName.text = getString(R.string.message_placeholder, "No file selected")
+            binding.textFileName.visibility = View.VISIBLE
         }
         renderTextFileThread()
     }
     private fun renderTextFileThread() {
-        val openTextFileThread: Thread = object : Thread() {
-            override fun run() {
-                try {
-                    val basePath = getExternalFilesDir(null)
-                    val file = File(basePath, "ole/$fileName")
-                    val text = StringBuilder()
-                    val reader = BufferedReader(FileReader(file))
-                    var line: String?
-                    while (reader.readLine().also { line = it } != null) {
-                        text.append(line)
-                        text.append('\n')
-                    }
-                    reader.close()
-                    activityTextFileViewerBinding.textFileContent.text = text.toString()
-                } catch (e: Exception) {
-                    e.printStackTrace()
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val basePath = getExternalFilesDir(null)
+                val file = File(basePath, "ole/$fileName")
+                val text = file.readText()
+                withContext(Dispatchers.Main) {
+                    binding.textFileContent.text = text
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
-        openTextFileThread.start()
     }
 }

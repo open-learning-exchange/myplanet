@@ -9,12 +9,18 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
 import com.google.gson.JsonArray
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmResults
 import io.realm.Sort
 import java.util.UUID
+import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertInputBinding
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
@@ -22,8 +28,9 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmTeamNotification
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
-import org.ole.planet.myplanet.ui.courses.TakeCourseFragment.Companion.userModel
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.Constants
@@ -31,9 +38,13 @@ import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class DiscussionListFragment : BaseTeamFragment() {
     private lateinit var fragmentDiscussionListBinding: FragmentDiscussionListBinding
     private var updatedNewsList: RealmResults<RealmNews>? = null
+    
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     private var filteredNewsList: List<RealmNews?> = listOf()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -98,10 +109,12 @@ class DiscussionListFragment : BaseTeamFragment() {
         val chatDetailFragment = ChatDetailFragment()
         chatDetailFragment.arguments = bundle
 
-        parentFragmentManager.beginTransaction()
-            .replace(R.id.fragment_container, chatDetailFragment)
-            .addToBackStack(null)
-            .commit()
+        NavigationHelper.replaceFragment(
+            parentFragmentManager,
+            R.id.fragment_container,
+            chatDetailFragment,
+            addToBackStack = true
+        )
     }
 
     override fun clearImages() {
@@ -157,17 +170,28 @@ class DiscussionListFragment : BaseTeamFragment() {
     }
 
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
-        val adapterNews = activity?.let {
-            realmNewsList?.let { it1 -> AdapterNews(it, it1.toMutableList(), user, null, getEffectiveTeamName()) }
+        val existingAdapter = fragmentDiscussionListBinding.rvDiscussion.adapter
+        if (existingAdapter == null) {
+            val adapterNews = activity?.let {
+                realmNewsList?.let { list ->
+                    AdapterNews(it, list.toMutableList(), user, null, getEffectiveTeamName(), teamId, userProfileDbHandler)
+                }
+            }
+            adapterNews?.setmRealm(mRealm)
+            adapterNews?.setListener(this)
+            if (!isMember()) adapterNews?.setNonTeamMember(true)
+            fragmentDiscussionListBinding.rvDiscussion.adapter = adapterNews
+            adapterNews?.let {
+                showNoData(fragmentDiscussionListBinding.tvNodata, it.itemCount, "discussions")
+            }
+        } else {
+            (existingAdapter as? AdapterNews)?.let { adapter ->
+                realmNewsList?.let {
+                    adapter.updateList(it)
+                    showNoData(fragmentDiscussionListBinding.tvNodata, adapter.itemCount, "discussions")
+                }
+            }
         }
-        adapterNews?.setmRealm(mRealm)
-        adapterNews?.setListener(this)
-        if (!isMember()) adapterNews?.setNonTeamMember(true)
-        fragmentDiscussionListBinding.rvDiscussion.adapter = adapterNews
-        if (adapterNews != null) {
-            showNoData(fragmentDiscussionListBinding.tvNodata, adapterNews.itemCount, "discussions")
-        }
-        adapterNews?.notifyDataSetChanged()
     }
 
     private fun showAddMessage() {
@@ -198,9 +222,20 @@ class DiscussionListFragment : BaseTeamFragment() {
                 map["messageType"] = getEffectiveTeamType()
                 map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
                 map["name"] = getEffectiveTeamName()
-                user?.let { createNews(map, mRealm, it, imageList) }
-                fragmentDiscussionListBinding.rvDiscussion.adapter?.notifyDataSetChanged()
-                setData(news)
+                
+                lifecycleScope.launch(Dispatchers.IO) {
+                    user?.let { userModel ->
+                        databaseService.withRealmAsync { realm ->
+                            createNews(map, realm, userModel, imageList)
+                        }
+                        withContext(Dispatchers.Main) {
+                            fragmentDiscussionListBinding.rvDiscussion.adapter?.notifyDataSetChanged()
+                            setData(news)
+                            fragmentDiscussionListBinding.rvDiscussion.scrollToPosition(0)
+                        }
+                    }
+                }
+                
                 layout.editText?.text?.clear()
                 imageList.clear()
                 llImage?.removeAllViews()
@@ -218,6 +253,15 @@ class DiscussionListFragment : BaseTeamFragment() {
 
     override fun setData(list: List<RealmNews?>?) {
         showRecyclerView(list)
+    }
+
+    override fun onDestroyView() {
+        updatedNewsList?.removeAllChangeListeners()
+        updatedNewsList = null
+        if (isRealmInitialized()) {
+            mRealm.close()
+        }
+        super.onDestroyView()
     }
 
     private fun shouldQueryTeamFromRealm(): Boolean {

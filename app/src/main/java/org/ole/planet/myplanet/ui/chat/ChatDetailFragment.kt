@@ -14,34 +14,37 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TableRow
 import androidx.core.content.ContextCompat
-import androidx.core.net.toUri
 import androidx.core.view.isNotEmpty
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.util.Date
 import java.util.Locale
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatModel
 import org.ole.planet.myplanet.model.ChatRequestModel
-import org.ole.planet.myplanet.model.ChatViewModel
 import org.ole.planet.myplanet.model.ContentData
 import org.ole.planet.myplanet.model.ContinueChatModel
 import org.ole.planet.myplanet.model.Conversation
@@ -49,17 +52,17 @@ import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
+@AndroidEntryPoint
 class ChatDetailFragment : Fragment() {
-    lateinit var fragmentChatDetailBinding: FragmentChatDetailBinding
+    private var _binding: FragmentChatDetailBinding? = null
+    private val binding get() = _binding!!
     private lateinit var mAdapter: ChatAdapter
     private lateinit var sharedViewModel: ChatViewModel
     private var _id: String = ""
@@ -70,8 +73,14 @@ class ChatDetailFragment : Fragment() {
     private lateinit var mRealm: Realm
     var user: RealmUserModel? = null
     private var newsId: String? = null
+    @Inject
+    @AppPreferences
     lateinit var settings: SharedPreferences
     lateinit var customProgressDialog: DialogUtils.CustomProgressDialog
+    @Inject
+    lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var chatApiHelper: ChatApiHelper
     private val gson = Gson()
     private val serverUrlMapper = ServerUrlMapper()
     private val jsonMediaType = "application/json".toMediaTypeOrNull()
@@ -84,10 +93,9 @@ class ChatDetailFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentChatDetailBinding = FragmentChatDetailBinding.inflate(inflater, container, false)
-        settings = requireActivity().getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
+        _binding = FragmentChatDetailBinding.inflate(inflater, container, false)
         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-        return fragmentChatDetailBinding.root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -107,10 +115,14 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun initChatComponents() {
-        mRealm = DatabaseService(requireContext()).realmInstance
-        user = UserProfileDbHandler(requireContext()).userModel
-        mAdapter = ChatAdapter(ArrayList(), requireContext(), fragmentChatDetailBinding.recyclerGchat)
-        fragmentChatDetailBinding.recyclerGchat.apply {
+        mRealm = databaseService.realmInstance
+        user = databaseService.withRealm { realm ->
+            realm.where(RealmUserModel::class.java)
+                .equalTo("id", settings.getString("userId", ""))
+                .findFirst()?.let { realm.copyFromRealm(it) }
+        }
+        mAdapter = ChatAdapter(ArrayList(), requireContext(), binding.recyclerGchat)
+        binding.recyclerGchat.apply {
             adapter = mAdapter
             layoutManager = LinearLayoutManager(requireContext())
             isNestedScrollingEnabled = true
@@ -118,20 +130,20 @@ class ChatDetailFragment : Fragment() {
         }
         newsId = arguments?.getString("newsId")
         if (mAdapter.itemCount > 0) {
-            fragmentChatDetailBinding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
-            fragmentChatDetailBinding.recyclerGchat.smoothScrollToPosition(mAdapter.itemCount - 1)
+            binding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
+            binding.recyclerGchat.smoothScrollToPosition(mAdapter.itemCount - 1)
         }
     }
 
     private fun setupSendButton() {
-        fragmentChatDetailBinding.buttonGchatSend.setOnClickListener {
+        binding.buttonGchatSend.setOnClickListener {
             val aiProvider = AiProvider(name = aiName, model = aiModel)
-            fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
-            if (TextUtils.isEmpty("${fragmentChatDetailBinding.editGchatMessage.text}".trim())) {
-                fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
-                fragmentChatDetailBinding.textGchatIndicator.text = context?.getString(R.string.kindly_enter_message)
+            binding.textGchatIndicator.visibility = View.GONE
+            if (TextUtils.isEmpty("${binding.editGchatMessage.text}".trim())) {
+                binding.textGchatIndicator.visibility = View.VISIBLE
+                binding.textGchatIndicator.text = context?.getString(R.string.kindly_enter_message)
             } else {
-                val message = "${fragmentChatDetailBinding.editGchatMessage.text}".replace("\n", " ")
+                val message = "${binding.editGchatMessage.text}".replace("\n", " ")
                 mAdapter.addQuery(message)
                 when {
                     _id.isNotEmpty() -> {
@@ -148,29 +160,29 @@ class ChatDetailFragment : Fragment() {
                         launchRequest(requestBody, message, null)
                     }
                 }
-                fragmentChatDetailBinding.editGchatMessage.text.clear()
-                fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
+                binding.editGchatMessage.text.clear()
+                binding.textGchatIndicator.visibility = View.GONE
             }
         }
     }
 
     private fun setupMessageInputListeners() {
-        fragmentChatDetailBinding.editGchatMessage.setOnKeyListener { _, _, event ->
+        binding.editGchatMessage.setOnKeyListener { _, _, event ->
             if (event.action == KeyEvent.ACTION_DOWN) {
                 if (event.keyCode == KeyEvent.KEYCODE_ENTER && event.isShiftPressed) {
-                    fragmentChatDetailBinding.editGchatMessage.append("\n")
+                    binding.editGchatMessage.append("\n")
                     return@setOnKeyListener true
                 } else if (event.keyCode == KeyEvent.KEYCODE_ENTER) {
-                    fragmentChatDetailBinding.buttonGchatSend.performClick()
+                    binding.buttonGchatSend.performClick()
                     return@setOnKeyListener true
                 }
             }
             false
         }
-        fragmentChatDetailBinding.editGchatMessage.addTextChangedListener(object : TextWatcher {
+        binding.editGchatMessage.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
+                binding.textGchatIndicator.visibility = View.GONE
             }
             override fun afterTextChanged(s: Editable?) {}
         })
@@ -188,39 +200,51 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun observeViewModelData() {
-        sharedViewModel.getSelectedChatHistory().observe(viewLifecycleOwner) { conversations ->
-            mAdapter.clearData()
-            fragmentChatDetailBinding.editGchatMessage.text.clear()
-            fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
-            if (conversations != null && conversations.isValid && conversations.isNotEmpty()) {
-                for (conversation in conversations) {
-                    conversation.query?.let { mAdapter.addQuery(it) }
-                    mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
-                    conversation.response?.let { mAdapter.addResponse(it) }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    sharedViewModel.selectedChatHistory.collect { conversations ->
+                        mAdapter.clearData()
+                        binding.editGchatMessage.text.clear()
+                        binding.textGchatIndicator.visibility = View.GONE
+                        if (!conversations.isNullOrEmpty()) {
+                            for (conversation in conversations) {
+                                conversation.query?.let { mAdapter.addQuery(it) }
+                                mAdapter.responseSource = ChatAdapter.RESPONSE_SOURCE_SHARED_VIEW_MODEL
+                                conversation.response?.let { mAdapter.addResponse(it) }
+                            }
+                            binding.recyclerGchat.post {
+                                binding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
+                            }
+                        }
+                    }
                 }
-                fragmentChatDetailBinding.recyclerGchat.post {
-                    fragmentChatDetailBinding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
+                launch {
+                    sharedViewModel.selectedAiProvider.collect { selectedAiProvider ->
+                        aiName = selectedAiProvider ?: aiName
+                        if (binding.aiTableRow.isNotEmpty()) {
+                            for (i in 0 until binding.aiTableRow.childCount) {
+                                val view = binding.aiTableRow.getChildAt(i)
+                                if (view is Button && view.text.toString().equals(selectedAiProvider, ignoreCase = true)) {
+                                    val modelName = getModelsMap()[selectedAiProvider?.lowercase()] ?: "default-model"
+                                    selectAI(view, "$selectedAiProvider", modelName)
+                                    break
+                                }
+                            }
+                        }
+                    }
                 }
-            }
-        }
-        sharedViewModel.getSelectedAiProvider().observe(viewLifecycleOwner) { selectedAiProvider ->
-            aiName = selectedAiProvider ?: aiName
-            if (fragmentChatDetailBinding.aiTableRow.isNotEmpty()) {
-                for (i in 0 until fragmentChatDetailBinding.aiTableRow.childCount) {
-                    val view = fragmentChatDetailBinding.aiTableRow.getChildAt(i)
-                    if (view is Button && view.text.toString().equals(selectedAiProvider, ignoreCase = true)) {
-                        val modelName = getModelsMap()[selectedAiProvider?.lowercase()] ?: "default-model"
-                        selectAI(view, "$selectedAiProvider", modelName)
-                        break
+                launch {
+                    sharedViewModel.selectedId.collect { selectedId ->
+                        _id = selectedId
+                    }
+                }
+                launch {
+                    sharedViewModel.selectedRev.collect { selectedRev ->
+                        _rev = selectedRev
                     }
                 }
             }
-        }
-        sharedViewModel.getSelectedId().observe(viewLifecycleOwner) { selectedId ->
-            _id = selectedId
-        }
-        sharedViewModel.getSelectedRev().observe(viewLifecycleOwner) { selectedRev ->
-            _rev = selectedRev
         }
     }
 
@@ -232,7 +256,7 @@ class ChatDetailFragment : Fragment() {
             withContext(Dispatchers.Main) {
                 customProgressDialog.setText("${context?.getString(R.string.fetching_ai_providers)}")
                 customProgressDialog.show()
-                ChatApiHelper.fetchAiProviders { providers ->
+                chatApiHelper.fetchAiProviders { providers ->
                     customProgressDialog.dismiss()
                     if (providers == null || providers.values.all { !it }) {
                         onFailError()
@@ -247,7 +271,7 @@ class ChatDetailFragment : Fragment() {
     private fun updateAIButtons(aiProvidersResponse: Map<String, Boolean>) {
         if (!isAdded || context == null) return
 
-        val aiTableRow = fragmentChatDetailBinding.aiTableRow
+        val aiTableRow = binding.aiTableRow
         aiTableRow.removeAllViews()
 
         val currentContext = requireContext()
@@ -290,7 +314,7 @@ class ChatDetailFragment : Fragment() {
         }
 
     private fun selectAI(selectedButton: Button, providerName: String, modelName: String) {
-        val aiTableRow = fragmentChatDetailBinding.aiTableRow
+        val aiTableRow = binding.aiTableRow
         val context = requireContext()
 
         if (aiName != providerName && aiName.isNotEmpty()) {
@@ -306,7 +330,7 @@ class ChatDetailFragment : Fragment() {
         aiName = providerName
         aiModel = modelName
 
-        fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
+        binding.textGchatIndicator.visibility = View.GONE
     }
 
     private fun updateButtonStyles(selectedButton: Button, aiTableRow: TableRow, context: Context) {
@@ -329,15 +353,15 @@ class ChatDetailFragment : Fragment() {
         _id = ""
         _rev = ""
         currentID = ""
-        fragmentChatDetailBinding.editGchatMessage.text.clear()
-        fragmentChatDetailBinding.textGchatIndicator.visibility = View.GONE
+        binding.editGchatMessage.text.clear()
+        binding.textGchatIndicator.visibility = View.GONE
     }
 
     private fun onFailError() {
-        fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
-        fragmentChatDetailBinding.textGchatIndicator.text = context?.getString(R.string.virtual_assistant_currently_not_available)
-        fragmentChatDetailBinding.editGchatMessage.isEnabled = false
-        fragmentChatDetailBinding.buttonGchatSend.isEnabled = false
+        binding.textGchatIndicator.visibility = View.VISIBLE
+        binding.textGchatIndicator.text = context?.getString(R.string.virtual_assistant_currently_not_available)
+        binding.editGchatMessage.isEnabled = false
+        binding.buttonGchatSend.isEnabled = false
     }
 
     private fun launchRequest(content: RequestBody, query: String, id: String?) {
@@ -350,15 +374,15 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun disableUI() {
-        fragmentChatDetailBinding.buttonGchatSend.isEnabled = false
-        fragmentChatDetailBinding.editGchatMessage.isEnabled = false
-        fragmentChatDetailBinding.imageGchatLoading.visibility = View.VISIBLE
+        binding.buttonGchatSend.isEnabled = false
+        binding.editGchatMessage.isEnabled = false
+        binding.imageGchatLoading.visibility = View.VISIBLE
     }
 
     private fun enableUI() {
-        fragmentChatDetailBinding.buttonGchatSend.isEnabled = true
-        fragmentChatDetailBinding.editGchatMessage.isEnabled = true
-        fragmentChatDetailBinding.imageGchatLoading.visibility = View.INVISIBLE
+        binding.buttonGchatSend.isEnabled = true
+        binding.editGchatMessage.isEnabled = true
+        binding.imageGchatLoading.visibility = View.INVISIBLE
     }
 
     private fun processServerUrl(): ServerUrlMapper.UrlMapping =
@@ -412,7 +436,7 @@ class ChatDetailFragment : Fragment() {
 
     private fun sendChatRequest(content: RequestBody, query: String, id: String?, newChat: Boolean) {
         viewLifecycleOwner.lifecycleScope.launch {
-            ChatApiHelper.sendChatRequest(content, object : Callback<ChatModel> {
+            chatApiHelper.sendChatRequest(content, object : Callback<ChatModel> {
                 override fun onResponse(call: Call<ChatModel>, response: Response<ChatModel>) {
                     handleResponse(response, query, id)
                 }
@@ -455,17 +479,24 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun showError(message: String?) {
-        fragmentChatDetailBinding.textGchatIndicator.visibility = View.VISIBLE
-        fragmentChatDetailBinding.textGchatIndicator.text = context?.getString(R.string.message_placeholder, message)
+        binding.textGchatIndicator.visibility = View.VISIBLE
+        binding.textGchatIndicator.text = context?.getString(R.string.message_placeholder, message)
     }
 
     private fun saveNewChat(query: String, chatResponse: String, responseBody: ChatModel) {
         val jsonObject = buildChatHistoryObject(query, chatResponse, responseBody)
 
-        mRealm.executeTransaction { realm ->
+        mRealm.executeTransactionAsync({ realm ->
             RealmChatHistory.insert(realm, jsonObject)
-        }
-        (requireActivity() as? DashboardActivity)?.refreshChatHistoryList()
+        }, {
+            if (isAdded && activity is DashboardActivity) {
+                (activity as DashboardActivity).refreshChatHistoryList()
+            }
+        }, {
+            if (isAdded) {
+                Snackbar.make(binding.root, getString(R.string.failed_to_save_chat), Snackbar.LENGTH_LONG).show()
+            }
+        })
     }
 
     private fun buildChatHistoryObject(query: String, chatResponse: String, responseBody: ChatModel): JsonObject =
@@ -495,17 +526,17 @@ class ChatDetailFragment : Fragment() {
             add("conversations", conversationsArray)
         }
 
-    private fun continueConversationRealm(id:String, query:String, chatResponse:String) {
-        try {
-            addConversationToChatHistory(mRealm, id, query, chatResponse, _rev)
-            mRealm.commitTransaction()
-        } catch (e: Exception) {
-            e.printStackTrace()
-            if (mRealm.isInTransaction) {
-                mRealm.cancelTransaction()
+    private fun continueConversationRealm(id: String, query: String, chatResponse: String) {
+        databaseService.withRealm { realm ->
+            try {
+                addConversationToChatHistory(realm, id, query, chatResponse, _rev)
+                realm.commitTransaction()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                if (realm.isInTransaction) {
+                    realm.cancelTransaction()
+                }
             }
-        } finally {
-            mRealm.close()
         }
     }
 
@@ -520,7 +551,9 @@ class ChatDetailFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        super.onDestroyView()
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
         val editor = settings.edit()
         if (settings.getBoolean("isAlternativeUrl", false)) {
             editor.putString("alternativeUrl", "")
@@ -528,5 +561,7 @@ class ChatDetailFragment : Fragment() {
             editor.putBoolean("isAlternativeUrl", false)
             editor.apply()
         }
+        _binding = null
+        super.onDestroyView()
     }
 }

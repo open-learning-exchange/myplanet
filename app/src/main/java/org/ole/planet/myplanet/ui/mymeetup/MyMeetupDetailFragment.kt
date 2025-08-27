@@ -8,7 +8,9 @@ import android.widget.ArrayAdapter
 import android.widget.ListView
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMyMeetupDetailBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -20,9 +22,12 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 
+@AndroidEntryPoint
 class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     private lateinit var fragmentMyMeetupDetailBinding: FragmentMyMeetupDetailBinding
     private var meetups: RealmMeetup? = null
+    @Inject
+    lateinit var databaseService: DatabaseService
     lateinit var mRealm: Realm
     private var meetUpId: String? = null
     var profileDbHandler: UserProfileDbHandler? = null
@@ -45,7 +50,7 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
         fragmentMyMeetupDetailBinding.btnInvite.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
         fragmentMyMeetupDetailBinding.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
         fragmentMyMeetupDetailBinding.btnLeave.setOnClickListener(this)
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = databaseService.realmInstance
         profileDbHandler = UserProfileDbHandler(requireContext())
         user = profileDbHandler?.userModel?.let { mRealm.copyFromRealm(it) }
         return fragmentMyMeetupDetailBinding.root
@@ -98,5 +103,12 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
                 fragmentMyMeetupDetailBinding.btnLeave.setText(R.string.join)
             }
         }
+    }
+
+    override fun onDestroy() {
+        if (this::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
+        super.onDestroy()
     }
 }

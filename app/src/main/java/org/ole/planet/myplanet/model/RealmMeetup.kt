@@ -4,14 +4,12 @@ import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmObject
-import io.realm.Case
 import io.realm.annotations.PrimaryKey
 import org.json.JSONArray
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.TimeUtils
 
 open class RealmMeetup : RealmObject() {
@@ -40,8 +38,6 @@ open class RealmMeetup : RealmObject() {
     var sourcePlanet: String? = null
 
     companion object {
-        private val meetupDataList: MutableList<Array<String>> = mutableListOf()
-
         @JvmStatic
         fun insert(mRealm: Realm, meetupDoc: JsonObject) {
             insert("", meetupDoc, mRealm)
@@ -70,56 +66,7 @@ open class RealmMeetup : RealmObject() {
             myMeetupsDB?.day = JsonUtils.getJsonArray("day", meetupDoc).toString()
             myMeetupsDB?.link = JsonUtils.getJsonObject("link", meetupDoc).toString()
             myMeetupsDB?.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("link", meetupDoc))
-
-            val csvRow = arrayOf(
-                JsonUtils.getString("_id", meetupDoc),
-                userId ?: "",
-                JsonUtils.getString("_rev", meetupDoc),
-                JsonUtils.getString("title", meetupDoc),
-                JsonUtils.getString("description", meetupDoc),
-                JsonUtils.getLong("startDate", meetupDoc).toString(),
-                JsonUtils.getLong("endDate", meetupDoc).toString(),
-                JsonUtils.getString("recurring", meetupDoc),
-                JsonUtils.getString("startTime", meetupDoc),
-                JsonUtils.getString("endTime", meetupDoc),
-                JsonUtils.getString("category", meetupDoc),
-                JsonUtils.getString("meetupLocation", meetupDoc),
-                JsonUtils.getString("meetupLink", meetupDoc),
-                JsonUtils.getString("createdBy", meetupDoc),
-                JsonUtils.getJsonArray("day", meetupDoc).toString(),
-                JsonUtils.getJsonObject("link", meetupDoc).toString(),
-                JsonUtils.getString("teams", JsonUtils.getJsonObject("link", meetupDoc))
-            )
-            meetupDataList.add(csvRow)
         }
-
-        @JvmStatic
-        fun meetupWriteCsv() {
-            CsvUtils.writeCsv(
-                "${context.getExternalFilesDir(null)}/ole/meetups.csv",
-                arrayOf(
-                    "meetupId",
-                    "userId",
-                    "meetupId_rev",
-                    "title",
-                    "description",
-                    "startDate",
-                    "endDate",
-                    "recurring",
-                    "startTime",
-                    "endTime",
-                    "category",
-                    "meetupLocation",
-                    "meetupLink",
-                    "createdBy",
-                    "day",
-                    "link",
-                    "teamId"
-                ),
-                meetupDataList
-            )
-        }
-
 
         @JvmStatic
         fun getMyMeetUpIds(realm: Realm?, userId: String?): JsonArray {
@@ -139,8 +86,8 @@ open class RealmMeetup : RealmObject() {
             map["Created By"] = checkNull(meetups.creator)
             map["Category"] = checkNull(meetups.category)
             try {
-                map["Meetup Date"] = TimeUtils.getFormatedDate(meetups.startDate) +
-                        " - " + TimeUtils.getFormatedDate(meetups.endDate)
+                map["Meetup Date"] = TimeUtils.getFormattedDate(meetups.startDate) +
+                        " - " + TimeUtils.getFormattedDate(meetups.endDate)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

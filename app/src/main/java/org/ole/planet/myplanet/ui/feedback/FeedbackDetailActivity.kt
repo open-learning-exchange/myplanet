@@ -13,8 +13,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.util.Date
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityFeedbackDetailBinding
 import org.ole.planet.myplanet.databinding.RowFeedbackReplyBinding
@@ -23,14 +25,18 @@ import org.ole.planet.myplanet.model.FeedbackReply
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.feedback.FeedbackDetailActivity.RvFeedbackAdapter.ReplyViewHolder
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.LocaleHelper
-import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDateWithTime
+import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
 
+@AndroidEntryPoint
 class FeedbackDetailActivity : AppCompatActivity() {
     private lateinit var activityFeedbackDetailBinding: ActivityFeedbackDetailBinding
     private var mAdapter: RecyclerView.Adapter<*>? = null
     private var layoutManager: RecyclerView.LayoutManager? = null
     private lateinit var feedback: RealmFeedback
+    @Inject
+    lateinit var databaseService: DatabaseService
     lateinit var realm: Realm
     private lateinit var rowFeedbackReplyBinding: RowFeedbackReplyBinding
 
@@ -42,12 +48,13 @@ class FeedbackDetailActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityFeedbackDetailBinding = ActivityFeedbackDetailBinding.inflate(layoutInflater)
         setContentView(activityFeedbackDetailBinding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityFeedbackDetailBinding.root)
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         setTitle(R.string.feedback)
-        realm = DatabaseService(this).realmInstance
+        realm = databaseService.realmInstance
         feedback = realm.where(RealmFeedback::class.java).equalTo("id", intent.getStringExtra("id")).findFirst()!!
-        activityFeedbackDetailBinding.tvDate.text = getFormatedDateWithTime(feedback.openTime)
+        activityFeedbackDetailBinding.tvDate.text = getFormattedDateWithTime(feedback.openTime)
         activityFeedbackDetailBinding.tvMessage.text = if (TextUtils.isEmpty(feedback.message))
             "N/A"
         else
@@ -123,6 +130,13 @@ class FeedbackDetailActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
+    override fun onDestroy() {
+        if (::realm.isInitialized && !realm.isClosed) {
+            realm.close()
+        }
+        super.onDestroy()
+    }
+
     inner class RvFeedbackAdapter(private val replyList: List<FeedbackReply>?, var context: Context) : RecyclerView.Adapter<ReplyViewHolder>() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReplyViewHolder {
             rowFeedbackReplyBinding = RowFeedbackReplyBinding.inflate(layoutInflater, parent, false)
@@ -131,7 +145,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: ReplyViewHolder, position: Int) {
             rowFeedbackReplyBinding.tvDate.text = replyList?.get(position)?.date?.let {
-                getFormatedDateWithTime(it.toLong())
+                getFormattedDateWithTime(it.toLong())
             }
             rowFeedbackReplyBinding.tvUser.text = replyList?.get(position)?.user
             rowFeedbackReplyBinding.tvMessage.text = replyList?.get(position)?.message

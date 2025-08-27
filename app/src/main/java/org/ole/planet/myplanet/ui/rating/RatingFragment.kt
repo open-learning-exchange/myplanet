@@ -10,9 +10,11 @@ import android.widget.RatingBar
 import android.widget.RatingBar.OnRatingBarChangeListener
 import androidx.fragment.app.DialogFragment
 import com.google.gson.Gson
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.util.Date
 import java.util.UUID
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentRatingBinding
@@ -22,9 +24,12 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class RatingFragment : DialogFragment() {
-    private lateinit var fragmentRatingBinding: FragmentRatingBinding
-    private lateinit var databaseService: DatabaseService
+    private var _binding: FragmentRatingBinding? = null
+    private val binding get() = _binding!!
+    @Inject
+    lateinit var databaseService: DatabaseService
     lateinit var mRealm: Realm
     var model: RealmUserModel? = null
     var id: String? = ""
@@ -48,11 +53,10 @@ class RatingFragment : DialogFragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentRatingBinding = FragmentRatingBinding.inflate(inflater, container, false)
-        databaseService = DatabaseService(requireActivity())
+        _binding = FragmentRatingBinding.inflate(inflater, container, false)
         mRealm = databaseService.realmInstance
         settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return fragmentRatingBinding.root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -62,29 +66,37 @@ class RatingFragment : DialogFragment() {
         previousRating = mRealm.where(RealmRating::class.java).equalTo("type", type)
             .equalTo("userId", settings.getString("userId", "")).equalTo("item", id).findFirst()
         if (previousRating != null) {
-            fragmentRatingBinding.ratingBar.rating = previousRating?.rate?.toFloat() ?: 0.0f
-            fragmentRatingBinding.etComment.setText(previousRating?.comment)
+            binding.ratingBar.rating = previousRating?.rate?.toFloat() ?: 0.0f
+            binding.etComment.setText(previousRating?.comment)
         }
-        fragmentRatingBinding.ratingBar.onRatingBarChangeListener =
+        binding.ratingBar.onRatingBarChangeListener =
             OnRatingBarChangeListener { _: RatingBar?, _: Float, fromUser: Boolean ->
                 if (fromUser) {
-                    fragmentRatingBinding.ratingError.visibility = View.GONE
+                    binding.ratingError.visibility = View.GONE
                 }
             }
-        fragmentRatingBinding.btnCancel.setOnClickListener { dismiss() }
-        fragmentRatingBinding.btnSubmit.setOnClickListener {
-            if (fragmentRatingBinding.ratingBar.rating.toDouble() == 0.0) {
-                fragmentRatingBinding.ratingError.visibility = View.VISIBLE
-                fragmentRatingBinding.ratingError.text = getString(R.string.kindly_give_a_rating)
+        binding.btnCancel.setOnClickListener { dismiss() }
+        binding.btnSubmit.setOnClickListener {
+            if (binding.ratingBar.rating.toDouble() == 0.0) {
+                binding.ratingError.visibility = View.VISIBLE
+                binding.ratingError.text = getString(R.string.kindly_give_a_rating)
             } else {
                 saveRating()
             }
         }
     }
 
+    override fun onDestroyView() {
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
+        _binding = null
+        super.onDestroyView()
+    }
+
     private fun saveRating() {
-        val comment = fragmentRatingBinding.etComment.text.toString()
-        val rating = fragmentRatingBinding.ratingBar.rating
+        val comment = binding.etComment.text.toString()
+        val rating = binding.ratingBar.rating
         mRealm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
             var ratingObject = realm.where(RealmRating::class.java)
                 .equalTo("type", type)

@@ -12,9 +12,12 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.AdapterView
 import android.widget.AdapterView.OnItemClickListener
 import android.widget.AdapterView.OnItemSelectedListener
+import android.widget.Button
+import android.widget.EditText
+import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.core.content.ContextCompat
@@ -24,17 +27,18 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Case
 import io.realm.Realm
 import io.realm.Sort
 import java.util.Calendar
 import java.util.Locale
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
@@ -51,11 +55,21 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
+import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class MyHealthFragment : Fragment() {
-    private lateinit var fragmentVitalSignBinding: FragmentVitalSignBinding
+    
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
+    
+    @Inject
+    lateinit var syncManager: SyncManager
+    @Inject
+    lateinit var databaseService: DatabaseService
+    private var _binding: FragmentVitalSignBinding? = null
+    private val binding get() = _binding!!
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
     private lateinit var alertHealthListBinding: AlertHealthListBinding
     var profileDbHandler: UserProfileDbHandler? = null
@@ -80,9 +94,9 @@ class MyHealthFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentVitalSignBinding = FragmentVitalSignBinding.inflate(inflater, container, false)
-        mRealm = DatabaseService(requireContext()).realmInstance
-        return fragmentVitalSignBinding.root
+        _binding = FragmentVitalSignBinding.inflate(inflater, container, false)
+        mRealm = databaseService.realmInstance
+        return binding.root
     }
 
     private fun startHealthSync() {
@@ -104,7 +118,7 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun startSyncManager() {
-        SyncManager.instance?.start(object : SyncListener {
+        syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
@@ -131,7 +145,7 @@ class MyHealthFragment : Fragment() {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
-                        Snackbar.make(fragmentVitalSignBinding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG).setAction("Retry") { startHealthSync() }.show()
+                        Snackbar.make(binding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG).setAction("Retry") { startHealthSync() }.show()
                     }
                 }
             }
@@ -164,16 +178,16 @@ class MyHealthFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         view.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
         alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(context))
-        fragmentVitalSignBinding.txtDob.hint = "yyyy-MM-dd'"
+        binding.txtDob.hint = "yyyy-MM-dd'"
 
         val allowDateEdit = false
         if(allowDateEdit) {
-            fragmentVitalSignBinding.txtDob.setOnClickListener {
+            binding.txtDob.setOnClickListener {
                 val now = Calendar.getInstance()
                 val dpd = DatePickerDialog(requireContext(), { _, year, month, dayOfMonth ->
                     val selectedDate =
                         String.format(Locale.US, "%04d-%02d-%02d", year, month + 1, dayOfMonth)
-                    fragmentVitalSignBinding.txtDob.text = selectedDate
+                    binding.txtDob.text = selectedDate
                 }, now.get(Calendar.YEAR), now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH))
                 dpd.show()
             }
@@ -181,7 +195,7 @@ class MyHealthFragment : Fragment() {
             disableDobField()
         }
 
-        fragmentVitalSignBinding.rvRecords.addItemDecoration(DividerItemDecoration(activity, DividerItemDecoration.VERTICAL))
+        binding.rvRecords.addItemDecoration(DividerItemDecoration(activity, DividerItemDecoration.VERTICAL))
 
         setupInitialData()
         setupButtons()
@@ -195,31 +209,31 @@ class MyHealthFragment : Fragment() {
 
     private fun setupButtons() {
         val isHealthProvider = userModel?.rolesList?.contains("health") ?: false
-        fragmentVitalSignBinding.btnnewPatient.visibility =
+        binding.btnnewPatient.visibility =
             if (isHealthProvider) View.VISIBLE else View.GONE
 
-        fragmentVitalSignBinding.btnnewPatient.setOnClickListener {
+        binding.btnnewPatient.setOnClickListener {
             if (isHealthProvider) {
                 selectPatient()
             }
         }
-        fragmentVitalSignBinding.updateHealth.visibility = View.VISIBLE
+        binding.updateHealth.visibility = View.VISIBLE
 
-        fragmentVitalSignBinding.updateHealth.setOnClickListener {
+        binding.updateHealth.setOnClickListener {
             startActivity(Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId))
         }
 
-        fragmentVitalSignBinding.txtDob.text = if (TextUtils.isEmpty(userModel?.dob)) getString(R.string.birth_date) else getFormatedDate(userModel?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        binding.txtDob.text = if (TextUtils.isEmpty(userModel?.dob)) getString(R.string.birth_date) else getFormattedDate(userModel?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
     }
 
     private fun getHealthRecords(memberId: String?) {
         userId = memberId
         userModel = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
-        fragmentVitalSignBinding.lblHealthName.text = userModel?.getFullName()
-        fragmentVitalSignBinding.addNewRecord.setOnClickListener {
+        binding.lblHealthName.text = userModel?.getFullName()
+        binding.addNewRecord.setOnClickListener {
             startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId))
         }
-        fragmentVitalSignBinding.updateHealth.setOnClickListener {
+        binding.updateHealth.setOnClickListener {
             startActivity(Intent(activity, AddMyHealthActivity::class.java).putExtra("userId", userId))
         }
         showRecords()
@@ -312,12 +326,12 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun showRecords() {
-        fragmentVitalSignBinding.layoutUserDetail.visibility = View.VISIBLE
-        fragmentVitalSignBinding.tvMessage.visibility = View.GONE
-        fragmentVitalSignBinding.txtFullName.text = getString(R.string.three_strings, userModel?.firstName, userModel?.middleName, userModel?.lastName)
-        fragmentVitalSignBinding.txtEmail.text = Utilities.checkNA(userModel?.email!!)
-        fragmentVitalSignBinding.txtLanguage.text = Utilities.checkNA(userModel?.language!!)
-        fragmentVitalSignBinding.txtDob.text = Utilities.checkNA(userModel?.dob!!)
+        binding.layoutUserDetail.visibility = View.VISIBLE
+        binding.tvMessage.visibility = View.GONE
+        binding.txtFullName.text = getString(R.string.three_strings, userModel?.firstName, userModel?.middleName, userModel?.lastName)
+        binding.txtEmail.text = Utilities.checkNA(userModel?.email!!)
+        binding.txtLanguage.text = Utilities.checkNA(userModel?.language!!)
+        binding.txtDob.text = Utilities.checkNA(userModel?.dob!!)
         var mh = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
         if (mh == null) {
             mh = mRealm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
@@ -325,17 +339,17 @@ class MyHealthFragment : Fragment() {
         if (mh != null) {
             val mm = getHealthProfile(mh)
             if (mm == null) {
-                fragmentVitalSignBinding.rvRecords.adapter = null
-                fragmentVitalSignBinding.tvNoRecords.visibility = View.VISIBLE
-                fragmentVitalSignBinding.tvDataPlaceholder.visibility = View.GONE
+                binding.rvRecords.adapter = null
+                binding.tvNoRecords.visibility = View.VISIBLE
+                binding.tvDataPlaceholder.visibility = View.GONE
                 Utilities.toast(activity, getString(R.string.health_record_not_available))
                 return
             }
             val myHealths = mm.profile
-            fragmentVitalSignBinding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes)
-            fragmentVitalSignBinding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds)
-            fragmentVitalSignBinding.txtBirthPlace.text = Utilities.checkNA(userModel?.birthPlace)
-            fragmentVitalSignBinding.txtEmergencyContact.text = getString(R.string.emergency_contact_details,
+            binding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes)
+            binding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds)
+            binding.txtBirthPlace.text = Utilities.checkNA(userModel?.birthPlace)
+            binding.txtEmergencyContact.text = getString(R.string.emergency_contact_details,
                 Utilities.checkNA(myHealths?.emergencyContactName),
                 Utilities.checkNA(myHealths?.emergencyContactType),
                 Utilities.checkNA(myHealths?.emergencyContact)).trimIndent()
@@ -343,37 +357,37 @@ class MyHealthFragment : Fragment() {
             val list = getExaminations(mm)
 
             if (list != null && list.isNotEmpty()) {
-                fragmentVitalSignBinding.rvRecords.visibility = View.VISIBLE
-                fragmentVitalSignBinding.tvNoRecords.visibility = View.GONE
-                fragmentVitalSignBinding.tvDataPlaceholder.visibility = View.VISIBLE
+                binding.rvRecords.visibility = View.VISIBLE
+                binding.tvNoRecords.visibility = View.GONE
+                binding.tvDataPlaceholder.visibility = View.VISIBLE
 
                 val adap = AdapterHealthExamination(requireActivity(), list, mh, userModel)
                 adap.setmRealm(mRealm)
-                fragmentVitalSignBinding.rvRecords.apply {
+                binding.rvRecords.apply {
                     layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
                     isNestedScrollingEnabled = false
                     adapter = adap
                 }
-                fragmentVitalSignBinding.rvRecords.post {
+                binding.rvRecords.post {
                     val lastPosition = list.size - 1
                     if (lastPosition >= 0) {
-                        fragmentVitalSignBinding.rvRecords.scrollToPosition(lastPosition)
+                        binding.rvRecords.scrollToPosition(lastPosition)
                     }
                 }
             } else {
-                fragmentVitalSignBinding.rvRecords.visibility = View.GONE
-                fragmentVitalSignBinding.tvNoRecords.visibility = View.GONE
-                fragmentVitalSignBinding.tvDataPlaceholder.visibility = View.VISIBLE
+                binding.rvRecords.visibility = View.GONE
+                binding.tvNoRecords.visibility = View.GONE
+                binding.tvDataPlaceholder.visibility = View.VISIBLE
             }
         } else {
-            fragmentVitalSignBinding.txtOtherNeed.text = getString(R.string.empty_text)
-            fragmentVitalSignBinding.txtSpecialNeeds.text = getString(R.string.empty_text)
-            fragmentVitalSignBinding.txtBirthPlace.text = getString(R.string.empty_text)
-            fragmentVitalSignBinding.txtEmergencyContact.text = getString(R.string.empty_text)
-            fragmentVitalSignBinding.rvRecords.adapter = null
-            fragmentVitalSignBinding.rvRecords.visibility = View.GONE
-            fragmentVitalSignBinding.tvNoRecords.visibility = View.VISIBLE
-            fragmentVitalSignBinding.tvDataPlaceholder.visibility = View.GONE
+            binding.txtOtherNeed.text = getString(R.string.empty_text)
+            binding.txtSpecialNeeds.text = getString(R.string.empty_text)
+            binding.txtBirthPlace.text = getString(R.string.empty_text)
+            binding.txtEmergencyContact.text = getString(R.string.empty_text)
+            binding.rvRecords.adapter = null
+            binding.rvRecords.visibility = View.GONE
+            binding.tvNoRecords.visibility = View.VISIBLE
+            binding.tvDataPlaceholder.visibility = View.GONE
         }
     }
 
@@ -397,14 +411,22 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun disableDobField() {
-        fragmentVitalSignBinding.txtDob.isClickable = false
-        fragmentVitalSignBinding.txtDob.isFocusable = false
-        fragmentVitalSignBinding.txtDob.setOnClickListener(null)
+        binding.txtDob.isClickable = false
+        binding.txtDob.isFocusable = false
+        binding.txtDob.setOnClickListener(null)
+    }
+
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         customProgressDialog?.dismiss()
         customProgressDialog = null
+        if (this::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
+        super.onDestroy()
     }
 }

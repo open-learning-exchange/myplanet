@@ -7,9 +7,11 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.ListView
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.Sort
 import java.util.Date
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDialogFragment
 import org.ole.planet.myplanet.databinding.FragmentSendSurveyBinding
@@ -20,17 +22,18 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class SendSurveyFragment : BaseDialogFragment() {
     private lateinit var fragmentSendSurveyBinding: FragmentSendSurveyBinding
     lateinit var mRealm: Realm
-    lateinit var dbService: DatabaseService
+    @Inject
+    lateinit var databaseService: DatabaseService
     override val key: String
         get() = "surveyId"
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentSendSurveyBinding = FragmentSendSurveyBinding.inflate(inflater, container, false)
-        dbService = DatabaseService(requireActivity())
-        mRealm = dbService.realmInstance
+        mRealm = databaseService.realmInstance
         if (TextUtils.isEmpty(id)) {
             dismiss()
             return fragmentSendSurveyBinding.root
@@ -40,7 +43,7 @@ class SendSurveyFragment : BaseDialogFragment() {
     }
 
     private fun createSurveySubmission(userId: String?) {
-        val mRealm = DatabaseService(requireActivity()).realmInstance
+        val mRealm = databaseService.realmInstance
         val exam = mRealm.where(RealmStepExam::class.java).equalTo("id", id).findFirst()
         mRealm.beginTransaction()
         var sub = mRealm.where(RealmSubmission::class.java).equalTo("userId", userId)

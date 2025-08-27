@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
 
 class AdapterLeader(var context: Context, private var leaders: List<RealmUserModel>) :
@@ -54,10 +55,12 @@ class AdapterLeader(var context: Context, private var leaders: List<RealmUserMod
                 memberLevel = leader.level ?: "",
                 imageUrl = null
             )
-            activity.supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, fragment)
-                .addToBackStack(null)
-                .commit()
+            NavigationHelper.replaceFragment(
+                activity.supportFragmentManager,
+                R.id.fragment_container,
+                fragment,
+                addToBackStack = true
+            )
         }
     }
 

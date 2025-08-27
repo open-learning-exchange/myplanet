@@ -10,15 +10,17 @@ import java.io.File
 import java.util.regex.Pattern
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityImageViewerBinding
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
 
 class ImageViewerActivity : AppCompatActivity() {
-    private lateinit var activityImageViewerBinding: ActivityImageViewerBinding
+    private lateinit var binding: ActivityImageViewerBinding
     var fileName: String? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        activityImageViewerBinding = ActivityImageViewerBinding.inflate(layoutInflater)
-        setContentView(activityImageViewerBinding.root)
+        binding = ActivityImageViewerBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
         renderImageFile()
     }
 
@@ -27,11 +29,11 @@ class ImageViewerActivity : AppCompatActivity() {
         val imageOpenIntent = intent
         fileName = imageOpenIntent.getStringExtra("TOUCHED_FILE")
         if (!fileName.isNullOrEmpty()) {
-            activityImageViewerBinding.imageFileName.text = FileUtils.nameWithoutExtension(fileName)
-            activityImageViewerBinding.imageFileName.visibility = View.VISIBLE
+            binding.imageFileName.text = FileUtils.nameWithoutExtension(fileName)
+            binding.imageFileName.visibility = View.VISIBLE
         } else {
-            activityImageViewerBinding.imageFileName.text = getString(R.string.message_placeholder, "No file selected")
-            activityImageViewerBinding.imageFileName.visibility = View.VISIBLE
+            binding.imageFileName.text = getString(R.string.message_placeholder, "No file selected")
+            binding.imageFileName.visibility = View.VISIBLE
         }
 
         if (fileName?.matches(".*[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}.*".toRegex()) == true) {
@@ -44,7 +46,7 @@ class ImageViewerActivity : AppCompatActivity() {
                     val basePath = getExternalFilesDir(null)
                     File(basePath, "ole/$fileName")
                 }
-                Glide.with(applicationContext).load(imageFile).into(activityImageViewerBinding.imageViewer)
+                Glide.with(applicationContext).load(imageFile).into(binding.imageViewer)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -65,6 +67,6 @@ class ImageViewerActivity : AppCompatActivity() {
         Glide.with(this)
             .load(fileName)
             .apply(requestOptions)
-            .into(activityImageViewerBinding.imageViewer)
+            .into(binding.imageViewer)
     }
 }

@@ -20,6 +20,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
+import dagger.hilt.android.AndroidEntryPoint
 import io.noties.markwon.Markwon
 import io.noties.markwon.editor.MarkwonEditor
 import io.noties.markwon.editor.MarkwonEditorTextWatcher
@@ -27,6 +28,7 @@ import io.realm.Realm
 import io.realm.RealmResults
 import java.util.Date
 import java.util.UUID
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseProgress
@@ -35,14 +37,17 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.NetworkUtils.getUniqueIdentifier
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var exam: RealmStepExam? = null
-    lateinit var db: DatabaseService
+    @Inject
+    lateinit var databaseService: DatabaseService
     lateinit var mRealm: Realm
     var stepId: String? = null
     var id: String? = ""
@@ -64,8 +69,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        db = DatabaseService(requireActivity())
-        mRealm = db.realmInstance
+        mRealm = databaseService.realmInstance
         if (arguments != null) {
             stepId = requireArguments().getString("stepId")
             stepNumber = requireArguments().getInt("stepNum")
@@ -140,7 +144,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
                 .setCustomTitle(titleView)
                 .setPositiveButton(getString(R.string.finish)) { _: DialogInterface?, _: Int ->
-                    parentFragmentManager.popBackStack()
+                    NavigationHelper.popBackStack(parentFragmentManager)
                 }.setCancelable(false).show()
         }
     }
@@ -157,8 +161,8 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     }
 
     private fun showUserInfoDialog() {
-        if (!isMySurvey && !exam?.isFromNation!!) {
-            UserInformationFragment.getInstance(sub?.id, teamId, !isMySurvey && !exam?.isFromNation!!).show(childFragmentManager, "")
+        if (!isMySurvey && exam?.isFromNation != true) {
+            UserInformationFragment.getInstance(sub?.id, teamId, !isMySurvey && exam?.isFromNation != true).show(childFragmentManager, "")
         } else {
             if (!mRealm.isInTransaction) mRealm.beginTransaction()
             sub?.status = "complete"
@@ -171,9 +175,11 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     companion object {
         fun navigateToSurveyList(activity: FragmentActivity) {
             val surveyListFragment = SurveyFragment()
-            activity.supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, surveyListFragment)
-                .commit()
+            NavigationHelper.replaceFragment(
+                activity.supportFragmentManager,
+                R.id.fragment_container,
+                surveyListFragment
+            )
         }
     }
 
@@ -222,5 +228,12 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             })
         }
         etAnswer.setText(oldAnswer)
+    }
+
+    override fun onDestroy() {
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
+        super.onDestroy()
     }
 }

@@ -10,11 +10,9 @@ import androidx.lifecycle.Lifecycle
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.tabs.TabLayoutMediator
-import java.util.Date
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.TimeUtils
 
 class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
     private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
@@ -81,14 +79,14 @@ class HomeCommunityDialogFragment : BottomSheetDialogFragment() {
         val settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val sParentcode = settings.getString("parentCode", "")
         val communityName = settings.getString("communityName", "")
-        fragmentTeamDetailBinding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "$communityName@$sParentcode", true)
+        fragmentTeamDetailBinding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), "$communityName@$sParentcode", true, settings)
         TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
             tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
         }.attach()
         fragmentTeamDetailBinding.title.text = communityName
         fragmentTeamDetailBinding.title.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
         fragmentTeamDetailBinding.subtitle.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-        fragmentTeamDetailBinding.subtitle.text = TimeUtils.getFormatedDateWithTime(Date().time)
+        fragmentTeamDetailBinding.subtitle.text = settings.getString("planetType", "")
         fragmentTeamDetailBinding.appBar.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
     }
 }

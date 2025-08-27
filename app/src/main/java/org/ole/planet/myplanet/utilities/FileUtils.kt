@@ -2,23 +2,31 @@ package org.ole.planet.myplanet.utilities
 
 import android.app.PendingIntent
 import android.app.usage.StorageStatsManager
-import android.content.*
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageInstaller
 import android.database.Cursor
 import android.net.Uri
-import android.os.*
+import android.os.Environment
+import android.os.StatFs
 import android.os.storage.StorageManager
 import android.provider.MediaStore
-import android.text.TextUtils
 import android.text.format.Formatter
 import androidx.core.net.toUri
-import java.io.*
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.io.InputStream
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID
 import org.ole.planet.myplanet.MainApplication.Companion.context
 
 object FileUtils {
+    val SD_PATH: String by lazy {
+        context.getExternalFilesDir(null)?.let { "${it}/ole/" } ?: ""
+    }
+
     @JvmStatic
     @Throws(IOException::class)
     fun fullyReadFileToBytes(f: File): ByteArray = f.readBytes()
@@ -104,7 +112,7 @@ object FileUtils {
 
     @JvmStatic
     fun installApk(activity: Context, file: String?) {
-        if (!file?.endsWith("apk")!!) return
+        if (file?.endsWith("apk") != true) return
         val toInstall = File(file)
         if (!toInstall.exists()) return
         try {
@@ -134,29 +142,6 @@ object FileUtils {
         }
     }
 
-    @JvmStatic
-    fun copyAssets(context: Context) {
-        val tiles = arrayOf("dhulikhel.mbtiles", "somalia.mbtiles")
-        val assetManager = context.assets
-        try {
-            for (s in tiles) {
-                var out: OutputStream
-                val `in`: InputStream = assetManager.open(s)
-                val outFile = File(Environment.getExternalStorageDirectory().toString() + "/osmdroid", s)
-                out = FileOutputStream(outFile)
-                copyFile(`in`, out)
-                out.close()
-                `in`.close()
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    @Throws(IOException::class)
-    private fun copyFile(`in`: InputStream, out: OutputStream) {
-        `in`.copyTo(out)
-    }
 
     @JvmStatic
     fun getRealPathFromURI(context: Context, contentUri: Uri?): String? {
@@ -170,6 +155,38 @@ object FileUtils {
         } finally {
             cursor?.close()
         }
+    }
+
+    @JvmStatic
+    fun copyUriToFile(context: Context, sourceUri: Uri, destinationFile: File) {
+        context.contentResolver.openInputStream(sourceUri)?.use { inputStream ->
+            FileOutputStream(destinationFile).use { outputStream ->
+                inputStream.copyTo(outputStream)
+            }
+        }
+    }
+
+    @JvmStatic
+    fun getPathFromURI(context: Context, uri: Uri?): String? {
+        var filePath: String? = null
+        if (uri != null) {
+            when (uri.scheme) {
+                "content" -> {
+                    context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                        if (cursor.moveToFirst()) {
+                            val columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
+                            val fileName = cursor.getString(columnIndex)
+                            val cacheDir = context.cacheDir
+                            val destinationFile = File(cacheDir, fileName)
+                            copyUriToFile(context, uri, destinationFile)
+                            filePath = destinationFile.absolutePath
+                        }
+                    }
+                }
+                "file" -> filePath = uri.path
+            }
+        }
+        return filePath
     }
 
     @JvmStatic
@@ -187,7 +204,7 @@ object FileUtils {
     @JvmStatic
     fun openOleFolder(): Intent {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
-        val uri = Utilities.SD_PATH.toUri()  // Ensure org.ole.planet.myplanet.utilities.Utilities.SD_PATH is the correct path
+        val uri = SD_PATH.toUri()
         intent.setDataAndType(uri, "*/*")
         return Intent.createChooser(intent, "Open folder")
     }

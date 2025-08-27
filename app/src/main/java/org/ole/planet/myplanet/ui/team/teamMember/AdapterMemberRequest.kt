@@ -5,14 +5,17 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.databinding.RowMemberRequestBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.UploadManager
+import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterMemberRequest(private val context: Context, private val list: MutableList<RealmUserModel>, private val mRealm: Realm, private val listener: MemberChangeListener) : RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser>() {
+class AdapterMemberRequest(private val context: Context, private val list: MutableList<RealmUserModel>, private val mRealm: Realm, private val currentUser: RealmUserModel, private val listener: MemberChangeListener, private val uploadManager: UploadManager) : RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser>() {
     private lateinit var rowMemberRequestBinding: RowMemberRequestBinding
     private var teamId: String? = null
     private lateinit var team: RealmMyTeam
@@ -51,9 +54,21 @@ class AdapterMemberRequest(private val context: Context, private val list: Mutab
                 btnAccept.isEnabled = false
             }
 
+            if(isGuestUser() || !isTeamLeader()){
+                btnReject.isEnabled = false
+                btnAccept.isEnabled = false
+            }
+
             btnAccept.setOnClickListener { handleClick(holder, true) }
             btnReject.setOnClickListener { handleClick(holder, false) }
         }
+    }
+
+    private fun isGuestUser() = currentUser.id?.startsWith("guest") == true
+
+    fun isTeamLeader(): Boolean {
+        if(teamId==null)return false
+        return team.userId == currentUser._id
     }
 
     private fun handleClick(holder: RecyclerView.ViewHolder, isAccepted: Boolean) {
@@ -65,24 +80,33 @@ class AdapterMemberRequest(private val context: Context, private val list: Mutab
     }
 
     private fun acceptReject(userModel: RealmUserModel, isAccept: Boolean, position: Int) {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        val team = mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId)
-            .equalTo("userId", userModel.id).findFirst()
-        if (team != null) {
-            if (isAccept) {
-                team.docType = "membership"
-                team.updated = true
-            } else {
-                team.deleteFromRealm()
-            }
-        }
-        mRealm.commitTransaction()
+        val userId = userModel.id
 
         list.removeAt(position)
         notifyItemRemoved(position)
         notifyItemRangeChanged(position, list.size)
 
-        syncTeamActivities(context)
+        mRealm.executeTransactionAsync({ realm: Realm ->
+            val team = realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("userId", userId)
+                .findFirst()
+            if (team != null) {
+                if (isAccept) {
+                    team.docType = "membership"
+                    team.updated = true
+                } else {
+                    team.deleteFromRealm()
+                }
+            }
+        }, {
+            syncTeamActivities(context, uploadManager)
+            listener.onMemberChanged()
+        }, { error ->
+            list.add(position, userModel)
+            notifyItemInserted(position)
+            Utilities.toast(context, context.getString(R.string.request_failed_please_retry))
+        })
     }
 
     override fun getItemCount(): Int {

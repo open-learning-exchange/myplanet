@@ -21,7 +21,6 @@ import com.applandeo.materialcalendarview.CalendarView
 import com.applandeo.materialcalendarview.listeners.OnCalendarDayClickListener
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import io.realm.Realm
 import io.realm.RealmResults
 import java.net.MalformedURLException
 import java.net.URL
@@ -54,6 +53,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private lateinit var calendarEventsMap: MutableMap<CalendarDay, RealmMeetup>
     private lateinit var meetupList: RealmResults<RealmMeetup>
     private val eventDates: MutableList<Calendar> = mutableListOf()
+    private var addMeetupDialog: AlertDialog? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentEnterpriseCalendarBinding = FragmentEnterpriseCalendarBinding.inflate(inflater, container, false)
@@ -76,6 +76,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
     }
 
     private fun showMeetupAlert() {
+        if (addMeetupDialog?.isShowing == true) return
         val addMeetupBinding = AddMeetupBinding.inflate(layoutInflater)
         setDatePickerListener(addMeetupBinding.tvStartDate, start, end)
         setDatePickerListener(addMeetupBinding.tvEndDate, end, null)
@@ -84,7 +85,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         if (!::clickedCalendar.isInitialized) {
             clickedCalendar = Calendar.getInstance()
         }
-        val alertDialog = AlertDialog.Builder(requireActivity()).setView(addMeetupBinding.root).create()
+        addMeetupDialog = AlertDialog.Builder(requireActivity()).setView(addMeetupBinding.root).create()
         addMeetupBinding.btnSave.setOnClickListener {
             val title = "${addMeetupBinding.etTitle.text.trim()}"
             val link = "${addMeetupBinding.etLink.text.trim()}"
@@ -136,7 +137,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
                     meetup.teamId = teamId
                     mRealm.commitTransaction()
                     Utilities.toast(activity, getString(R.string.meetup_added))
-                    alertDialog.dismiss()
+                    addMeetupDialog?.dismiss()
                     refreshCalendarView()
                 } catch (e: Exception) {
                     mRealm.cancelTransaction()
@@ -147,17 +148,17 @@ class TeamCalendarFragment : BaseTeamFragment() {
         }
 
         addMeetupBinding.btnCancel.setOnClickListener {
-            alertDialog.dismiss()
+            addMeetupDialog?.dismiss()
         }
 
-        alertDialog.setOnDismissListener {
+        addMeetupDialog?.setOnDismissListener {
             if (selectedDates.contains(clickedCalendar)) {
                 selectedDates.remove(clickedCalendar)
                 refreshCalendarView()
             }
         }
-        alertDialog.show()
-        alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
+        addMeetupDialog?.show()
+        addMeetupDialog?.window?.setBackgroundDrawableResource(R.color.card_bg)
     }
 
     private fun setDatePickerListener(view: TextView, date: Calendar?, endDate: Calendar?) {
@@ -306,22 +307,20 @@ class TeamCalendarFragment : BaseTeamFragment() {
             return
         }
         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-            var meetupList = mutableListOf<RealmMeetup>()
             val newDates = mutableListOf<Calendar>()
-            val realm = Realm.getDefaultInstance()
-            try {
-                meetupList = realm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
-                val calendarInstance = Calendar.getInstance()
+            databaseService.withRealm { realm ->
+                try {
+                    val meetupList = realm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
+                    val calendarInstance = Calendar.getInstance()
 
-                for (meetup in meetupList) {
-                    val startDateMillis = meetup.startDate
-                    calendarInstance.timeInMillis = startDateMillis
-                    newDates.add(calendarInstance.clone() as Calendar)
+                    for (meetup in meetupList) {
+                        val startDateMillis = meetup.startDate
+                        calendarInstance.timeInMillis = startDateMillis
+                        newDates.add(calendarInstance.clone() as Calendar)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                realm.close()
             }
             withContext(Dispatchers.Main) {
                 if (isAdded && activity != null) {
@@ -332,4 +331,6 @@ class TeamCalendarFragment : BaseTeamFragment() {
             }
         }
     }
+
+    
 }

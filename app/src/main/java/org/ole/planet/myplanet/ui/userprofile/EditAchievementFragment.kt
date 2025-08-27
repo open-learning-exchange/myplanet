@@ -14,7 +14,6 @@ import android.widget.ListView
 import android.widget.Toast
 import android.widget.Toolbar
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatTextView
 import androidx.core.content.ContextCompat
 import com.google.gson.JsonArray
@@ -27,7 +26,6 @@ import kotlin.Array
 import kotlin.Int
 import kotlin.String
 import kotlin.arrayOf
-import kotlin.plus
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.AlertAddAttachmentBinding
@@ -37,15 +35,15 @@ import org.ole.planet.myplanet.databinding.EditOtherInfoBinding
 import org.ole.planet.myplanet.databinding.FragmentEditAchievementBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.databinding.RowlayoutBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmAchievement.Companion.createReference
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.CheckboxListView
 import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
-import org.ole.planet.myplanet.utilities.TimeUtils.getFormatedDate
+import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utilities.Utilities
 
 class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDateSetListener {
@@ -64,7 +62,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentEditAchievementBinding = FragmentEditAchievementBinding.inflate(inflater, container, false)
-        aRealm = DatabaseService(requireActivity()).realmInstance
+        aRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
         achievementArray = JsonArray()
         achievement = aRealm.where(RealmAchievement::class.java).equalTo("_id", user?.id + "@" + user?.planetCode).findFirst()
@@ -79,7 +77,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         super.onViewCreated(view, savedInstanceState)
         val toolbar = view.findViewById<androidx.appcompat.widget.Toolbar>(R.id.toolbar)
         toolbar.setNavigationOnClickListener {
-            requireActivity().supportFragmentManager.popBackStack()
+            NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
         }
     }
     
@@ -89,12 +87,10 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             setUserInfo()
             setAchievementInfo()
             aRealm.commitTransaction()
-            val fragmentManager = parentFragmentManager
-            fragmentManager.popBackStack()
+            NavigationHelper.popBackStack(parentFragmentManager)
         }
         fragmentEditAchievementBinding.btnCancel.setOnClickListener {
-            val fragmentManager = parentFragmentManager
-            fragmentManager.popBackStack()
+            NavigationHelper.popBackStack(parentFragmentManager)
         }
         fragmentEditAchievementBinding.btnAchievement.setOnClickListener {
             showAddAchievementAlert(null)
@@ -285,7 +281,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             fragmentEditAchievementBinding.etGoals.setText(achievement?.goals)
             fragmentEditAchievementBinding.cbSendToNation.isChecked = achievement?.sendToNation.toBoolean()
         }
-        fragmentEditAchievementBinding.txtDob.text = if (TextUtils.isEmpty(user?.dob)) getString(R.string.birth_date) else getFormatedDate(user?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        fragmentEditAchievementBinding.txtDob.text = if (TextUtils.isEmpty(user?.dob)) getString(R.string.birth_date) else getFormattedDate(user?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         resourceArray = JsonArray()
         fragmentEditAchievementBinding.etFname.setText(user?.firstName)
         fragmentEditAchievementBinding.etMname.setText(user?.middleName)
@@ -324,5 +320,18 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         achievement?.setAchievements(achievementArray!!)
         achievement?.setReferences(referenceArray)
         achievement?.sendToNation = fragmentEditAchievementBinding.cbSendToNation.isChecked.toString() + ""
+    }
+
+    override fun onDestroy() {
+        if (this::aRealm.isInitialized && !aRealm.isClosed) {
+            aRealm.close()
+        }
+        try {
+            if (!mRealm.isClosed) {
+                mRealm.close()
+            }
+        } catch (_: UninitializedPropertyAccessException) {
+        }
+        super.onDestroy()
     }
 }

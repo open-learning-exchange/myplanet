@@ -2,9 +2,7 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.app.AlertDialog
 import android.content.Context
-import android.content.Context.MODE_PRIVATE
 import android.content.DialogInterface
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -24,8 +22,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -46,13 +46,14 @@ import org.ole.planet.myplanet.model.RealmTag.Companion.getTagsArray
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
+@AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener {
 
     companion object {
@@ -79,18 +80,22 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     lateinit var spnSubject: Spinner
     lateinit var searchTags: MutableList<RealmTag>
     private lateinit var confirmation: AlertDialog
-    private var isCheckboxChangedByCode = false
+    private var isUpdatingSelectAllState = false
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
-//    lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
+    
+    @Inject
+    lateinit var syncManager: SyncManager
+    
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefManager = SharedPrefManager(requireContext())
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         startCoursesSync()
     }
 
@@ -117,7 +122,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun startSyncManager() {
-        SyncManager.instance?.start(object : SyncListener {
+        syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
@@ -167,7 +172,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         try {
             val map = getRatings(mRealm, "course", model?.id)
             val progressMap = getCourseProgress(mRealm, model?.id)
-            val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>()
+            val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }.filter { !it?.courseTitle.isNullOrBlank() }
             val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
 
             adapterCourses.updateCourseList(sortedCourseList)
@@ -195,9 +200,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     override fun getAdapter(): RecyclerView.Adapter<*> {
         val map = getRatings(mRealm, "course", model?.id)
         val progressMap = getCourseProgress(mRealm, model?.id)
-        val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>()
+        val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
         val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
-        adapterCourses = AdapterCourses(requireActivity(), sortedCourseList, map)
+        adapterCourses = AdapterCourses(requireActivity(), sortedCourseList, map, userProfileDbHandler)
         adapterCourses.setProgressMap(progressMap)
         adapterCourses.setmRealm(mRealm)
         adapterCourses.setListener(this)
@@ -315,10 +320,12 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                         }
                     }
 
-                    parentFragmentManager.beginTransaction()
-                        .replace(R.id.fragment_container, myProgressFragment)
-                        .addToBackStack(null)
-                        .commit()
+                    NavigationHelper.replaceFragment(
+                        parentFragmentManager,
+                        R.id.fragment_container,
+                        myProgressFragment,
+                        addToBackStack = true
+                    )
                 }
             }
         }
@@ -392,18 +399,12 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
 
         selectAll.setOnCheckedChangeListener { _, isChecked ->
-            if (isCheckboxChangedByCode) {
-                isCheckboxChangedByCode = false
+            if (isUpdatingSelectAllState) {
                 return@setOnCheckedChangeListener
             }
             hideButtons()
-            if (isChecked) {
-                adapterCourses.selectAllItems(true)
-                selectAll.text = getString(R.string.unselect_all)
-            } else {
-                adapterCourses.selectAllItems(false)
-                selectAll.text = getString(R.string.select_all)
-            }
+            adapterCourses.selectAllItems(isChecked)
+            selectAll.text = if (isChecked) getString(R.string.unselect_all) else getString(R.string.select_all)
         }
     }
 
@@ -527,22 +528,27 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun updateCheckBoxState(programmaticState: Boolean) {
-        isCheckboxChangedByCode = true
+        isUpdatingSelectAllState = true
         selectAll.isChecked = programmaticState
-        isCheckboxChangedByCode = false
+        isUpdatingSelectAllState = false
+    }
+
+    private fun clearAllSelections() {
+        if (::adapterCourses.isInitialized) {
+            adapterCourses.selectAllItems(false)
+            updateCheckBoxState(false)
+            selectAll.text = getString(R.string.select_all)
+        }
     }
 
     private fun changeButtonStatus() {
         tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
         btnRemove.isEnabled = (selectedItems?.size ?: 0) > 0
         btnArchive.isEnabled = (selectedItems?.size ?: 0) > 0
-        if (adapterCourses.areAllSelected()) {
-            updateCheckBoxState(true)
-            selectAll.text = getString(R.string.unselect_all)
-        } else {
-            updateCheckBoxState(false)
-            selectAll.text = getString(R.string.select_all)
-        }
+        
+        val allSelected = adapterCourses.areAllSelected()
+        updateCheckBoxState(allSelected)
+        selectAll.text = if (allSelected) getString(R.string.unselect_all) else getString(R.string.select_all)
     }
 
     override fun onTagSelected(tag: RealmTag) {
@@ -593,12 +599,13 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     override fun onPause() {
         super.onPause()
         saveSearchActivity()
+        clearAllSelections()
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         customProgressDialog?.dismiss()
         customProgressDialog = null
+        super.onDestroy()
     }
 
     private fun recreateFragment(fragment: Fragment) {
@@ -609,15 +616,21 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 args.putString("courseLib", courseLib)
                 args.putSerializable("resources", resources?.let { ArrayList(it) })
                 fragment.arguments = args
-                val transaction = parentFragmentManager.beginTransaction()
-                transaction.replace(R.id.fragment_container, fragment)
-                transaction.addToBackStack(null)
-                transaction.commitAllowingStateLoss()
+                NavigationHelper.replaceFragment(
+                    parentFragmentManager,
+                    R.id.fragment_container,
+                    fragment,
+                    addToBackStack = true,
+                    allowStateLoss = true
+                )
             } else {
-                val transaction = parentFragmentManager.beginTransaction()
-                transaction.replace(R.id.fragment_container, fragment)
-                transaction.addToBackStack(null)
-                transaction.commitAllowingStateLoss()
+                NavigationHelper.replaceFragment(
+                    parentFragmentManager,
+                    R.id.fragment_container,
+                    fragment,
+                    addToBackStack = true,
+                    allowStateLoss = true
+                )
             }
         }
     }

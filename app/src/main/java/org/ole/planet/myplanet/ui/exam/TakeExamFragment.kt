@@ -21,8 +21,6 @@ import io.realm.RealmList
 import io.realm.RealmQuery
 import io.realm.Sort
 import java.util.Date
-import java.util.Locale
-import java.util.UUID
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeExamBinding
@@ -33,12 +31,10 @@ import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.ui.exam.ExamAnswerUtils
-import org.ole.planet.myplanet.ui.exam.ExamSubmissionUtils
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.CameraUtils.capturePhoto
-import org.ole.planet.myplanet.utilities.JsonParserUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
+import org.ole.planet.myplanet.utilities.JsonUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utilities.KeyboardUtils.hideSoftKeyboard
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.Utilities.toast
@@ -47,6 +43,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private lateinit var fragmentTakeExamBinding: FragmentTakeExamBinding
     private var isCertified = false
     var container: NestedScrollView? = null
+    private val gson = Gson()
     override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTakeExamBinding = FragmentTakeExamBinding.inflate(inflater, parent, false)
         listAns = HashMap()
@@ -164,8 +161,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun createSubmission() {
-        mRealm.executeTransaction { realm ->
-            sub = createSubmission(null, realm)
+        mRealm.beginTransaction()
+        try {
+            sub = createSubmission(null, mRealm)
             setParentId()
             sub?.userId = user?.id
             sub?.status = "pending"
@@ -178,8 +176,12 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
             currentIndex = 0
             if (isTeam == true && teamId != null) {
-                addTeamInformation(realm)
+                addTeamInformation(mRealm)
             }
+            mRealm.commitTransaction()
+        } catch (e: Exception) {
+            mRealm.cancelTransaction()
+            throw e
         }
     }
 
@@ -278,7 +280,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private fun loadSelectSavedAnswer(savedAnswer: RealmAnswer) {
         ans = savedAnswer.valueChoices?.firstOrNull()?.let {
             try {
-                val jsonObject = Gson().fromJson(it, JsonObject::class.java)
+                val jsonObject = gson.fromJson(it, JsonObject::class.java)
                 val id = jsonObject.get("id").asString
                 val text = jsonObject.get("text").asString
 
@@ -300,7 +302,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
         savedAnswer.valueChoices?.forEach { choiceJson ->
             try {
-                val jsonObject = Gson().fromJson(choiceJson, JsonObject::class.java)
+                val jsonObject = gson.fromJson(choiceJson, JsonObject::class.java)
                 val id = jsonObject.get("id").asString
                 val text = jsonObject.get("text").asString
 
@@ -349,7 +351,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         }
 
         if (question?.hasOtherOption == true) {
-            val gson = Gson()
             val otherChoice = gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
 
             addCompoundButton(otherChoice, false, oldAnswer)
@@ -370,7 +371,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
         if (question?.hasOtherOption == true) {
             if (choices.size() > 0 && choices[0].isJsonObject) {
-                val gson = Gson()
                 val otherChoice = gson.fromJson("""{"text":"Other","id":"other"}""", JsonObject::class.java)
 
                 addCompoundButton(otherChoice, isRadio, oldAnswer)
@@ -494,11 +494,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             currentIndex,
             questions?.size ?: 0
         )
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        mRealm.close()
     }
 
     override fun onCheckedChanged(compoundButton: CompoundButton, isChecked: Boolean) {

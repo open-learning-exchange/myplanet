@@ -1,14 +1,29 @@
 package org.ole.planet.myplanet.ui.sync
 
 import android.Manifest
-import android.content.*
+import android.content.DialogInterface
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.SharedPreferences
 import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
-import android.text.*
-import android.view.*
+import android.text.Editable
+import android.text.TextUtils
+import android.text.TextWatcher
+import android.view.ContextThemeWrapper
+import android.view.LayoutInflater
+import android.view.View
 import android.webkit.URLUtil
-import android.widget.*
+import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.CompoundButton
+import android.widget.EditText
+import android.widget.ImageView
+import android.widget.RadioGroup
+import android.widget.Spinner
+import android.widget.TextView
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
@@ -16,21 +31,27 @@ import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.preference.PreferenceManager
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.afollestad.materialdialogs.*
-import io.realm.*
+import com.afollestad.materialdialogs.DialogAction
+import com.afollestad.materialdialogs.MaterialDialog
+import dagger.hilt.android.AndroidEntryPoint
+import io.realm.Realm
 import java.io.File
-import java.util.*
+import java.util.ArrayList
+import java.util.Calendar
+import java.util.Date
+import java.util.HashMap
+import java.util.Locale
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 import kotlin.isInitialized
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
@@ -38,16 +59,24 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.backgroundDownload
 import org.ole.planet.myplanet.base.BaseResourceFragment.Companion.getAllLibraryList
 import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.databinding.*
-import org.ole.planet.myplanet.datamanager.*
+import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
+import org.ole.planet.myplanet.databinding.LayoutChildLoginBinding
 import org.ole.planet.myplanet.datamanager.ApiClient.client
-import org.ole.planet.myplanet.datamanager.Service.*
-import org.ole.planet.myplanet.model.*
-import org.ole.planet.myplanet.service.*
+import org.ole.planet.myplanet.datamanager.ApiInterface
+import org.ole.planet.myplanet.datamanager.Service
+import org.ole.planet.myplanet.datamanager.Service.CheckVersionCallback
+import org.ole.planet.myplanet.datamanager.Service.ConfigurationIdListener
+import org.ole.planet.myplanet.datamanager.Service.PlanetAvailableListener
+import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.ServerAddressesModel
+import org.ole.planet.myplanet.service.SyncManager
+import org.ole.planet.myplanet.service.TransactionSyncManager
+import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.team.AdapterTeam.OnUserSelectedListener
-import org.ole.planet.myplanet.utilities.*
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecrypter
+import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.autoSynFeature
 import org.ole.planet.myplanet.utilities.DialogUtils.getUpdateDialog
@@ -55,15 +84,21 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showAlert
 import org.ole.planet.myplanet.utilities.DialogUtils.showSnack
 import org.ole.planet.myplanet.utilities.DialogUtils.showWifiSettingDialog
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
+import org.ole.planet.myplanet.utilities.DownloadUtils.openDownloadService
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
+import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
 import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
-import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
+import org.ole.planet.myplanet.utilities.NotificationUtils.cancelAll
 import org.ole.planet.myplanet.utilities.ServerConfigUtils
+import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.utilities.UrlUtils
+import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
-import org.ole.planet.myplanet.utilities.Utilities.openDownloadService
 
+@AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
     OnUserSelectedListener, ConfigurationIdListener {
     private lateinit var syncDate: TextView
@@ -110,19 +145,22 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     var serverAddressAdapter: ServerAddressAdapter? = null
     lateinit var serverListAddresses: List<ServerAddressesModel>
     private var isProgressDialogShowing = false
+    private lateinit var bManager: LocalBroadcastManager
+
+    @Inject
+    lateinit var syncManager: SyncManager
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         editor = settings.edit()
-        mRealm = DatabaseService(this).realmInstance
-        mRealm = Realm.getDefaultInstance()
+        mRealm = databaseService.realmInstance
         requestAllPermissions()
         prefData = SharedPrefManager(this)
         profileDbHandler = UserProfileDbHandler(this)
         defaultPref = PreferenceManager.getDefaultSharedPreferences(this)
-        processedUrl = Utilities.getUrl()
+        processedUrl = UrlUtils.getUrl()
     }
 
     override fun onConfigurationIdReceived(id: String, code: String, url: String, defaultUrl: String, isAlternativeUrl: Boolean, callerActivity: String) {
@@ -197,7 +235,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     private fun clearInternalStorage() {
-        val myDir = File(Utilities.SD_PATH)
+        val myDir = File(FileUtils.SD_PATH)
         if (myDir.isDirectory) {
             val children = myDir.list()
             if (children != null) {
@@ -235,11 +273,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             val apiInterface = client?.create(ApiInterface::class.java)
             try {
                 val response = if (settings.getBoolean("isAlternativeUrl", false)){
-                     if (processedUrl?.contains("/db") == true) {
-                         val processedUrlWithoutDb = processedUrl.replace("/db", "")
-                         apiInterface?.isPlanetAvailable("$processedUrlWithoutDb/db/_all_dbs")?.execute()
+                    if (processedUrl?.contains("/db") == true) {
+                        val processedUrlWithoutDb = processedUrl.replace("/db", "")
+                        apiInterface?.isPlanetAvailable("$processedUrlWithoutDb/db/_all_dbs")?.execute()
                     } else {
-                         apiInterface?.isPlanetAvailable("$processedUrl/db/_all_dbs")?.execute()
+                        apiInterface?.isPlanetAvailable("$processedUrl/db/_all_dbs")?.execute()
                     }
                 } else {
                     apiInterface?.isPlanetAvailable("$processedUrl/_all_dbs")?.execute()
@@ -360,7 +398,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun startSync(type: String) {
-        SyncManager.instance?.start(this@SyncActivity, type)
+        syncManager.start(this@SyncActivity, type)
     }
 
     private fun saveConfigAndContinue(
@@ -435,22 +473,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 var attempt = 0
-                while (true) {
-                    val realm = Realm.getDefaultInstance()
-                    var dataInserted = false
-
-                    try {
+                Realm.getDefaultInstance().use { realm ->
+                    while (true) {
                         realm.refresh()
                         val realmResults = realm.where(RealmUserModel::class.java).findAll()
-                        if (!realmResults.isEmpty()) {
-                            dataInserted = true
+                        if (realmResults.isNotEmpty()) {
                             break
                         }
-                    } finally {
-                        realm.close()
+                        attempt++
+                        delay(1000)
                     }
-                    attempt++
-                    delay(1000)
                 }
 
                 withContext(Dispatchers.Main) {
@@ -501,7 +533,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                         withContext(Dispatchers.IO) {
                             val downloadRealm = Realm.getDefaultInstance()
                             try {
-                                backgroundDownload(downloadAllFiles(getAllLibraryList(downloadRealm)))
+                                backgroundDownload(downloadAllFiles(getAllLibraryList(downloadRealm)), activityContext)
                             } finally {
                                 downloadRealm.close()
                             }
@@ -570,17 +602,19 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun forceSyncTrigger(): Boolean {
-        if (settings.getLong(getString(R.string.last_syncs), 0) <= 0) {
-            lblLastSyncDate.text = getString(R.string.last_synced_never)
-        } else {
-            val lastSyncMillis = settings.getLong(getString(R.string.last_syncs), 0)
-            var relativeTime = getRelativeTime(lastSyncMillis)
+        if (::lblLastSyncDate.isInitialized) {
+            if (settings.getLong(getString(R.string.last_syncs), 0) <= 0) {
+                lblLastSyncDate.text = getString(R.string.last_synced_never)
+            } else {
+                val lastSyncMillis = settings.getLong(getString(R.string.last_syncs), 0)
+                var relativeTime = getRelativeTime(lastSyncMillis)
 
-            if (relativeTime.matches(Regex("^\\d{1,2} seconds ago$"))) {
-                relativeTime = getString(R.string.a_few_seconds_ago)
+                if (relativeTime.matches(Regex("^\\d{1,2} seconds ago$"))) {
+                    relativeTime = getString(R.string.a_few_seconds_ago)
+                }
+
+                lblLastSyncDate.text = getString(R.string.last_sync, relativeTime)
             }
-
-            lblLastSyncDate.text = getString(R.string.last_sync, relativeTime)
         }
         if (autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext) && autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, applicationContext)) {
             return checkForceSync(7)
@@ -638,7 +672,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                                 startUpload("login")
                             }
                             withContext(Dispatchers.Default) {
-                                val backgroundRealm = Realm.getDefaultInstance()
+                                val backgroundRealm = databaseService.realmInstance
                                 try {
                                     TransactionSyncManager.syncDb(backgroundRealm, "login_activities")
                                 } finally {
@@ -723,7 +757,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
-        mRealm = Realm.getDefaultInstance()
         val builder = getUpdateDialog(this, info, customProgressDialog)
         if (cancelable || getCustomDeviceName(this).endsWith("###")) {
             builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
@@ -742,7 +775,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     fun registerReceiver() {
-        val bManager = LocalBroadcastManager.getInstance(this)
+        bManager = LocalBroadcastManager.getInstance(this)
         val intentFilter = IntentFilter()
         intentFilter.addAction(DashboardActivity.MESSAGE_PROGRESS)
         bManager.registerReceiver(broadcastReceiver, intentFilter)
@@ -777,7 +810,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
 
     override fun onSelectedUser(userModel: RealmUserModel) {
-        mRealm = Realm.getDefaultInstance()
         val layoutChildLoginBinding = LayoutChildLoginBinding.inflate(layoutInflater)
         AlertDialog.Builder(this).setView(layoutChildLoginBinding.root)
             .setTitle(R.string.please_enter_your_password)
@@ -803,10 +835,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onDestroy() {
-        super.onDestroy()
+        if (this::bManager.isInitialized) {
+            bManager.unregisterReceiver(broadcastReceiver)
+        }
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        super.onDestroy()
     }
     companion object {
         lateinit var cal_today: Calendar
@@ -814,13 +849,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
         suspend fun clearRealmDb() {
             withContext(Dispatchers.IO) {
-                val realm = Realm.getDefaultInstance()
-                try {
+                MainApplication.service.withRealm { realm ->
                     realm.executeTransaction { transactionRealm ->
                         transactionRealm.deleteAll()
                     }
-                } finally {
-                    realm.close()
                 }
             }
         }
@@ -828,7 +860,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         fun clearSharedPref() {
             val settings = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             val editor = settings.edit()
-            val keysToKeep = setOf(SharedPrefManager(context).firstLaunch, SharedPrefManager(context).manualConfig )
+            val keysToKeep = setOf(SharedPrefManager.FIRST_LAUNCH, SharedPrefManager.MANUAL_CONFIG)
             val tempStorage = HashMap<String, Boolean>()
             for (key in keysToKeep) {
                 tempStorage[key] = settings.getBoolean(key, false)

@@ -1,29 +1,29 @@
 package org.ole.planet.myplanet.ui.team
 
-import android.content.Context
-import android.content.SharedPreferences
 import android.os.Bundle
+import dagger.hilt.android.AndroidEntryPoint
+import io.realm.Realm
 import org.ole.planet.myplanet.base.BaseNewsFragment
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
+private val Realm.isOpen: Boolean
+    get() = !isClosed
+
+@AndroidEntryPoint
 abstract class BaseTeamFragment : BaseNewsFragment() {
-    lateinit var dbService: DatabaseService
     var user: RealmUserModel? = null
     lateinit var teamId: String
     var team: RealmMyTeam? = null
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val sParentCode = settings?.getString("parentCode", "")
-        val communityName = settings?.getString("communityName", "")
+        val sParentCode = settings.getString("parentCode", "")
+        val communityName = settings.getString("communityName", "")
         teamId = requireArguments().getString("id", "") ?: "$communityName@$sParentCode"
-        dbService = DatabaseService(requireActivity())
-        mRealm = dbService.realmInstance
+        mRealm = databaseService.realmInstance
         user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
 
         if (shouldQueryTeamFromRealm()) {
@@ -72,7 +72,11 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
         return requireArguments().getString("teamId") ?: teamId
     }
 
-    companion object {
-        var settings: SharedPreferences? = null
+    override fun onDestroy() {
+        if (isRealmInitialized() && mRealm.isOpen) {
+            mRealm.close()
+        }
+        super.onDestroy()
     }
+    
 }

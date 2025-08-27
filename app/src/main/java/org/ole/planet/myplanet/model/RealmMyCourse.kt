@@ -18,10 +18,9 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.CsvUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.UrlUtils
 
 open class RealmMyCourse : RealmObject() {
     @PrimaryKey
@@ -70,7 +69,6 @@ open class RealmMyCourse : RealmObject() {
     companion object {
         private val gson = Gson()
         private val concatenatedLinks = ArrayList<String>()
-        val courseDataList: MutableList<Array<String>> = mutableListOf()
 
         @JvmStatic
         fun insertMyCourses(userId: String?, myCoursesDoc: JsonObject?, mRealm: Realm) {
@@ -89,7 +87,7 @@ open class RealmMyCourse : RealmObject() {
             myMyCoursesDB?.description = JsonUtils.getString("description", myCoursesDoc)
             val description = JsonUtils.getString("description", myCoursesDoc)
             val links = extractLinks(description)
-            val baseUrl = Utilities.getUrl()
+            val baseUrl = UrlUtils.getUrl()
             for (link in links) {
                 val concatenatedLink = "$baseUrl/$link"
                 concatenatedLinks.add(concatenatedLink)
@@ -124,41 +122,6 @@ open class RealmMyCourse : RealmObject() {
             }
             myMyCoursesDB?.courseSteps = RealmList()
             myMyCoursesDB?.courseSteps?.addAll(courseStepsList)
-
-            val csvRow = arrayOf(
-                JsonUtils.getString("_id", myCoursesDoc),
-                JsonUtils.getString("_rev", myCoursesDoc),
-                JsonUtils.getString("languageOfInstruction", myCoursesDoc),
-                JsonUtils.getString("courseTitle", myCoursesDoc),
-                JsonUtils.getInt("memberLimit", myCoursesDoc).toString(),
-                JsonUtils.getString("description", myCoursesDoc),
-                JsonUtils.getString("method", myCoursesDoc),
-                JsonUtils.getString("gradeLevel", myCoursesDoc),
-                JsonUtils.getString("subjectLevel", myCoursesDoc),
-                JsonUtils.getLong("createdDate", myCoursesDoc).toString(),
-                JsonUtils.getJsonArray("steps", myCoursesDoc).toString()
-            )
-            courseDataList.add(csvRow)
-        }
-
-        fun courseWriteCsv() {
-            CsvUtils.writeCsv(
-                "${context.getExternalFilesDir(null)}/ole/course.csv",
-                arrayOf(
-                    "courseId",
-                    "course_rev",
-                    "languageOfInstruction",
-                    "courseTitle",
-                    "memberLimit",
-                    "description",
-                    "method",
-                    "gradeLevel",
-                    "subjectLevel",
-                    "createdDate",
-                    "steps"
-                ),
-                courseDataList
-            )
         }
 
         @JvmStatic

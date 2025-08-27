@@ -11,10 +11,12 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmList
 import java.util.Calendar
 import java.util.UUID
+import javax.inject.Inject
 import kotlin.toString
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
@@ -24,12 +26,19 @@ import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createFromResource
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.CheckboxListView
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
+@AndroidEntryPoint
 class AddResourceActivity : AppCompatActivity() {
-    private lateinit var activityAddResourceBinding: ActivityAddResourceBinding
+    @Inject
+    lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
+    private lateinit var binding: ActivityAddResourceBinding
     private lateinit var mRealm: Realm
     var userModel: RealmUserModel? = null
     var subjects: RealmList<String>? = null
@@ -44,47 +53,48 @@ class AddResourceActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        activityAddResourceBinding = ActivityAddResourceBinding.inflate(layoutInflater)
-        setContentView(activityAddResourceBinding.root)
+        binding = ActivityAddResourceBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
-        userModel = UserProfileDbHandler(this).userModel
+        userModel = userProfileDbHandler.userModel
         resourceUrl = intent.getStringExtra("resource_local_url")
         levels = RealmList()
         subjects = RealmList()
         resourceFor = RealmList()
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = databaseService.realmInstance
         initializeViews()
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        super.onDestroy()
     }
 
     private fun initializeViews() {
         val etYear = findViewById<EditText>(R.id.et_year)
         val currentYear = Calendar.getInstance().get(Calendar.YEAR)
         etYear.setText(currentYear.toString())
-        activityAddResourceBinding.fileUrl.text = getString(R.string.file, resourceUrl)
-        activityAddResourceBinding.tvAddedBy.text = userModel?.name
-        activityAddResourceBinding.tvLevels.setOnClickListener { view: View ->
+        binding.fileUrl.text = getString(R.string.file, resourceUrl)
+        binding.tvAddedBy.text = userModel?.name
+        binding.tvLevels.setOnClickListener { view: View ->
             showMultiSelectList(resources.getStringArray(R.array.array_levels), levels, view,getString(R.string.levels))
         }
-        activityAddResourceBinding.tvSubject.setOnClickListener { view: View ->
+        binding.tvSubject.setOnClickListener { view: View ->
             showMultiSelectList(resources.getStringArray(R.array.array_subjects), subjects, view,getString(R.string.subject))
         }
-        activityAddResourceBinding.tvResourceFor.setOnClickListener { view: View ->
+        binding.tvResourceFor.setOnClickListener { view: View ->
             showMultiSelectList(resources.getStringArray(R.array.array_resource_for), resourceFor, view,getString(R.string.resource_for))
         }
-        activityAddResourceBinding.btnSubmit.setOnClickListener { saveResource() }
-        activityAddResourceBinding.btnCancel.setOnClickListener { finish() }
+        binding.btnSubmit.setOnClickListener { saveResource() }
+        binding.btnCancel.setOnClickListener { finish() }
     }
 
     private fun saveResource() {
-        val title = activityAddResourceBinding.etTitle.text.toString().trim { it <= ' ' }
+        val title = binding.etTitle.text.toString().trim { it <= ' ' }
         if (!validate(title)) return
         val id = UUID.randomUUID().toString()
         mRealm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
@@ -110,10 +120,13 @@ class AddResourceActivity : AppCompatActivity() {
                 }
             }
 
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, fragment)
-                .addToBackStack(null)
-                .commitAllowingStateLoss()
+            NavigationHelper.replaceFragment(
+                supportFragmentManager,
+                R.id.fragment_container,
+                fragment,
+                addToBackStack = true,
+                allowStateLoss = true
+            )
         } else {
             existingFragment.arguments = Bundle().apply {
                 putString("libraryId", libraryId)
@@ -122,17 +135,17 @@ class AddResourceActivity : AppCompatActivity() {
     }
 
     private fun createResource(resource: RealmMyLibrary, id: String) {
-        resource.addedBy = activityAddResourceBinding.tvAddedBy.text.toString().trim { it <= ' ' }
-        resource.author = activityAddResourceBinding.etAuthor.text.toString().trim { it <= ' ' }
+        resource.addedBy = binding.tvAddedBy.text.toString().trim { it <= ' ' }
+        resource.author = binding.etAuthor.text.toString().trim { it <= ' ' }
         resource.resourceId = id
-        resource.year = activityAddResourceBinding.etYear.text.toString().trim { it <= ' ' }
-        resource.description = activityAddResourceBinding.etDescription.text.toString().trim { it <= ' ' }
-        resource.publisher = activityAddResourceBinding.etPublisher.text.toString().trim { it <= ' ' }
-        resource.linkToLicense = activityAddResourceBinding.etLinkToLicense.text.toString().trim { it <= ' ' }
-        resource.openWith = activityAddResourceBinding.spnOpenWith.selectedItem.toString()
-        resource.language = activityAddResourceBinding.spnLang.selectedItem.toString()
-        resource.mediaType = activityAddResourceBinding.spnMedia.selectedItem.toString()
-        resource.resourceType = activityAddResourceBinding.spnResourceType.selectedItem.toString()
+        resource.year = binding.etYear.text.toString().trim { it <= ' ' }
+        resource.description = binding.etDescription.text.toString().trim { it <= ' ' }
+        resource.publisher = binding.etPublisher.text.toString().trim { it <= ' ' }
+        resource.linkToLicense = binding.etLinkToLicense.text.toString().trim { it <= ' ' }
+        resource.openWith = binding.spnOpenWith.selectedItem.toString()
+        resource.language = binding.spnLang.selectedItem.toString()
+        resource.mediaType = binding.spnMedia.selectedItem.toString()
+        resource.resourceType = binding.spnResourceType.selectedItem.toString()
         resource.subject = subjects
         resource.setUserId(RealmList())
         resource.level = levels
@@ -145,12 +158,12 @@ class AddResourceActivity : AppCompatActivity() {
 
     private fun validate(title: String): Boolean {
         if (title.isEmpty()) {
-            activityAddResourceBinding.tlTitle.error = getString(R.string.title_is_required)
+            binding.tlTitle.error = getString(R.string.title_is_required)
             return false
         }
-        val description = activityAddResourceBinding.etDescription.text.toString().trim()
+        val description = binding.etDescription.text.toString().trim()
         if (description.isEmpty()) {
-            activityAddResourceBinding.etDescription.error = getString(R.string.description_is_required)
+            binding.etDescription.error = getString(R.string.description_is_required)
             return false
         }
         if (levels?.isEmpty() == true) {

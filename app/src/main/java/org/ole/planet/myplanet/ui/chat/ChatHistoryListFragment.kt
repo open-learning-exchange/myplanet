@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.chat
 
-import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
 import android.content.res.ColorStateList
 import android.content.res.Resources
@@ -17,9 +16,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import com.google.android.material.snackbar.Snackbar
-import io.realm.Realm
-import io.realm.RealmList
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Sort
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -29,27 +28,35 @@ import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryListBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.ChatViewModel
+import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
-import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
+@AndroidEntryPoint
 class ChatHistoryListFragment : Fragment() {
-    private lateinit var fragmentChatHistoryListBinding: FragmentChatHistoryListBinding
+    private var _binding: FragmentChatHistoryListBinding? = null
+    private val binding get() = _binding!!
     private lateinit var sharedViewModel: ChatViewModel
     var user: RealmUserModel? = null
     private var isFullSearch: Boolean = false
     private var isQuestion: Boolean = false
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
+    @Inject
+    @AppPreferences
     lateinit var settings: SharedPreferences
     private val serverUrlMapper = ServerUrlMapper()
+    
+    @Inject
+    lateinit var syncManager: SyncManager
+    @Inject
+    lateinit var databaseService: DatabaseService
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -57,91 +64,103 @@ class ChatHistoryListFragment : Fragment() {
         super.onCreate(savedInstanceState)
         sharedViewModel = ViewModelProvider(requireActivity())[ChatViewModel::class.java]
         prefManager = SharedPrefManager(requireContext())
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         startChatHistorySync()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentChatHistoryListBinding = FragmentChatHistoryListBinding.inflate(inflater, container, false)
-        user = UserProfileDbHandler(requireContext()).userModel
+        _binding = FragmentChatHistoryListBinding.inflate(inflater, container, false)
+        user = databaseService.withRealm { realm ->
+            realm.where(RealmUserModel::class.java)
+                .equalTo("id", settings.getString("userId", ""))
+                .findFirst()?.let { realm.copyFromRealm(it) }
+        }
 
-        return fragmentChatHistoryListBinding.root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val slidingPaneLayout = fragmentChatHistoryListBinding.slidingPaneLayout
+        val slidingPaneLayout = binding.slidingPaneLayout
         slidingPaneLayout.lockMode = SlidingPaneLayout.LOCK_MODE_LOCKED
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, ChatHistoryListOnBackPressedCallback(slidingPaneLayout))
 
-        fragmentChatHistoryListBinding.toggleGroup.visibility = View.GONE
-        fragmentChatHistoryListBinding.newChat.setOnClickListener {
+        binding.toggleGroup.visibility = View.GONE
+        binding.newChat.setOnClickListener {
             if (resources.getBoolean(R.bool.isLargeScreen)) {
                 val chatHistoryListFragment = ChatHistoryListFragment()
-                parentFragmentManager.beginTransaction().apply {
-                    replace(R.id.fragment_container, chatHistoryListFragment)
-                    addToBackStack("ChatHistoryList")
-                    commit()
-                }
+                NavigationHelper.replaceFragment(
+                    parentFragmentManager,
+                    R.id.fragment_container,
+                    chatHistoryListFragment,
+                    addToBackStack = true,
+                    tag = "ChatHistoryList"
+                )
             } else {
                 val chatDetailFragment = ChatDetailFragment()
-                parentFragmentManager.beginTransaction().apply {
-                    replace(R.id.fragment_container, chatDetailFragment)
-                    addToBackStack("ChatDetail")
-                    commit()
-                }
+                NavigationHelper.replaceFragment(
+                    parentFragmentManager,
+                    R.id.fragment_container,
+                    chatDetailFragment,
+                    addToBackStack = true,
+                    tag = "ChatDetail"
+                )
             }
         }
 
         refreshChatHistoryList()
 
-        fragmentChatHistoryListBinding.searchBar.addTextChangedListener(object : TextWatcher {
+        binding.searchBar.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                (fragmentChatHistoryListBinding.recyclerView.adapter as? ChatHistoryListAdapter)?.search(s.toString(), isFullSearch, isQuestion)
+                (binding.recyclerView.adapter as? ChatHistoryListAdapter)?.search(s.toString(), isFullSearch, isQuestion)
             }
 
             override fun afterTextChanged(s: Editable?) {}
         })
 
-        fragmentChatHistoryListBinding.fullSearch.setOnCheckedChangeListener { _, isChecked ->
+        binding.fullSearch.setOnCheckedChangeListener { _, isChecked ->
             val density = Resources.getSystem().displayMetrics.density
-            val params = fragmentChatHistoryListBinding.fullSearch.layoutParams as ViewGroup.MarginLayoutParams
+            val params = binding.fullSearch.layoutParams as ViewGroup.MarginLayoutParams
             if (isChecked) {
                 isFullSearch = true
-                fragmentChatHistoryListBinding.toggleGroup.visibility = View.VISIBLE
+                binding.toggleGroup.visibility = View.VISIBLE
                 params.topMargin = (0 * density).toInt()
             } else {
                 isFullSearch = false
-                fragmentChatHistoryListBinding.toggleGroup.visibility = View.GONE
+                binding.toggleGroup.visibility = View.GONE
                 params.topMargin = (20 * density).toInt()
             }
-            fragmentChatHistoryListBinding.fullSearch.layoutParams = params
+            binding.fullSearch.layoutParams = params
         }
 
-        fragmentChatHistoryListBinding.toggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
+        binding.toggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if(isChecked){
                 when (checkedId) {
                     R.id.btnQuestions -> {
                         isQuestion = true
-                        fragmentChatHistoryListBinding.btnQuestions.strokeColor = ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.mainColor))
-                        fragmentChatHistoryListBinding.btnResponses.strokeColor = ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.hint_color))
+                        binding.btnQuestions.strokeColor = ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.mainColor))
+                        binding.btnResponses.strokeColor = ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.hint_color))
 
-                        fragmentChatHistoryListBinding.btnQuestions.setTextColor(ContextCompat.getColor(requireContext(), R.color.mainColor))
-                        fragmentChatHistoryListBinding.btnResponses.setTextColor(ContextCompat.getColor(requireContext(), R.color.hint_color))
+                        binding.btnQuestions.setTextColor(ContextCompat.getColor(requireContext(), R.color.mainColor))
+                        binding.btnResponses.setTextColor(ContextCompat.getColor(requireContext(), R.color.hint_color))
                     }
                     R.id.btnResponses -> {
                         isQuestion = false
-                        fragmentChatHistoryListBinding.btnResponses.strokeColor = ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.mainColor))
-                        fragmentChatHistoryListBinding.btnQuestions.strokeColor = ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.hint_color))
+                        binding.btnResponses.strokeColor = ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.mainColor))
+                        binding.btnQuestions.strokeColor = ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.hint_color))
 
-                        fragmentChatHistoryListBinding.btnResponses.setTextColor(ContextCompat.getColor(requireContext(), R.color.mainColor))
-                        fragmentChatHistoryListBinding.btnQuestions.setTextColor(ContextCompat.getColor(requireContext(), R.color.hint_color))
+                        binding.btnResponses.setTextColor(ContextCompat.getColor(requireContext(), R.color.mainColor))
+                        binding.btnQuestions.setTextColor(ContextCompat.getColor(requireContext(), R.color.hint_color))
                     }
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshChatHistoryList()
     }
 
     private fun startChatHistorySync() {
@@ -163,7 +182,7 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     private fun startSyncManager() {
-        SyncManager.instance?.start(object : SyncListener {
+        syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
                 activity?.runOnUiThread {
                     if (isAdded && !requireActivity().isFinishing) {
@@ -193,7 +212,7 @@ class ChatHistoryListFragment : Fragment() {
                         customProgressDialog = null
                         refreshChatHistoryList()
 
-                        Snackbar.make(fragmentChatHistoryListBinding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
+                        Snackbar.make(binding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
                             .setAction("Retry") { startChatHistorySync() }.show()
                     }
                 }
@@ -207,41 +226,50 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     fun refreshChatHistoryList() {
-        val mRealm = DatabaseService(requireActivity()).realmInstance
-        val list = mRealm.where(RealmChatHistory::class.java).equalTo("user", user?.name)
-            .sort("id", Sort.DESCENDING)
-            .findAll()
+        val list = databaseService.withRealm { realm ->
+            realm.copyFromRealm(
+                realm.where(RealmChatHistory::class.java)
+                    .equalTo("user", user?.name)
+                    .sort("id", Sort.DESCENDING)
+                    .findAll()
+            )
+        }
 
-        val adapter = fragmentChatHistoryListBinding.recyclerView.adapter as? ChatHistoryListAdapter
+        val adapter = binding.recyclerView.adapter as? ChatHistoryListAdapter
         if (adapter == null) {
-            val newAdapter = ChatHistoryListAdapter(requireContext(), list, this)
+            val newAdapter = ChatHistoryListAdapter(requireContext(), list, this, databaseService, settings)
             newAdapter.setChatHistoryItemClickListener(object : ChatHistoryListAdapter.ChatHistoryItemClickListener {
-                override fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?, aiProvider: String?) {
+                override fun onChatHistoryItemClicked(conversations: List<Conversation>?, id: String, rev: String?, aiProvider: String?) {
                     conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
                     sharedViewModel.setSelectedId(id)
                     rev?.let { sharedViewModel.setSelectedRev(it) }
                     aiProvider?.let { sharedViewModel.setSelectedAiProvider(it) }
-                    fragmentChatHistoryListBinding.slidingPaneLayout.openPane()
+                    binding.slidingPaneLayout.openPane()
                 }
             })
-            fragmentChatHistoryListBinding.recyclerView.adapter = newAdapter
+            binding.recyclerView.adapter = newAdapter
         } else {
             adapter.updateChatHistory(list)
-            fragmentChatHistoryListBinding.searchBar.visibility = View.VISIBLE
-            fragmentChatHistoryListBinding.recyclerView.visibility = View.VISIBLE
+            binding.searchBar.visibility = View.VISIBLE
+            binding.recyclerView.visibility = View.VISIBLE
         }
 
-        showNoData(fragmentChatHistoryListBinding.noChats, list.size, "chatHistory")
+        showNoData(binding.noChats, list.size, "chatHistory")
         if (list.isEmpty()) {
-            fragmentChatHistoryListBinding.searchBar.visibility = View.GONE
-            fragmentChatHistoryListBinding.recyclerView.visibility = View.GONE
+            binding.searchBar.visibility = View.GONE
+            binding.recyclerView.visibility = View.GONE
         }
     }
 
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
+    }
+
     override fun onDestroy() {
-        super.onDestroy()
         customProgressDialog?.dismiss()
         customProgressDialog = null
+        super.onDestroy()
     }
 }
 

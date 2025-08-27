@@ -6,24 +6,38 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
-import android.net.Uri
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
-import android.text.TextUtils
 import androidx.core.net.toUri
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
 import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
 object NetworkUtils {
-    lateinit var coroutineScope: CoroutineScope
+    private val coroutineScope: CoroutineScope by lazy {
+        val entryPoint = EntryPointAccessors.fromApplication(context, NetworkUtilsEntryPoint::class.java)
+        entryPoint.applicationScope()
+    }
 
-    fun initialize(coroutineScope: CoroutineScope) {
-        this.coroutineScope = coroutineScope
+    @EntryPoint
+    @InstallIn(SingletonComponent::class)
+    interface NetworkUtilsEntryPoint {
+        @ApplicationScope
+        fun applicationScope(): CoroutineScope
     }
 
     private val connectivityManager: ConnectivityManager by lazy {
@@ -53,6 +67,15 @@ object NetworkUtils {
         }
 
         connectivityManager.registerDefaultNetworkCallback(networkCallback)
+    }
+
+    fun stopListenNetworkState() {
+        if (!_currentNetwork.value.isListening) {
+            return
+        }
+
+        connectivityManager.unregisterNetworkCallback(networkCallback)
+        _currentNetwork.update { provideDefaultCurrentNetwork() }
     }
 
     private class NetworkCallback : ConnectivityManager.NetworkCallback() {
@@ -103,32 +126,27 @@ object NetworkUtils {
         else -> false
     }
 
-    @JvmStatic
     fun isWifiEnabled(): Boolean {
         val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
         return wifiManager.isWifiEnabled
     }
 
-    @JvmStatic
     fun isWifiConnected(): Boolean {
         val network = connectivityManager.activeNetwork
         val capabilities = connectivityManager.getNetworkCapabilities(network)
         return capabilities != null && capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
     }
 
-    @JvmStatic
     fun isWifiBluetoothEnabled(): Boolean {
         return isBluetoothEnabled() || isWifiEnabled()
     }
 
-    @JvmStatic
     fun isBluetoothEnabled(): Boolean {
         val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         val adapter: BluetoothAdapter? = bluetoothManager.adapter
         return adapter != null && adapter.isEnabled
     }
 
-    @JvmStatic
     fun getCurrentNetworkId(context: Context): Int {
         var ssid = -1
         val connManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -137,21 +155,19 @@ object NetworkUtils {
         if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) {
             val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager?
             val connectionInfo: WifiInfo? = wifiManager?.connectionInfo
-            if (connectionInfo != null && !TextUtils.isEmpty(connectionInfo.ssid)) {
+            if (!connectionInfo?.ssid.isNullOrEmpty()) {
                 ssid = connectionInfo.networkId
             }
         }
         return ssid
     }
 
-    @JvmStatic
     fun getUniqueIdentifier(): String {
         val androidId = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
         val buildId = Build.ID
         return androidId + "_" + buildId
     }
 
-    @JvmStatic
     fun getDeviceName(): String {
         val manufacturer = Build.MANUFACTURER
         val model = Build.MODEL
@@ -162,7 +178,6 @@ object NetworkUtils {
         }
     }
 
-    @JvmStatic
     fun getCustomDeviceName(context: Context): String {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getString("customDeviceName", "") ?: ""

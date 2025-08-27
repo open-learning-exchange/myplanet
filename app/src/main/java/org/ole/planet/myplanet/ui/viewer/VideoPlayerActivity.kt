@@ -4,9 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.SharedPreferences
 import android.media.AudioManager
-import android.net.Uri
 import android.os.Bundle
 import androidx.activity.OnBackPressedCallback
 import androidx.annotation.OptIn
@@ -25,21 +23,29 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import javax.inject.Provider
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityExoPlayerVideoBinding
-import org.ole.planet.myplanet.utilities.AuthSessionUpdater
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.datamanager.auth.AuthSessionUpdater
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
+import org.ole.planet.myplanet.utilities.DownloadUtils
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback {
     private lateinit var binding: ActivityExoPlayerVideoBinding
     private var exoPlayer: ExoPlayer? = null
     private var auth: String = ""
     private var videoURL: String = ""
-    private lateinit var settings: SharedPreferences
+    private var videoType: String? = null
     private var playWhenReady = true
     private var currentPosition = 0L
     private var isActivityVisible = false
+    @Inject
+    lateinit var authSessionUpdaterProvider: Provider<AuthSessionUpdater>
     private var authSessionUpdater: AuthSessionUpdater? = null
 
     private val audioBecomingNoisyReceiver = object : BroadcastReceiver() {
@@ -54,10 +60,10 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         super.onCreate(savedInstanceState)
         binding = ActivityExoPlayerVideoBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
 
         val extras = intent.extras
-        val videoType = extras?.getString("videoType")
+        videoType = extras?.getString("videoType")
         videoURL = extras?.getString("videoURL") ?: ""
         auth = extras?.getString("Auth") ?: ""
 
@@ -66,7 +72,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         when (videoType) {
             "offline" -> prepareExoPlayerFromFileUri(videoURL)
             "online" -> {
-                authSessionUpdater = AuthSessionUpdater(this, settings)
+                authSessionUpdater = authSessionUpdaterProvider.get()
             }
         }
 
@@ -82,7 +88,16 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     override fun setAuthSession(responseHeader: Map<String, List<String>>) {
         val headerAuth = responseHeader["Set-Cookie"]?.get(0)?.split(";") ?: return
         auth = headerAuth[0]
-        runOnUiThread { streamVideoFromUrl(videoURL, auth) }
+        runOnUiThread {
+            streamVideoFromUrl(videoURL, auth)
+            if (videoType == "online" && !FileUtils.checkFileExist(videoURL)) {
+                try {
+                    DownloadUtils.openDownloadService(this, arrayListOf(videoURL), false)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
     }
 
     override fun onError(s: String) {
@@ -99,7 +114,16 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         isActivityVisible = true
         if (exoPlayer == null) {
             when {
-                videoURL.startsWith("http") -> streamVideoFromUrl(videoURL, auth)
+                videoURL.startsWith("http") -> {
+                    streamVideoFromUrl(videoURL, auth)
+                    if (videoType == "online" && !FileUtils.checkFileExist(videoURL)) {
+                        try {
+                            DownloadUtils.openDownloadService(this, arrayListOf(videoURL), false)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
                 else -> prepareExoPlayerFromFileUri(videoURL)
             }
         }
@@ -222,12 +246,12 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         authSessionUpdater?.stop()
         try {
             unregisterReceiver(audioBecomingNoisyReceiver)
         } catch (e: IllegalArgumentException) {
             e.printStackTrace()
         }
+        super.onDestroy()
     }
 }

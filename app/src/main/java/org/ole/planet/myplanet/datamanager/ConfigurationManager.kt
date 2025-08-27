@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.UrlUtils
-import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.IntentUtils
 
 class ConfigurationManager(
     private val context: Context,
@@ -165,6 +165,13 @@ class ConfigurationManager(
                 preferences.edit { putString("ai_models", Gson().toJson(modelsMap)) }
             }
         }
+
+        if (doc.has("planetType")) {
+            val planetType = doc.getAsJsonPrimitive("planetType").asString
+            withContext(Dispatchers.IO) {
+                preferences.edit { putString("planetType", planetType) }
+            }
+        }
     }
 
     private fun buildCouchdbUrl(currentUrl: String, pin: String): String {
@@ -218,7 +225,7 @@ class ConfigurationManager(
             builder.setCancelable(true)
             builder.setNegativeButton(R.string.okay) { dialog: DialogInterface, _: Int ->
                 if (playStoreRedirect) {
-                    Utilities.openPlayStore()
+                    IntentUtils.openPlayStore(context)
                 }
                 dialog.cancel()
             }

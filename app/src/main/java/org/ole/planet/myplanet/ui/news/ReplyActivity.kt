@@ -18,11 +18,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.Sort
 import java.io.File
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -30,17 +32,25 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.news.AdapterNews.OnNewsItemClickListener
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 
+@AndroidEntryPoint
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private lateinit var activityReplyBinding: ActivityReplyBinding
     lateinit var mRealm: Realm
+    @Inject
+    lateinit var databaseService: DatabaseService
     var id: String? = null
     private lateinit var newsAdapter: AdapterNews
+    private val gson = Gson()
     var user: RealmUserModel? = null
+    
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var imageList: RealmList<String>
     private var llImage: LinearLayout? = null
     private lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
@@ -49,9 +59,10 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         super.onCreate(savedInstanceState)
         activityReplyBinding = ActivityReplyBinding.inflate(layoutInflater)
         setContentView(activityReplyBinding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, activityReplyBinding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = databaseService.realmInstance
         title = "Reply"
         imageList = RealmList()
         id = intent.getStringExtra("id")
@@ -65,18 +76,32 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                 handleImageSelection(url)
             }
         }
-        setResult(Activity.RESULT_OK)
+        val resultIntent = Intent().putExtra("newsId", id)
+        setResult(Activity.RESULT_OK, resultIntent)
     }
 
     private fun showData(id: String?) {
         val news = mRealm.where(RealmNews::class.java).equalTo("id", id).findFirst()
         val list: List<RealmNews?> = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING).equalTo("replyTo", id, Case.INSENSITIVE).findAll()
-        newsAdapter = AdapterNews(this, list.toMutableList(), user, news)
+        newsAdapter = AdapterNews(this, list.toMutableList(), user, news, "", null, userProfileDbHandler)
         newsAdapter.setListener(this)
         newsAdapter.setmRealm(mRealm)
         newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
         newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
         activityReplyBinding.rvReply.adapter = newsAdapter
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshData()
+
+    }
+    private fun refreshData() {
+        id?.let { showData(it) }
+    }
+
+    override fun onDataChanged() {
+        refreshData()
     }
 
     override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
@@ -114,7 +139,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         val jsonObject = JsonObject()
         jsonObject.addProperty("imageUrl", path)
         jsonObject.addProperty("fileName", getFileNameFromUrl(path))
-        imageList.add(Gson().toJson(jsonObject))
+        imageList.add(gson.toJson(jsonObject))
 
         try {
             showSelectedImages()
@@ -127,7 +152,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         llImage?.removeAllViews()
         llImage?.visibility = View.VISIBLE
         for (img in imageList) {
-            val ob = Gson().fromJson(img, JsonObject::class.java)
+            val ob = gson.fromJson(img, JsonObject::class.java)
             val inflater = LayoutInflater.from(this).inflate(R.layout.image_thumb, llImage, false)
             val imgView = inflater.findViewById<ImageView>(R.id.thumb)
             Glide.with(this).load(File(getString("imageUrl", ob))).into(imgView)
@@ -140,5 +165,13 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) finish()
         return super.onOptionsItemSelected(item)
+    }
+
+    override fun onDestroy() {
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.removeAllChangeListeners()
+            mRealm.close()
+        }
+        super.onDestroy()
     }
 }

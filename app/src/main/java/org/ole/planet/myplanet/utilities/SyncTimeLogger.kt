@@ -15,7 +15,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.service.UploadManager
 
-class SyncTimeLogger private constructor() {
+object SyncTimeLogger {
     private val processTimes = ConcurrentHashMap<String, Long>()
     private val processItemCounts = ConcurrentHashMap<String, Int>()
     private var startTime: Long = 0
@@ -30,16 +30,16 @@ class SyncTimeLogger private constructor() {
         processItemCounts.clear()
     }
 
-    fun stopLogging() {
+    fun stopLogging(uploadManager: UploadManager? = null) {
         if (!isLogging) return
 
         endTime = System.currentTimeMillis()
         isLogging = false
         val summary = generateSummary()
-        saveSummaryToRealm(summary)
+        saveSummaryToRealm(summary, uploadManager)
     }
 
-    private fun saveSummaryToRealm(summary: String) {
+    private fun saveSummaryToRealm(summary: String, uploadManager: UploadManager? = null) {
         val settings = MainApplication.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
         handler.post {
             MainApplication.createLog("sync summary", summary)
@@ -62,17 +62,17 @@ class SyncTimeLogger private constructor() {
                 }
 
                 withContext(Dispatchers.Main) {
-                    uploadCrashLogs()
+                    uploadCrashLogs(uploadManager)
                 }
             }
         }
     }
 
-    private fun uploadCrashLogs() {
+    private fun uploadCrashLogs(uploadManager: UploadManager?) {
         MainApplication.applicationScope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    UploadManager.instance?.uploadCrashLog()
+                    uploadManager?.uploadCrashLog()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -149,19 +149,4 @@ class SyncTimeLogger private constructor() {
         }
     }
 
-    companion object {
-        private var instance: SyncTimeLogger? = null
-
-        @JvmStatic
-        fun getInstance(): SyncTimeLogger {
-            if (instance == null) {
-                synchronized(SyncTimeLogger::class.java) {
-                    if (instance == null) {
-                        instance = SyncTimeLogger()
-                    }
-                }
-            }
-            return instance!!
-        }
-    }
 }

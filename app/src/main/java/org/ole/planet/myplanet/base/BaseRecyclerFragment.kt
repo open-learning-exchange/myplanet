@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.base
 
-import android.content.Context.MODE_PRIVATE
-import android.content.SharedPreferences
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
@@ -10,19 +8,18 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.annotation.RequiresApi
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.common.reflect.TypeToken
-import com.google.gson.Gson
 import io.realm.RealmList
 import io.realm.RealmModel
 import io.realm.RealmObject
 import io.realm.RealmResults
 import java.text.Normalizer
 import java.util.Locale
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.createMyCourse
@@ -38,7 +35,6 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
@@ -49,7 +45,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var selectedItems: MutableList<LI>? = null
     var gradeLevel = ""
     var subjectLevel = ""
-    private lateinit var realmService: DatabaseService
     lateinit var recyclerView: RecyclerView
     lateinit var tvMessage: TextView
     lateinit var tvFragmentInfo: TextView
@@ -57,6 +52,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var list: MutableList<LI>? = null
     var resources: List<RealmMyLibrary>? = null
     var courseLib: String? = null
+
 
     abstract fun getLayout(): Int
 
@@ -79,7 +75,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val v = inflater.inflate(getLayout(), container, false)
-        settings = requireActivity().getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         recyclerView = v.findViewById(R.id.recycler)
         recyclerView.layoutManager = LinearLayoutManager(activity)
         if (isMyCourseLib) {
@@ -90,16 +85,17 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         tvMessage = v.findViewById(R.id.tv_message)
         selectedItems = mutableListOf()
         list = mutableListOf()
-        realmService = DatabaseService(requireActivity())
-        mRealm = realmService.realmInstance
+        mRealm = databaseService.realmInstance
         profileDbHandler = UserProfileDbHandler(requireActivity())
-        model = profileDbHandler.userModel!!
+        model = profileDbHandler.userModel
         val adapter = getAdapter()
         recyclerView.adapter = adapter
         if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
             resources?.let { showDownloadDialog(it) }
         } else if (isMyCourseLib && courseLib == null && !isSurvey) {
-            showDownloadDialog(getLibraryList(mRealm))
+            viewLifecycleOwner.lifecycleScope.launch {
+                showDownloadDialog(getLibraryList(mRealm))
+            }
         }
         return v
     }
@@ -116,8 +112,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     fun addToMyList() {
-        for (i in selectedItems?.indices!!) {
-            val `object` = selectedItems?.get(i) as RealmObject
+        selectedItems?.forEach { item ->
+            val `object` = item as RealmObject
             if (`object` is RealmMyLibrary) {
                 val myObject = mRealm.where(RealmMyLibrary::class.java)
                     .equalTo("resourceId", `object`.resourceId).findFirst()
@@ -136,9 +132,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     fun deleteSelected(deleteProgress: Boolean) {
-        for (i in selectedItems?.indices!!) {
+        selectedItems?.forEach { item ->
             if (!mRealm.isInTransaction()) mRealm.beginTransaction()
-            val `object` = selectedItems?.get(i) as RealmObject
+            val `object` = item as RealmObject
             deleteCourseProgress(deleteProgress, `object`)
             removeFromShelf(`object`)
             recyclerView.adapter = getAdapter()
@@ -160,11 +156,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                     .deleteAllFromRealm()
             }
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        mRealm.close()
     }
 
     private fun checkAndAddToList(course: RealmMyCourse?, courses: MutableList<RealmMyCourse>, tags: List<RealmTag>) {
@@ -290,15 +281,28 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     private fun isValidFilter(l: RealmMyLibrary): Boolean {
         val sub = subjects.isEmpty() || subjects.let { l.subject?.containsAll(it) } == true
-        val lev = levels.isEmpty() || l.level!!.containsAll(levels)
+        val lev = levels.isEmpty() || l.level?.containsAll(levels) == true
         val lan = languages.isEmpty() || languages.contains(l.language)
         val med = mediums.isEmpty() || mediums.contains(l.mediaType)
         return sub && lev && lan && med
     }
 
-    companion object {
-        lateinit var settings: SharedPreferences
+    override fun onDestroy() {
+        if (isRealmInitialized()) {
+            mRealm.removeAllChangeListeners()
+            if (mRealm.isInTransaction) {
+                try {
+                    mRealm.commitTransaction()
+                } catch (e: Exception) {
+                    mRealm.cancelTransaction()
+                }
+            }
+            mRealm.close()
+        }
+        super.onDestroy()
+    }
 
+    companion object {
         private val noDataMessages = mapOf(
             "courses" to R.string.no_courses,
             "resources" to R.string.no_resources,

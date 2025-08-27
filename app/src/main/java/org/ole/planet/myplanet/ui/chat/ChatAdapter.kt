@@ -3,15 +3,16 @@ package org.ole.planet.myplanet.ui.chat
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemAiResponseMessageBinding
 import org.ole.planet.myplanet.databinding.ItemUserMessageBinding
@@ -51,6 +52,7 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
         private val textAiMessageBinding: ItemAiResponseMessageBinding,
         private val copyToClipboard: (String) -> Unit,
         val context: Context,
+        private val recyclerView: RecyclerView,
         private val coroutineScope: CoroutineScope
     ) : RecyclerView.ViewHolder(textAiMessageBinding.root) {
         fun bind(response: String, responseSource: Int,  shouldAnimate: Boolean, markAnimated: () -> Unit) {
@@ -81,6 +83,7 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
             var currentIndex = 0
             while (currentIndex < response.length) {
                 textAiMessageBinding.textGchatMessageOther.text = response.substring(0, currentIndex + 1)
+                recyclerView.scrollToPosition(bindingAdapterPosition)
                 currentIndex++
                 delay(10L)
             }
@@ -133,7 +136,7 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
             }
             viewTypeResponse -> {
                 textAiMessageBinding = ItemAiResponseMessageBinding.inflate(LayoutInflater.from(context), parent, false)
-                ResponseViewHolder(textAiMessageBinding, this::copyToClipboard, context, coroutineScope)
+                ResponseViewHolder(textAiMessageBinding, this::copyToClipboard, context, recyclerView,coroutineScope)
             }
             else -> throw IllegalArgumentException("Invalid view type")
         }
@@ -162,6 +165,11 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
 
     override fun getItemCount(): Int {
         return chatList.size
+    }
+
+    override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView)
+        coroutineScope.cancel()
     }
 
     companion object {

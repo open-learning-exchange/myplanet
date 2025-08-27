@@ -11,10 +11,12 @@ import android.widget.CompoundButton
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.Sort
+import javax.inject.Inject
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -25,9 +27,13 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
+@AndroidEntryPoint
 class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
-    private lateinit var fragmentMySubmissionBinding: FragmentMySubmissionBinding
+    private var _binding: FragmentMySubmissionBinding? = null
+    private val binding get() = _binding!!
     lateinit var mRealm: Realm
+    @Inject
+    lateinit var databaseService: DatabaseService
     var type: String? = ""
     var exams: HashMap<String?, RealmStepExam>? = null
     private var submissions: List<RealmSubmission>? = null
@@ -39,23 +45,23 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentMySubmissionBinding = FragmentMySubmissionBinding.inflate(inflater, container, false)
+        _binding = FragmentMySubmissionBinding.inflate(inflater, container, false)
         exams = HashMap()
         user = UserProfileDbHandler(requireContext()).userModel
-        return fragmentMySubmissionBinding.root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        mRealm = DatabaseService(requireActivity()).realmInstance
-        fragmentMySubmissionBinding.rvMysurvey.layoutManager = LinearLayoutManager(activity)
-        fragmentMySubmissionBinding.rvMysurvey.addItemDecoration(
+        mRealm = databaseService.realmInstance
+        binding.rvMysurvey.layoutManager = LinearLayoutManager(activity)
+        binding.rvMysurvey.addItemDecoration(
             DividerItemDecoration(activity, DividerItemDecoration.VERTICAL)
         )
         submissions = mRealm.where(RealmSubmission::class.java).findAll()
         exams = getExamMap(mRealm, submissions)
         setData("")
-        fragmentMySubmissionBinding.etSearch.addTextChangedListener(object : TextWatcher {
+        binding.etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
                 val cleanString = charSequence.toString()
@@ -68,18 +74,18 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
 
     private fun showHideRadioButton() {
         if (type != "survey") {
-            fragmentMySubmissionBinding.rbExam.isChecked = true
-            fragmentMySubmissionBinding.rbExam.setOnCheckedChangeListener(this)
-            fragmentMySubmissionBinding.rbSurvey.setOnCheckedChangeListener(this)
+            binding.rbExam.isChecked = true
+            binding.rbExam.setOnCheckedChangeListener(this)
+            binding.rbSurvey.setOnCheckedChangeListener(this)
         } else {
-            fragmentMySubmissionBinding.rbSurvey.visibility = View.GONE
-            fragmentMySubmissionBinding.rbExam.visibility = View.GONE
-            fragmentMySubmissionBinding.rgSubmission.visibility = View.GONE
+            binding.rbSurvey.visibility = View.GONE
+            binding.rbExam.visibility = View.GONE
+            binding.rgSubmission.visibility = View.GONE
         }
     }
 
     override fun onCheckedChanged(compoundButton: CompoundButton, b: Boolean) {
-        type = if (fragmentMySubmissionBinding.rbSurvey.isChecked) {
+        type = if (binding.rbSurvey.isChecked) {
             "survey_submission"
         } else {
             "exam"
@@ -132,29 +138,37 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         val itemCount = adapter.itemCount
 
         if (s.isEmpty()) {
-            fragmentMySubmissionBinding.llSearch.visibility = View.VISIBLE
-            fragmentMySubmissionBinding.title.visibility = View.VISIBLE
-            if (fragmentMySubmissionBinding.rbSurvey.isChecked || type == "survey") {
-                fragmentMySubmissionBinding.tvFragmentInfo.text = "mySurveys"
-                showNoData(fragmentMySubmissionBinding.tvMessage, itemCount, "survey_submission")
+            binding.llSearch.visibility = View.VISIBLE
+            binding.title.visibility = View.VISIBLE
+            if (binding.rbSurvey.isChecked || type == "survey") {
+                binding.tvFragmentInfo.text = "mySurveys"
+                showNoData(binding.tvMessage, itemCount, "survey_submission")
             } else {
-                fragmentMySubmissionBinding.tvFragmentInfo.text = "mySubmissions"
-                showNoData(fragmentMySubmissionBinding.tvMessage, itemCount, "exam_submission")
+                binding.tvFragmentInfo.text = "mySubmissions"
+                showNoData(binding.tvMessage, itemCount, "exam_submission")
             }
 
             if (itemCount == 0) {
-                fragmentMySubmissionBinding.title.visibility = View.GONE
-                fragmentMySubmissionBinding.tlSearch.visibility = View.GONE
+                binding.title.visibility = View.GONE
+                binding.tlSearch.visibility = View.GONE
             } else {
-                fragmentMySubmissionBinding.tvMessage.visibility = View.GONE
-                fragmentMySubmissionBinding.title.visibility = View.VISIBLE
-                fragmentMySubmissionBinding.tlSearch.visibility = View.VISIBLE
+                binding.tvMessage.visibility = View.GONE
+                binding.title.visibility = View.VISIBLE
+                binding.tlSearch.visibility = View.VISIBLE
             }
         }
 
         adapter.setmRealm(mRealm)
         adapter.setType(type)
-        fragmentMySubmissionBinding.rvMysurvey.adapter = adapter
+        binding.rvMysurvey.adapter = adapter
+    }
+
+    override fun onDestroyView() {
+        if (::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
+        _binding = null
+        super.onDestroyView()
     }
 
     companion object {

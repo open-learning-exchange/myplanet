@@ -1,98 +1,153 @@
 package org.ole.planet.myplanet.utilities
 
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.Period
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
-import java.util.TimeZone
 
 object TimeUtils {
     private val defaultLocale: Locale
         get() = Locale.getDefault()
 
-    @JvmStatic
-    fun getFormatedDate(date: Long?): String {
+    private val utcZone: ZoneId = ZoneId.of("UTC")
+
+    private val defaultDateFormatter by lazy {
+        DateTimeFormatter.ofPattern("EEEE, MMM dd, yyyy", defaultLocale).withZone(utcZone)
+    }
+
+    private val dateTimeFormatter by lazy {
+        DateTimeFormatter
+            .ofPattern("EEE dd, MMMM yyyy , hh:mm a", defaultLocale)
+            .withZone(ZoneId.systemDefault())
+    }
+
+    private val tzFormatter by lazy {
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault())
+    }
+
+    private val dateOnlyFormatter by lazy {
+        DateTimeFormatter.ofPattern("EEE dd, MMMM yyyy", defaultLocale).withZone(ZoneId.systemDefault())
+    }
+
+    fun getFormattedDate(date: Long?): String =
         try {
-            val d = date?.let { Date(it) } ?: Date()
-            val f = SimpleDateFormat("EEEE, MMM dd, yyyy", defaultLocale)
-            f.timeZone = TimeZone.getTimeZone("UTC")
-            return f.format(d)
+            val instant = date?.let { Instant.ofEpochMilli(it) } ?: Instant.now()
+            defaultDateFormatter.format(instant)
         } catch (e: Exception) {
             e.printStackTrace()
+            "N/A"
         }
-        return "N/A"
-    }
 
-    @JvmStatic
-    fun getFormatedDateWithTime(date: Long): String {
-        val d = Date(date)
-        val dateFormat = SimpleDateFormat("EEE dd, MMMM yyyy , hh:mm aa")
-        return dateFormat.format(d)
-    }
-
-    @JvmStatic
-    fun formatDateTZ(data: Long): String {
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-        return dateFormat.format(data)
-    }
-
-    @JvmStatic
-    fun getAge(date: String): Int {
-        val dateFormatTimeIncluded = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd")
-        val dob = Calendar.getInstance()
-        val today = Calendar.getInstance()
+    fun getFormattedDateWithTime(date: Long): String =
         try {
-            if (date.contains("T")) {
-                val dt = dateFormatTimeIncluded.parse(date.replace("T".toRegex(), " ").replace(".000Z".toRegex(), ""))
-                if (dt != null) {
-                    dob.time = dt
-                }
-            } else {
-                val dt2 = dateFormat.parse(date)
-                if (dt2 != null) {
-                    dob.time = dt2
-                }
-            }
+            val instant = Instant.ofEpochMilli(date)
+            dateTimeFormatter.format(instant)
         } catch (e: Exception) {
             e.printStackTrace()
+            "N/A"
         }
-        var age = today[Calendar.YEAR] - dob[Calendar.YEAR]
-        if (today[Calendar.DAY_OF_YEAR] < dob[Calendar.DAY_OF_YEAR]) {
-            age--
-        }
-        return age
-    }
 
-    @JvmStatic
-    fun getFormatedDate(stringDate: String?, pattern: String?): String {
+    fun formatDateTZ(data: Long): String =
+        try {
+            val instant = Instant.ofEpochMilli(data)
+            tzFormatter.format(instant)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ""
+        }
+
+    fun getAge(date: String): Int =
+        try {
+            val cleaned = date.replace("T", " ").replace(".000Z", "")
+            val dob =
+                try {
+                    LocalDateTime
+                        .parse(cleaned, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                        .toLocalDate()
+                } catch (e: Exception) {
+                    LocalDate.parse(cleaned, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                }
+            val today = LocalDate.now()
+            Period.between(dob, today).years
+        } catch (e: Exception) {
+            e.printStackTrace()
+            0
+        }
+
+    fun getFormattedDate(
+        stringDate: String?,
+        pattern: String?,
+    ): String {
         return try {
-            val sf = SimpleDateFormat(pattern, defaultLocale)
-            sf.timeZone = TimeZone.getTimeZone("UTC")
-            val date = stringDate?.let { sf.parse(it) }
-            getFormatedDate(date?.time)
+            if (stringDate.isNullOrBlank() || pattern.isNullOrBlank()) return "N/A"
+            val formatter = DateTimeFormatter.ofPattern(pattern, defaultLocale).withZone(utcZone)
+            val instant = if (stringDate.contains("T")) {
+                Instant.from(formatter.parse(stringDate))
+            } else {
+                val dateOnlyFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", defaultLocale)
+                LocalDate.parse(stringDate, dateOnlyFormatter).atStartOfDay(utcZone).toInstant()
+            }
+            getFormattedDate(instant.toEpochMilli())
         } catch (e: Exception) {
             e.printStackTrace()
             "N/A"
         }
     }
 
-    @JvmStatic
-    fun currentDate(): String {
-        val c = Calendar.getInstance()
-        val dateFormat = SimpleDateFormat("EEE dd, MMMM yyyy")
-        return dateFormat.format(c.time)
-    }
+    fun currentDate(): String =
+        try {
+            dateOnlyFormatter.format(Instant.now())
+        } catch (e: Exception) {
+            e.printStackTrace()
+            "N/A"
+        }
 
-    @JvmStatic
-    fun formatDate(date: Long): String {
-        val dateFormat = SimpleDateFormat("EEE dd, MMMM yyyy")
-        return dateFormat.format(date)
-    }
+    fun formatDate(date: Long): String =
+        try {
+            dateOnlyFormatter.format(Instant.ofEpochMilli(date))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ""
+        }
 
-    @JvmStatic
-    fun formatDate(date: Long, format: String?): String {
-        val dateFormat = SimpleDateFormat(format)
-        return dateFormat.format(date)
-    }
+    fun formatDate(
+        date: Long,
+        format: String?,
+    ): String =
+        try {
+            val formatter = DateTimeFormatter.ofPattern(format ?: "", defaultLocale).withZone(ZoneId.systemDefault())
+            formatter.format(Instant.ofEpochMilli(date))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ""
+        }
+
+    fun parseDate(dateString: String): Long? =
+        try {
+            val localDate = try {
+                LocalDate.parse(dateString, dateOnlyFormatter)
+            } catch (_: Exception) {
+                val fallbackFormatter = DateTimeFormatter.ofPattern("dd, MMMM yyyy", defaultLocale)
+                LocalDate.parse(dateString, fallbackFormatter)
+            }
+            localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+
+    fun parseInstantFromString(dateString: String): Instant? =
+        try {
+            if (dateString.contains("T")) {
+                Instant.parse(dateString)
+            } else {
+                Instant.parse("${dateString}T00:00:00.000Z")
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
 }

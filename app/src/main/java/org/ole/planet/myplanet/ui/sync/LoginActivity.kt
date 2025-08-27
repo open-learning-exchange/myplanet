@@ -7,9 +7,6 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -21,35 +18,41 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.ImageButton
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
-import io.realm.Realm
 import java.util.Locale
-import org.ole.planet.myplanet.*
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.databinding.*
-import org.ole.planet.myplanet.datamanager.*
-import org.ole.planet.myplanet.model.*
-import org.ole.planet.myplanet.ui.SettingActivity
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.databinding.ActivityLoginBinding
+import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
+import org.ole.planet.myplanet.datamanager.Service
+import org.ole.planet.myplanet.model.MyPlanet
+import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
-import org.ole.planet.myplanet.ui.userprofile.*
-import org.ole.planet.myplanet.utilities.*
+import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
+import org.ole.planet.myplanet.ui.userprofile.TeamListAdapter
+import org.ole.planet.myplanet.utilities.AuthHelper
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
-import org.ole.planet.myplanet.utilities.Utilities.getUrl
+import org.ole.planet.myplanet.utilities.LocaleHelper
+import org.ole.planet.myplanet.utilities.NetworkUtils
+import org.ole.planet.myplanet.utilities.ThemeManager
+import org.ole.planet.myplanet.utilities.UrlUtils.getUrl
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
-    private lateinit var activityLoginBinding: ActivityLoginBinding
+    private lateinit var binding: ActivityLoginBinding
     private var guest = false
     var users: List<RealmUserModel>? = null
     private var mAdapter: TeamListAdapter? = null
@@ -60,23 +63,24 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        activityLoginBinding = ActivityLoginBinding.inflate(layoutInflater)
-        setContentView(activityLoginBinding.root)
-        lblLastSyncDate = activityLoginBinding.lblLastSyncDate
-        btnSignIn = activityLoginBinding.btnSignin
-        syncIcon = activityLoginBinding.syncIcon
-        lblVersion = activityLoginBinding.lblVersion
-        tvAvailableSpace = activityLoginBinding.tvAvailableSpace
-        btnGuestLogin = activityLoginBinding.btnGuestLogin
-        becomeMember = activityLoginBinding.becomeMember
-        btnFeedback = activityLoginBinding.btnFeedback
-        openCommunity = activityLoginBinding.openCommunity
-        btnLang = activityLoginBinding.btnLang
-        inputName = activityLoginBinding.inputName
-        inputPassword = activityLoginBinding.inputPassword
+        binding = ActivityLoginBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
+        lblLastSyncDate = binding.lblLastSyncDate
+        btnSignIn = binding.btnSignin
+        syncIcon = binding.syncIcon
+        lblVersion = binding.lblVersion
+        tvAvailableSpace = binding.tvAvailableSpace
+        btnGuestLogin = binding.btnGuestLogin
+        becomeMember = binding.becomeMember
+        btnFeedback = binding.btnFeedback
+        openCommunity = binding.openCommunity
+        btnLang = binding.btnLang
+        inputName = binding.inputName
+        inputPassword = binding.inputPassword
         service = Service(this)
 
-        activityLoginBinding.tvAvailableSpace.text = buildString {
+        binding.tvAvailableSpace.text = buildString {
             append(getString(R.string.available_space_colon))
             append(" ")
             append(availableOverTotalMemoryFormattedString)
@@ -108,16 +112,21 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
         val url = getUrl()
         if (url.isNotEmpty() && url != "/db") {
-            activityLoginBinding.openCommunity.visibility = View.VISIBLE
-            activityLoginBinding.openCommunity.setOnClickListener {
+            binding.openCommunity.visibility = View.VISIBLE
+            binding.openCommunity.setOnClickListener {
                 HomeCommunityDialogFragment().show(supportFragmentManager, "")
             }
             HomeCommunityDialogFragment().show(supportFragmentManager, "")
         } else {
-            activityLoginBinding.openCommunity.visibility = View.GONE
+            binding.openCommunity.visibility = View.GONE
         }
-        activityLoginBinding.btnFeedback.setOnClickListener {
-            FeedbackFragment().show(supportFragmentManager, "")
+        binding.btnFeedback.setOnClickListener {
+            if (getUrl() != "/db") {
+                FeedbackFragment().show(supportFragmentManager, "")
+            } else {
+                toast(this, getString(R.string.please_enter_server_url_first))
+                settingDialog()
+            }
         }
 
         guest = intent.getBooleanExtra("guest", false)
@@ -148,9 +157,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 }
             }
         })
-        val selectDarkModeButton = findViewById<ImageButton>(R.id.themeToggleButton)
-        selectDarkModeButton?.setOnClickListener{
-            SettingActivity.SettingFragment.darkMode(this)
+        val selectDarkModeButton = binding.themeToggleButton
+        selectDarkModeButton.setOnClickListener {
+            ThemeManager.showThemeDialog(this)
         }
     }
 
@@ -158,50 +167,57 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         if (!defaultPref.contains("beta_addImageToMessage")) {
             defaultPref.edit { putBoolean("beta_addImageToMessage", true) }
         }
-        activityLoginBinding.customDeviceName.text = getCustomDeviceName()
+        binding.customDeviceName.text = getCustomDeviceName()
         btnSignIn.setOnClickListener {
-            if (TextUtils.isEmpty(activityLoginBinding.inputName.text.toString())) {
-                activityLoginBinding.inputName.error = getString(R.string.err_msg_name)
-            } else if (TextUtils.isEmpty(activityLoginBinding.inputPassword.text.toString())) {
-                activityLoginBinding.inputPassword.error = getString(R.string.err_msg_password)
-            } else {
-                if (mRealm.isClosed) {
-                    mRealm = Realm.getDefaultInstance()
-                }
-                val enterUserName = activityLoginBinding.inputName.text.toString().trimEnd()
-                val user = mRealm.where(RealmUserModel::class.java).equalTo("name", enterUserName).findFirst()
-                if (user == null || !user.isArchived) {
-                    submitForm(enterUserName, activityLoginBinding.inputPassword.text.toString())
+            if (getUrl() != "/db") {
+                if (TextUtils.isEmpty(binding.inputName.text.toString())) {
+                    binding.inputName.error = getString(R.string.err_msg_name)
+                } else if (TextUtils.isEmpty(binding.inputPassword.text.toString())) {
+                    binding.inputPassword.error = getString(R.string.err_msg_password)
                 } else {
-                    val builder = AlertDialog.Builder(this)
-                    builder.setMessage("member ${activityLoginBinding.inputName.text} is archived")
-                    builder.setCancelable(false)
-                    builder.setPositiveButton("ok") { dialog: DialogInterface, _: Int ->
-                        dialog.dismiss()
-                        activityLoginBinding.inputName.setText(R.string.empty_text)
-                        activityLoginBinding.inputPassword.setText(R.string.empty_text)
+                    val enterUserName = binding.inputName.text.toString().trimEnd()
+                    val user = mRealm.where(RealmUserModel::class.java).equalTo("name", enterUserName).findFirst()
+                    if (user == null || !user.isArchived) {
+                        submitForm(enterUserName, binding.inputPassword.text.toString())
+                    } else {
+                        val builder = AlertDialog.Builder(this)
+                        builder.setMessage("member ${binding.inputName.text} is archived")
+                        builder.setCancelable(false)
+                        builder.setPositiveButton("ok") { dialog: DialogInterface, _: Int ->
+                            dialog.dismiss()
+                            binding.inputName.setText(R.string.empty_text)
+                            binding.inputPassword.setText(R.string.empty_text)
+                        }
+                        val dialog = builder.create()
+                        dialog.show()
                     }
-                    val dialog = builder.create()
-                    dialog.show()
                 }
+            } else {
+                toast(this, getString(R.string.please_enter_server_url_first))
+                settingDialog()
             }
         }
         if (!settings.contains("serverProtocol")) settings.edit {
             putString("serverProtocol", "http://")
         }
-        activityLoginBinding.becomeMember.setOnClickListener {
-            activityLoginBinding.inputName.setText(R.string.empty_text)
-            becomeAMember()
+        binding.becomeMember.setOnClickListener {
+            if (getUrl() != "/db") {
+                binding.inputName.setText(R.string.empty_text)
+                becomeAMember()
+            } else {
+                toast(this, getString(R.string.please_enter_server_url_first))
+                settingDialog()
+            }
         }
 
-        activityLoginBinding.imgBtnSetting.setOnClickListener {
-            activityLoginBinding.inputName.setText(R.string.empty_text)
+        binding.imgBtnSetting.setOnClickListener {
+            binding.inputName.setText(R.string.empty_text)
             settingDialog()
         }
 
-        activityLoginBinding.btnGuestLogin.setOnClickListener {
-            if (getUrl().isNotEmpty()) {
-                activityLoginBinding.inputName.setText(R.string.empty_text)
+        binding.btnGuestLogin.setOnClickListener {
+            if (getUrl() != "/db") {
+                binding.inputName.setText(R.string.empty_text)
                 showGuestLoginDialog()
             } else {
                 toast(this, getString(R.string.please_enter_server_url_first))
@@ -212,34 +228,38 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
 
     private fun declareMoreElements() {
         try {
-            mRealm = Realm.getDefaultInstance()
             syncIcon.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.login_file_upload_animation))
             syncIcon.scaleType
             syncIconDrawable = syncIcon.drawable as AnimationDrawable
             syncIcon.setOnClickListener {
-                val protocol = settings.getString("serverProtocol", "")
-                val serverUrl = "${settings.getString("serverURL", "")}"
-                val serverPin = "${settings.getString("serverPin", "")}"
+                if (getUrl() != "/db") {
+                    val protocol = settings.getString("serverProtocol", "")
+                    val serverUrl = "${settings.getString("serverURL", "")}"
+                    val serverPin = "${settings.getString("serverPin", "")}"
 
-                val url = if (serverUrl.startsWith("http://") || serverUrl.startsWith("https://")) {
-                    serverUrl
+                    val url = if (serverUrl.startsWith("http://") || serverUrl.startsWith("https://")) {
+                        serverUrl
+                    } else {
+                        "$protocol$serverUrl"
+                    }
+                    syncIconDrawable.start()
+
+                    val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
+                    val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
+                    val builder = MaterialDialog.Builder(contextWrapper).customView(dialogServerUrlBinding.root, true)
+                    val dialog = builder.build()
+                    currentDialog = dialog
+                    service.getMinApk(this, url, serverPin, this, "LoginActivity")
                 } else {
-                    "$protocol$serverUrl"
+                    toast(this, getString(R.string.please_enter_server_url_first))
+                    settingDialog()
                 }
-                syncIconDrawable.start()
-
-                val dialogServerUrlBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
-                val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
-                val builder = MaterialDialog.Builder(contextWrapper).customView(dialogServerUrlBinding.root, true)
-                val dialog = builder.build()
-                currentDialog = dialog
-                service.getMinApk(this, url, serverPin, this, "LoginActivity")
             }
             declareHideKeyboardElements()
-            activityLoginBinding.lblVersion.text = getString(R.string.version, resources.getText(R.string.app_version))
-            activityLoginBinding.inputName.addTextChangedListener(MyTextWatcher(activityLoginBinding.inputName))
-            activityLoginBinding.inputPassword.addTextChangedListener(MyTextWatcher(activityLoginBinding.inputPassword))
-            activityLoginBinding.inputPassword.setOnEditorActionListener { _: TextView?, actionId: Int, event: KeyEvent? ->
+            binding.lblVersion.text = getString(R.string.version, resources.getText(R.string.app_version))
+            binding.inputName.addTextChangedListener(MyTextWatcher(binding.inputName))
+            binding.inputPassword.addTextChangedListener(MyTextWatcher(binding.inputPassword))
+            binding.inputPassword.setOnEditorActionListener { _: TextView?, actionId: Int, event: KeyEvent? ->
                 if (actionId == EditorInfo.IME_ACTION_DONE || event != null && event.action == KeyEvent.ACTION_DOWN && event.keyCode == KeyEvent.KEYCODE_ENTER) {
                     btnSignIn.performClick()
                     return@setOnEditorActionListener true
@@ -252,14 +272,14 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                     toast(this, success)
                 }
             }
-            activityLoginBinding.inputName.addTextChangedListener(object : TextWatcher {
+            binding.inputName.addTextChangedListener(object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
 
                 override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                     val lowercaseText = s.toString().lowercase()
                     if (s.toString() != lowercaseText) {
-                        activityLoginBinding.inputName.setText(lowercaseText)
-                        activityLoginBinding.inputName.setSelection(lowercaseText.length)
+                        binding.inputName.setText(lowercaseText)
+                        binding.inputName.setSelection(lowercaseText.length)
                     }
                 }
 
@@ -276,14 +296,11 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     fun updateTeamDropdown() {
-        if (mRealm.isClosed) {
-            mRealm = Realm.getDefaultInstance()
-        }
         val teams: List<RealmMyTeam>? = mRealm.where(RealmMyTeam::class.java)
             ?.isEmpty("teamId")?.equalTo("status", "active")?.findAll()
 
         if (!teams.isNullOrEmpty()) {
-            activityLoginBinding.team.visibility = View.VISIBLE
+            binding.team.visibility = View.VISIBLE
             teamAdapter = ArrayAdapter(this, R.layout.spinner_item_white, teamList)
             teamAdapter?.setDropDownViewResource(R.layout.custom_simple_list_item_1)
             teamList.clear()
@@ -293,20 +310,20 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                     teamList.add(team.name)
                 }
             }
-            activityLoginBinding.team.adapter = teamAdapter
+            binding.team.adapter = teamAdapter
             val lastSelection = prefData.getSelectedTeamId()
             if (!lastSelection.isNullOrEmpty()) {
                 for (i in teams.indices) {
                     val team = teams[i]
                     if (team._id != null && team._id == lastSelection && team.isValid) {
                         val lastSelectedPosition = i + 1
-                        activityLoginBinding.team.setSelection(lastSelectedPosition)
+                        binding.team.setSelection(lastSelectedPosition)
                         break
                     }
                 }
             }
 
-            activityLoginBinding.team.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            binding.team.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(parentView: AdapterView<*>?, selectedItemView: View?, position: Int, id: Long) {
                     if (position > 0) {
                         val selectedTeam = teams[position - 1]
@@ -321,21 +338,21 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 override fun onNothingSelected(parentView: AdapterView<*>?) {}
             }
         } else {
-            activityLoginBinding.team.visibility = View.GONE
+            binding.team.visibility = View.GONE
         }
     }
 
     private fun setUpLanguageButton() {
         updateLanguageButtonText()
 
-        activityLoginBinding.btnLang.setOnClickListener {
+        binding.btnLang.setOnClickListener {
             showLanguageSelectionDialog()
         }
     }
 
     private fun updateLanguageButtonText() {
         val currentLanguage = LocaleHelper.getLanguage(this)
-        activityLoginBinding.btnLang.text = getLanguageString(currentLanguage)
+        binding.btnLang.text = getLanguageString(currentLanguage)
     }
 
     private fun showLanguageSelectionDialog() {
@@ -383,11 +400,8 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     private fun declareHideKeyboardElements() {
-        val constraintLayout = findViewById<View>(R.id.constraintLayout)
-        constraintLayout.setOnTouchListener { view: View?, event: MotionEvent? ->
+        binding.constraintLayout.setOnTouchListener { view, event ->
             when (event?.action) {
-                MotionEvent.ACTION_DOWN -> {
-                }
                 MotionEvent.ACTION_UP -> {
                     view?.let {
                         hideKeyboard(it)
@@ -416,18 +430,18 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         updateTeamDropdown()
 
         if (mAdapter == null) {
-            mAdapter = TeamListAdapter(prefData.getSavedUsers().toMutableList(), this, this)
-            activityLoginBinding.recyclerView.layoutManager = LinearLayoutManager(this)
-            activityLoginBinding.recyclerView.adapter = mAdapter
+            mAdapter = TeamListAdapter(prefData.getSavedUsers().toMutableList(), this)
+            binding.recyclerView.layoutManager = LinearLayoutManager(this)
+            binding.recyclerView.adapter = mAdapter
         } else {
             mAdapter?.updateList(prefData.getSavedUsers().toMutableList())
         }
 
-        activityLoginBinding.recyclerView.isNestedScrollingEnabled = true
-        activityLoginBinding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
-        activityLoginBinding.recyclerView.isVerticalScrollBarEnabled = true
+        binding.recyclerView.isNestedScrollingEnabled = true
+        binding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+        binding.recyclerView.isVerticalScrollBarEnabled = true
 
-        activityLoginBinding.recyclerView.post {
+        binding.recyclerView.post {
             mAdapter?.notifyDataSetChanged()
         }
     }
@@ -438,9 +452,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
                 .load(user.image)
                 .placeholder(R.drawable.profile)
                 .error(R.drawable.profile)
-                .into(activityLoginBinding.userProfile)
+                .into(binding.userProfile)
 
-            activityLoginBinding.inputName.setText(user.name)
+            binding.inputName.setText(user.name)
         } else {
             if (user.source == "guest"){
                 val model = RealmUserModel.createGuestUser(user.name, mRealm, settings)?.let { mRealm.copyFromRealm(it) }
@@ -488,7 +502,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         builder.setNegativeButton("Cancel") { dialog: DialogInterface, _: Int -> dialog.dismiss() }
         builder.setPositiveButton("login") { dialog: DialogInterface, _: Int ->
             dialog.dismiss()
-            activityLoginBinding.inputName.setText(username)
+            binding.inputName.setText(username)
         }
         val dialog = builder.create()
         dialog.show()
@@ -568,9 +582,9 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         if (!mRealm.isClosed) {
             mRealm.close()
         }
+        super.onDestroy()
     }
 }

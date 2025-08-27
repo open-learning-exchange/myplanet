@@ -9,8 +9,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmResults
+import javax.inject.Inject
 import org.ole.planet.myplanet.databinding.FragmentMyProgressBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmAnswer
@@ -22,12 +24,16 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
+@AndroidEntryPoint
 class MyProgressFragment : Fragment() {
-    private lateinit var fragmentMyProgressBinding: FragmentMyProgressBinding
+    private var _binding: FragmentMyProgressBinding? = null
+    private val binding get() = _binding!!
+    @Inject
+    lateinit var databaseService: DatabaseService
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentMyProgressBinding = FragmentMyProgressBinding.inflate(inflater, container, false)
-        return fragmentMyProgressBinding.root
+        _binding = FragmentMyProgressBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -36,11 +42,15 @@ class MyProgressFragment : Fragment() {
     }
 
     private fun initializeData() {
-        val realm = DatabaseService(requireActivity()).realmInstance
-        val user = UserProfileDbHandler(requireActivity()).userModel
-        val courseData = fetchCourseData(realm, user?.id)
-        fragmentMyProgressBinding.rvMyprogress.layoutManager = LinearLayoutManager(requireActivity())
-        fragmentMyProgressBinding.rvMyprogress.adapter = AdapterMyProgress(requireActivity(), courseData)
+        val realm = databaseService.realmInstance
+        try {
+            val user = UserProfileDbHandler(requireActivity()).userModel
+            val courseData = fetchCourseData(realm, user?.id)
+            binding.rvMyprogress.layoutManager = LinearLayoutManager(requireActivity())
+            binding.rvMyprogress.adapter = AdapterMyProgress(requireActivity(), courseData)
+        } finally {
+            realm.close()
+        }
     }
 
     companion object {
@@ -133,5 +143,10 @@ class MyProgressFragment : Fragment() {
             }
             return completedCount
         }
+    }
+
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
     }
 }

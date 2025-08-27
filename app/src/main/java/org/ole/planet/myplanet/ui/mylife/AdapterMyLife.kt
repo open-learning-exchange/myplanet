@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.mylife
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.ContextWrapper
 import android.os.Handler
 import android.os.Looper
 import android.view.LayoutInflater
@@ -28,6 +29,7 @@ import org.ole.planet.myplanet.ui.myhealth.MyHealthFragment
 import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperAdapter
 import org.ole.planet.myplanet.ui.mylife.helper.ItemTouchHelperViewHolder
 import org.ole.planet.myplanet.ui.mylife.helper.OnStartDragListener
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.NewsFragment
 import org.ole.planet.myplanet.ui.references.ReferenceFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
@@ -151,10 +153,24 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
         }
 
         fun transactionFragment(f: Fragment?, view: View) {
-            val activity = view.context as AppCompatActivity
-            f?.let {
-                activity.supportFragmentManager.beginTransaction().replace(R.id.fragment_container, it)
-                    .addToBackStack(null).commit()
+            var context = view.context
+            while (context is ContextWrapper) {
+                if (context is AppCompatActivity) {
+                    break
+                }
+                context = context.baseContext
+            }
+            
+            val activity = context as? AppCompatActivity
+            activity?.let { act ->
+                f?.let {
+                    NavigationHelper.replaceFragment(
+                        act.supportFragmentManager,
+                        R.id.fragment_container,
+                        it,
+                        addToBackStack = true
+                    )
+                }
             }
         }
     }

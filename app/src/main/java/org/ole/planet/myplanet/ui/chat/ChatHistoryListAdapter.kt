@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.ui.chat
 
 import android.app.AlertDialog
 import android.content.Context
-import android.graphics.drawable.ColorDrawable
+import android.content.SharedPreferences
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
@@ -11,9 +11,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
 import io.realm.Case
-import io.realm.Realm
-import io.realm.RealmList
-import io.realm.RealmResults
 import java.text.Normalizer
 import java.util.Date
 import java.util.Locale
@@ -29,13 +26,16 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
 import org.ole.planet.myplanet.ui.news.GrandChildAdapter
-import org.ole.planet.myplanet.ui.team.BaseTeamFragment.Companion.settings
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
-class ChatHistoryListAdapter(var context: Context, private var chatHistory: List<RealmChatHistory>, private val fragment: ChatHistoryListFragment) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class ChatHistoryListAdapter(
+    var context: Context,
+    private var chatHistory: List<RealmChatHistory>,
+    private val fragment: ChatHistoryListFragment,
+    private val databaseService: DatabaseService,
+    private val settings: SharedPreferences
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
     private var chatHistoryItemClickListener: ChatHistoryItemClickListener? = null
     private var filteredChatHistory: List<RealmChatHistory> = chatHistory
@@ -43,9 +43,8 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     private lateinit var expandableListAdapter: ExpandableListAdapter
     private lateinit var expandableTitleList: List<String>
     private lateinit var expandableDetailList: HashMap<String, List<String>>
-    private lateinit var mRealm: Realm
     var user: RealmUserModel? = null
-    private var newsList: RealmResults<RealmNews>? = null
+    private var newsList: List<RealmNews> = emptyList()
 
     init {
         chatHistory = chatHistory.sortedByDescending { it.lastUsed }
@@ -53,7 +52,7 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
     }
 
     interface ChatHistoryItemClickListener {
-        fun onChatHistoryItemClicked(conversations: RealmList<Conversation>?, id: String, rev: String?, aiProvider: String?)
+        fun onChatHistoryItemClicked(conversations: List<Conversation>?, id: String, rev: String?, aiProvider: String?)
     }
 
     fun setChatHistoryItemClickListener(listener: ChatHistoryItemClickListener) {
@@ -143,12 +142,21 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         rowChatHistoryBinding = RowChatHistoryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        mRealm = DatabaseService(context).realmInstance
-        user = UserProfileDbHandler(context).userModel
-        newsList = mRealm.where(RealmNews::class.java)
-            .equalTo("docType", "message", Case.INSENSITIVE)
-            .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE)
-            .findAll()
+        databaseService.withRealm { realm ->
+            val userId = settings.getString("userId", "")
+            user = realm.where(RealmUserModel::class.java)
+                .equalTo("id", userId)
+                .findFirst()?.let { realm.copyFromRealm(it) }
+
+            newsList = user?.planetCode?.let { planetCode ->
+                realm.copyFromRealm(
+                    realm.where(RealmNews::class.java)
+                        .equalTo("docType", "message", Case.INSENSITIVE)
+                        .equalTo("createdOn", planetCode, Case.INSENSITIVE)
+                        .findAll()
+                )
+            } ?: emptyList()
+        }
         return ViewHolderChat(rowChatHistoryBinding)
     }
 
@@ -177,16 +185,16 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
         viewHolderChat.rowChatHistoryBinding.root.setOnClickListener {
             viewHolderChat.rowChatHistoryBinding.chatCardView.contentDescription = chatTitle
             chatHistoryItemClickListener?.onChatHistoryItemClicked(
-                filteredChatHistory[position].conversations,
+                filteredChatHistory[position].conversations?.toList(),
                 "${filteredChatHistory[position]._id}",
                 filteredChatHistory[position]._rev,
                 filteredChatHistory[position].aiProvider
             )
         }
 
-        val isInNewsList = newsList?.any { newsItem ->
+        val isInNewsList = newsList.any { newsItem ->
             newsItem.newsId == filteredChatHistory[position]._id
-        } == true
+        }
 
         if (isInNewsList) {
             viewHolderChat.rowChatHistoryBinding.shareChat.setImageResource(R.drawable.baseline_check_24)
@@ -197,32 +205,41 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
                 var dialog: AlertDialog? = null
 
                 expandableDetailList = getData() as HashMap<String, List<String>>
-                expandableTitleList = ArrayList<String>(expandableDetailList.keys)
+                expandableTitleList = ArrayList(expandableDetailList.keys)
                 expandableListAdapter = ExpandableListAdapter(context, expandableTitleList, expandableDetailList)
                 chatShareDialogBinding.listView.setAdapter(expandableListAdapter)
 
                 chatShareDialogBinding.listView.setOnChildClickListener { _, _, groupPosition, childPosition, _ ->
                     if (expandableTitleList[groupPosition] == context.getString(R.string.share_with_team_enterprise)) {
-                        val teamList = mRealm.where(RealmMyTeam::class.java)
-                            .isEmpty("teamId").notEqualTo("status", "archived")
-                            .equalTo("type", "team").findAll()
+                        databaseService.withRealm { realm ->
+                            val teamList = realm.copyFromRealm(
+                                realm.where(RealmMyTeam::class.java)
+                                    .isEmpty("teamId").notEqualTo("status", "archived")
+                                    .equalTo("type", "team").findAll()
+                            )
 
-                        val enterpriseList = mRealm.where(RealmMyTeam::class.java)
-                            .isEmpty("teamId").notEqualTo("status", "archived")
-                            .equalTo("type", "enterprise").findAll()
+                            val enterpriseList = realm.copyFromRealm(
+                                realm.where(RealmMyTeam::class.java)
+                                    .isEmpty("teamId").notEqualTo("status", "archived")
+                                    .equalTo("type", "enterprise").findAll()
+                            )
 
-                        if (expandableDetailList[expandableTitleList[groupPosition]]?.get(childPosition) == context.getString(R.string.teams)) {
-                            showGrandChildRecyclerView(teamList, context.getString(R.string.teams), filteredChatHistory[position])
-                        } else {
-                            showGrandChildRecyclerView(enterpriseList, context.getString(R.string.enterprises), filteredChatHistory[position])
+                            if (expandableDetailList[expandableTitleList[groupPosition]]?.get(childPosition) == context.getString(R.string.teams)) {
+                                showGrandChildRecyclerView(teamList, context.getString(R.string.teams), filteredChatHistory[position])
+                            } else {
+                                showGrandChildRecyclerView(enterpriseList, context.getString(R.string.enterprises), filteredChatHistory[position])
+                            }
                         }
                     } else {
-                        settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                        val sParentcode = settings?.getString("parentCode", "")
-                        val communityName = settings?.getString("communityName", "")
+                        val sParentcode = settings.getString("parentCode", "")
+                        val communityName = settings.getString("communityName", "")
                         val teamId = "$communityName@$sParentcode"
-                        val community = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-                        showEditTextAndShareButton(community, context.getString(R.string.community), filteredChatHistory[position])
+                        databaseService.withRealm { realm ->
+                            val community = realm.where(RealmMyTeam::class.java)
+                                .equalTo("_id", teamId)
+                                .findFirst()?.let { realm.copyFromRealm(it) }
+                            showEditTextAndShareButton(community, context.getString(R.string.community), filteredChatHistory[position])
+                        }
                     }
                     dialog?.dismiss()
                     false
@@ -296,7 +313,9 @@ class ChatHistoryListAdapter(var context: Context, private var chatHistory: List
             map["chat"] = "true"
             map["news"] = Gson().toJson(serializedMap)
 
-            createNews(map, mRealm, user, null)
+            databaseService.withRealm { realm ->
+                createNews(map, realm, user, null)
+            }
 
             fragment.refreshChatHistoryList()
             dialog.dismiss()

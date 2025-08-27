@@ -8,11 +8,12 @@ import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import dagger.hilt.android.EntryPointAccessors
 import io.realm.Realm
 import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
-import kotlin.math.min
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -24,7 +25,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SecurityDataCallback
 import org.ole.planet.myplanet.callback.SuccessListener
-import org.ole.planet.myplanet.datamanager.ConfigurationManager
+import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmUserModel.Companion.isUserExists
@@ -39,9 +40,7 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.Sha256Utils
 import org.ole.planet.myplanet.utilities.UrlUtils
@@ -51,15 +50,24 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class Service(private val context: Context) {
+class Service @Inject constructor(
+    private val context: Context,
+    private val retrofitInterface: ApiInterface
+) {
+    constructor(context: Context) : this(
+        context,
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            ApiInterfaceEntryPoint::class.java
+        ).apiInterface()
+    )
     private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val retrofitInterface: ApiInterface? = ApiClient.client?.create(ApiInterface::class.java)
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
     private val configurationManager = ConfigurationManager(context, preferences, retrofitInterface)
 
     fun healthAccess(listener: SuccessListener) {
-        retrofitInterface?.healthAccess(Utilities.getHealthAccessUrl(preferences))?.enqueue(object : Callback<ResponseBody> {
+        retrofitInterface.healthAccess(UrlUtils.getHealthAccessUrl(preferences))?.enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                 if (response.code() == 200) {
                     listener.onSuccess(context.getString(R.string.server_sync_successfully))
@@ -75,7 +83,7 @@ class Service(private val context: Context) {
     }
 
     fun checkCheckSum(callback: ChecksumCallback, path: String?) {
-        retrofitInterface?.getChecksum(Utilities.getChecksumUrl(preferences))?.enqueue(object : Callback<ResponseBody> {
+        retrofitInterface.getChecksum(UrlUtils.getChecksumUrl(preferences))?.enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                 if (response.code() == 200) {
                     try {
@@ -174,7 +182,7 @@ class Service(private val context: Context) {
             }
 
             withContext(Dispatchers.Main) {
-                retrofitInterface?.isPlanetAvailable(Utilities.getUpdateUrl(preferences))?.enqueue(object : Callback<ResponseBody?> {
+                retrofitInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(preferences))?.enqueue(object : Callback<ResponseBody?> {
                     override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
                         val isAvailable = callback != null && response.code() == 200
                         serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
@@ -197,12 +205,12 @@ class Service(private val context: Context) {
     fun becomeMember(realm: Realm, obj: JsonObject, callback: CreateUserCallback, securityCallback: SecurityDataCallback? = null) {
         isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
-                retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}")?.enqueue(object : Callback<JsonObject> {
+                retrofitInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}")?.enqueue(object : Callback<JsonObject> {
                     override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
                         if (response.body() != null && response.body()?.has("_id") == true) {
                             callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
                         } else {
-                            retrofitInterface.putDoc(null, "application/json", "${Utilities.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
+                            retrofitInterface.putDoc(null, "application/json", "${UrlUtils.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
                                 override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
                                     if (response.body() != null && response.body()?.has("id") == true) {
                                         uploadToShelf(obj)
@@ -248,7 +256,7 @@ class Service(private val context: Context) {
     }
 
     private fun uploadToShelf(obj: JsonObject) {
-        retrofitInterface?.putDoc(null, "application/json", Utilities.getUrl() + "/shelf/org.couchdb.user:" + obj["name"].asString, JsonObject())?.enqueue(object : Callback<JsonObject?> {
+        retrofitInterface.putDoc(null, "application/json", UrlUtils.getUrl() + "/shelf/org.couchdb.user:" + obj["name"].asString, JsonObject())?.enqueue(object : Callback<JsonObject?> {
             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {}
 
             override fun onFailure(call: Call<JsonObject?>, t: Throwable) {}
@@ -259,11 +267,15 @@ class Service(private val context: Context) {
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         realm.executeTransactionAsync({ realm1: Realm? ->
             try {
-                val res = retrofitInterface?.getJsonObject(Utilities.header, "${Utilities.getUrl()}/_users/$id")?.execute()
+                val res = retrofitInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/_users/$id")?.execute()
                 if (res?.body() != null) {
                     val model = populateUsersTable(res.body(), realm1, settings)
                     if (model != null) {
-                        UploadToShelfService(MainApplication.context).saveKeyIv(retrofitInterface, model, obj)
+                        UploadToShelfService(
+                            MainApplication.context,
+                            DatabaseService(MainApplication.context),
+                            settings
+                        ).saveKeyIv(retrofitInterface, model, obj)
                     }
                 }
             } catch (e: IOException) {
@@ -287,35 +299,39 @@ class Service(private val context: Context) {
     }
 
     fun syncPlanetServers(callback: SuccessListener) {
-        retrofitInterface?.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true")?.enqueue(object : Callback<JsonObject?> {
+        retrofitInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true")?.enqueue(object : Callback<JsonObject?> {
             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
                 if (response.body() != null) {
                     val arr = JsonUtils.getJsonArray("rows", response.body())
 
-                    Executors.newSingleThreadExecutor().execute {
-                        val backgroundRealm = Realm.getDefaultInstance()
-                        try {
-                            backgroundRealm.executeTransaction { realm1 ->
-                                realm1.delete(RealmCommunity::class.java)
-                                for (j in arr) {
-                                    var jsonDoc = j.asJsonObject
-                                    jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-                                    val id = JsonUtils.getString("_id", jsonDoc)
-                                    val community = realm1.createObject(RealmCommunity::class.java, id)
-                                    if (JsonUtils.getString("name", jsonDoc) == "learning") {
-                                        community.weight = 0
+                    val executor = Executors.newSingleThreadExecutor()
+                    try {
+                        executor.execute {
+                            MainApplication.service.withRealm { backgroundRealm ->
+                                try {
+                                    backgroundRealm.executeTransaction { realm1 ->
+                                        realm1.delete(RealmCommunity::class.java)
+                                        for (j in arr) {
+                                            var jsonDoc = j.asJsonObject
+                                            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+                                            val id = JsonUtils.getString("_id", jsonDoc)
+                                            val community = realm1.createObject(RealmCommunity::class.java, id)
+                                            if (JsonUtils.getString("name", jsonDoc) == "learning") {
+                                                community.weight = 0
+                                            }
+                                            community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
+                                            community.name = JsonUtils.getString("name", jsonDoc)
+                                            community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
+                                            community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
+                                        }
                                     }
-                                    community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
-                                    community.name = JsonUtils.getString("name", jsonDoc)
-                                    community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
-                                    community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
                                 }
                             }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        } finally {
-                            backgroundRealm.close()
                         }
+                    } finally {
+                        executor.shutdown()
                     }
                 }
             }
@@ -360,19 +376,23 @@ class Service(private val context: Context) {
 
     private suspend fun fetchVersionInfo(settings: SharedPreferences): MyPlanet? =
         withContext(Dispatchers.IO) {
-            try {
-                retrofitInterface?.checkVersion(Utilities.getUpdateUrl(settings))?.execute()?.body()
-            } catch (_: Exception) {
-                null
+            val result = ApiClient.executeWithResult {
+                retrofitInterface.checkVersion(UrlUtils.getUpdateUrl(settings))
+            }
+            when (result) {
+                is NetworkResult.Success -> result.data
+                else -> null
             }
         }
 
     private suspend fun fetchApkVersionString(settings: SharedPreferences): String? =
         withContext(Dispatchers.IO) {
-            try {
-                retrofitInterface?.getApkVersion(Utilities.getApkVersionUrl(settings))?.execute()?.body()?.string()
-            } catch (_: Exception) {
-                null
+            val result = ApiClient.executeWithResult {
+                retrofitInterface.getApkVersion(UrlUtils.getApkVersionUrl(settings))
+            }
+            when (result) {
+                is NetworkResult.Success -> result.data.string()
+                else -> null
             }
         }
 

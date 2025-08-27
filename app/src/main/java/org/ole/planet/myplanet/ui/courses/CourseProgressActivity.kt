@@ -4,12 +4,13 @@ import android.os.Bundle
 import androidx.recyclerview.widget.GridLayoutManager
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import io.realm.RealmResults
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.databinding.ActivityCourseProgressBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
@@ -19,34 +20,39 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 
+@AndroidEntryPoint
 class CourseProgressActivity : BaseActivity() {
-    private lateinit var activityCourseProgressBinding: ActivityCourseProgressBinding
+    private lateinit var binding: ActivityCourseProgressBinding
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     lateinit var realm: Realm
     var user: RealmUserModel? = null
     lateinit var courseId: String
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        activityCourseProgressBinding = ActivityCourseProgressBinding.inflate(layoutInflater)
-        setContentView(activityCourseProgressBinding.root)
+        binding = ActivityCourseProgressBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
         initActionBar()
         courseId = intent.getStringExtra("courseId").toString()
-        realm = DatabaseService(this).realmInstance
-        user = UserProfileDbHandler(this).userModel
+        realm = databaseService.realmInstance
+        user = userProfileDbHandler.userModel
         val courseProgress = RealmCourseProgress.getCourseProgress(realm, user?.id)
         val progress = courseProgress[courseId]
         val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
         if (progress != null) {
             val maxProgress = progress["max"].asInt
             if (maxProgress != 0) {
-                activityCourseProgressBinding.progressView.setProgress((progress["current"].asInt.toDouble() / maxProgress.toDouble() * 100).toInt(), true)
+                binding.progressView.setProgress((progress["current"].asInt.toDouble() / maxProgress.toDouble() * 100).toInt(), true)
             } else {
-                activityCourseProgressBinding.progressView.setProgress(0, true)
+                binding.progressView.setProgress(0, true)
             }
         }
-        activityCourseProgressBinding.tvCourse.text = course?.courseTitle
-        activityCourseProgressBinding.tvProgress.text = getString(R.string.course_progress, courseProgress[courseId]?.get("current")?.asString, courseProgress[courseId]?.get("max")?.asString)
-        activityCourseProgressBinding.rvProgress.layoutManager = GridLayoutManager(this, 4)
+        binding.tvCourse.text = course?.courseTitle
+        binding.tvProgress.text = getString(R.string.course_progress, courseProgress[courseId]?.get("current")?.asString, courseProgress[courseId]?.get("max")?.asString)
+        binding.rvProgress.layoutManager = GridLayoutManager(this, 4)
         showProgress()
     }
 
@@ -60,7 +66,7 @@ class CourseProgressActivity : BaseActivity() {
             getExamObject(exams, ob)
             array.add(ob)
         }
-        activityCourseProgressBinding.rvProgress.adapter = AdapterProgressGrid(this, array)
+        binding.rvProgress.adapter = AdapterProgressGrid(this, array)
 
     }
 
@@ -81,5 +87,12 @@ class CourseProgressActivity : BaseActivity() {
                 ob.addProperty("status", it.status)
             }
         }
+    }
+
+    override fun onDestroy() {
+        if (this::realm.isInitialized && !realm.isClosed) {
+            realm.close()
+        }
+        super.onDestroy()
     }
 }

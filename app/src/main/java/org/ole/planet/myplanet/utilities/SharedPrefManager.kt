@@ -2,23 +2,27 @@ package org.ole.planet.myplanet.utilities
 
 import android.content.Context
 import android.content.SharedPreferences
-import org.json.JSONArray
-import org.json.JSONException
-import org.json.JSONObject
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
-class SharedPrefManager(context: Context) {
+class SharedPrefManager @Inject constructor(@ApplicationContext context: Context) {
     private var privateMode = 0
     private var pref: SharedPreferences = context.getSharedPreferences(PREFS_NAME, privateMode)
     private var editor: SharedPreferences.Editor = pref.edit()
+    private val gson = Gson()
 
-    private var savedUsers = "savedUsers"
-    private var repliedNewsId = "repliedNewsId"
-    var manualConfig = "manualConfig"
-    private var selectedTeamId = "selectedTeamId"
-    var firstLaunch = "firstLaunch"
-    private var teamName = "teamName"
+    companion object {
+        private const val SAVED_USERS = "savedUsers"
+        private const val REPLIED_NEWS_ID = "repliedNewsId"
+        const val MANUAL_CONFIG = "manualConfig"
+        private const val SELECTED_TEAM_ID = "selectedTeamId"
+        const val FIRST_LAUNCH = "firstLaunch"
+        private const val TEAM_NAME = "teamName"
+    }
 
     enum class SyncKey(val key: String) {
         CHAT_HISTORY("chat_history_synced"),
@@ -32,89 +36,63 @@ class SharedPrefManager(context: Context) {
     }
 
     fun getSavedUsers(): List<User> {
-        val usersJson = pref.getString(savedUsers, null)
+        val usersJson = pref.getString(SAVED_USERS, null)
         return if (usersJson != null) {
-            try {
-                val jsonArray = JSONArray(usersJson)
-                val userList = mutableListOf<User>()
-                for (i in 0 until jsonArray.length()) {
-                    val userJson = jsonArray.getJSONObject(i)
-                    val fullName = userJson.getString("fullName")
-                    val name = userJson.getString("name")
-                    val password = userJson.getString("password")
-                    val image = userJson.getString("image")
-                    val source = userJson.getString("source")
-                    val user = User(fullName, name, password, image, source)
-                    userList.add(user)
-                }
-                userList
-            } catch (e: JSONException) {
-                e.printStackTrace()
-                emptyList()
-            }
+            val type = object : TypeToken<List<User>>() {}.type
+            gson.fromJson(usersJson, type)
         } else {
             emptyList()
         }
     }
 
     fun setSavedUsers(users: List<User>) {
-        val jsonArray = JSONArray()
-        for (user in users) {
-            val userJson = JSONObject()
-            userJson.put("fullName", user.fullName)
-            userJson.put("name", user.name)
-            userJson.put("password", user.password)
-            userJson.put("image", user.image)
-            userJson.put("source", user.source)
-            jsonArray.put(userJson)
-        }
-        editor.putString(savedUsers, jsonArray.toString())
+        editor.putString(SAVED_USERS, gson.toJson(users))
         editor.apply()
     }
 
     fun setRepliedNewsId(repliedNewsId: String?) {
-        editor.putString(this.repliedNewsId, repliedNewsId)
+        editor.putString(REPLIED_NEWS_ID, repliedNewsId)
         editor.apply()
     }
 
     fun getManualConfig(): Boolean {
-        return pref.getBoolean(manualConfig, false)
+        return pref.getBoolean(MANUAL_CONFIG, false)
     }
 
     fun setManualConfig(manualConfig: Boolean) {
-        editor.putBoolean(this.manualConfig, manualConfig)
+        editor.putBoolean(MANUAL_CONFIG, manualConfig)
         editor.apply()
     }
 
     fun getSelectedTeamId(): String? {
-        return if (pref.getString(selectedTeamId, "") != "") pref.getString(
-            selectedTeamId, "") else ""
+        return if (pref.getString(SELECTED_TEAM_ID, "") != "") pref.getString(
+            SELECTED_TEAM_ID, "") else ""
     }
 
     fun setSelectedTeamId(selectedTeamId: String?) {
-        editor.putString(this.selectedTeamId, selectedTeamId)
+        editor.putString(SELECTED_TEAM_ID, selectedTeamId)
         editor.apply()
     }
 
     fun getFirstLaunch(): Boolean {
-        return pref.getBoolean(firstLaunch, false)
+        return pref.getBoolean(FIRST_LAUNCH, false)
     }
 
     fun setFirstLaunch(firstLaunch: Boolean) {
-        editor.putBoolean(this.firstLaunch, firstLaunch)
+        editor.putBoolean(FIRST_LAUNCH, firstLaunch)
         editor.apply()
     }
 
     fun getTeamName(): String? {
-        return if (pref.getString(teamName, "") != "") {
-            pref.getString(teamName, "")
+        return if (pref.getString(TEAM_NAME, "") != "") {
+            pref.getString(TEAM_NAME, "")
         } else {
             ""
         }
     }
 
     fun setTeamName(teamName: String?) {
-        editor.putString(this.teamName, teamName)
+        editor.putString(TEAM_NAME, teamName)
         editor.apply()
     }
 

@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.utilities
 import android.app.Dialog
 import android.content.Context
 import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.text.Layout
 import android.text.Spannable
 import android.text.TextPaint
@@ -35,9 +34,9 @@ import io.noties.markwon.image.file.FileSchemeHandler
 import io.noties.markwon.image.network.NetworkSchemeHandler
 import io.noties.markwon.image.network.OkHttpNetworkSchemeHandler
 import io.noties.markwon.movement.MovementMethodPlugin
+import java.util.regex.Pattern
 import org.commonmark.node.Image
 import org.ole.planet.myplanet.R
-import java.util.regex.Pattern
 
 object Markdown {
     private var currentZoomDialog: Dialog? = null
@@ -96,7 +95,7 @@ object Markdown {
         dialog.setContentView(view)
         dialog.window?.setBackgroundDrawable(Color.BLACK.toDrawable())
 
-        Glide.with(context)
+        Glide.with(photoView.context)
             .load(imageUrl)
             .error(R.drawable.ic_loading)
             .into(photoView)

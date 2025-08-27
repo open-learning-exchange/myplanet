@@ -14,23 +14,23 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexboxLayout
 import io.realm.Case
-import io.realm.Realm
 import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.Sort
 import java.util.Calendar
 import java.util.UUID
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -51,13 +51,13 @@ import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.userprofile.UserProfileFragment
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DialogUtils
+import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCallback,
     SyncListener {
     private var fullName: String? = null
-    lateinit var dbService: DatabaseService
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
     private lateinit var myCoursesResults: RealmResults<RealmMyCourse>
@@ -111,7 +111,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun forceDownloadNewsImages() {
-        mRealm = DatabaseService(requireContext()).realmInstance
+        mRealm = databaseService.realmInstance
         Utilities.toast(activity, getString(R.string.please_select_starting_date))
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(requireActivity(), { _: DatePicker?, i: Int, i1: Int, i2: Int ->
@@ -134,7 +134,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         list.add(Constants.DICTIONARY_URL)
         if (!FileUtils.checkFileExist(Constants.DICTIONARY_URL)) {
             Utilities.toast(activity, getString(R.string.downloading_started_please_check_notification))
-            Utilities.openDownloadService(activity, list, false)
+            DownloadUtils.openDownloadService(activity, list, false)
         } else {
             Utilities.toast(activity, getString(R.string.file_already_exists))
         }
@@ -182,7 +182,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         setUpMyLife(userId)
         dbMycourses = when (c) {
             RealmMyCourse::class.java -> {
-                RealmMyCourse.getMyByUserId(mRealm, settings)
+                RealmMyCourse.getMyByUserId(mRealm, settings).filter { !it.courseTitle.isNullOrBlank() }
             }
             RealmMyTeam::class.java -> {
                 val i = myTeamInit(flexboxLayout)
@@ -202,6 +202,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         setCountText(dbMycourses.size, c, view)
         val myCoursesTextViewArray = arrayOfNulls<TextView>(dbMycourses.size)
         for ((itemCnt, items) in dbMycourses.withIndex()) {
+            val course = items as RealmMyCourse
             setTextViewProperties(myCoursesTextViewArray, itemCnt, items)
             myCoursesTextViewArray[itemCnt]?.let { setTextColor(it, itemCnt) }
             flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params)
@@ -254,7 +255,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun setUpMyLife(userId: String?) {
-        val realm = DatabaseService(requireContext()).realmInstance
+        val realm = databaseService.realmInstance
         val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings)
         if (realmObjects.isEmpty()) {
             if (!realm.isInTransaction) {
@@ -285,7 +286,6 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         profileDbHandler.onDestroy()
         if (::myCoursesResults.isInitialized) {
             myCoursesResults.removeChangeListener(myCoursesChangeListener)
@@ -293,7 +293,14 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         if (::myTeamsResults.isInitialized) {
             myTeamsResults.removeChangeListener(myTeamsChangeListener)
         }
-        mRealm.close()
+        if (isRealmInitialized()) {
+            mRealm.removeAllChangeListeners()
+            if (mRealm.isInTransaction) {
+                mRealm.cancelTransaction()
+            }
+            mRealm.close()
+        }
+        super.onDestroy()
     }
 
     private fun setCountText(countText: Int, c: Class<*>, v: View) {
@@ -326,8 +333,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         view.findViewById<View>(R.id.txtFullName).setOnClickListener {
             homeItemClickListener?.openCallFragment(UserProfileFragment())
         }
-        dbService = DatabaseService(requireContext())
-        mRealm = dbService.realmInstance
+        mRealm = databaseService.realmInstance
         myLibraryDiv(view)
         initializeFlexBoxView(view, R.id.flexboxLayoutCourse, RealmMyCourse::class.java)
         initializeFlexBoxView(view, R.id.flexboxLayoutTeams, RealmMyTeam::class.java)
@@ -357,7 +363,9 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun showResourceDownloadDialog() {
-        showDownloadDialog(getLibraryList(mRealm))
+        viewLifecycleOwner.lifecycleScope.launch {
+            showDownloadDialog(getLibraryList(mRealm))
+        }
     }
 
     override fun showUserResourceDialog() {

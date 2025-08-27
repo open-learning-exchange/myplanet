@@ -8,10 +8,14 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject
-import io.realm.Realm
 import io.realm.RealmResults
 import java.util.Calendar
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
@@ -24,7 +28,6 @@ class AdapterReports(private val context: Context, private var list: RealmResult
     private var startTimeStamp: String? = null
     private var endTimeStamp: String? = null
     lateinit var prefData: SharedPrefManager
-    private var mRealm: Realm = Realm.getDefaultInstance()
     private var nonTeamMember = false
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderReports {
@@ -153,8 +156,16 @@ class AdapterReports(private val context: Context, private var list: RealmResult
                         addProperty("updatedDate", System.currentTimeMillis())
                         addProperty("updated", true)
                     }
-                    RealmMyTeam.updateReports(doc, mRealm)
-                    dialog.dismiss()
+                    CoroutineScope(Dispatchers.Main).launch {
+                        try {
+                            MainApplication.service.executeTransactionAsync { realm ->
+                                RealmMyTeam.updateReports(doc, realm)
+                            }
+                            dialog.dismiss()
+                        } catch (e: Exception) {
+                            Snackbar.make(reportListItemBinding.root, "Failed to update report. Please try again.", Snackbar.LENGTH_LONG).show()
+                        }
+                    }
                 }
             }
 
@@ -164,18 +175,26 @@ class AdapterReports(private val context: Context, private var list: RealmResult
         reportListItemBinding.delete.setOnClickListener {
             report?._id?.let { reportId ->
                 val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                builder.setTitle("Delete Report")
+                builder.setTitle(context.getString(R.string.delete_report))
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _, _ ->
-                        mRealm.executeTransaction { realm ->
-                            realm.where(RealmMyTeam::class.java)
-                                .equalTo("_id", reportId)
-                                .findFirst()?.apply {
-                                    status = "archived"
-                                    updated = true
+                        CoroutineScope(Dispatchers.Main).launch {
+                            try {
+                                MainApplication.service.executeTransactionAsync { realm ->
+                                    realm.where(RealmMyTeam::class.java)
+                                        .equalTo("_id", reportId)
+                                        .findFirst()?.apply {
+                                            status = "archived"
+                                            updated = true
+                                        }
                                 }
+                                notifyDataSetChanged()
+                            } catch (e: Exception) {
+                                reportListItemBinding.root.let { view ->
+                                    Snackbar.make(view, context.getString(R.string.failed_to_delete_report), Snackbar.LENGTH_LONG).show()
+                                }
+                            }
                         }
-                        notifyDataSetChanged()
                     }
                     .setNegativeButton("Cancel", null)
                     .show()

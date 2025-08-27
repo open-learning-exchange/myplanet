@@ -15,18 +15,19 @@ import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.ItemTeamListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-class AdapterTeamList(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm, private val fragmentManager: FragmentManager) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
+class AdapterTeamList(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm, private val fragmentManager: FragmentManager, private val uploadManager: UploadManager) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private lateinit var itemTeamListBinding: ItemTeamListBinding
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
@@ -56,7 +57,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         val user: RealmUserModel? = UserProfileDbHandler(context).userModel
 
         with(holder.binding) {
-            created.text = TimeUtils.getFormatedDate(team.createdDate)
+            created.text = TimeUtils.getFormattedDate(team.createdDate)
             type.text = team.teamType
             type.visibility = if (team.teamType == null) View.GONE else View.VISIBLE
             name.text = team.name
@@ -66,23 +67,21 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
             showActionButton(isMyTeam, team, user)
 
             root.setOnClickListener {
-                if (context is OnHomeItemClickListener) {
-                    val fragmentManager = (context as AppCompatActivity).supportFragmentManager
-                    val existingFragment = fragmentManager.findFragmentByTag("TeamDetailFragment")
-
-                    val f = TeamDetailFragment.newInstance(
-                        teamId = "${team._id}",
-                        teamName = "${team.name}",
-                        teamType = "${team.type}",
-                        isMyTeam = isMyTeam
-                    )
-                    if (existingFragment is TeamDetailFragment) {
-                        existingFragment.arguments?.clear()
-                        existingFragment.arguments = f.arguments
-                    }
-                    (context as OnHomeItemClickListener).openCallFragment(f)
-                    prefData.setTeamName(team.name)
-                }
+                val activity = context as? AppCompatActivity ?: return@setOnClickListener
+                val fragment = TeamDetailFragment.newInstance(
+                    teamId = "${team._id}",
+                    teamName = "${team.name}",
+                    teamType = "${team.type}",
+                    isMyTeam = isMyTeam
+                )
+                NavigationHelper.replaceFragment(
+                    activity.supportFragmentManager,
+                    R.id.fragment_container,
+                    fragment,
+                    addToBackStack = true,
+                    tag = "TeamDetailFragment"
+                )
+                prefData.setTeamName(team.name)
             }
 
             btnFeedback.setOnClickListener {
@@ -163,7 +162,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
             RealmMyTeam.requestToJoin(team._id, user, mRealm, team.teamType)
             updateList()
         }
-        syncTeamActivities(context)
+        syncTeamActivities(context, uploadManager)
     }
 
     private fun updateList() {

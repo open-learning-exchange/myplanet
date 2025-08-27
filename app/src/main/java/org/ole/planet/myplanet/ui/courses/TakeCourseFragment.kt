@@ -12,10 +12,13 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager.widget.ViewPager
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.util.Locale
+import javax.inject.Inject
 import kotlin.collections.isNotEmpty
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -36,12 +39,15 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.isStepCompleted
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnClickListener {
     private lateinit var fragmentTakeCourseBinding: FragmentTakeCourseBinding
-    lateinit var dbService: DatabaseService
+    @Inject
+    lateinit var databaseService: DatabaseService
     lateinit var mRealm: Realm
     private var currentCourse: RealmMyCourse? = null
     lateinit var steps: List<RealmCourseStep?>
@@ -60,8 +66,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentTakeCourseBinding = FragmentTakeCourseBinding.inflate(inflater, container, false)
-        dbService = DatabaseService(requireActivity())
-        mRealm = dbService.realmInstance
+        mRealm = databaseService.realmInstance
         userModel = UserProfileDbHandler(requireContext()).userModel
         currentCourse = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
         return fragmentTakeCourseBinding.root
@@ -75,13 +80,20 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             fragmentTakeCourseBinding.nextStep.visibility = View.GONE
             fragmentTakeCourseBinding.previousStep.visibility = View.GONE
         }
-        fragmentTakeCourseBinding.viewPager2.adapter = CoursesPagerAdapter(this, courseId, getCourseStepIds(mRealm, courseId))
-        fragmentTakeCourseBinding.viewPager2.isUserInputEnabled = false
 
         currentStep = getCourseProgress()
+        position = if (currentStep > 0) currentStep  else 0
+        setNavigationButtons()
+        fragmentTakeCourseBinding.viewPager2.adapter =
+            CoursesPagerAdapter(
+                this@TakeCourseFragment,
+                courseId,
+                getCourseStepIds(mRealm, courseId)
+            )
 
-        position = if (currentStep > 0) currentStep - 1 else 0
-        fragmentTakeCourseBinding.viewPager2.currentItem = position
+        fragmentTakeCourseBinding.viewPager2.isUserInputEnabled = false
+        fragmentTakeCourseBinding.viewPager2.setCurrentItem(position, false)
+
         updateStepDisplay(position)
 
         if (position == 0) {
@@ -89,11 +101,15 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         }
         setCourseData()
         setListeners()
-        fragmentTakeCourseBinding.viewPager2.currentItem = position
         checkSurveyCompletion()
         fragmentTakeCourseBinding.backButton.setOnClickListener {
-            requireActivity().supportFragmentManager.popBackStack()
+            NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        updateStepDisplay(fragmentTakeCourseBinding.viewPager2.currentItem)
     }
 
     private fun setListeners() {
@@ -115,7 +131,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun updateStepDisplay(position: Int) {
-        val currentPosition = position + 1
+        val currentPosition = position
         fragmentTakeCourseBinding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", currentPosition, steps.size)
 
         val currentProgress = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
@@ -148,21 +164,23 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             val detachedCurrentCourse = currentCourse?.let { mRealm.copyFromRealm(it) }
 
             withContext(Dispatchers.IO) {
+                val backgroundRealm = databaseService.realmInstance
                 try {
-                    Realm.getDefaultInstance().use { backgroundRealm ->
-                        createActivity(backgroundRealm, detachedUserModel, detachedCurrentCourse)
-                    }
+                    createActivity(backgroundRealm, detachedUserModel, detachedCurrentCourse)
                 } catch (e: Exception) {
                     e.printStackTrace()
+                } finally {
+                    backgroundRealm.close()
                 }
             }
 
             withContext(Dispatchers.Main) {
                 fragmentTakeCourseBinding.courseProgress.max = stepsSize
-                updateStepDisplay(currentItem)
 
                 if (containsUserId) {
-                    fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
+                    if(position != currentCourse?.courseSteps?.size){
+                        fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
+                    }
                     fragmentTakeCourseBinding.courseProgress.visibility = View.VISIBLE
                 } else {
                     fragmentTakeCourseBinding.nextStep.visibility = View.GONE
@@ -266,7 +284,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun getCourseProgress(): Int {
-        val realm = DatabaseService(requireActivity()).realmInstance
+        val realm = databaseService.realmInstance
         val user = UserProfileDbHandler(requireActivity()).userModel
         val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
         val courseProgress = courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt
@@ -289,9 +307,29 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             fragmentTakeCourseBinding.finishStep.isEnabled = true
             fragmentTakeCourseBinding.finishStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
             fragmentTakeCourseBinding.finishStep.setOnClickListener {
-                requireActivity().supportFragmentManager.popBackStack()
+                NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
             }
         }
+    }
+
+    private fun setNavigationButtons(){
+        if(position == currentCourse?.courseSteps?.size){
+            fragmentTakeCourseBinding.nextStep.visibility = View.GONE
+            fragmentTakeCourseBinding.finishStep.visibility = View.VISIBLE
+        } else {
+            fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
+            fragmentTakeCourseBinding.finishStep.visibility = View.GONE
+        }
+
+    }
+
+    override fun onDestroyView() {
+        fragmentTakeCourseBinding.courseProgress.setOnSeekBarChangeListener(null)
+        lifecycleScope.coroutineContext.cancelChildren()
+        if (this::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
+        super.onDestroyView()
     }
 
     private val isValidClickRight: Boolean get() = fragmentTakeCourseBinding.viewPager2.adapter != null && fragmentTakeCourseBinding.viewPager2.currentItem < fragmentTakeCourseBinding.viewPager2.adapter?.itemCount!!

@@ -9,8 +9,10 @@ import com.github.barteksc.pdfviewer.listener.OnLoadCompleteListener
 import com.github.barteksc.pdfviewer.listener.OnPageChangeListener
 import com.github.barteksc.pdfviewer.listener.OnPageErrorListener
 import com.github.barteksc.pdfviewer.scroll.DefaultScrollHandle
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.io.File
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityPdfreaderBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -18,32 +20,37 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.service.AudioRecorderService
 import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
-import org.ole.planet.myplanet.utilities.NotificationUtil.cancelAll
-import org.ole.planet.myplanet.utilities.NotificationUtil.create
+import org.ole.planet.myplanet.utilities.NotificationUtils.cancelAll
+import org.ole.planet.myplanet.utilities.NotificationUtils.create
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompleteListener, OnPageErrorListener, AudioRecordListener {
-    private lateinit var activityPdfReaderBinding: ActivityPdfreaderBinding
-    private var fileName: String? = null
+    private lateinit var binding: ActivityPdfreaderBinding
     private lateinit var audioRecorderService: AudioRecorderService
+    private var fileName: String? = null
+    @Inject
+    lateinit var databaseService: DatabaseService
     private lateinit var library: RealmMyLibrary
     private lateinit var mRealm: Realm
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        activityPdfReaderBinding = ActivityPdfreaderBinding.inflate(layoutInflater)
-        setContentView(activityPdfReaderBinding.root)
+        binding = ActivityPdfreaderBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
         audioRecorderService = AudioRecorderService().setAudioRecordListener(this)
         audioRecorderService.setCaller(this, this)
-        mRealm = DatabaseService(this).realmInstance
+        mRealm = databaseService.realmInstance
         if (intent.hasExtra("resourceId")) {
             val resourceID = intent.getStringExtra("resourceId")
             library = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceID).findFirst()!!
         }
         renderPdfFile()
-        activityPdfReaderBinding.fabRecord.setOnClickListener { audioRecorderService.onRecordClicked()}
-        activityPdfReaderBinding.fabPlay.setOnClickListener {
+        binding.fabRecord.setOnClickListener { audioRecorderService.onRecordClicked()}
+        binding.fabPlay.setOnClickListener {
             if (this::library.isInitialized && !TextUtils.isEmpty(library.translationAudioPath)) {
                 openAudioFile(this, library.translationAudioPath)
             }
@@ -54,16 +61,16 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         val pdfOpenIntent = intent
         fileName = pdfOpenIntent.getStringExtra("TOUCHED_FILE")
         if (!fileName.isNullOrEmpty()) {
-            activityPdfReaderBinding.pdfFileName.text = FileUtils.nameWithoutExtension(fileName)
-            activityPdfReaderBinding.pdfFileName.visibility = View.VISIBLE
+            binding.pdfFileName.text = FileUtils.nameWithoutExtension(fileName)
+            binding.pdfFileName.visibility = View.VISIBLE
         } else {
-            activityPdfReaderBinding.pdfFileName.text = getString(R.string.message_placeholder, "No file selected")
-            activityPdfReaderBinding.pdfFileName.visibility = View.VISIBLE
+            binding.pdfFileName.text = getString(R.string.message_placeholder, "No file selected")
+            binding.pdfFileName.visibility = View.VISIBLE
         }
         val file = File(getExternalFilesDir(null), "ole/$fileName")
         if (file.exists()) {
             try {
-                activityPdfReaderBinding.pdfView.fromFile(file).defaultPage(0)
+                binding.pdfView.fromFile(file).defaultPage(0)
                     .enableAnnotationRendering(true).onLoad(this).onPageChange(this)
                     .scrollHandle(DefaultScrollHandle(this)).load()
             } catch (e: Exception) {
@@ -83,15 +90,15 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
     override fun onRecordStarted() {
         Utilities.toast(this, getString(R.string.recording_started))
         create(this, R.drawable.ic_mic, "Recording Audio", getString(R.string.ole_is_recording_audio))
-        activityPdfReaderBinding.fabRecord.setImageResource(R.drawable.ic_stop)
+        binding.fabRecord.setImageResource(R.drawable.ic_stop)
     }
 
     override fun onRecordStopped(outputFile: String?) {
         Utilities.toast(this, getString(R.string.recording_stopped))
         cancelAll(this)
         updateTranslation(outputFile)
-        AddResourceFragment.showAlert(this, outputFile)
-        activityPdfReaderBinding.fabRecord.setImageResource(R.drawable.ic_mic)
+        AddResourceFragment.showAlert(this, outputFile, databaseService)
+        binding.fabRecord.setImageResource(R.drawable.ic_mic)
     }
 
     private fun updateTranslation(outputFile: String?) {
@@ -104,15 +111,25 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
     }
 
     override fun onDestroy() {
-        super.onDestroy()
         if (this::audioRecorderService.isInitialized && audioRecorderService.isRecording()) {
             audioRecorderService.stopRecording()
         }
+        if (this::mRealm.isInitialized && !mRealm.isClosed) {
+            if (mRealm.isInTransaction) {
+                try {
+                    mRealm.commitTransaction()
+                } catch (e: Exception) {
+                    mRealm.cancelTransaction()
+                }
+            }
+            mRealm.close()
+        }
+        super.onDestroy()
     }
 
     override fun onError(error: String?) {
         cancelAll(this)
         Utilities.toast(this, error)
-        activityPdfReaderBinding.fabRecord.setImageResource(R.drawable.ic_mic)
+        binding.fabRecord.setImageResource(R.drawable.ic_mic)
     }
 }

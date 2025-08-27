@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.utilities
 
 import android.content.Context
 import android.widget.Toast
-import androidx.core.content.edit
 import io.realm.Realm
 import java.text.Normalizer
 import java.util.regex.Pattern
@@ -51,10 +50,7 @@ object AuthHelper {
         if (activity.forceSyncTrigger()) return
 
         val settings = activity.settings
-        settings.edit {
-            putString("loginUserName", name)
-            putString("loginUserPassword", password)
-        }
+        SecurePrefs.saveCredentials(activity, settings, name, password)
 
         val isLoggedIn = activity.authenticateUser(settings, name, password, false)
         if (isLoggedIn) {
@@ -93,4 +89,3 @@ object AuthHelper {
         })
     }
 }
-

@@ -11,9 +11,11 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import java.util.Locale
 import java.util.UUID
+import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentAddLinkBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -21,11 +23,14 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.ui.team.AdapterTeam
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedListener {
     private lateinit var fragmentAddLinkBinding: FragmentAddLinkBinding
     override fun onNothingSelected(p0: AdapterView<*>?) {
     }
 
+    @Inject
+    lateinit var databaseService: DatabaseService
     lateinit var mRealm: Realm
     var selectedTeam: RealmMyTeam? = null
 
@@ -66,7 +71,7 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        mRealm = DatabaseService(requireActivity()).realmInstance
+        mRealm = databaseService.realmInstance
         fragmentAddLinkBinding.spnLink.onItemSelectedListener = this
         fragmentAddLinkBinding.btnSave.setOnClickListener {
             val type = fragmentAddLinkBinding.spnLink.selectedItem.toString()
@@ -90,5 +95,12 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
 
             }
         }
+    }
+
+    override fun onDestroyView() {
+        if (this::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
+        super.onDestroyView()
     }
 }
