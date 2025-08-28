@@ -188,26 +188,37 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
     override fun onCreate() {
         super.onCreate()
         initApp()
-        setupPreferences()
+        setupCriticalProperties()
         setupStrictMode()
-        setupAnrWatchdog()
-        scheduleWorkersOnStart()
         registerExceptionHandler()
         setupLifecycleCallbacks()
         configureTheme()
-        observeNetworkForDownloads()
+
+        applicationScope.launch {
+            initializeDatabaseConnection()
+            setupAnrWatchdog()
+            scheduleWorkersOnStart()
+            observeNetworkForDownloads()
+        }
     }
 
     private fun initApp() {
         context = this
-        startListenNetworkState()
+        applicationScope.launch(Dispatchers.Default) {
+            startListenNetworkState()
+        }
     }
 
-    private fun setupPreferences() {
+    private fun setupCriticalProperties() {
         preferences = appPreferences
         service = databaseService
-        service.withRealm { }
         defaultPref = defaultPreferences
+    }
+    
+    private suspend fun initializeDatabaseConnection() {
+        withContext(Dispatchers.IO) {
+            service.withRealm { }
+        }
     }
 
     private fun setupStrictMode() {
@@ -216,27 +227,31 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         builder.detectFileUriExposure()
     }
 
-    private fun setupAnrWatchdog() {
-        anrWatchdog = ANRWatchdog(timeout = 5000L, listener = object : ANRWatchdog.ANRListener {
-            override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
-                applicationScope.launch {
-                    createLog("anr", "ANR detected! Duration: ${duration}ms\n $message")
+    private suspend fun setupAnrWatchdog() {
+        withContext(Dispatchers.Default) {
+            anrWatchdog = ANRWatchdog(timeout = 5000L, listener = object : ANRWatchdog.ANRListener {
+                override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
+                    applicationScope.launch {
+                        createLog("anr", "ANR detected! Duration: ${duration}ms\n $message")
+                    }
                 }
-            }
-        })
-        anrWatchdog.start()
+            })
+            anrWatchdog.start()
+        }
     }
 
-    private fun scheduleWorkersOnStart() {
-        if (preferences?.getBoolean("autoSync", false) == true && preferences?.contains("autoSyncInterval") == true) {
-            val syncInterval = preferences?.getInt("autoSyncInterval", 60 * 60)
-            scheduleAutoSyncWork(syncInterval)
-        } else {
-            cancelAutoSyncWork()
+    private suspend fun scheduleWorkersOnStart() {
+        withContext(Dispatchers.Default) {
+            if (preferences?.getBoolean("autoSync", false) == true && preferences?.contains("autoSyncInterval") == true) {
+                val syncInterval = preferences?.getInt("autoSyncInterval", 60 * 60)
+                scheduleAutoSyncWork(syncInterval)
+            } else {
+                cancelAutoSyncWork()
+            }
+            scheduleStayOnlineWork()
+            scheduleTaskNotificationWork()
+            startNetworkMonitoring()
         }
-        scheduleStayOnlineWork()
-        scheduleTaskNotificationWork()
-        startNetworkMonitoring()
     }
 
     private fun registerExceptionHandler() {
@@ -255,27 +270,29 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
         applyThemeMode(savedThemeMode)
     }
 
-    private fun observeNetworkForDownloads() {
-        isNetworkConnectedFlow.onEach { isConnected ->
-            if (isConnected) {
-                val serverUrl = preferences?.getString("serverURL", "")
-                if (!serverUrl.isNullOrEmpty()) {
-                    applicationScope.launch {
-                        val canReachServer = withContext(Dispatchers.IO) {
-                            isServerReachable(serverUrl)
-                        }
-                        if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
-                            service.withRealm { realm ->
-                                backgroundDownload(
-                                    downloadAllFiles(getAllLibraryList(realm)),
-                                    applicationContext
-                                )
+    private suspend fun observeNetworkForDownloads() {
+        withContext(Dispatchers.Default) {
+            isNetworkConnectedFlow.onEach { isConnected ->
+                if (isConnected) {
+                    val serverUrl = preferences?.getString("serverURL", "")
+                    if (!serverUrl.isNullOrEmpty()) {
+                        applicationScope.launch {
+                            val canReachServer = withContext(Dispatchers.IO) {
+                                isServerReachable(serverUrl)
+                            }
+                            if (canReachServer && defaultPref.getBoolean("beta_auto_download", false)) {
+                                service.withRealm { realm ->
+                                    backgroundDownload(
+                                        downloadAllFiles(getAllLibraryList(realm)),
+                                        applicationContext
+                                    )
+                                }
                             }
                         }
                     }
                 }
-            }
-        }.launchIn(applicationScope)
+            }.launchIn(applicationScope)
+        }
     }
 
     private fun scheduleAutoSyncWork(syncInterval: Int?) {
