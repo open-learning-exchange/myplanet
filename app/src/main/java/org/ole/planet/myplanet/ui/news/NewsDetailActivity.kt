@@ -31,7 +31,6 @@ class NewsDetailActivity : BaseActivity() {
     lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var binding: ActivityNewsDetailBinding
     var news: RealmNews? = null
-    lateinit var realm: Realm
     private val gson = Gson()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,32 +39,33 @@ class NewsDetailActivity : BaseActivity() {
         EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
         setSupportActionBar(binding.toolbar)
         initActionBar()
-        realm = databaseService.realmInstance
-        val id = intent.getStringExtra("newsId")
-        news = realm.where(RealmNews::class.java).equalTo("id", id).findFirst()
-        if (news == null) {
-            Utilities.toast(this, getString(R.string.new_not_available))
-            finish()
-            return
+        databaseService.withRealm { realm ->
+            val id = intent.getStringExtra("newsId")
+            news = realm.where(RealmNews::class.java).equalTo("id", id).findFirst()
+            if (news == null) {
+                Utilities.toast(this, getString(R.string.new_not_available))
+                finish()
+                return@withRealm
+            }
+            val user = userProfileDbHandler.userModel!!
+            val userId = user.id
+            realm.executeTransactionAsync {
+                val newsLog: RealmNewsLog = it.createObject(RealmNewsLog::class.java, UUID.randomUUID().toString())
+                newsLog.androidId = NetworkUtils.getUniqueIdentifier()
+                newsLog.type = "news"
+                newsLog.time = Date().time
+                newsLog.userId = userId
+            }
+            initViews(realm)
         }
-        val user = userProfileDbHandler.userModel!!
-        val userId = user.id
-        realm.executeTransactionAsync {
-            val newsLog: RealmNewsLog = it.createObject(RealmNewsLog::class.java, UUID.randomUUID().toString())
-            newsLog.androidId = NetworkUtils.getUniqueIdentifier()
-            newsLog.type = "news"
-            newsLog.time = Date().time
-            newsLog.userId = userId
-        }
-        initViews()
     }
 
-    private fun initViews() {
+    private fun initViews(realm: Realm) {
         title = news?.userName
         var msg: String? = news?.message
 
         if (news?.imageUrls != null && (news?.imageUrls?.size ?: 0) > 0) {
-            msg = loadLocalImage()
+            msg = loadLocalImage(realm)
         } else {
             news?.imagesArray?.forEach {
                 val ob = it.asJsonObject
@@ -78,7 +78,7 @@ class NewsDetailActivity : BaseActivity() {
                     false
                 )
             }
-            loadImage()
+            loadImage(realm)
         }
         msg = msg?.replace(
             "\n",
@@ -94,7 +94,7 @@ class NewsDetailActivity : BaseActivity() {
         )
     }
 
-    private fun loadLocalImage(): String? {
+    private fun loadLocalImage(realm: Realm): String? {
         var msg: String? = news?.message
         try {
             val imgObject = gson.fromJson(news?.imageUrls?.get(0), JsonObject::class.java)
@@ -108,12 +108,12 @@ class NewsDetailActivity : BaseActivity() {
                 ) + "\"><br/>"
             }
         } catch (e: Exception) {
-            loadImage()
+            loadImage(realm)
         }
         return msg
     }
 
-    private fun loadImage() {
+    private fun loadImage(realm: Realm) {
         if ((news?.imagesArray?.size() ?: 0) > 0) {
             val ob = news?.imagesArray?.get(0)?.asJsonObject
             val resourceId = JsonUtils.getString("resourceId", ob?.asJsonObject)
@@ -128,13 +128,5 @@ class NewsDetailActivity : BaseActivity() {
             }
         }
         binding.img.visibility = View.GONE
-    }
-
-    override fun onDestroy() {
-        if (::realm.isInitialized && !realm.isClosed) {
-            realm.removeAllChangeListeners()
-            realm.close()
-        }
-        super.onDestroy()
     }
 }
