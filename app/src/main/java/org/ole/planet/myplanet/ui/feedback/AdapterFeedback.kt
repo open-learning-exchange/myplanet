@@ -4,29 +4,30 @@ import android.content.Intent
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.content.res.ResourcesCompat
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFeedbackBinding
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.ui.feedback.AdapterFeedback.ViewHolderFeedback
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 
 class AdapterFeedback :
-    ListAdapter<RealmFeedback, ViewHolderFeedback>(DiffCallback) {
-
-    companion object DiffCallback : DiffUtil.ItemCallback<RealmFeedback>() {
-        override fun areItemsTheSame(oldItem: RealmFeedback, newItem: RealmFeedback) =
-            oldItem.id == newItem.id
-
-        override fun areContentsTheSame(oldItem: RealmFeedback, newItem: RealmFeedback) =
-            oldItem.title == newItem.title &&
-                oldItem.type == newItem.type &&
-                oldItem.priority == newItem.priority &&
-                oldItem.status == newItem.status &&
-                oldItem.openTime == newItem.openTime
-    }
+    ListAdapter<RealmFeedback, ViewHolderFeedback>(
+        DiffUtils.itemCallback(
+            { oldItem, newItem ->
+                oldItem.id == newItem.id
+            },
+            { oldItem, newItem ->
+                oldItem.title == newItem.title &&
+                    oldItem.type == newItem.type &&
+                    oldItem.priority == newItem.priority &&
+                    oldItem.status == newItem.status &&
+                    oldItem.openTime == newItem.openTime
+            }
+        )
+    ) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderFeedback {
         val binding = RowFeedbackBinding.inflate(LayoutInflater.from(parent.context), parent, false)
