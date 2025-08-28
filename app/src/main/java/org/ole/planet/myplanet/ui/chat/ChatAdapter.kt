@@ -34,6 +34,7 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView) 
     val animatedMessages = HashMap<Int, Boolean>()
     var lastAnimatedPosition: Int = -1
     private val coroutineScope = CoroutineScope(Dispatchers.Main)
+    private val messages = mutableListOf<String>()
 
     interface OnChatItemClickListener {
         fun onChatItemClick(position: Int, chatItem: String)
@@ -107,30 +108,29 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView) 
     }
 
     fun addQuery(query: String) {
-        val updated = currentList.toMutableList()
-        updated.add(query)
-        submitList(updated) {
-            scrollToLastItem(updated.size)
+        messages.add(query)
+        submitList(messages.toList()) {
+            scrollToLastItem()
         }
     }
 
     fun addResponse(response: String) {
-        val updated = currentList.toMutableList()
-        updated.add(response)
-        lastAnimatedPosition = updated.size - 1
-        submitList(updated) {
-            scrollToLastItem(updated.size)
+        messages.add(response)
+        lastAnimatedPosition = messages.size - 1
+        submitList(messages.toList()) {
+            scrollToLastItem()
         }
     }
 
     fun clearData() {
-        val updated = currentList.toMutableList()
-        updated.clear()
-        submitList(updated)
+        messages.clear()
+        animatedMessages.clear()
+        lastAnimatedPosition = -1
+        submitList(emptyList())
     }
 
-    private fun scrollToLastItem(listSize: Int = currentList.size) {
-        val lastPosition = listSize - 1
+    private fun scrollToLastItem() {
+        val lastPosition = messages.size - 1
         if (lastPosition >= 0) {
             recyclerView.scrollToPosition(lastPosition)
         }
