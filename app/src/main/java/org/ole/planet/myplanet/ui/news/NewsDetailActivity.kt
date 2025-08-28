@@ -41,16 +41,19 @@ class NewsDetailActivity : BaseActivity() {
         initActionBar()
         databaseService.withRealm { realm ->
             val id = intent.getStringExtra("newsId")
-            news = realm.where(RealmNews::class.java).equalTo("id", id).findFirst()
-            if (news == null) {
+            val managedNews =
+                realm.where(RealmNews::class.java).equalTo("id", id).findFirst()
+            if (managedNews == null) {
                 Utilities.toast(this, getString(R.string.new_not_available))
                 finish()
                 return@withRealm
             }
+            news = realm.copyFromRealm(managedNews)
             val user = userProfileDbHandler.userModel!!
             val userId = user.id
             realm.executeTransactionAsync {
-                val newsLog: RealmNewsLog = it.createObject(RealmNewsLog::class.java, UUID.randomUUID().toString())
+                val newsLog: RealmNewsLog =
+                    it.createObject(RealmNewsLog::class.java, UUID.randomUUID().toString())
                 newsLog.androidId = NetworkUtils.getUniqueIdentifier()
                 newsLog.type = "news"
                 newsLog.time = Date().time
