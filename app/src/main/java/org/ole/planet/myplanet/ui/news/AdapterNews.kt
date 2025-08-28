@@ -30,6 +30,7 @@ import com.google.gson.JsonObject
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
+import io.realm.RealmObject
 import io.realm.Sort
 import java.io.File
 import java.util.Calendar
@@ -54,16 +55,21 @@ import org.ole.planet.myplanet.utilities.ImageUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
 
+private fun RealmNews.asUnmanaged(): RealmNews {
+    return if (RealmObject.isManaged(this)) this.realm.copyFromRealm(this) else this
+}
+
 class AdapterNews(
     var context: Context,
     initialList: MutableList<RealmNews?>,
     private var currentUser: RealmUserModel?,
-    private val parentNews: RealmNews?,
+    parentNews: RealmNews?,
     private val teamName: String = "",
     private val teamId: String? = null,
     private val userProfileDbHandler: UserProfileDbHandler
 ) : ListAdapter<RealmNews, RecyclerView.ViewHolder>(DIFF_CALLBACK) {
-    private val list: MutableList<RealmNews> = initialList.filterNotNull().toMutableList()
+    private val parentNewsItem: RealmNews? = parentNews?.asUnmanaged()
+    private val list: MutableList<RealmNews> = initialList.filterNotNull().map { it.asUnmanaged() }.toMutableList()
     private lateinit var rowNewsBinding: RowNewsBinding
     private var listener: OnNewsItemClickListener? = null
     private var imageList: RealmList<String>? = null
@@ -83,8 +89,8 @@ class AdapterNews(
     }
 
     init {
-        val displayList = if (parentNews != null) {
-            listOf(parentNews) + list
+        val displayList = if (parentNewsItem != null) {
+            listOf(parentNewsItem) + list
         } else {
             list.toList()
         }
@@ -94,19 +100,13 @@ class AdapterNews(
     companion object {
         private val DIFF_CALLBACK = DiffUtils.itemCallback<RealmNews>(
             areItemsTheSame = { old, new ->
-                val oId = if (old.isValid) old.id else null
-                val nId = if (new.isValid) new.id else null
-                oId != null && oId == nId
+                old.id == new.id
             },
             areContentsTheSame = { old, new ->
-                if (!old.isValid || !new.isValid) {
-                    false
-                } else {
-                    old.id == new.id &&
-                        old.time == new.time &&
-                        old.isEdited == new.isEdited &&
-                        old.message == new.message
-                }
+                old.id == new.id &&
+                    old.time == new.time &&
+                    old.isEdited == new.isEdited &&
+                    old.message == new.message
             }
         )
     }
@@ -117,10 +117,10 @@ class AdapterNews(
 
     fun addItem(news: RealmNews?) {
         val newList = list.toMutableList()
-        news?.let { newList.add(0, it) }
+        news?.let { newList.add(0, it.asUnmanaged()) }
         list.clear()
         list.addAll(newList)
-        val displayList = if (parentNews != null) listOf(parentNews) + newList else newList
+        val displayList = if (parentNewsItem != null) listOf(parentNewsItem) + newList else newList
         submitList(displayList)
         recyclerView?.scrollToPosition(0)
     }
@@ -192,9 +192,9 @@ class AdapterNews(
 
     fun updateReplyBadge(newsId: String?) {
         if (newsId.isNullOrEmpty()) return
-        val index = if (parentNews != null) {
+        val index = if (parentNewsItem != null) {
             when {
-                parentNews.id == newsId -> 0
+                parentNewsItem.id == newsId -> 0
                 else -> list.indexOfFirst { it.id == newsId }.let { if (it != -1) it + 1 else -1 }
             }
         } else {
@@ -288,7 +288,7 @@ class AdapterNews(
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
                         NewsActions.deletePost(context, mRealm, news, list as MutableList<RealmNews?>, teamName, listener)
-                        val displayList = if (parentNews != null) listOf(parentNews) + list else list.toList()
+                        val displayList = if (parentNewsItem != null) listOf(parentNewsItem) + list else list.toList()
                         submitList(displayList)
                     }
                     .setNegativeButton(R.string.cancel, null)
@@ -367,8 +367,8 @@ class AdapterNews(
 
     fun updateList(newList: List<RealmNews?>) {
         list.clear()
-        list.addAll(newList.filterNotNull())
-        val displayList = if (parentNews != null) listOf(parentNews) + list else list.toList()
+        list.addAll(newList.filterNotNull().map { it.asUnmanaged() })
+        val displayList = if (parentNewsItem != null) listOf(parentNewsItem) + list else list.toList()
         submitList(displayList)
     }
 
@@ -438,14 +438,14 @@ class AdapterNews(
         with(viewHolder.rowNewsBinding) {
             btnShowReply.text = String.format(Locale.getDefault(),"(%d)", replies.size)
             btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
-            val visible = replies.isNotEmpty() && !(position == 0 && parentNews != null) && canReply()
+            val visible = replies.isNotEmpty() && !(position == 0 && parentNewsItem != null) && canReply()
             btnShowReply.visibility = if (visible) View.VISIBLE else View.GONE
         }
     }
 
     private fun getNews(holder: RecyclerView.ViewHolder, position: Int): RealmNews {
         val news = getItem(position)
-        val colorRes = if (parentNews != null && position == 0) {
+        val colorRes = if (parentNewsItem != null && position == 0) {
             R.color.md_blue_50
         } else {
             R.color.md_white_1000
