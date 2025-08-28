@@ -7,7 +7,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import org.ole.planet.myplanet.utilities.DiffUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -17,7 +19,13 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemAiResponseMessageBinding
 import org.ole.planet.myplanet.databinding.ItemUserMessageBinding
 
-class ChatAdapter(private val chatList: ArrayList<String>, val context: Context, private val recyclerView: RecyclerView) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+class ChatAdapter(val context: Context, private val recyclerView: RecyclerView) :
+    ListAdapter<String, RecyclerView.ViewHolder>(
+        DiffUtils.itemCallback(
+            { old, new -> old == new },
+            { old, new -> old == new }
+        )
+    ) {
     private lateinit var textUserMessageBinding: ItemUserMessageBinding
     private lateinit var textAiMessageBinding: ItemAiResponseMessageBinding
     var responseSource: Int = RESPONSE_SOURCE_UNKNOWN
@@ -99,26 +107,30 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
     }
 
     fun addQuery(query: String) {
-        chatList.add(query)
-        notifyItemInserted(chatList.size - 1)
-        scrollToLastItem()
+        val updated = currentList.toMutableList()
+        updated.add(query)
+        submitList(updated) {
+            scrollToLastItem(updated.size)
+        }
     }
 
     fun addResponse(response: String) {
-        chatList.add(response)
-        lastAnimatedPosition = chatList.size - 1
-        notifyItemInserted(chatList.size - 1)
-        scrollToLastItem()
+        val updated = currentList.toMutableList()
+        updated.add(response)
+        lastAnimatedPosition = updated.size - 1
+        submitList(updated) {
+            scrollToLastItem(updated.size)
+        }
     }
 
     fun clearData() {
-        val size = chatList.size
-        chatList.clear()
-        notifyItemRangeRemoved(0, size)
+        val updated = currentList.toMutableList()
+        updated.clear()
+        submitList(updated)
     }
 
-    private fun scrollToLastItem() {
-        val lastPosition = chatList.size - 1
+    private fun scrollToLastItem(listSize: Int = currentList.size) {
+        val lastPosition = listSize - 1
         if (lastPosition >= 0) {
             recyclerView.scrollToPosition(lastPosition)
         }
@@ -143,7 +155,7 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        val chatItem = chatList[position]
+        val chatItem = getItem(position)
         when (holder.itemViewType) {
             viewTypeQuery -> {
                 val queryViewHolder = holder as QueryViewHolder
@@ -161,10 +173,6 @@ class ChatAdapter(private val chatList: ArrayList<String>, val context: Context,
         holder.itemView.setOnClickListener {
             chatItemClickListener?.onChatItemClick(position, chatItem)
         }
-    }
-
-    override fun getItemCount(): Int {
-        return chatList.size
     }
 
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
