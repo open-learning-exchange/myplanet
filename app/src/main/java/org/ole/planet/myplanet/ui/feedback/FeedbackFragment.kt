@@ -7,7 +7,7 @@ import android.view.ViewGroup
 import android.widget.RadioButton
 import android.widget.Toast
 import androidx.fragment.app.DialogFragment
-import androidx.fragment.app.viewModels
+import androidx.fragment.app.activityViewModels
 import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentFeedbackBinding
@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.utilities.Utilities
 class FeedbackFragment : DialogFragment(), View.OnClickListener {
     private var _binding: FragmentFeedbackBinding? = null
     private val binding get() = _binding!!
-    private val viewModel: SubmitFeedbackViewModel by viewModels()
+    private val viewModel: SubmitFeedbackViewModel by activityViewModels()
     private var model: RealmUserModel? = null
     var user: String? = ""
 
@@ -46,7 +46,7 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
 
         viewModel.submitStatus.observe(viewLifecycleOwner) { result ->
             result.onSuccess {
-                Utilities.toast(activity, R.string.feedback_saved.toString())
+                Utilities.toast(activity, getString(R.string.feedback_saved))
                 Toast.makeText(
                     activity,
                     R.string.thank_you_your_feedback_has_been_submitted,
