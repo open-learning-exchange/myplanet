@@ -16,8 +16,8 @@ import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
-import org.ole.planet.myplanet.BuildConfig
 import java.io.File
+import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
