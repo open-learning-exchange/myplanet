@@ -3,12 +3,12 @@ package org.ole.planet.myplanet.service.sync
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import java.util.concurrent.ConcurrentHashMap
+import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import java.util.concurrent.ConcurrentHashMap
-import kotlin.math.roundToInt
 
 data class SyncMetrics(
     val tableName: String,
