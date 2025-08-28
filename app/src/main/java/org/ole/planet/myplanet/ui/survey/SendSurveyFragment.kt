@@ -25,7 +25,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 @AndroidEntryPoint
 class SendSurveyFragment : BaseDialogFragment() {
     private lateinit var fragmentSendSurveyBinding: FragmentSendSurveyBinding
-    lateinit var mRealm: Realm
+    private var mRealm: Realm? = null
+    private lateinit var users: List<RealmUserModel>
     @Inject
     lateinit var databaseService: DatabaseService
     override val key: String
@@ -33,7 +34,9 @@ class SendSurveyFragment : BaseDialogFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentSendSurveyBinding = FragmentSendSurveyBinding.inflate(inflater, container, false)
-        mRealm = databaseService.realmInstance
+        databaseService.withRealm { realm ->
+            users = realm.where(RealmUserModel::class.java).findAll().let { realm.copyFromRealm(it) }
+        }
         if (TextUtils.isEmpty(id)) {
             dismiss()
             return fragmentSendSurveyBinding.root
@@ -43,24 +46,27 @@ class SendSurveyFragment : BaseDialogFragment() {
     }
 
     private fun createSurveySubmission(userId: String?) {
-        val mRealm = databaseService.realmInstance
-        val exam = mRealm.where(RealmStepExam::class.java).equalTo("id", id).findFirst()
-        mRealm.beginTransaction()
-        var sub = mRealm.where(RealmSubmission::class.java).equalTo("userId", userId)
-            .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) id + "@" + exam?.courseId else id)
-            .sort("lastUpdateTime", Sort.DESCENDING).equalTo("status", "pending").findFirst()
-        sub = createSubmission(sub, mRealm)
-        sub.parentId = if (!TextUtils.isEmpty(exam?.courseId)) id + "@" + exam?.courseId else id
-        sub.userId = userId
-        sub.type = "survey"
-        sub.status = "pending"
-        sub.startTime = Date().time
-        mRealm.commitTransaction()
+        databaseService.withRealm { realm ->
+            val exam = realm.where(RealmStepExam::class.java).equalTo("id", id).findFirst()
+            realm.executeTransaction { r ->
+                var sub = r.where(RealmSubmission::class.java).equalTo("userId", userId)
+                    .equalTo(
+                        "parentId",
+                        if (!TextUtils.isEmpty(exam?.courseId)) id + "@" + exam?.courseId else id,
+                    )
+                    .sort("lastUpdateTime", Sort.DESCENDING).equalTo("status", "pending").findFirst()
+                sub = createSubmission(sub, r)
+                sub.parentId = if (!TextUtils.isEmpty(exam?.courseId)) id + "@" + exam?.courseId else id
+                sub.userId = userId
+                sub.type = "survey"
+                sub.status = "pending"
+                sub.startTime = Date().time
+            }
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val users: List<RealmUserModel> = mRealm.where(RealmUserModel::class.java).findAll()
         initListView(users)
         fragmentSendSurveyBinding.sendSurvey.setOnClickListener {
             for (i in fragmentSendSurveyBinding.listUsers.selectedItemsList.indices) {
@@ -76,5 +82,14 @@ class SendSurveyFragment : BaseDialogFragment() {
         val adapter = ArrayAdapter(requireActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, users)
         fragmentSendSurveyBinding.listUsers.choiceMode = ListView.CHOICE_MODE_MULTIPLE
         fragmentSendSurveyBinding.listUsers.adapter = adapter
+    }
+
+    override fun onDestroy() {
+        mRealm?.let {
+            if (!it.isClosed) {
+                it.close()
+            }
+        }
+        super.onDestroy()
     }
 }
