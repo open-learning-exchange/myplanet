@@ -27,6 +27,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runBlocking
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
@@ -173,34 +174,35 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private fun refreshResourcesData() {
         if (!isAdded || requireActivity().isFinishing) return
 
-        try {
-            map = getRatings(mRealm, "resource", model?.id)
-            val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
-            adapterLibrary.setLibraryList(libraryList)
-            adapterLibrary.setRatingMap(map!!)
-            adapterLibrary.notifyDataSetChanged()
-            checkList()
-            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                map = getRatings(mRealm, "resource", model?.id)
+                val libraryList = libraryRepository.getAllLibraryList()
+                adapterLibrary.setLibraryList(libraryList)
+                adapterLibrary.setRatingMap(map!!)
+                adapterLibrary.notifyDataSetChanged()
+                checkList()
+                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
 
-            if (searchTags.isNotEmpty() || etSearch.text?.isNotEmpty() == true) {
-                adapterLibrary.setLibraryList(
-                    applyFilter(
-                        filterLibraryByTag(
-                            etSearch.text.toString().trim(), searchTags
+                if (searchTags.isNotEmpty() || etSearch.text?.isNotEmpty() == true) {
+                    adapterLibrary.setLibraryList(
+                        applyFilter(
+                            filterLibraryByTag(
+                                etSearch.text.toString().trim(), searchTags
+                            )
                         )
                     )
-                )
-                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+                    showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
         map = getRatings(mRealm, "resource", model?.id)
-        val libraryList: List<RealmMyLibrary?> = getList(RealmMyLibrary::class.java).filterIsInstance<RealmMyLibrary?>()
+        val libraryList = runBlocking { libraryRepository.getAllLibraryList() }
         adapterLibrary = AdapterResource(requireActivity(), libraryList, map!!, mRealm)
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
