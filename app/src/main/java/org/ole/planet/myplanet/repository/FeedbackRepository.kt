@@ -19,6 +19,14 @@ interface FeedbackRepository {
     suspend fun getFeedbackById(id: String?): RealmFeedback?
     suspend fun closeFeedback(id: String?)
     suspend fun addReply(id: String?, obj: JsonObject)
+    suspend fun submitFeedback(
+        user: String?,
+        urgent: String,
+        type: String,
+        message: String,
+        item: String? = null,
+        state: String? = null,
+    )
 }
 
 class FeedbackRepositoryImpl @Inject constructor(
@@ -78,6 +86,38 @@ class FeedbackRepositoryImpl @Inject constructor(
                 msgArray.add(obj)
                 feedback.setMessages(msgArray)
             }
+        }
+    }
+
+    override suspend fun submitFeedback(
+        user: String?,
+        urgent: String,
+        type: String,
+        message: String,
+        item: String?,
+        state: String?,
+    ) {
+        databaseService.executeTransactionAsync { realm ->
+            val feedback = realm.createObject(RealmFeedback::class.java, java.util.UUID.randomUUID().toString())
+            feedback.title = if (state != null) "Question regarding /" + state else "Question regarding /"
+            feedback.openTime = java.util.Date().time
+            feedback.url = if (state != null) "/" + state else "/"
+            feedback.owner = user
+            feedback.source = user
+            feedback.status = "Open"
+            feedback.priority = urgent
+            feedback.type = type
+            feedback.parentCode = "dev"
+            if (state != null) feedback.state = state
+            if (item != null) feedback.item = item
+            val obj = JsonObject().apply {
+                addProperty("message", message)
+                addProperty("time", java.util.Date().time.toString() + "")
+                addProperty("user", user + "")
+            }
+            val msgArray = JsonArray()
+            msgArray.add(obj)
+            feedback.setMessages(msgArray)
         }
     }
 }
