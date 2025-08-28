@@ -47,9 +47,7 @@ class NotificationsFragment : Fragment() {
     private lateinit var userId: String
     private var notificationUpdateListener: NotificationListener? = null
     private lateinit var dashboardActivity: DashboardActivity
-    private val viewModel: NotificationsViewModel by viewModels(
-        extrasProducer = { defaultViewModelCreationExtras }
-    )
+    private val viewModel: NotificationsViewModel by viewModels()
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
