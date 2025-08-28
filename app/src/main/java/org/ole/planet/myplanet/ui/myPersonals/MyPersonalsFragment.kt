@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
@@ -17,8 +18,10 @@ import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
+import org.ole.planet.myplanet.repository.MyPersonalRepository
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
@@ -31,6 +34,8 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     lateinit var uploadManager: UploadManager
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var myPersonalRepository: MyPersonalRepository
     fun refreshFragment() {
         if (isAdded) {
             setAdapter()
@@ -63,16 +68,17 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
 
     private fun setAdapter() {
         val model = UserProfileDbHandler(requireContext()).userModel
-        val realmMyPersonals: List<RealmMyPersonal> = mRealm.where(RealmMyPersonal::class.java)
-            .equalTo("userId", model?.id).findAll()
-        val personalAdapter = AdapterMyPersonal(requireActivity(), realmMyPersonals)
-        personalAdapter.setListener(this)
-        personalAdapter.setRealm(mRealm)
-        fragmentMyPersonalsBinding.rvMypersonal.adapter = personalAdapter
-        showNodata()
-        mRealm.addChangeListener {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val realmMyPersonals = myPersonalRepository.getMyPersonalsByUserId(model?.id ?: "")
+            val personalAdapter = AdapterMyPersonal(requireActivity(), realmMyPersonals)
+            personalAdapter.setListener(this@MyPersonalsFragment)
+            personalAdapter.setRealm(mRealm)
+            fragmentMyPersonalsBinding.rvMypersonal.adapter = personalAdapter
             showNodata()
-            personalAdapter.notifyDataSetChanged()
+            mRealm.addChangeListener {
+                showNodata()
+                personalAdapter.notifyDataSetChanged()
+            }
         }
     }
 
