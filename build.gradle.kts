@@ -24,6 +24,7 @@ buildscript {
         classpath("com.google.dagger:hilt-android-gradle-plugin:2.57.1")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
         classpath("org.jetbrains.kotlin:kotlin-serialization:$kotlinVersion")
+        classpath("org.jetbrains.kotlin:compose-compiler-gradle-plugin:$kotlinVersion")
         // NOTE: Do not place your application dependencies here
     }
 }
