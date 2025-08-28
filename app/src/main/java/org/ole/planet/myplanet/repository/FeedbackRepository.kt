@@ -5,6 +5,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.RealmChangeListener
 import io.realm.RealmResults
+import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -28,9 +29,12 @@ class FeedbackRepositoryImpl @Inject constructor(
             callbackFlow {
                 val feedbackList: RealmResults<RealmFeedback> =
                     if (userModel?.isManager() == true) {
-                        realm.where(RealmFeedback::class.java).findAllAsync()
+                        realm.where(RealmFeedback::class.java)
+                            .sort("openTime", Sort.DESCENDING)
+                            .findAllAsync()
                     } else {
                         realm.where(RealmFeedback::class.java).equalTo("owner", userModel?.name)
+                            .sort("openTime", Sort.DESCENDING)
                             .findAllAsync()
                     }
 
