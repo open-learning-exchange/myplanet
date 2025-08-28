@@ -16,69 +16,170 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.androidDecry
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
-import org.ole.planet.myplanet.utilities.Utilities
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
-class ManagerSync private constructor(context: Context) {
+class ManagerSync private constructor(private val context: Context) {
     private val settings: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     private val dbService: DatabaseService = DatabaseService(context)
 
     fun login(userName: String?, password: String?, listener: SyncListener) {
-        listener.onSyncStarted()
-        val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
-        apiInterface?.getJsonObject("Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP), String.format("%s/_users/%s", UrlUtils.getUrl(), "org.couchdb.user:$userName"))
-            ?.enqueue(object : Callback<JsonObject?> {
+        try {
+            if (userName.isNullOrBlank() || password.isNullOrBlank()) {
+                listener.onSyncFailed("Username and password are required.")
+                return
+            }
+            
+            listener.onSyncStarted()
+            
+            val apiInterface = ApiClient.client.create(ApiInterface::class.java)
+            if (apiInterface == null) {
+                listener.onSyncFailed("Network client not available.")
+                return
+            }
+            
+            val authHeader = try {
+                "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                listener.onSyncFailed("Authentication encoding failed.")
+                return
+            }
+            
+            val userUrl = try {
+                String.format("%s/_users/%s", UrlUtils.getUrl(), "org.couchdb.user:$userName")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                listener.onSyncFailed("Invalid server URL.")
+                return
+            }
+
+            apiInterface.getJsonObject(authHeader, userUrl).enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                    if (response.isSuccessful && response.body() != null) {
+                    try {
+                        when {
+                            !response.isSuccessful -> {
+                                val errorMsg = when (response.code()) {
+                                    401 -> "Name or password is incorrect."
+                                    404 -> "User not found."
+                                    500 -> "Server error. Please try again later."
+                                    else -> "Login failed. Error code: ${response.code()}"
+                                }
+                                listener.onSyncFailed(errorMsg)
+                                return
+                            }
+
+                            response.body() == null -> {
+                                listener.onSyncFailed("Empty response from server.")
+                                return
+                            }
+                        }
+
                         val jsonDoc = response.body()
                         if (jsonDoc?.has("derived_key") == true && jsonDoc.has("salt")) {
-//                          val decrypt = AndroidDecrypter()
-                            val derivedKey = jsonDoc["derived_key"].asString
-                            val salt = jsonDoc["salt"].asString
-                            if (androidDecrypter(userName, password, derivedKey, salt)) {
-                                dbService.withRealm { realm ->
-                                    checkManagerAndInsert(jsonDoc, realm, listener)
+                            try {
+                                val derivedKey = jsonDoc["derived_key"].asString
+                                val salt = jsonDoc["salt"].asString
+
+                                if (androidDecrypter(userName, password, derivedKey, salt)) {
+                                    dbService.withRealm { realm ->
+                                        checkManagerAndInsert(jsonDoc, realm, listener)
+                                    }
+                                } else {
+                                    listener.onSyncFailed("Authentication failed. Invalid credentials.")
                                 }
-                            } else {
-                                listener.onSyncFailed("Name or password is incorrect.")
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                listener.onSyncFailed("Authentication processing failed.")
                             }
                         } else {
-                            listener.onSyncFailed("JSON response is missing required keys.")
+                            listener.onSyncFailed("Server response missing authentication data.")
                         }
-                    } else {
-                        listener.onSyncFailed("Name or password is incorrect.")
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        listener.onSyncFailed("Login processing failed.")
                     }
                 }
 
                 override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                    listener.onSyncFailed("Server not reachable.")
+                    try {
+                        t.printStackTrace()
+                        val errorMsg = when (t) {
+                            is java.net.UnknownHostException -> "Server not reachable. Check your internet connection."
+                            is java.net.SocketTimeoutException -> "Connection timeout. Please try again."
+                            is java.net.ConnectException -> "Unable to connect to server."
+                            else -> "Network error: ${t.message ?: "Unknown error"}"
+                        }
+                        listener.onSyncFailed(errorMsg)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        listener.onSyncFailed("Network error occurred.")
+                    }
                 }
             })
+        } catch (e: Exception) {
+            e.printStackTrace()
+            listener.onSyncFailed("Login initialization failed.")
+        }
     }
 
     fun syncAdmin() {
-        val `object` = JsonObject()
-        val selector = JsonObject()
-        selector.addProperty("isUserAdmin", true)
-        `object`.add("selector", selector)
-        val apiInterface = ApiClient.client?.create(ApiInterface::class.java)
-        apiInterface?.findDocs(Utilities.header, "application/json", UrlUtils.getUrl() + "/_users/_find", `object`)?.enqueue(object : Callback<JsonObject?> {
-            override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                if (response.body() != null) {
-                    settings.edit { putString("communityLeaders", "${response.body()}") }
-                    val array = JsonUtils.getJsonArray("docs", response.body())
-                    if (array.size() > 0) {
-                        settings.edit { putString("user_admin", Gson().toJson(array[0])) }
-                    }
-                }
+        try {
+            val `object` = JsonObject()
+            val selector = JsonObject()
+            selector.addProperty("isUserAdmin", true)
+            `object`.add("selector", selector)
+            
+            val apiInterface = ApiClient.client.create(ApiInterface::class.java)
+            if (apiInterface == null) {
+                return
+            }
+            
+            val header = UrlUtils.header
+            if (header.isBlank()) {
+                return
+            }
+            
+            val url = try {
+                UrlUtils.getUrl() + "/_users/_find"
+            } catch (e: Exception) {
+                e.printStackTrace()
+                return
             }
 
-            override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                t.printStackTrace()
-            }
-        })
+            apiInterface.findDocs(header, "application/json", url, `object`).enqueue(object : Callback<JsonObject?> {
+                override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
+                    try {
+                        if (response.isSuccessful && response.body() != null) {
+                            val responseBody = response.body()
+                            settings.edit { putString("communityLeaders", "$responseBody") }
+
+                            val array = JsonUtils.getJsonArray("docs", responseBody)
+                            if (array != null && array.size() > 0) {
+                                try {
+                                    settings.edit { putString("user_admin", Gson().toJson(array[0])) }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+
+                override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
+                    try {
+                        t.printStackTrace()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            })
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun checkManagerAndInsert(jsonDoc: JsonObject?, realm: Realm, listener: SyncListener) {

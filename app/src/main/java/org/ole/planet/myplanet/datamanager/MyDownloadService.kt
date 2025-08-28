@@ -21,8 +21,6 @@ import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
-import java.io.InputStream
-import java.io.OutputStream
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,7 +34,7 @@ import org.ole.planet.myplanet.utilities.FileUtils.availableExternalMemorySize
 import org.ole.planet.myplanet.utilities.FileUtils.externalMemoryAvailable
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getSDPathFromUrl
-import org.ole.planet.myplanet.utilities.Utilities.header
+import org.ole.planet.myplanet.utilities.UrlUtils.header
 import retrofit2.Call
 
 class MyDownloadService : Service() {
@@ -104,10 +102,48 @@ class MyDownloadService : Service() {
     }
 
     private fun initDownload(url: String, fromSync: Boolean) {
-        val retrofitInterface = ApiClient.client?.create(ApiInterface::class.java)
         try {
-            request = retrofitInterface?.downloadFile(header, url)
-            val response = request?.clone()?.execute()
+            if (url.isBlank()) {
+                downloadFailed("Invalid URL - empty or blank", fromSync)
+                return
+            }
+            
+            val retrofitInterface = ApiClient.client.create(ApiInterface::class.java)
+            if (retrofitInterface == null) {
+                downloadFailed("Network client not available", fromSync)
+                return
+            }
+            
+            val authHeader = header
+            if (authHeader.isBlank()) {
+                downloadFailed("Authentication header not available", fromSync)
+                return
+            }
+            
+            request = retrofitInterface.downloadFile(authHeader, url)
+            if (request == null) {
+                downloadFailed("Failed to create download request", fromSync)
+                return
+            }
+            
+            val response = try {
+                request?.clone()?.execute()
+            } catch (e: java.net.UnknownHostException) {
+                downloadFailed("Server not reachable. Check internet connection.", fromSync)
+                return
+            } catch (e: java.net.SocketTimeoutException) {
+                downloadFailed("Connection timeout. Please try again.", fromSync)
+                return
+            } catch (e: java.net.ConnectException) {
+                downloadFailed("Unable to connect to server", fromSync)
+                return
+            } catch (e: IOException) {
+                downloadFailed("Network error: ${e.localizedMessage ?: "Unknown IO error"}", fromSync)
+                return
+            } catch (e: Exception) {
+                downloadFailed("Network error: ${e.localizedMessage ?: "Unknown error"}", fromSync)
+                return
+            }
 
             when {
                 response == null -> {
@@ -115,26 +151,52 @@ class MyDownloadService : Service() {
                 }
                 response.isSuccessful -> {
                     val responseBody = response.body()
-                    if (!checkStorage(responseBody?.contentLength() ?: 0L)) {
-                        responseBody?.let { downloadFile(it, url) }
+                    if (responseBody == null) {
+                        downloadFailed("Empty response body", fromSync)
+                        return
+                    }
+                    
+                    try {
+                        val contentLength = responseBody.contentLength()
+                        if (contentLength > 0 && !checkStorage(contentLength)) {
+                            downloadFile(responseBody, url)
+                        } else if (contentLength <= 0) {
+                            downloadFailed("Invalid file size", fromSync)
+                        }
+                    } catch (e: Exception) {
+                        downloadFailed("Storage check failed: ${e.localizedMessage ?: "Unknown error"}", fromSync)
                     }
                 }
                 else -> {
-                    val message = if (response.code() == 404) "File Not Found" else "Connection failed (${response.code()})"
-                    downloadFailed(message, fromSync)
+                    val errorMessage = when (response.code()) {
+                        401 -> "Unauthorized access"
+                        403 -> "Forbidden - Access denied"
+                        404 -> "File not found"
+                        408 -> "Request timeout"
+                        500 -> "Server error"
+                        502 -> "Bad gateway"
+                        503 -> "Service unavailable"
+                        504 -> "Gateway timeout"
+                        else -> "Connection failed (${response.code()})"
+                    }
+                    downloadFailed(errorMessage, fromSync)
 
-                    val responseString = response.toString()
-                    val regex = Regex("url=([^}]*)")
-                    val matchResult = regex.find(responseString)
-
-                    val url = matchResult?.groupValues?.get(1)
                     if (response.code() == 404) {
-                        createLog("File Not Found", "$url")
+                        try {
+                            val responseString = response.toString()
+                            val regex = Regex("url=([^}]*)")
+                            val matchResult = regex.find(responseString)
+                            val extractedUrl = matchResult?.groupValues?.get(1)
+                            createLog("File Not Found", "$extractedUrl")
+                        } catch (e: Exception) {
+                            createLog("File Not Found", url)
+                        }
                     }
                 }
             }
-        } catch (e: IOException) {
-            downloadFailed(e.localizedMessage ?: "Download failed due to an IO error", fromSync)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            downloadFailed("Download initialization failed: ${e.localizedMessage ?: "Unknown error"}", fromSync)
         }
     }
 
@@ -166,41 +228,43 @@ class MyDownloadService : Service() {
     @Throws(IOException::class)
     private fun downloadFile(body: ResponseBody, url: String) {
         val fileSize = body.contentLength()
-        val bis: InputStream = BufferedInputStream(body.byteStream(), 1024 * 8)
         outputFile = getSDPathFromUrl(url)
-        val output: OutputStream = FileOutputStream(outputFile)
         var total: Long = 0
         val startTime = System.currentTimeMillis()
         var timeCount = 1
 
         try {
-            while (true) {
-                val readCount = bis.read(data)
-                if (readCount == -1) break
+            BufferedInputStream(body.byteStream(), 1024 * 8).use { bis ->
+                FileOutputStream(outputFile).use { output ->
+                    while (true) {
+                        val readCount = bis.read(data)
+                        if (readCount == -1) break
 
-                if (readCount > 0) {
-                    total += readCount
-                    totalFileSize = (fileSize / 1024.0).toInt()
-                    val current = (total / 1024.0).roundToInt().toDouble()
-                    val progress = (total * 100 / fileSize).toInt()
-                    val currentTime = System.currentTimeMillis() - startTime
+                        if (readCount > 0) {
+                            total += readCount
+                            totalFileSize = (fileSize / 1024.0).toInt()
+                            val current = (total / 1024.0).roundToInt().toDouble()
+                            val progress = (total * 100 / fileSize).toInt()
+                            val currentTime = System.currentTimeMillis() - startTime
 
-                    val download = Download().apply {
-                        fileName = getFileNameFromUrl(url)
-                        totalFileSize = this@MyDownloadService.totalFileSize
+                            val download = Download().apply {
+                                fileName = getFileNameFromUrl(url)
+                                totalFileSize = this@MyDownloadService.totalFileSize
+                            }
+
+                            if (currentTime > 1000 * timeCount) {
+                                download.currentFileSize = current.toInt()
+                                download.progress = progress
+                                sendNotification(download)
+                                timeCount++
+                            }
+                            output.write(data, 0, readCount)
+                        }
                     }
-
-                    if (currentTime > 1000 * timeCount) {
-                        download.currentFileSize = current.toInt()
-                        download.progress = progress
-                        sendNotification(download)
-                        timeCount++
-                    }
-                    output.write(data, 0, readCount)
                 }
             }
         } finally {
-            closeStreams(output, bis, url)
+            onDownloadComplete(url)
         }
     }
 
@@ -216,14 +280,6 @@ class MyDownloadService : Service() {
             }
             else -> false
         }
-    }
-
-    @Throws(IOException::class)
-    private fun closeStreams(output: OutputStream, bis: InputStream, url: String) {
-        output.flush()
-        output.close()
-        bis.close()
-        onDownloadComplete(url)
     }
 
     private fun sendNotification(download: Download) {

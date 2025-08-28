@@ -17,8 +17,8 @@ object MapTileUtils {
             for (s in tiles) {
                 val outFile = File(Environment.getExternalStorageDirectory().toString() + "/osmdroid", s)
                 assetManager.open(s).use { input ->
-                    FileOutputStream(outFile).use { out ->
-                        copyFile(input, out)
+                    FileOutputStream(outFile).use { output ->
+                        copyFile(input, output)
                     }
                 }
             }

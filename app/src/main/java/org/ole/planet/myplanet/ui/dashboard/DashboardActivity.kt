@@ -21,6 +21,7 @@ import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.MenuItemCompat
@@ -92,7 +93,7 @@ import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils.totalAvailableMemoryRatio
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
-import org.ole.planet.myplanet.utilities.NotificationUtil
+import org.ole.planet.myplanet.utilities.NotificationUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
@@ -114,7 +115,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private val realmListeners = mutableListOf<RealmListener>()
     private val dashboardViewModel: DashboardViewModel by viewModels()
     private lateinit var challengeHelper: ChallengeHelper
-    private lateinit var notificationManager: NotificationUtil.NotificationManager
+    private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
     private var lastNotificationCheckTime = 0L
     private val notificationCheckThrottleMs = 5000L
@@ -133,7 +134,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         checkUser()
         initViews()
         updateAppTitle()
-        notificationManager = NotificationUtil.getInstance(this)
+        notificationManager = NotificationUtils.getInstance(this)
         if (handleGuestAccess()) return
         setupNavigation()
         handleInitialFragment()
@@ -339,30 +340,39 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val notificationId = intent.getStringExtra("notification_id")
 
             notificationId?.let {
-                notificationManager.clearNotification("${notificationType}_$it")
+                notificationManager.clearNotification(it)
+                markDatabaseNotificationAsRead(it)
             }
 
             when (notificationType) {
-                NotificationUtil.TYPE_SURVEY -> {
+                NotificationUtils.TYPE_SURVEY -> {
                     val surveyId = intent.getStringExtra("surveyId")
-                    openCallFragment(SurveyFragment().apply {
-                        arguments = Bundle().apply {
-                            surveyId?.let { putString("surveyId", it) }
-                        }
-                    })
+                    if (surveyId != null) {
+                        openCallFragment(SurveyFragment().apply {
+                            arguments = Bundle().apply {
+                                putString("surveyId", surveyId)
+                            }
+                        })
+                    } else {
+                        openNotificationsList(user?.id ?: "")
+                    }
                 }
-                NotificationUtil.TYPE_TASK -> {
+                NotificationUtils.TYPE_TASK -> {
                     val taskId = intent.getStringExtra("taskId")
-                    openMyFragment(TeamFragment().apply {
-                        arguments = Bundle().apply {
-                            taskId?.let { putString("taskId", it) }
-                        }
-                    })
+                    if (taskId != null) {
+                        openMyFragment(TeamFragment().apply {
+                            arguments = Bundle().apply {
+                                putString("taskId", taskId)
+                            }
+                        })
+                    } else {
+                        openNotificationsList(user?.id ?: "")
+                    }
                 }
-                NotificationUtil.TYPE_STORAGE -> {
+                NotificationUtils.TYPE_STORAGE -> {
                     startActivity(Intent(this, SettingActivity::class.java))
                 }
-                NotificationUtil.TYPE_JOIN_REQUEST -> {
+                NotificationUtils.TYPE_JOIN_REQUEST -> {
                     val teamName = intent.getStringExtra("teamName")
                     openMyFragment(TeamFragment().apply {
                         arguments = Bundle().apply {
@@ -384,16 +394,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val relatedId = intent.getStringExtra("related_id")
             
             when (notificationType) {
-                NotificationUtil.TYPE_SURVEY -> {
+                NotificationUtils.TYPE_SURVEY -> {
                     handleSurveyNavigation(relatedId)
                 }
-                NotificationUtil.TYPE_TASK -> {
+                NotificationUtils.TYPE_TASK -> {
                     handleTaskNavigation(relatedId)
                 }
-                NotificationUtil.TYPE_JOIN_REQUEST -> {
+                NotificationUtils.TYPE_JOIN_REQUEST -> {
                     handleJoinRequestNavigation(relatedId)
                 }
-                NotificationUtil.TYPE_RESOURCE -> {
+                NotificationUtils.TYPE_RESOURCE -> {
                     openCallFragment(ResourcesFragment(), "Resources")
                 }
             }
@@ -560,7 +570,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val fromLogin = intent.getBooleanExtra("from_login", false)
         if (fromLogin || !notificationsShownThisSession) {
             notificationsShownThisSession = true
-            checkAndCreateNewNotifications()
+            lifecycleScope.launch {
+                kotlinx.coroutines.delay(1000)
+                checkAndCreateNewNotifications()
+            }
         }
     }
 
@@ -569,7 +582,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         lifecycleScope.launch(Dispatchers.IO) {
             var unreadCount = 0
-            val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
+            val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
 
             try {
                 dashboardViewModel.updateResourceNotification(userId)
@@ -591,8 +604,18 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         openNotificationsList(userId ?: "")
                     }
 
-                    newNotifications.forEach { config ->
-                        notificationManager.showNotification(config)
+                    val groupedNotifications = newNotifications.groupBy { it.type }
+                    
+                    groupedNotifications.forEach { (type, notifications) ->
+                        when {
+                            notifications.size == 1 -> {
+                                notificationManager.showNotification(notifications.first())
+                            }
+                            notifications.size > 1 -> {
+                                val summaryConfig = createSummaryNotification(type, notifications.size)
+                                notificationManager.showNotification(summaryConfig)
+                            }
+                        }
                     }
 
                 } catch (e: Exception) {
@@ -602,8 +625,89 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun createNotifications(realm: Realm, userId: String?): List<NotificationUtil.NotificationConfig> {
-        val newNotifications = mutableListOf<NotificationUtil.NotificationConfig>()
+    private fun markDatabaseNotificationAsRead(notificationId: String) {
+        try {
+            val userId = user?.id
+            if (notificationId.startsWith("summary_")) {
+                val type = notificationId.removePrefix("summary_")
+                mRealm.executeTransactionAsync { realm ->
+                    realm.where(RealmNotification::class.java)
+                        .equalTo("userId", userId)
+                        .equalTo("type", type)
+                        .equalTo("isRead", false)
+                        .findAll()
+                        .forEach { it.isRead = true }
+                }
+            } else {
+                mRealm.executeTransactionAsync { realm ->
+                    val notification = realm.where(RealmNotification::class.java)
+                        .equalTo("id", notificationId)
+                        .findFirst()
+                    notification?.isRead = true
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun createSummaryNotification(type: String, count: Int): NotificationUtils.NotificationConfig {
+        val summaryId = "summary_${type}"
+        
+        return when (type) {
+            "survey" -> NotificationUtils.NotificationConfig(
+                id = summaryId,
+                type = type,
+                title = "📋 New Surveys Available",
+                message = "$count new surveys are waiting for you",
+                priority = NotificationCompat.PRIORITY_HIGH,
+                category = NotificationCompat.CATEGORY_REMINDER
+            )
+            "task" -> NotificationUtils.NotificationConfig(
+                id = summaryId,
+                type = type,
+                title = "✅ New Tasks Assigned",
+                message = "$count new tasks have been assigned to you",
+                priority = NotificationCompat.PRIORITY_HIGH,
+                category = NotificationCompat.CATEGORY_REMINDER
+            )
+            "join_request" -> NotificationUtils.NotificationConfig(
+                id = summaryId,
+                type = type,
+                title = "👥 Team Join Requests",
+                message = "$count new team join requests to review",
+                priority = NotificationCompat.PRIORITY_DEFAULT,
+                category = NotificationCompat.CATEGORY_SOCIAL
+            )
+            "resource" -> NotificationUtils.NotificationConfig(
+                id = summaryId,
+                type = type,
+                title = "📚 New Resources Available",
+                message = "$count new resources have been added",
+                priority = NotificationCompat.PRIORITY_DEFAULT,
+                category = NotificationCompat.CATEGORY_RECOMMENDATION
+            )
+            "storage" -> NotificationUtils.NotificationConfig(
+                id = summaryId,
+                type = type,
+                title = "⚠️ Storage Warnings",
+                message = "$count storage warnings need attention",
+                priority = NotificationCompat.PRIORITY_DEFAULT,
+                category = NotificationCompat.CATEGORY_STATUS
+            )
+            else -> NotificationUtils.NotificationConfig(
+                id = summaryId,
+                type = type,
+                title = "📱 App Notifications",
+                message = "$count new notifications",
+                priority = NotificationCompat.PRIORITY_DEFAULT,
+                category = NotificationCompat.CATEGORY_MESSAGE
+            )
+        }
+    }
+
+    private fun createNotifications(realm: Realm, userId: String?): List<NotificationUtils.NotificationConfig> {
+        val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
         createSurveyDatabaseNotifications(realm, userId)
         createTaskDatabaseNotifications(realm, userId)
         createStorageDatabaseNotifications(realm, userId)
@@ -623,17 +727,21 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         return newNotifications
     }
 
-    private fun createNotificationConfigFromDatabase(dbNotification: RealmNotification): NotificationUtil.NotificationConfig? {
+    private fun createNotificationConfigFromDatabase(dbNotification: RealmNotification): NotificationUtils.NotificationConfig? {
         return when (dbNotification.type.lowercase()) {
             "survey" -> notificationManager.createSurveyNotification(
                 dbNotification.id, 
                 dbNotification.message
+            ).copy(
+                extras = mapOf("surveyId" to (dbNotification.relatedId ?: dbNotification.id))
             )
             "task" -> {
                 val parts = dbNotification.message.split(" ")
                 val taskTitle = parts.dropLast(3).joinToString(" ")
                 val deadline = parts.takeLast(3).joinToString(" ")
-                notificationManager.createTaskNotification(dbNotification.id, taskTitle, deadline)
+                notificationManager.createTaskNotification(dbNotification.id, taskTitle, deadline).copy(
+                    extras = mapOf("taskId" to (dbNotification.relatedId ?: dbNotification.id))
+                )
             }
             "resource" -> notificationManager.createResourceNotification(
                 dbNotification.id,
@@ -647,6 +755,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 dbNotification.id,
                 "New Request",
                 dbNotification.message
+            ).copy(
+                extras = mapOf("requestId" to (dbNotification.relatedId ?: dbNotification.id), "teamName" to dbNotification.message)
             )
             else -> null
         }
@@ -724,11 +834,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 val message = "$requesterName has requested to join $teamName"
 
                 dashboardViewModel.createNotificationIfNotExists(
-                    realm,
-                    "join_request",
-                    message,
-                    joinRequest._id,
-                    userId
+                    realm, "join_request", message, joinRequest._id, userId
                 )
             }
         }

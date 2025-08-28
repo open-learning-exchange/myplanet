@@ -67,23 +67,57 @@ class Service @Inject constructor(
     private val configurationManager = ConfigurationManager(context, preferences, retrofitInterface)
 
     fun healthAccess(listener: SuccessListener) {
-        retrofitInterface.healthAccess(UrlUtils.getHealthAccessUrl(preferences))?.enqueue(object : Callback<ResponseBody> {
-            override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                if (response.code() == 200) {
-                    listener.onSuccess(context.getString(R.string.server_sync_successfully))
-                } else {
-                    listener.onSuccess("")
-                }
+        try {
+            val healthUrl = UrlUtils.getHealthAccessUrl(preferences)
+            if (healthUrl.isBlank()) {
+                listener.onSuccess("")
+                return
             }
 
-            override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                listener.onSuccess("")
-            }
-        })
+            retrofitInterface.healthAccess(healthUrl).enqueue(object : Callback<ResponseBody> {
+                override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                    try {
+                        when (response.code()) {
+                            200 -> listener.onSuccess(context.getString(R.string.server_sync_successfully))
+                            401 -> listener.onSuccess("Unauthorized - Invalid credentials")
+                            404 -> listener.onSuccess("Server endpoint not found")
+                            500 -> listener.onSuccess("Server internal error")
+                            502 -> listener.onSuccess("Bad gateway - Server unavailable")
+                            503 -> listener.onSuccess("Service temporarily unavailable")
+                            504 -> listener.onSuccess("Gateway timeout")
+                            else -> listener.onSuccess("Server error: ${response.code()}")
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        listener.onSuccess("")
+                    }
+                }
+
+                override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                    try {
+                        t.printStackTrace()
+                        val errorMsg = when (t) {
+                            is java.net.UnknownHostException -> "Server not reachable"
+                            is java.net.SocketTimeoutException -> "Connection timeout"
+                            is java.net.ConnectException -> "Unable to connect to server"
+                            is java.io.IOException -> "Network connection error"
+                            else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
+                        }
+                        listener.onSuccess(errorMsg)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        listener.onSuccess("Health check failed")
+                    }
+                }
+            })
+        } catch (e: Exception) {
+            e.printStackTrace()
+            listener.onSuccess("Health access initialization failed")
+        }
     }
 
     fun checkCheckSum(callback: ChecksumCallback, path: String?) {
-        retrofitInterface.getChecksum(UrlUtils.getChecksumUrl(preferences))?.enqueue(object : Callback<ResponseBody> {
+        retrofitInterface.getChecksum(UrlUtils.getChecksumUrl(preferences)).enqueue(object : Callback<ResponseBody> {
             override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                 if (response.code() == 200) {
                     try {
@@ -182,7 +216,7 @@ class Service @Inject constructor(
             }
 
             withContext(Dispatchers.Main) {
-                retrofitInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(preferences))?.enqueue(object : Callback<ResponseBody?> {
+                retrofitInterface.isPlanetAvailable(UrlUtils.getUpdateUrl(preferences)).enqueue(object : Callback<ResponseBody?> {
                     override fun onResponse(call: Call<ResponseBody?>, response: Response<ResponseBody?>) {
                         val isAvailable = callback != null && response.code() == 200
                         serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
@@ -205,27 +239,27 @@ class Service @Inject constructor(
     fun becomeMember(realm: Realm, obj: JsonObject, callback: CreateUserCallback, securityCallback: SecurityDataCallback? = null) {
         isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
-                retrofitInterface.getJsonObject(Utilities.header, "${UrlUtils.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}")?.enqueue(object : Callback<JsonObject> {
-                    override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                        if (response.body() != null && response.body()?.has("_id") == true) {
-                            callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                        } else {
-                            retrofitInterface.putDoc(null, "application/json", "${UrlUtils.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
-                                override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
-                                    if (response.body() != null && response.body()?.has("id") == true) {
-                                        uploadToShelf(obj)
-                                        saveUserToDb(realm, "${response.body()?.get("id")?.asString}", obj, callback, securityCallback)
-                                    } else {
-                                        callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                                    }
-                                }
+                retrofitInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}").enqueue(object : Callback<JsonObject> {
+                     override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                         if (response.body() != null && response.body()?.has("_id") == true) {
+                             callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
+                         } else {
+                             retrofitInterface.putDoc(null, "application/json", "${UrlUtils.getUrl()}/_users/org.couchdb.user:${obj["name"].asString}", obj).enqueue(object : Callback<JsonObject> {
+                                 override fun onResponse(call: Call<JsonObject>, response: Response<JsonObject>) {
+                                     if (response.body() != null && response.body()?.has("id") == true) {
+                                         uploadToShelf(obj)
+                                         saveUserToDb(realm, "${response.body()?.get("id")?.asString}", obj, callback, securityCallback)
+                                     } else {
+                                         callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
+                                     }
+                                 }
 
-                                override fun onFailure(call: Call<JsonObject>, t: Throwable) {
-                                    callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
-                                }
-                            })
-                        }
-                    }
+                                 override fun onFailure(call: Call<JsonObject>, t: Throwable) {
+                                     callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
+                                 }
+                             })
+                         }
+                     }
 
                     override fun onFailure(call: Call<JsonObject>, t: Throwable) {
                         callback.onSuccess(context.getString(R.string.unable_to_create_user_user_already_exists))
@@ -256,9 +290,8 @@ class Service @Inject constructor(
     }
 
     private fun uploadToShelf(obj: JsonObject) {
-        retrofitInterface.putDoc(null, "application/json", UrlUtils.getUrl() + "/shelf/org.couchdb.user:" + obj["name"].asString, JsonObject())?.enqueue(object : Callback<JsonObject?> {
+        retrofitInterface.putDoc(null, "application/json", UrlUtils.getUrl() + "/shelf/org.couchdb.user:" + obj["name"].asString, JsonObject()).enqueue(object : Callback<JsonObject?> {
             override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {}
-
             override fun onFailure(call: Call<JsonObject?>, t: Throwable) {}
         })
     }
@@ -267,8 +300,8 @@ class Service @Inject constructor(
         val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         realm.executeTransactionAsync({ realm1: Realm? ->
             try {
-                val res = retrofitInterface.getJsonObject(Utilities.header, "${UrlUtils.getUrl()}/_users/$id")?.execute()
-                if (res?.body() != null) {
+                val res = retrofitInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/_users/$id").execute()
+                if (res.body() != null) {
                     val model = populateUsersTable(res.body(), realm1, settings)
                     if (model != null) {
                         UploadToShelfService(
@@ -299,47 +332,48 @@ class Service @Inject constructor(
     }
 
     fun syncPlanetServers(callback: SuccessListener) {
-        retrofitInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true")?.enqueue(object : Callback<JsonObject?> {
-            override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                if (response.body() != null) {
-                    val arr = JsonUtils.getJsonArray("rows", response.body())
+        retrofitInterface.getJsonObject("", "https://planet.earth.ole.org/db/communityregistrationrequests/_all_docs?include_docs=true")
+            .enqueue(object : Callback<JsonObject?> {
+                override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
+                    if (response.body() != null) {
+                        val arr = JsonUtils.getJsonArray("rows", response.body())
 
-                    val executor = Executors.newSingleThreadExecutor()
-                    try {
-                        executor.execute {
-                            MainApplication.service.withRealm { backgroundRealm ->
-                                try {
-                                    backgroundRealm.executeTransaction { realm1 ->
-                                        realm1.delete(RealmCommunity::class.java)
-                                        for (j in arr) {
-                                            var jsonDoc = j.asJsonObject
-                                            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-                                            val id = JsonUtils.getString("_id", jsonDoc)
-                                            val community = realm1.createObject(RealmCommunity::class.java, id)
-                                            if (JsonUtils.getString("name", jsonDoc) == "learning") {
-                                                community.weight = 0
+                        val executor = Executors.newSingleThreadExecutor()
+                        try {
+                            executor.execute {
+                                MainApplication.service.withRealm { backgroundRealm ->
+                                    try {
+                                        backgroundRealm.executeTransaction { realm1 ->
+                                            realm1.delete(RealmCommunity::class.java)
+                                            for (j in arr) {
+                                                var jsonDoc = j.asJsonObject
+                                                jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+                                                val id = JsonUtils.getString("_id", jsonDoc)
+                                                val community = realm1.createObject(RealmCommunity::class.java, id)
+                                                if (JsonUtils.getString("name", jsonDoc) == "learning") {
+                                                    community.weight = 0
+                                                }
+                                                community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
+                                                community.name = JsonUtils.getString("name", jsonDoc)
+                                                community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
+                                                community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
                                             }
-                                            community.localDomain = JsonUtils.getString("localDomain", jsonDoc)
-                                            community.name = JsonUtils.getString("name", jsonDoc)
-                                            community.parentDomain = JsonUtils.getString("parentDomain", jsonDoc)
-                                            community.registrationRequest = JsonUtils.getString("registrationRequest", jsonDoc)
                                         }
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
                                     }
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
                                 }
                             }
+                        } finally {
+                            executor.shutdown()
                         }
-                    } finally {
-                        executor.shutdown()
                     }
                 }
-            }
 
-            override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
-                callback.onSuccess(context.getString(R.string.server_sync_has_failed))
-            }
-        })
+                override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
+                    callback.onSuccess(context.getString(R.string.server_sync_has_failed))
+                }
+            })
     }
 
     fun getMinApk(listener: ConfigurationIdListener?, url: String, pin: String, activity: SyncActivity, callerActivity: String) {

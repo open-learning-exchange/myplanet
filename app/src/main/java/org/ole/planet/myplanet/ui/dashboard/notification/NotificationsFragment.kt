@@ -10,13 +10,14 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import io.realm.Sort
 import java.util.ArrayList
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.status_options
@@ -36,10 +37,10 @@ import org.ole.planet.myplanet.ui.team.TeamPageConfig.TasksPage
 
 @AndroidEntryPoint
 class NotificationsFragment : Fragment() {
-    private lateinit var fragmentNotificationsBinding: FragmentNotificationsBinding
+    private var _binding: FragmentNotificationsBinding? = null
+    private val binding get() = _binding!!
     @Inject
     lateinit var databaseService: DatabaseService
-    private lateinit var mRealm: Realm
     private lateinit var adapter: AdapterNotification
     private lateinit var userId: String
     private var notificationUpdateListener: NotificationListener? = null
@@ -57,8 +58,7 @@ class NotificationsFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentNotificationsBinding = FragmentNotificationsBinding.inflate(inflater, container, false)
-        mRealm = databaseService.realmInstance
+        _binding = FragmentNotificationsBinding.inflate(inflater, container, false)
         userId = arguments?.getString("userId") ?: ""
 
         val notifications = loadNotifications(userId, "all")
@@ -67,25 +67,21 @@ class NotificationsFragment : Fragment() {
         val optionsList: MutableList<String?> = ArrayList(listOf(*options))
         val spinnerAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, optionsList)
         spinnerAdapter.setDropDownViewResource(R.layout.spinner_item)
-        fragmentNotificationsBinding.status.adapter = spinnerAdapter
-        fragmentNotificationsBinding.status.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+        binding.status.adapter = spinnerAdapter
+        binding.status.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
                 val selectedOption = parent.getItemAtPosition(position).toString().lowercase()
                 val filteredNotifications = loadNotifications(userId, selectedOption)
                 adapter.updateNotifications(filteredNotifications)
 
-                if (filteredNotifications.isEmpty()) {
-                    fragmentNotificationsBinding.emptyData.visibility = View.VISIBLE
-                } else {
-                    fragmentNotificationsBinding.emptyData.visibility = View.GONE
-                }
+                binding.emptyData.visibility = if (filteredNotifications.isEmpty()) View.VISIBLE else View.GONE
             }
 
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
 
         if (notifications.isEmpty()) {
-            fragmentNotificationsBinding.emptyData.visibility = View.VISIBLE
+            binding.emptyData.visibility = View.VISIBLE
         }
 
         adapter = AdapterNotification(
@@ -98,14 +94,14 @@ class NotificationsFragment : Fragment() {
                 handleNotificationClick(notification)
             }
         )
-        fragmentNotificationsBinding.rvNotifications.adapter = adapter
-        fragmentNotificationsBinding.rvNotifications.layoutManager = LinearLayoutManager(requireContext())
+        binding.rvNotifications.adapter = adapter
+        binding.rvNotifications.layoutManager = LinearLayoutManager(requireContext())
 
-        fragmentNotificationsBinding.btnMarkAllAsRead.setOnClickListener {
+        binding.btnMarkAllAsRead.setOnClickListener {
             markAllAsRead()
         }
         updateMarkAllAsReadButtonVisibility()
-        return fragmentNotificationsBinding.root
+        return binding.root
     }
 
     private fun handleNotificationClick(notification: RealmNotification) {
@@ -115,59 +111,70 @@ class NotificationsFragment : Fragment() {
                 startActivity(intent)
             }
             "survey" -> {
-                val currentStepExam = mRealm.where(RealmStepExam::class.java).equalTo("name", notification.relatedId)
-                    .findFirst()
-                if (context is OnHomeItemClickListener) {
-                    AdapterMySubmission.openSurvey(context as OnHomeItemClickListener, currentStepExam?.id, false, false, "")
+                databaseService.withRealm { realm ->
+                    val currentStepExam = realm.where(RealmStepExam::class.java)
+                        .equalTo("name", notification.relatedId)
+                        .findFirst()
+                    if (currentStepExam != null && activity is OnHomeItemClickListener) {
+                        AdapterMySubmission.openSurvey(
+                            activity as OnHomeItemClickListener,
+                            currentStepExam.id,
+                            false,
+                            false,
+                            "",
+                        )
+                    }
                 }
             }
             "task" -> {
-                val taskId = notification.relatedId
-                val task = mRealm.where(RealmTeamTask::class.java)
-                    .equalTo("id", taskId)
-                    .findFirst()
+                databaseService.withRealm { realm ->
+                    val taskId = notification.relatedId
+                    val task = realm.where(RealmTeamTask::class.java)
+                        .equalTo("id", taskId)
+                        .findFirst()
 
-                val linkJson = JSONObject(task?.link ?: "{}")
-                val teamId = linkJson.optString("teams")
-                if (teamId.isNotEmpty()) {
-                    if (context is OnHomeItemClickListener) {
-                        val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", teamId)?.findFirst()
-
+                    val linkJson = JSONObject(task?.link ?: "{}")
+                    val teamId = linkJson.optString("teams")
+                    if (teamId.isNotEmpty() && activity is OnHomeItemClickListener) {
+                        val teamObject = realm.where(RealmMyTeam::class.java)
+                            .equalTo("_id", teamId)
+                            .findFirst()
                         val f = TeamDetailFragment.newInstance(
                             teamId = teamId,
                             teamName = teamObject?.name ?: "",
                             teamType = teamObject?.type ?: "",
                             isMyTeam = true,
-                            navigateToPage = TasksPage
+                            navigateToPage = TasksPage,
                         )
 
-                        (context as OnHomeItemClickListener).openCallFragment(f)
+                        (activity as OnHomeItemClickListener).openCallFragment(f)
                     }
                 }
             }
             "join_request" -> {
                 val joinRequestId = notification.relatedId
-                if (joinRequestId?.isNotEmpty() == true && context is OnHomeItemClickListener) {
+                if (joinRequestId?.isNotEmpty() == true && activity is OnHomeItemClickListener) {
                     val actualJoinRequestId = if (joinRequestId.startsWith("join_request_")) {
                         joinRequestId.removePrefix("join_request_")
                     } else {
                         joinRequestId
                     }
-                    val joinRequest = mRealm.where(RealmMyTeam::class.java)
-                        .equalTo("_id", actualJoinRequestId)
-                        .equalTo("docType", "request")
-                        .findFirst()
+                    databaseService.withRealm { realm ->
+                        val joinRequest = realm.where(RealmMyTeam::class.java)
+                            .equalTo("_id", actualJoinRequestId)
+                            .equalTo("docType", "request")
+                            .findFirst()
 
-                    val teamId = joinRequest?.teamId
-
-                    if (teamId?.isNotEmpty() == true) {
-                        val f = TeamDetailFragment()
-                        val b = Bundle()
-                        b.putString("id", teamId)
-                        b.putBoolean("isMyTeam", true)
-                        b.putString("navigateToPage", JoinRequestsPage.id)
-                        f.arguments = b
-                        (context as OnHomeItemClickListener).openCallFragment(f)
+                        val teamId = joinRequest?.teamId
+                        if (teamId?.isNotEmpty() == true) {
+                            val f = TeamDetailFragment()
+                            val b = Bundle()
+                            b.putString("id", teamId)
+                            b.putBoolean("isMyTeam", true)
+                            b.putString("navigateToPage", JoinRequestsPage.id)
+                            f.arguments = b
+                            (activity as OnHomeItemClickListener).openCallFragment(f)
+                        }
                     }
                 }
             }
@@ -177,77 +184,113 @@ class NotificationsFragment : Fragment() {
         }
 
         if (!notification.isRead) {
-            markAsRead(adapter.currentList.indexOf(notification))
+            val position = adapter.currentList.indexOf(notification)
+            if (position >= 0) {
+                markAsRead(position)
+            } else {
+                markAsReadById(notification.id)
+            }
         }
     }
 
     private fun loadNotifications(userId: String, filter: String): List<RealmNotification> {
-        val query = mRealm.where(RealmNotification::class.java)
-            .equalTo("userId", userId)
+        return databaseService.withRealm { realm ->
+            val query = realm.where(RealmNotification::class.java)
+                .equalTo("userId", userId)
 
-        when (filter) {
-            "read" -> query.equalTo("isRead", true)
-            "unread" -> query.equalTo("isRead", false)
-            "all" -> {}
-        }
+            when (filter) {
+                "read" -> query.equalTo("isRead", true)
+                "unread" -> query.equalTo("isRead", false)
+                "all" -> {}
+            }
 
-        val results = query.sort("createdAt", Sort.DESCENDING).findAll()
-        return mRealm.copyFromRealm(results).filter {
-            it.message.isNotEmpty() && it.message != "INVALID"
+            val results = query.sort("createdAt", Sort.DESCENDING).findAll()
+            realm.copyFromRealm(results).filter {
+                it.message.isNotEmpty() && it.message != "INVALID"
+            }
         }
     }
 
     private fun markAsRead(position: Int) {
         val notification = adapter.currentList[position]
         val notificationId = notification.id
-        mRealm.executeTransactionAsync({ realm ->
-            val realmNotification = realm.where(RealmNotification::class.java)
-                .equalTo("id", notificationId)
-                .findFirst()
-            realmNotification?.isRead = true
-        }, {
-            activity?.runOnUiThread {
-                adapter.updateNotifications(
-                    loadNotifications(
-                        userId,
-                        fragmentNotificationsBinding.status.selectedItem.toString().lowercase()
-                    )
-                )
+        viewLifecycleOwner.lifecycleScope.launch {
+            databaseService.executeTransactionAsync { realm ->
+                val realmNotification = realm.where(RealmNotification::class.java)
+                    .equalTo("id", notificationId)
+                    .findFirst()
+                realmNotification?.isRead = true
+            }
+            adapter.updateNotifications(
+                loadNotifications(
+                    userId,
+                    binding.status.selectedItem.toString().lowercase(),
+                ),
+            )
+            updateUnreadCount()
+            updateMarkAllAsReadButtonVisibility()
+        }
+    }
+
+    private fun markAsReadById(notificationId: String) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            databaseService.executeTransactionAsync { realm ->
+                val realmNotification = realm.where(RealmNotification::class.java)
+                    .equalTo("id", notificationId)
+                    .findFirst()
+                realmNotification?.isRead = true
+            }
+            val currentList = adapter.currentList.toMutableList()
+            val index = currentList.indexOfFirst { it.id == notificationId }
+            if (index != -1) {
+                currentList[index].isRead = true
+                adapter.submitList(currentList)
+                adapter.notifyItemChanged(index)
                 updateUnreadCount()
                 updateMarkAllAsReadButtonVisibility()
+            } else {
+                refreshNotificationsList()
             }
-        }, {})
+        }
     }
 
     private fun markAllAsRead() {
-        mRealm.executeTransactionAsync({ realm ->
-            realm.where(RealmNotification::class.java)
-                .equalTo("userId", userId)
-                .equalTo("isRead", false)
-                .findAll()
-                .forEach { it.isRead = true }
-        }, {
-            activity?.runOnUiThread {
-                adapter.updateNotifications(loadNotifications(userId, fragmentNotificationsBinding.status.selectedItem.toString().lowercase()))
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                databaseService.executeTransactionAsync { realm ->
+                    realm.where(RealmNotification::class.java)
+                        .equalTo("userId", userId)
+                        .equalTo("isRead", false)
+                        .findAll()
+                        .forEach { it.isRead = true }
+                }
+                adapter.updateNotifications(
+                    loadNotifications(
+                        userId,
+                        binding.status.selectedItem.toString().lowercase(),
+                    ),
+                )
                 updateMarkAllAsReadButtonVisibility()
                 updateUnreadCount()
+            } catch (e: Exception) {
+                Snackbar.make(binding.root, getString(R.string.failed_to_mark_as_read), Snackbar.LENGTH_LONG).show()
             }
-        }, {
-            Snackbar.make(fragmentNotificationsBinding.root, getString(R.string.failed_to_mark_as_read), Snackbar.LENGTH_LONG).show()
-        })
+        }
     }
 
     private fun updateMarkAllAsReadButtonVisibility() {
         val unreadCount = getUnreadNotificationsSize()
-        fragmentNotificationsBinding.btnMarkAllAsRead.visibility = if (unreadCount > 0) View.VISIBLE else View.GONE
+        binding.btnMarkAllAsRead.visibility = if (unreadCount > 0) View.VISIBLE else View.GONE
     }
 
     private fun getUnreadNotificationsSize(): Int {
-        return mRealm.where(RealmNotification::class.java)
-            .equalTo("userId", userId)
-            .equalTo("isRead", false)
-            .count()
-            .toInt()
+        return databaseService.withRealm { realm ->
+            realm.where(RealmNotification::class.java)
+                .equalTo("userId", userId)
+                .equalTo("isRead", false)
+                .count()
+                .toInt()
+        }
     }
 
     private fun updateUnreadCount() {
@@ -256,25 +299,19 @@ class NotificationsFragment : Fragment() {
     }
 
     fun refreshNotificationsList() {
-        if (::adapter.isInitialized && ::fragmentNotificationsBinding.isInitialized) {
-            val selectedFilter = fragmentNotificationsBinding.status.selectedItem.toString().lowercase()
+        if (::adapter.isInitialized && _binding != null) {
+            val selectedFilter = binding.status.selectedItem.toString().lowercase()
             val notifications = loadNotifications(userId, selectedFilter)
             adapter.updateNotifications(notifications)
             updateMarkAllAsReadButtonVisibility()
             updateUnreadCount()
 
-            if (notifications.isEmpty()) {
-                fragmentNotificationsBinding.emptyData.visibility = View.VISIBLE
-            } else {
-                fragmentNotificationsBinding.emptyData.visibility = View.GONE
-            }
+            binding.emptyData.visibility = if (notifications.isEmpty()) View.VISIBLE else View.GONE
         }
     }
 
-    override fun onDestroy() {
-        if (::mRealm.isInitialized) {
-            mRealm.close()
-        }
-        super.onDestroy()
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
     }
 }
