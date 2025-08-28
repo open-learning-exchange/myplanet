@@ -142,12 +142,13 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             override fun onSyncComplete() {
                 activity?.runOnUiThread {
                     if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-
+                        customProgressDialog?.setText(getString(R.string.loading_courses))
+                        
                         lifecycleScope.launch {
                             delay(3000)
                             withContext(Dispatchers.Main) {
+                                customProgressDialog?.dismiss()
+                                customProgressDialog = null
                                 refreshCoursesData()
                             }
                         }

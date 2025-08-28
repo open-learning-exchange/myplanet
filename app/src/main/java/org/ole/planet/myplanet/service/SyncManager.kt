@@ -59,8 +59,6 @@ import org.ole.planet.myplanet.utilities.NotificationUtils.cancel
 import org.ole.planet.myplanet.utilities.NotificationUtils.create
 import org.ole.planet.myplanet.utilities.SyncTimeLogger
 import org.ole.planet.myplanet.utilities.UrlUtils
-import org.ole.planet.myplanet.utilities.Utilities
-import org.ole.planet.myplanet.service.sync.SyncMode
 import org.ole.planet.myplanet.service.sync.ThreadSafeRealmHelper
 
 @Singleton
@@ -318,6 +316,13 @@ class SyncManager @Inject constructor(
                 }
 
                 if (syncTables?.contains("courses") == true) {
+                    syncJobs.add(
+                        async {
+                            logger.startProcess("library_sync")
+                            myLibraryTransactionSync()
+                            logger.endProcess("library_sync")
+                        })
+
                     syncJobs.add(
                         async {
                             logger.startProcess("courses_sync")
