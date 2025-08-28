@@ -1219,12 +1219,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         checkNotificationPermissionStatus()
     }
 
-    override fun onNewIntent(intent: Intent?) {
+    override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
         handleNotificationIntent(intent)
 
-        if (intent?.action == "REFRESH_NOTIFICATION_BADGE") {
+        if (intent.action == "REFRESH_NOTIFICATION_BADGE") {
             val userId = user?.id
             if (userId != null) {
                 Handler(Looper.getMainLooper()).postDelayed({
