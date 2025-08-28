@@ -20,6 +20,10 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.MainApplication
 
 object NotificationUtils {
     const val CHANNEL_GENERAL = "general_notifications"
@@ -546,7 +550,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 }
             }
 
-            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            MainApplication.applicationScope.launch(Dispatchers.Main) {
+                delay(200)
                 val broadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
                 broadcastIntent.setPackage(context.packageName)
                 broadcastIntent.putExtra("notification_id", notificationId)
@@ -570,8 +575,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
-
-            }, 200)
+            }
             
         } catch (e: Exception) {
             e.printStackTrace()

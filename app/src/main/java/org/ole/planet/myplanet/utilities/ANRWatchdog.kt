@@ -1,19 +1,20 @@
 package org.ole.planet.myplanet.utilities
 
-import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.MainApplication
 
 class ANRWatchdog(private val timeout: Long = DEFAULT_ANR_TIMEOUT, private val listener: ANRListener? = null) {
     companion object {
         private const val DEFAULT_ANR_TIMEOUT = 5000L
     }
 
-    private val mainHandler = Handler(Looper.getMainLooper())
     private var isWatching = false
     private var tick = 0L
 
-    private val ticker = Runnable {
+    private fun updateTick() {
         tick = SystemClock.elapsedRealtime()
     }
 
@@ -28,7 +29,7 @@ class ANRWatchdog(private val timeout: Long = DEFAULT_ANR_TIMEOUT, private val l
 
         isWatching = true
         tick = SystemClock.elapsedRealtime()
-        mainHandler.post(ticker)
+        MainApplication.applicationScope.launch(Dispatchers.Main) { updateTick() }
 
         Thread({
             val threadName = Thread.currentThread().name
@@ -37,7 +38,7 @@ class ANRWatchdog(private val timeout: Long = DEFAULT_ANR_TIMEOUT, private val l
             while (isWatching) {
                 val lastTick = tick
                 val currentTime = SystemClock.elapsedRealtime()
-                mainHandler.post(ticker)
+                MainApplication.applicationScope.launch(Dispatchers.Main) { updateTick() }
 
                 try {
                     Thread.sleep(timeout / 2)

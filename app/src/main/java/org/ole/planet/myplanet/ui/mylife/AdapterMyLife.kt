@@ -3,8 +3,6 @@ package org.ole.planet.myplanet.ui.mylife
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.ContextWrapper
-import android.os.Handler
-import android.os.Looper
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -36,6 +34,9 @@ import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.Utilities
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.MainApplication
 
 class AdapterMyLife(private val context: Context, private val myLifeList: List<RealmMyLife>, private var mRealm: Realm, private val mDragStartListener: OnStartDragListener) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), ItemTouchHelperAdapter {
     private val hide = 0.5f
@@ -80,11 +81,10 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
     private fun updateVisibility(holder: RecyclerView.ViewHolder, position: Int, isVisible: Boolean) {
         mRealm.executeTransactionAsync({ realm: Realm? ->
             realm?.let {
-                updateVisibility(!isVisible, myLifeList[position]._id
-                )
+                updateVisibility(!isVisible, myLifeList[position]._id)
             }
         }, {
-            Handler(Looper.getMainLooper()).post {
+            MainApplication.applicationScope.launch(Dispatchers.Main) {
                 if (isVisible) {
                     changeVisibility(holder, R.drawable.ic_visibility, hide)
                     Utilities.toast(context, myLifeList[position].title + context.getString(R.string.is_now_hidden))
@@ -92,7 +92,8 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
                     changeVisibility(holder, R.drawable.ic_visibility_off, show)
                     Utilities.toast(context, myLifeList[position].title + context.getString(R.string.is_now_shown))
                 }
-            } }) { }
+            }
+        }) { }
     }
 
     private fun changeVisibility(holder: RecyclerView.ViewHolder, imageId: Int, alpha: Float) {

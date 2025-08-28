@@ -3,8 +3,6 @@ package org.ole.planet.myplanet.ui.exam
 import android.content.DialogInterface
 import android.graphics.Typeface
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -20,6 +18,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import io.noties.markwon.Markwon
 import io.noties.markwon.editor.MarkwonEditor
@@ -42,6 +41,8 @@ import org.ole.planet.myplanet.ui.survey.SurveyFragment
 import org.ole.planet.myplanet.utilities.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utilities.NetworkUtils.getUniqueIdentifier
 import org.ole.planet.myplanet.utilities.Utilities
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
@@ -119,9 +120,10 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             isLastAnsvalid = false
             val toast = Toast.makeText(activity, getString(R.string.incorrect_ans), Toast.LENGTH_SHORT)
             toast.show()
-            Handler(Looper.getMainLooper()).postDelayed({
+            viewLifecycleOwner.lifecycleScope.launch {
+                delay(1000)
                 toast.cancel()
-            }, 1000)
+            }
         }
     }
 
