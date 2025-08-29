@@ -7,7 +7,6 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -30,6 +29,7 @@ import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
 import org.ole.planet.myplanet.ui.news.GrandChildAdapter
+import org.ole.planet.myplanet.utilities.DiffUtils
 
 class ChatHistoryListAdapter(
     var context: Context,
@@ -343,15 +343,11 @@ class ChatHistoryListAdapter(
     }
 
     companion object {
-        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<RealmChatHistory>() {
-            override fun areItemsTheSame(oldItem: RealmChatHistory, newItem: RealmChatHistory): Boolean {
-                return oldItem._id == newItem._id
-            }
-
-            override fun areContentsTheSame(oldItem: RealmChatHistory, newItem: RealmChatHistory): Boolean {
-                return oldItem == newItem
-            }
-        }
+        private val DIFF_CALLBACK =
+            DiffUtils.itemCallback<RealmChatHistory>(
+                idSelector = { it._id },
+                contentsComparator = { old, new -> old == new }
+            )
     }
 
     class ViewHolderChat(val rowChatHistoryBinding: RowChatHistoryBinding) : RecyclerView.ViewHolder(rowChatHistoryBinding.root)
