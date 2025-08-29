@@ -39,8 +39,18 @@ class ChatHistoryListAdapter(
     private val settings: SharedPreferences
 ) : ListAdapter<RealmChatHistory, ChatHistoryListAdapter.ViewHolderChat>(
     DiffUtils.itemCallback(
-        areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
-        areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+        areItemsTheSame = { oldItem, newItem ->
+            val oldId = oldItem._id
+            val newId = newItem._id
+            oldId != null && newId != null && oldId == newId
+        },
+        areContentsTheSame = { oldItem, newItem ->
+            oldItem._rev == newItem._rev &&
+                oldItem.lastUsed == newItem.lastUsed &&
+                oldItem.title == newItem.title &&
+                oldItem.conversations?.firstOrNull()?.query ==
+                newItem.conversations?.firstOrNull()?.query
+        }
     )
 ) {
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
