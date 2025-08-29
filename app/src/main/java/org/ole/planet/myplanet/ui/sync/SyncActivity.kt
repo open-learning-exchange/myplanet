@@ -473,16 +473,15 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 var attempt = 0
-                Realm.getDefaultInstance().use { realm ->
-                    while (true) {
-                        realm.refresh()
-                        val realmResults = realm.where(RealmUserModel::class.java).findAll()
-                        if (realmResults.isNotEmpty()) {
-                            break
-                        }
-                        attempt++
-                        delay(1000)
+                while (true) {
+                    val hasUser = databaseService.withRealm { realm ->
+                        realm.where(RealmUserModel::class.java).findAll().isNotEmpty()
                     }
+                    if (hasUser) {
+                        break
+                    }
+                    attempt++
+                    delay(1000)
                 }
 
                 withContext(Dispatchers.Main) {
@@ -531,11 +530,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
                     if (betaAutoDownload) {
                         withContext(Dispatchers.IO) {
-                            val downloadRealm = Realm.getDefaultInstance()
-                            try {
-                                backgroundDownload(downloadAllFiles(getAllLibraryList(downloadRealm)), activityContext)
-                            } finally {
-                                downloadRealm.close()
+                            databaseService.withRealm { realm ->
+                                backgroundDownload(
+                                    downloadAllFiles(getAllLibraryList(realm)),
+                                    activityContext
+                                )
                             }
                         }
                     }
