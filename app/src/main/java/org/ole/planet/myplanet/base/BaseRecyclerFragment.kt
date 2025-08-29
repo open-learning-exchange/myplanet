@@ -112,19 +112,36 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     fun addToMyList() {
+        if (!isRealmInitialized()) return
+        
         selectedItems?.forEach { item ->
-            val `object` = item as RealmObject
-            if (`object` is RealmMyLibrary) {
-                val myObject = mRealm.where(RealmMyLibrary::class.java)
-                    .equalTo("resourceId", `object`.resourceId).findFirst()
-                createFromResource(myObject, mRealm, model?.id)
-                onAdd(mRealm, "resources", profileDbHandler.userModel?.id, myObject?.resourceId)
-                toast(activity, getString(R.string.added_to_my_library))
-            } else {
-                val myObject = getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
-                createMyCourse(myObject, mRealm, model?.id)
-                onAdd(mRealm, "courses", profileDbHandler.userModel?.id, myObject?.courseId)
-                toast(activity, getString(R.string.added_to_my_courses))
+            try {
+                if (!mRealm.isInTransaction) {
+                    mRealm.beginTransaction()
+                }
+                
+                val `object` = item as RealmObject
+                if (`object` is RealmMyLibrary) {
+                    val myObject = mRealm.where(RealmMyLibrary::class.java)
+                        .equalTo("resourceId", `object`.resourceId).findFirst()
+                    createFromResource(myObject, mRealm, model?.id)
+                    onAdd(mRealm, "resources", profileDbHandler.userModel?.id, myObject?.resourceId)
+                    toast(activity, getString(R.string.added_to_my_library))
+                } else {
+                    val myObject = getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
+                    createMyCourse(myObject, mRealm, model?.id)
+                    onAdd(mRealm, "courses", profileDbHandler.userModel?.id, myObject?.courseId)
+                    toast(activity, getString(R.string.added_to_my_courses))
+                }
+                
+                if (mRealm.isInTransaction) {
+                    mRealm.commitTransaction()
+                }
+            } catch (e: Exception) {
+                if (mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
+                throw e
             }
         }
         recyclerView.adapter = getAdapter()
@@ -133,13 +150,25 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     fun deleteSelected(deleteProgress: Boolean) {
         selectedItems?.forEach { item ->
-            if (!mRealm.isInTransaction()) mRealm.beginTransaction()
-            val `object` = item as RealmObject
-            deleteCourseProgress(deleteProgress, `object`)
-            removeFromShelf(`object`)
-            recyclerView.adapter = getAdapter()
-            showNoData(tvMessage, getAdapter().itemCount, "")
+            try {
+                if (!mRealm.isInTransaction) {
+                    mRealm.beginTransaction()
+                }
+                val `object` = item as RealmObject
+                deleteCourseProgress(deleteProgress, `object`)
+                removeFromShelf(`object`)
+                if (mRealm.isInTransaction) {
+                    mRealm.commitTransaction()
+                }
+            } catch (e: Exception) {
+                if (mRealm.isInTransaction) {
+                    mRealm.cancelTransaction()
+                }
+                throw e
+            }
         }
+        recyclerView.adapter = getAdapter()
+        showNoData(tvMessage, getAdapter().itemCount, "")
     }
 
     fun countSelected(): Int {
@@ -288,18 +317,43 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     override fun onDestroy() {
+        cleanupRealm()
+        super.onDestroy()
+    }
+
+    private fun cleanupRealm() {
         if (isRealmInitialized()) {
-            mRealm.removeAllChangeListeners()
-            if (mRealm.isInTransaction) {
-                try {
-                    mRealm.commitTransaction()
-                } catch (e: Exception) {
-                    mRealm.cancelTransaction()
+            try {
+                mRealm.removeAllChangeListeners()
+
+                if (mRealm.isInTransaction) {
+                    try {
+                        mRealm.commitTransaction()
+                    } catch (e: Exception) {
+                        mRealm.cancelTransaction()
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                if (!mRealm.isClosed) {
+                    mRealm.close()
                 }
             }
-            mRealm.close()
         }
-        super.onDestroy()
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        cleanupReferences()
+    }
+
+    private fun cleanupReferences() {
+        selectedItems?.clear()
+        list?.clear()
+        selectedItems = null
+        list = null
+        resources = null
     }
 
     companion object {

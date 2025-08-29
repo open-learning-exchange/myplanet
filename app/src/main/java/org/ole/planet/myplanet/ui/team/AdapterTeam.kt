@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
 import org.ole.planet.myplanet.R
@@ -13,11 +14,25 @@ import org.ole.planet.myplanet.databinding.ItemTeamGridBinding
 import org.ole.planet.myplanet.databinding.LayoutUserListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.utilities.DiffUtils
 
-class AdapterTeam(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm) : RecyclerView.Adapter<AdapterTeam.ViewHolderTeam>() {
+class AdapterTeam(
+    private val context: Context,
+    teams: List<RealmMyTeam>,
+    private val mRealm: Realm
+) : ListAdapter<RealmMyTeam, AdapterTeam.ViewHolderTeam>(
+    DiffUtils.itemCallback(
+        areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
+        areContentsTheSame = { oldItem, newItem -> oldItem.name == newItem.name }
+    )
+) {
     private var teamSelectedListener: OnTeamSelectedListener? = null
     private var listener: OnUserSelectedListener? = context as? OnUserSelectedListener
     private var users: List<RealmUserModel> = emptyList()
+
+    init {
+        submitList(teams)
+    }
 
     interface OnTeamSelectedListener {
         fun onSelectedTeam(team: RealmMyTeam)
@@ -33,7 +48,7 @@ class AdapterTeam(private val context: Context, private val list: List<RealmMyTe
     }
 
     override fun onBindViewHolder(holder: ViewHolderTeam, position: Int) {
-        val team = list[position]
+        val team = getItem(position)
         holder.itemTeamGridBinding.title.text = team.name
         holder.itemView.setOnClickListener {
             teamSelectedListener?.onSelectedTeam(team) ?: showUserList(team)
@@ -66,7 +81,9 @@ class AdapterTeam(private val context: Context, private val list: List<RealmMyTe
         lv.adapter = adapter
     }
 
-    override fun getItemCount(): Int = list.size
+    fun updateTeams(newTeams: List<RealmMyTeam>) {
+        submitList(newTeams)
+    }
 
     interface OnUserSelectedListener {
         fun onSelectedUser(userModel: RealmUserModel)

@@ -121,7 +121,7 @@ class ChatDetailFragment : Fragment() {
                 .equalTo("id", settings.getString("userId", ""))
                 .findFirst()?.let { realm.copyFromRealm(it) }
         }
-        mAdapter = ChatAdapter(ArrayList(), requireContext(), binding.recyclerGchat)
+        mAdapter = ChatAdapter(requireContext(), binding.recyclerGchat)
         binding.recyclerGchat.apply {
             adapter = mAdapter
             layoutManager = LinearLayoutManager(requireContext())

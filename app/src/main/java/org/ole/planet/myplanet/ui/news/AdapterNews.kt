@@ -302,7 +302,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private fun handleChat(holder: ViewHolderNews, news: RealmNews) {
         if (news.newsId?.isNotEmpty() == true) {
             val conversations = gson.fromJson(news.conversations, Array<Conversation>::class.java).toList()
-            val chatAdapter = ChatAdapter(ArrayList(), context, holder.rowNewsBinding.recyclerGchat)
+            val chatAdapter = ChatAdapter(context, holder.rowNewsBinding.recyclerGchat)
 
             if (user?.id?.startsWith("guest") == false) {
                 chatAdapter.setOnChatItemClickListener(object : ChatAdapter.OnChatItemClickListener {
