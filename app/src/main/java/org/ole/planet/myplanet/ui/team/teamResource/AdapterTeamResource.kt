@@ -26,7 +26,7 @@ class AdapterTeamResource(
     private val updateListener: ResourceUpdateListner
 ) : ListAdapter<RealmMyLibrary, AdapterTeamResource.ViewHolderTeamResource>(
     DiffUtils.itemCallback(
-        areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
+        areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
         areContentsTheSame = { oldItem, newItem ->
             oldItem.title == newItem.title &&
                 oldItem.description == newItem.description
@@ -75,7 +75,7 @@ class AdapterTeamResource(
     fun removeResource(resource: RealmMyLibrary, position: Int, view: View? = null) {
         if (position < 0 || position >= currentList.size) return
 
-        val resourceId = resource.id
+        val resourceId = resource._id
 
         mRealm.executeTransactionAsync({ realm ->
             val itemToDelete = realm.where(RealmMyTeam::class.java)
