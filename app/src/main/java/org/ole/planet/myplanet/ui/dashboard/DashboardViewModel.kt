@@ -69,48 +69,38 @@ class DashboardViewModel @Inject constructor(
 
     suspend fun updateResourceNotification(userId: String?) {
         try {
-            databaseService.executeTransactionAsync { realm ->
-                val resourceCount = BaseResourceFragment.getLibraryList(realm, userId).size
-                if (resourceCount > 0) {
-                    val existingNotification = realm.where(RealmNotification::class.java)
-                        .equalTo("userId", userId)
-                        .equalTo("type", "resource")
-                        .findFirst()
-
-                    if (existingNotification != null) {
-                        existingNotification.message = "$resourceCount"
-                        existingNotification.relatedId = "$resourceCount"
-                    } else {
-                        createNotificationIfNotExists(realm, "resource", "$resourceCount", "$resourceCount", userId)
-                    }
-                } else {
-                    realm.where(RealmNotification::class.java)
-                        .equalTo("userId", userId)
-                        .equalTo("type", "resource")
-                        .findFirst()?.deleteFromRealm()
-                }
-            }
+            val resourceCount = libraryRepository.getLibraryListForUser(userId).size
+            notificationRepository.updateResourceNotification(userId, resourceCount)
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    fun createNotificationIfNotExists(realm: Realm, type: String, message: String, relatedId: String?, userId: String?) {
-        val existingNotification = realm.where(RealmNotification::class.java)
-            .equalTo("userId", userId)
-            .equalTo("type", type)
-            .equalTo("relatedId", relatedId)
-            .findFirst()
-
-        if (existingNotification == null) {
-            realm.createObject(RealmNotification::class.java, "${UUID.randomUUID()}").apply {
-                this.userId = userId ?: ""
-                this.type = type
-                this.message = message
-                this.relatedId = relatedId
-                this.createdAt = Date()
-            }
+    fun createNotificationIfNotExists(
+        type: String,
+        message: String,
+        relatedId: String?,
+        userId: String?
+    ) {
+        viewModelScope.launch {
+            notificationRepository.createNotificationIfNotExists(type, message, relatedId, userId)
         }
+    }
+
+    fun markNotificationAsRead(notificationId: String) {
+        viewModelScope.launch {
+            notificationRepository.markAsRead(notificationId)
+        }
+    }
+
+    fun markAllNotificationsAsRead(type: String, userId: String?) {
+        viewModelScope.launch {
+            notificationRepository.markAllAsRead(type, userId)
+        }
+    }
+
+    suspend fun getUnreadNotifications(userId: String?): List<org.ole.planet.myplanet.model.RealmNotification> {
+        return notificationRepository.getUnreadNotifications(userId)
     }
 
     suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {

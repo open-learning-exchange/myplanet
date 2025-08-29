@@ -17,4 +17,87 @@ class NotificationRepositoryImpl @Inject constructor(
                 .toInt()
         }
     }
+
+    override suspend fun updateResourceNotification(userId: String?, resourceCount: Int) {
+        executeTransactionAsync { realm ->
+            if (resourceCount > 0) {
+                val existingNotification = realm.where(RealmNotification::class.java)
+                    .equalTo("userId", userId)
+                    .equalTo("type", "resource")
+                    .findFirst()
+
+                if (existingNotification != null) {
+                    existingNotification.message = "$resourceCount"
+                    existingNotification.relatedId = "$resourceCount"
+                } else {
+                    createNotificationIfNotExists(
+                        "resource",
+                        "$resourceCount",
+                        "$resourceCount",
+                        userId
+                    )
+                }
+            } else {
+                realm.where(RealmNotification::class.java)
+                    .equalTo("userId", userId)
+                    .equalTo("type", "resource")
+                    .findFirst()?.deleteFromRealm()
+            }
+        }
+    }
+
+    override suspend fun createNotificationIfNotExists(
+        type: String,
+        message: String,
+        relatedId: String?,
+        userId: String?
+    ) {
+        executeTransactionAsync { realm ->
+            val existingNotification = realm.where(RealmNotification::class.java)
+                .equalTo("userId", userId)
+                .equalTo("type", type)
+                .equalTo("relatedId", relatedId)
+                .findFirst()
+
+            if (existingNotification == null) {
+                realm.createObject(RealmNotification::class.java, "${java.util.UUID.randomUUID()}").apply {
+                    this.userId = userId ?: ""
+                    this.type = type
+                    this.message = message
+                    this.relatedId = relatedId
+                    this.createdAt = java.util.Date()
+                }
+            }
+        }
+    }
+
+    override suspend fun markAsRead(notificationId: String) {
+        executeTransactionAsync { realm ->
+            realm.where(RealmNotification::class.java)
+                .equalTo("id", notificationId)
+                .findFirst()
+                ?.isRead = true
+        }
+    }
+
+    override suspend fun markAllAsRead(type: String, userId: String?) {
+        executeTransactionAsync { realm ->
+            realm.where(RealmNotification::class.java)
+                .equalTo("userId", userId)
+                .equalTo("type", type)
+                .equalTo("isRead", false)
+                .findAll()
+                .forEach { it.isRead = true }
+        }
+    }
+
+    override suspend fun getUnreadNotifications(userId: String?): List<org.ole.planet.myplanet.model.RealmNotification> {
+        return withRealm { realm ->
+            val unreadNotificationsDb = realm.where(org.ole.planet.myplanet.model.RealmNotification::class.java)
+                .equalTo("userId", userId)
+                .equalTo("isRead", false)
+                .findAll()
+            realm.copyFromRealm(unreadNotificationsDb)
+        }
+    }
 }

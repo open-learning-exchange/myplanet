@@ -581,21 +581,18 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         val userId = user?.id
 
         lifecycleScope.launch(Dispatchers.IO) {
-            var unreadCount = 0
+            val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
             val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
 
-            try {
-                dashboardViewModel.updateResourceNotification(userId)
-                databaseService.realmInstance.use { backgroundRealm ->
-                    backgroundRealm.executeTransaction { realm ->
-                        val createdNotifications = createNotifications(realm, userId)
-                        newNotifications.addAll(createdNotifications)
-                    }
+            dashboardViewModel.updateResourceNotification(userId)
+            createNotifications(userId)
+            val unreadNotificationsDb = dashboardViewModel.getUnreadNotifications(userId)
 
-                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+            unreadNotificationsDb.forEach { dbNotification ->
+                val config = createNotificationConfigFromDatabase(dbNotification)
+                if (config != null) {
+                    newNotifications.add(config)
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
             }
 
             withContext(Dispatchers.Main) {
@@ -605,7 +602,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     }
 
                     val groupedNotifications = newNotifications.groupBy { it.type }
-                    
+
                     groupedNotifications.forEach { (type, notifications) ->
                         when {
                             notifications.size == 1 -> {
@@ -626,28 +623,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun markDatabaseNotificationAsRead(notificationId: String) {
-        try {
-            val userId = user?.id
-            if (notificationId.startsWith("summary_")) {
-                val type = notificationId.removePrefix("summary_")
-                mRealm.executeTransactionAsync { realm ->
-                    realm.where(RealmNotification::class.java)
-                        .equalTo("userId", userId)
-                        .equalTo("type", type)
-                        .equalTo("isRead", false)
-                        .findAll()
-                        .forEach { it.isRead = true }
-                }
-            } else {
-                mRealm.executeTransactionAsync { realm ->
-                    val notification = realm.where(RealmNotification::class.java)
-                        .equalTo("id", notificationId)
-                        .findFirst()
-                    notification?.isRead = true
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
+        val userId = user?.id
+        if (notificationId.startsWith("summary_")) {
+            val type = notificationId.removePrefix("summary_")
+            dashboardViewModel.markAllNotificationsAsRead(type, userId)
+        } else {
+            dashboardViewModel.markNotificationAsRead(notificationId)
         }
     }
 
@@ -706,25 +687,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun createNotifications(realm: Realm, userId: String?): List<NotificationUtils.NotificationConfig> {
-        val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
-        createSurveyDatabaseNotifications(realm, userId)
-        createTaskDatabaseNotifications(realm, userId)
-        createStorageDatabaseNotifications(realm, userId)
-        createJoinRequestDatabaseNotifications(realm, userId)
-
-        val unreadNotifications = realm.where(RealmNotification::class.java)
-            .equalTo("userId", userId)
-            .equalTo("isRead", false)
-            .findAll()
-
-        unreadNotifications.forEach { dbNotification ->
-            val config = createNotificationConfigFromDatabase(dbNotification)
-            if (config != null) {
-                newNotifications.add(config)
-            }
-        }
-        return newNotifications
+    private fun createNotifications(userId: String?) {
+        dashboardViewModel.createSurveyDatabaseNotifications(userId)
+        dashboardViewModel.createTaskDatabaseNotifications(userId)
+        dashboardViewModel.createStorageDatabaseNotifications(userId)
+        dashboardViewModel.createJoinRequestDatabaseNotifications(userId)
     }
 
     private fun createNotificationConfigFromDatabase(dbNotification: RealmNotification): NotificationUtils.NotificationConfig? {
@@ -762,83 +729,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun createSurveyDatabaseNotifications(realm: Realm, userId: String?) {
-        val pendingSurveys = realm.where(RealmSubmission::class.java)
-            .equalTo("userId", userId)
-            .equalTo("status", "pending")
-            .equalTo("type", "survey")
-            .findAll()
-
-        pendingSurveys.mapNotNull { submission ->
-            val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
-            realm.where(RealmStepExam::class.java)
-                .equalTo("id", examId)
-                .findFirst()
-                ?.name
-        }.forEach { title ->
-            dashboardViewModel.createNotificationIfNotExists(realm, "survey", title, title, userId)
-        }
-    }
-
-    private fun createTaskDatabaseNotifications(realm: Realm, userId: String?) {
-        val tasks = realm.where(RealmTeamTask::class.java)
-            .notEqualTo("status", "archived")
-            .equalTo("completed", false)
-            .equalTo("assignee", userId)
-            .findAll()
-
-        tasks.forEach { task ->
-            dashboardViewModel.createNotificationIfNotExists(
-                realm,
-                "task",
-                "${task.title} ${formatDate(task.deadline)}",
-                task.id,
-                userId
-            )
-        }
-    }
-
-    private fun createStorageDatabaseNotifications(realm: Realm, userId: String?) {
-        val storageRatio = totalAvailableMemoryRatio
-        if (storageRatio > 85) {
-            dashboardViewModel.createNotificationIfNotExists(realm, "storage", "$storageRatio%", "storage", userId)
-        }
-
-        dashboardViewModel.createNotificationIfNotExists(realm, "storage", "90%", "storage_test", userId)
-    }
-
-    private fun createJoinRequestDatabaseNotifications(realm: Realm, userId: String?) {
-        val teamLeaderMemberships = realm.where(RealmMyTeam::class.java)
-            .equalTo("userId", userId)
-            .equalTo("docType", "membership")
-            .equalTo("isLeader", true)
-            .findAll()
-
-        teamLeaderMemberships.forEach { leadership ->
-            val pendingJoinRequests = realm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", leadership.teamId)
-                .equalTo("docType", "request")
-                .findAll()
-
-            pendingJoinRequests.forEach { joinRequest ->
-                val team = realm.where(RealmMyTeam::class.java)
-                    .equalTo("_id", leadership.teamId)
-                    .findFirst()
-
-                val requester = realm.where(RealmUserModel::class.java)
-                    .equalTo("id", joinRequest.userId)
-                    .findFirst()
-
-                val requesterName = requester?.name ?: "Unknown User"
-                val teamName = team?.name ?: "Unknown Team"
-                val message = "$requesterName has requested to join $teamName"
-
-                dashboardViewModel.createNotificationIfNotExists(
-                    realm, "join_request", message, joinRequest._id, userId
-                )
-            }
-        }
-    }
 
     private fun openNotificationsList(userId: String) {
         val fragment = NotificationsFragment().apply {
