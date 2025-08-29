@@ -9,9 +9,10 @@ import android.view.ViewGroup
 import android.widget.RatingBar
 import android.widget.RatingBar.OnRatingBarChangeListener
 import androidx.fragment.app.DialogFragment
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
+import kotlinx.coroutines.launch
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
@@ -30,8 +31,6 @@ class RatingFragment : DialogFragment() {
     private val binding get() = _binding!!
     @Inject
     lateinit var databaseService: DatabaseService
-    lateinit var mRealm: Realm
-    var model: RealmUserModel? = null
     var id: String? = ""
     var type: String? = ""
     var title: String? = ""
@@ -54,20 +53,21 @@ class RatingFragment : DialogFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentRatingBinding.inflate(inflater, container, false)
-        mRealm = databaseService.realmInstance
         settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        model = mRealm.where(RealmUserModel::class.java)
-            .equalTo("id", settings.getString("userId", "")).findFirst()
-        previousRating = mRealm.where(RealmRating::class.java).equalTo("type", type)
-            .equalTo("userId", settings.getString("userId", "")).equalTo("item", id).findFirst()
-        if (previousRating != null) {
-            binding.ratingBar.rating = previousRating?.rate?.toFloat() ?: 0.0f
-            binding.etComment.setText(previousRating?.comment)
+        previousRating = databaseService.withRealm { realm ->
+            realm.where(RealmRating::class.java).equalTo("type", type)
+                .equalTo("userId", settings.getString("userId", ""))
+                .equalTo("item", id).findFirst()
+                ?.let { realm.copyFromRealm(it) }
+        }
+        previousRating?.let {
+            binding.ratingBar.rating = it.rate.toFloat()
+            binding.etComment.setText(it.comment)
         }
         binding.ratingBar.onRatingBarChangeListener =
             OnRatingBarChangeListener { _: RatingBar?, _: Float, fromUser: Boolean ->
@@ -87,9 +87,6 @@ class RatingFragment : DialogFragment() {
     }
 
     override fun onDestroyView() {
-        if (::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
         _binding = null
         super.onDestroyView()
     }
@@ -97,19 +94,24 @@ class RatingFragment : DialogFragment() {
     private fun saveRating() {
         val comment = binding.etComment.text.toString()
         val rating = binding.ratingBar.rating
-        mRealm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
-            var ratingObject = realm.where(RealmRating::class.java)
-                .equalTo("type", type)
-                .equalTo("userId", settings.getString("userId", ""))
-                .equalTo("item", id).findFirst()
-            if (ratingObject == null) ratingObject = realm.createObject(RealmRating::class.java, UUID.randomUUID().toString())
-            model = realm.where(RealmUserModel::class.java).equalTo("id", settings.getString("userId", "")).findFirst()
-            setData(model, ratingObject, comment, rating)
-        }, Realm.Transaction.OnSuccess {
+        viewLifecycleOwner.lifecycleScope.launch {
+            databaseService.executeTransactionAsync { realm ->
+                var ratingObject = realm.where(RealmRating::class.java)
+                    .equalTo("type", type)
+                    .equalTo("userId", settings.getString("userId", ""))
+                    .equalTo("item", id).findFirst()
+                if (ratingObject == null) {
+                    ratingObject = realm.createObject(RealmRating::class.java, UUID.randomUUID().toString())
+                }
+                val model = realm.where(RealmUserModel::class.java)
+                    .equalTo("id", settings.getString("userId", ""))
+                    .findFirst()
+                setData(model, ratingObject, comment, rating)
+            }
             Utilities.toast(activity, "Thank you, your rating is submitted.")
-            if (ratingListener != null) ratingListener?.onRatingChanged()
+            ratingListener?.onRatingChanged()
             dismiss()
-        })
+        }
     }
 
     private fun setData(model: RealmUserModel?, ratingObject: RealmRating?, comment: String, rating: Float) {
