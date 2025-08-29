@@ -12,7 +12,6 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
@@ -31,24 +30,30 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
 
     @Inject
     lateinit var databaseService: DatabaseService
-    lateinit var mRealm: Realm
     var selectedTeam: RealmMyTeam? = null
 
     override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-        val query = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId").isNotEmpty("name").equalTo(             "type",
-            if (fragmentAddLinkBinding.spnLink.selectedItem.toString() == "Enterprises") "enterprise"
-            else ""
-        ).notEqualTo("status", "archived").findAll()
-        fragmentAddLinkBinding.rvList.layoutManager = LinearLayoutManager(requireActivity())
-        val adapter = AdapterTeam(requireActivity(), query, mRealm)
-        adapter.setTeamSelectedListener(object : AdapterTeam.OnTeamSelectedListener {
-            override fun onSelectedTeam(team: RealmMyTeam) {
-                this@AddLinkFragment.selectedTeam = team
-                Utilities.toast(requireActivity(), "Selected ${team.name}")
-            }
-        })
-
-        fragmentAddLinkBinding.rvList.adapter = adapter
+        databaseService.withRealm { realm ->
+            val teams = realm.where(RealmMyTeam::class.java)
+                .isEmpty("teamId")
+                .isNotEmpty("name")
+                .equalTo(
+                    "type",
+                    if (fragmentAddLinkBinding.spnLink.selectedItem.toString() == "Enterprises") "enterprise" else ""
+                )
+                .notEqualTo("status", "archived")
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+            fragmentAddLinkBinding.rvList.layoutManager = LinearLayoutManager(requireActivity())
+            val adapter = AdapterTeam(requireActivity(), teams, databaseService.realmInstance)
+            adapter.setTeamSelectedListener(object : AdapterTeam.OnTeamSelectedListener {
+                override fun onSelectedTeam(team: RealmMyTeam) {
+                    this@AddLinkFragment.selectedTeam = team
+                    Utilities.toast(requireActivity(), "Selected ${team.name}")
+                }
+            })
+            fragmentAddLinkBinding.rvList.adapter = adapter
+        }
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -71,7 +76,6 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        mRealm = databaseService.realmInstance
         fragmentAddLinkBinding.spnLink.onItemSelectedListener = this
         fragmentAddLinkBinding.btnSave.setOnClickListener {
             val type = fragmentAddLinkBinding.spnLink.selectedItem.toString()
@@ -85,22 +89,16 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
                 return@setOnClickListener
             }
 
-            mRealm.executeTransaction {
-                val team = it.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
-                team.docType = "link"
-                team.updated = true
-                team.title = title
-                team.route = """/${type.lowercase(Locale.ROOT)}/view/${selectedTeam!!._id}"""
-                dismiss()
-
+            databaseService.withRealm { realm ->
+                realm.executeTransaction {
+                    val team = it.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
+                    team.docType = "link"
+                    team.updated = true
+                    team.title = title
+                    team.route = "/${type.lowercase(Locale.ROOT)}/view/${selectedTeam!!._id}"
+                    dismiss()
+                }
             }
         }
-    }
-
-    override fun onDestroyView() {
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
-        super.onDestroyView()
     }
 }
