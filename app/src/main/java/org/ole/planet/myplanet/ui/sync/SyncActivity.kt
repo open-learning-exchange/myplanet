@@ -473,16 +473,15 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 var attempt = 0
-                databaseService.withRealm { realm ->
-                    while (true) {
-                        realm.refresh()
-                        val realmResults = realm.where(RealmUserModel::class.java).findAll()
-                        if (realmResults.isNotEmpty()) {
-                            break
-                        }
-                        attempt++
-                        delay(1000)
+                while (true) {
+                    val hasUser = databaseService.withRealm { realm ->
+                        realm.where(RealmUserModel::class.java).findAll().isNotEmpty()
                     }
+                    if (hasUser) {
+                        break
+                    }
+                    attempt++
+                    delay(1000)
                 }
 
                 withContext(Dispatchers.Main) {
