@@ -43,7 +43,9 @@ class FeedbackRepositoryImpl @Inject constructor(
                     }
 
                 val listener = RealmChangeListener<RealmResults<RealmFeedback>> { results ->
-                    trySend(realm.copyFromRealm(results))
+                    if (results.isLoaded && results.isValid) {
+                        trySend(realm.copyFromRealm(results))
+                    }
                 }
 
                 feedbackList.addChangeListener(listener)
