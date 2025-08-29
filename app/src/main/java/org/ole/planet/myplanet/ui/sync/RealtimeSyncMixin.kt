@@ -65,7 +65,7 @@ class RealtimeSyncHelper(
     }
     
     private fun refreshRecyclerView() {
-        fragment.requireActivity().runOnUiThread {
+        fragment.viewLifecycleOwner.lifecycleScope.launch {
             mixin.getSyncRecyclerView()?.adapter?.notifyDataSetChanged()
         }
     }
