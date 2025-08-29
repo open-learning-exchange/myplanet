@@ -59,6 +59,7 @@ import org.ole.planet.myplanet.utilities.NotificationUtils.cancel
 import org.ole.planet.myplanet.utilities.NotificationUtils.create
 import org.ole.planet.myplanet.utilities.SyncTimeLogger
 import org.ole.planet.myplanet.utilities.UrlUtils
+import org.ole.planet.myplanet.service.sync.ThreadSafeRealmHelper
 
 @Singleton
 class SyncManager @Inject constructor(
@@ -76,19 +77,31 @@ class SyncManager @Inject constructor(
     private val syncScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val semaphore = Semaphore(5)
     private var betaSync = false
+    private lateinit var improvedSyncManager: ImprovedSyncManager
 
     fun start(listener: SyncListener?, type: String, syncTables: List<String>? = null) {
         this.listener = listener
         if (!isSyncing) {
             settings.edit { remove("concatenated_links") }
             listener?.onSyncStarted()
-            authenticateAndSync(type, syncTables)
+            
+            // Use improved sync manager if beta sync is enabled
+            if (settings.getBoolean("useImprovedSync", false)) {
+                if (!::improvedSyncManager.isInitialized) {
+                    improvedSyncManager = ImprovedSyncManager(context, databaseService, settings, apiInterface)
+                    runBlocking { improvedSyncManager.initialize() }
+                }
+                improvedSyncManager.start(listener, type, syncTables)
+            } else {
+                authenticateAndSync(type, syncTables)
+            }
         }
     }
 
     private fun destroy() {
         if (betaSync) {
             cleanup()
+            ThreadSafeRealmHelper.closeThreadRealm()
         }
         cancelBackgroundSync()
         cancel(context, 111)
@@ -305,6 +318,13 @@ class SyncManager @Inject constructor(
                 if (syncTables?.contains("courses") == true) {
                     syncJobs.add(
                         async {
+                            logger.startProcess("library_sync")
+                            myLibraryTransactionSync()
+                            logger.endProcess("library_sync")
+                        })
+
+                    syncJobs.add(
+                        async {
                             logger.startProcess("courses_sync")
                             TransactionSyncManager.syncDb(mRealm, "courses")
                             logger.endProcess("courses_sync")
@@ -433,13 +453,11 @@ class SyncManager @Inject constructor(
 
     private fun startFastSync() {
         betaSync = true
-        var mainRealm: Realm? = null
         try {
             val logger = SyncTimeLogger
             logger.startLogging()
 
             initializeSync()
-            mainRealm = databaseService.realmInstance
             runBlocking {
                 async {
                     syncWithSemaphore("tablet_users") {
@@ -516,7 +534,9 @@ class SyncManager @Inject constructor(
             logger.endProcess("admin_sync")
 
             logger.startProcess("on_synced")
-            onSynced(mainRealm, settings)
+            safeRealmOperation { realm ->
+                onSynced(realm, settings)
+            }
             logger.endProcess("on_synced")
 
             logger.stopLogging()
@@ -525,7 +545,7 @@ class SyncManager @Inject constructor(
             err.printStackTrace()
             handleException(err.message)
         } finally {
-            mainRealm?.close()
+            ThreadSafeRealmHelper.closeThreadRealm()
             destroy()
         }
     }
@@ -1198,14 +1218,7 @@ class SyncManager @Inject constructor(
     }
 
     private fun <T> safeRealmOperation(operation: (Realm) -> T): T? {
-        return try {
-            databaseService.realmInstance.use { realm ->
-                operation(realm)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
+        return ThreadSafeRealmHelper.withRealm(databaseService, operation)
     }
 
     private fun processBatchForShelfData(batch: List<String>, shelfData: Constants.ShelfData, shelfId: String?, apiInterface: ApiInterface, realmInstance: Realm): Int {
@@ -1263,6 +1276,29 @@ class SyncManager @Inject constructor(
 
     fun cleanup() {
         syncScope.cancel()
+        ThreadSafeRealmHelper.closeThreadRealm()
+    }
+    
+    fun getPerformanceReport(): String {
+        return if (::improvedSyncManager.isInitialized) {
+            improvedSyncManager.getPerformanceReport()
+        } else {
+            "Improved sync manager not initialized"
+        }
+    }
+    
+    fun getCircuitBreakerStatus(): Map<String, String> {
+        return if (::improvedSyncManager.isInitialized) {
+            improvedSyncManager.getCircuitBreakerStatus().mapValues { it.value.toString() }
+        } else {
+            emptyMap()
+        }
+    }
+    
+    fun resetErrorRecovery() {
+        if (::improvedSyncManager.isInitialized) {
+            improvedSyncManager.resetErrorRecovery()
+        }
     }
 
     // Backward compatibility constructor for code that still uses singleton pattern
