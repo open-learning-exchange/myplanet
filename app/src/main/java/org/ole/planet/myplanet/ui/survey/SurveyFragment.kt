@@ -24,6 +24,9 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.SurveyAdoptListener
 import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.callback.TableDataUpdate
+import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
+import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.service.SyncManager
@@ -34,7 +37,7 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 
 @AndroidEntryPoint
-class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListener {
+class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListener, RealtimeSyncMixin {
     private lateinit var addNewSurvey: FloatingActionButton
     private lateinit var spn: CustomSpinner
     private lateinit var etSearch: EditText
@@ -50,6 +53,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     
     @Inject
     lateinit var syncManager: SyncManager
+    private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
@@ -136,6 +140,8 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        realtimeSyncHelper = RealtimeSyncHelper(this, this)
+        realtimeSyncHelper.setupRealtimeSync()
         initializeViews(view)
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
@@ -295,6 +301,27 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
 
     private fun <T> safeCastList(items: List<Any?>, clazz: Class<T>): List<T> {
         return items.mapNotNull { it?.takeIf(clazz::isInstance)?.let(clazz::cast) }
+    }
+
+    override fun getWatchedTables(): List<String> {
+        return listOf("exams")
+    }
+
+    override fun onDataUpdated(table: String, update: TableDataUpdate) {
+        if (table == "exams" && update.shouldRefreshUI) {
+            updateAdapterData(isTeamShareAllowed = false)
+        }
+    }
+
+    override fun getSyncRecyclerView(): RecyclerView? {
+        return if (::recyclerView.isInitialized) recyclerView else null
+    }
+
+    override fun onDestroyView() {
+        if (::realtimeSyncHelper.isInitialized) {
+            realtimeSyncHelper.cleanup()
+        }
+        super.onDestroyView()
     }
 
     companion object {
