@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.datamanager
 import java.io.IOException
 import java.net.SocketTimeoutException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import org.ole.planet.myplanet.utilities.RetryUtils
 import retrofit2.Response
 import retrofit2.Retrofit
@@ -15,12 +16,12 @@ object ApiClient {
         return enhancedRetrofit.create(ApiInterface::class.java)
     }
 
-    fun <T> executeWithRetry(operation: () -> Response<T>?): Response<T>? {
-        return RetryUtils.retry(
+    fun <T> executeWithRetry(operation: () -> Response<T>?): Response<T>? = runBlocking {
+        RetryUtils.retry(
             maxAttempts = 3,
             delayMs = 2000L,
             shouldRetry = { resp -> resp == null || !resp.isSuccessful },
-            block = operation,
+            block = { operation() },
         )
     }
 

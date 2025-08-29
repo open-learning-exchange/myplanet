@@ -15,6 +15,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
@@ -230,12 +231,14 @@ class UploadToShelfService @Inject constructor(
         val maxAttempts = 3
         val retryDelayMs = 2000L
 
-        val response = RetryUtils.retry(
-            maxAttempts = maxAttempts,
-            delayMs = retryDelayMs,
-            shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
-        ) {
-            apiInterface?.postDoc(header, "application/json", "${UrlUtils.getUrl()}/$table", ob)?.execute()
+        val response = runBlocking {
+            RetryUtils.retry(
+                maxAttempts = maxAttempts,
+                delayMs = retryDelayMs,
+                shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
+            ) {
+                apiInterface?.postDoc(header, "application/json", "${UrlUtils.getUrl()}/$table", ob)?.execute()
+            }
         }
 
         if (response?.isSuccessful == true && response.body() != null) {
