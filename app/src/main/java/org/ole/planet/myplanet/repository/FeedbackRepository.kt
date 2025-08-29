@@ -29,15 +29,18 @@ class FeedbackRepositoryImpl @Inject constructor(
 
     override fun getFeedback(userModel: RealmUserModel?): Flow<List<RealmFeedback>> =
         callbackFlow {
+            val isManager = userModel?.isManager() == true
+            val ownerName = userModel?.name
+
             withRealm { realm ->
                 val feedbackList: RealmResults<RealmFeedback> =
-                    if (userModel?.isManager() == true) {
+                    if (isManager) {
                         realm.where(RealmFeedback::class.java)
                             .sort("openTime", Sort.DESCENDING)
                             .findAllAsync()
                     } else {
                         realm.where(RealmFeedback::class.java)
-                            .equalTo("owner", userModel?.name)
+                            .equalTo("owner", ownerName)
                             .sort("openTime", Sort.DESCENDING)
                             .findAllAsync()
                     }
