@@ -473,7 +473,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 var attempt = 0
-                Realm.getDefaultInstance().use { realm ->
+                databaseService.withRealm { realm ->
                     while (true) {
                         realm.refresh()
                         val realmResults = realm.where(RealmUserModel::class.java).findAll()
@@ -531,11 +531,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
                     if (betaAutoDownload) {
                         withContext(Dispatchers.IO) {
-                            val downloadRealm = Realm.getDefaultInstance()
-                            try {
-                                backgroundDownload(downloadAllFiles(getAllLibraryList(downloadRealm)), activityContext)
-                            } finally {
-                                downloadRealm.close()
+                            databaseService.withRealm { realm ->
+                                backgroundDownload(
+                                    downloadAllFiles(getAllLibraryList(realm)),
+                                    activityContext
+                                )
                             }
                         }
                     }
