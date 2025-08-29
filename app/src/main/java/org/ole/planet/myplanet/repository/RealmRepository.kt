@@ -17,6 +17,20 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         realm.queryList(clazz, builder)
     }
 
+    protected suspend fun <T : RealmObject> queryInList(
+        clazz: Class<T>,
+        fieldName: String,
+        ids: List<String>,
+    ): List<T> {
+        if (ids.isEmpty()) return emptyList()
+        return databaseService.withRealmAsync { realm ->
+            realm.queryList(clazz) {
+                `in`(fieldName, ids.toTypedArray())
+            }
+        }
+    }
+
+
     protected suspend fun <T : RealmObject, V : Any> findByField(
         clazz: Class<T>,
         fieldName: String,
