@@ -20,8 +20,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class UserDetailFragment : Fragment() {
-    private lateinit var fragmentUserDetailBinding: FragmentUserDetailBinding
-    lateinit var itemTitleDescBinding: ItemTitleDescBinding
+    private var _binding: FragmentUserDetailBinding? = null
+    private val binding get() = _binding!!
     private var userId: String? = null
     private var user: RealmUserModel? = null
     @Inject
@@ -36,15 +36,15 @@ class UserDetailFragment : Fragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentUserDetailBinding = FragmentUserDetailBinding.inflate(inflater, container, false)
-        fragmentUserDetailBinding.rvUserDetail.layoutManager = GridLayoutManager(activity, 2)
+        _binding = FragmentUserDetailBinding.inflate(inflater, container, false)
+        binding.rvUserDetail.layoutManager = GridLayoutManager(activity, 2)
         db = UserProfileDbHandler(requireActivity())
         user = databaseService.withRealm { realm ->
             realm.where(RealmUserModel::class.java)
                 .equalTo("id", userId)
                 .findFirst()?.let { realm.copyFromRealm(it) }
         }
-        return fragmentUserDetailBinding.root
+        return binding.root
     }
 
     data class Detail(val title: String, val description: String)
@@ -53,16 +53,16 @@ class UserDetailFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         user?.let { user ->
             val list = getList(user, db)
-            fragmentUserDetailBinding.rvUserDetail.adapter = object : RecyclerView.Adapter<ViewHolderUserDetail>() {
+            binding.rvUserDetail.adapter = object : RecyclerView.Adapter<ViewHolderUserDetail>() {
                 override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderUserDetail {
-                    itemTitleDescBinding = ItemTitleDescBinding.inflate(LayoutInflater.from(activity), parent, false)
-                    return ViewHolderUserDetail(itemTitleDescBinding)
+                    val binding = ItemTitleDescBinding.inflate(LayoutInflater.from(activity), parent, false)
+                    return ViewHolderUserDetail(binding)
                 }
 
                 override fun onBindViewHolder(holder: ViewHolderUserDetail, position: Int) {
                     val detail = list[position]
-                    itemTitleDescBinding.tvTitle.text = detail.title
-                    itemTitleDescBinding.tvDescription.text = detail.description
+                    holder.binding.tvTitle.text = detail.title
+                    holder.binding.tvDescription.text = detail.description
                 }
 
                 override fun getItemCount() = list.size
@@ -70,6 +70,11 @@ class UserDetailFragment : Fragment() {
         } ?: run {
             Utilities.toast(activity, getString(R.string.user_not_available_in_our_database))
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     private fun getList(user: RealmUserModel, db: UserProfileDbHandler?): List<Detail> {
@@ -85,5 +90,5 @@ class UserDetailFragment : Fragment() {
         return list
     }
 
-    class ViewHolderUserDetail(itemTitleDescBinding: ItemTitleDescBinding) : RecyclerView.ViewHolder(itemTitleDescBinding.root)
+    class ViewHolderUserDetail(val binding: ItemTitleDescBinding) : RecyclerView.ViewHolder(binding.root)
 }
