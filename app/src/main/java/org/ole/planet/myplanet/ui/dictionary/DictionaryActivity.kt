@@ -14,10 +14,10 @@ import org.ole.planet.myplanet.databinding.FragmentDictionaryBinding
 import org.ole.planet.myplanet.model.RealmDictionary
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DownloadUtils
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 
 @AndroidEntryPoint
 class DictionaryActivity : BaseActivity() {
@@ -27,7 +27,7 @@ class DictionaryActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         fragmentDictionaryBinding = FragmentDictionaryBinding.inflate(layoutInflater)
         setContentView(fragmentDictionaryBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, fragmentDictionaryBinding.root)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, fragmentDictionaryBinding.root)
         initActionBar()
         title = getString(R.string.dictionary)
         mRealm = databaseService.realmInstance

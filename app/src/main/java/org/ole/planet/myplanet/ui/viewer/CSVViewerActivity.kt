@@ -13,8 +13,8 @@ import java.io.File
 import java.io.FileReader
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityCsvviewerBinding
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.FileUtils
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 
 class CSVViewerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCsvviewerBinding
@@ -22,7 +22,7 @@ class CSVViewerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityCsvviewerBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithNoPadding(this, binding.root)
         renderCSVFile()
     }
 

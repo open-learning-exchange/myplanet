@@ -25,8 +25,8 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.decrypt
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.encrypt
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 
 @AndroidEntryPoint
 class AddMyHealthActivity : AppCompatActivity() {
@@ -45,7 +45,7 @@ class AddMyHealthActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityAddMyHealthBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, binding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         realm = databaseService.realmInstance

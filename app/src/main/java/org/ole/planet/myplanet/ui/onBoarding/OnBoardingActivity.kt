@@ -15,10 +15,10 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.MapTileUtils.copyAssets
 import org.ole.planet.myplanet.utilities.SecurePrefs
 import org.ole.planet.myplanet.utilities.SharedPrefManager
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 
 class OnBoardingActivity : AppCompatActivity() {
     private lateinit var binding: ActivityOnBoardingBinding
@@ -32,8 +32,8 @@ class OnBoardingActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityOnBoardingBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
         prefData = SharedPrefManager(this)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
 
         copyAssets(this)
         val settings = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)

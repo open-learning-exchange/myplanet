@@ -24,9 +24,9 @@ import org.ole.planet.myplanet.model.FeedbackReply
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.feedback.FeedbackDetailActivity.RvFeedbackAdapter.ReplyViewHolder
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 
 @AndroidEntryPoint
 class FeedbackDetailActivity : AppCompatActivity() {
@@ -46,7 +46,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityFeedbackDetailBinding = ActivityFeedbackDetailBinding.inflate(layoutInflater)
         setContentView(activityFeedbackDetailBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityFeedbackDetailBinding.root)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, activityFeedbackDetailBinding.root)
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         setTitle(R.string.feedback)
