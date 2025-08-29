@@ -7,7 +7,6 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -30,6 +29,7 @@ import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
 import org.ole.planet.myplanet.ui.news.GrandChildAdapter
+import org.ole.planet.myplanet.utilities.DiffUtils
 
 class ChatHistoryListAdapter(
     var context: Context,
@@ -37,7 +37,12 @@ class ChatHistoryListAdapter(
     private val fragment: ChatHistoryListFragment,
     private val databaseService: DatabaseService,
     private val settings: SharedPreferences
-) : ListAdapter<RealmChatHistory, ChatHistoryListAdapter.ViewHolderChat>(DIFF_CALLBACK) {
+) : ListAdapter<RealmChatHistory, ChatHistoryListAdapter.ViewHolderChat>(
+    DiffUtils.itemCallback(
+        areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
+        areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+    )
+) {
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
     private var chatHistoryItemClickListener: ChatHistoryItemClickListener? = null
     private var chatTitle: String? = ""
@@ -340,18 +345,6 @@ class ChatHistoryListAdapter(
         expandableListDetail[context.getString(R.string.share_with_community)] = community
         expandableListDetail[context.getString(R.string.share_with_team_enterprise)] = teams
         return expandableListDetail
-    }
-
-    companion object {
-        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<RealmChatHistory>() {
-            override fun areItemsTheSame(oldItem: RealmChatHistory, newItem: RealmChatHistory): Boolean {
-                return oldItem._id == newItem._id
-            }
-
-            override fun areContentsTheSame(oldItem: RealmChatHistory, newItem: RealmChatHistory): Boolean {
-                return oldItem == newItem
-            }
-        }
     }
 
     class ViewHolderChat(val rowChatHistoryBinding: RowChatHistoryBinding) : RecyclerView.ViewHolder(rowChatHistoryBinding.root)
