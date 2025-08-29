@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import io.realm.Realm
@@ -14,15 +15,24 @@ import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getTeamLeader
+import org.ole.planet.myplanet.utilities.DiffUtils
 
 class AdapterTeamResource(
     private val context: Context,
-    private val list: MutableList<RealmMyLibrary>,
+    resources: List<RealmMyLibrary>,
     private val mRealm: Realm,
     teamId: String?,
     private val settings: SharedPreferences,
     private val updateListener: ResourceUpdateListner
-) : RecyclerView.Adapter<AdapterTeamResource.ViewHolderTeamResource>() {
+) : ListAdapter<RealmMyLibrary, AdapterTeamResource.ViewHolderTeamResource>(
+    DiffUtils.itemCallback(
+        areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
+        areContentsTheSame = { oldItem, newItem ->
+            oldItem.title == newItem.title &&
+                oldItem.description == newItem.description
+        }
+    )
+) {
 
     private var listener: OnHomeItemClickListener? = null
     private val teamLeader: String = getTeamLeader(teamId, mRealm)
@@ -31,6 +41,7 @@ class AdapterTeamResource(
         if (context is OnHomeItemClickListener) {
             listener = context
         }
+        submitList(resources)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderTeamResource {
@@ -39,7 +50,7 @@ class AdapterTeamResource(
     }
 
     override fun onBindViewHolder(holder: ViewHolderTeamResource, position: Int) {
-        val resource = list[position]
+        val resource = getItem(position)
 
         holder.rowTeamResourceBinding.tvTitle.text = resource.title
         holder.rowTeamResourceBinding.tvDescription.text = resource.description
@@ -55,18 +66,14 @@ class AdapterTeamResource(
         val isLeader = settings.getString("userId", "--").equals(teamLeader, ignoreCase = true)
         if (!isLeader) {
             holder.rowTeamResourceBinding.ivRemove.visibility = View.GONE
-        }else{
+        } else {
             holder.rowTeamResourceBinding.ivRemove.visibility = View.VISIBLE
 
         }
     }
 
-    override fun getItemCount(): Int {
-        return list.size
-    }
-
     fun removeResource(resource: RealmMyLibrary, position: Int, view: View? = null) {
-        if (position < 0 || position >= list.size) return
+        if (position < 0 || position >= currentList.size) return
 
         val resourceId = resource.id
 
@@ -80,10 +87,10 @@ class AdapterTeamResource(
                 it.updated = true
             }
         }, {
-            list.removeAt(position)
-            notifyItemRemoved(position)
+            val newList = currentList.toMutableList().apply { removeAt(position) }
+            submitList(newList)
 
-            if (list.isEmpty()) {
+            if (newList.isEmpty()) {
                 updateListener.onResourceListUpdated()
             }
         }, {
