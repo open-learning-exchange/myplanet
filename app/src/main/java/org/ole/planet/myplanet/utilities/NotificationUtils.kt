@@ -16,14 +16,14 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmNotification
-import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 
 object NotificationUtils {
     const val CHANNEL_GENERAL = "general_notifications"
