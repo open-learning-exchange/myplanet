@@ -106,13 +106,13 @@
 
     <style name="BlueButton" parent="Theme.AppCompat">
         <item name="android:textColor">@color/md_white_1000</item>
-        <item name="android:background">@color/colorPrimaryDark</item>
+        <item name="android:background">@drawable/buttonblue</item>
         <item name="colorControlHighlight">@color/colorPrimary</item>
     </style>
 
     <style name="GreyButtons" parent="Theme.AppCompat">
         <item name="android:textColor">@color/md_white_1000</item>
-        <item name="android:background">@color/md_amber_500</item>
+        <item name="android:background">@drawable/buttongrey</item>
         <item name="colorControlHighlight">@color/disable_color</item>
         <item name="paddingStart">8dp</item>
         <item name="android:paddingEnd">8dp</item>
@@ -125,7 +125,7 @@
     <style name="YellowButtons" parent="Theme.AppCompat">
         <item name="android:textColor">@color/md_black_1000</item>
         <item name="android:padding">8dp</item>
-        <item name="android:background">@color/md_amber_500</item>
+        <item name="android:background">@drawable/buttonyellow</item>
         <item name="colorControlHighlight">@color/disable_color</item>
         <item name="android:layout_margin">8dp</item>
     </style>
