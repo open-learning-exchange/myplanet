@@ -20,7 +20,7 @@ import retrofit2.http.Url
 interface ApiInterface {
     @Streaming
     @GET
-    fun downloadFile(@Header("Authorization") header: String?, @Url fileUrl: String?): Call<ResponseBody>
+    suspend fun downloadFile(@Header("Authorization") header: String?, @Url fileUrl: String?): Response<ResponseBody>
 
     @GET
     fun getDocuments(@Header("Authorization") header: String?, @Url url: String?): Call<DocumentResponse>
