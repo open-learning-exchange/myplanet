@@ -18,6 +18,8 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class PlanFragment : BaseTeamFragment() {
     private var _binding: FragmentPlanBinding? = null
@@ -122,14 +124,14 @@ class PlanFragment : BaseTeamFragment() {
                 it.updated = true
             }
         }, {
-            activity.runOnUiThread {
+            viewLifecycleOwner.lifecycleScope.launch {
                 updateUIWithTeamData(team)
-                Utilities.toast(activity, context.getString(R.string.added_successfully))
+                Utilities.toast(requireContext(), context.getString(R.string.added_successfully))
                 dialog.dismiss()
             }
         }, {
-            activity.runOnUiThread {
-                Utilities.toast(activity, context.getString(R.string.failed_to_add_please_retry))
+            viewLifecycleOwner.lifecycleScope.launch {
+                Utilities.toast(requireContext(), context.getString(R.string.failed_to_add_please_retry))
             }
         })
     }

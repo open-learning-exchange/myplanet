@@ -38,6 +38,8 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     private var _binding: FragmentTeamTaskBinding? = null
@@ -297,9 +299,9 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     }
 
     private fun updatedTeamTaskList(updatedList: RealmResults<RealmTeamTask>) {
-        activity?.runOnUiThread {
+        viewLifecycleOwner.lifecycleScope.launch {
             adapterTask = AdapterTask(requireContext(), mRealm, updatedList, !isMember())
-            adapterTask.setListener(this)
+            adapterTask.setListener(this@TeamTaskFragment)
             binding.rvTask.adapter = adapterTask
             adapterTask.notifyDataSetChanged()
         }

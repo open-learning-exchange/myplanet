@@ -125,7 +125,7 @@ class MyHealthFragment : Fragment() {
     private fun startSyncManager() {
         syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded && !requireActivity().isFinishing) {
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
                         customProgressDialog?.setText(getString(R.string.syncing_health_data))
@@ -135,7 +135,7 @@ class MyHealthFragment : Fragment() {
             }
 
             override fun onSyncComplete() {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
@@ -146,7 +146,7 @@ class MyHealthFragment : Fragment() {
             }
 
             override fun onSyncFailed(msg: String?) {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
@@ -236,7 +236,7 @@ class MyHealthFragment : Fragment() {
         realtimeSyncListener = object : BaseRealtimeSyncListener() {
             override fun onTableDataUpdated(update: TableDataUpdate) {
                 if (update.table == "health" && update.shouldRefreshUI) {
-                    activity?.runOnUiThread {
+                    viewLifecycleOwner.lifecycleScope.launch {
                         refreshHealthData()
                     }
                 }

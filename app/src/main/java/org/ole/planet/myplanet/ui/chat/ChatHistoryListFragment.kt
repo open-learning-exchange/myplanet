@@ -191,7 +191,7 @@ class ChatHistoryListFragment : Fragment() {
     private fun startSyncManager() {
         syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded && !requireActivity().isFinishing) {
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
                         customProgressDialog?.setText(getString(R.string.syncing_chat_history))
@@ -201,7 +201,7 @@ class ChatHistoryListFragment : Fragment() {
             }
 
             override fun onSyncComplete() {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
@@ -213,7 +213,7 @@ class ChatHistoryListFragment : Fragment() {
             }
 
             override fun onSyncFailed(msg: String?) {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
@@ -272,7 +272,7 @@ class ChatHistoryListFragment : Fragment() {
         realtimeSyncListener = object : BaseRealtimeSyncListener() {
             override fun onTableDataUpdated(update: TableDataUpdate) {
                 if (update.table == "chats" && update.shouldRefreshUI) {
-                    activity?.runOnUiThread {
+                    viewLifecycleOwner.lifecycleScope.launch {
                         refreshChatHistoryList()
                     }
                 }

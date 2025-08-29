@@ -21,6 +21,8 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.news.ReplyActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickListener {
@@ -80,10 +82,10 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
     }
 
     private fun updatedNewsList(updatedList: List<RealmNews>) {
-        activity?.runOnUiThread {
+        viewLifecycleOwner.lifecycleScope.launch {
             val updatedListAsMutable: MutableList<RealmNews?> = updatedList.toMutableList()
             val adapter = activity?.let { AdapterNews(it, updatedListAsMutable, user, null, "", null, userProfileDbHandler) }
-            adapter?.setListener(this)
+            adapter?.setListener(this@CommunityFragment)
             adapter?.setFromLogin(requireArguments().getBoolean("fromLogin", false))
             binding.rvCommunity.adapter = adapter
             binding.llEditDelete.visibility = if (user?.isManager() == true) View.VISIBLE else View.GONE

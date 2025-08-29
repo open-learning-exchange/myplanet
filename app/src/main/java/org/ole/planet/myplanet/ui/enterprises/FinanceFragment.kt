@@ -24,6 +24,8 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class FinanceFragment : BaseTeamFragment() {
     private lateinit var fragmentFinanceBinding: FragmentFinanceBinding
@@ -251,24 +253,23 @@ class FinanceFragment : BaseTeamFragment() {
     }
 
     private fun updatedFinanceList(results: RealmResults<RealmMyTeam>) {
-        activity?.runOnUiThread {
+        viewLifecycleOwner.lifecycleScope.launch {
             if (!results.isEmpty()) {
                 adapterFinance = AdapterFinance(requireActivity(), results)
                 fragmentFinanceBinding.rvFinance.layoutManager = LinearLayoutManager(activity)
                 fragmentFinanceBinding.rvFinance.adapter = adapterFinance
                 adapterFinance?.notifyDataSetChanged()
                 calculateTotal(results)
-            } else if(fragmentFinanceBinding.tvFromDateCalendar.text.isNullOrEmpty()
+            } else if (fragmentFinanceBinding.tvFromDateCalendar.text.isNullOrEmpty()
                 && fragmentFinanceBinding.etToDate.text.isNullOrEmpty()) {
                 fragmentFinanceBinding.rvFinance.adapter = null
-                fragmentFinanceBinding.dataLayout.visibility= View.GONE
-                fragmentFinanceBinding.tvNodata.visibility= View.VISIBLE
-            }else{
+                fragmentFinanceBinding.dataLayout.visibility = View.GONE
+                fragmentFinanceBinding.tvNodata.visibility = View.VISIBLE
+            } else {
                 calculateTotal(results)
-                fragmentFinanceBinding.dataLayout.visibility= View.VISIBLE
-                fragmentFinanceBinding.tvNodata.visibility= View.VISIBLE
+                fragmentFinanceBinding.dataLayout.visibility = View.VISIBLE
+                fragmentFinanceBinding.tvNodata.visibility = View.VISIBLE
                 fragmentFinanceBinding.rvFinance.adapter = null
-
             }
         }
     }
