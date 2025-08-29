@@ -345,7 +345,9 @@ class ChatHistoryListAdapter(
     companion object {
         private val DIFF_CALLBACK =
             DiffUtils.itemCallback<RealmChatHistory>(
-                areItemsTheSame = { old, new -> old._id == new._id },
+                areItemsTheSame = { old, new ->
+                    (old._id ?: old.id) == (new._id ?: new.id)
+                },
                 areContentsTheSame = { old, new -> old == new }
             )
     }
