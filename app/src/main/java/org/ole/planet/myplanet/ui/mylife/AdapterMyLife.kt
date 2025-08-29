@@ -16,6 +16,9 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyLife.Companion.updateVisibility
@@ -34,9 +37,6 @@ import org.ole.planet.myplanet.ui.submission.MySubmissionFragment
 import org.ole.planet.myplanet.ui.submission.MySubmissionFragment.Companion.newInstance
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.Utilities
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication
 
 class AdapterMyLife(private val context: Context, private val myLifeList: List<RealmMyLife>, private var mRealm: Realm, private val mDragStartListener: OnStartDragListener) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), ItemTouchHelperAdapter {
     private val hide = 0.5f
