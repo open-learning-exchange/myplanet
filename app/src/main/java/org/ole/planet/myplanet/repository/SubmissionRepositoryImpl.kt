@@ -58,6 +58,14 @@ class SubmissionRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getExamMap(
+        submissions: List<RealmSubmission>?
+    ): HashMap<String?, RealmStepExam> {
+        return withRealm { realm ->
+            RealmSubmission.getExamMap(realm, submissions)
+        }
+    }
+
     override suspend fun saveSubmission(submission: RealmSubmission) {
         save(submission)
     }
