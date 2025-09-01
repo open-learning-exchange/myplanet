@@ -32,7 +32,8 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
 
 class ReportsFragment : BaseTeamFragment() {
-    private lateinit var fragmentReportsBinding: FragmentReportsBinding
+    private var _binding: FragmentReportsBinding? = null
+    private val binding get() = _binding!!
     var list: RealmResults<RealmMyTeam>? = null
     private lateinit var adapterReports: AdapterReports
     private var startTimeStamp: String? = null
@@ -41,13 +42,13 @@ class ReportsFragment : BaseTeamFragment() {
     private lateinit var createFileLauncher: ActivityResultLauncher<Intent>
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentReportsBinding = FragmentReportsBinding.inflate(inflater, container, false)
+        _binding = FragmentReportsBinding.inflate(inflater, container, false)
         mRealm = databaseService.realmInstance
         prefData = SharedPrefManager(requireContext())
         if (!isMember()) {
-            fragmentReportsBinding.addReports.visibility = View.GONE
+            binding.addReports.visibility = View.GONE
         }
-        fragmentReportsBinding.addReports.setOnClickListener{
+        binding.addReports.setOnClickListener{
             val dialogAddReportBinding = DialogAddReportBinding.inflate(LayoutInflater.from(requireContext()))
             val v: View = dialogAddReportBinding.root
             val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
@@ -149,7 +150,7 @@ class ReportsFragment : BaseTeamFragment() {
             cancel.setOnClickListener { dialog.dismiss() }
         }
 
-        fragmentReportsBinding.exportCSV.setOnClickListener {
+        binding.exportCSV.setOnClickListener {
             val currentDate = Date()
             val dateFormat = SimpleDateFormat("EEE_MMM_dd_yyyy", Locale.US)
             val formattedDate = dateFormat.format(currentDate)
@@ -210,7 +211,7 @@ class ReportsFragment : BaseTeamFragment() {
                 }
             }
         }
-        return fragmentReportsBinding.root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -235,16 +236,26 @@ class ReportsFragment : BaseTeamFragment() {
         activity?.runOnUiThread {
             adapterReports = AdapterReports(requireContext(), results)
             adapterReports.setNonTeamMember(!isMember())
-            fragmentReportsBinding.rvReports.layoutManager = LinearLayoutManager(activity)
-            fragmentReportsBinding.rvReports.adapter = adapterReports
+            binding.rvReports.layoutManager = LinearLayoutManager(activity)
+            binding.rvReports.adapter = adapterReports
             adapterReports.notifyDataSetChanged()
 
             if (results.isEmpty()) {
-                fragmentReportsBinding.exportCSV.visibility = View.GONE
-                BaseRecyclerFragment.showNoData(fragmentReportsBinding.tvMessage, results.count(), "reports")
+                binding.exportCSV.visibility = View.GONE
+                BaseRecyclerFragment.showNoData(binding.tvMessage, results.count(), "reports")
             } else {
-                fragmentReportsBinding.exportCSV.visibility = View.VISIBLE
+                binding.exportCSV.visibility = View.VISIBLE
             }
         }
+    }
+
+    override fun onDestroyView() {
+        list?.removeAllChangeListeners()
+        list = null
+        if (isRealmInitialized()) {
+            mRealm.close()
+        }
+        _binding = null
+        super.onDestroyView()
     }
 }
