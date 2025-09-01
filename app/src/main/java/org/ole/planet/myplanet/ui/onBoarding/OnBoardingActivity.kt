@@ -15,10 +15,10 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.MapTileUtils.copyAssets
 import org.ole.planet.myplanet.utilities.SecurePrefs
 import org.ole.planet.myplanet.utilities.SharedPrefManager
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 
 class OnBoardingActivity : AppCompatActivity() {
     private lateinit var binding: ActivityOnBoardingBinding
