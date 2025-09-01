@@ -8,15 +8,12 @@ import android.util.Patterns
 import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.core.graphics.toColorInt
-import androidx.core.net.toUri
 import fisk.chipcloud.ChipCloudConfig
 import java.math.BigInteger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
 object Utilities {
 

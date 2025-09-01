@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.callback
 
-import kotlinx.coroutines.flow.Flow
-
 data class SyncProgressUpdate(
     val table: String,
     val itemsProcessed: Int,
