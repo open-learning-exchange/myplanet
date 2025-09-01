@@ -10,8 +10,8 @@ import android.view.ViewGroup
 import android.widget.AbsListView
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.ImageView
 import android.widget.ListView
+import android.widget.TextView
 import androidx.core.view.isGone
 import androidx.fragment.app.DialogFragment
 import org.ole.planet.myplanet.R
@@ -49,7 +49,7 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
             toggleSection(
                 fragmentLibraryFilterBinding.expandableLayoutSubjects,
                 fragmentLibraryFilterBinding.listSub,
-                fragmentLibraryFilterBinding.subjectsDropdownIcon
+                fragmentLibraryFilterBinding.subjectsLayout
             )
             isSubjectsExpanded = !isSubjectsExpanded
         }
@@ -57,7 +57,7 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
             toggleSection(
                 fragmentLibraryFilterBinding.expandableLayoutLanguages,
                 fragmentLibraryFilterBinding.listLang,
-                fragmentLibraryFilterBinding.languagesDropdownIcon
+                fragmentLibraryFilterBinding.languagesLayout
             )
             isLanguagesExpanded = !isLanguagesExpanded
         }
@@ -65,7 +65,7 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
             toggleSection(
                 fragmentLibraryFilterBinding.expandableLayoutMediums,
                 fragmentLibraryFilterBinding.listMedium,
-                fragmentLibraryFilterBinding.mediumsDropdownIcon
+                fragmentLibraryFilterBinding.mediumsLayout
             )
             isMediumsExpanded = !isMediumsExpanded
         }
@@ -73,7 +73,7 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
             toggleSection(
                 fragmentLibraryFilterBinding.expandableLayoutLevels,
                 fragmentLibraryFilterBinding.listLevel,
-                fragmentLibraryFilterBinding.levelsDropdownIcon
+                fragmentLibraryFilterBinding.levelsLayout
             )
             isLevelsExpanded = !isLevelsExpanded
         }
@@ -83,6 +83,16 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initList()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        dialog?.window?.let { window ->
+            val params = window.attributes
+            params.width = (resources.displayMetrics.widthPixels * 0.9).toInt()
+            params.height = ViewGroup.LayoutParams.WRAP_CONTENT
+            window.attributes = params
+        }
     }
 
     private fun initList() {
@@ -127,15 +137,15 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
         if (list.contains(s)) list.remove(s) else list.add(s)
     }
 
-    private fun toggleSection(section: View, listView: ListView, dropdownIcon: ImageView) {
+    private fun toggleSection(section: View, listView: ListView, headerTextView: TextView) {
         if (section.isGone) {
-            expand(section, listView, dropdownIcon)
+            expand(section, listView, headerTextView)
         } else {
-            collapse(section, dropdownIcon)
+            collapse(section, headerTextView)
         }
     }
 
-    private fun expand(view: View, listView: ListView, dropdownIcon: ImageView) {
+    private fun expand(view: View, listView: ListView, headerTextView: TextView) {
         val count = listView.adapter.count
         val itemHeight = 100
         val topPadding = 80
@@ -148,10 +158,10 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
         view.visibility = View.VISIBLE
         val animator = slideAnimator(view, 0, targetHeight)
         animator.start()
-        dropdownIcon.animate().rotation(180f).setDuration(300).start()
+        rotateDrawable(headerTextView, 180f)
     }
 
-    private fun collapse(view: View, dropdownIcon: ImageView) {
+    private fun collapse(view: View, headerTextView: TextView) {
         val finalHeight = view.height
         val animator = slideAnimator(view, finalHeight, 0)
         animator.addListener(object : AnimatorListenerAdapter() {
@@ -160,7 +170,7 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
             }
         })
         animator.start()
-        dropdownIcon.animate().rotation(0f).setDuration(300).start()
+        rotateDrawable(headerTextView, 0f)
     }
 
     private fun slideAnimator(view: View, start: Int, end: Int): ValueAnimator {
@@ -173,5 +183,10 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
             view.layoutParams = layoutParams
         }
         return animator
+    }
+
+    private fun rotateDrawable(textView: TextView, rotation: Float) {
+        val drawableRes = if (rotation == 180f) R.drawable.outline_keyboard_arrow_up_24 else R.drawable.down_arrow
+        textView.setCompoundDrawablesWithIntrinsicBounds(0, 0, drawableRes, 0)
     }
 }
