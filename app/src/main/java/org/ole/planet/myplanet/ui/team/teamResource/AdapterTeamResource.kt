@@ -26,7 +26,7 @@ class AdapterTeamResource(
     private val updateListener: ResourceUpdateListner
 ) : ListAdapter<RealmMyLibrary, AdapterTeamResource.ViewHolderTeamResource>(
     DiffUtils.itemCallback(
-        areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
+        areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
         areContentsTheSame = { oldItem, newItem ->
             oldItem.title == newItem.title &&
                 oldItem.description == newItem.description
