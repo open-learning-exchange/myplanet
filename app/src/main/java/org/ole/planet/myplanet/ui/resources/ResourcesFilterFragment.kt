@@ -10,8 +10,8 @@ import android.view.ViewGroup
 import android.widget.AbsListView
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.TextView
 import android.widget.ListView
+import android.widget.TextView
 import androidx.core.view.isGone
 import androidx.fragment.app.DialogFragment
 import org.ole.planet.myplanet.R
