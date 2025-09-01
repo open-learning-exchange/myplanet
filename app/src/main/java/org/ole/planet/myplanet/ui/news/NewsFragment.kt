@@ -12,6 +12,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -20,6 +21,9 @@ import io.realm.Case
 import io.realm.RealmResults
 import io.realm.Sort
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.databinding.FragmentNewsBinding
@@ -84,11 +88,18 @@ class NewsFragment : BaseNewsFragment() {
 
         updatedNewsList?.addChangeListener { results ->
             if (_binding == null) return@addChangeListener
-            filteredNewsList = filterNewsList(results)
-            updateLabelSpinner()
-            labelFilteredList = applyLabelFilter(filteredNewsList)
-            searchFilteredList = applySearchFilter(labelFilteredList)
-            setData(searchFilteredList)
+            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
+                val filtered = filterNewsList(results)
+                val labelFiltered = applyLabelFilter(filtered)
+                val searchFiltered = applySearchFilter(labelFiltered)
+                withContext(Dispatchers.Main) {
+                    filteredNewsList = filtered
+                    updateLabelSpinner()
+                    labelFilteredList = labelFiltered
+                    searchFilteredList = searchFiltered
+                    setData(searchFilteredList)
+                }
+            }
         }
         
         etSearch = binding.root.findViewById(R.id.et_search)
@@ -128,9 +139,15 @@ class NewsFragment : BaseNewsFragment() {
         super.onViewCreated(view, savedInstanceState)
         filteredNewsList = newsList
         setupLabelFilter()
-        labelFilteredList = applyLabelFilter(filteredNewsList)
-        searchFilteredList = applySearchFilter(labelFilteredList)
-        setData(searchFilteredList)
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
+            val labelFiltered = applyLabelFilter(filteredNewsList)
+            val searchFiltered = applySearchFilter(labelFiltered)
+            withContext(Dispatchers.Main) {
+                labelFilteredList = labelFiltered
+                searchFilteredList = searchFiltered
+                setData(searchFilteredList)
+            }
+        }
         binding.btnSubmit.setOnClickListener {
             val message = binding.etMessage.text.toString().trim { it <= ' ' }
             if (message.isEmpty()) {
@@ -149,10 +166,17 @@ class NewsFragment : BaseNewsFragment() {
             imageList.clear()
             llImage?.removeAllViews()
             adapterNews?.addItem(n)
-            filteredNewsList = filterNewsList(updatedNewsList!!)
-            labelFilteredList = applyLabelFilter(filteredNewsList)
-            searchFilteredList = applySearchFilter(labelFilteredList)
-            setData(searchFilteredList)
+            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
+                val filtered = filterNewsList(updatedNewsList!!)
+                val labelFiltered = applyLabelFilter(filtered)
+                val searchFiltered = applySearchFilter(labelFiltered)
+                withContext(Dispatchers.Main) {
+                    filteredNewsList = filtered
+                    labelFilteredList = labelFiltered
+                    searchFilteredList = searchFiltered
+                    setData(searchFilteredList)
+                }
+            }
         }
 
         binding.addNewsImage.setOnClickListener {
@@ -294,8 +318,13 @@ class NewsFragment : BaseNewsFragment() {
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                searchFilteredList = applySearchFilter(labelFilteredList)
-                setData(searchFilteredList)
+                viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
+                    val searchFiltered = applySearchFilter(labelFilteredList)
+                    withContext(Dispatchers.Main) {
+                        searchFilteredList = searchFiltered
+                        setData(searchFilteredList)
+                    }
+                }
             }
             override fun afterTextChanged(s: Editable) {}
         })
@@ -323,9 +352,15 @@ class NewsFragment : BaseNewsFragment() {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 val labels = (binding.filterByLabel.adapter as ArrayAdapter<String>)
                 selectedLabel = labels.getItem(position) ?: "All"
-                labelFilteredList = applyLabelFilter(filteredNewsList)
-                searchFilteredList = applySearchFilter(labelFilteredList)
-                setData(searchFilteredList)
+                viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Default) {
+                    val labelFiltered = applyLabelFilter(filteredNewsList)
+                    val searchFiltered = applySearchFilter(labelFiltered)
+                    withContext(Dispatchers.Main) {
+                        labelFilteredList = labelFiltered
+                        searchFilteredList = searchFiltered
+                        setData(searchFilteredList)
+                    }
+                }
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
