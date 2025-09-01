@@ -17,6 +17,8 @@ import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.repository.NotificationRepositoryImpl
 import org.ole.planet.myplanet.repository.RatingRepository
 import org.ole.planet.myplanet.repository.RatingRepositoryImpl
+import org.ole.planet.myplanet.repository.MyPersonalRepository
+import org.ole.planet.myplanet.repository.MyPersonalRepositoryImpl
 import org.ole.planet.myplanet.repository.SearchRepository
 import org.ole.planet.myplanet.repository.SearchRepositoryImpl
 import org.ole.planet.myplanet.repository.SubmissionRepository
@@ -69,4 +71,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindUserRepository(impl: UserRepositoryImpl): UserRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMyPersonalRepository(impl: MyPersonalRepositoryImpl): MyPersonalRepository
 }
