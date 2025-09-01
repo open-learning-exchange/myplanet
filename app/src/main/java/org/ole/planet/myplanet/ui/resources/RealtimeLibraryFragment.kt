@@ -2,10 +2,10 @@ package org.ole.planet.myplanet.ui.resources
 
 import android.os.Bundle
 import android.view.View
-import androidx.recyclerview.widget.DiffUtil
 import org.ole.planet.myplanet.base.BaseRealtimeFragment
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 abstract class RealtimeLibraryFragment : BaseRealtimeFragment<RealmMyLibrary>() {
@@ -29,9 +29,17 @@ abstract class RealtimeLibraryFragment : BaseRealtimeFragment<RealmMyLibrary>() 
     private fun updateLibraryData() {
         val newList = getUpdatedResourceList()
         
-        // Use DiffUtil for efficient updates
-        val diffCallback = LibraryDiffCallback(resourceList, newList)
-        val diffResult = DiffUtil.calculateDiff(diffCallback)
+        // Use DiffUtils for efficient updates
+        val diffResult = DiffUtils.calculateDiff(
+            resourceList,
+            newList,
+            areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem.title == newItem.title &&
+                    oldItem.description == newItem.description &&
+                    oldItem.resourceLocalAddress == newItem.resourceLocalAddress
+            }
+        )
         
         resourceList.clear()
         resourceList.addAll(newList)
@@ -69,28 +77,5 @@ abstract class RealtimeLibraryFragment : BaseRealtimeFragment<RealmMyLibrary>() 
         // Only auto-refresh if the last update was more than 1 second ago
         // This prevents too frequent updates
         return System.currentTimeMillis() - lastUpdateTime > 1000
-    }
-}
-
-class LibraryDiffCallback(
-    private val oldList: List<RealmMyLibrary>,
-    private val newList: List<RealmMyLibrary>
-) : DiffUtil.Callback() {
-    
-    override fun getOldListSize(): Int = oldList.size
-    
-    override fun getNewListSize(): Int = newList.size
-    
-    override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-        return oldList[oldItemPosition].id == newList[newItemPosition].id
-    }
-    
-    override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-        val oldItem = oldList[oldItemPosition]
-        val newItem = newList[newItemPosition]
-        
-        return oldItem.title == newItem.title &&
-               oldItem.description == newItem.description &&
-               oldItem.resourceLocalAddress == newItem.resourceLocalAddress
     }
 }
