@@ -18,6 +18,9 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import org.ole.planet.myplanet.service.UploadManager
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import android.util.Log
 
 class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
     companion object {
@@ -27,6 +30,7 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
         private const val LAST_NOTIFICATION_TIME_KEY = "last_server_notification_time"
         private const val NOTIFICATION_COOLDOWN_MS = 30 * 60 * 1000L
         private const val NETWORK_RECONNECTION_KEY = "network_reconnection_trigger"
+        private const val TAG = "ServerReachabilityWorker"
     }
 
     override suspend fun doWork(): Result {
@@ -52,15 +56,28 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
             }
             
             if (isReachable && isNetworkReconnection) {
+                Log.d(TAG, "Server is reachable after network reconnection")
                 val lastNotificationTime = preferences.getLong(LAST_NOTIFICATION_TIME_KEY, 0)
                 val currentTime = System.currentTimeMillis()
                 val timeSinceLastNotification = currentTime - lastNotificationTime
                 
+                // Always check for unsynced submissions regardless of notification cooldown
+//                if (hasUnsyncedSubmissions()) {
+                    Log.i(TAG, "Found unsynced submissions, triggering automatic upload")
+                    triggerSubmissionUpload()
+//                } else {
+//                    Log.d(TAG, "No unsynced submissions found")
+//                }
+                
+                // Show notification only if cooldown has passed
                 if (timeSinceLastNotification > NOTIFICATION_COOLDOWN_MS) {
+                    Log.d(TAG, "Showing server notification (cooldown expired)")
                     showServerNotification(preferences)
                     preferences.edit {
                         putLong(LAST_NOTIFICATION_TIME_KEY, currentTime)
                     }
+                } else {
+                    Log.d(TAG, "Notification cooldown still active, skipping notification but upload check completed")
                 }
             }
 
@@ -87,15 +104,28 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
                     }
 
                     if (isNetworkReconnection) {
+                        Log.d(TAG, "Alternative server is reachable after network reconnection")
                         val lastNotificationTime = preferences.getLong(LAST_NOTIFICATION_TIME_KEY, 0)
                         val currentTime = System.currentTimeMillis()
                         val timeSinceLastNotification = currentTime - lastNotificationTime
                         
+                        // Always check for unsynced submissions regardless of notification cooldown
+                        if (hasUnsyncedSubmissions()) {
+                            Log.i(TAG, "Found unsynced submissions with alternative server, triggering automatic upload")
+                            triggerSubmissionUpload()
+                        } else {
+                            Log.d(TAG, "No unsynced submissions found (alternative server)")
+                        }
+                        
+                        // Show notification only if cooldown has passed
                         if (timeSinceLastNotification > NOTIFICATION_COOLDOWN_MS) {
+                            Log.d(TAG, "Showing server notification for alternative server (cooldown expired)")
                             showServerNotification(preferences)
                             preferences.edit {
                                 putLong(LAST_NOTIFICATION_TIME_KEY, currentTime)
                             }
+                        } else {
+                            Log.d(TAG, "Alternative server notification cooldown still active, skipping notification but upload check completed")
                         }
                     }
                 }
@@ -160,6 +190,42 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
         } catch (e: Exception) {
             e.printStackTrace()
             "Server"
+        }
+    }
+    
+    private fun hasUnsyncedSubmissions(): Boolean {
+        return try {
+            Log.d(TAG, "Checking for unsynced submissions in database")
+            val databaseService = DatabaseService(applicationContext)
+            val realm = databaseService.realmInstance
+            
+            realm.use { realmInstance ->
+                val unsyncedSubmissions = realmInstance.where(org.ole.planet.myplanet.model.RealmSubmission::class.java)
+                    .equalTo("isUpdated", true)
+                    .or()
+                    .isEmpty("_id")
+                    .findAll()
+                
+                val count = unsyncedSubmissions.size
+                Log.d(TAG, "Found $count unsynced submissions")
+                count > 0
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking for unsynced submissions", e)
+            e.printStackTrace()
+            false
+        }
+    }
+    
+    private fun triggerSubmissionUpload() {
+        try {
+            Log.i(TAG, "Starting automatic submission upload after server reconnection")
+            val uploadManager = UploadManager(applicationContext)
+            uploadManager.uploadSubmissions()
+            Log.i(TAG, "Automatic submission upload triggered successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error triggering automatic submission upload", e)
+            e.printStackTrace()
         }
     }
 }

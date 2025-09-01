@@ -445,7 +445,7 @@ class UploadManager @Inject constructor(
 
     fun uploadSubmissions() {
         val realm = getRealm()
-        val apiInterface = client?.create(ApiInterface::class.java)
+        val apiInterface = client.create(ApiInterface::class.java)
 
         realm.executeTransactionAsync { realm: Realm ->
             val list: List<RealmSubmission> = realm.where(RealmSubmission::class.java)
@@ -454,9 +454,10 @@ class UploadManager @Inject constructor(
             list.processInBatches { submission ->
                     try {
                         val requestJson = RealmSubmission.serialize(realm, submission)
-                        val response = apiInterface?.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions", requestJson)?.execute()
+                        val response = apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/submissions", requestJson)
+                            .execute()
 
-                        val jsonObject = response?.body()
+                        val jsonObject = response.body()
                         if (jsonObject != null) {
                             val rev = getString("rev", jsonObject)
                             val id = getString("id", jsonObject)
