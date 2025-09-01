@@ -12,23 +12,31 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
 class CommunityTabFragment : Fragment() {
-    private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
+    private var _binding: FragmentTeamDetailBinding? = null
+    private val binding get() = _binding!!
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentTeamDetailBinding = FragmentTeamDetailBinding.inflate(inflater, container, false)
-        return fragmentTeamDetailBinding.root
+        _binding = FragmentTeamDetailBinding.inflate(inflater, container, false)
+        return _binding!!.root
     }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val sParentcode = settings.getString("parentCode", "")
         val communityName = settings.getString("communityName", "")
         val user = UserProfileDbHandler(requireActivity()).userModel
-        fragmentTeamDetailBinding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), user?.planetCode + "@" + sParentcode, false, settings)
-        TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
-            tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
+        binding.viewPager2.adapter = CommunityPagerAdapter(requireActivity(), user?.planetCode + "@" + sParentcode, false, settings)
+        TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
+            tab.text = (binding.viewPager2.adapter as CommunityPagerAdapter).getPageTitle(position)
         }.attach()
-        fragmentTeamDetailBinding.title.text = if (user?.planetCode == "") communityName else user?.planetCode
-        fragmentTeamDetailBinding.subtitle.text = settings.getString("planetType", "")
-        fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
+        binding.title.text = if (user?.planetCode == "") communityName else user?.planetCode
+        binding.subtitle.text = settings.getString("planetType", "")
+        binding.llActionButtons.visibility = View.GONE
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }
