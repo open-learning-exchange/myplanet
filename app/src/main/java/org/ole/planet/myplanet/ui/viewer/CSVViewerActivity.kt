@@ -13,8 +13,8 @@ import java.io.File
 import java.io.FileReader
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityCsvviewerBinding
-import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utilities.FileUtils
 
 class CSVViewerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCsvviewerBinding
