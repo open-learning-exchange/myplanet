@@ -11,8 +11,6 @@ import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -48,6 +46,7 @@ import io.realm.RealmObject
 import io.realm.RealmResults
 import kotlin.math.ceil
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -319,7 +318,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         if (!doubleBackToExitPressedOnce) {
                             doubleBackToExitPressedOnce = true
                             toast(MainApplication.context, getString(R.string.press_back_again_to_exit))
-                            Handler(Looper.getMainLooper()).postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
+                            lifecycleScope.launch {
+                                delay(2000)
+                                doubleBackToExitPressedOnce = false
+                            }
                         } else {
                             val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
                             if (!BuildConfig.LITE && fragment is BaseContainerFragment) {
@@ -408,9 +410,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
 
-            Handler(Looper.getMainLooper()).postDelayed({
+            lifecycleScope.launch {
+                delay(1000)
                 isFromNotificationAction = false
-            }, 1000)
+            }
         }
     }
     
@@ -527,28 +530,24 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                                 fragment.refreshNotificationsList()
                             }
                         } else {
-                            Handler(Looper.getMainLooper()).postDelayed({
-                                lifecycleScope.launch {
+                            lifecycleScope.launch {
+                                delay(300)
+                                try {
+                                    mRealm.refresh()
+                                    val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+                                    onNotificationCountUpdated(unreadCount)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    delay(300)
                                     try {
                                         mRealm.refresh()
                                         val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
                                         onNotificationCountUpdated(unreadCount)
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                        Handler(Looper.getMainLooper()).postDelayed({
-                                            lifecycleScope.launch {
-                                                try {
-                                                    mRealm.refresh()
-                                                    val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
-                                                    onNotificationCountUpdated(unreadCount)
-                                                } catch (e2: Exception) {
-                                                    e2.printStackTrace()
-                                                }
-                                            }
-                                        }, 300)
+                                    } catch (e2: Exception) {
+                                        e2.printStackTrace()
                                     }
                                 }
-                            }, 300)
+                            }
                         }
                     } else {
                         android.util.Log.w("DashboardActivity", "SystemNotificationReceiver: User ID is null")
@@ -1227,17 +1226,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (intent?.action == "REFRESH_NOTIFICATION_BADGE") {
             val userId = user?.id
             if (userId != null) {
-                Handler(Looper.getMainLooper()).postDelayed({
-                    lifecycleScope.launch {
-                        try {
-                            mRealm.refresh()
-                            val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
-                            onNotificationCountUpdated(unreadCount)
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
+                lifecycleScope.launch {
+                    delay(100)
+                    try {
+                        mRealm.refresh()
+                        val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+                        onNotificationCountUpdated(unreadCount)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
-                }, 100)
+                }
             }
         }
     }
