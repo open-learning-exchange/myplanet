@@ -27,9 +27,9 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.CheckboxListView
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities.toast
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 
 @AndroidEntryPoint
 class AddResourceActivity : AppCompatActivity() {
