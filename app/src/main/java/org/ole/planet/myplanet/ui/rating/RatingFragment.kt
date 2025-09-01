@@ -21,7 +21,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 class RatingFragment : DialogFragment() {
     private var _binding: FragmentRatingBinding? = null
     private val binding get() = _binding!!
-    private val viewModel by viewModels<RatingViewModel>()
+    // Use the Activity as the ViewModelStoreOwner to provide required saved state extras
+    private val viewModel by viewModels<RatingViewModel>(ownerProducer = { requireActivity() })
     var id: String? = ""
     var type: String? = ""
     var title: String? = ""
