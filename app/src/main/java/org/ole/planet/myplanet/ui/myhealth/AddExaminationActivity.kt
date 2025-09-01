@@ -35,7 +35,7 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DimenUtils.dpToPx
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getBoolean
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.getAge
@@ -73,7 +73,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         super.onCreate(savedInstanceState)
         binding = ActivityAddExaminationBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, binding.root)
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         customDiag = HashSet()
