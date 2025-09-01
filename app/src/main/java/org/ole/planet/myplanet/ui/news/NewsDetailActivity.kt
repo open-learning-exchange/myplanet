@@ -19,9 +19,9 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNewsLog
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint

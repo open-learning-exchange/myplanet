@@ -4,7 +4,9 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.realm.Realm
+import java.util.Date
+import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -15,7 +17,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.ApiInterface
@@ -26,16 +27,12 @@ import org.ole.planet.myplanet.service.sync.AdaptiveBatchProcessor
 import org.ole.planet.myplanet.service.sync.OptimizedSyncStrategy
 import org.ole.planet.myplanet.service.sync.RealmPoolManager
 import org.ole.planet.myplanet.service.sync.StandardSyncStrategy
-import org.ole.planet.myplanet.service.sync.SyncConfig
 import org.ole.planet.myplanet.service.sync.SyncErrorRecovery
 import org.ole.planet.myplanet.service.sync.SyncMode
 import org.ole.planet.myplanet.service.sync.SyncPerformanceMonitor
 import org.ole.planet.myplanet.service.sync.SyncStrategy
 import org.ole.planet.myplanet.utilities.NotificationUtils
 import org.ole.planet.myplanet.utilities.SyncTimeLogger
-import java.util.Date
-import javax.inject.Inject
-import javax.inject.Singleton
 
 @Singleton
 class ImprovedSyncManager @Inject constructor(

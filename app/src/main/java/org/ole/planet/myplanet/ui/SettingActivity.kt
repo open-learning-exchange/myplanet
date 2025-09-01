@@ -44,10 +44,10 @@ import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.ThemeManager
-import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint

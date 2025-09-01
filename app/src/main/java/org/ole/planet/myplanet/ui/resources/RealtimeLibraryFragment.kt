@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.ui.resources
 
-import android.os.Bundle
-import android.view.View
 import org.ole.planet.myplanet.base.BaseRealtimeFragment
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.model.RealmMyLibrary
