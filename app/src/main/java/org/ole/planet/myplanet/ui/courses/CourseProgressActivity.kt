@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 
 @AndroidEntryPoint
 class CourseProgressActivity : BaseActivity() {
@@ -34,7 +34,7 @@ class CourseProgressActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityCourseProgressBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
         initActionBar()
         courseId = intent.getStringExtra("courseId").toString()
         realm = databaseService.realmInstance
