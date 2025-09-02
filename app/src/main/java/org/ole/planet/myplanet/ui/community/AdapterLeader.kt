@@ -5,38 +5,43 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.FragmentActivity
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.team.teamMember.MemberDetailFragment
 
-class AdapterLeader(var context: Context, private var leaders: List<RealmUserModel>) :
-    RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    private lateinit var rowJoinedUserBinding: RowJoinedUserBinding
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-        rowJoinedUserBinding = RowJoinedUserBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+internal class AdapterLeader(var context: Context) :
+    ListAdapter<RealmUserModel, AdapterLeader.ViewHolderLeader>(
+        DiffUtils.itemCallback(
+            areItemsTheSame = { oldItem, newItem -> oldItem.name == newItem.name },
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem.firstName == newItem.firstName &&
+                    oldItem.lastName == newItem.lastName &&
+                    oldItem.email == newItem.email
+            }
+        )
+    ) {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderLeader {
+        val rowJoinedUserBinding =
+            RowJoinedUserBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolderLeader(rowJoinedUserBinding)
     }
 
-    override fun getItemCount(): Int {
-        return leaders.size
-    }
+    override fun onBindViewHolder(holder: ViewHolderLeader, position: Int) {
+        val leader = getItem(position)
+        if (leader.firstName == null) {
+            holder.title.text = leader.name
+        } else {
+            holder.title.text = context.getString(R.string.message_placeholder, leader)
+        }
+        holder.tvDescription.text = leader.email
 
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        if (holder is ViewHolderLeader) {
-            val leader = leaders[position]
-            if (leader.firstName == null) {
-                holder.title.text = leader.name
-            } else {
-                holder.title.text = context.getString(R.string.message_placeholder, leader)
-            }
-            holder.tvDescription.text = leader.email
-
-            holder.itemView.setOnClickListener {
-                showLeaderDetails(leader)
-            }
+        holder.itemView.setOnClickListener {
+            showLeaderDetails(leader)
         }
     }
 

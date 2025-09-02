@@ -33,7 +33,9 @@ class LeadersFragment : Fragment() {
         } else {
             val leadersList = RealmUserModel.parseLeadersJson(leaders)
             fragmentMembersBinding.rvMember.layoutManager = GridLayoutManager(activity, 2)
-            fragmentMembersBinding.rvMember.adapter = AdapterLeader(requireActivity(), leadersList)
+            val adapter = AdapterLeader(requireActivity())
+            fragmentMembersBinding.rvMember.adapter = adapter
+            adapter.submitList(leadersList)
         }
     }
 }
