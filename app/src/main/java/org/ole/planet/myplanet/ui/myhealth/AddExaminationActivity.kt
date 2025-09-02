@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getBoolean
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.getAge
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.ui.myhealth.RealmExamination
 
 @AndroidEntryPoint
 class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
@@ -276,7 +277,14 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         examination?.isHasInfo = hasInfo
         pojo?.isUpdated = true
         try {
-            examination?.data = encrypt(gson.toJson(sign), user?.key!!, user?.iv!!)
+            val userKey = user?.key
+            val userIv = user?.iv
+            if (userKey != null && userIv != null) {
+                examination?.data = encrypt(gson.toJson(sign), userKey, userIv)
+            } else {
+                Utilities.toast(this, getString(R.string.unable_to_add_health_record))
+                return
+            }
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -366,7 +374,11 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
                 pojo?.userId = user?._id
             }
             health?.lastExamination = Date().time
-            pojo?.data = encrypt(gson.toJson(health), user?.key, user?.iv)
+            val userKey = user?.key
+            val userIv = user?.iv
+            if (userKey != null && userIv != null) {
+                pojo?.data = encrypt(gson.toJson(health), userKey, userIv)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             Utilities.toast(this, getString(R.string.unable_to_add_health_record))
