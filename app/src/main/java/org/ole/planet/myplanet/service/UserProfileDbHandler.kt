@@ -51,6 +51,7 @@ class UserProfileDbHandler @Inject constructor(
         return mRealm.where(RealmUserModel::class.java)
             .equalTo("id", settings.getString("userId", ""))
             .findFirst()
+            ?.let { mRealm.copyFromRealm(it) }
     }
 
     fun onLogin() {
