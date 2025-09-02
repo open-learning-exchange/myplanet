@@ -30,6 +30,8 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.Utilities
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class ReportsFragment : BaseTeamFragment() {
     private var _binding: FragmentReportsBinding? = null
@@ -233,7 +235,7 @@ class ReportsFragment : BaseTeamFragment() {
     }
 
     fun updatedReportsList(results: RealmResults<RealmMyTeam>) {
-        activity?.runOnUiThread {
+        viewLifecycleOwner.lifecycleScope.launch {
             adapterReports = AdapterReports(requireContext(), results)
             adapterReports.setNonTeamMember(!isMember())
             binding.rvReports.layoutManager = LinearLayoutManager(activity)
