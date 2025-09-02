@@ -14,7 +14,6 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import java.util.regex.Pattern
-import kotlin.text.isNotEmpty
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DownloadWorker
@@ -126,20 +125,15 @@ object DownloadUtils {
     }
     @JvmStatic
     fun downloadAllFiles(dbMyLibrary: List<RealmMyLibrary?>): ArrayList<String> {
-        val urls = ArrayList<String>()
-        for (i in dbMyLibrary.indices) {
-            urls.add(UrlUtils.getUrl(dbMyLibrary[i]))
-        }
-        return urls
+        return dbMyLibrary.map { UrlUtils.getUrl(it) } as ArrayList<String>
     }
 
     @JvmStatic
-    fun downloadFiles(dbMyLibrary: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>): ArrayList<String> {
-        val urls = ArrayList<String>()
-        for (i in selectedItems.indices) {
-            urls.add(UrlUtils.getUrl(dbMyLibrary[selectedItems[i]]))
-        }
-        return urls
+    fun downloadFiles(
+        dbMyLibrary: List<RealmMyLibrary?>,
+        selectedItems: ArrayList<Int>
+    ): ArrayList<String> {
+        return selectedItems.map { UrlUtils.getUrl(dbMyLibrary[it]) } as ArrayList<String>
     }
 
     @RequiresApi(Build.VERSION_CODES.S)

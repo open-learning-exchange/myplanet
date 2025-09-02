@@ -148,6 +148,14 @@ class Service @Inject constructor(
     fun checkVersion(callback: CheckVersionCallback, settings: SharedPreferences) {
         if (shouldPromptForSettings(settings)) return
 
+        val lastCheckTime = preferences.getLong("last_version_check_timestamp", 0)
+        val currentTime = System.currentTimeMillis()
+        val twentyFourHoursInMillis = 24 * 60 * 60 * 1000
+
+        if (currentTime - lastCheckTime < twentyFourHoursInMillis) {
+            return
+        }
+
         serviceScope.launch {
             callback.onCheckingVersion()
             try {
@@ -158,6 +166,7 @@ class Service @Inject constructor(
                 }
 
                 preferences.edit {
+                    putLong("last_version_check_timestamp", System.currentTimeMillis())
                     putInt("LastWifiID", NetworkUtils.getCurrentNetworkId(context))
                     putString("versionDetail", Gson().toJson(planetInfo))
                 }
