@@ -7,6 +7,7 @@ import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.channels.awaitClose
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.queryList
 import org.ole.planet.myplanet.model.RealmFeedback
@@ -17,23 +18,27 @@ class FeedbackRepositoryImpl @Inject constructor(
     private val gson: Gson,
 ) : RealmRepository(databaseService), FeedbackRepository {
 
-    override fun getFeedback(userModel: RealmUserModel?): Flow<List<RealmFeedback>> =
-        callbackFlow {
+    override fun getFeedback(userModel: RealmUserModel?): Flow<List<RealmFeedback>> {
+        val isManager = userModel?.isManager() == true
+        val owner = userModel?.name
+        return callbackFlow {
             val feedback = withRealm { realm ->
-                if (userModel?.isManager() == true) {
+                if (isManager) {
                     realm.queryList(RealmFeedback::class.java) {
                         sort("openTime", Sort.DESCENDING)
                     }
                 } else {
                     realm.queryList(RealmFeedback::class.java) {
-                        equalTo("owner", userModel?.name)
+                        equalTo("owner", owner)
                         sort("openTime", Sort.DESCENDING)
                     }
                 }
             }
             trySend(feedback)
             close()
+            awaitClose { }
         }
+    }
 
     override suspend fun getFeedbackById(id: String?): RealmFeedback? {
         return id?.let { findByField(RealmFeedback::class.java, "id", it) }
