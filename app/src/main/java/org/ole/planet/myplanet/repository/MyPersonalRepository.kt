@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.repository
 
+import org.ole.planet.myplanet.model.RealmMyPersonal
+
 interface MyPersonalRepository {
     suspend fun savePersonalResource(
         title: String,
@@ -8,4 +10,6 @@ interface MyPersonalRepository {
         path: String?,
         description: String?
     )
+
+    suspend fun getPersonalItems(userId: String?): List<RealmMyPersonal>
 }
