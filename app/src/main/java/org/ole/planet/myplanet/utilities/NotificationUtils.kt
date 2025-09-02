@@ -16,8 +16,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -490,81 +488,82 @@ class NotificationActionReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
         val notificationId = intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_ID)
-        
-        when (action) {
-            NotificationUtils.ACTION_MARK_AS_READ -> {
-                markNotificationAsRead(context, notificationId)
-                notificationId?.let {
-                    NotificationUtils.getInstance(context).clearNotification(it)
+        val pendingResult = goAsync()
+        MainApplication.applicationScope.launch {
+            when (action) {
+                NotificationUtils.ACTION_MARK_AS_READ -> {
+                    markNotificationAsRead(context, notificationId)
+                    notificationId?.let {
+                        NotificationUtils.getInstance(context).clearNotification(it)
+                    }
+                }
+
+                NotificationUtils.ACTION_STORAGE_SETTINGS -> {
+                    markNotificationAsRead(context, notificationId)
+                    val storageIntent = Intent(Settings.ACTION_INTERNAL_STORAGE_SETTINGS).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    context.startActivity(storageIntent)
+                    notificationId?.let {
+                        NotificationUtils.getInstance(context).clearNotification(it)
+                    }
+                }
+
+                NotificationUtils.ACTION_OPEN_NOTIFICATION -> {
+                    markNotificationAsRead(context, notificationId)
+                    val notificationType = intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_TYPE)
+                    val relatedId = intent.getStringExtra(NotificationUtils.EXTRA_RELATED_ID)
+
+                    val dashboardIntent = Intent(context, DashboardActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        putExtra("notification_type", notificationType)
+                        putExtra("notification_id", notificationId)
+                        putExtra("related_id", relatedId)
+                        putExtra("auto_navigate", true)
+                    }
+                    context.startActivity(dashboardIntent)
+                    notificationId?.let {
+                        NotificationUtils.getInstance(context).clearNotification(it)
+                    }
                 }
             }
-            
-            NotificationUtils.ACTION_STORAGE_SETTINGS -> {
-                markNotificationAsRead(context, notificationId)
-                val storageIntent = Intent(Settings.ACTION_INTERNAL_STORAGE_SETTINGS).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                }
-                context.startActivity(storageIntent)
-                notificationId?.let {
-                    NotificationUtils.getInstance(context).clearNotification(it)
-                }
-            }
-            
-            NotificationUtils.ACTION_OPEN_NOTIFICATION -> {
-                markNotificationAsRead(context, notificationId)
-                val notificationType = intent.getStringExtra(NotificationUtils.EXTRA_NOTIFICATION_TYPE)
-                val relatedId = intent.getStringExtra(NotificationUtils.EXTRA_RELATED_ID)
-                
-                val dashboardIntent = Intent(context, DashboardActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    putExtra("notification_type", notificationType)
-                    putExtra("notification_id", notificationId)
-                    putExtra("related_id", relatedId)
-                    putExtra("auto_navigate", true)
-                }
-                context.startActivity(dashboardIntent)
-                notificationId?.let {
-                    NotificationUtils.getInstance(context).clearNotification(it)
-                }
-            }
+            pendingResult.finish()
         }
     }
-    
-    private fun markNotificationAsRead(context: Context, notificationId: String?) {
-        if (notificationId == null) {
-            return
-        }
 
-        MainApplication.applicationScope.launch(Dispatchers.Main) {
+    private suspend fun markNotificationAsRead(context: Context, notificationId: String?) {
+        if (notificationId == null) return
+
+        try {
+            notificationRepository.markAsRead(notificationId)
+            val broadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM").apply {
+                setPackage(context.packageName)
+                putExtra("notification_id", notificationId)
+            }
+            context.sendBroadcast(broadcastIntent)
+
             try {
-                notificationRepository.markAsRead(notificationId)
-                delay(200)
-                val broadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
-                broadcastIntent.setPackage(context.packageName)
-                broadcastIntent.putExtra("notification_id", notificationId)
-                context.sendBroadcast(broadcastIntent)
-
-                try {
-                    val localBroadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM_LOCAL")
-                    localBroadcastIntent.putExtra("notification_id", notificationId)
-                    androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(context)
-                        .sendBroadcast(localBroadcastIntent)
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                val localBroadcastIntent = Intent("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM_LOCAL").apply {
+                    putExtra("notification_id", notificationId)
                 }
-
-                try {
-                    val dashboardIntent = Intent(context, DashboardActivity::class.java)
-                    dashboardIntent.action = "REFRESH_NOTIFICATION_BADGE"
-                    dashboardIntent.putExtra("notification_id", notificationId)
-                    dashboardIntent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-                    context.startActivity(dashboardIntent)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                androidx.localbroadcastmanager.content.LocalBroadcastManager.getInstance(context)
+                    .sendBroadcast(localBroadcastIntent)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+
+            try {
+                val dashboardIntent = Intent(context, DashboardActivity::class.java).apply {
+                    action = "REFRESH_NOTIFICATION_BADGE"
+                    putExtra("notification_id", notificationId)
+                    flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                context.startActivity(dashboardIntent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }
