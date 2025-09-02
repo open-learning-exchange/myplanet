@@ -92,7 +92,7 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     private fun showProgressDialog() {
-        activity?.runOnUiThread {
+        viewLifecycleOwner.lifecycleScope.launch {
             if (isFragmentActive()) {
                 prgDialog.show()
             }

@@ -72,15 +72,15 @@ abstract class BaseRealtimeFragment<LI> : BaseRecyclerFragment<LI>() {
     }
     
     protected fun refreshRecyclerView() {
-        requireActivity().runOnUiThread {
+        viewLifecycleOwner.lifecycleScope.launch {
             recyclerView?.adapter?.notifyDataSetChanged()
             // Alternative: Use DiffUtil for more efficient updates
             // if (adapter is YourAdapter) adapter.updateData(newData)
         }
     }
-    
+
     protected fun refreshRecyclerViewWithDiff(newData: List<*>) {
-        requireActivity().runOnUiThread {
+        viewLifecycleOwner.lifecycleScope.launch {
             // Implement DiffUtil-based refresh for better performance
             // This should be implemented in subclasses with specific adapter types
         }
