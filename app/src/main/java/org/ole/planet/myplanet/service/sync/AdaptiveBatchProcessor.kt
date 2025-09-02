@@ -5,9 +5,9 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
-import kotlinx.coroutines.sync.Semaphore
 import kotlin.math.max
 import kotlin.math.min
+import kotlinx.coroutines.sync.Semaphore
 
 data class SystemCapabilities(
     val availableMemoryMB: Long,

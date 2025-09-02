@@ -18,10 +18,9 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
-import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
+import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
-import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.databinding.FragmentFeedbackListBinding
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.RealmFeedback
@@ -29,6 +28,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment.OnFeedbackSubmittedListener
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
@@ -86,7 +86,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
         realtimeSyncListener = object : BaseRealtimeSyncListener() {
             override fun onTableDataUpdated(update: TableDataUpdate) {
                 if (update.table == "feedback" && update.shouldRefreshUI) {
-                    activity?.runOnUiThread {
+                    viewLifecycleOwner.lifecycleScope.launch {
                         refreshFeedbackListData()
                     }
                 }
@@ -124,7 +124,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
     private fun startSyncManager() {
         syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded && !requireActivity().isFinishing) {
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
                         customProgressDialog?.setText(getString(R.string.syncing_feedback))
@@ -134,7 +134,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
             }
 
             override fun onSyncComplete() {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
@@ -145,7 +145,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
             }
 
             override fun onSyncFailed(msg: String?) {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null

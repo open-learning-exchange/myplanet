@@ -5,7 +5,6 @@ import android.view.View
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
@@ -73,15 +72,15 @@ abstract class BaseRealtimeFragment<LI> : BaseRecyclerFragment<LI>() {
     }
     
     protected fun refreshRecyclerView() {
-        requireActivity().runOnUiThread {
+        viewLifecycleOwner.lifecycleScope.launch {
             recyclerView?.adapter?.notifyDataSetChanged()
             // Alternative: Use DiffUtil for more efficient updates
             // if (adapter is YourAdapter) adapter.updateData(newData)
         }
     }
-    
+
     protected fun refreshRecyclerViewWithDiff(newData: List<*>) {
-        requireActivity().runOnUiThread {
+        viewLifecycleOwner.lifecycleScope.launch {
             // Implement DiffUtil-based refresh for better performance
             // This should be implemented in subclasses with specific adapter types
         }

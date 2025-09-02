@@ -43,7 +43,7 @@ import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.userprofile.TeamListAdapter
 import org.ole.planet.myplanet.utilities.AuthHelper
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils
@@ -65,7 +65,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
         lblLastSyncDate = binding.lblLastSyncDate
         btnSignIn = binding.btnSignin
         syncIcon = binding.syncIcon

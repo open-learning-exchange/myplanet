@@ -2,15 +2,14 @@ package org.ole.planet.myplanet.service.sync
 
 import android.content.Context
 import io.realm.Realm
-import io.realm.RealmConfiguration
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
-import kotlinx.coroutines.runBlocking
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.atomic.AtomicInteger
 
 data class RealmPoolConfig(
     val maxConnections: Int = 5,

@@ -32,9 +32,9 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
-import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.ApplicantsPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.CalendarPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.ChatPage
@@ -169,7 +169,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     private fun startSyncManager() {
         syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded && !requireActivity().isFinishing) {
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
                         customProgressDialog?.setText(requireContext().getString(R.string.syncing_team_data))
@@ -179,7 +179,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
             }
 
             override fun onSyncComplete() {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
@@ -190,7 +190,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
             }
 
             override fun onSyncFailed(msg: String?) {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
@@ -393,7 +393,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         realtimeSyncListener = object : BaseRealtimeSyncListener() {
             override fun onTableDataUpdated(update: TableDataUpdate) {
                 if (update.table == "teams" && update.shouldRefreshUI) {
-                    activity?.runOnUiThread {
+                    viewLifecycleOwner.lifecycleScope.launch {
                         refreshTeamData()
                     }
                 }

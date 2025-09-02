@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.utilities
 
 import android.content.Context
-import android.os.Handler
-import android.os.Looper
 import androidx.core.net.toUri
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
@@ -21,7 +19,6 @@ object SyncTimeLogger {
     private var startTime: Long = 0
     private var endTime: Long = 0
     private var isLogging = false
-    private val handler = Handler(Looper.getMainLooper())
 
     fun startLogging() {
         startTime = System.currentTimeMillis()
@@ -41,7 +38,7 @@ object SyncTimeLogger {
 
     private fun saveSummaryToRealm(summary: String, uploadManager: UploadManager? = null) {
         val settings = MainApplication.context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-        handler.post {
+        MainApplication.applicationScope.launch(Dispatchers.Main) {
             MainApplication.createLog("sync summary", summary)
             val updateUrl = "${settings.getString("serverURL", "")}"
             val serverUrlMapper = ServerUrlMapper()

@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.service.sync
 
+import kotlin.math.min
+import kotlin.math.pow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlin.math.min
-import kotlin.math.pow
 
 enum class CircuitState {
     CLOSED, OPEN, HALF_OPEN
