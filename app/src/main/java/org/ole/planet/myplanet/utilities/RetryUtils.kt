@@ -1,11 +1,11 @@
 package org.ole.planet.myplanet.utilities
 
 object RetryUtils {
-    fun <T> retry(
+    suspend fun <T> retry(
         maxAttempts: Int = 3,
         delayMs: Long = 2000L,
         shouldRetry: (T?) -> Boolean = { it == null },
-        block: () -> T?
+        block: suspend () -> T?
     ): T? {
         var attempt = 0
         var result: T? = null
@@ -23,12 +23,7 @@ object RetryUtils {
             }
             attempt++
             if (attempt < maxAttempts) {
-                try {
-                    Thread.sleep(delayMs)
-                } catch (ie: InterruptedException) {
-                    Thread.currentThread().interrupt()
-                    return result
-                }
+                kotlinx.coroutines.delay(delayMs)
             }
         }
         lastException?.printStackTrace()
