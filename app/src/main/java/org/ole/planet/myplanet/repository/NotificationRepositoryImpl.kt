@@ -17,4 +17,10 @@ class NotificationRepositoryImpl @Inject constructor(
                 .toInt()
         }
     }
+
+    override suspend fun markAsRead(id: String) {
+        update(RealmNotification::class.java, "id", id) { notification ->
+            notification.isRead = true
+        }
+    }
 }
