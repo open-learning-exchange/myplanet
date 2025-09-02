@@ -3,15 +3,12 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.realm.Realm
-import io.realm.RealmChangeListener
-import io.realm.RealmResults
 import io.realm.Sort
 import javax.inject.Inject
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.datamanager.queryList
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUserModel
 
@@ -22,29 +19,20 @@ class FeedbackRepositoryImpl @Inject constructor(
 
     override fun getFeedback(userModel: RealmUserModel?): Flow<List<RealmFeedback>> =
         callbackFlow {
-            val realm = Realm.getDefaultInstance()
-            val feedbackList: RealmResults<RealmFeedback> =
+            val feedback = withRealm { realm ->
                 if (userModel?.isManager() == true) {
-                    realm.where(RealmFeedback::class.java)
-                        .sort("openTime", Sort.DESCENDING)
-                        .findAllAsync()
+                    realm.queryList(RealmFeedback::class.java) {
+                        sort("openTime", Sort.DESCENDING)
+                    }
                 } else {
-                    realm.where(RealmFeedback::class.java)
-                        .equalTo("owner", userModel?.name)
-                        .sort("openTime", Sort.DESCENDING)
-                        .findAllAsync()
+                    realm.queryList(RealmFeedback::class.java) {
+                        equalTo("owner", userModel?.name)
+                        sort("openTime", Sort.DESCENDING)
+                    }
                 }
-
-            val listener = RealmChangeListener<RealmResults<RealmFeedback>> { results ->
-                trySend(realm.copyFromRealm(results))
             }
-
-            feedbackList.addChangeListener(listener)
-
-            awaitClose {
-                feedbackList.removeChangeListener(listener)
-                realm.close()
-            }
+            trySend(feedback)
+            close()
         }
 
     override suspend fun getFeedbackById(id: String?): RealmFeedback? {
