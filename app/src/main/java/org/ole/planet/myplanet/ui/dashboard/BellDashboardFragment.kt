@@ -98,8 +98,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun setNetworkIndicatorColor(colorRes: Int) {
         if (isAdded && view?.isAttachedToWindow == true) {
-            fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
-                ContextCompat.getColor(requireContext(), colorRes)
+            val color = ContextCompat.getColor(requireContext(), colorRes)
+            fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = color
         }
     }
 
@@ -107,18 +107,27 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val serverCheckPrimary = lifecycleScope.async(Dispatchers.IO) {
             viewModel.checkServerConnection(mapping.primaryUrl)
         }
-        val serverCheckAlternative = mapping.alternativeUrl?.let {
-            lifecycleScope.async(Dispatchers.IO) { viewModel.checkServerConnection(it) }
-        }
 
         val primaryAvailable = serverCheckPrimary.await()
-        val alternativeAvailable = serverCheckAlternative?.await() == true
-        return primaryAvailable || alternativeAvailable
+
+        if (primaryAvailable) {
+            return true
+        }
+
+        mapping.alternativeUrl?.let {
+            val serverCheckAlternative = lifecycleScope.async(Dispatchers.IO) {
+                viewModel.checkServerConnection(it)
+            }
+            val alternativeAvailable = serverCheckAlternative.await()
+            return alternativeAvailable
+        }
+
+        return false
     }
 
     private suspend fun handleConnectingState() {
         setNetworkIndicatorColor(R.color.md_yellow_600)
-        val updateUrl = settings?.getString("serverURL", "") ?: return
+        val updateUrl = settings.getString("serverURL", "") ?: return
         val mapping = ServerUrlMapper().processUrl(updateUrl)
         try {
             val reachable = isServerReachable(mapping)

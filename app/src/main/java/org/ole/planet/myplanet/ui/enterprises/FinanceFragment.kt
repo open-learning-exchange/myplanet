@@ -1,3 +1,4 @@
+
 package org.ole.planet.myplanet.ui.enterprises
 
 import android.content.DialogInterface
@@ -24,6 +25,8 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class FinanceFragment : BaseTeamFragment() {
     private var _binding: FragmentFinanceBinding? = null
@@ -252,24 +255,23 @@ class FinanceFragment : BaseTeamFragment() {
     }
 
     private fun updatedFinanceList(results: RealmResults<RealmMyTeam>) {
-        activity?.runOnUiThread {
+        viewLifecycleOwner.lifecycleScope.launch {
             if (!results.isEmpty()) {
                 adapterFinance = AdapterFinance(requireActivity(), results)
                 binding.rvFinance.layoutManager = LinearLayoutManager(activity)
                 binding.rvFinance.adapter = adapterFinance
                 adapterFinance?.notifyDataSetChanged()
                 calculateTotal(results)
-            } else if(binding.tvFromDateCalendar.text.isNullOrEmpty()
+            } else if (binding.tvFromDateCalendar.text.isNullOrEmpty()
                 && binding.etToDate.text.isNullOrEmpty()) {
                 binding.rvFinance.adapter = null
-                binding.dataLayout.visibility= View.GONE
-                binding.tvNodata.visibility= View.VISIBLE
-            }else{
+                binding.dataLayout.visibility = View.GONE
+                binding.tvNodata.visibility = View.VISIBLE
+            } else {
                 calculateTotal(results)
-                binding.dataLayout.visibility= View.VISIBLE
-                binding.tvNodata.visibility= View.VISIBLE
+                binding.dataLayout.visibility = View.VISIBLE
+                binding.tvNodata.visibility = View.VISIBLE
                 binding.rvFinance.adapter = null
-
             }
         }
     }
