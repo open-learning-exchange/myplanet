@@ -3,11 +3,14 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.realm.Realm
+import io.realm.RealmChangeListener
+import io.realm.RealmResults
 import io.realm.Sort
 import javax.inject.Inject
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.channels.awaitClose
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.queryList
 import org.ole.planet.myplanet.model.RealmFeedback
@@ -22,8 +25,20 @@ class FeedbackRepositoryImpl @Inject constructor(
         val isManager = userModel?.isManager() == true
         val owner = userModel?.name
         return callbackFlow {
-            val feedback = withRealm { realm ->
-                if (isManager) {
+            val realm = Realm.getDefaultInstance()
+            val results: RealmResults<RealmFeedback> = if (isManager) {
+                realm.where(RealmFeedback::class.java)
+                    .sort("openTime", Sort.DESCENDING)
+                    .findAllAsync()
+            } else {
+                realm.where(RealmFeedback::class.java)
+                    .equalTo("owner", owner)
+                    .sort("openTime", Sort.DESCENDING)
+                    .findAllAsync()
+            }
+
+            val listener = RealmChangeListener<RealmResults<RealmFeedback>> {
+                val feedback = if (isManager) {
                     realm.queryList(RealmFeedback::class.java) {
                         sort("openTime", Sort.DESCENDING)
                     }
@@ -33,10 +48,15 @@ class FeedbackRepositoryImpl @Inject constructor(
                         sort("openTime", Sort.DESCENDING)
                     }
                 }
+                trySend(feedback)
             }
-            trySend(feedback)
-            close()
-            awaitClose { }
+
+            results.addChangeListener(listener)
+
+            awaitClose {
+                results.removeChangeListener(listener)
+                realm.close()
+            }
         }
     }
 
