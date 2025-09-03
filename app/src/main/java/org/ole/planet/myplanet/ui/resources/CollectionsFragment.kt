@@ -9,7 +9,7 @@ import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.fragment.app.DialogFragment
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Locale
+import io.realm.Case
 import javax.inject.Inject
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
@@ -29,7 +29,6 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
     @Inject
     lateinit var databaseService: DatabaseService
     private lateinit var list: List<RealmTag>
-    private var filteredList: ArrayList<RealmTag> = ArrayList()
     private lateinit var adapter: TagExpandableAdapter
     private var dbType: String? = null
     private var listener: TagClickListener? = null
@@ -68,17 +67,17 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
     }
 
     private fun filterTags(charSequence: String) {
-        filteredList.clear()
-        if (charSequence.isEmpty()) {
-            adapter.setTagList(list)
-            return
-        }
-        list.forEach { t ->
-            if (t.name?.lowercase(Locale.ROOT)?.contains(charSequence.lowercase(Locale.ROOT)) == true) {
-                filteredList.add(t)
+        databaseService.withRealm { realm ->
+            val query = realm.where(RealmTag::class.java)
+                .equalTo("db", dbType)
+                .isNotEmpty("name")
+                .equalTo("isAttached", false)
+            if (charSequence.isNotEmpty()) {
+                query.contains("name", charSequence, Case.INSENSITIVE)
             }
+            list = realm.copyFromRealm(query.findAll())
+            adapter.setTagList(list)
         }
-        adapter.setTagList(filteredList)
     }
 
     private fun setListAdapter() {
