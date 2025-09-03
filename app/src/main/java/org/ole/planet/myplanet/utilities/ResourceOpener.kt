@@ -81,7 +81,7 @@ object ResourceOpener {
             } else {
                 bundle.putString(
                     "videoURL",
-                    Uri.fromFile(FileUtils.getSDPathFromUrl(items.resourceRemoteAddress)).toString()
+                    Uri.fromFile(FileUtils.getSDPathFromUrl(activity, items.resourceRemoteAddress)).toString()
                 )
             }
             bundle.putString("Auth", "")

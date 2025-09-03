@@ -84,7 +84,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     fun getUrlsAndStartDownload(lib: List<RealmMyLibrary?>, urls: ArrayList<String>) {
         for (library in lib) {
             val url = UrlUtils.getUrl(library)
-            if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url)) {
+            if (!FileUtils.checkFileExist(requireContext(), url) && !TextUtils.isEmpty(url)) {
                 urls.add(url)
             }
         }
@@ -105,7 +105,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             val library = pendingAutoOpenLibrary!!
             shouldAutoOpenAfterDownload = false
             pendingAutoOpenLibrary = null
-            if (library.isResourceOffline() || FileUtils.checkFileExist(UrlUtils.getUrl(library))) {
+            if (library.isResourceOffline() || FileUtils.checkFileExist(requireContext(), UrlUtils.getUrl(library))) {
                 ResourceOpener.openFileType(requireActivity(), library, "offline", profileDbHandler)
             }
         }

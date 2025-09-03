@@ -84,7 +84,7 @@ class NewsDetailActivity : BaseActivity() {
                 }
                 msg = msg?.replace(
                     markDown,
-                    "<img style=\"float: right; padding: 10px 10px 10px 10px;\"  width=\"200px\" src=\"file://" + FileUtils.SD_PATH + "/" + library?.id + "/" + library?.resourceLocalAddress + "\"/>",
+                    "<img style=\"float: right; padding: 10px 10px 10px 10px;\"  width=\"200px\" src=\"file://" + FileUtils.getOlePath(this) + library?.id + "/" + library?.resourceLocalAddress + "\"/>",
                     false
                 )
             }
@@ -135,7 +135,7 @@ class NewsDetailActivity : BaseActivity() {
             }
             if (library != null) {
                 Glide.with(this)
-                    .load(File(FileUtils.SD_PATH, library.id + "/" + library.resourceLocalAddress))
+                    .load(File(FileUtils.getOlePath(this), library.id + "/" + library.resourceLocalAddress))
                     .into(binding.img)
                 binding.img.visibility = View.VISIBLE
                 return
