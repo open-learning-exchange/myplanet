@@ -89,4 +89,11 @@ class DictionaryActivity : BaseActivity() {
             }
         }
     }
+
+    override fun onDestroy() {
+        if (this::mRealm.isInitialized && !mRealm.isClosed) {
+            mRealm.close()
+        }
+        super.onDestroy()
+    }
 }
