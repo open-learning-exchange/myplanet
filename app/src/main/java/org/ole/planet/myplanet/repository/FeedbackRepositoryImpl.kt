@@ -41,7 +41,7 @@ class FeedbackRepositoryImpl @Inject constructor(
 
                 feedbackList.addChangeListener(listener)
 
-                runBlocking {
+                runBlocking(this@callbackFlow.coroutineContext) {
                     awaitClose {
                         feedbackList.removeChangeListener(listener)
                     }
