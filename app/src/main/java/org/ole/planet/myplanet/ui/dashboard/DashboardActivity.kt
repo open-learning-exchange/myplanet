@@ -95,6 +95,8 @@ import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NotificationUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities.toast
+import javax.inject.Inject
+import org.ole.planet.myplanet.repository.NotificationRepository
 
 @AndroidEntryPoint  
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, NotificationListener {
@@ -113,6 +115,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var dl: DrawerLayout? = null
     private val realmListeners = mutableListOf<RealmListener>()
     private val dashboardViewModel: DashboardViewModel by viewModels()
+    @Inject
+    lateinit var notificationRepository: NotificationRepository
     private lateinit var challengeHelper: ChallengeHelper
     private lateinit var notificationManager: NotificationUtils.NotificationManager
     private var notificationsShownThisSession = false
@@ -775,7 +779,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 .findFirst()
                 ?.name
         }.forEach { title ->
-            dashboardViewModel.createNotificationIfNotExists(realm, "survey", title, title, userId)
+            notificationRepository.createNotificationIfNotExists(realm, "survey", title, title, userId)
         }
     }
 
@@ -787,7 +791,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             .findAll()
 
         tasks.forEach { task ->
-            dashboardViewModel.createNotificationIfNotExists(
+            notificationRepository.createNotificationIfNotExists(
                 realm,
                 "task",
                 "${task.title} ${formatDate(task.deadline)}",
@@ -800,10 +804,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun createStorageDatabaseNotifications(realm: Realm, userId: String?) {
         val storageRatio = totalAvailableMemoryRatio
         if (storageRatio > 85) {
-            dashboardViewModel.createNotificationIfNotExists(realm, "storage", "$storageRatio%", "storage", userId)
+            notificationRepository.createNotificationIfNotExists(realm, "storage", "$storageRatio%", "storage", userId)
         }
 
-        dashboardViewModel.createNotificationIfNotExists(realm, "storage", "90%", "storage_test", userId)
+        notificationRepository.createNotificationIfNotExists(realm, "storage", "90%", "storage_test", userId)
     }
 
     private fun createJoinRequestDatabaseNotifications(realm: Realm, userId: String?) {
@@ -832,7 +836,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 val teamName = team?.name ?: "Unknown Team"
                 val message = "$requesterName has requested to join $teamName"
 
-                dashboardViewModel.createNotificationIfNotExists(
+                notificationRepository.createNotificationIfNotExists(
                     realm, "join_request", message, joinRequest._id, userId
                 )
             }
