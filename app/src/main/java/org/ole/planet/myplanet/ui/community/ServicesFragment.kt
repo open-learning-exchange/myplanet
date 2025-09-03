@@ -22,11 +22,16 @@ import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
 class ServicesFragment : BaseTeamFragment() {
-    private lateinit var fragmentServicesBinding: FragmentServicesBinding
+    private var binding: FragmentServicesBinding? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentServicesBinding = FragmentServicesBinding.inflate(inflater, container, false)
-        return fragmentServicesBinding.root
+        binding = FragmentServicesBinding.inflate(inflater, container, false)
+        return binding!!.root
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        binding = null
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -37,7 +42,7 @@ class ServicesFragment : BaseTeamFragment() {
 
         val links = mRealm.where(RealmMyTeam::class.java)?.equalTo("docType", "link")?.findAll()
 
-        fragmentServicesBinding.fab.setOnClickListener {
+        binding?.fab?.setOnClickListener {
             val bottomSheetDialog: BottomSheetDialogFragment = AddLinkFragment()
             bottomSheetDialog.show(childFragmentManager, "")
             viewLifecycleOwner.lifecycleScope.launch {
@@ -49,19 +54,19 @@ class ServicesFragment : BaseTeamFragment() {
         }
 
         if (links?.size == 0) {
-            fragmentServicesBinding.llServices.visibility = View.GONE
-            fragmentServicesBinding.tvNoLinks.visibility = View.VISIBLE
+            binding?.llServices?.visibility = View.GONE
+            binding?.tvNoLinks?.visibility = View.VISIBLE
         } else {
-            fragmentServicesBinding.llServices.visibility = View.VISIBLE
+            binding?.llServices?.visibility = View.VISIBLE
         }
 
         val description = team?.description ?: ""
         if (description.isEmpty()) {
-            fragmentServicesBinding.tvDescription.visibility = View.GONE
-            fragmentServicesBinding.tvNoDescription.visibility = View.VISIBLE
+            binding?.tvDescription?.visibility = View.GONE
+            binding?.tvNoDescription?.visibility = View.VISIBLE
         } else {
-            fragmentServicesBinding.tvDescription.visibility = View.VISIBLE
-            fragmentServicesBinding.tvNoDescription.visibility = View.GONE
+            binding?.tvDescription?.visibility = View.VISIBLE
+            binding?.tvNoDescription?.visibility = View.GONE
         }
         val markdownContentWithLocalPaths = prependBaseUrlToImages(
             description,
@@ -69,13 +74,13 @@ class ServicesFragment : BaseTeamFragment() {
             600,
             350
         )
-        setMarkdownText(fragmentServicesBinding.tvDescription, markdownContentWithLocalPaths)
+        binding?.let { setMarkdownText(it.tvDescription, markdownContentWithLocalPaths) }
         setRecyclerView(links)
 
         if (user?.isManager() == true || user?.isLeader() == true) {
-            fragmentServicesBinding.fab.show()
+            binding?.fab?.show()
         } else {
-            fragmentServicesBinding.fab.hide()
+            binding?.fab?.hide()
         }
     }
 
@@ -87,9 +92,10 @@ class ServicesFragment : BaseTeamFragment() {
     }
 
     private fun setRecyclerView(links: RealmResults<RealmMyTeam>?) {
-        fragmentServicesBinding.llServices.removeAllViews()
+        val parent = binding?.llServices ?: return
+        parent.removeAllViews()
         links?.forEach { team ->
-            val b: TextView = LayoutInflater.from(activity).inflate(R.layout.button_single, fragmentServicesBinding.llServices, false) as TextView
+            val b: TextView = LayoutInflater.from(activity).inflate(R.layout.button_single, parent, false) as TextView
             b.setPadding(8, 8, 8, 8)
             b.text = team.title
             b.setOnClickListener {
@@ -110,7 +116,7 @@ class ServicesFragment : BaseTeamFragment() {
                     }
                 }
             }
-            fragmentServicesBinding.llServices.addView(b)
+            parent.addView(b)
         }
     }
 }

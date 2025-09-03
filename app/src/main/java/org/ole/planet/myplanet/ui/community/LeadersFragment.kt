@@ -16,24 +16,31 @@ import org.ole.planet.myplanet.model.RealmUserModel
 
 @AndroidEntryPoint
 class LeadersFragment : Fragment() {
-    private lateinit var fragmentMembersBinding: FragmentMembersBinding
+    private var binding: FragmentMembersBinding? = null
     @Inject
     @AppPreferences
     lateinit var settings: SharedPreferences
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentMembersBinding = FragmentMembersBinding.inflate(inflater, container, false)
-        return fragmentMembersBinding.root
+        binding = FragmentMembersBinding.inflate(inflater, container, false)
+        return binding!!.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val leaders = settings.getString("communityLeaders", "")
         if (leaders.isNullOrEmpty()) {
-            fragmentMembersBinding.tvNodata.text = getString(R.string.no_data_available)
+            binding?.tvNodata?.let { it.text = getString(R.string.no_data_available) }
         } else {
             val leadersList = RealmUserModel.parseLeadersJson(leaders)
-            fragmentMembersBinding.rvMember.layoutManager = GridLayoutManager(activity, 2)
-            fragmentMembersBinding.rvMember.adapter = AdapterLeader(requireActivity(), leadersList)
+            binding?.rvMember?.apply {
+                layoutManager = GridLayoutManager(activity, 2)
+                adapter = AdapterLeader(requireActivity(), leadersList)
+            }
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        binding = null
     }
 }

@@ -14,7 +14,6 @@ import javax.crypto.spec.SecretKeySpec
 
 class AndroidDecrypter {
     companion object {
-
         @JvmStatic
         @Throws(Exception::class)
         fun encrypt(plainText: String, key: String?, iv: String?): String {
@@ -59,12 +58,15 @@ class AndroidDecrypter {
         @JvmStatic
         fun decrypt(encrypted: String?, key: String?, initVector: String?): String? {
             try {
-                val iv = IvParameterSpec(initVector?.let { hexStringToByteArray(it) })
-                val skeySpec = SecretKeySpec(key?.let { hexStringToByteArray(it) }, "AES")
+                if (encrypted == null || key == null || initVector == null) {
+                    return null
+                }
+                val iv = IvParameterSpec(hexStringToByteArray(initVector))
+                val skeySpec = SecretKeySpec(hexStringToByteArray(key), "AES")
 
                 val cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING")
                 cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv)
-                val original = cipher.doFinal(encrypted?.let { hexStringToByteArray(it) })
+                val original = cipher.doFinal(hexStringToByteArray(encrypted))
                 return String(original)
             } catch (ex: Exception) {
                 ex.printStackTrace()
