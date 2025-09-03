@@ -91,7 +91,7 @@ class DictionaryActivity : BaseActivity() {
     }
 
     override fun onDestroy() {
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
+        if (!mRealm.isClosed) {
             mRealm.close()
         }
         super.onDestroy()
