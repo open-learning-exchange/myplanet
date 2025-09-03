@@ -252,7 +252,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                     }.thenBy { it.name })
 
                     val adapterTeamList = AdapterTeamList(
-                        activity as Context, sortedList, mRealm, childFragmentManager, uploadManager
+                        activity as Context, sortedList.toMutableList(), mRealm, childFragmentManager, uploadManager
                     )
                     adapterTeamList.setTeamListener(this@TeamFragment)
                     binding.rvTeamList.adapter = adapterTeamList
@@ -280,7 +280,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     private fun setTeamList() {
         val list = teamList!!
-        adapterTeamList = activity?.let { AdapterTeamList(it, list, mRealm, childFragmentManager, uploadManager) } ?: return
+        adapterTeamList = activity?.let { AdapterTeamList(it, list.toMutableList(), mRealm, childFragmentManager, uploadManager) } ?: return
         adapterTeamList.setType(type)
         adapterTeamList.setTeamListener(this@TeamFragment)
         requireView().findViewById<View>(R.id.type).visibility =
@@ -318,7 +318,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private fun updatedTeamList() {
         viewLifecycleOwner.lifecycleScope.launch {
             val sortedList = sortTeams(teamList!!)
-            val adapterTeamList = AdapterTeamList(activity as Context, sortedList, mRealm, childFragmentManager, uploadManager).apply {
+            val adapterTeamList = AdapterTeamList(activity as Context, sortedList.toMutableList(), mRealm, childFragmentManager, uploadManager).apply {
                 setType(type)
                 setTeamListener(this@TeamFragment)
             }

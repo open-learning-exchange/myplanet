@@ -12,6 +12,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.toColorInt
 import androidx.fragment.app.FragmentManager
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
 import org.ole.planet.myplanet.R
@@ -27,7 +28,7 @@ import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-class AdapterTeamList(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm, private val fragmentManager: FragmentManager, private val uploadManager: UploadManager) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
+class AdapterTeamList(private val context: Context, private var list: MutableList<RealmMyTeam>, private val mRealm: Realm, private val fragmentManager: FragmentManager, private val uploadManager: UploadManager) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private lateinit var itemTeamListBinding: ItemTeamListBinding
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
@@ -170,7 +171,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         val userId = user?.id
 
         val validTeams = list.filter { it.status?.isNotEmpty() == true }
-        filteredList = validTeams.sortedWith(compareByDescending<RealmMyTeam> { team ->
+        val newFilteredList = validTeams.sortedWith(compareByDescending<RealmMyTeam> { team ->
             when {
                 userId != null && RealmMyTeam.isTeamLeader(team._id, userId, mRealm) -> 3
                 team.isMyTeam(userId, mRealm) -> 2
@@ -179,7 +180,22 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         }.thenByDescending { team ->
             RealmTeamLog.getVisitByTeam(mRealm, team._id)
         })
-        notifyDataSetChanged()
+        
+        updateFilteredList(newFilteredList)
+    }
+
+    fun updateOriginalList(newList: List<RealmMyTeam>) {
+        list.clear()
+        list.addAll(newList)
+        updateList()
+    }
+
+    private fun updateFilteredList(newFilteredList: List<RealmMyTeam>) {
+        val diffCallback = TeamListDiffCallback(filteredList, newFilteredList)
+        val diffResult = DiffUtil.calculateDiff(diffCallback)
+        
+        filteredList = newFilteredList
+        diffResult.dispatchUpdatesTo(this)
     }
 
     private fun getBundle(team: RealmMyTeam): Bundle {
@@ -197,4 +213,41 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
     override fun getItemCount(): Int = filteredList.size
 
     class ViewHolderTeam(val binding: ItemTeamListBinding) : RecyclerView.ViewHolder(binding.root)
+
+    private class TeamListDiffCallback(
+        private val oldList: List<RealmMyTeam>,
+        private val newList: List<RealmMyTeam>
+    ) : DiffUtil.Callback() {
+        
+        override fun getOldListSize(): Int = oldList.size
+        
+        override fun getNewListSize(): Int = newList.size
+        
+        override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            return try {
+                val oldItem = oldList[oldItemPosition]
+                val newItem = newList[newItemPosition]
+                oldItem._id == newItem._id
+            } catch (e: Exception) {
+                false
+            }
+        }
+        
+        override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            return try {
+                val oldItem = oldList[oldItemPosition]
+                val newItem = newList[newItemPosition]
+                
+                oldItem._id == newItem._id &&
+                    oldItem.name == newItem.name &&
+                    oldItem.teamType == newItem.teamType &&
+                    oldItem.type == newItem.type &&
+                    oldItem.status == newItem.status &&
+                    oldItem.createdDate == newItem.createdDate &&
+                    oldItem.description == newItem.description
+            } catch (e: Exception) {
+                false
+            }
+        }
+    }
 }
