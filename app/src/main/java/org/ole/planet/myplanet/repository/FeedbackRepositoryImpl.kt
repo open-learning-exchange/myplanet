@@ -10,6 +10,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.runBlocking
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUserModel
@@ -40,8 +41,10 @@ class FeedbackRepositoryImpl @Inject constructor(
 
                 feedbackList.addChangeListener(listener)
 
-                awaitClose {
-                    feedbackList.removeChangeListener(listener)
+                runBlocking {
+                    awaitClose {
+                        feedbackList.removeChangeListener(listener)
+                    }
                 }
             }
         }
