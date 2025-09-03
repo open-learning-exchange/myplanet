@@ -9,9 +9,9 @@ import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.databinding.ItemTeamGridBinding
 import org.ole.planet.myplanet.databinding.LayoutUserListBinding
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.DiffUtils
