@@ -441,9 +441,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         binding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
         binding.recyclerView.isVerticalScrollBarEnabled = true
 
-        binding.recyclerView.post {
-            mAdapter?.notifyDataSetChanged()
-        }
     }
 
     override fun onItemClick(user: User) {
