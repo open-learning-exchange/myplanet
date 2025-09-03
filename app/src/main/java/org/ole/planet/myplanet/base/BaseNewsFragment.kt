@@ -30,7 +30,6 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.news.AdapterNews.OnNewsItemClickListener
 import org.ole.planet.myplanet.ui.news.ReplyActivity
-import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utilities.FileUtils
