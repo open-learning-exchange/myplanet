@@ -14,6 +14,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
 import kotlinx.coroutines.Dispatchers
@@ -38,7 +39,7 @@ import org.ole.planet.myplanet.ui.submission.MySubmissionFragment.Companion.newI
 import org.ole.planet.myplanet.ui.userprofile.AchievementFragment
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterMyLife(private val context: Context, private val myLifeList: List<RealmMyLife>, private var mRealm: Realm, private val mDragStartListener: OnStartDragListener) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), ItemTouchHelperAdapter {
+class AdapterMyLife(private val context: Context, private var myLifeList: MutableList<RealmMyLife>, private var mRealm: Realm, private val mDragStartListener: OnStartDragListener) : RecyclerView.Adapter<RecyclerView.ViewHolder>(), ItemTouchHelperAdapter {
     private val hide = 0.5f
     private val show = 1f
 
@@ -105,12 +106,26 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
         this.mRealm = mRealm
     }
 
+    fun updateList(newList: List<RealmMyLife>) {
+        val diffCallback = MyLifeDiffCallback(myLifeList, newList)
+        val diffResult = DiffUtil.calculateDiff(diffCallback)
+        
+        myLifeList.clear()
+        myLifeList.addAll(newList)
+        diffResult.dispatchUpdatesTo(this)
+    }
+
     override fun getItemCount(): Int {
         return myLifeList.size
     }
 
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
-        updateWeight(toPosition + 1, myLifeList[fromPosition]._id, myLifeList[fromPosition].userId)
+        val item = myLifeList[fromPosition]
+        updateWeight(toPosition + 1, item._id, item.userId)
+        
+        // Update the internal list
+        myLifeList.removeAt(fromPosition)
+        myLifeList.add(toPosition, item)
         notifyItemMoved(fromPosition, toPosition)
         return true
     }
@@ -172,6 +187,42 @@ class AdapterMyLife(private val context: Context, private val myLifeList: List<R
                         addToBackStack = true
                     )
                 }
+            }
+        }
+    }
+
+    private class MyLifeDiffCallback(
+        private val oldList: List<RealmMyLife>,
+        private val newList: List<RealmMyLife>
+    ) : DiffUtil.Callback() {
+        
+        override fun getOldListSize(): Int = oldList.size
+        
+        override fun getNewListSize(): Int = newList.size
+        
+        override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            return try {
+                val oldItem = oldList[oldItemPosition]
+                val newItem = newList[newItemPosition]
+                oldItem._id == newItem._id
+            } catch (e: Exception) {
+                false
+            }
+        }
+        
+        override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            return try {
+                val oldItem = oldList[oldItemPosition]
+                val newItem = newList[newItemPosition]
+                
+                oldItem._id == newItem._id &&
+                    oldItem.title == newItem.title &&
+                    oldItem.imageId == newItem.imageId &&
+                    oldItem.isVisible == newItem.isVisible &&
+                    oldItem.weight == newItem.weight &&
+                    oldItem.userId == newItem.userId
+            } catch (e: Exception) {
+                false
             }
         }
     }
