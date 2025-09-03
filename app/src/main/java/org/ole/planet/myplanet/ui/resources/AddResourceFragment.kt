@@ -30,16 +30,17 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
-import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertSoundRecorderBinding
 import org.ole.planet.myplanet.databinding.FragmentAddResourceBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmMyPersonal
+import org.ole.planet.myplanet.repository.MyPersonalRepository
 import org.ole.planet.myplanet.service.AudioRecorderService
 import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -61,7 +62,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     private lateinit var openFolderLauncher: ActivityResultLauncher<String>
     private lateinit var requestCameraLauncher: ActivityResultLauncher<String>
     @Inject
-    lateinit var databaseService: DatabaseService
+    lateinit var myPersonalRepository: MyPersonalRepository
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -254,7 +255,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         if (type == 0) {
             startActivity(Intent(activity, AddResourceActivity::class.java).putExtra("resource_local_url", path))
         } else {
-            showAlert(requireContext(), path, databaseService)
+            showAlert(requireContext(), path, myPersonalRepository)
         }
     }
 
@@ -268,7 +269,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         const val REQUEST_FILE_SELECTION = 3
         var type = 0
         private val myPersonalsFragment: MyPersonalsFragment? = null
-        fun showAlert(context: Context, path: String?, databaseService: DatabaseService) {
+        fun showAlert(context: Context, path: String?, repository: MyPersonalRepository) {
             val v = LayoutInflater.from(context).inflate(R.layout.alert_my_personal, null)
             val etTitle = v.findViewById<EditText>(R.id.et_title)
             val etDesc = v.findViewById<EditText>(R.id.et_description)
@@ -285,27 +286,14 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                         return@setPositiveButton
                     }
                     val desc = etDesc.text.toString().trim { it <= ' ' }
-                    databaseService.withRealm { realm ->
-                        realm.executeTransactionAsync(
-                            Realm.Transaction { realm1: Realm ->
-                                val myPersonal = realm1.createObject(
-                                    RealmMyPersonal::class.java,
-                                    UUID.randomUUID().toString()
-                                )
-                                myPersonal.title = title
-                                myPersonal.userId = userId
-                                myPersonal.userName = userName
-                                myPersonal.path = path
-                                myPersonal.date = Date().time
-                                myPersonal.description = desc
-                            },
-                            Realm.Transaction.OnSuccess {
-                                Utilities.toast(
-                                    MainApplication.context,
-                                    context.getString(R.string.resource_saved_to_my_personal)
-                                )
-                            }
-                        )
+                    CoroutineScope(Dispatchers.IO).launch {
+                        repository.savePersonalResource(title, userId, userName, path, desc)
+                        withContext(Dispatchers.Main) {
+                            Utilities.toast(
+                                MainApplication.context,
+                                context.getString(R.string.resource_saved_to_my_personal)
+                            )
+                        }
                     }
                     if (type == 1) {
                         myPersonalsFragment?.refreshFragment()

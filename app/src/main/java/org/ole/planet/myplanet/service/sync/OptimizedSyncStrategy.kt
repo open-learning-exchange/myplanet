@@ -1,9 +1,10 @@
 package org.ole.planet.myplanet.service.sync
 
-import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
+import java.util.concurrent.ConcurrentHashMap
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -18,9 +19,6 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utilities.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.UrlUtils
-import org.ole.planet.myplanet.utilities.Utilities
-import java.util.concurrent.ConcurrentHashMap
-import javax.inject.Inject
 
 class OptimizedSyncStrategy @Inject constructor(
     private val apiInterface: ApiInterface,
