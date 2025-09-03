@@ -5,21 +5,28 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.SuccessListener
+import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 
 class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
+    private val databaseService = DatabaseService(context)
     companion object {
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "server_reachability_channel"
@@ -55,13 +62,13 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
                 val lastNotificationTime = preferences.getLong(LAST_NOTIFICATION_TIME_KEY, 0)
                 val currentTime = System.currentTimeMillis()
                 val timeSinceLastNotification = currentTime - lastNotificationTime
-                
                 if (timeSinceLastNotification > NOTIFICATION_COOLDOWN_MS) {
                     showServerNotification(preferences)
                     preferences.edit {
                         putLong(LAST_NOTIFICATION_TIME_KEY, currentTime)
                     }
                 }
+                checkAvailableServerAndUpload(preferences)
             }
 
             Result.success()
@@ -71,7 +78,7 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
         }
     }
 
-    private suspend fun tryServerSwitch(serverUrl: String, preferences: android.content.SharedPreferences, isNetworkReconnection: Boolean) {
+    private suspend fun tryServerSwitch(serverUrl: String, preferences: SharedPreferences, isNetworkReconnection: Boolean) {
         try {
             val serverUrlMapper = ServerUrlMapper()
             val mapping = serverUrlMapper.processUrl(serverUrl)
@@ -90,13 +97,13 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
                         val lastNotificationTime = preferences.getLong(LAST_NOTIFICATION_TIME_KEY, 0)
                         val currentTime = System.currentTimeMillis()
                         val timeSinceLastNotification = currentTime - lastNotificationTime
-                        
                         if (timeSinceLastNotification > NOTIFICATION_COOLDOWN_MS) {
                             showServerNotification(preferences)
                             preferences.edit {
                                 putLong(LAST_NOTIFICATION_TIME_KEY, currentTime)
                             }
                         }
+                        checkAvailableServerAndUpload(preferences)
                     }
                 }
             }
@@ -105,7 +112,7 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
         }
     }
 
-    private fun showServerNotification(preferences: android.content.SharedPreferences) {
+    private fun showServerNotification(preferences: SharedPreferences) {
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createNotificationChannel(notificationManager)
         
@@ -136,6 +143,106 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
         }
     }
     
+    private suspend fun checkAvailableServerAndUpload(settings: SharedPreferences) {
+        val updateUrl = "${settings.getString("serverURL", "")}"
+        val serverUrlMapper = ServerUrlMapper()
+        val mapping = serverUrlMapper.processUrl(updateUrl)
+
+        try {
+            val primaryAvailable = withTimeoutOrNull(15000) {
+                isServerReachable(mapping.primaryUrl)
+            } ?: false
+            
+            val alternativeAvailable = if (mapping.alternativeUrl != null) {
+                withTimeoutOrNull(15000) {
+                    isServerReachable(mapping.alternativeUrl)
+                } ?: false
+            } else {
+                false
+            }
+
+            if (!primaryAvailable && alternativeAvailable) {
+                mapping.alternativeUrl?.let { alternativeUrl ->
+                    val uri = updateUrl.toUri()
+                    val editor = settings.edit()
+                    serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
+                }
+            }
+            uploadSubmissions()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            uploadSubmissions()
+        }
+    }
+
+    private fun hasPendingSubmissions(): Boolean {
+        var hasPending = false
+        try {
+            val realm = databaseService.realmInstance
+            hasPending = realm.use { r ->
+                val submissions = r.where(RealmSubmission::class.java)
+                    .equalTo("isUpdated", true)
+                    .or()
+                    .isEmpty("_id")
+                    .findAll()
+                submissions.isNotEmpty()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return hasPending
+    }
+
+    private fun hasPendingExamResults(): Boolean {
+        var hasPending = false
+        var examResultCount: Int
+        try {
+            val realm = databaseService.realmInstance
+            hasPending = realm.use { r ->
+                val submissions = r.where(RealmSubmission::class.java).findAll()
+                examResultCount = submissions.count { submission ->
+                    (submission.answers?.size ?: 0) > 0
+                }
+                examResultCount > 0
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return hasPending
+    }
+
+    private suspend fun uploadSubmissions() {
+        try {
+            if (hasPendingSubmissions()) {
+                withContext(Dispatchers.IO) {
+                    val uploadManager = UploadManager(applicationContext)
+                    uploadManager.uploadSubmissions()
+                }
+            }
+            uploadExamResultWrapper()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private suspend fun uploadExamResultWrapper() {
+        if (hasPendingExamResults()) {
+            try {
+                withContext(Dispatchers.Main) {
+                    val successListener = object : SuccessListener {
+                        override fun onSuccess(success: String?) {
+                        }
+                    }
+
+                    val uploadManager = UploadManager(applicationContext)
+                    uploadManager.uploadExamResult(successListener)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+    
     private fun createNotificationChannel(notificationManager: NotificationManager) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -147,7 +254,7 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
         }
     }
     
-    private fun getServerDisplayName(preferences: android.content.SharedPreferences): String {
+    private fun getServerDisplayName(preferences: SharedPreferences): String {
         return try {
             val communityName = preferences.getString("communityName", "") ?: ""
             val planetString = applicationContext.getString(R.string.planet)

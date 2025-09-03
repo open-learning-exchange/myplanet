@@ -55,11 +55,11 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                     databaseService.withRealm { backgroundRealm ->
                         val backgroundLibrary = backgroundRealm.where(RealmMyLibrary::class.java)
                             .equalTo("resourceId", libraryId).findFirst()
-                        if (backgroundLibrary != null && !backgroundLibrary.userId?.contains(userId)!!) {
-                            if (!backgroundRealm.isInTransaction) backgroundRealm.beginTransaction()
-                            backgroundLibrary.setUserId(userId)
+                        if (backgroundLibrary != null && backgroundLibrary.userId?.contains(userId) != true) {
+                            backgroundRealm.executeTransaction {
+                                backgroundLibrary.setUserId(userId)
+                            }
                             onAdd(backgroundRealm, "resources", userId, libraryId)
-                            backgroundRealm.commitTransaction()
                         }
                     }
                 } catch (e: Exception) {
@@ -188,15 +188,18 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                                 .equalTo("resourceId", libraryId).findFirst()
 
                             if (backgroundLibrary != null) {
-                                if (!backgroundRealm.isInTransaction) backgroundRealm.beginTransaction()
+                                backgroundRealm.executeTransaction {
+                                    if (isAdd) {
+                                        backgroundLibrary.setUserId(userId)
+                                    } else {
+                                        backgroundLibrary.removeUserId(userId)
+                                    }
+                                }
                                 if (isAdd) {
-                                    backgroundLibrary.setUserId(userId)
                                     onAdd(backgroundRealm, "resources", userId, libraryId)
                                 } else {
-                                    backgroundLibrary.removeUserId(userId)
                                     onRemove(backgroundRealm, "resources", userId, libraryId)
                                 }
-                                backgroundRealm.commitTransaction()
                             }
                         }
                     } catch (e: Exception) {
