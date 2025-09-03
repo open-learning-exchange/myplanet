@@ -24,24 +24,24 @@ import org.ole.planet.myplanet.utilities.TimeUtils.currentDate
 
 class DashboardFragment : BaseDashboardFragment() {
     private val viewModel: DashboardViewModel by viewModels()
-    private lateinit var fragmentHomeBinding: FragmentHomeBinding
+    private var binding: FragmentHomeBinding? = null
     private lateinit var dRealm: Realm
     var user: RealmUserModel? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentHomeBinding = FragmentHomeBinding.inflate(inflater, container, false)
-        val view: View = fragmentHomeBinding.root
-        fragmentHomeBinding.cardProfile.tvSurveys.setOnClickListener {
+        binding = FragmentHomeBinding.inflate(inflater, container, false)
+        val view: View = binding!!.root
+        binding?.cardProfile?.tvSurveys?.setOnClickListener {
             homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("survey"))
         }
-        fragmentHomeBinding.cardProfile.tvNews.setOnClickListener {
+        binding?.cardProfile?.tvNews?.setOnClickListener {
             homeItemClickListener?.openCallFragment(NewsFragment())
         }
-        fragmentHomeBinding.cardProfile.tvSubmission.setOnClickListener {
+        binding?.cardProfile?.tvSubmission?.setOnClickListener {
             homeItemClickListener?.openCallFragment(MySubmissionFragment.newInstance("exam"))
         }
-        fragmentHomeBinding.cardProfile.tvAchievement.visibility = View.VISIBLE
-        fragmentHomeBinding.cardProfile.tvAchievement.setOnClickListener {
+        binding?.cardProfile?.tvAchievement?.visibility = View.VISIBLE
+        binding?.cardProfile?.tvAchievement?.setOnClickListener {
             homeItemClickListener?.openCallFragment(AchievementFragment())
         }
         dRealm = databaseService.realmInstance
@@ -49,7 +49,7 @@ class DashboardFragment : BaseDashboardFragment() {
         onLoaded(view)
         initView(view)
         (activity as AppCompatActivity?)?.supportActionBar?.subtitle = currentDate()
-        return fragmentHomeBinding.root
+        return binding!!.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -58,18 +58,23 @@ class DashboardFragment : BaseDashboardFragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.surveyWarning.collect { show ->
-                    fragmentHomeBinding.cardProfile.imgSurveyWarn.visibility =
+                    binding?.cardProfile?.imgSurveyWarn?.visibility =
                         if (show) View.VISIBLE else View.GONE
                 }
             }
         }
-        fragmentHomeBinding.addResource.setOnClickListener {
+        binding?.addResource?.setOnClickListener {
             if (user?.id?.startsWith("guest") == false) {
                 AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
             } else {
                 guestDialog(requireContext())
             }
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        binding = null
     }
 
     override fun onDestroy() {
