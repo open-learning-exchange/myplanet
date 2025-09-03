@@ -7,7 +7,6 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSelectedMyPersonal
@@ -23,7 +22,6 @@ import org.ole.planet.myplanet.utilities.Utilities
 @AndroidEntryPoint
 class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     private lateinit var fragmentMyPersonalsBinding: FragmentMyPersonalsBinding
-    lateinit var mRealm: Realm
     private lateinit var pg: DialogUtils.CustomProgressDialog
     private var addResourceFragment: AddResourceFragment? = null
     
@@ -43,7 +41,6 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentMyPersonalsBinding = FragmentMyPersonalsBinding.inflate(inflater, container, false)
         pg = DialogUtils.getCustomProgressDialog(requireContext())
-        mRealm = databaseService.realmInstance
         fragmentMyPersonalsBinding.rvMypersonal.layoutManager = LinearLayoutManager(activity)
         fragmentMyPersonalsBinding.addMyPersonal.setOnClickListener {
             addResourceFragment = AddResourceFragment()
@@ -62,17 +59,17 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     }
 
     private fun setAdapter() {
-        val model = UserProfileDbHandler(requireContext()).userModel
-        val realmMyPersonals: List<RealmMyPersonal> = mRealm.where(RealmMyPersonal::class.java)
-            .equalTo("userId", model?.id).findAll()
-        val personalAdapter = AdapterMyPersonal(requireActivity(), realmMyPersonals)
-        personalAdapter.setListener(this)
-        personalAdapter.setRealm(mRealm)
-        fragmentMyPersonalsBinding.rvMypersonal.adapter = personalAdapter
-        showNodata()
-        mRealm.addChangeListener {
+        databaseService.withRealm { realm ->
+            val model = UserProfileDbHandler(requireContext()).userModel
+            val realmMyPersonals: List<RealmMyPersonal> = realm.copyFromRealm(
+                realm.where(RealmMyPersonal::class.java)
+                    .equalTo("userId", model?.id)
+                    .findAll()
+            )
+            val personalAdapter = AdapterMyPersonal(requireActivity(), realmMyPersonals)
+            personalAdapter.setListener(this)
+            fragmentMyPersonalsBinding.rvMypersonal.adapter = personalAdapter
             showNodata()
-            personalAdapter.notifyDataSetChanged()
         }
     }
 
@@ -83,14 +80,6 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
         } else {
             fragmentMyPersonalsBinding.tvNodata.visibility = View.GONE
         }
-    }
-
-    override fun onDestroy() {
-        if (::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.removeAllChangeListeners()
-            mRealm.close()
-        }
-        super.onDestroy()
     }
 
     override fun onUpload(personal: RealmMyPersonal?) {
