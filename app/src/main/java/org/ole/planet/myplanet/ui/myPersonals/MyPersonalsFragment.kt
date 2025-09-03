@@ -31,7 +31,7 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     lateinit var mRealm: Realm
     private lateinit var pg: DialogUtils.CustomProgressDialog
     private var addResourceFragment: AddResourceFragment? = null
-    private val viewModel: MyPersonalsViewModel by viewModels()
+    private val viewModel: MyPersonalsViewModel by viewModels(ownerProducer = { requireActivity() })
 
     @Inject lateinit var uploadManager: UploadManager
     @Inject lateinit var databaseService: DatabaseService
