@@ -20,7 +20,7 @@ import java.io.File
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 
 class WebViewActivity : AppCompatActivity() {
     private lateinit var activityWebViewBinding: ActivityWebViewBinding
@@ -31,7 +31,7 @@ class WebViewActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityWebViewBinding = ActivityWebViewBinding.inflate(layoutInflater)
         setContentView(activityWebViewBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityWebViewBinding.root)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithNoPadding(this, activityWebViewBinding.root)
         val dataFromDeepLink = intent.dataString
         fromDeepLink = !TextUtils.isEmpty(dataFromDeepLink)
         val title: String? = intent.getStringExtra("title")

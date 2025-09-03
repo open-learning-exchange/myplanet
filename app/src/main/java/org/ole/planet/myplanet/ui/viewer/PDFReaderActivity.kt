@@ -16,11 +16,12 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityPdfreaderBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.repository.MyPersonalRepository
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.service.AudioRecorderService
 import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.NotificationUtils.cancelAll
@@ -34,13 +35,15 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
     private var fileName: String? = null
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var myPersonalRepository: MyPersonalRepository
     private lateinit var library: RealmMyLibrary
     private lateinit var mRealm: Realm
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityPdfreaderBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithNoPadding(this, binding.root)
         audioRecorderService = AudioRecorderService().setAudioRecordListener(this)
         audioRecorderService.setCaller(this, this)
         mRealm = databaseService.realmInstance
@@ -97,7 +100,7 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         Utilities.toast(this, getString(R.string.recording_stopped))
         cancelAll(this)
         updateTranslation(outputFile)
-        AddResourceFragment.showAlert(this, outputFile, databaseService)
+        AddResourceFragment.showAlert(this, outputFile, myPersonalRepository)
         binding.fabRecord.setImageResource(R.drawable.ic_mic)
     }
 

@@ -27,19 +27,17 @@ import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.delay
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnCourseItemSelected
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.SyncListener
-import org.ole.planet.myplanet.callback.TagClickListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
-import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
-import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
+import org.ole.planet.myplanet.callback.TagClickListener
 import org.ole.planet.myplanet.model.RealmCourseProgress.Companion.getCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -52,6 +50,8 @@ import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
+import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
+import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
@@ -130,7 +130,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun startSyncManager() {
         syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded && !requireActivity().isFinishing) {
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
                         customProgressDialog?.setText(getString(R.string.syncing_courses_data))
@@ -140,10 +140,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
 
             override fun onSyncComplete() {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded) {
                         customProgressDialog?.setText(getString(R.string.loading_courses))
-                        
+
                         lifecycleScope.launch {
                             delay(3000)
                             withContext(Dispatchers.Main) {
@@ -158,7 +158,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
 
             override fun onSyncFailed(msg: String?) {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null

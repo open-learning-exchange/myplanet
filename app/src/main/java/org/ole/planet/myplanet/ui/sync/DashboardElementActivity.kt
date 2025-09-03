@@ -7,8 +7,6 @@ import android.graphics.PorterDuff
 import android.net.ConnectivityManager
 import android.net.wifi.WifiManager
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.provider.Settings
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
@@ -24,6 +22,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
@@ -201,7 +200,10 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         } else {
             wifi.isWifiEnabled = true
             Toast.makeText(this, getString(R.string.turning_on_wifi_please_wait), Toast.LENGTH_LONG).show()
-            Handler(Looper.getMainLooper()).postDelayed({ connectToWifi() }, 5000)
+            lifecycleScope.launch {
+                delay(5000)
+                connectToWifi()
+            }
             if (resIcon != null) {
                 DrawableCompat.setTintMode(resIcon.mutate(), PorterDuff.Mode.SRC_ATOP)
                 DrawableCompat.setTint(resIcon, ContextCompat.getColor(this, R.color.accent))
@@ -247,7 +249,10 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         } else {
             doubleBackToExitPressedOnce = true
             Toast.makeText(this, getString(R.string.press_back_again_to_exit), Toast.LENGTH_SHORT).show()
-            Handler(Looper.getMainLooper()).postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
+            lifecycleScope.launch {
+                delay(2000)
+                doubleBackToExitPressedOnce = false
+            }
         }
     }
 

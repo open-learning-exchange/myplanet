@@ -25,12 +25,12 @@ import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.SurveyAdoptListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.callback.TableDataUpdate
-import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
-import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
+import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utilities.CustomSpinner
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
@@ -93,7 +93,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
     private fun startSyncManager() {
         syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded && !requireActivity().isFinishing) {
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
                         customProgressDialog?.setText("Syncing surveys...")
@@ -103,7 +103,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
             }
 
             override fun onSyncComplete() {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
@@ -114,7 +114,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
             }
 
             override fun onSyncFailed(msg: String?) {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
