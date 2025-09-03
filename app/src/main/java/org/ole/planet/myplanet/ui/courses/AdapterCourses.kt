@@ -37,7 +37,7 @@ import org.ole.planet.myplanet.utilities.SelectionUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterCourses(
+internal class AdapterCourses(
     private val context: Context,
     private val map: HashMap<String?, JsonObject>,
     private val userProfileDbHandler: UserProfileDbHandler
