@@ -21,28 +21,28 @@ class FeedbackRepositoryImpl @Inject constructor(
 
     override fun getFeedback(userModel: RealmUserModel?): Flow<List<RealmFeedback>> =
         callbackFlow {
-            val realm = databaseService.realmInstance
-            val feedbackList: RealmResults<RealmFeedback> =
-                if (userModel?.isManager() == true) {
-                    realm.where(RealmFeedback::class.java)
-                        .sort("openTime", Sort.DESCENDING)
-                        .findAllAsync()
-                } else {
-                    realm.where(RealmFeedback::class.java)
-                        .equalTo("owner", userModel?.name)
-                        .sort("openTime", Sort.DESCENDING)
-                        .findAllAsync()
+            databaseService.withRealm { realm ->
+                val feedbackList: RealmResults<RealmFeedback> =
+                    if (userModel?.isManager() == true) {
+                        realm.where(RealmFeedback::class.java)
+                            .sort("openTime", Sort.DESCENDING)
+                            .findAllAsync()
+                    } else {
+                        realm.where(RealmFeedback::class.java)
+                            .equalTo("owner", userModel?.name)
+                            .sort("openTime", Sort.DESCENDING)
+                            .findAllAsync()
+                    }
+
+                val listener = RealmChangeListener<RealmResults<RealmFeedback>> { results ->
+                    trySend(realm.copyFromRealm(results))
                 }
 
-            val listener = RealmChangeListener<RealmResults<RealmFeedback>> { results ->
-                trySend(realm.copyFromRealm(results))
-            }
+                feedbackList.addChangeListener(listener)
 
-            feedbackList.addChangeListener(listener)
-
-            awaitClose {
-                feedbackList.removeChangeListener(listener)
-                realm.close()
+                awaitClose {
+                    feedbackList.removeChangeListener(listener)
+                }
             }
         }
 
