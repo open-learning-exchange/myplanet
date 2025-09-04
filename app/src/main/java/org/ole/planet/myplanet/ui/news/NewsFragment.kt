@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
-import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 
@@ -157,7 +157,7 @@ class NewsFragment : BaseNewsFragment() {
 
         binding.addNewsImage.setOnClickListener {
             llImage = binding.llImages
-            val openFolderIntent = openOleFolder()
+            val openFolderIntent = FileUtils.openOleFolder(requireContext())
             openFolderLauncher.launch(openFolderIntent)
         }
         binding.addNewsImage.visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, requireActivity())) View.VISIBLE else View.GONE

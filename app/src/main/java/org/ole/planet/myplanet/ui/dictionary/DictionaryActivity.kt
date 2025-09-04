@@ -33,7 +33,7 @@ class DictionaryActivity : BaseActivity() {
         mRealm = databaseService.realmInstance
         list = mRealm.where(RealmDictionary::class.java)?.findAll()
         fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, list?.size)
-        if (FileUtils.checkFileExist(Constants.DICTIONARY_URL)) {
+        if (FileUtils.checkFileExist(this, Constants.DICTIONARY_URL)) {
             insertDictionary()
         } else {
             val list = ArrayList<String>()
@@ -46,7 +46,7 @@ class DictionaryActivity : BaseActivity() {
     private fun insertDictionary() {
         if (list.isNullOrEmpty()) {
             try {
-                val data = FileUtils.getStringFromFile(FileUtils.getSDPathFromUrl(Constants.DICTIONARY_URL))
+                val data = FileUtils.getStringFromFile(FileUtils.getSDPathFromUrl(this, Constants.DICTIONARY_URL))
                 val json = Gson().fromJson(data, JsonArray::class.java)
                 mRealm.executeTransactionAsync {
                     json?.forEach { js ->

@@ -33,7 +33,7 @@ import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils.availableExternalMemorySize
 import org.ole.planet.myplanet.utilities.FileUtils.externalMemoryAvailable
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
-import org.ole.planet.myplanet.utilities.FileUtils.getSDPathFromUrl
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.UrlUtils.header
 
 class MyDownloadService : Service() {
@@ -213,7 +213,7 @@ class MyDownloadService : Service() {
     @Throws(IOException::class)
     private fun downloadFile(body: ResponseBody, url: String) {
         val fileSize = body.contentLength()
-        outputFile = getSDPathFromUrl(url)
+        outputFile = FileUtils.getSDPathFromUrl(this@MyDownloadService, url)
         var total: Long = 0
         val startTime = System.currentTimeMillis()
         var timeCount = 1
