@@ -70,7 +70,6 @@ class AdapterMyPersonal(
                         ?.equalTo("_id", list[position]._id)?.findFirst()
                     personal?.deleteFromRealm()
                     realm?.commitTransaction()
-                    updateList(realm?.where(RealmMyPersonal::class.java)?.findAll()?.toList() ?: emptyList())
                     listener?.onAddedResource()
                 }.setNegativeButton(R.string.cancel, null).show()
         }
@@ -129,7 +128,6 @@ class AdapterMyPersonal(
                 personal.description = desc
                 personal.title = title
                 realm?.commitTransaction()
-                updateList(realm?.where(RealmMyPersonal::class.java)?.findAll()?.toList() ?: emptyList())
                 listener?.onAddedResource()
             }
             .setNegativeButton(R.string.cancel, null)
