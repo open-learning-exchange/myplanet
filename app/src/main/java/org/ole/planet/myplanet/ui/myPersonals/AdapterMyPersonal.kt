@@ -8,7 +8,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
-import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
 import java.io.File
@@ -21,64 +21,81 @@ import org.ole.planet.myplanet.ui.myPersonals.AdapterMyPersonal.ViewHolderMyPers
 import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
 import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
 import org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterMyPersonal(private val context: Context, private var list: MutableList<RealmMyPersonal>) : RecyclerView.Adapter<ViewHolderMyPersonal>() {
+class AdapterMyPersonal(
+    private val context: Context,
+    personals: List<RealmMyPersonal>
+) : ListAdapter<RealmMyPersonal, ViewHolderMyPersonal>(
+    DiffUtils.itemCallback(
+        areItemsTheSame = { old, new -> old._id == new._id },
+        areContentsTheSame = { old, new ->
+            old.title == new.title &&
+                old.description == new.description &&
+                old.date == new.date &&
+                old.path == new.path
+        }
+    )
+) {
     private lateinit var rowMyPersonalBinding: RowMyPersonalBinding
     private var realm: Realm? = null
     private var listener: OnSelectedMyPersonal? = null
-    
+
+    init {
+        submitList(personals)
+    }
+
     fun setListener(listener: OnSelectedMyPersonal?) {
         this.listener = listener
     }
-    
-    fun updateList(newList: List<RealmMyPersonal>) {
-        val diffCallback = MyPersonalDiffCallback(list, newList)
-        val diffResult = DiffUtil.calculateDiff(diffCallback)
-        list.clear()
-        list.addAll(newList)
-        diffResult.dispatchUpdatesTo(this)
-    }
-    
-    fun getList(): List<RealmMyPersonal> = list
+
     fun setRealm(realm: Realm?) {
         this.realm = realm
     }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyPersonal {
-        rowMyPersonalBinding = RowMyPersonalBinding.inflate(LayoutInflater.from(context), parent, false)
+        rowMyPersonalBinding =
+            RowMyPersonalBinding.inflate(LayoutInflater.from(context), parent, false)
         return ViewHolderMyPersonal(rowMyPersonalBinding)
     }
+
     override fun onBindViewHolder(holder: ViewHolderMyPersonal, position: Int) {
-        rowMyPersonalBinding.title.text = list[position].title
-        rowMyPersonalBinding.description.text = list[position].description
-        rowMyPersonalBinding.date.text = getFormattedDate(list[position].date)
+        val item = getItem(position)
+        rowMyPersonalBinding.title.text = item.title
+        rowMyPersonalBinding.description.text = item.description
+        rowMyPersonalBinding.date.text = getFormattedDate(item.date)
         rowMyPersonalBinding.imgDelete.setOnClickListener {
             AlertDialog.Builder(context, R.style.AlertDialogTheme)
                 .setMessage(R.string.delete_record)
                 .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
                     if (realm?.isInTransaction != true) realm?.beginTransaction()
                     val personal = realm?.where(RealmMyPersonal::class.java)
-                        ?.equalTo("_id", list[position]._id)?.findFirst()
+                        ?.equalTo("_id", item._id)?.findFirst()
                     personal?.deleteFromRealm()
                     realm?.commitTransaction()
-                    updateList(realm?.where(RealmMyPersonal::class.java)?.findAll()?.toList() ?: emptyList())
+                    submitList(
+                        realm?.where(RealmMyPersonal::class.java)?.findAll()?.toList()
+                            ?: emptyList()
+                    )
                     listener?.onAddedResource()
                 }.setNegativeButton(R.string.cancel, null).show()
         }
         rowMyPersonalBinding.imgEdit.setOnClickListener {
-            editPersonal(list[position])
+            editPersonal(item)
         }
         holder.itemView.setOnClickListener {
-            openResource(list[position].path)
+            openResource(item.path)
         }
         rowMyPersonalBinding.imgUpload.setOnClickListener {
             if (listener != null) {
-                listener?.onUpload(list[position])
+                listener?.onUpload(item)
             }
         }
     }
+
     private fun openResource(path: String?) {
         val arr = path?.split("\\.".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()
         when (arr?.get(arr.size - 1)) {
@@ -94,6 +111,7 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
             "mp4" -> openVideo(path)
         }
     }
+
     private fun openVideo(path: String?) {
         val b = Bundle()
         b.putString("videoURL", "" + Uri.fromFile(path?.let { File(it) }))
@@ -103,6 +121,7 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
         i.putExtras(b)
         context.startActivity(i)
     }
+
     private fun editPersonal(personal: RealmMyPersonal) {
         val alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(context))
         alertMyPersonalBinding.etDescription.setText(personal.description)
@@ -111,7 +130,7 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
             .setTitle(R.string.edit_personal)
             .setIcon(R.drawable.ic_edit)
             .setView(alertMyPersonalBinding.root)
-            .setPositiveButton(R.string.button_submit) {_: DialogInterface?, _: Int ->
+            .setPositiveButton(R.string.button_submit) { _: DialogInterface?, _: Int ->
                 val title = alertMyPersonalBinding.etDescription.text.toString().trim { it <= ' ' }
                 val desc = alertMyPersonalBinding.etTitle.text.toString().trim { it <= ' ' }
                 if (title.isEmpty()) {
@@ -122,45 +141,16 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
                 personal.description = desc
                 personal.title = title
                 realm?.commitTransaction()
-                updateList(realm?.where(RealmMyPersonal::class.java)?.findAll()?.toList() ?: emptyList())
+                submitList(
+                    realm?.where(RealmMyPersonal::class.java)?.findAll()?.toList() ?: emptyList()
+                )
                 listener?.onAddedResource()
             }
             .setNegativeButton(R.string.cancel, null)
             .show()
     }
-    override fun getItemCount(): Int {
-        return list.size
-    }
-    class ViewHolderMyPersonal(rowMyPersonalBinding: RowMyPersonalBinding) : RecyclerView.ViewHolder(rowMyPersonalBinding.root)
-    
-    private class MyPersonalDiffCallback(
-        private val oldList: List<RealmMyPersonal>,
-        private val newList: List<RealmMyPersonal>
-    ) : DiffUtil.Callback() {
-        
-        override fun getOldListSize(): Int = oldList.size
-        
-        override fun getNewListSize(): Int = newList.size
-        
-        override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-            return try {
-                oldList[oldItemPosition]._id == newList[newItemPosition]._id
-            } catch (e: Exception) {
-                false
-            }
-        }
-        
-        override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-            return try {
-                val oldItem = oldList[oldItemPosition]
-                val newItem = newList[newItemPosition]
-                oldItem.title == newItem.title &&
-                    oldItem.description == newItem.description &&
-                    oldItem.date == newItem.date &&
-                    oldItem.path == newItem.path
-            } catch (e: Exception) {
-                false
-            }
-        }
-    }
+
+    class ViewHolderMyPersonal(rowMyPersonalBinding: RowMyPersonalBinding) :
+        RecyclerView.ViewHolder(rowMyPersonalBinding.root)
 }
+

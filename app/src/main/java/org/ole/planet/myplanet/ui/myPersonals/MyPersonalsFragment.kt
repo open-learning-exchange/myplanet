@@ -66,7 +66,7 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
         val model = UserProfileDbHandler(requireContext()).userModel
         val realmMyPersonals: List<RealmMyPersonal> = mRealm.where(RealmMyPersonal::class.java)
             .equalTo("userId", model?.id).findAll()
-        personalAdapter = AdapterMyPersonal(requireActivity(), realmMyPersonals.toMutableList())
+        personalAdapter = AdapterMyPersonal(requireActivity(), realmMyPersonals.toList())
         personalAdapter?.setListener(this)
         personalAdapter?.setRealm(mRealm)
         fragmentMyPersonalsBinding.rvMypersonal.adapter = personalAdapter
@@ -80,7 +80,7 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
         val model = UserProfileDbHandler(requireContext()).userModel
         val realmMyPersonals: List<RealmMyPersonal> = mRealm.where(RealmMyPersonal::class.java)
             .equalTo("userId", model?.id).findAll()
-        personalAdapter?.updateList(realmMyPersonals)
+        personalAdapter?.submitList(realmMyPersonals.toList())
         showNodata()
     }
 
