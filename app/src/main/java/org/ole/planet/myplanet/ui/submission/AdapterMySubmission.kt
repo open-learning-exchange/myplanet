@@ -8,7 +8,6 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
@@ -22,13 +21,25 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission.ViewHolderMySurvey
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 
 class AdapterMySubmission(
     private val context: Context,
     list: List<RealmSubmission>?,
     private val examHashMap: HashMap<String?, RealmStepExam>?
-) : ListAdapter<RealmSubmission, ViewHolderMySurvey>(DIFF_CALLBACK) {
+) : ListAdapter<RealmSubmission, ViewHolderMySurvey>(
+    DiffUtils.itemCallback(
+        areItemsTheSame = { oldItem, newItem ->
+            oldItem.id == newItem.id
+        },
+        areContentsTheSame = { oldItem, newItem ->
+            oldItem.id == newItem.id &&
+                oldItem.status == newItem.status &&
+                oldItem.lastUpdateTime == newItem.lastUpdateTime
+        }
+    )
+) {
     private lateinit var rowMySurveyBinding: RowMysurveyBinding
     private var listener: OnHomeItemClickListener? = null
     private var type = ""
@@ -109,18 +120,6 @@ class AdapterMySubmission(
     class ViewHolderMySurvey(rowMySurveyBinding: RowMysurveyBinding) : RecyclerView.ViewHolder(rowMySurveyBinding.root)
 
     companion object {
-        val DIFF_CALLBACK = object : DiffUtil.ItemCallback<RealmSubmission>() {
-            override fun areItemsTheSame(oldItem: RealmSubmission, newItem: RealmSubmission): Boolean {
-                return oldItem.id == newItem.id
-            }
-
-            override fun areContentsTheSame(oldItem: RealmSubmission, newItem: RealmSubmission): Boolean {
-                return oldItem.id == newItem.id &&
-                    oldItem.status == newItem.status &&
-                    oldItem.lastUpdateTime == newItem.lastUpdateTime
-            }
-        }
-
         @JvmStatic
         fun openSurvey(listener: OnHomeItemClickListener?, id: String?, isMySurvey: Boolean, isTeam: Boolean, teamId: String?) {
             if (listener != null) {
