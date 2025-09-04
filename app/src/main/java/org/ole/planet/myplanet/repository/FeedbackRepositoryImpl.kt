@@ -67,4 +67,8 @@ class FeedbackRepositoryImpl @Inject constructor(
             }
         }
     }
+
+    override suspend fun saveFeedback(feedback: RealmFeedback) {
+        save(feedback)
+    }
 }
