@@ -90,7 +90,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         auth = headerAuth[0]
         runOnUiThread {
             streamVideoFromUrl(videoURL, auth)
-            if (videoType == "online" && !FileUtils.checkFileExist(videoURL)) {
+            if (videoType == "online" && !FileUtils.checkFileExist(this, videoURL)) {
                 try {
                     DownloadUtils.openDownloadService(this, arrayListOf(videoURL), false)
                 } catch (e: Exception) {
@@ -116,7 +116,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
             when {
                 videoURL.startsWith("http") -> {
                     streamVideoFromUrl(videoURL, auth)
-                    if (videoType == "online" && !FileUtils.checkFileExist(videoURL)) {
+                    if (videoType == "online" && !FileUtils.checkFileExist(this, videoURL)) {
                         try {
                             DownloadUtils.openDownloadService(this, arrayListOf(videoURL), false)
                         } catch (e: Exception) {
