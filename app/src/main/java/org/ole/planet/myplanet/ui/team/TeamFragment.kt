@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getMyTeamsByUserId
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
@@ -49,6 +50,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private var conditionApplied: Boolean = false
     @Inject
     lateinit var uploadManager: UploadManager
+    @Inject
+    lateinit var teamRepository: TeamRepository
     private val settings by lazy {
         requireActivity().getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     }
@@ -252,7 +255,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                     }.thenBy { it.name })
 
                     val adapterTeamList = AdapterTeamList(
-                        activity as Context, sortedList, mRealm, childFragmentManager, uploadManager
+                        activity as Context, sortedList, mRealm, childFragmentManager, uploadManager, teamRepository
                     )
                     adapterTeamList.setTeamListener(this@TeamFragment)
                     binding.rvTeamList.adapter = adapterTeamList
@@ -280,7 +283,9 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
 
     private fun setTeamList() {
         val list = teamList!!
-        adapterTeamList = activity?.let { AdapterTeamList(it, list, mRealm, childFragmentManager, uploadManager) } ?: return
+        adapterTeamList = activity?.let {
+            AdapterTeamList(it, list, mRealm, childFragmentManager, uploadManager, teamRepository)
+        } ?: return
         adapterTeamList.setType(type)
         adapterTeamList.setTeamListener(this@TeamFragment)
         requireView().findViewById<View>(R.id.type).visibility =
@@ -318,7 +323,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private fun updatedTeamList() {
         viewLifecycleOwner.lifecycleScope.launch {
             val sortedList = sortTeams(teamList!!)
-            val adapterTeamList = AdapterTeamList(activity as Context, sortedList, mRealm, childFragmentManager, uploadManager).apply {
+            val adapterTeamList = AdapterTeamList(activity as Context, sortedList, mRealm, childFragmentManager, uploadManager, teamRepository).apply {
                 setType(type)
                 setTeamListener(this@TeamFragment)
             }

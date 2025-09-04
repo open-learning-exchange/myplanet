@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -66,6 +67,8 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
     @Inject
     lateinit var uploadManager: UploadManager
+    @Inject
+    lateinit var teamRepository: TeamRepository
     
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
@@ -285,7 +288,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                     RealmMyTeam.requestToJoin(currentTeam._id!!, user, mRealm, team?.teamType)
                     binding.btnLeave.text = getString(R.string.requested)
                     binding.btnLeave.isEnabled = false
-                    syncTeamActivities(requireContext(), uploadManager)
+                    syncTeamActivities(requireContext(), uploadManager, teamRepository)
                 }
             }
         } else {
