@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmRemovedLog
 
 class LibraryRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
@@ -47,6 +48,12 @@ class LibraryRepositoryImpl @Inject constructor(
 
     override suspend fun saveLibraryItem(item: RealmMyLibrary) {
         save(item)
+    }
+
+    override suspend fun markResourceAdded(userId: String?, resourceId: String) {
+        executeTransaction { realm ->
+            RealmRemovedLog.onAdd(realm, "resources", userId, resourceId)
+        }
     }
 
     override suspend fun deleteLibraryItem(id: String) {
