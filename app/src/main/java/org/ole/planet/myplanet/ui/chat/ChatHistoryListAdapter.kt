@@ -279,12 +279,13 @@ class ChatHistoryListAdapter(
             context.getString(R.string.enterprises)
         }
 
-        val grandChildAdapter = GrandChildAdapter(items, section) { selectedItem ->
+        val grandChildAdapter = GrandChildAdapter(section) { selectedItem ->
             showEditTextAndShareButton(selectedItem, section, realmChatHistory)
             dialog?.dismiss()
         }
         grandChildDialogBinding.recyclerView.layoutManager = LinearLayoutManager(context)
         grandChildDialogBinding.recyclerView.adapter = grandChildAdapter
+        grandChildAdapter.submitList(items)
 
         val builder = AlertDialog.Builder(context, R.style.CustomAlertDialog)
         builder.setView(grandChildDialogBinding.root)
