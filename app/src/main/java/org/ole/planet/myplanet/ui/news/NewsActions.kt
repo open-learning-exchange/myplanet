@@ -169,19 +169,39 @@ object NewsActions {
             list.removeAt(position)
         }
         if (teamName.isNotEmpty() || ar.size() < 2) {
-            news?.let {
-                deleteChildPosts(realm, it.id, list)
-                it.deleteFromRealm()
+            news?.let { newsItem ->
+                deleteChildPosts(realm, newsItem.id, list)
+
+                val managedNews = if (newsItem.isManaged) {
+                    newsItem
+                } else {
+                    realm.where(RealmNews::class.java)
+                        .equalTo("id", newsItem.id)
+                        .findFirst()
+                }
+                
+                managedNews?.deleteFromRealm()
             }
         } else {
-            val filtered = JsonArray().apply {
-                ar.forEach { elem ->
-                    if (!elem.asJsonObject.has("sharedDate")) {
-                        add(elem)
+            news?.let { newsItem ->
+                val filtered = JsonArray().apply {
+                    ar.forEach { elem ->
+                        if (!elem.asJsonObject.has("sharedDate")) {
+                            add(elem)
+                        }
                     }
                 }
+                
+                val managedNews = if (newsItem.isManaged) {
+                    newsItem
+                } else {
+                    realm.where(RealmNews::class.java)
+                        .equalTo("id", newsItem.id)
+                        .findFirst()
+                }
+                
+                managedNews?.viewIn = Gson().toJson(filtered)
             }
-            news?.viewIn = Gson().toJson(filtered)
         }
         realm.commitTransaction()
         listener?.onDataChanged()

@@ -26,6 +26,7 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     lateinit var mRealm: Realm
     private lateinit var pg: DialogUtils.CustomProgressDialog
     private var addResourceFragment: AddResourceFragment? = null
+    private var personalAdapter: AdapterMyPersonal? = null
     
     @Inject
     lateinit var uploadManager: UploadManager
@@ -65,15 +66,22 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
         val model = UserProfileDbHandler(requireContext()).userModel
         val realmMyPersonals: List<RealmMyPersonal> = mRealm.where(RealmMyPersonal::class.java)
             .equalTo("userId", model?.id).findAll()
-        val personalAdapter = AdapterMyPersonal(requireActivity(), realmMyPersonals)
-        personalAdapter.setListener(this)
-        personalAdapter.setRealm(mRealm)
+        personalAdapter = AdapterMyPersonal(requireActivity(), realmMyPersonals.toMutableList())
+        personalAdapter?.setListener(this)
+        personalAdapter?.setRealm(mRealm)
         fragmentMyPersonalsBinding.rvMypersonal.adapter = personalAdapter
         showNodata()
         mRealm.addChangeListener {
-            showNodata()
-            personalAdapter.notifyDataSetChanged()
+            updatePersonalList()
         }
+    }
+    
+    private fun updatePersonalList() {
+        val model = UserProfileDbHandler(requireContext()).userModel
+        val realmMyPersonals: List<RealmMyPersonal> = mRealm.where(RealmMyPersonal::class.java)
+            .equalTo("userId", model?.id).findAll()
+        personalAdapter?.updateList(realmMyPersonals)
+        showNodata()
     }
 
     private fun showNodata() {
@@ -107,6 +115,6 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     }
 
     override fun onAddedResource() {
-        showNodata()
+        updatePersonalList()
     }
 }
