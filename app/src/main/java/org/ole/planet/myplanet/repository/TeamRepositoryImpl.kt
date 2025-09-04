@@ -15,7 +15,7 @@ class TeamRepositoryImpl @Inject constructor(
             emptyList()
         } else {
             queryList(RealmMyLibrary::class.java) {
-                `in`("id", resourceIds.toTypedArray())
+                `in`("resourceId", resourceIds.toTypedArray())
             }
         }
     }
