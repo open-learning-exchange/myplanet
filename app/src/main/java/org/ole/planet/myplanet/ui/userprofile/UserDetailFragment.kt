@@ -5,15 +5,17 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentUserDetailBinding
 import org.ole.planet.myplanet.databinding.ItemTitleDescBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utilities.Utilities
@@ -25,7 +27,7 @@ class UserDetailFragment : Fragment() {
     private var userId: String? = null
     private var user: RealmUserModel? = null
     @Inject
-    lateinit var databaseService: DatabaseService
+    lateinit var userRepository: UserRepository
     private lateinit var db: UserProfileDbHandler
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,11 +41,6 @@ class UserDetailFragment : Fragment() {
         _binding = FragmentUserDetailBinding.inflate(inflater, container, false)
         binding.rvUserDetail.layoutManager = GridLayoutManager(activity, 2)
         db = UserProfileDbHandler(requireActivity())
-        user = databaseService.withRealm { realm ->
-            realm.where(RealmUserModel::class.java)
-                .equalTo("id", userId)
-                .findFirst()?.let { realm.copyFromRealm(it) }
-        }
         return binding.root
     }
 
@@ -51,24 +48,27 @@ class UserDetailFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        user?.let { user ->
-            val list = getList(user, db)
-            binding.rvUserDetail.adapter = object : RecyclerView.Adapter<ViewHolderUserDetail>() {
-                override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderUserDetail {
-                    val binding = ItemTitleDescBinding.inflate(LayoutInflater.from(activity), parent, false)
-                    return ViewHolderUserDetail(binding)
-                }
+        viewLifecycleOwner.lifecycleScope.launch {
+            user = userId?.let { userRepository.getUserById(it) }
+            user?.let { user ->
+                val list = getList(user, db)
+                binding.rvUserDetail.adapter = object : RecyclerView.Adapter<ViewHolderUserDetail>() {
+                    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderUserDetail {
+                        val binding = ItemTitleDescBinding.inflate(LayoutInflater.from(activity), parent, false)
+                        return ViewHolderUserDetail(binding)
+                    }
 
-                override fun onBindViewHolder(holder: ViewHolderUserDetail, position: Int) {
-                    val detail = list[position]
-                    holder.binding.tvTitle.text = detail.title
-                    holder.binding.tvDescription.text = detail.description
-                }
+                    override fun onBindViewHolder(holder: ViewHolderUserDetail, position: Int) {
+                        val detail = list[position]
+                        holder.binding.tvTitle.text = detail.title
+                        holder.binding.tvDescription.text = detail.description
+                    }
 
-                override fun getItemCount() = list.size
+                    override fun getItemCount() = list.size
+                }
+            } ?: run {
+                Utilities.toast(activity, getString(R.string.user_not_available_in_our_database))
             }
-        } ?: run {
-            Utilities.toast(activity, getString(R.string.user_not_available_in_our_database))
         }
     }
 
