@@ -34,7 +34,7 @@ class DatabaseService(context: Context) {
         return withRealmInstance(operation)
     }
 
-    suspend fun <T> withRealm(operation: suspend (Realm) -> T): T {
+    suspend fun <T> withRealmSuspend(operation: suspend (Realm) -> T): T {
         val realm = realmInstance
         return try {
             operation(realm)

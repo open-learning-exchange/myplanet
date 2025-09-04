@@ -21,7 +21,7 @@ class FeedbackRepositoryImpl @Inject constructor(
 
     override fun getFeedback(userModel: RealmUserModel?): Flow<List<RealmFeedback>> =
         callbackFlow {
-            databaseService.withRealm { realm ->
+            databaseService.withRealmSuspend { realm ->
                 val feedbackList: RealmResults<RealmFeedback> =
                     if (userModel?.isManager() == true) {
                         realm.where(RealmFeedback::class.java)
