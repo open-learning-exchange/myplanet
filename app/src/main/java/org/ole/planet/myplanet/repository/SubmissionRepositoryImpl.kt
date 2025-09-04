@@ -31,14 +31,14 @@ class SubmissionRepositoryImpl @Inject constructor(
     ): List<String> {
         val examIds = submissions
             .mapNotNull { it.parentId?.split("@")?.firstOrNull() }
-            .toTypedArray()
         if (examIds.isEmpty()) return emptyList()
 
         return withRealm { realm ->
-            realm.where(RealmStepExam::class.java)
-                .`in`("id", examIds)
+            val exams = realm.where(RealmStepExam::class.java)
+                .`in`("id", examIds.distinct().toTypedArray())
                 .findAll()
-                .mapNotNull { it.name }
+            val examMap = exams.associate { it.id to it.name }
+            examIds.mapNotNull { examMap[it] }
         }
     }
 
