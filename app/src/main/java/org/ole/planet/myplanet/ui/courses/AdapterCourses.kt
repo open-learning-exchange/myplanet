@@ -87,7 +87,8 @@ internal class AdapterCourses(
     }
 
     fun setCourseList(courseList: List<RealmMyCourse?>) {
-        submitList(courseList)
+        val safeList = mRealm?.copyFromRealm(courseList.filterNotNull()) ?: courseList.filterNotNull()
+        submitList(safeList)
     }
 
     private fun sortCourseListByTitle(list: List<RealmMyCourse?>): List<RealmMyCourse?> {
