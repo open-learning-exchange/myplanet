@@ -10,4 +10,5 @@ interface FeedbackRepository {
     suspend fun getFeedbackById(id: String?): RealmFeedback?
     suspend fun closeFeedback(id: String?)
     suspend fun addReply(id: String?, obj: JsonObject)
+    suspend fun saveFeedback(feedback: RealmFeedback)
 }

@@ -10,6 +10,7 @@ interface LibraryRepository {
     suspend fun getAllLibraryList(): List<RealmMyLibrary>
     suspend fun getCourseLibraryItems(courseIds: List<String>): List<RealmMyLibrary>
     suspend fun saveLibraryItem(item: RealmMyLibrary)
+    suspend fun markResourceAdded(userId: String?, resourceId: String)
     suspend fun deleteLibraryItem(id: String)
     suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit)
 }
