@@ -25,23 +25,30 @@ import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterMyPersonal(private val context: Context, private var list: MutableList<RealmMyPersonal>) : RecyclerView.Adapter<ViewHolderMyPersonal>() {
+class AdapterMyPersonal(
+    private val context: Context,
+    private var list: MutableList<RealmMyPersonal> = mutableListOf(),
+) : RecyclerView.Adapter<ViewHolderMyPersonal>() {
     private lateinit var rowMyPersonalBinding: RowMyPersonalBinding
     private var realm: Realm? = null
     private var listener: OnSelectedMyPersonal? = null
-    
+
     fun setListener(listener: OnSelectedMyPersonal?) {
         this.listener = listener
     }
-    
-    fun updateList(newList: List<RealmMyPersonal>) {
+
+    private fun updateList(newList: List<RealmMyPersonal>) {
         val diffCallback = MyPersonalDiffCallback(list, newList)
         val diffResult = DiffUtil.calculateDiff(diffCallback)
         list.clear()
         list.addAll(newList)
         diffResult.dispatchUpdatesTo(this)
     }
-    
+
+    fun submitList(newList: List<RealmMyPersonal>) {
+        updateList(newList)
+    }
+
     fun getList(): List<RealmMyPersonal> = list
     fun setRealm(realm: Realm?) {
         this.realm = realm

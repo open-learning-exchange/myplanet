@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
@@ -13,12 +14,14 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSelectedMyPersonal
 import org.ole.planet.myplanet.databinding.FragmentMyPersonalsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.repository.MyPersonalRepository
+import org.ole.planet.myplanet.model.RealmMyPersonal
 
 @AndroidEntryPoint
 class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
@@ -32,6 +35,10 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     lateinit var uploadManager: UploadManager
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var myPersonalRepository: MyPersonalRepository
+    @Inject
+    lateinit var userProfileDbHandler: UserProfileDbHandler
     fun refreshFragment() {
         if (isAdded) {
             setAdapter()
@@ -63,25 +70,26 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     }
 
     private fun setAdapter() {
-        val model = UserProfileDbHandler(requireContext()).userModel
-        val realmMyPersonals: List<RealmMyPersonal> = mRealm.where(RealmMyPersonal::class.java)
-            .equalTo("userId", model?.id).findAll()
-        personalAdapter = AdapterMyPersonal(requireActivity(), realmMyPersonals.toMutableList())
+        val userId = userProfileDbHandler.userModel?.id
+        personalAdapter = AdapterMyPersonal(requireActivity())
         personalAdapter?.setListener(this)
         personalAdapter?.setRealm(mRealm)
         fragmentMyPersonalsBinding.rvMypersonal.adapter = personalAdapter
-        showNodata()
-        mRealm.addChangeListener {
-            updatePersonalList()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val realmMyPersonals = userId?.let { myPersonalRepository.getMyPersonalByUser(it) } ?: emptyList()
+            personalAdapter?.submitList(realmMyPersonals.toMutableList())
+            showNodata()
         }
+        mRealm.addChangeListener { updatePersonalList() }
     }
     
     private fun updatePersonalList() {
-        val model = UserProfileDbHandler(requireContext()).userModel
-        val realmMyPersonals: List<RealmMyPersonal> = mRealm.where(RealmMyPersonal::class.java)
-            .equalTo("userId", model?.id).findAll()
-        personalAdapter?.updateList(realmMyPersonals)
-        showNodata()
+        val userId = userProfileDbHandler.userModel?.id
+        viewLifecycleOwner.lifecycleScope.launch {
+            val realmMyPersonals = userId?.let { myPersonalRepository.getMyPersonalByUser(it) } ?: emptyList()
+            personalAdapter?.submitList(realmMyPersonals.toMutableList())
+            showNodata()
+        }
     }
 
     private fun showNodata() {
