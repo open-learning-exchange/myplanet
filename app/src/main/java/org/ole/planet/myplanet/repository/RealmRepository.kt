@@ -56,6 +56,16 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         }
     }
 
+    protected suspend fun <T : RealmObject, V : Any> count(
+        clazz: Class<T>,
+        field: String,
+        value: V
+    ): Long = databaseService.withRealmAsync { realm ->
+        realm.where(clazz)
+            .applyEqualTo(field, value)
+            .count()
+    }
+
     protected suspend fun <T> withRealm(operation: (Realm) -> T): T {
         return databaseService.withRealmAsync(operation)
     }
