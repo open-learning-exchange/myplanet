@@ -106,7 +106,7 @@
                 android:padding="@dimen/padding_normal"
                 android:text="@string/date_reset"
                 android:textColor="@android:color/white"
-                android:textSize="18sp"
+                android:textSize="@dimen/text_size_mid"
                 android:theme="@style/GuestStyle" />
         </LinearLayout>
 
