@@ -44,7 +44,7 @@ import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.userprofile.TeamListAdapter
 import org.ole.planet.myplanet.utilities.AuthHelper
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
-import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.ThemeManager
@@ -83,7 +83,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         binding.tvAvailableSpace.text = buildString {
             append(getString(R.string.available_space_colon))
             append(" ")
-            append(availableOverTotalMemoryFormattedString)
+            append(FileUtils.availableOverTotalMemoryFormattedString(this@LoginActivity))
         }
         changeLogoColor()
         declareElements()

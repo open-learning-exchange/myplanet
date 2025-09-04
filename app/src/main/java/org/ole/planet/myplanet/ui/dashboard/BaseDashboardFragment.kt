@@ -132,7 +132,7 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     override fun downloadDictionary() {
         val list = ArrayList<String>()
         list.add(Constants.DICTIONARY_URL)
-        if (!FileUtils.checkFileExist(Constants.DICTIONARY_URL)) {
+        if (!FileUtils.checkFileExist(requireContext(), Constants.DICTIONARY_URL)) {
             Utilities.toast(activity, getString(R.string.downloading_started_please_check_notification))
             DownloadUtils.openDownloadService(activity, list, false)
         } else {
