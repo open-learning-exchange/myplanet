@@ -88,6 +88,12 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             pojo = mRealm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
         }
         user = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+        if (user != null && (user?.key == null || user?.iv == null)) {
+            if (!mRealm.isInTransaction) mRealm.beginTransaction()
+            user?.key = generateKey()
+            user?.iv = generateIv()
+            mRealm.commitTransaction()
+        }
         if (pojo != null && !TextUtils.isEmpty(pojo?.data)) {
             health = gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
         }
@@ -277,14 +283,9 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         examination?.isHasInfo = hasInfo
         pojo?.isUpdated = true
         try {
-            val userKey = user?.key
-            val userIv = user?.iv
-            if (userKey != null && userIv != null) {
-                examination?.data = encrypt(gson.toJson(sign), userKey, userIv)
-            } else {
-                Utilities.toast(this, getString(R.string.unable_to_add_health_record))
-                return
-            }
+            val key = user?.key ?: generateKey().also { user?.key = it }
+            val iv = user?.iv ?: generateIv().also { user?.iv = it }
+            examination?.data = encrypt(gson.toJson(sign), key, iv)
         } catch (e: Exception) {
             e.printStackTrace()
         }

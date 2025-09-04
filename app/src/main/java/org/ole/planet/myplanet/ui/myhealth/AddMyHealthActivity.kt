@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.model.RealmMyHealthPojo
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.decrypt
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.encrypt
+import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.Utilities
@@ -37,8 +38,6 @@ class AddMyHealthActivity : AppCompatActivity() {
     private var healthPojo: RealmMyHealthPojo? = null
     private var userModelB: RealmUserModel? = null
     var userId: String? = null
-    var key: String? = null
-    var iv: String? = null
     private var myHealth: RealmMyHealth? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,8 +54,6 @@ class AddMyHealthActivity : AppCompatActivity() {
             healthPojo = realm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
         }
         userModelB = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
-        key = userModelB?.key
-        iv = userModelB?.iv
         findViewById<View>(R.id.btn_submit).setOnClickListener {
             createMyHealth()
             Utilities.toast(this@AddMyHealthActivity, getString(R.string.my_health_saved_successfully))
@@ -108,6 +105,8 @@ class AddMyHealthActivity : AppCompatActivity() {
         healthPojo?.isUpdated = true
         healthPojo?.userId = userModelB?._id
         try {
+            val key = userModelB?.key ?: generateKey().also { userModelB?.key = it }
+            val iv = userModelB?.iv ?: generateIv().also { userModelB?.iv = it }
             healthPojo?.data = encrypt(Gson().toJson(myHealth), key, iv)
         } catch (e: Exception) {
             e.printStackTrace()
