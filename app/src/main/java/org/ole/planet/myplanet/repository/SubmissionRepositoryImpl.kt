@@ -29,16 +29,16 @@ class SubmissionRepositoryImpl @Inject constructor(
     override suspend fun getSurveyTitlesFromSubmissions(
         submissions: List<RealmSubmission>
     ): List<String> {
+        val examIds = submissions
+            .mapNotNull { it.parentId?.split("@")?.firstOrNull() }
+            .toTypedArray()
+        if (examIds.isEmpty()) return emptyList()
+
         return withRealm { realm ->
-            val titles = mutableListOf<String>()
-            submissions.forEach { submission ->
-                val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
-                val exam = realm.where(RealmStepExam::class.java)
-                    .equalTo("id", examId)
-                    .findFirst()
-                exam?.name?.let { titles.add(it) }
-            }
-            titles
+            realm.where(RealmStepExam::class.java)
+                .`in`("id", examIds)
+                .findAll()
+                .mapNotNull { it.name }
         }
     }
 
