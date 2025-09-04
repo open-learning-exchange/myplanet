@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 class TeamCourseFragment : BaseTeamFragment() {
     private var _binding: FragmentTeamCourseBinding? = null
     private val binding get() = _binding!!
+    private var adapterTeamCourse: AdapterTeamCourse? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentTeamCourseBinding.inflate(inflater, container, false)
@@ -21,12 +22,24 @@ class TeamCourseFragment : BaseTeamFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupCoursesList()
+    }
+    
+    private fun setupCoursesList() {
         val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
-        val adapterTeamCourse = settings?.let { AdapterTeamCourse(requireActivity(), courses, mRealm, teamId, it) }
+        adapterTeamCourse = settings?.let { AdapterTeamCourse(requireActivity(), courses.toMutableList(), mRealm, teamId, it) }
         binding.rvCourse.layoutManager = LinearLayoutManager(activity)
         binding.rvCourse.adapter = adapterTeamCourse
-        if (adapterTeamCourse != null) {
-            showNoData(binding.tvNodata, adapterTeamCourse.itemCount, "teamCourses")
+        adapterTeamCourse?.let {
+            showNoData(binding.tvNodata, it.itemCount, "teamCourses")
+        }
+    }
+    
+    fun updateCoursesList() {
+        val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
+        adapterTeamCourse?.updateList(courses)
+        adapterTeamCourse?.let {
+            showNoData(binding.tvNodata, it.itemCount, "teamCourses")
         }
     }
 
