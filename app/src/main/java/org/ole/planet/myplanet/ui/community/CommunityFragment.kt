@@ -84,12 +84,12 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
     private fun updatedNewsList(updatedList: List<RealmNews>) {
         viewLifecycleOwner.lifecycleScope.launch {
             val updatedListAsMutable: MutableList<RealmNews?> = updatedList.toMutableList()
-            val adapter = activity?.let { AdapterNews(it, updatedListAsMutable, user, null, "", null, userProfileDbHandler) }
+            val adapter = activity?.let { AdapterNews(it, user, null, "", null, userProfileDbHandler) }
             adapter?.setListener(this@CommunityFragment)
             adapter?.setFromLogin(requireArguments().getBoolean("fromLogin", false))
+            adapter?.updateList(updatedListAsMutable)
             binding.rvCommunity.adapter = adapter
             binding.llEditDelete.visibility = if (user?.isManager() == true) View.VISIBLE else View.GONE
-            adapter?.notifyDataSetChanged()
         }
     }
 

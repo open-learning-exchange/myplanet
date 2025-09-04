@@ -174,13 +174,12 @@ class DiscussionListFragment : BaseTeamFragment() {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
             val adapterNews = activity?.let {
-                realmNewsList?.let { list ->
-                    AdapterNews(it, list.toMutableList(), user, null, getEffectiveTeamName(), teamId, userProfileDbHandler)
-                }
+                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler)
             }
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setListener(this)
             if (!isMember()) adapterNews?.setNonTeamMember(true)
+            realmNewsList?.let { adapterNews?.updateList(it) }
             binding.rvDiscussion.adapter = adapterNews
             adapterNews?.let {
                 showNoData(binding.tvNodata, it.itemCount, "discussions")
