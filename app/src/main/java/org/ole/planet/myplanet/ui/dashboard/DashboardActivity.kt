@@ -630,23 +630,24 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun markDatabaseNotificationAsRead(notificationId: String) {
         try {
-            val userId = user?.id
-            if (notificationId.startsWith("summary_")) {
-                val type = notificationId.removePrefix("summary_")
-                mRealm.executeTransactionAsync { realm ->
+            mRealm.executeTransactionAsync { realm ->
+                if (notificationId.startsWith("summary_")) {
+                    val type = notificationId.removePrefix("summary_")
+                    val userId = user?.id ?: realm.where(RealmNotification::class.java)
+                        .equalTo("type", type)
+                        .findFirst()
+                        ?.userId
                     realm.where(RealmNotification::class.java)
                         .equalTo("userId", userId)
                         .equalTo("type", type)
                         .equalTo("isRead", false)
                         .findAll()
                         .forEach { it.isRead = true }
-                }
-            } else {
-                mRealm.executeTransactionAsync { realm ->
-                    val notification = realm.where(RealmNotification::class.java)
+                } else {
+                    realm.where(RealmNotification::class.java)
                         .equalTo("id", notificationId)
                         .findFirst()
-                    notification?.isRead = true
+                        ?.isRead = true
                 }
             }
         } catch (e: Exception) {
