@@ -76,10 +76,10 @@ class AdapterMyPersonal(
                         ?.equalTo("_id", item._id)?.findFirst()
                     personal?.deleteFromRealm()
                     realm?.commitTransaction()
-                    submitList(
-                        realm?.where(RealmMyPersonal::class.java)?.findAll()?.toList()
-                            ?: emptyList()
-                    )
+                    val updated = realm?.let { r ->
+                        r.copyFromRealm(r.where(RealmMyPersonal::class.java).findAll())
+                    } ?: emptyList()
+                    submitList(updated)
                     listener?.onAddedResource()
                 }.setNegativeButton(R.string.cancel, null).show()
         }
@@ -90,8 +90,10 @@ class AdapterMyPersonal(
             openResource(item.path)
         }
         rowMyPersonalBinding.imgUpload.setOnClickListener {
+            val personal = realm?.where(RealmMyPersonal::class.java)
+                ?.equalTo("_id", item._id)?.findFirst()
             if (listener != null) {
-                listener?.onUpload(item)
+                listener?.onUpload(personal)
             }
         }
     }
@@ -137,13 +139,16 @@ class AdapterMyPersonal(
                     Utilities.toast(context, R.string.please_enter_title.toString())
                     return@setPositiveButton
                 }
+                val managed = realm?.where(RealmMyPersonal::class.java)
+                    ?.equalTo("_id", personal._id)?.findFirst()
                 if (!realm?.isInTransaction!!) realm?.beginTransaction()
-                personal.description = desc
-                personal.title = title
+                managed?.description = desc
+                managed?.title = title
                 realm?.commitTransaction()
-                submitList(
-                    realm?.where(RealmMyPersonal::class.java)?.findAll()?.toList() ?: emptyList()
-                )
+                val updated = realm?.let { r ->
+                    r.copyFromRealm(r.where(RealmMyPersonal::class.java).findAll())
+                } ?: emptyList()
+                submitList(updated)
                 listener?.onAddedResource()
             }
             .setNegativeButton(R.string.cancel, null)
