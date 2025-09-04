@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.ui.rating
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.gson.Gson
+import java.util.Date
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,8 +13,6 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmUserModel
-import java.util.Date
-import java.util.UUID
 
 class RatingViewModel @Inject constructor(
     private val databaseService: DatabaseService
