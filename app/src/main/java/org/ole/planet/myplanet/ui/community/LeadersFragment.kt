@@ -32,10 +32,10 @@ class LeadersFragment : Fragment() {
             binding?.tvNodata?.let { it.text = getString(R.string.no_data_available) }
         } else {
             val leadersList = RealmUserModel.parseLeadersJson(leaders)
-            binding?.rvMember?.apply {
-                layoutManager = GridLayoutManager(activity, 2)
-                adapter = AdapterLeader(requireActivity(), leadersList)
-            }
+            binding?.rvMember?.layoutManager = GridLayoutManager(activity, 2)
+            val adapter = AdapterLeader(requireActivity())
+            binding?.rvMember?.adapter = adapter
+            adapter.submitList(leadersList)
         }
     }
 
