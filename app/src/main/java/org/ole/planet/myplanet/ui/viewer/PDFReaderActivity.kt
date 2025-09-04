@@ -10,7 +10,6 @@ import com.github.barteksc.pdfviewer.listener.OnPageChangeListener
 import com.github.barteksc.pdfviewer.listener.OnPageErrorListener
 import com.github.barteksc.pdfviewer.scroll.DefaultScrollHandle
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import java.io.File
 import javax.inject.Inject
 import org.ole.planet.myplanet.R
@@ -38,7 +37,6 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
     @Inject
     lateinit var myPersonalRepository: MyPersonalRepository
     private lateinit var library: RealmMyLibrary
-    private lateinit var mRealm: Realm
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityPdfreaderBinding.inflate(layoutInflater)
@@ -46,10 +44,15 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         EdgeToEdgeUtils.setupEdgeToEdgeWithNoPadding(this, binding.root)
         audioRecorderService = AudioRecorderService().setAudioRecordListener(this)
         audioRecorderService.setCaller(this, this)
-        mRealm = databaseService.realmInstance
         if (intent.hasExtra("resourceId")) {
             val resourceID = intent.getStringExtra("resourceId")
-            library = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceID).findFirst()!!
+            library =
+                databaseService.withRealm { realm ->
+                    realm.where(RealmMyLibrary::class.java)
+                        .equalTo("id", resourceID)
+                        .findFirst()
+                        ?.let { realm.copyFromRealm(it) }
+                }!!
         }
         renderPdfFile()
         binding.fabRecord.setOnClickListener { audioRecorderService.onRecordClicked()}
@@ -106,9 +109,15 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
 
     private fun updateTranslation(outputFile: String?) {
         if (this::library.isInitialized) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
+            databaseService.withRealm { realm ->
+                realm.executeTransaction { transactionRealm ->
+                    transactionRealm.where(RealmMyLibrary::class.java)
+                        .equalTo("id", library.id)
+                        .findFirst()
+                        ?.let { it.translationAudioPath = outputFile }
+                }
+            }
             library.translationAudioPath = outputFile
-            mRealm.commitTransaction()
             Utilities.toast(this, getString(R.string.audio_file_saved_in_database))
         }
     }
@@ -116,16 +125,6 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
     override fun onDestroy() {
         if (this::audioRecorderService.isInitialized && audioRecorderService.isRecording()) {
             audioRecorderService.stopRecording()
-        }
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            if (mRealm.isInTransaction) {
-                try {
-                    mRealm.commitTransaction()
-                } catch (e: Exception) {
-                    mRealm.cancelTransaction()
-                }
-            }
-            mRealm.close()
         }
         super.onDestroy()
     }

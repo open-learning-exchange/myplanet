@@ -212,13 +212,13 @@ class NewsFragment : BaseNewsFragment() {
             val sortedList = updatedListAsMutable.sortedWith(compareByDescending { news ->
                 getSortDate(news)
             })
-            adapterNews = AdapterNews(requireActivity(), sortedList.toMutableList(), user, null, "", null, userProfileDbHandler)
+            adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler)
 
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
             adapterNews?.setListener(this)
             adapterNews?.registerAdapterDataObserver(observer)
-
+            adapterNews?.updateList(sortedList)
             binding.rvNews.adapter = adapterNews
         } else {
             (binding.rvNews.adapter as? AdapterNews)?.updateList(list)
