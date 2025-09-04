@@ -33,9 +33,8 @@ import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils.availableExternalMemorySize
 import org.ole.planet.myplanet.utilities.FileUtils.externalMemoryAvailable
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
-import org.ole.planet.myplanet.utilities.FileUtils.getSDPathFromUrl
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.UrlUtils.header
-import retrofit2.Call
 
 class MyDownloadService : Service() {
     private var data = ByteArray(1024 * 4)
@@ -46,7 +45,6 @@ class MyDownloadService : Service() {
     private lateinit var preferences: SharedPreferences
     private lateinit var urls: Array<String>
     private var currentIndex = 0
-    private var request: Call<ResponseBody>? = null
     private var fromSync = false
 
     private var totalDownloadsCount = 0
@@ -101,7 +99,7 @@ class MyDownloadService : Service() {
         notificationManager?.notify(ONGOING_NOTIFICATION_ID, notificationBuilder?.build())
     }
 
-    private fun initDownload(url: String, fromSync: Boolean) {
+    private suspend fun initDownload(url: String, fromSync: Boolean) {
         try {
             if (url.isBlank()) {
                 downloadFailed("Invalid URL - empty or blank", fromSync)
@@ -119,15 +117,8 @@ class MyDownloadService : Service() {
                 downloadFailed("Authentication header not available", fromSync)
                 return
             }
-            
-            request = retrofitInterface.downloadFile(authHeader, url)
-            if (request == null) {
-                downloadFailed("Failed to create download request", fromSync)
-                return
-            }
-            
             val response = try {
-                request?.clone()?.execute()
+                retrofitInterface.downloadFile(authHeader, url)
             } catch (e: java.net.UnknownHostException) {
                 downloadFailed("Server not reachable. Check internet connection.", fromSync)
                 return
@@ -145,11 +136,7 @@ class MyDownloadService : Service() {
                 return
             }
 
-            when {
-                response == null -> {
-                    downloadFailed("Null response from server", fromSync)
-                }
-                response.isSuccessful -> {
+            if (response.isSuccessful) {
                     val responseBody = response.body()
                     if (responseBody == null) {
                         downloadFailed("Empty response body", fromSync)
@@ -166,9 +153,8 @@ class MyDownloadService : Service() {
                     } catch (e: Exception) {
                         downloadFailed("Storage check failed: ${e.localizedMessage ?: "Unknown error"}", fromSync)
                     }
-                }
-                else -> {
-                    val errorMessage = when (response.code()) {
+            } else {
+                val errorMessage = when (response.code()) {
                         401 -> "Unauthorized access"
                         403 -> "Forbidden - Access denied"
                         404 -> "File not found"
@@ -178,19 +164,18 @@ class MyDownloadService : Service() {
                         503 -> "Service unavailable"
                         504 -> "Gateway timeout"
                         else -> "Connection failed (${response.code()})"
-                    }
-                    downloadFailed(errorMessage, fromSync)
+                }
+                downloadFailed(errorMessage, fromSync)
 
-                    if (response.code() == 404) {
-                        try {
-                            val responseString = response.toString()
-                            val regex = Regex("url=([^}]*)")
-                            val matchResult = regex.find(responseString)
-                            val extractedUrl = matchResult?.groupValues?.get(1)
-                            createLog("File Not Found", "$extractedUrl")
-                        } catch (e: Exception) {
-                            createLog("File Not Found", url)
-                        }
+                if (response.code() == 404) {
+                    try {
+                        val responseString = response.toString()
+                        val regex = Regex("url=([^}]*)")
+                        val matchResult = regex.find(responseString)
+                        val extractedUrl = matchResult?.groupValues?.get(1)
+                        createLog("File Not Found", "$extractedUrl")
+                    } catch (e: Exception) {
+                        createLog("File Not Found", url)
                     }
                 }
             }
@@ -228,7 +213,7 @@ class MyDownloadService : Service() {
     @Throws(IOException::class)
     private fun downloadFile(body: ResponseBody, url: String) {
         val fileSize = body.contentLength()
-        outputFile = getSDPathFromUrl(url)
+        outputFile = FileUtils.getSDPathFromUrl(this@MyDownloadService, url)
         var total: Long = 0
         val startTime = System.currentTimeMillis()
         var timeCount = 1
@@ -346,7 +331,6 @@ class MyDownloadService : Service() {
     }
 
     override fun onDestroy() {
-        request?.cancel()
         try {
             stopForeground(true)
         } catch (_: Exception) {

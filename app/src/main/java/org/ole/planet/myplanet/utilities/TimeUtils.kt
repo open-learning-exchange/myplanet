@@ -59,8 +59,9 @@ object TimeUtils {
             ""
         }
 
-    fun getAge(date: String): Int =
-        try {
+    fun getAge(date: String): Int {
+        return try {
+            if (date.isBlank()) return 0
             val cleaned = date.replace("T", " ").replace(".000Z", "")
             val dob =
                 try {
@@ -76,6 +77,7 @@ object TimeUtils {
             e.printStackTrace()
             0
         }
+    }
 
     fun getFormattedDate(
         stringDate: String?,

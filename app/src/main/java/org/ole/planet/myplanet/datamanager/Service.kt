@@ -123,7 +123,7 @@ class Service @Inject constructor(
                     try {
                         val checksum = response.body()?.string()
                         if (TextUtils.isEmpty(checksum)) {
-                            val f = FileUtils.getSDPathFromUrl(path)
+                            val f = FileUtils.getSDPathFromUrl(context, path)
                             if (f.exists()) {
                                 val sha256 = Sha256Utils().getCheckSumFromFile(f)
                                 if (checksum?.contains(sha256) == true) {

@@ -5,19 +5,22 @@ import android.content.Context
 import android.content.Intent
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.work.CoroutineWorker
+import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import dagger.hilt.android.EntryPointAccessors
-import java.io.BufferedInputStream
-import java.io.FileOutputStream
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
+import okio.Buffer
+import okio.buffer
+import okio.sink
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.di.ApiInterfaceEntryPoint
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.utilities.DownloadUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
-import org.ole.planet.myplanet.utilities.FileUtils.getSDPathFromUrl
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.UrlUtils
 
 class DownloadWorker(val context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
@@ -73,20 +76,14 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
 
     private suspend fun downloadFile(url: String, index: Int, total: Int): Boolean {
         return try {
-            val response = apiInterface.downloadFile(UrlUtils.header, url)?.execute()
-
-            when {
-                response == null -> false
-                response.isSuccessful -> {
-                    val responseBody = response.body()
-                    responseBody?.let {
-                        downloadFileBody(it, url, index, total)
-                        true
-                    } == true
-                }
-                else -> {
-                    false
-                }
+            val response = apiInterface.downloadFile(UrlUtils.header, url)
+            if (response.isSuccessful) {
+                response.body()?.let {
+                    downloadFileBody(it, url, index, total)
+                    true
+                } ?: false
+            } else {
+                false
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -94,37 +91,34 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
         }
     }
 
-    private fun downloadFileBody(body: ResponseBody, url: String, index: Int, total: Int) {
+    private suspend fun downloadFileBody(body: ResponseBody, url: String, index: Int, total: Int) {
         val fileSize = body.contentLength()
-        val outputFile = getSDPathFromUrl(url)
-        val data = ByteArray(1024 * 4)
+        val outputFile: File = FileUtils.getSDPathFromUrl(context, url)
         var totalBytes: Long = 0
 
-        BufferedInputStream(body.byteStream(), 1024 * 8).use { bis ->
-            FileOutputStream(outputFile).use { output ->
+        outputFile.sink().buffer().use { sink ->
+            body.source().use { source ->
+                val buffer = Buffer()
                 while (true) {
-                    val readCount = bis.read(data)
-                    if (readCount == -1) break
+                    val read = source.read(buffer, 8_192)
+                    if (read == -1L) break
+                    sink.write(buffer, read)
+                    totalBytes += read
 
-                    if (readCount > 0) {
-                        totalBytes += readCount
-                        output.write(data, 0, readCount)
-
-                        if (totalBytes % (1024 * 100) == 0L) {
-                            val progress = if (fileSize > 0) {
-                                (totalBytes * 100 / fileSize).toInt()
-                            } else 0
-
-                            showProgressNotification(index, total, "Downloading ${getFileNameFromUrl(url)} ($progress%)")
-                        }
+                    if (totalBytes % (1024 * 100) == 0L) {
+                        val progress = if (fileSize > 0) {
+                            (totalBytes * 100 / fileSize).toInt()
+                        } else 0
+                        showProgressNotification(index, total, "Downloading ${getFileNameFromUrl(url)} ($progress%)")
                     }
                 }
+                sink.flush()
             }
         }
         DownloadUtils.updateResourceOfflineStatus(url)
     }
 
-    private fun showProgressNotification(current: Int, total: Int, text: String) {
+    private suspend fun showProgressNotification(current: Int, total: Int, text: String) {
         val notification = DownloadUtils.buildProgressNotification(
             context,
             current,
@@ -132,8 +126,7 @@ class DownloadWorker(val context: Context, workerParams: WorkerParameters) : Cor
             text,
             forWorker = true
         )
-
-        notificationManager.notify(WORKER_NOTIFICATION_ID, notification)
+        setForeground(ForegroundInfo(WORKER_NOTIFICATION_ID, notification))
     }
 
     private fun showCompletionNotification(completed: Int, total: Int, hadErrors: Boolean) {

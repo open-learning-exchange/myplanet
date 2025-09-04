@@ -87,7 +87,7 @@ object CameraUtils {
 
     @JvmStatic
     private fun savePicture(data: ByteArray, callback: ImageCaptureCallback) {
-        val pictureFileDir = File("${FileUtils.SD_PATH}/userimages")
+        val pictureFileDir = File("${FileUtils.getOlePath(context)}/userimages")
         if (!pictureFileDir.exists() && !pictureFileDir.mkdirs()) {
             pictureFileDir.mkdirs()
         }

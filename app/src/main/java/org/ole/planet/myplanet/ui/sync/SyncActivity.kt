@@ -86,7 +86,6 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showWifiSettingDialog
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.DownloadUtils.openDownloadService
 import org.ole.planet.myplanet.utilities.FileUtils
-import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
@@ -235,7 +234,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     private fun clearInternalStorage() {
-        val myDir = File(FileUtils.SD_PATH)
+        val myDir = File(FileUtils.getOlePath(this))
         if (myDir.isDirectory) {
             val children = myDir.list()
             if (children != null) {
@@ -561,7 +560,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
             tvAvailableSpace.text = buildString {
                 append(getString(R.string.available_space_colon))
                 append(" ")
-                append(availableOverTotalMemoryFormattedString)
+                append(FileUtils.availableOverTotalMemoryFormattedString(this@SyncActivity))
             }
 
             inputName.hint = getString(R.string.hint_name)
