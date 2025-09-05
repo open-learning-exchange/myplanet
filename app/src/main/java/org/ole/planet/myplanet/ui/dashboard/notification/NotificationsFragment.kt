@@ -87,8 +87,8 @@ class NotificationsFragment : Fragment() {
         adapter = AdapterNotification(
             databaseService,
             notifications,
-            onMarkAsReadClick = { position ->
-                markAsRead(position)
+            onMarkAsReadClick = { notificationId ->
+                markAsReadById(notificationId)
             },
             onNotificationClick = { notification ->
                 handleNotificationClick(notification)
@@ -184,12 +184,7 @@ class NotificationsFragment : Fragment() {
         }
 
         if (!notification.isRead) {
-            val position = adapter.currentList.indexOf(notification)
-            if (position >= 0) {
-                markAsRead(position)
-            } else {
-                markAsReadById(notification.id)
-            }
+            markAsReadById(notification.id)
         }
     }
 
@@ -211,27 +206,6 @@ class NotificationsFragment : Fragment() {
         }
     }
 
-    private fun markAsRead(position: Int) {
-        val notification = adapter.currentList[position]
-        val notificationId = notification.id
-        viewLifecycleOwner.lifecycleScope.launch {
-            databaseService.executeTransactionAsync { realm ->
-                val realmNotification = realm.where(RealmNotification::class.java)
-                    .equalTo("id", notificationId)
-                    .findFirst()
-                realmNotification?.isRead = true
-            }
-            adapter.updateNotifications(
-                loadNotifications(
-                    userId,
-                    binding.status.selectedItem.toString().lowercase(),
-                ),
-            )
-            updateUnreadCount()
-            updateMarkAllAsReadButtonVisibility()
-        }
-    }
-
     private fun markAsReadById(notificationId: String) {
         viewLifecycleOwner.lifecycleScope.launch {
             databaseService.executeTransactionAsync { realm ->
@@ -243,11 +217,19 @@ class NotificationsFragment : Fragment() {
             val currentList = adapter.currentList.toMutableList()
             val index = currentList.indexOfFirst { it.id == notificationId }
             if (index != -1) {
-                currentList[index].isRead = true
-                adapter.submitList(currentList)
-                adapter.notifyItemChanged(index)
+                val selectedFilter = binding.status.selectedItem.toString().lowercase()
+                if (selectedFilter == "unread") {
+                    currentList.removeAt(index)
+                    adapter.submitList(currentList)
+                    adapter.notifyItemRemoved(index)
+                } else {
+                    currentList[index].isRead = true
+                    adapter.submitList(currentList)
+                    adapter.notifyItemChanged(index)
+                }
                 updateUnreadCount()
                 updateMarkAllAsReadButtonVisibility()
+                binding.emptyData.visibility = if (currentList.isEmpty()) View.VISIBLE else View.GONE
             } else {
                 refreshNotificationsList()
             }
