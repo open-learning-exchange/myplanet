@@ -831,7 +831,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
                 val requesterName = requester?.name ?: "Unknown User"
                 val teamName = team?.name ?: "Unknown Team"
-                val message = "$requesterName has requested to join $teamName"
+                val message = getString(R.string.user_requested_to_join_team, requesterName, teamName)
 
                 dashboardViewModel.createNotificationIfNotExists(
                     realm, "join_request", message, joinRequest._id, userId
