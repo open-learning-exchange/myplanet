@@ -117,16 +117,20 @@ class AdapterMyPersonal(
             .setTitle(R.string.edit_personal)
             .setIcon(R.drawable.ic_edit)
             .setView(alertMyPersonalBinding.root)
-            .setPositiveButton(R.string.button_submit) {_: DialogInterface?, _: Int ->
-                val title = alertMyPersonalBinding.etDescription.text.toString().trim { it <= ' ' }
-                val desc = alertMyPersonalBinding.etTitle.text.toString().trim { it <= ' ' }
+            .setPositiveButton(R.string.button_submit) { _: DialogInterface?, _: Int ->
+                val title = alertMyPersonalBinding.etTitle.text.toString().trim { it <= ' ' }
+                val desc = alertMyPersonalBinding.etDescription.text.toString().trim { it <= ' ' }
                 if (title.isEmpty()) {
                     Utilities.toast(context, R.string.please_enter_title.toString())
                     return@setPositiveButton
                 }
-                if (!realm?.isInTransaction!!) realm?.beginTransaction()
-                personal.description = desc
-                personal.title = title
+                if (realm?.isInTransaction != true) realm?.beginTransaction()
+                realm?.where(RealmMyPersonal::class.java)
+                    ?.equalTo("_id", personal._id)
+                    ?.findFirst()?.apply {
+                        this.title = title
+                        this.description = desc
+                    }
                 realm?.commitTransaction()
                 listener?.onAddedResource()
             }
