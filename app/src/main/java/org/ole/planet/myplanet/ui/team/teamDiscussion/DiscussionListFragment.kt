@@ -231,7 +231,9 @@ class DiscussionListFragment : BaseTeamFragment() {
                         withContext(Dispatchers.Main) {
                             this@DiscussionListFragment.binding.rvDiscussion.adapter?.notifyDataSetChanged()
                             setData(news)
-                            this@DiscussionListFragment.binding.rvDiscussion.scrollToPosition(0)
+                            this@DiscussionListFragment.binding.rvDiscussion.post {
+                                this@DiscussionListFragment.binding.rvDiscussion.smoothScrollToPosition(0)
+                            }
                         }
                     }
                 }
