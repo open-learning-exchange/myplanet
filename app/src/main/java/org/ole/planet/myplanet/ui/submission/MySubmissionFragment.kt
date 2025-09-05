@@ -12,15 +12,12 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -29,9 +26,6 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     private var _binding: FragmentMySubmissionBinding? = null
     private val binding get() = _binding!!
-    lateinit var mRealm: Realm
-    @Inject
-    lateinit var databaseService: DatabaseService
     @Inject
     lateinit var submissionRepository: SubmissionRepository
     var type: String? = ""
@@ -53,14 +47,14 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        mRealm = databaseService.realmInstance
         binding.rvMysurvey.layoutManager = LinearLayoutManager(activity)
         binding.rvMysurvey.addItemDecoration(
             DividerItemDecoration(activity, DividerItemDecoration.VERTICAL)
         )
         viewLifecycleOwner.lifecycleScope.launch {
-            submissions = submissionRepository.getSubmissionsByUserId(user?.id ?: "")
-            exams = getExamMap(mRealm, submissions)
+            val subs = submissionRepository.getSubmissionsByUserId(user?.id ?: "")
+            submissions = subs
+            exams = HashMap(submissionRepository.getExamMapForSubmissions(subs))
             setData("")
         }
         binding.etSearch.addTextChangedListener(object : TextWatcher {
@@ -146,15 +140,11 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
             }
         }
 
-        adapter.setmRealm(mRealm)
         adapter.setType(type)
         binding.rvMysurvey.adapter = adapter
     }
 
     override fun onDestroyView() {
-        if (::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
         _binding = null
         super.onDestroyView()
     }
