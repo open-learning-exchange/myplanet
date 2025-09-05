@@ -47,35 +47,34 @@ class RatingViewModel @Inject constructor(
             try {
                 _ratingState.value = RatingUiState.Loading
                 
-                val realm = databaseService.realmInstance
-                val existingRating = realm.where(RealmRating::class.java)
-                    .equalTo("type", type)
-                    .equalTo("userId", userId)
-                    .equalTo("item", itemId)
-                    .findFirst()
+                databaseService.withRealm { realm ->
+                    val existingRating = realm.where(RealmRating::class.java)
+                        .equalTo("type", type)
+                        .equalTo("userId", userId)
+                        .equalTo("item", itemId)
+                        .findFirst()
 
-                val allRatings = realm.where(RealmRating::class.java)
-                    .equalTo("type", type)
-                    .equalTo("item", itemId)
-                    .findAll()
-                
-                val totalRatings = allRatings.size
-                val averageRating = if (totalRatings > 0) {
-                    allRatings.sumOf { it.rate }.toFloat() / totalRatings
-                } else {
-                    0f
+                    val allRatings = realm.where(RealmRating::class.java)
+                        .equalTo("type", type)
+                        .equalTo("item", itemId)
+                        .findAll()
+
+                    val totalRatings = allRatings.size
+                    val averageRating = if (totalRatings > 0) {
+                        allRatings.sumOf { it.rate }.toFloat() / totalRatings
+                    } else {
+                        0f
+                    }
+
+                    val userRating = existingRating?.rate
+
+                    _ratingState.value = RatingUiState.Success(
+                        existingRating = existingRating,
+                        averageRating = averageRating,
+                        totalRatings = totalRatings,
+                        userRating = userRating
+                    )
                 }
-                
-                val userRating = existingRating?.rate
-                
-                _ratingState.value = RatingUiState.Success(
-                    existingRating = existingRating,
-                    averageRating = averageRating,
-                    totalRatings = totalRatings,
-                    userRating = userRating
-                )
-                
-                realm.close()
             } catch (e: Exception) {
                 _ratingState.value = RatingUiState.Error(e.message ?: "Failed to load rating data")
             }
@@ -93,40 +92,38 @@ class RatingViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _submitState.value = SubmitState.Submitting
-                
-                val realm = databaseService.realmInstance
-                
-                realm.executeTransactionAsync(
-                    { backgroundRealm ->
-                        var ratingObject = backgroundRealm.where(RealmRating::class.java)
-                            .equalTo("type", type)
-                            .equalTo("userId", userId)
-                            .equalTo("item", itemId)
-                            .findFirst()
-                        
-                        if (ratingObject == null) {
-                            ratingObject = backgroundRealm.createObject(
-                                RealmRating::class.java,
-                                UUID.randomUUID().toString()
-                            )
-                        }
-                        
-                        val userModelCopy = backgroundRealm.where(RealmUserModel::class.java)
-                            .equalTo("id", userId)
-                            .findFirst()
-                        
-                        setRatingData(ratingObject, userModelCopy, type, itemId, title, rating, comment)
-                    },
-                    {
-                        _submitState.value = SubmitState.Success
-                        loadRatingData(type, itemId, userId)
-                    },
-                    { error ->
-                        _submitState.value = SubmitState.Error(
-                            error.message ?: "Failed to submit rating"
+
+                databaseService.executeTransactionAsync { realm ->
+                    var ratingObject = realm.where(RealmRating::class.java)
+                        .equalTo("type", type)
+                        .equalTo("userId", userId)
+                        .equalTo("item", itemId)
+                        .findFirst()
+
+                    if (ratingObject == null) {
+                        ratingObject = realm.createObject(
+                            RealmRating::class.java,
+                            UUID.randomUUID().toString()
                         )
                     }
-                )
+
+                    val userModelCopy = realm.where(RealmUserModel::class.java)
+                        .equalTo("id", userId)
+                        .findFirst()
+
+                    setRatingData(
+                        ratingObject,
+                        userModelCopy,
+                        type,
+                        itemId,
+                        title,
+                        rating,
+                        comment
+                    )
+                }
+
+                _submitState.value = SubmitState.Success
+                loadRatingData(type, itemId, userId)
             } catch (e: Exception) {
                 _submitState.value = SubmitState.Error(e.message ?: "Failed to submit rating")
             }
