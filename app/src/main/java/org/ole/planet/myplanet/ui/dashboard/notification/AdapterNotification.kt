@@ -101,11 +101,21 @@ class AdapterNotification(
                     } ?: "INVALID"
                 }
                 "join_request" -> {
-                    val teamId = notification.relatedId
+                    val joinRequestId = notification.relatedId
                     val teamName = databaseService.withRealm { realm ->
-                        realm.where(RealmMyTeam::class.java)
-                            .equalTo("_id", teamId)
-                            .findFirst()?.name
+                        // First find the join request, then get the team name
+                        val joinRequest = realm.where(RealmMyTeam::class.java)
+                            .equalTo("_id", joinRequestId)
+                            .equalTo("docType", "request")
+                            .findFirst()
+                        
+                        if (joinRequest != null) {
+                            realm.where(RealmMyTeam::class.java)
+                                .equalTo("_id", joinRequest.teamId)
+                                .findFirst()?.name
+                        } else {
+                            null
+                        }
                     } ?: "Unknown Team"
                     
                     val message = notification.message
@@ -114,7 +124,7 @@ class AdapterNotification(
                         val parsedMessage = parseJoinRequestMessage(message, teamName, context)
                         "<b>${context.getString(R.string.join_request_prefix)}</b> $parsedMessage"
                     } else {
-                        "<b>${context.getString(R.string.join_request_prefix)}</b> ${context.getString(R.string.new_request_to_join, teamName)}"
+                        "<b>${context.getString(R.string.join_request_prefix)}</b> New request to join $teamName"
                     }
                 }
                 else -> notification.message
@@ -133,9 +143,10 @@ class AdapterNotification(
                     "<b>${team.name}</b>: ${context.getString(R.string.task_notification, taskTitle, dateValue)}"
                 } else {
                     context.getString(R.string.task_notification, taskTitle, dateValue)
+                }
             }
         }
-        
+
         private fun parseJoinRequestMessage(message: String, teamName: String, context: Context): String {
             // Try to extract username from patterns like "username has requested to join teamname"
             val patterns = listOf(
@@ -155,4 +166,4 @@ class AdapterNotification(
             return message
         }
     }
-}}
+}
