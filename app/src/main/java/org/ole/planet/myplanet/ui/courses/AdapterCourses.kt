@@ -18,7 +18,6 @@ import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import io.realm.Realm
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnCourseItemSelected
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -29,10 +28,10 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
-import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getInt
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.SelectionUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
@@ -360,6 +359,10 @@ internal class AdapterCourses(
         }
     }
 
+    override fun getItemCount(): Int {
+        return currentList.size
+    }
+
     fun setRatingMap(newRatingMap: HashMap<String?, JsonObject>) {
         this.map.clear()
         this.map.putAll(newRatingMap)
@@ -373,7 +376,7 @@ internal class AdapterCourses(
         init {
             itemView.setOnClickListener {
                 if (adapterPosition != RecyclerView.NO_POSITION) {
-                    openCourse(getItem(adapterPosition), 0)
+                    openCourse(currentList[adapterPosition], 0)
                 }
             }
             rowCourseBinding.courseProgress.scaleY = 0.3f
@@ -385,7 +388,7 @@ internal class AdapterCourses(
                             val ob = progressMap!![currentList[bindingAdapterPosition]?.courseId]
                             val current = getInt("current", ob)
                             if (b && i <= current + 1) {
-                                openCourse(getItem(bindingAdapterPosition), seekBar.progress)
+                                openCourse(currentList[bindingAdapterPosition], seekBar.progress)
                             }
                         }
                     }
