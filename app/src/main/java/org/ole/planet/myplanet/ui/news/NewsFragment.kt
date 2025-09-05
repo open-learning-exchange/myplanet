@@ -429,6 +429,10 @@ class NewsFragment : BaseNewsFragment() {
 
     override fun onDestroyView() {
         updatedNewsList?.removeAllChangeListeners()
+        updatedNewsList = null
+        if (isRealmInitialized()) {
+            mRealm.close()
+        }
         _binding = null
         super.onDestroyView()
     }
