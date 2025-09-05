@@ -109,7 +109,13 @@ open class RealmMyLibrary : RealmObject() {
             this.userId = RealmList()
         }
         if (!this.userId!!.contains(userId)) {
-            this.userId?.add(userId)
+            if (isManaged && !realm.isInTransaction) {
+                realm.executeTransaction { realm ->
+                    this.userId?.add(userId)
+                }
+            } else {
+                this.userId?.add(userId)
+            }
         }
     }
     fun isResourceOffline(): Boolean {
