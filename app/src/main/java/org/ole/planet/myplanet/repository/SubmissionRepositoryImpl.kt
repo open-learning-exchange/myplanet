@@ -30,15 +30,19 @@ class SubmissionRepositoryImpl @Inject constructor(
         submissions: List<RealmSubmission>
     ): List<String> {
         return withRealm { realm ->
-            val titles = mutableListOf<String>()
-            submissions.forEach { submission ->
-                val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
-                val exam = realm.where(RealmStepExam::class.java)
-                    .equalTo("id", examId)
-                    .findFirst()
-                exam?.name?.let { titles.add(it) }
+            val examIds = submissions.mapNotNull { it.parentId?.split("@")?.firstOrNull() }
+            if (examIds.isEmpty()) {
+                emptyList()
+            } else {
+                val exams = realm.where(RealmStepExam::class.java)
+                    .`in`("id", examIds.toTypedArray())
+                    .findAll()
+                val examMap = exams.associate { it.id to (it.name ?: "") }
+                submissions.map { submission ->
+                    val examId = submission.parentId?.split("@")?.firstOrNull()
+                    examMap[examId] ?: ""
+                }
             }
-            titles
         }
     }
 
