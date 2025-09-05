@@ -1110,6 +1110,8 @@
     <string name="no_join_request_available">no hay solicitud de unirse disponible</string>
     <string name="no_description_available">No hay descripción disponible</string>
     <string name="no_links_available">No hay enlaces disponibles</string>
+    <string name="join_request_prefix">Solicitud de Unión:</string>
+    <string name="new_request_to_join">Nueva solicitud para unirse a %s</string>
     <string name="user_requested_to_join_team">%1$s ha solicitado unirse a %2$s</string>
     <string name="no_news">noticias no disponibles</string>
     <string name="no_surveys">encuestas no disponibles</string>
