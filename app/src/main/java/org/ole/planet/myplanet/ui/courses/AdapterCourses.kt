@@ -86,9 +86,21 @@ internal class AdapterCourses(
         return currentList
     }
 
-    fun setCourseList(courseList: List<RealmMyCourse?>) {
-        val safeList = mRealm?.copyFromRealm(courseList.filterNotNull()) ?: courseList.filterNotNull()
-        submitList(safeList)
+    override fun submitList(list: List<RealmMyCourse?>?) {
+        submitList(list, null)
+    }
+
+    override fun submitList(list: List<RealmMyCourse?>?, commitCallback: Runnable?) {
+        val safeList = list?.let { courses ->
+            if (mRealm != null) {
+                mRealm!!.copyFromRealm(courses.filterNotNull())
+            } else {
+                Realm.getDefaultInstance().use { realm ->
+                    realm.copyFromRealm(courses.filterNotNull())
+                }
+            }
+        }
+        super.submitList(safeList, commitCallback)
     }
 
     private fun sortCourseListByTitle(list: List<RealmMyCourse?>): List<RealmMyCourse?> {
