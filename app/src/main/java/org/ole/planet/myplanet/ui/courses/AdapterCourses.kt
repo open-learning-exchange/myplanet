@@ -92,13 +92,18 @@ internal class AdapterCourses(
 
     override fun submitList(list: List<RealmMyCourse?>?, commitCallback: Runnable?) {
         val safeList = list?.let { courses ->
-            if (mRealm != null) {
-                mRealm!!.copyFromRealm(courses.filterNotNull())
-            } else {
-                Realm.getDefaultInstance().use { realm ->
-                    realm.copyFromRealm(courses.filterNotNull())
+            val realm = mRealm ?: Realm.getDefaultInstance()
+            val copied = courses.map { course ->
+                if (course != null && course.isManaged) {
+                    realm.copyFromRealm(course)
+                } else {
+                    course
                 }
             }
+            if (realm !== mRealm) {
+                realm.close()
+            }
+            copied
         }
         super.submitList(safeList, commitCallback)
     }
