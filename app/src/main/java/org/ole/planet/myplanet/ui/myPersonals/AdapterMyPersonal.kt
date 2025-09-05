@@ -25,23 +25,30 @@ import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterMyPersonal(private val context: Context, private var list: MutableList<RealmMyPersonal>) : RecyclerView.Adapter<ViewHolderMyPersonal>() {
+class AdapterMyPersonal(
+    private val context: Context,
+    private var list: MutableList<RealmMyPersonal> = mutableListOf(),
+) : RecyclerView.Adapter<ViewHolderMyPersonal>() {
     private lateinit var rowMyPersonalBinding: RowMyPersonalBinding
     private var realm: Realm? = null
     private var listener: OnSelectedMyPersonal? = null
-    
+
     fun setListener(listener: OnSelectedMyPersonal?) {
         this.listener = listener
     }
-    
-    fun updateList(newList: List<RealmMyPersonal>) {
+
+    private fun updateList(newList: List<RealmMyPersonal>) {
         val diffCallback = MyPersonalDiffCallback(list, newList)
         val diffResult = DiffUtil.calculateDiff(diffCallback)
         list.clear()
         list.addAll(newList)
         diffResult.dispatchUpdatesTo(this)
     }
-    
+
+    fun submitList(newList: List<RealmMyPersonal>) {
+        updateList(newList)
+    }
+
     fun getList(): List<RealmMyPersonal> = list
     fun setRealm(realm: Realm?) {
         this.realm = realm
@@ -63,7 +70,6 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
                         ?.equalTo("_id", list[position]._id)?.findFirst()
                     personal?.deleteFromRealm()
                     realm?.commitTransaction()
-                    updateList(realm?.where(RealmMyPersonal::class.java)?.findAll()?.toList() ?: emptyList())
                     listener?.onAddedResource()
                 }.setNegativeButton(R.string.cancel, null).show()
         }
@@ -111,18 +117,21 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
             .setTitle(R.string.edit_personal)
             .setIcon(R.drawable.ic_edit)
             .setView(alertMyPersonalBinding.root)
-            .setPositiveButton(R.string.button_submit) {_: DialogInterface?, _: Int ->
-                val title = alertMyPersonalBinding.etDescription.text.toString().trim { it <= ' ' }
-                val desc = alertMyPersonalBinding.etTitle.text.toString().trim { it <= ' ' }
+            .setPositiveButton(R.string.button_submit) { _: DialogInterface?, _: Int ->
+                val title = alertMyPersonalBinding.etTitle.text.toString().trim { it <= ' ' }
+                val desc = alertMyPersonalBinding.etDescription.text.toString().trim { it <= ' ' }
                 if (title.isEmpty()) {
                     Utilities.toast(context, R.string.please_enter_title.toString())
                     return@setPositiveButton
                 }
-                if (!realm?.isInTransaction!!) realm?.beginTransaction()
-                personal.description = desc
-                personal.title = title
+                if (realm?.isInTransaction != true) realm?.beginTransaction()
+                realm?.where(RealmMyPersonal::class.java)
+                    ?.equalTo("_id", personal._id)
+                    ?.findFirst()?.apply {
+                        this.title = title
+                        this.description = desc
+                    }
                 realm?.commitTransaction()
-                updateList(realm?.where(RealmMyPersonal::class.java)?.findAll()?.toList() ?: emptyList())
                 listener?.onAddedResource()
             }
             .setNegativeButton(R.string.cancel, null)

@@ -27,4 +27,10 @@ class MyPersonalRepositoryImpl @Inject constructor(
             personal.description = description
         }
     }
+
+    override suspend fun getMyPersonalByUser(userId: String): List<RealmMyPersonal> {
+        return queryList(RealmMyPersonal::class.java) {
+            equalTo("userId", userId)
+        }
+    }
 }
