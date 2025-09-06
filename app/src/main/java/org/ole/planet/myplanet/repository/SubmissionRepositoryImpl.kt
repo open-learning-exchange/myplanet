@@ -30,15 +30,40 @@ class SubmissionRepositoryImpl @Inject constructor(
         submissions: List<RealmSubmission>
     ): List<String> {
         return withRealm { realm ->
-            val titles = mutableListOf<String>()
-            submissions.forEach { submission ->
-                val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
-                val exam = realm.where(RealmStepExam::class.java)
-                    .equalTo("id", examId)
-                    .findFirst()
-                exam?.name?.let { titles.add(it) }
+            val examIds = submissions.mapNotNull { it.parentId?.split("@")?.firstOrNull() }
+            if (examIds.isEmpty()) {
+                emptyList()
+            } else {
+                val exams = realm.where(RealmStepExam::class.java)
+                    .`in`("id", examIds.toTypedArray())
+                    .findAll()
+                val examMap = exams.associate { it.id to (it.name ?: "") }
+                submissions.map { submission ->
+                    val examId = submission.parentId?.split("@")?.firstOrNull()
+                    examMap[examId] ?: ""
+                }
             }
-            titles
+        }
+    }
+
+    override suspend fun getExamMapForSubmissions(
+        submissions: List<RealmSubmission>
+    ): Map<String?, RealmStepExam> {
+        return withRealm { realm ->
+            val exams = HashMap<String?, RealmStepExam>()
+            submissions.forEach { sub ->
+                var id = sub.parentId
+                if (id?.contains("@") == true) {
+                    id = id.split("@").firstOrNull()
+                }
+                val survey = realm.where(RealmStepExam::class.java)
+                    .equalTo("id", id)
+                    .findFirst()
+                if (survey != null) {
+                    exams[sub.parentId] = realm.copyFromRealm(survey)
+                }
+            }
+            exams
         }
     }
 

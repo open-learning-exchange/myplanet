@@ -19,7 +19,8 @@ import org.ole.planet.myplanet.callback.OnFilterListener
 import org.ole.planet.myplanet.databinding.FragmentLibraryFilterBinding
 
 class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListener {
-    private lateinit var fragmentLibraryFilterBinding: FragmentLibraryFilterBinding
+    private var _binding: FragmentLibraryFilterBinding? = null
+    private val binding get() = _binding!!
     var languages: Set<String>? = null
     var subjects: Set<String>? = null
     var mediums: Set<String>? = null
@@ -39,45 +40,50 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentLibraryFilterBinding = FragmentLibraryFilterBinding.inflate(inflater, container, false)
-        fragmentLibraryFilterBinding.listMedium.onItemClickListener = this
-        fragmentLibraryFilterBinding.listLang.onItemClickListener = this
-        fragmentLibraryFilterBinding.listLevel.onItemClickListener = this
-        fragmentLibraryFilterBinding.listSub.onItemClickListener = this
-        fragmentLibraryFilterBinding.ivClose.setOnClickListener { dismiss() }
-        fragmentLibraryFilterBinding.subjectsLayout.setOnClickListener {
+        _binding = FragmentLibraryFilterBinding.inflate(inflater, container, false)
+        binding.listMedium.onItemClickListener = this
+        binding.listLang.onItemClickListener = this
+        binding.listLevel.onItemClickListener = this
+        binding.listSub.onItemClickListener = this
+        binding.ivClose.setOnClickListener { dismiss() }
+        binding.subjectsLayout.setOnClickListener {
             toggleSection(
-                fragmentLibraryFilterBinding.expandableLayoutSubjects,
-                fragmentLibraryFilterBinding.listSub,
-                fragmentLibraryFilterBinding.subjectsLayout
+                binding.expandableLayoutSubjects,
+                binding.listSub,
+                binding.subjectsLayout
             )
             isSubjectsExpanded = !isSubjectsExpanded
         }
-        fragmentLibraryFilterBinding.languagesLayout.setOnClickListener {
+        binding.languagesLayout.setOnClickListener {
             toggleSection(
-                fragmentLibraryFilterBinding.expandableLayoutLanguages,
-                fragmentLibraryFilterBinding.listLang,
-                fragmentLibraryFilterBinding.languagesLayout
+                binding.expandableLayoutLanguages,
+                binding.listLang,
+                binding.languagesLayout
             )
             isLanguagesExpanded = !isLanguagesExpanded
         }
-        fragmentLibraryFilterBinding.mediumsLayout.setOnClickListener {
+        binding.mediumsLayout.setOnClickListener {
             toggleSection(
-                fragmentLibraryFilterBinding.expandableLayoutMediums,
-                fragmentLibraryFilterBinding.listMedium,
-                fragmentLibraryFilterBinding.mediumsLayout
+                binding.expandableLayoutMediums,
+                binding.listMedium,
+                binding.mediumsLayout
             )
             isMediumsExpanded = !isMediumsExpanded
         }
-        fragmentLibraryFilterBinding.levelsLayout.setOnClickListener {
+        binding.levelsLayout.setOnClickListener {
             toggleSection(
-                fragmentLibraryFilterBinding.expandableLayoutLevels,
-                fragmentLibraryFilterBinding.listLevel,
-                fragmentLibraryFilterBinding.levelsLayout
+                binding.expandableLayoutLevels,
+                binding.listLevel,
+                binding.levelsLayout
             )
             isLevelsExpanded = !isLevelsExpanded
         }
-        return fragmentLibraryFilterBinding.root
+        return binding.root
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -104,10 +110,10 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
         selectedSubs = filterListener?.getSelectedFilter()?.get("subjects") as MutableSet<String>
         selectedMeds = filterListener?.getSelectedFilter()?.get("mediums") as MutableSet<String>
         selectedLang = filterListener?.getSelectedFilter()?.get("languages") as MutableSet<String>
-        setAdapter(fragmentLibraryFilterBinding.listLevel, levels, selectedLvls)
-        setAdapter(fragmentLibraryFilterBinding.listLang, languages, selectedLang)
-        setAdapter(fragmentLibraryFilterBinding.listMedium, mediums, selectedMeds)
-        setAdapter(fragmentLibraryFilterBinding.listSub, subjects, selectedSubs)
+        setAdapter(binding.listLevel, levels, selectedLvls)
+        setAdapter(binding.listLang, languages, selectedLang)
+        setAdapter(binding.listMedium, mediums, selectedMeds)
+        setAdapter(binding.listSub, subjects, selectedSubs)
     }
 
     private fun setAdapter(listView: ListView, ar: Set<String>?, set: Set<String>) {

@@ -50,7 +50,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class AddResourceFragment : BottomSheetDialogFragment() {
-    private lateinit var fragmentAddResourceBinding: FragmentAddResourceBinding
+    private var _binding: FragmentAddResourceBinding? = null
+    private val binding get() = _binding!!
     var tvTime: TextView? = null
     var floatingActionButton: FloatingActionButton? = null
     private var audioRecorderService: AudioRecorderService? = null
@@ -131,12 +132,17 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentAddResourceBinding = FragmentAddResourceBinding.inflate(inflater, container, false)
-        fragmentAddResourceBinding.llRecordVideo.setOnClickListener { dispatchTakeVideoIntent() }
-        fragmentAddResourceBinding.llRecordAudio.setOnClickListener { showAudioRecordAlert() }
-        fragmentAddResourceBinding.llCaptureImage.setOnClickListener { takePhoto() }
-        fragmentAddResourceBinding.llDraft.setOnClickListener { openFolderLauncher.launch("*/*") }
-        return fragmentAddResourceBinding.root
+        _binding = FragmentAddResourceBinding.inflate(inflater, container, false)
+        binding.llRecordVideo.setOnClickListener { dispatchTakeVideoIntent() }
+        binding.llRecordAudio.setOnClickListener { showAudioRecordAlert() }
+        binding.llCaptureImage.setOnClickListener { takePhoto() }
+        binding.llDraft.setOnClickListener { openFolderLauncher.launch("*/*") }
+        return binding.root
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     private fun showAudioRecordAlert() {
