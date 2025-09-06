@@ -178,6 +178,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
     }
 
+    private fun scrollToTop() {
+        recyclerView.post {
+            if (recyclerView.adapter?.itemCount ?: 0 > 0) {
+                recyclerView.scrollToPosition(0)
+            }
+        }
+    }
+
     private fun refreshCoursesData() {
         if (!isAdded || requireActivity().isFinishing) return
 
@@ -194,7 +202,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             adapterCourses.setmRealm(mRealm)
             adapterCourses.setListener(this)
             adapterCourses.setRatingChangeListener(this)
-            adapterCourses.submitList(sortedCourseList)
+
+            val frozenCourseList = sortedCourseList.map { it?.freeze() as RealmMyCourse? }
+            adapterCourses.setCourseList(frozenCourseList)
             recyclerView.adapter = adapterCourses
 
             if (isMyCourseLib) {
@@ -224,7 +234,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         adapterCourses.setmRealm(mRealm)
         adapterCourses.setListener(this)
         adapterCourses.setRatingChangeListener(this)
-        adapterCourses.submitList(sortedCourseList)
+        val frozenCourseList = sortedCourseList.map { it?.freeze() as RealmMyCourse? }
+        adapterCourses.setCourseList(frozenCourseList)
 
         if (isMyCourseLib) {
             val courseIds = courseList.mapNotNull { it?.id }
@@ -279,9 +290,13 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 if (query.isEmpty()) {
                     val courseList = filterCourseByTag(query, searchTags)
                     val sortedCourseList = courseList.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
-                    adapterCourses.submitList(sortedCourseList)
+                    val frozenSortedList = sortedCourseList.map { it?.freeze() as RealmMyCourse? }
+                    adapterCourses.setCourseList(frozenSortedList)
+                    scrollToTop()
                 } else {
-                    adapterCourses.submitList(filterCourseByTag(etSearch.text.toString(), searchTags))
+                    val frozenFilteredList = filterCourseByTag(etSearch.text.toString(), searchTags).map { it?.freeze() as RealmMyCourse? }
+                    adapterCourses.setCourseList(frozenFilteredList)
+                    scrollToTop()
                     showNoData(tvMessage, adapterCourses.itemCount, "courses")
                 }
             }
@@ -472,7 +487,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             gradeLevel = if (spnGrade.selectedItem.toString() == "All") "" else spnGrade.selectedItem.toString()
             subjectLevel = if (spnSubject.selectedItem.toString() == "All") "" else spnSubject.selectedItem.toString()
-            adapterCourses.submitList(filterCourseByTag(etSearch.text.toString(), searchTags))
+            val frozenFilteredList = filterCourseByTag(etSearch.text.toString(), searchTags).map { it?.freeze() as RealmMyCourse? }
+            adapterCourses.setCourseList(frozenFilteredList)
+            scrollToTop()
             showNoFilter(tvMessage, adapterCourses.itemCount)
         }
 
@@ -484,7 +501,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             searchTags.clear()
             etSearch.setText(R.string.empty_text)
             tvSelected.text = context?.getString(R.string.empty_text)
-            adapterCourses.submitList(filterCourseByTag("", searchTags))
+            val frozenFilteredList = filterCourseByTag("", searchTags).map { it?.freeze() as RealmMyCourse? }
+            adapterCourses.setCourseList(frozenFilteredList)
+            scrollToTop()
             showNoData(tvMessage, adapterCourses.itemCount, "courses")
             spnGrade.setSelection(0)
             spnSubject.setSelection(0)
@@ -542,7 +561,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (!searchTags.contains(tag)) {
             tag?.let { searchTags.add(it) }
         }
-        adapterCourses.submitList(filterCourseByTag(etSearch.text.toString(), searchTags))
+        val frozenFilteredList = filterCourseByTag(etSearch.text.toString(), searchTags).map { it?.freeze() as RealmMyCourse? }
+        adapterCourses.setCourseList(frozenFilteredList)
+        scrollToTop()
         showTagText(searchTags, tvSelected)
         showNoData(tvMessage, adapterCourses.itemCount, "courses")
     }
@@ -576,14 +597,18 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         li.add(tag)
         searchTags = li
         tvSelected.text = context?.getString(R.string.tag_selected, tag.name)
-        adapterCourses.submitList(filterCourseByTag(etSearch.text.toString(), li))
+        val frozenFilteredList = filterCourseByTag(etSearch.text.toString(), li).map { it?.freeze() as RealmMyCourse? }
+        adapterCourses.setCourseList(frozenFilteredList)
+        scrollToTop()
         showNoData(tvMessage, adapterCourses.itemCount, "courses")
     }
 
     override fun onOkClicked(list: List<RealmTag>?) {
         if (list?.isEmpty() == true) {
             searchTags.clear()
-            adapterCourses.submitList(filterCourseByTag(etSearch.text.toString(), searchTags))
+            val frozenFilteredList = filterCourseByTag(etSearch.text.toString(), searchTags).map { it?.freeze() as RealmMyCourse? }
+            adapterCourses.setCourseList(frozenFilteredList)
+            scrollToTop()
             showNoData(tvMessage, adapterCourses.itemCount, "courses")
         } else {
             for (tag in list ?: emptyList()) {
