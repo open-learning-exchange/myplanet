@@ -42,6 +42,27 @@ class SubmissionRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getExamMapForSubmissions(
+        submissions: List<RealmSubmission>
+    ): Map<String?, RealmStepExam> {
+        return withRealm { realm ->
+            val exams = HashMap<String?, RealmStepExam>()
+            submissions.forEach { sub ->
+                var id = sub.parentId
+                if (id?.contains("@") == true) {
+                    id = id.split("@").firstOrNull()
+                }
+                val survey = realm.where(RealmStepExam::class.java)
+                    .equalTo("id", id)
+                    .findFirst()
+                if (survey != null) {
+                    exams[sub.parentId] = realm.copyFromRealm(survey)
+                }
+            }
+            exams
+        }
+    }
+
     override suspend fun getSubmissionById(id: String): RealmSubmission? {
         return findByField(RealmSubmission::class.java, "id", id)
     }
