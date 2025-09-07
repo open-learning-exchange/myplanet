@@ -165,6 +165,7 @@
                                     android:layout_centerVertical="true"
                                     android:autofillHints=""
                                     android:hint="@string/password"
+                                    android:textColorHint="@color/hint_color"
                                     android:backgroundTint="@color/daynight_textColor"
                                     android:drawablePadding="12dp"
                                     android:inputType="textPassword"
