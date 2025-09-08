@@ -91,11 +91,11 @@ class AdapterNotification(
                 }
                 "storage" -> {
                     val storageValue = notification.message.replace("%", "").toIntOrNull()
-                    storageValue?.let { v ->
+                    storageValue?.let {
                         when {
-                            v <= 10 -> context.getString(R.string.storage_running_low) + " ${v}%"
-                            v <= 40 -> context.getString(R.string.storage_running_low) + " ${v}%"
-                            else -> context.getString(R.string.storage_available) + " ${v}%"
+                            it <= 10 -> context.getString(R.string.storage_running_low) + " ${it}%"
+                            it <= 40 -> context.getString(R.string.storage_running_low) + " ${it}%"
+                            else -> context.getString(R.string.storage_available) + " ${it}%"
                         }
                     } ?: notification.message
                 }
