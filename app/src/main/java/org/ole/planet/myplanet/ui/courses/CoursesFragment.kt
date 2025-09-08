@@ -653,6 +653,16 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         super.onDestroy()
     }
 
+    override fun onDownloadComplete() {
+        super.onDownloadComplete()
+        refreshCoursesData()
+        if (!isAdded) return
+        AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
+            .setMessage(R.string.all_files_downloaded_successfully)
+            .setPositiveButton(R.string.ok, null)
+            .show()
+    }
+
     private fun recreateFragment(fragment: Fragment) {
         if (isAdded && activity != null && !requireActivity().isFinishing) {
             if (isMyCourseLib) {
