@@ -9,6 +9,8 @@ import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.Spinner
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import com.google.gson.Gson
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
@@ -68,9 +70,9 @@ class AddMyHealthActivity : AppCompatActivity() {
     }
 
     private fun createMyHealth() {
-        databaseService.withRealm { realm ->
-            realm.executeTransaction {
-                val userModel = it.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+        lifecycleScope.launch {
+            databaseService.executeTransactionAsync { realm ->
+                val userModel = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
                 val health = RealmMyHealthProfile()
                 userModel?.firstName = "${binding.etFname.editText?.text}".trim { ch -> ch <= ' ' }
                 userModel?.middleName = "${binding.etMname.editText?.text}".trim { ch -> ch <= ' ' }
@@ -91,12 +93,12 @@ class AddMyHealthActivity : AppCompatActivity() {
                     myHealth?.userKey = generateKey()
                 }
                 myHealth?.profile = health
-                var healthPojo = it.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
+                var healthPojo = realm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
                 if (healthPojo == null) {
-                    healthPojo = it.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
+                    healthPojo = realm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
                 }
                 if (healthPojo == null) {
-                    healthPojo = it.createObject(RealmMyHealthPojo::class.java, userId)
+                    healthPojo = realm.createObject(RealmMyHealthPojo::class.java, userId)
                 }
                 healthPojo.isUpdated = true
                 healthPojo.userId = userModel?._id
@@ -108,8 +110,8 @@ class AddMyHealthActivity : AppCompatActivity() {
                     e.printStackTrace()
                 }
             }
+            finish()
         }
-        finish()
     }
 
     private fun initViews() {
