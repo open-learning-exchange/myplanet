@@ -13,6 +13,10 @@
         android:textColor="@color/daynight_textColor"
         android:textSize="16sp"
         android:textStyle="bold"
+        android:ellipsize="end"
+        android:breakStrategy="balanced"
+        android:hyphenationFrequency="none"
+        android:maxLines="2"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
