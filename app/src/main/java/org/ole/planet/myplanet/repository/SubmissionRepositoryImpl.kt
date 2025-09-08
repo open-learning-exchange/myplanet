@@ -50,20 +50,23 @@ class SubmissionRepositoryImpl @Inject constructor(
         submissions: List<RealmSubmission>
     ): Map<String?, RealmStepExam> {
         return withRealm { realm ->
-            val exams = HashMap<String?, RealmStepExam>()
-            submissions.forEach { sub ->
-                var id = sub.parentId
-                if (id?.contains("@") == true) {
-                    id = id.split("@").firstOrNull()
-                }
-                val survey = realm.where(RealmStepExam::class.java)
-                    .equalTo("id", id)
-                    .findFirst()
-                if (survey != null) {
-                    exams[sub.parentId] = realm.copyFromRealm(survey)
-                }
+            val examIds = submissions.mapNotNull { sub ->
+                sub.parentId?.split("@")?.firstOrNull()
+            }.distinct()
+
+            if (examIds.isEmpty()) {
+                emptyMap()
+            } else {
+                val examMap = realm.queryList(RealmStepExam::class.java) {
+                    `in`("id", examIds.toTypedArray())
+                }.associateBy { it.id }
+
+                submissions.mapNotNull { sub ->
+                    val parentId = sub.parentId
+                    val examId = parentId?.split("@")?.firstOrNull()
+                    examMap[examId]?.let { parentId to it }
+                }.toMap()
             }
-            exams
         }
     }
 
@@ -94,5 +97,5 @@ class SubmissionRepositoryImpl @Inject constructor(
     override suspend fun deleteSubmission(id: String) {
         delete(RealmSubmission::class.java, "id", id)
     }
-
 }
+
