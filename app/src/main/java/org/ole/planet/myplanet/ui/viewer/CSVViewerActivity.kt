@@ -10,7 +10,9 @@ import androidx.core.content.ContextCompat
 import com.opencsv.CSVParserBuilder
 import com.opencsv.CSVReaderBuilder
 import java.io.File
-import java.io.FileReader
+import java.io.FileInputStream
+import java.io.InputStreamReader
+import java.nio.charset.StandardCharsets
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityCsvviewerBinding
 import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
@@ -44,7 +46,9 @@ class CSVViewerActivity : AppCompatActivity() {
                 val basePath = getExternalFilesDir(null)
                 File(basePath, "ole/$fileName")
             }
-            val reader = CSVReaderBuilder(FileReader(csvFile))
+            val reader = CSVReaderBuilder(
+                InputStreamReader(FileInputStream(csvFile), StandardCharsets.UTF_8)
+            )
                 .withCSVParser(CSVParserBuilder().withSeparator(',').withQuoteChar('"').build())
                 .build()
 

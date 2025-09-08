@@ -64,6 +64,10 @@ object Utilities {
 
     fun getMimeType(url: String?): String? {
         val extension = FileUtils.getFileExtension(url)
-        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+        return if (extension.equals("csv", ignoreCase = true)) {
+            "text/csv"
+        } else {
+            MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+        }
     }
 }
