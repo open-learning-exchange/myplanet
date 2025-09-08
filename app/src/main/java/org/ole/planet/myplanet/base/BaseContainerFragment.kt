@@ -78,7 +78,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
     fun setRatings(`object`: JsonObject?) {
         if (`object` != null) {
-            CourseRatingUtils.showRating(`object`, rating, timesRated, ratingBar)
+            CourseRatingUtils.showRating(requireContext(), `object`, rating, timesRated, ratingBar)
         }
     }
     fun getUrlsAndStartDownload(lib: List<RealmMyLibrary?>, urls: ArrayList<String>) {
