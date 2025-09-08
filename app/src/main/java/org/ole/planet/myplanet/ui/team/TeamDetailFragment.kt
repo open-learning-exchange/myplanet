@@ -82,6 +82,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
     private var pageConfigs: List<TeamPageConfig> = emptyList()
+    private var pendingAddDocument = false
 
     private fun pageIndexById(pageId: String?): Int? {
         pageId ?: return null
@@ -255,6 +256,10 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                     team?._id?.let { teamId ->
                         pageConfigs.getOrNull(position)?.id?.let { pageId ->
                             teamLastPage[teamId] = pageId
+                            if (pendingAddDocument && pageId == DocumentsPage.id) {
+                                pendingAddDocument = false
+                                MainApplication.listener?.onAddDocument()
+                            }
                         }
                     }
                 }
@@ -312,9 +317,9 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
         binding.btnAddDoc.setOnClickListener {
             MainApplication.showDownload = true
+            pendingAddDocument = true
             selectPage(DocumentsPage.id)
             MainApplication.showDownload = false
-            MainApplication.listener?.onAddDocument()
         }
     }
 
