@@ -45,7 +45,6 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
         binding.listLang.onItemClickListener = this
         binding.listLevel.onItemClickListener = this
         binding.listSub.onItemClickListener = this
-        binding.ivClose.setOnClickListener { dismiss() }
         binding.subjectsLayout.setOnClickListener {
             toggleSection(
                 binding.expandableLayoutSubjects,
@@ -88,11 +87,14 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        binding.ivClose.setOnClickListener { dismiss() }
+        dialog?.setCanceledOnTouchOutside(true)
         initList()
     }
 
     override fun onStart() {
         super.onStart()
+        dialog?.setCanceledOnTouchOutside(true)
         dialog?.window?.let { window ->
             val params = window.attributes
             params.width = (resources.displayMetrics.widthPixels * 0.9).toInt()
