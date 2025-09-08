@@ -31,6 +31,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     var type: String? = ""
     var exams: HashMap<String?, RealmStepExam>? = null
     private var submissions: List<RealmSubmission>? = null
+    private var allSubmissions: List<RealmSubmission> = emptyList()
     var user: RealmUserModel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,7 +54,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
         )
         viewLifecycleOwner.lifecycleScope.launch {
             val subs = submissionRepository.getSubmissionsByUserId(user?.id ?: "")
-            submissions = subs
+            allSubmissions = subs
             exams = HashMap(submissionRepository.getExamMapForSubmissions(subs))
             setData("")
         }
@@ -90,7 +91,7 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     }
 
     private fun setData(s: String) {
-        var filtered = submissions ?: emptyList()
+        var filtered = allSubmissions
 
         filtered = when (type) {
             "survey" -> filtered.filter { it.userId == user?.id && it.type == "survey" }
