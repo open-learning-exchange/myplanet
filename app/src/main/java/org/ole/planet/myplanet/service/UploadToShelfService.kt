@@ -133,7 +133,9 @@ class UploadToShelfService @Inject constructor(
 
     private fun uploadNewUser(apiInterface: ApiInterface?, realm: Realm, model: RealmUserModel) {
         try {
-            val obj = model.serialize()
+            val obj = model.serialize().apply {
+                model.userImage?.let { addProperty("userImage", it) }
+            }
             val createResponse = apiInterface?.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj)?.execute()
 
             if (createResponse?.isSuccessful == true) {
@@ -174,7 +176,9 @@ class UploadToShelfService @Inject constructor(
 
             if (latestDocResponse?.isSuccessful == true) {
                 val latestRev = latestDocResponse.body()?.get("_rev")?.asString
-                val obj = model.serialize()
+                val obj = model.serialize().apply {
+                    model.userImage?.let { addProperty("userImage", it) }
+                }
                 val objMap = obj.entrySet().associate { (key, value) -> key to value }
                 val mutableObj = mutableMapOf<String, Any>().apply { putAll(objMap) }
                 latestRev?.let { rev -> mutableObj["_rev"] = rev as Any }
