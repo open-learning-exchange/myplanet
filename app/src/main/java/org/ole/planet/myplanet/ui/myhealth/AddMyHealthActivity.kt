@@ -128,6 +128,12 @@ class AddMyHealthActivity : AppCompatActivity() {
                 )
                 val health = myHealth?.profile
                 binding.etEmergency.editText?.setText(health?.emergencyContactName)
+                binding.etContact.editText?.setText(health?.emergencyContact)
+                val contactTypes = resources.getStringArray(R.array.contact_type)
+                val contactTypeIndex = contactTypes.indexOf(health?.emergencyContactType)
+                if (contactTypeIndex >= 0) {
+                    binding.spnContactType.setSelection(contactTypeIndex)
+                }
                 binding.etSpecialNeed.editText?.setText(health?.specialNeeds)
                 binding.etOtherNeed.editText?.setText(health?.notes)
             }
