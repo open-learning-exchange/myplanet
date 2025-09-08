@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.datamanager
 import com.google.gson.JsonObject
 import java.io.File
 import java.io.IOException
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.callback.SuccessListener
@@ -48,10 +50,15 @@ open class FileUploadService {
             val mimeType = connection.contentType
             val body = FileUtils.fullyReadFileToBytes(f)
                 .toRequestBody("application/octet-stream".toMediaTypeOrNull())
-            val url = String.format(format, UrlUtils.getUrl(), id, name)
+            val encodedName = URLEncoder.encode(name, StandardCharsets.UTF_8.name()).replace("+", "%20")
+            val url = String.format(format, UrlUtils.getUrl(), id, encodedName)
             apiInterface?.uploadResource(getHeaderMap(mimeType, rev), url, body)?.enqueue(object : Callback<JsonObject?> {
                 override fun onResponse(call: Call<JsonObject?>, response: Response<JsonObject?>) {
-                    onDataReceived(response.body(), listener)
+                    if (response.isSuccessful) {
+                        onDataReceived(response.body(), listener)
+                    } else {
+                        listener.onSuccess("Unable to upload resource")
+                    }
                 }
 
                 override fun onFailure(call: Call<JsonObject?>, t: Throwable) {
