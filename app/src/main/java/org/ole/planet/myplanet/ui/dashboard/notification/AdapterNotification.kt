@@ -50,7 +50,7 @@ class AdapterNotification(
     inner class ViewHolderNotifications(private val rowNotificationsBinding: RowNotificationsBinding) :
         RecyclerView.ViewHolder(rowNotificationsBinding.root) {
 
-    fun bind(notification: RealmNotification, position: Int) {
+        fun bind(notification: RealmNotification, position: Int) {
             val context = rowNotificationsBinding.root.context
             val currentNotification = formatNotificationMessage(notification, context)
             rowNotificationsBinding.title.text = Html.fromHtml(currentNotification, Html.FROM_HTML_MODE_LEGACY)
