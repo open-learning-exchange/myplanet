@@ -72,34 +72,6 @@ class AdapterNotification(
         private fun formatNotificationMessage(notification: RealmNotification, context: Context): String {
             return when (notification.type.lowercase()) {
                 "survey" -> context.getString(R.string.pending_survey_notification) + " ${notification.message}"
-                "task" -> {
-                    val datePattern = Pattern.compile("\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s\\d{1,2},\\s\\w+\\s\\d{4}\\b")
-                    val matcher = datePattern.matcher(notification.message)
-
-                    if (matcher.find()) {
-                        val taskTitle = notification.message.substring(0, matcher.start()).trim()
-                        val dateValue = notification.message.substring(matcher.start()).trim()
-                        return formatTaskNotification(context, taskTitle, dateValue)
-                    } else {
-                        "INVALID"
-                    }
-                }
-                "resource" -> {
-                    val resourceCount = notification.message.toIntOrNull()
-                    resourceCount?.let {
-                        context.getString(R.string.resource_notification, it)
-                    } ?: "INVALID"
-                }
-                "storage" -> {
-                    val storageValue = notification.message.replace("%", "").toIntOrNull()
-                    storageValue?.let {
-                        when {
-                            it <= 10 -> context.getString(R.string.storage_running_low) + " ${it}%"
-                            it <= 40 -> context.getString(R.string.storage_running_low) + " ${it}%"
-                            else -> context.getString(R.string.storage_available) + " ${it}%"
-                        }
-                    } ?: "INVALID"
-                }
                 "join_request" -> {
                     val joinRequestId = notification.relatedId
                     val teamName = databaseService.withRealm { realm ->
@@ -115,14 +87,14 @@ class AdapterNotification(
                     } ?: "Unknown Team"
                     val existing = notification.message
                     if (existing.isNotEmpty()) {
-                        // Attempt to extract requester name from stored English or Spanish patterns
-                        val patterns = listOf(
-                            "(.+) has requested to join (.+)".toRegex(),
-                            "(.+) ha solicitado unirse a (.+)".toRegex()
+                        // Minimal parse: support English & Spanish stored forms
+                        val regexes = listOf(
+                            "^(.+) has requested to join (.+)$".toRegex(),
+                            "^(.+) ha solicitado unirse a (.+)$".toRegex()
                         )
                         var rebuilt: String? = null
-                        for (p in patterns) {
-                            val m = p.find(existing)
+                        for (r in regexes) {
+                            val m = r.find(existing)
                             if (m != null) {
                                 val requester = m.groupValues[1].trim()
                                 rebuilt = context.getString(R.string.user_requested_to_join_team, requester, teamName)
