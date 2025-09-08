@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.DiffUtils as DiffUtilExtensions
 
 class AdapterNotification(
@@ -73,37 +74,25 @@ class AdapterNotification(
             return when (notification.type.lowercase()) {
                 "survey" -> context.getString(R.string.pending_survey_notification) + " ${notification.message}"
                 "join_request" -> {
-                    val joinRequestId = notification.relatedId
-                    val teamName = databaseService.withRealm { realm ->
+                    databaseService.withRealm { realm ->
                         val joinRequest = realm.where(RealmMyTeam::class.java)
-                            .equalTo("_id", joinRequestId)
+                            .equalTo("_id", notification.relatedId)
                             .equalTo("docType", "request")
                             .findFirst()
-                        joinRequest?.let { jr ->
+                        val team = joinRequest?.teamId?.let { tid ->
                             realm.where(RealmMyTeam::class.java)
-                                .equalTo("_id", jr.teamId)
-                                .findFirst()?.name
+                                .equalTo("_id", tid)
+                                .findFirst()
                         }
-                    } ?: "Unknown Team"
-                    val existing = notification.message
-                    if (existing.isNotEmpty()) {
-                        // Minimal parse: support English & Spanish stored forms
-                        val regexes = listOf(
-                            "^(.+) has requested to join (.+)$".toRegex(),
-                            "^(.+) ha solicitado unirse a (.+)$".toRegex()
-                        )
-                        var rebuilt: String? = null
-                        for (r in regexes) {
-                            val m = r.find(existing)
-                            if (m != null) {
-                                val requester = m.groupValues[1].trim()
-                                rebuilt = context.getString(R.string.user_requested_to_join_team, requester, teamName)
-                                break
-                            }
+                        val requester = joinRequest?.userId?.let { uid ->
+                            realm.where(RealmUserModel::class.java)
+                                .equalTo("id", uid)
+                                .findFirst()
                         }
-                        rebuilt ?: existing
-                    } else {
-                        context.getString(R.string.user_requested_to_join_team, "Someone", teamName)
+                        val requesterName = requester?.name ?: "Unknown User"
+                        val teamName = team?.name ?: "Unknown Team"
+                        "<b>${context.getString(R.string.join_request_prefix)}</b> " +
+                            context.getString(R.string.user_requested_to_join_team, requesterName, teamName)
                     }
                 }
                 else -> notification.message
