@@ -103,28 +103,35 @@ class AdapterNotification(
                 "join_request" -> {
                     val joinRequestId = notification.relatedId
                     val teamName = databaseService.withRealm { realm ->
-                        // First find the join request, then get the team name
                         val joinRequest = realm.where(RealmMyTeam::class.java)
                             .equalTo("_id", joinRequestId)
                             .equalTo("docType", "request")
                             .findFirst()
-                        
-                        if (joinRequest != null) {
+                        joinRequest?.let { jr ->
                             realm.where(RealmMyTeam::class.java)
-                                .equalTo("_id", joinRequest.teamId)
+                                .equalTo("_id", jr.teamId)
                                 .findFirst()?.name
-                        } else {
-                            null
                         }
                     } ?: "Unknown Team"
-                    
-                    val message = notification.message
-                    if (message.isNotEmpty()) {
-                        // Try to parse the stored message to extract user name for re-translation
-                        val parsedMessage = parseJoinRequestMessage(message, teamName, context)
-                        "<b>${context.getString(R.string.join_request_prefix)}</b> $parsedMessage"
+                    val existing = notification.message
+                    if (existing.isNotEmpty()) {
+                        // Attempt to extract requester name from stored English or Spanish patterns
+                        val patterns = listOf(
+                            "(.+) has requested to join (.+)".toRegex(),
+                            "(.+) ha solicitado unirse a (.+)".toRegex()
+                        )
+                        var rebuilt: String? = null
+                        for (p in patterns) {
+                            val m = p.find(existing)
+                            if (m != null) {
+                                val requester = m.groupValues[1].trim()
+                                rebuilt = context.getString(R.string.user_requested_to_join_team, requester, teamName)
+                                break
+                            }
+                        }
+                        rebuilt ?: existing
                     } else {
-                        "<b>${context.getString(R.string.join_request_prefix)}</b> New request to join $teamName"
+                        context.getString(R.string.user_requested_to_join_team, "Someone", teamName)
                     }
                 }
                 else -> notification.message
@@ -147,23 +154,5 @@ class AdapterNotification(
             }
         }
 
-        private fun parseJoinRequestMessage(message: String, teamName: String, context: Context): String {
-            // Try to extract username from patterns like "username has requested to join teamname"
-            val patterns = listOf(
-                "(.+) has requested to join (.+)".toRegex(),
-                "(.+) ha solicitado unirse a (.+)".toRegex()
-            )
-            
-            for (pattern in patterns) {
-                val match = pattern.find(message)
-                if (match != null) {
-                    val username = match.groupValues[1].trim()
-                    return context.getString(R.string.user_requested_to_join_team, username, teamName)
-                }
-            }
-            
-            // If we can't parse it, return the original message
-            return message
-        }
     }
 }
