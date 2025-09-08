@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
+import io.realm.Sort
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
@@ -23,17 +24,30 @@ class LibraryRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getLibraryListForUser(userId: String?): List<RealmMyLibrary> {
+    override suspend fun getLibraryListForUser(
+        userId: String?,
+        orderBy: String?,
+        ascending: Boolean,
+    ): List<RealmMyLibrary> {
         val results = queryList(RealmMyLibrary::class.java) {
             equalTo("isPrivate", false)
+            orderBy?.let {
+                sort(it, if (ascending) Sort.ASCENDING else Sort.DESCENDING)
+            }
         }
         return filterLibrariesNeedingUpdate(results)
             .filter { it.userId?.contains(userId) == true }
     }
 
-    override suspend fun getAllLibraryList(): List<RealmMyLibrary> {
+    override suspend fun getAllLibraryList(
+        orderBy: String?,
+        ascending: Boolean,
+    ): List<RealmMyLibrary> {
         val results = queryList(RealmMyLibrary::class.java) {
             equalTo("resourceOffline", false)
+            orderBy?.let {
+                sort(it, if (ascending) Sort.ASCENDING else Sort.DESCENDING)
+            }
         }
         return filterLibrariesNeedingUpdate(results)
     }
