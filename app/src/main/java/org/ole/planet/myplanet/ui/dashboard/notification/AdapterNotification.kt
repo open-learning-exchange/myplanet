@@ -50,7 +50,7 @@ class AdapterNotification(
     inner class ViewHolderNotifications(private val rowNotificationsBinding: RowNotificationsBinding) :
         RecyclerView.ViewHolder(rowNotificationsBinding.root) {
 
-        fun bind(notification: RealmNotification, position: Int) {
+    fun bind(notification: RealmNotification, position: Int) {
             val context = rowNotificationsBinding.root.context
             val currentNotification = formatNotificationMessage(notification, context)
             rowNotificationsBinding.title.text = Html.fromHtml(currentNotification, Html.FROM_HTML_MODE_LEGACY)
@@ -61,7 +61,7 @@ class AdapterNotification(
                 rowNotificationsBinding.btnMarkAsRead.visibility = View.VISIBLE
                 rowNotificationsBinding.root.alpha = 1.0f
                 rowNotificationsBinding.btnMarkAsRead.setOnClickListener {
-                    onMarkAsReadClick(position)
+            onMarkAsReadClick(position)
                 }
             }
 
@@ -73,6 +73,32 @@ class AdapterNotification(
         private fun formatNotificationMessage(notification: RealmNotification, context: Context): String {
             return when (notification.type.lowercase()) {
                 "survey" -> context.getString(R.string.pending_survey_notification) + " ${notification.message}"
+                "task" -> {
+                    val datePattern = Pattern.compile("\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s\\d{1,2},\\s\\w+\\s\\d{4}\\b")
+                    val matcher = datePattern.matcher(notification.message)
+                    if (matcher.find()) {
+                        val taskTitle = notification.message.substring(0, matcher.start()).trim()
+                        val dateValue = notification.message.substring(matcher.start()).trim()
+                        formatTaskNotification(context, taskTitle, dateValue)
+                    } else {
+                        notification.message
+                    }
+                }
+                "resource" -> {
+                    notification.message.toIntOrNull()?.let { count ->
+                        context.getString(R.string.resource_notification, count)
+                    } ?: notification.message
+                }
+                "storage" -> {
+                    val storageValue = notification.message.replace("%", "").toIntOrNull()
+                    storageValue?.let { v ->
+                        when {
+                            v <= 10 -> context.getString(R.string.storage_running_low) + " ${v}%"
+                            v <= 40 -> context.getString(R.string.storage_running_low) + " ${v}%"
+                            else -> context.getString(R.string.storage_available) + " ${v}%"
+                        }
+                    } ?: notification.message
+                }
                 "join_request" -> {
                     databaseService.withRealm { realm ->
                         val joinRequest = realm.where(RealmMyTeam::class.java)
