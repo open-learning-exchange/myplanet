@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.utilities.DiffUtils
 class AdapterTeam(
     private val context: Context,
     teams: List<RealmMyTeam>,
-    private val databaseService: DatabaseService,
+    private val databaseService: DatabaseService? = null,
 ) : ListAdapter<RealmMyTeam, AdapterTeam.ViewHolderTeam>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
@@ -56,15 +56,16 @@ class AdapterTeam(
     }
 
     private fun showUserList(realmMyTeam: RealmMyTeam) {
+        val ds = databaseService ?: return
         val layoutUserListBinding = LayoutUserListBinding.inflate(LayoutInflater.from(context))
-        databaseService.withRealm { realm ->
+        ds.withRealm { realm ->
             users = realm.copyFromRealm(RealmMyTeam.getUsers(realmMyTeam._id, realm, ""))
             setListAdapter(layoutUserListBinding.listUser, users)
         }
         layoutUserListBinding.etSearch.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                databaseService.withRealm { realm ->
+                ds.withRealm { realm ->
                     users = realm.copyFromRealm(RealmMyTeam.filterUsers(realmMyTeam._id, "$s", realm))
                     setListAdapter(layoutUserListBinding.listUser, users)
                 }

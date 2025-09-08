@@ -7,18 +7,18 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.FrameLayout
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Locale
-import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentAddLinkBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.ui.team.AdapterTeam
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -30,24 +30,15 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
     }
 
     @Inject
-    lateinit var databaseService: DatabaseService
+    lateinit var teamRepository: TeamRepository
     var selectedTeam: RealmMyTeam? = null
 
     override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
-        databaseService.withRealm { realm ->
-            val teams = realm.copyFromRealm(
-                realm.where(RealmMyTeam::class.java)
-                    .isEmpty("teamId")
-                    .isNotEmpty("name")
-                    .equalTo(
-                        "type",
-                        if (binding.spnLink.selectedItem.toString() == "Enterprises") "enterprise" else ""
-                    )
-                    .notEqualTo("status", "archived")
-                    .findAll()
-            )
+        viewLifecycleOwner.lifecycleScope.launch {
+            val isEnterprise = binding.spnLink.selectedItem.toString() == "Enterprises"
+            val teams = teamRepository.getSelectableTeams(isEnterprise)
             binding.rvList.layoutManager = LinearLayoutManager(requireActivity())
-            val adapter = AdapterTeam(requireActivity(), teams, databaseService)
+            val adapter = AdapterTeam(requireActivity(), teams)
             adapter.setTeamSelectedListener(object : AdapterTeam.OnTeamSelectedListener {
                 override fun onSelectedTeam(team: RealmMyTeam) {
                     this@AddLinkFragment.selectedTeam = team
@@ -91,16 +82,10 @@ class AddLinkFragment : BottomSheetDialogFragment(), AdapterView.OnItemSelectedL
                 return@setOnClickListener
             }
 
-            databaseService.withRealm { realm ->
-                realm.executeTransaction { r ->
-                    val team = r.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
-                    team.docType = "link"
-                    team.updated = true
-                    team.title = title
-                    team.route = """/${type.lowercase(Locale.ROOT)}/view/${selectedTeam!!._id}"""
-                }
+            viewLifecycleOwner.lifecycleScope.launch {
+                teamRepository.addLink(type, title, selectedTeam!!._id!!)
+                dismiss()
             }
-            dismiss()
         }
     }
 
