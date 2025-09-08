@@ -18,7 +18,7 @@ class CourseRepositoryImpl @Inject constructor(
 
     override suspend fun getCoursesByUserId(userId: String): List<RealmMyCourse> {
         return queryList(RealmMyCourse::class.java) {
-            equalTo("userId", userId)
+            contains("userId", userId)
         }
     }
 

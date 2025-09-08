@@ -187,7 +187,7 @@ open class RealmMyCourse : RealmObject() {
         fun getMyByUserId(mRealm: Realm, settings: SharedPreferences?): RealmResults<RealmMyCourse> {
             val userId = settings?.getString("userId", "--")
             return mRealm.where(RealmMyCourse::class.java)
-                .equalTo("userId", userId)
+                .contains("userId", userId)
                 .findAll()
         }
 
