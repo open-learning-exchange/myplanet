@@ -71,6 +71,10 @@ class SurveyViewModel @Inject constructor(
         refreshSurveys()
     }
 
+    fun clearSearch() {
+        searchQuery = ""
+    }
+
     fun setTeamShareAllowed(flag: Boolean) {
         currentIsTeamShareAllowed = flag
         refreshSurveys()

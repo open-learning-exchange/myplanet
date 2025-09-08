@@ -133,7 +133,12 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
                 }
             }
         }
+    }
 
+    override fun onResume() {
+        super.onResume()
+        binding.layoutSearch.etSearch.setText("")
+        viewModel.clearSearch()
         viewModel.setTeamShareAllowed(false)
     }
 
