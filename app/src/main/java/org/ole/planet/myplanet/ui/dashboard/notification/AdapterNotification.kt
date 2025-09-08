@@ -61,7 +61,7 @@ class AdapterNotification(
                 rowNotificationsBinding.btnMarkAsRead.visibility = View.VISIBLE
                 rowNotificationsBinding.root.alpha = 1.0f
                 rowNotificationsBinding.btnMarkAsRead.setOnClickListener {
-            onMarkAsReadClick(position)
+                    onMarkAsReadClick(position)
                 }
             }
 
