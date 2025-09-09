@@ -7,7 +7,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.content.edit
@@ -113,7 +112,6 @@ object DownloadUtils {
         createChannels(context)
         val text = if (hadErrors) {
             val errorMessage = context.getString(R.string.download_progress_with_errors, completed, total)
-            Log.e("DownloadUtils", "Download completed with errors: $errorMessage (completed: $completed, total: $total)")
             errorMessage
         } else {
             context.getString(R.string.download_progress, completed, total)
