@@ -55,20 +55,22 @@ class AuthSessionUpdater @Inject constructor(
         try {
             withContext(Dispatchers.IO) {
                 val conn = getSessionUrl()?.openConnection() as HttpURLConnection
-                conn.requestMethod = "GET"
-                conn.setRequestProperty("Content-Type", "application/json")
-                conn.setRequestProperty("Accept", "application/json")
-                conn.doOutput = true
-                conn.doInput = true
+                try {
+                    conn.requestMethod = "GET"
+                    conn.setRequestProperty("Content-Type", "application/json")
+                    conn.setRequestProperty("Accept", "application/json")
+                    conn.doOutput = true
+                    conn.doInput = true
 
-                val os = DataOutputStream(conn.outputStream)
-                os.writeBytes(getJsonObject(settings).toString())
+                    DataOutputStream(conn.outputStream).use { os ->
+                        os.writeBytes(getJsonObject(settings).toString())
+                        os.flush()
+                    }
 
-                os.flush()
-                os.close()
-
-                callback.setAuthSession(conn.headerFields)
-                conn.disconnect()
+                    callback.setAuthSession(conn.headerFields)
+                } finally {
+                    conn.disconnect()
+                }
             }
         } catch (e: Exception) {
             callback.onError(e.message.orEmpty())

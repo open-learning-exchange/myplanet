@@ -151,15 +151,18 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
                 val connection = withContext(Dispatchers.IO) {
                     url.openConnection()
                 } as HttpURLConnection
-                connection.requestMethod = "GET"
-                connection.connectTimeout = 5000
-                connection.readTimeout = 5000
-                withContext(Dispatchers.IO) {
-                    connection.connect()
+                try {
+                    connection.requestMethod = "GET"
+                    connection.connectTimeout = 5000
+                    connection.readTimeout = 5000
+                    withContext(Dispatchers.IO) {
+                        connection.connect()
+                    }
+                    val responseCode = connection.responseCode
+                    responseCode in 200..299
+                } finally {
+                    connection.disconnect()
                 }
-                val responseCode = connection.responseCode
-                connection.disconnect()
-                responseCode in 200..299
 
             } catch (e: Exception) {
                 e.printStackTrace()

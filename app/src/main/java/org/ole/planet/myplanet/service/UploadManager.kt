@@ -12,6 +12,7 @@ import io.realm.RealmResults
 import java.io.File
 import java.io.IOException
 import java.util.Date
+import java.net.URLConnection
 import javax.inject.Inject
 import javax.inject.Singleton
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -603,8 +604,7 @@ class UploadManager @Inject constructor(
                                     val f = File(getString("imageUrl", imgObject))
                                     val name = FileUtils.getFileNameFromUrl(getString("imageUrl", imgObject))
                                     val format = "%s/resources/%s/%s"
-                                    val connection = f.toURI().toURL().openConnection()
-                                    val mimeType = connection.contentType
+                                    val mimeType = URLConnection.guessContentTypeFromName(f.name) ?: "application/octet-stream"
                                     val body = FileUtils.fullyReadFileToBytes(f)
                                         .toRequestBody("application/octet-stream".toMediaTypeOrNull())
                                     val url = String.format(format, UrlUtils.getUrl(), id, name)
