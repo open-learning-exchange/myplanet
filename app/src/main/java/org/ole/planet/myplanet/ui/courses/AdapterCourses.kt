@@ -410,5 +410,4 @@ class AdapterCourses(
             adapterPosition = position
         }
     }
-
 }
