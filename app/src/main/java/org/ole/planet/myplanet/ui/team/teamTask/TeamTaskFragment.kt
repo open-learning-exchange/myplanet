@@ -14,6 +14,7 @@ import android.widget.TextView
 import android.widget.TimePicker
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -23,6 +24,7 @@ import io.realm.Sort
 import java.util.Calendar
 import java.util.Date
 import java.util.UUID
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertTaskBinding
 import org.ole.planet.myplanet.databinding.AlertUsersSpinnerBinding
@@ -38,8 +40,6 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
 
 class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     private var _binding: FragmentTeamTaskBinding? = null

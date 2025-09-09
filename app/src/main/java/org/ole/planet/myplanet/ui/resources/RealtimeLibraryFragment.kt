@@ -1,15 +1,12 @@
 package org.ole.planet.myplanet.ui.resources
 
-import android.os.Bundle
-import android.view.View
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.DiffUtil
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseRealtimeFragment
 import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import kotlinx.coroutines.launch
 
 abstract class RealtimeLibraryFragment : BaseRealtimeFragment<RealmMyLibrary>() {
     

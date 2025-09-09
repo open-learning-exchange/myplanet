@@ -88,15 +88,15 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     lateinit var prefManager: SharedPrefManager
     private val serverUrlMapper = ServerUrlMapper()
-    
+
     @Inject
     lateinit var syncManager: SyncManager
-    
+
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
-    
+
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -178,6 +178,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
     }
 
+    private fun scrollToTop() {
+        recyclerView.post {
+            if ((recyclerView.adapter?.itemCount ?: 0) > 0) {
+                recyclerView.scrollToPosition(0)
+            }
+        }
+    }
+
     private fun refreshCoursesData() {
         if (!isAdded || requireActivity().isFinishing) return
 
@@ -189,12 +197,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
 
             recyclerView.adapter = null
-            adapterCourses = AdapterCourses(requireActivity(), map, userProfileDbHandler)
+            adapterCourses = AdapterCourses(requireActivity(), sortedCourseList, map, userProfileDbHandler)
             adapterCourses.setProgressMap(progressMap)
             adapterCourses.setmRealm(mRealm)
             adapterCourses.setListener(this)
             adapterCourses.setRatingChangeListener(this)
-            adapterCourses.submitList(sortedCourseList)
             recyclerView.adapter = adapterCourses
 
             if (isMyCourseLib) {
@@ -214,17 +221,16 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
         mRealm.refresh()
-        
+
         val map = getRatings(mRealm, "course", model?.id)
         val progressMap = getCourseProgress(mRealm, model?.id)
         val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java).filterIsInstance<RealmMyCourse?>().filter { !it?.courseTitle.isNullOrBlank() }
         val sortedCourseList = courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
-        adapterCourses = AdapterCourses(requireActivity(), map, userProfileDbHandler)
+        adapterCourses = AdapterCourses(requireActivity(), sortedCourseList, map, userProfileDbHandler)
         adapterCourses.setProgressMap(progressMap)
         adapterCourses.setmRealm(mRealm)
         adapterCourses.setListener(this)
         adapterCourses.setRatingChangeListener(this)
-        adapterCourses.submitList(sortedCourseList)
 
         if (isMyCourseLib) {
             val courseIds = courseList.mapNotNull { it?.id }
@@ -253,7 +259,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (!isMyCourseLib) tvFragmentInfo.setText(R.string.our_courses)
         additionalSetup()
         setupMyProgressButton()
-        
+
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
     }
@@ -279,9 +285,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 if (query.isEmpty()) {
                     val courseList = filterCourseByTag(query, searchTags)
                     val sortedCourseList = courseList.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
-                    adapterCourses.submitList(sortedCourseList)
-                } else {
-                    adapterCourses.submitList(filterCourseByTag(etSearch.text.toString(), searchTags))
+                    adapterCourses.setOriginalCourseList(sortedCourseList)
+                }
+                else {
+                    adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
+                    scrollToTop()
                     showNoData(tvMessage, adapterCourses.itemCount, "courses")
                 }
             }
@@ -458,6 +466,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             tvSelected.visibility = View.GONE
             btnArchive.visibility = View.GONE
         } else {
+            etSearch.visibility = View.VISIBLE
+            requireView().findViewById<View>(R.id.filter).visibility = View.VISIBLE
             val allMyCourses = adapterCourses.getCourseList().all { it?.isMyCourse == true }
             if (userModel?.isGuest() == false) {
                 selectAll.visibility = if (allMyCourses) View.GONE else View.VISIBLE
@@ -472,7 +482,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             gradeLevel = if (spnGrade.selectedItem.toString() == "All") "" else spnGrade.selectedItem.toString()
             subjectLevel = if (spnSubject.selectedItem.toString() == "All") "" else spnSubject.selectedItem.toString()
-            adapterCourses.submitList(filterCourseByTag(etSearch.text.toString(), searchTags))
+            adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
+            scrollToTop()
             showNoFilter(tvMessage, adapterCourses.itemCount)
         }
 
@@ -484,7 +495,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             searchTags.clear()
             etSearch.setText(R.string.empty_text)
             tvSelected.text = context?.getString(R.string.empty_text)
-            adapterCourses.submitList(filterCourseByTag("", searchTags))
+            adapterCourses.setCourseList(filterCourseByTag("", searchTags))
+            scrollToTop()
             showNoData(tvMessage, adapterCourses.itemCount, "courses")
             spnGrade.setSelection(0)
             spnSubject.setSelection(0)
@@ -542,7 +554,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (!searchTags.contains(tag)) {
             tag?.let { searchTags.add(it) }
         }
-        adapterCourses.submitList(filterCourseByTag(etSearch.text.toString(), searchTags))
+        adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
+        scrollToTop()
         showTagText(searchTags, tvSelected)
         showNoData(tvMessage, adapterCourses.itemCount, "courses")
     }
@@ -565,7 +578,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         tvAddToLib.isEnabled = (selectedItems?.size ?: 0) > 0
         btnRemove.isEnabled = (selectedItems?.size ?: 0) > 0
         btnArchive.isEnabled = (selectedItems?.size ?: 0) > 0
-        
+
         val allSelected = adapterCourses.areAllSelected()
         updateCheckBoxState(allSelected)
         selectAll.text = if (allSelected) getString(R.string.unselect_all) else getString(R.string.select_all)
@@ -576,14 +589,16 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         li.add(tag)
         searchTags = li
         tvSelected.text = context?.getString(R.string.tag_selected, tag.name)
-        adapterCourses.submitList(filterCourseByTag(etSearch.text.toString(), li))
+        adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), li))
+        scrollToTop()
         showNoData(tvMessage, adapterCourses.itemCount, "courses")
     }
 
     override fun onOkClicked(list: List<RealmTag>?) {
         if (list?.isEmpty() == true) {
             searchTags.clear()
-            adapterCourses.submitList(filterCourseByTag(etSearch.text.toString(), searchTags))
+            adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
+            scrollToTop()
             showNoData(tvMessage, adapterCourses.itemCount, "courses")
         } else {
             for (tag in list ?: emptyList()) {
@@ -654,11 +669,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
         }
     }
-    
+
     override fun getWatchedTables(): List<String> {
         return listOf("courses")
     }
-    
+
     override fun onDataUpdated(table: String, update: TableDataUpdate) {
         if (table == "courses" && update.shouldRefreshUI) {
             if (::adapterCourses.isInitialized) {
@@ -668,11 +683,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
         }
     }
-    
+
     override fun getSyncRecyclerView(): RecyclerView? {
         return if (::recyclerView.isInitialized) recyclerView else null
     }
-    
+
     override fun onDestroyView() {
         if (::realtimeSyncHelper.isInitialized) {
             realtimeSyncHelper.cleanup()

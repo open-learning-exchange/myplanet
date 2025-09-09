@@ -153,6 +153,9 @@ class NewsFragment : BaseNewsFragment() {
             labelFilteredList = applyLabelFilter(filteredNewsList)
             searchFilteredList = applySearchFilter(labelFilteredList)
             setData(searchFilteredList)
+            binding.rvNews.post {
+                binding.rvNews.smoothScrollToPosition(0)
+            }
         }
 
         binding.addNewsImage.setOnClickListener {
@@ -426,6 +429,10 @@ class NewsFragment : BaseNewsFragment() {
 
     override fun onDestroyView() {
         updatedNewsList?.removeAllChangeListeners()
+        updatedNewsList = null
+        if (isRealmInitialized()) {
+            mRealm.close()
+        }
         _binding = null
         super.onDestroyView()
     }

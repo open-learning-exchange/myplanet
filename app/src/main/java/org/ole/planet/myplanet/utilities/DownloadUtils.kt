@@ -111,7 +111,8 @@ object DownloadUtils {
         val channel = if (forWorker) WORKER_CHANNEL else COMPLETION_CHANNEL
         createChannels(context)
         val text = if (hadErrors) {
-            context.getString(R.string.download_progress_with_errors, completed, total)
+            val errorMessage = context.getString(R.string.download_progress_with_errors, completed, total)
+            errorMessage
         } else {
             context.getString(R.string.download_progress, completed, total)
         }
@@ -125,7 +126,7 @@ object DownloadUtils {
     }
     @JvmStatic
     fun downloadAllFiles(dbMyLibrary: List<RealmMyLibrary?>): ArrayList<String> {
-        return dbMyLibrary.map { UrlUtils.getUrl(it) } as ArrayList<String>
+        return ArrayList(dbMyLibrary.map { UrlUtils.getUrl(it) })
     }
 
     @JvmStatic
@@ -133,7 +134,7 @@ object DownloadUtils {
         dbMyLibrary: List<RealmMyLibrary?>,
         selectedItems: ArrayList<Int>
     ): ArrayList<String> {
-        return selectedItems.map { UrlUtils.getUrl(dbMyLibrary[it]) } as ArrayList<String>
+        return ArrayList(selectedItems.map { UrlUtils.getUrl(dbMyLibrary[it]) })
     }
 
     @RequiresApi(Build.VERSION_CODES.S)

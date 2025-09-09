@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.DatePicker
 import androidx.appcompat.app.AlertDialog
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import io.realm.Realm
 import io.realm.RealmResults
@@ -17,6 +18,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddTransactionBinding
 import org.ole.planet.myplanet.databinding.FragmentFinanceBinding
@@ -25,8 +27,6 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
 
 class FinanceFragment : BaseTeamFragment() {
     private var _binding: FragmentFinanceBinding? = null
@@ -255,6 +255,7 @@ class FinanceFragment : BaseTeamFragment() {
     }
 
     private fun updatedFinanceList(results: RealmResults<RealmMyTeam>) {
+        if (view == null) return
         viewLifecycleOwner.lifecycleScope.launch {
             if (!results.isEmpty()) {
                 adapterFinance = AdapterFinance(requireActivity(), results)

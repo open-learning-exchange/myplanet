@@ -11,14 +11,12 @@ import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import io.realm.Realm
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnCourseItemSelected
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -37,24 +35,12 @@ import org.ole.planet.myplanet.utilities.SelectionUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-internal class AdapterCourses(
+class AdapterCourses(
     private val context: Context,
+    private var courseList: List<RealmMyCourse?>,
     private val map: HashMap<String?, JsonObject>,
     private val userProfileDbHandler: UserProfileDbHandler
-) : ListAdapter<RealmMyCourse?, AdapterCourses.ViewHoldercourse>(
-    DiffUtils.itemCallback(
-        areItemsTheSame = { old, new -> old?.id == new?.id },
-        areContentsTheSame = { old, new ->
-            old?.courseTitle == new?.courseTitle &&
-                old?.description == new?.description &&
-                old?.gradeLevel == new?.gradeLevel &&
-                old?.subjectLevel == new?.subjectLevel &&
-                old?.createdDate == new?.createdDate &&
-                old?.isMyCourse == new?.isMyCourse &&
-                old?.getNumberOfSteps() == new?.getNumberOfSteps()
-        }
-    )
-) {
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val selectedItems: MutableList<RealmMyCourse?> = ArrayList()
     private var listener: OnCourseItemSelected? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
@@ -83,11 +69,34 @@ internal class AdapterCourses(
     }
 
     fun getCourseList(): List<RealmMyCourse?> {
-        return currentList
+        return courseList
+    }
+
+    private fun dispatchDiff(newList: List<RealmMyCourse?>) {
+        val diffResult = DiffUtils.calculateDiff(
+            courseList,
+            newList,
+            areItemsTheSame = { old, new -> old?.id == new?.id },
+            areContentsTheSame = { old, new ->
+                old?.courseTitle == new?.courseTitle &&
+                        old?.description == new?.description &&
+                        old?.gradeLevel == new?.gradeLevel &&
+                        old?.subjectLevel == new?.subjectLevel &&
+                        old?.createdDate == new?.createdDate &&
+                        old?.isMyCourse == new?.isMyCourse &&
+                        old?.getNumberOfSteps() == new?.getNumberOfSteps()
+            }
+        )
+        courseList = newList
+        diffResult.dispatchUpdatesTo(this)
+    }
+
+    fun setOriginalCourseList(courseList: List<RealmMyCourse?>){
+        dispatchDiff(courseList)
     }
 
     fun setCourseList(courseList: List<RealmMyCourse?>) {
-        submitList(courseList)
+        dispatchDiff(courseList)
     }
 
     private fun sortCourseListByTitle(list: List<RealmMyCourse?>): List<RealmMyCourse?> {
@@ -112,14 +121,14 @@ internal class AdapterCourses(
 
     fun toggleTitleSortOrder() {
         isTitleAscending = !isTitleAscending
-        val sortedList = sortCourseListByTitle(currentList)
-        submitList(sortedList)
+        val sortedList = sortCourseListByTitle(courseList)
+        dispatchDiff(sortedList)
     }
 
     fun toggleSortOrder() {
         isAscending = !isAscending
-        val sortedList = sortCourseList(currentList)
-        submitList(sortedList)
+        val sortedList = sortCourseList(courseList)
+        dispatchDiff(sortedList)
     }
 
     fun setProgressMap(progressMap: HashMap<String?, JsonObject>?) {
@@ -130,14 +139,16 @@ internal class AdapterCourses(
         this.listener = listener
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHoldercourse {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val binding = RowCourseBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHoldercourse(binding)
     }
 
-    override fun onBindViewHolder(holder: ViewHoldercourse, position: Int) {
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        if (holder !is ViewHoldercourse) return
+
         holder.bind(position)
-        val course = getItem(position) ?: return
+        val course = courseList[position] ?: return
 
         updateVisibilityForMyCourse(holder, course)
         holder.rowCourseBinding.title.text = course.courseTitle
@@ -167,7 +178,7 @@ internal class AdapterCourses(
 
         holder.rowCourseBinding.root.setOnClickListener {
             if (position != RecyclerView.NO_POSITION) {
-                openCourse(getItem(position), 0)
+                openCourse(courseList[position], 0)
             }
         }
     }
@@ -248,7 +259,7 @@ internal class AdapterCourses(
                 holder.rowCourseBinding.checkbox.setOnClickListener { view: View ->
                     holder.rowCourseBinding.checkbox.contentDescription =
                         context.getString(R.string.select_res_course, course.courseTitle)
-                    SelectionUtils.handleCheck((view as CheckBox).isChecked, position, selectedItems, currentList)
+                    SelectionUtils.handleCheck((view as CheckBox).isChecked, position, selectedItems, courseList)
                     listener?.onSelectedListChange(selectedItems)
                 }
             }
@@ -267,7 +278,7 @@ internal class AdapterCourses(
     }
 
     fun areAllSelected(): Boolean {
-        val selectableCourses = currentList.filterNotNull().filter { !it.isMyCourse }
+        val selectableCourses = courseList.filterNotNull().filter { !it.isMyCourse }
         areAllSelected = selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
         return areAllSelected
     }
@@ -276,12 +287,12 @@ internal class AdapterCourses(
         selectedItems.clear()
 
         if (selectAll) {
-            val selectableCourses = currentList.filterNotNull().filter { !it.isMyCourse }
+            val selectableCourses = courseList.filterNotNull().filter { !it.isMyCourse }
             selectedItems.addAll(selectableCourses)
         }
 
         val updatedPositions = mutableListOf<Int>()
-        currentList.forEachIndexed { index, course ->
+        courseList.forEachIndexed { index, course ->
             if (course != null && !course.isMyCourse) {
                 updatedPositions.add(index)
             }
@@ -297,7 +308,7 @@ internal class AdapterCourses(
     private fun displayTagCloud(flexboxDrawable: FlexboxLayout, position: Int) {
         flexboxDrawable.removeAllViews()
         val chipCloud = ChipCloud(context, flexboxDrawable, config)
-        val tags: List<RealmTag>? = mRealm?.where(RealmTag::class.java)?.equalTo("db", "courses")?.equalTo("linkId", currentList[position]!!.id)?.findAll()
+        val tags: List<RealmTag>? = mRealm?.where(RealmTag::class.java)?.equalTo("db", "courses")?.equalTo("linkId", courseList[position]!!.id)?.findAll()
         showTags(tags, chipCloud)
     }
 
@@ -322,9 +333,10 @@ internal class AdapterCourses(
     private fun showProgressAndRating(position: Int, holder: RecyclerView.ViewHolder) {
         val viewHolder = holder as ViewHoldercourse
         showProgress(viewHolder.rowCourseBinding, position)
-        if (map.containsKey(currentList[position]!!.courseId)) {
-            val `object` = map[currentList[position]!!.courseId]
+        if (map.containsKey(courseList[position]!!.courseId)) {
+            val `object` = map[courseList[position]!!.courseId]
             CourseRatingUtils.showRating(
+                context,
                 `object`,
                 viewHolder.rowCourseBinding.rating,
                 viewHolder.rowCourseBinding.timesRated,
@@ -336,8 +348,8 @@ internal class AdapterCourses(
     }
 
     private fun showProgress(binding: RowCourseBinding, position: Int) {
-        if (progressMap?.containsKey(currentList[position]?.courseId) == true) {
-            val ob = progressMap!![currentList[position]?.courseId]
+        if (progressMap?.containsKey(courseList[position]?.courseId) == true) {
+            val ob = progressMap!![courseList[position]?.courseId]
             binding.courseProgress.max = getInt("max", ob)
             binding.courseProgress.progress = getInt("current", ob)
             if (getInt("current", ob) < getInt("max", ob)) {
@@ -348,7 +360,7 @@ internal class AdapterCourses(
             binding.courseProgress.visibility = View.GONE
         }
     }
-    
+
     private fun openCourse(realmMyCourses: RealmMyCourse?, step: Int) {
         if (homeItemClickListener != null) {
             val f: Fragment = TakeCourseFragment()
@@ -360,10 +372,8 @@ internal class AdapterCourses(
         }
     }
 
-    fun setRatingMap(newRatingMap: HashMap<String?, JsonObject>) {
-        this.map.clear()
-        this.map.putAll(newRatingMap)
-        notifyItemRangeChanged(0, currentList.size)
+    override fun getItemCount(): Int {
+        return courseList.size
     }
 
     internal inner class ViewHoldercourse(val rowCourseBinding: RowCourseBinding) :
@@ -373,19 +383,19 @@ internal class AdapterCourses(
         init {
             itemView.setOnClickListener {
                 if (adapterPosition != RecyclerView.NO_POSITION) {
-                    openCourse(getItem(adapterPosition), 0)
+                    openCourse(courseList[adapterPosition], 0)
                 }
             }
             rowCourseBinding.courseProgress.scaleY = 0.3f
             rowCourseBinding.courseProgress.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
                 override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
                     val position = bindingAdapterPosition
-                    if (position != RecyclerView.NO_POSITION && position < currentList.size) {
-                        if (progressMap?.containsKey(currentList[bindingAdapterPosition]?.courseId) == true) {
-                            val ob = progressMap!![currentList[bindingAdapterPosition]?.courseId]
+                    if (position != RecyclerView.NO_POSITION && position < courseList.size) {
+                        if (progressMap?.containsKey(courseList[bindingAdapterPosition]?.courseId) == true) {
+                            val ob = progressMap!![courseList[bindingAdapterPosition]?.courseId]
                             val current = getInt("current", ob)
                             if (b && i <= current + 1) {
-                                openCourse(getItem(bindingAdapterPosition), seekBar.progress)
+                                openCourse(courseList[bindingAdapterPosition], seekBar.progress)
                             }
                         }
                     }
@@ -400,5 +410,4 @@ internal class AdapterCourses(
             adapterPosition = position
         }
     }
-
 }
