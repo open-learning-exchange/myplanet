@@ -20,6 +20,7 @@ import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.github.chrisbanes.photoview.PhotoView
@@ -44,16 +45,49 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DiffUtils
+import org.ole.planet.myplanet.utilities.ImageUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
-import org.ole.planet.myplanet.utilities.ImageUtils
 import org.ole.planet.myplanet.utilities.Utilities
 import org.ole.planet.myplanet.utilities.makeExpandable
 
-class AdapterNews(var context: Context, private val list: MutableList<RealmNews?>, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
+class AdapterNews(var context: Context, private var currentUser: RealmUserModel?, private val parentNews: RealmNews?, private val teamName: String = "", private val teamId: String? = null, private val userProfileDbHandler: UserProfileDbHandler) : ListAdapter<RealmNews?, RecyclerView.ViewHolder?>(
+    DiffUtils.itemCallback(
+        areItemsTheSame = { oldItem, newItem ->
+            if (oldItem === newItem) return@itemCallback true
+            if (oldItem == null || newItem == null) return@itemCallback oldItem == newItem
+
+            try {
+                val oId = oldItem.takeIf { it.isValid }?.id
+                val nId = newItem.takeIf { it.isValid }?.id
+                oId != null && oId == nId
+            } catch (e: Exception) {
+                false
+            }
+        },
+        areContentsTheSame = { oldItem, newItem ->
+            if (oldItem === newItem) return@itemCallback true
+            if (oldItem == null || newItem == null) return@itemCallback oldItem == newItem
+
+            try {
+                if (!oldItem.isValid || !newItem.isValid) return@itemCallback false
+                
+                oldItem.id == newItem.id &&
+                    oldItem.time == newItem.time &&
+                    oldItem.isEdited == newItem.isEdited &&
+                    oldItem.message == newItem.message &&
+                    oldItem.userName == newItem.userName &&
+                    oldItem.userId == newItem.userId &&
+                    oldItem.sharedBy == newItem.sharedBy
+            } catch (e: Exception) {
+                false
+            }
+        }
+    )
+) {
     private lateinit var rowNewsBinding: RowNewsBinding
     private var listener: OnNewsItemClickListener? = null
     private var imageList: RealmList<String>? = null
@@ -77,31 +111,14 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     }
 
     fun addItem(news: RealmNews?) {
-        val newList = list.toMutableList()
-        newList.add(0, news)
-        val diffResult = DiffUtils.calculateDiff(
-            list,
-            newList,
-            areItemsTheSame = { old, new ->
-                val oId = if (old?.isValid == true) old.id else null
-                val nId = if (new?.isValid == true) new.id else null
-                oId != null && oId == nId
-            },
-            areContentsTheSame = { old, new ->
-                if (old?.isValid != true || new?.isValid != true) {
-                    false
-                } else {
-                    old.id == new.id &&
-                        old.time == new.time &&
-                        old.isEdited == new.isEdited &&
-                        old.message == new.message
-                }
+        val currentList = currentList.toMutableList()
+        currentList.add(0, news)
+        submitListSafely(currentList) {
+            recyclerView?.post {
+                recyclerView?.scrollToPosition(0)
+                recyclerView?.smoothScrollToPosition(0)
             }
-        )
-        list.clear()
-        list.addAll(newList)
-        diffResult.dispatchUpdatesTo(this)
-        recyclerView?.scrollToPosition(0)
+        }
     }
 
     fun setFromLogin(fromLogin: Boolean) {
@@ -174,10 +191,10 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
         val index = if (parentNews != null) {
             when {
                 parentNews.id == newsId -> 0
-                else -> list.indexOfFirst { it?.id == newsId }.let { if (it != -1) it + 1 else -1 }
+                else -> currentList.indexOfFirst { it?.id == newsId }.let { if (it != -1) it + 1 else -1 }
             }
         } else {
-            list.indexOfFirst { it?.id == newsId }
+            currentList.indexOfFirst { it?.id == newsId }
         }
         if (index >= 0) {
             notifyItemChanged(index)
@@ -266,10 +283,14 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 AlertDialog.Builder(context, R.style.AlertDialogTheme)
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                        NewsActions.deletePost(context, mRealm, news, list, teamName,listener)
+                        val currentList = currentList.toMutableList()
                         val pos = holder.adapterPosition
-                        notifyItemRemoved(pos)
-                        notifyItemRangeChanged(pos, list.size)
+                        val adjustedPos = if (parentNews != null && pos > 0) pos - 1 else pos
+                        if (adjustedPos >= 0 && adjustedPos < currentList.size) {
+                            currentList.removeAt(adjustedPos)
+                            submitListSafely(currentList)
+                        }
+                        NewsActions.deletePost(context, mRealm, news, currentList.toMutableList(), teamName, listener)
                     }
                     .setNegativeButton(R.string.cancel, null)
                     .show()
@@ -302,7 +323,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     private fun handleChat(holder: ViewHolderNews, news: RealmNews) {
         if (news.newsId?.isNotEmpty() == true) {
             val conversations = gson.fromJson(news.conversations, Array<Conversation>::class.java).toList()
-            val chatAdapter = ChatAdapter(ArrayList(), context, holder.rowNewsBinding.recyclerGchat)
+            val chatAdapter = ChatAdapter(context, holder.rowNewsBinding.recyclerGchat)
 
             if (user?.id?.startsWith("guest") == false) {
                 chatAdapter.setOnChatItemClickListener(object : ChatAdapter.OnChatItemClickListener {
@@ -346,28 +367,22 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     }
 
     fun updateList(newList: List<RealmNews?>) {
-        val diffResult = DiffUtils.calculateDiff(
-            list,
-            newList,
-            areItemsTheSame = { old, new ->
-                val oId = if (old?.isValid == true) old.id else null
-                val nId = if (new?.isValid == true) new.id else null
-                oId != null && oId == nId
-            },
-            areContentsTheSame = { old, new ->
-                if (old?.isValid != true || new?.isValid != true) {
-                    false
-                } else {
-                    old.id == new.id &&
-                        old.time == new.time &&
-                        old.isEdited == new.isEdited &&
-                        old.message == new.message
+        submitListSafely(newList)
+    }
+
+    private fun submitListSafely(list: List<RealmNews?>, commitCallback: Runnable? = null) {
+        val detachedList = list.map { news ->
+            if (news?.isValid == true && ::mRealm.isInitialized) {
+                try {
+                    mRealm.copyFromRealm(news)
+                } catch (e: Exception) {
+                    news
                 }
+            } else {
+                news
             }
-        )
-        list.clear()
-        list.addAll(newList)
-        diffResult.dispatchUpdatesTo(this)
+        }
+        submitList(detachedList, commitCallback)
     }
 
     private fun setMemberClickListeners(holder: ViewHolderNews, userModel: RealmUserModel?, currentLeader: RealmUserModel?) {
@@ -448,11 +463,11 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                 parentNews
             } else {
                 (holder.itemView as CardView).setCardBackgroundColor(ContextCompat.getColor(context, R.color.md_white_1000))
-                list[position - 1]
+                getItem(position - 1)
             }
         } else {
             (holder.itemView as CardView).setCardBackgroundColor(ContextCompat.getColor(context, R.color.md_white_1000))
-            list[position]
+            getItem(position)
         }
         return news
     }
@@ -499,7 +514,7 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
     }
 
     override fun getItemCount(): Int {
-        return if (parentNews == null) list.size else list.size + 1
+        return if (parentNews == null) super.getItemCount() else super.getItemCount() + 1
     }
 
     interface OnNewsItemClickListener {
@@ -534,8 +549,19 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
                     if (!mRealm.isInTransaction) {
                         mRealm.beginTransaction()
                     }
-                    news?.sharedBy = currentUser?.id
-                    news?.viewIn = gson.toJson(array)
+
+                    val managedNews = news?.let { newsItem ->
+                        if (newsItem.isManaged) {
+                            newsItem
+                        } else {
+                            mRealm.where(RealmNews::class.java)
+                                .equalTo("id", newsItem.id)
+                                .findFirst()
+                        }
+                    }
+                    
+                    managedNews?.sharedBy = currentUser?.id
+                    managedNews?.viewIn = gson.toJson(array)
                     mRealm.commitTransaction()
                     Utilities.toast(context, context.getString(R.string.shared_to_community))
                     viewHolder.rowNewsBinding.btnShare.visibility = View.GONE
@@ -643,4 +669,5 @@ class AdapterNews(var context: Context, private val list: MutableList<RealmNews?
             adapterPosition = position
         }
     }
+
 }

@@ -2,8 +2,6 @@ package org.ole.planet.myplanet.service
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.os.Handler
-import android.os.Looper
 import android.text.TextUtils
 import android.util.Base64
 import com.google.gson.Gson
@@ -15,6 +13,10 @@ import java.io.IOException
 import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.ApiClient.client
 import org.ole.planet.myplanet.datamanager.ApiInterface
@@ -229,12 +231,14 @@ class UploadToShelfService @Inject constructor(
         val maxAttempts = 3
         val retryDelayMs = 2000L
 
-        val response = RetryUtils.retry(
-            maxAttempts = maxAttempts,
-            delayMs = retryDelayMs,
-            shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
-        ) {
-            apiInterface?.postDoc(header, "application/json", "${UrlUtils.getUrl()}/$table", ob)?.execute()
+        val response = runBlocking {
+            RetryUtils.retry(
+                maxAttempts = maxAttempts,
+                delayMs = retryDelayMs,
+                shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
+            ) {
+                apiInterface?.postDoc(header, "application/json", "${UrlUtils.getUrl()}/$table", ob)?.execute()
+            }
         }
 
         if (response?.isSuccessful == true && response.body() != null) {
@@ -318,7 +322,6 @@ class UploadToShelfService @Inject constructor(
         val apiInterface = client?.create(ApiInterface::class.java)
         mRealm = dbService.realmInstance
         var unmanagedUsers: List<RealmUserModel> = emptyList()
-        val mainHandler = Handler(Looper.getMainLooper())
 
         mRealm.executeTransactionAsync({ realm ->
             val users = realm.where(RealmUserModel::class.java).isNotEmpty("_id").findAll()
@@ -344,10 +347,14 @@ class UploadToShelfService @Inject constructor(
                             e.printStackTrace()
                         }
                     }
-                    mainHandler.post { listener.onSuccess("Sync with server completed successfully") }
+                    MainApplication.applicationScope.launch(Dispatchers.Main) {
+                        listener.onSuccess("Sync with server completed successfully")
+                    }
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    mainHandler.post { listener.onSuccess("Unable to update documents: ${e.localizedMessage}") }
+                    MainApplication.applicationScope.launch(Dispatchers.Main) {
+                        listener.onSuccess("Unable to update documents: ${e.localizedMessage}")
+                    }
                 } finally {
                     backgroundRealm?.close()
                 }

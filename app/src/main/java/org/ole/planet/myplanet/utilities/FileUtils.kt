@@ -20,18 +20,18 @@ import java.io.InputStream
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID
-import org.ole.planet.myplanet.MainApplication.Companion.context
 
 object FileUtils {
-    val SD_PATH: String by lazy {
-        context.getExternalFilesDir(null)?.let { "${it}/ole/" } ?: ""
+    @JvmStatic
+    fun getOlePath(context: Context): String {
+        return context.getExternalFilesDir(null)?.let { "${it}/ole/" } ?: ""
     }
 
     @JvmStatic
     @Throws(IOException::class)
     fun fullyReadFileToBytes(f: File): ByteArray = f.readBytes()
 
-    private fun createFilePath(folder: String, filename: String): File {
+    private fun createFilePath(context: Context, folder: String, filename: String): File {
         val baseDirectory = File(context.getExternalFilesDir(null), folder)
 
         if (filename.contains("/")) {
@@ -63,14 +63,14 @@ object FileUtils {
     }
 
     @JvmStatic
-    fun getSDPathFromUrl(url: String?): File {
-        return createFilePath("/ole/${getIdFromUrl(url)}", getFileNameFromUrl(url))
+    fun getSDPathFromUrl(context: Context, url: String?): File {
+        return createFilePath(context, "/ole/${getIdFromUrl(url)}", getFileNameFromUrl(url))
     }
 
     @JvmStatic
-    fun checkFileExist(url: String?): Boolean {
+    fun checkFileExist(context: Context, url: String?): Boolean {
         if (url.isNullOrEmpty()) return false
-        val f = getSDPathFromUrl(url)
+        val f = getSDPathFromUrl(context, url)
         return f.exists()
     }
 
@@ -202,9 +202,9 @@ object FileUtils {
     }
 
     @JvmStatic
-    fun openOleFolder(): Intent {
+    fun openOleFolder(context: Context): Intent {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
-        val uri = SD_PATH.toUri()
+        val uri = getOlePath(context).toUri()
         intent.setDataAndType(uri, "*/*")
         return Intent.createChooser(intent, "Open folder")
     }
@@ -272,33 +272,29 @@ object FileUtils {
      * @return A string with size followed by an appropriate suffix
      */
     @JvmStatic
-    fun formatSize(size: Long): String {
+    fun formatSize(context: Context, size: Long): String {
         return Formatter.formatFileSize(context, size)
     }
 
     @JvmStatic
-    val totalMemoryCapacity: Long
-        get() = getStorageStats(context).first
+    fun totalMemoryCapacity(context: Context): Long = getStorageStats(context).first
 
     @JvmStatic
-    val totalAvailableMemory: Long
-        get() = getStorageStats(context).second
+    fun totalAvailableMemory(context: Context): Long = getStorageStats(context).second
 
     @JvmStatic
-    val totalAvailableMemoryRatio: Long
-        get() {
-            val total = totalMemoryCapacity
-            val available = totalAvailableMemory
-            return Math.round(available.toDouble() / total.toDouble() * 100)
-        }
+    fun totalAvailableMemoryRatio(context: Context): Long {
+        val total = totalMemoryCapacity(context)
+        val available = totalAvailableMemory(context)
+        return Math.round(available.toDouble() / total.toDouble() * 100)
+    }
 
     @JvmStatic
-    val availableOverTotalMemoryFormattedString: String
-        get() {
-            val available = totalAvailableMemory
-            val total = totalMemoryCapacity
-            return formatSize(available) + "/" + formatSize(total)
-        }
+    fun availableOverTotalMemoryFormattedString(context: Context): String {
+        val available = totalAvailableMemory(context)
+        val total = totalMemoryCapacity(context)
+        return formatSize(context, available) + "/" + formatSize(context, total)
+    }
 
     private fun getStorageStats(context: Context): Pair<Long, Long> {
         val storageStatsManager =

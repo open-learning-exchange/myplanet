@@ -1388,5 +1388,6 @@
     <string name="failed_to_delete_report">Ku guuldareystay tirtiridda warbixinta. Fadlan isku day mar kale</string>
     <string name="delete_report">Tirtir warbixinta</string>
     <string name="checking_server_availability">la hubiyo helitaanka serverka…</string>
+    <string name="loading_courses">Koorsada ayaa la rarayaa…</string>
 
 </resources>

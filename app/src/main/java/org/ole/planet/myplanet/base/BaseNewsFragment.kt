@@ -33,7 +33,6 @@ import org.ole.planet.myplanet.ui.news.ReplyActivity
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
-import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 
 @RequiresApi(api = Build.VERSION_CODES.O)
@@ -131,7 +130,7 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
 
     override fun addImage(llImage: LinearLayout?) {
         this.llImage = llImage
-        val openFolderIntent = openOleFolder()
+        val openFolderIntent = FileUtils.openOleFolder(requireContext())
         openFolderLauncher.launch(openFolderIntent)
     }
 }

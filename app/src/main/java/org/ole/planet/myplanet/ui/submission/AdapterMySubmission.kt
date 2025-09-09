@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
 import io.realm.internal.SyncObjectServerFacade
@@ -20,9 +21,25 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.exam.TakeExamFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission.ViewHolderMySurvey
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 
-class AdapterMySubmission(private val context: Context, private val list: List<RealmSubmission>?, private val examHashMap: HashMap<String?, RealmStepExam>?) : RecyclerView.Adapter<ViewHolderMySurvey>() {
+class AdapterMySubmission(
+    private val context: Context,
+    list: List<RealmSubmission>?,
+    private val examHashMap: HashMap<String?, RealmStepExam>?
+) : ListAdapter<RealmSubmission, ViewHolderMySurvey>(
+    DiffUtils.itemCallback(
+        areItemsTheSame = { oldItem, newItem ->
+            oldItem.id == newItem.id
+        },
+        areContentsTheSame = { oldItem, newItem ->
+            oldItem.id == newItem.id &&
+                oldItem.status == newItem.status &&
+                oldItem.lastUpdateTime == newItem.lastUpdateTime
+        }
+    )
+) {
     private lateinit var rowMySurveyBinding: RowMysurveyBinding
     private var listener: OnHomeItemClickListener? = null
     private var type = ""
@@ -33,8 +50,13 @@ class AdapterMySubmission(private val context: Context, private val list: List<R
             listener = context
         }
         if (list != null && list.isEmpty()) {
-            Toast.makeText(SyncObjectServerFacade.getApplicationContext(), context.getString(R.string.no_items), Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                SyncObjectServerFacade.getApplicationContext(),
+                context.getString(R.string.no_items),
+                Toast.LENGTH_SHORT
+            ).show()
         }
+        submitList(list)
     }
 
     fun setmRealm(mRealm: Realm?) {
@@ -47,28 +69,32 @@ class AdapterMySubmission(private val context: Context, private val list: List<R
     }
 
     override fun onBindViewHolder(holder: ViewHolderMySurvey, position: Int) {
-        rowMySurveyBinding.status.text = list?.get(position)?.status
-        rowMySurveyBinding.date.text = getFormattedDate(list?.get(position)?.startTime)
-        showSubmittedBy(rowMySurveyBinding.submittedBy, position)
-        if (examHashMap?.containsKey(list?.get(position)?.parentId) == true)
-            rowMySurveyBinding.title.text = examHashMap[list?.get(position)?.parentId]?.name
+        val submission = getItem(position)
+        rowMySurveyBinding.status.text = submission.status
+        rowMySurveyBinding.date.text = getFormattedDate(submission.startTime)
+        showSubmittedBy(rowMySurveyBinding.submittedBy, submission)
+        if (examHashMap?.containsKey(submission.parentId) == true) {
+            rowMySurveyBinding.title.text = examHashMap[submission.parentId]?.name
+        }
         holder.itemView.setOnClickListener {
-            if (type == "survey")
-                openSurvey(listener, list?.get(position)?.id, true, false, "")
-            else
-                openSubmissionDetail(listener, list?.get(position)?.id)
+            if (type == "survey") {
+                openSurvey(listener, submission.id, true, false, "")
+            } else {
+                openSubmissionDetail(listener, submission.id)
+            }
         }
     }
 
-    private fun showSubmittedBy(submittedBy: TextView, position: Int) {
+    private fun showSubmittedBy(submittedBy: TextView, submission: RealmSubmission) {
         submittedBy.visibility = View.VISIBLE
         try {
-            val ob = list?.get(position)?.user?.let { JSONObject(it) }
+            val ob = submission.user?.let { JSONObject(it) }
             if (ob != null) {
                 submittedBy.text = ob.optString("name")
             }
         } catch (e: Exception) {
-            val user = mRealm?.where(RealmUserModel::class.java)?.equalTo("id", list?.get(position)?.userId)?.findFirst()
+            val user =
+                mRealm?.where(RealmUserModel::class.java)?.equalTo("id", submission.userId)?.findFirst()
             if (user != null) {
                 submittedBy.text = user.name
             }
@@ -81,11 +107,8 @@ class AdapterMySubmission(private val context: Context, private val list: List<R
             b.putString("id", id)
             val f: Fragment = SubmissionDetailFragment()
             f.arguments = b
-            listener.openCallFragment(f)}
-    }
-
-    override fun getItemCount(): Int {
-        return list?.size ?: 0
+            listener.openCallFragment(f)
+        }
     }
 
     fun setType(type: String?) {

@@ -47,7 +47,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class MyTeamsDetailFragment : BaseNewsFragment() {
-    private lateinit var fragmentMyTeamsDetailBinding: FragmentMyTeamsDetailBinding
+    private var _binding: FragmentMyTeamsDetailBinding? = null
+    private val binding get() = _binding!!
     lateinit var tvDescription: TextView
     var user: RealmUserModel? = null
     
@@ -71,13 +72,13 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentMyTeamsDetailBinding = FragmentMyTeamsDetailBinding.inflate(inflater, container, false)
-        val v: View = fragmentMyTeamsDetailBinding.root
+        _binding = FragmentMyTeamsDetailBinding.inflate(inflater, container, false)
+        val v: View = binding.root
         initializeViews(v)
         mRealm = databaseService.realmInstance
         user = profileDbHandler.userModel?.let { mRealm.copyFromRealm(it) }
         team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-        return fragmentMyTeamsDetailBinding.root
+        return binding.root
     }
 
     private fun initializeViews(v: View) {
@@ -86,12 +87,12 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
         tvDescription = v.findViewById(R.id.description)
         tabLayout = v.findViewById(R.id.tab_layout)
         listContent = v.findViewById(R.id.list_content)
-        fragmentMyTeamsDetailBinding.btnInvite.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) {
+        binding.btnInvite.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) {
             View.VISIBLE
         } else {
             View.GONE
         }
-        fragmentMyTeamsDetailBinding.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) {
+        binding.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) {
             View.VISIBLE
         } else {
             View.GONE
@@ -126,9 +127,14 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        fragmentMyTeamsDetailBinding.title.text = team?.name
+        binding.title.text = team?.name
         tvDescription.text = team?.description
         setTeamList()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
@@ -182,12 +188,11 @@ class MyTeamsDetailFragment : BaseNewsFragment() {
 
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
         adapterNews = activity?.let {
-            realmNewsList?.let { it1 ->
-                AdapterNews(it, it1.toMutableList(), user, null, team?.name.toString(), teamId, userProfileDbHandler)
-            }
+            AdapterNews(it, user, null, team?.name.toString(), teamId, userProfileDbHandler)
         }
         adapterNews?.setmRealm(mRealm)
         adapterNews?.setListener(this)
+        realmNewsList?.let { adapterNews?.updateList(it) }
         rvDiscussion.adapter = adapterNews
         llRv.visibility = View.VISIBLE
     }

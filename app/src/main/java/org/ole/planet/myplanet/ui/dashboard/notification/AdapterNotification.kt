@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.utilities.DiffUtils as DiffUtilExtensions
 class AdapterNotification(
     private val databaseService: DatabaseService,
     notifications: List<RealmNotification>,
-    private val onMarkAsReadClick: (Int) -> Unit,
+    private val onMarkAsReadClick: (String) -> Unit,
     private val onNotificationClick: (RealmNotification) -> Unit
 ) : ListAdapter<RealmNotification, AdapterNotification.ViewHolderNotifications>(
     DiffUtilExtensions.itemCallback(
@@ -40,7 +40,7 @@ class AdapterNotification(
 
     override fun onBindViewHolder(holder: ViewHolderNotifications, position: Int) {
         val notification = getItem(position)
-        holder.bind(notification, position)
+        holder.bind(notification)
     }
 
     fun updateNotifications(newNotifications: List<RealmNotification>) {
@@ -50,7 +50,7 @@ class AdapterNotification(
     inner class ViewHolderNotifications(private val rowNotificationsBinding: RowNotificationsBinding) :
         RecyclerView.ViewHolder(rowNotificationsBinding.root) {
 
-        fun bind(notification: RealmNotification, position: Int) {
+        fun bind(notification: RealmNotification) {
             val context = rowNotificationsBinding.root.context
             val currentNotification = formatNotificationMessage(notification, context)
             rowNotificationsBinding.title.text = Html.fromHtml(currentNotification, Html.FROM_HTML_MODE_LEGACY)
@@ -61,7 +61,7 @@ class AdapterNotification(
                 rowNotificationsBinding.btnMarkAsRead.visibility = View.VISIBLE
                 rowNotificationsBinding.root.alpha = 1.0f
                 rowNotificationsBinding.btnMarkAsRead.setOnClickListener {
-                    onMarkAsReadClick(position)
+                    onMarkAsReadClick(notification.id)
                 }
             }
 

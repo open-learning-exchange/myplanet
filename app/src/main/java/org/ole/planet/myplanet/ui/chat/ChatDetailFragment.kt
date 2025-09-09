@@ -121,7 +121,7 @@ class ChatDetailFragment : Fragment() {
                 .equalTo("id", settings.getString("userId", ""))
                 .findFirst()?.let { realm.copyFromRealm(it) }
         }
-        mAdapter = ChatAdapter(ArrayList(), requireContext(), binding.recyclerGchat)
+        mAdapter = ChatAdapter(requireContext(), binding.recyclerGchat)
         binding.recyclerGchat.apply {
             adapter = mAdapter
             layoutManager = LinearLayoutManager(requireContext())
@@ -374,15 +374,19 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun disableUI() {
-        binding.buttonGchatSend.isEnabled = false
-        binding.editGchatMessage.isEnabled = false
-        binding.imageGchatLoading.visibility = View.VISIBLE
+        _binding?.let { binding ->
+            binding.buttonGchatSend.isEnabled = false
+            binding.editGchatMessage.isEnabled = false
+            binding.imageGchatLoading.visibility = View.VISIBLE
+        } ?: return
     }
 
     private fun enableUI() {
-        binding.buttonGchatSend.isEnabled = true
-        binding.editGchatMessage.isEnabled = true
-        binding.imageGchatLoading.visibility = View.INVISIBLE
+        _binding?.let { binding ->
+            binding.buttonGchatSend.isEnabled = true
+            binding.editGchatMessage.isEnabled = true
+            binding.imageGchatLoading.visibility = View.INVISIBLE
+        } ?: return
     }
 
     private fun processServerUrl(): ServerUrlMapper.UrlMapping =

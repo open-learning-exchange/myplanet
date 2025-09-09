@@ -29,8 +29,8 @@ import javax.inject.Provider
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityExoPlayerVideoBinding
 import org.ole.planet.myplanet.datamanager.auth.AuthSessionUpdater
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
 import org.ole.planet.myplanet.utilities.DownloadUtils
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -60,7 +60,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         super.onCreate(savedInstanceState)
         binding = ActivityExoPlayerVideoBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithNoPadding(this, binding.root)
 
         val extras = intent.extras
         videoType = extras?.getString("videoType")
@@ -90,7 +90,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         auth = headerAuth[0]
         runOnUiThread {
             streamVideoFromUrl(videoURL, auth)
-            if (videoType == "online" && !FileUtils.checkFileExist(videoURL)) {
+            if (videoType == "online" && !FileUtils.checkFileExist(this, videoURL)) {
                 try {
                     DownloadUtils.openDownloadService(this, arrayListOf(videoURL), false)
                 } catch (e: Exception) {
@@ -116,7 +116,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
             when {
                 videoURL.startsWith("http") -> {
                     streamVideoFromUrl(videoURL, auth)
-                    if (videoType == "online" && !FileUtils.checkFileExist(videoURL)) {
+                    if (videoType == "online" && !FileUtils.checkFileExist(this, videoURL)) {
                         try {
                             DownloadUtils.openDownloadService(this, arrayListOf(videoURL), false)
                         } catch (e: Exception) {

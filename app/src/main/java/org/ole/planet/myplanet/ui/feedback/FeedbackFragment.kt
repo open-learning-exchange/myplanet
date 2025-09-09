@@ -7,18 +7,14 @@ import android.view.ViewGroup
 import android.widget.RadioButton
 import android.widget.Toast
 import androidx.fragment.app.DialogFragment
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
+import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
-import java.util.Date
-import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentFeedbackBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -26,9 +22,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 class FeedbackFragment : DialogFragment(), View.OnClickListener {
     private var _binding: FragmentFeedbackBinding? = null
     private val binding get() = _binding!!
-    private lateinit var mRealm: Realm
     @Inject
-    lateinit var databaseService: DatabaseService
+    lateinit var feedbackRepository: FeedbackRepository
     private var model: RealmUserModel ?= null
     var user: String? = ""
 
@@ -48,7 +43,6 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentFeedbackBinding.inflate(inflater, container, false)
-        mRealm = databaseService.realmInstance
         model = UserProfileDbHandler(requireContext()).userModel
         user = model?.name
         binding.btnSubmit.setOnClickListener(this)
@@ -59,13 +53,6 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
     override fun onDestroyView() {
         _binding = null
         super.onDestroyView()
-    }
-
-    override fun onDestroy() {
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
-        super.onDestroy()
     }
 
     override fun onClick(view: View) {
@@ -95,31 +82,16 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
         }
         val urgent = rbUrgent.text.toString()
         val type = rbType.text.toString()
-        val arguments = arguments
-        if (arguments != null) {
-            val argumentArray = getArgumentArray(message)
-            mRealm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
-                saveData(realm, urgent, type, argumentArray)
-            }, Realm.Transaction.OnSuccess {
-                Utilities.toast(activity, R.string.feedback_saved.toString())
-            })
-        } else mRealm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
-            saveData(realm, urgent, type, message)
-        }, Realm.Transaction.OnSuccess {
+        val item = arguments?.getString("item")
+        val state = arguments?.getString("state")
+        val feedback = feedbackRepository.createFeedback(user, urgent, type, message, item, state)
+        viewLifecycleOwner.lifecycleScope.launch {
+            feedbackRepository.saveFeedback(feedback)
             Utilities.toast(activity, R.string.feedback_saved.toString())
-        })
-        Toast.makeText(activity, R.string.thank_you_your_feedback_has_been_submitted, Toast.LENGTH_SHORT).show()
-        if (mListener != null) {
-            mListener?.onFeedbackSubmitted()
         }
-    }
-
-    private fun getArgumentArray(message: String?): Array<String?> {
-        val argumentArray = arrayOfNulls<String>(3)
-        argumentArray[0] = message
-        argumentArray[1] = requireArguments().getString("item")
-        argumentArray[2] = requireArguments().getString("state")
-        return argumentArray
+        Toast.makeText(activity, R.string.thank_you_your_feedback_has_been_submitted, Toast.LENGTH_SHORT).show()
+        mListener?.onFeedbackSubmitted()
+        dismiss()
     }
 
     private fun clearError() {
@@ -128,47 +100,4 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
         binding.tlMessage.error = ""
     }
 
-    private fun saveData(realm: Realm, urgent: String, type: String, message: String) {
-        val feedback = realm.createObject(RealmFeedback::class.java, UUID.randomUUID().toString())
-        feedback.title = "Question regarding /"
-        feedback.openTime = Date().time
-        feedback.url = "/"
-        feedback.owner = user
-        feedback.source = user
-        feedback.status = "Open"
-        feedback.priority = urgent
-        feedback.type = type
-        feedback.parentCode = "dev"
-        val `object` = JsonObject()
-        `object`.addProperty("message", message)
-        `object`.addProperty("time", Date().time.toString() + "")
-        `object`.addProperty("user", user + "")
-        val msgArray = JsonArray()
-        msgArray.add(`object`)
-        feedback.setMessages(msgArray)
-        dismiss()
-    }
-
-    private fun saveData(realm: Realm, urgent: String, type: String, argumentArray: Array<String?>) {
-        val feedback = realm.createObject(RealmFeedback::class.java, UUID.randomUUID().toString())
-        feedback.title = "Question regarding /" + argumentArray[2]
-        feedback.openTime = Date().time
-        feedback.url = "/" + argumentArray[2]
-        feedback.owner = user
-        feedback.source = user
-        feedback.status = "Open"
-        feedback.priority = urgent
-        feedback.type = type
-        feedback.parentCode = "dev"
-        feedback.state = argumentArray[2]
-        feedback.item = argumentArray[1]
-        val `object` = JsonObject()
-        `object`.addProperty("message", argumentArray[0])
-        `object`.addProperty("time", Date().time.toString() + "")
-        `object`.addProperty("user", user + "")
-        val msgArray = JsonArray()
-        msgArray.add(`object`)
-        feedback.setMessages(msgArray)
-        dismiss()
-    }
 }

@@ -7,7 +7,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
-import io.realm.Realm
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,7 +32,6 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var _binding: FragmentLibraryDetailBinding? = null
     private val binding get() = _binding!!
     private var libraryId: String? = null
-    private lateinit var lRealm: Realm
     private lateinit var library: RealmMyLibrary
     var userModel: RealmUserModel? = null
     private val fragmentScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -55,12 +53,13 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                     databaseService.withRealm { backgroundRealm ->
                         val backgroundLibrary = backgroundRealm.where(RealmMyLibrary::class.java)
                             .equalTo("resourceId", libraryId).findFirst()
-                        if (backgroundLibrary != null && !backgroundLibrary.userId?.contains(userId)!!) {
-                            if (!backgroundRealm.isInTransaction) backgroundRealm.beginTransaction()
-                            backgroundLibrary.setUserId(userId)
+                        if (backgroundLibrary != null && backgroundLibrary.userId?.contains(userId) != true) {
+                            backgroundRealm.executeTransaction {
+                                backgroundLibrary.setUserId(userId)
+                            }
                             onAdd(backgroundRealm, "resources", userId, libraryId)
-                            backgroundRealm.commitTransaction()
                         }
+                        library = backgroundLibrary?.let { backgroundRealm.copyFromRealm(it) }!!
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -79,9 +78,13 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         super.onCreateView(inflater, container, savedInstanceState)
         _binding = FragmentLibraryDetailBinding.inflate(inflater, container, false)
-        lRealm = databaseService.realmInstance
         userModel = UserProfileDbHandler(requireContext()).userModel!!
-        library = lRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", libraryId).findFirst()!!
+        library = databaseService.withRealm { realm ->
+            realm.where(RealmMyLibrary::class.java)
+                .equalTo("resourceId", libraryId)
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }
+        }!!
         return binding.root
     }
 
@@ -188,15 +191,19 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                                 .equalTo("resourceId", libraryId).findFirst()
 
                             if (backgroundLibrary != null) {
-                                if (!backgroundRealm.isInTransaction) backgroundRealm.beginTransaction()
+                                backgroundRealm.executeTransaction {
+                                    if (isAdd) {
+                                        backgroundLibrary.setUserId(userId)
+                                    } else {
+                                        backgroundLibrary.removeUserId(userId)
+                                    }
+                                }
                                 if (isAdd) {
-                                    backgroundLibrary.setUserId(userId)
                                     onAdd(backgroundRealm, "resources", userId, libraryId)
                                 } else {
-                                    backgroundLibrary.removeUserId(userId)
                                     onRemove(backgroundRealm, "resources", userId, libraryId)
                                 }
-                                backgroundRealm.commitTransaction()
+                                library = backgroundRealm.copyFromRealm(backgroundLibrary)
                             }
                         }
                     } catch (e: Exception) {
@@ -222,14 +229,13 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     override fun onRatingChanged() {
-        val `object` = getRatingsById(lRealm, "resource", library.resourceId, userModel?.id)
+        val `object` = databaseService.withRealm { realm ->
+            getRatingsById(realm, "resource", library.resourceId, userModel?.id)
+        }
         setRatings(`object`)
     }
     override fun onDestroy() {
         fragmentScope.cancel()
-        if (this::lRealm.isInitialized && !lRealm.isClosed) {
-            lRealm.close()
-        }
         try {
             if (!mRealm.isClosed) {
                 mRealm.close()

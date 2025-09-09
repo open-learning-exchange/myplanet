@@ -1388,5 +1388,6 @@
     <string name="failed_to_delete_report">प्रतिवेदन मेटाउन असफल भयो। कृपया फेरि प्रयास गर्नुहोस्</string>
     <string name="delete_report">प्रतिवेदन मेटाउनुहोस्</string>
     <string name="checking_server_availability">सर्भर उपलब्धता जाँच गर्दै…</string>
+    <string name="loading_courses">पाठ्यक्रमहरू लोड हुँदैछन्…</string>
 
 </resources>

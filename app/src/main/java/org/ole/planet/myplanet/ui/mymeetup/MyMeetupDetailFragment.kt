@@ -9,7 +9,6 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMyMeetupDetailBinding
@@ -24,11 +23,11 @@ import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 
 @AndroidEntryPoint
 class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
-    private lateinit var fragmentMyMeetupDetailBinding: FragmentMyMeetupDetailBinding
+    private var _binding: FragmentMyMeetupDetailBinding? = null
+    private val binding get() = _binding!!
     private var meetups: RealmMeetup? = null
     @Inject
     lateinit var databaseService: DatabaseService
-    lateinit var mRealm: Realm
     private var meetUpId: String? = null
     var profileDbHandler: UserProfileDbHandler? = null
     var user: RealmUserModel? = null
@@ -43,35 +42,51 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentMyMeetupDetailBinding = FragmentMyMeetupDetailBinding.inflate(inflater, container, false)
-        listDesc = fragmentMyMeetupDetailBinding.root.findViewById(R.id.list_desc)
-        listUsers = fragmentMyMeetupDetailBinding.root.findViewById(R.id.list_users)
-        tvJoined = fragmentMyMeetupDetailBinding.root.findViewById(R.id.tv_joined)
-        fragmentMyMeetupDetailBinding.btnInvite.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
-        fragmentMyMeetupDetailBinding.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
-        fragmentMyMeetupDetailBinding.btnLeave.setOnClickListener(this)
-        mRealm = databaseService.realmInstance
+        _binding = FragmentMyMeetupDetailBinding.inflate(inflater, container, false)
+        listDesc = binding.root.findViewById(R.id.list_desc)
+        listUsers = binding.root.findViewById(R.id.list_users)
+        tvJoined = binding.root.findViewById(R.id.tv_joined)
+        binding.btnInvite.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
+        binding.btnLeave.visibility = if (showBetaFeature(Constants.KEY_MEETUPS, requireContext())) View.VISIBLE else View.GONE
+        binding.btnLeave.setOnClickListener(this)
         profileDbHandler = UserProfileDbHandler(requireContext())
-        user = profileDbHandler?.userModel?.let { mRealm.copyFromRealm(it) }
-        return fragmentMyMeetupDetailBinding.root
+        databaseService.withRealm { realm ->
+            user = profileDbHandler?.userModel?.let { realm.copyFromRealm(it) }
+        }
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        meetups = mRealm.where(RealmMeetup::class.java).equalTo("meetupId", meetUpId).findFirst()
+        databaseService.withRealm { realm ->
+            meetups = realm.where(RealmMeetup::class.java)
+                .equalTo("meetupId", meetUpId)
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }
+        }
         setUpData()
         setUserList()
     }
 
     private fun setUserList() {
-        val ids = getJoinedUserIds(mRealm)
-        val users = mRealm.where(RealmUserModel::class.java).`in`("id", ids).findAll()
-        listUsers?.adapter = ArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, users)
-        tvJoined?.text = String.format(getString(R.string.joined_members_colon) + " %s", if (users.size == 0) """(0) ${getString(R.string.no_members_has_joined_this_meet_up)}""" else users.size)
+        databaseService.withRealm { realm ->
+            val ids = getJoinedUserIds(realm)
+            val users = realm.where(RealmUserModel::class.java).`in`("id", ids).findAll()
+            val userCopies = realm.copyFromRealm(users)
+            listUsers?.adapter = ArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, userCopies)
+            tvJoined?.text = String.format(
+                getString(R.string.joined_members_colon) + " %s",
+                if (userCopies.size == 0) {
+                    """(0) ${getString(R.string.no_members_has_joined_this_meet_up)}"""
+                } else {
+                    userCopies.size
+                }
+            )
+        }
     }
 
     private fun setUpData() {
-        fragmentMyMeetupDetailBinding.meetupTitle.text = meetups?.title
+        binding.meetupTitle.text = meetups?.title
         val map: HashMap<String, String>? = meetups?.let { getHashMap(it) }
         val keys = ArrayList(map?.keys ?: emptyList())
         listDesc?.adapter = object : ArrayAdapter<String?>(requireActivity(), R.layout.row_description, keys) {
@@ -94,21 +109,25 @@ class MyMeetupDetailFragment : Fragment(), View.OnClickListener {
     }
 
     private fun leaveJoinMeetUp() {
-        mRealm.executeTransaction {
-            if (meetups?.userId?.isEmpty() == true) {
-                meetups?.userId = user?.id
-                fragmentMyMeetupDetailBinding.btnLeave.setText(R.string.leave)
-            } else {
-                meetups?.userId = ""
-                fragmentMyMeetupDetailBinding.btnLeave.setText(R.string.join)
+        databaseService.withRealm { realm ->
+            realm.executeTransaction { r ->
+                val meetup = r.where(RealmMeetup::class.java)
+                    .equalTo("meetupId", meetUpId)
+                    .findFirst()
+                if (meetup?.userId.isNullOrEmpty()) {
+                    meetup?.userId = user?.id
+                    binding.btnLeave.setText(R.string.leave)
+                } else {
+                    meetup?.userId = ""
+                    binding.btnLeave.setText(R.string.join)
+                }
+                meetups = meetup?.let { r.copyFromRealm(it) }
             }
         }
     }
 
-    override fun onDestroy() {
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
-        super.onDestroy()
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

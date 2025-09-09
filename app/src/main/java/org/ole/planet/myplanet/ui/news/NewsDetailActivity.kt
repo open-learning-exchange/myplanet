@@ -7,7 +7,6 @@ import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import java.io.File
 import java.util.Date
 import java.util.UUID
@@ -19,10 +18,10 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNewsLog
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils
 import org.ole.planet.myplanet.utilities.NetworkUtils
-import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -31,18 +30,21 @@ class NewsDetailActivity : BaseActivity() {
     lateinit var userProfileDbHandler: UserProfileDbHandler
     private lateinit var binding: ActivityNewsDetailBinding
     var news: RealmNews? = null
-    lateinit var realm: Realm
     private val gson = Gson()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityNewsDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
         setSupportActionBar(binding.toolbar)
         initActionBar()
-        realm = databaseService.realmInstance
         val id = intent.getStringExtra("newsId")
-        news = realm.where(RealmNews::class.java).equalTo("id", id).findFirst()
+        news = databaseService.withRealm { realm ->
+            realm.where(RealmNews::class.java)
+                .equalTo("id", id)
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }
+        }
         if (news == null) {
             Utilities.toast(this, getString(R.string.new_not_available))
             finish()
@@ -50,12 +52,15 @@ class NewsDetailActivity : BaseActivity() {
         }
         val user = userProfileDbHandler.userModel!!
         val userId = user.id
-        realm.executeTransactionAsync {
-            val newsLog: RealmNewsLog = it.createObject(RealmNewsLog::class.java, UUID.randomUUID().toString())
-            newsLog.androidId = NetworkUtils.getUniqueIdentifier()
-            newsLog.type = "news"
-            newsLog.time = Date().time
-            newsLog.userId = userId
+        databaseService.withRealm { realm ->
+            realm.executeTransaction { transactionRealm ->
+                val newsLog: RealmNewsLog =
+                    transactionRealm.createObject(RealmNewsLog::class.java, UUID.randomUUID().toString())
+                newsLog.androidId = NetworkUtils.getUniqueIdentifier()
+                newsLog.type = "news"
+                newsLog.time = Date().time
+                newsLog.userId = userId
+            }
         }
         initViews()
     }
@@ -71,10 +76,15 @@ class NewsDetailActivity : BaseActivity() {
                 val ob = it.asJsonObject
                 val resourceId = JsonUtils.getString("resourceId", ob.asJsonObject)
                 val markDown = JsonUtils.getString("markdown", ob.asJsonObject)
-                val library = realm.where(RealmMyLibrary::class.java).equalTo("_id", resourceId).findFirst()
+                val library = databaseService.withRealm { realm ->
+                    realm.where(RealmMyLibrary::class.java)
+                        .equalTo("_id", resourceId)
+                        .findFirst()
+                        ?.let { realm.copyFromRealm(it) }
+                }
                 msg = msg?.replace(
                     markDown,
-                    "<img style=\"float: right; padding: 10px 10px 10px 10px;\"  width=\"200px\" src=\"file://" + FileUtils.SD_PATH + "/" + library?.id + "/" + library?.resourceLocalAddress + "\"/>",
+                    "<img style=\"float: right; padding: 10px 10px 10px 10px;\"  width=\"200px\" src=\"file://" + FileUtils.getOlePath(this) + library?.id + "/" + library?.resourceLocalAddress + "\"/>",
                     false
                 )
             }
@@ -117,24 +127,20 @@ class NewsDetailActivity : BaseActivity() {
         if ((news?.imagesArray?.size() ?: 0) > 0) {
             val ob = news?.imagesArray?.get(0)?.asJsonObject
             val resourceId = JsonUtils.getString("resourceId", ob?.asJsonObject)
-            val library =
-                realm.where(RealmMyLibrary::class.java).equalTo("_id", resourceId).findFirst()
+            val library = databaseService.withRealm { realm ->
+                realm.where(RealmMyLibrary::class.java)
+                    .equalTo("_id", resourceId)
+                    .findFirst()
+                    ?.let { realm.copyFromRealm(it) }
+            }
             if (library != null) {
                 Glide.with(this)
-                    .load(File(FileUtils.SD_PATH, library.id + "/" + library.resourceLocalAddress))
+                    .load(File(FileUtils.getOlePath(this), library.id + "/" + library.resourceLocalAddress))
                     .into(binding.img)
                 binding.img.visibility = View.VISIBLE
                 return
             }
         }
         binding.img.visibility = View.GONE
-    }
-
-    override fun onDestroy() {
-        if (::realm.isInitialized && !realm.isClosed) {
-            realm.removeAllChangeListeners()
-            realm.close()
-        }
-        super.onDestroy()
     }
 }

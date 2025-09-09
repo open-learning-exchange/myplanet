@@ -43,7 +43,8 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 class TeamCalendarFragment : BaseTeamFragment() {
-    private lateinit var fragmentEnterpriseCalendarBinding: FragmentEnterpriseCalendarBinding
+    private var _binding: FragmentEnterpriseCalendarBinding? = null
+    private val binding get() = _binding!!
     private val selectedDates: MutableList<Calendar> = mutableListOf()
     private lateinit var calendar: CalendarView
     private lateinit var list: List<Calendar>
@@ -56,10 +57,10 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private var addMeetupDialog: AlertDialog? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentEnterpriseCalendarBinding = FragmentEnterpriseCalendarBinding.inflate(inflater, container, false)
+        _binding = FragmentEnterpriseCalendarBinding.inflate(inflater, container, false)
         start = Calendar.getInstance()
         end = Calendar.getInstance()
-        return fragmentEnterpriseCalendarBinding.root
+        return binding.root
     }
 
     fun String.isValidWebLink(): Boolean {
@@ -189,21 +190,26 @@ class TeamCalendarFragment : BaseTeamFragment() {
         }
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        list = mutableListOf()
+        calendar = binding.calendarView
+        calendarEventsMap = mutableMapOf()
+        setupCalendarClickListener()
+    }
+
     override fun onResume() {
         super.onResume()
         setupCalendarClickListener()
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        list = mutableListOf()
-        calendar = fragmentEnterpriseCalendarBinding.calendarView
-        calendarEventsMap = mutableMapOf()
-        setupCalendarClickListener()
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     private fun setupCalendarClickListener(){
-        fragmentEnterpriseCalendarBinding.calendarView.setOnCalendarDayClickListener(object : OnCalendarDayClickListener {
+        binding.calendarView.setOnCalendarDayClickListener(object : OnCalendarDayClickListener {
             override fun onClick(calendarDay: CalendarDay) {
                 meetupList = mRealm.where(RealmMeetup::class.java).equalTo("teamId", teamId).findAll()
                 clickedCalendar = calendarDay.calendar
@@ -223,7 +229,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
                     showMeetupDialog(markedDates)
                 } else {
                     if(arguments?.getBoolean("fromLogin", false) != false || user?.id?.startsWith("guest") == true){
-                        fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
+                        binding.calendarView.selectedDates = eventDates
                     } else{
                         start = clickedCalendar.clone() as Calendar
                         end = clickedCalendar.clone() as Calendar
@@ -293,10 +299,10 @@ class TeamCalendarFragment : BaseTeamFragment() {
         dialog.setOnDismissListener {
             eventDates.add(clickedCalendar)
             lifecycleScope.launch(Dispatchers.Main) {
-                fragmentEnterpriseCalendarBinding.calendarView.selectedDates = emptyList()
-                fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates.toList()
+                binding.calendarView.selectedDates = emptyList()
+                binding.calendarView.selectedDates = eventDates.toList()
             }
-            fragmentEnterpriseCalendarBinding.calendarView.selectedDates = eventDates
+            binding.calendarView.selectedDates = eventDates
         }
 
         dialog.show()
@@ -326,7 +332,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 if (isAdded && activity != null) {
                     eventDates.clear()
                     eventDates.addAll(newDates)
-                    fragmentEnterpriseCalendarBinding.calendarView.selectedDates = ArrayList(newDates)
+                    binding.calendarView.selectedDates = ArrayList(newDates)
                 }
             }
         }

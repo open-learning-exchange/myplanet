@@ -43,11 +43,10 @@ import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
-import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.ThemeManager
-import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -70,9 +69,9 @@ class SettingActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, window.decorView)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         NavigationHelper.replaceFragment(supportFragmentManager, android.R.id.content, SettingFragment())
-        EdgeToEdgeUtil.setupEdgeToEdge(this, findViewById(android.R.id.content))
         title = getString(R.string.action_settings)
     }
 
@@ -133,7 +132,7 @@ class SettingActivity : AppCompatActivity() {
             // Show Available space under the "Freeup Space" preference.
             val spacePreference = findPreference<Preference>("freeup_space")
             if (spacePreference != null) {
-                spacePreference.summary = "${getString(R.string.available_space_colon)} $availableOverTotalMemoryFormattedString"
+                spacePreference.summary = "${getString(R.string.available_space_colon)} ${FileUtils.availableOverTotalMemoryFormattedString(requireContext())}"
             }
 
             val autoDownload = findPreference<SwitchPreference>("beta_auto_download")
@@ -191,7 +190,7 @@ class SettingActivity : AppCompatActivity() {
                                         library.resourceOffline = false
                                     }
                                 }, {
-                                    val f = File(FileUtils.SD_PATH)
+                                    val f = File(FileUtils.getOlePath(requireContext()))
                                     deleteRecursive(f)
                                     Utilities.toast(requireActivity(), R.string.data_cleared.toString())
                                 }) {

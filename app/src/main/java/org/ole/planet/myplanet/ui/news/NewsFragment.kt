@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
-import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 
@@ -153,11 +153,14 @@ class NewsFragment : BaseNewsFragment() {
             labelFilteredList = applyLabelFilter(filteredNewsList)
             searchFilteredList = applySearchFilter(labelFilteredList)
             setData(searchFilteredList)
+            binding.rvNews.post {
+                binding.rvNews.smoothScrollToPosition(0)
+            }
         }
 
         binding.addNewsImage.setOnClickListener {
             llImage = binding.llImages
-            val openFolderIntent = openOleFolder()
+            val openFolderIntent = FileUtils.openOleFolder(requireContext())
             openFolderLauncher.launch(openFolderIntent)
         }
         binding.addNewsImage.visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, requireActivity())) View.VISIBLE else View.GONE
@@ -212,13 +215,13 @@ class NewsFragment : BaseNewsFragment() {
             val sortedList = updatedListAsMutable.sortedWith(compareByDescending { news ->
                 getSortDate(news)
             })
-            adapterNews = AdapterNews(requireActivity(), sortedList.toMutableList(), user, null, "", null, userProfileDbHandler)
+            adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler)
 
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
             adapterNews?.setListener(this)
             adapterNews?.registerAdapterDataObserver(observer)
-
+            adapterNews?.updateList(sortedList)
             binding.rvNews.adapter = adapterNews
         } else {
             (binding.rvNews.adapter as? AdapterNews)?.updateList(list)
@@ -426,6 +429,10 @@ class NewsFragment : BaseNewsFragment() {
 
     override fun onDestroyView() {
         updatedNewsList?.removeAllChangeListeners()
+        updatedNewsList = null
+        if (isRealmInitialized()) {
+            mRealm.close()
+        }
         _binding = null
         super.onDestroyView()
     }

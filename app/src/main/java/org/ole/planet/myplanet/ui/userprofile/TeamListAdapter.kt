@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.userprofile
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.R
@@ -25,8 +26,11 @@ class TeamListAdapter(
         holder.bindView(membersList[position])
 
         holder.itemView.setOnClickListener {
-            val member = membersList[position]
-            onItemClickListener.onItemClick(member)
+            val currentPosition = holder.bindingAdapterPosition
+            if (currentPosition != RecyclerView.NO_POSITION) {
+                val member = membersList[currentPosition]
+                onItemClickListener.onItemClick(member)
+            }
         }
     }
 
@@ -35,9 +39,14 @@ class TeamListAdapter(
     }
 
     fun updateList(newUserList: MutableList<User>) {
-        membersList = newUserList
-        notifyDataSetChanged()
+        val diffCallback = TeamListDiffCallback(membersList, newUserList)
+        val diffResult = DiffUtil.calculateDiff(diffCallback)
+        membersList.clear()
+        membersList.addAll(newUserList)
+        diffResult.dispatchUpdatesTo(this)
     }
+    
+    fun getList(): List<User> = membersList
 
     class ViewHolder(private val binding: UserListItemBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bindView(account: User) {
@@ -51,6 +60,36 @@ class TeamListAdapter(
                 .placeholder(R.drawable.profile)
                 .error(R.drawable.profile)
                 .into(binding.userProfile)
+        }
+    }
+    
+    private class TeamListDiffCallback(
+        private val oldList: List<User>,
+        private val newList: List<User>
+    ) : DiffUtil.Callback() {
+        
+        override fun getOldListSize(): Int = oldList.size
+        
+        override fun getNewListSize(): Int = newList.size
+        
+        override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            return try {
+                oldList[oldItemPosition].name == newList[newItemPosition].name
+            } catch (e: Exception) {
+                false
+            }
+        }
+        
+        override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+            return try {
+                val oldItem = oldList[oldItemPosition]
+                val newItem = newList[newItemPosition]
+                oldItem.name == newItem.name &&
+                    oldItem.fullName == newItem.fullName &&
+                    oldItem.image == newItem.image
+            } catch (e: Exception) {
+                false
+            }
         }
     }
 }

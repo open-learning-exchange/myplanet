@@ -7,25 +7,24 @@ import android.text.TextUtils
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.Gson
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import java.util.Date
-import javax.inject.Inject
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityFeedbackDetailBinding
 import org.ole.planet.myplanet.databinding.RowFeedbackReplyBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.FeedbackReply
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.feedback.FeedbackDetailActivity.RvFeedbackAdapter.ReplyViewHolder
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDateWithTime
 
@@ -34,11 +33,10 @@ class FeedbackDetailActivity : AppCompatActivity() {
     private lateinit var activityFeedbackDetailBinding: ActivityFeedbackDetailBinding
     private var mAdapter: RecyclerView.Adapter<*>? = null
     private var layoutManager: RecyclerView.LayoutManager? = null
-    private lateinit var feedback: RealmFeedback
-    @Inject
-    lateinit var databaseService: DatabaseService
-    lateinit var realm: Realm
+    private var feedback: RealmFeedback? = null
     private lateinit var rowFeedbackReplyBinding: RowFeedbackReplyBinding
+    private lateinit var feedbackId: String
+    private val viewModel: FeedbackDetailViewModel by viewModels()
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(LocaleHelper.onAttach(base))
@@ -48,53 +46,58 @@ class FeedbackDetailActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityFeedbackDetailBinding = ActivityFeedbackDetailBinding.inflate(layoutInflater)
         setContentView(activityFeedbackDetailBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityFeedbackDetailBinding.root)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, activityFeedbackDetailBinding.root)
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         setTitle(R.string.feedback)
-        realm = databaseService.realmInstance
-        feedback = realm.where(RealmFeedback::class.java).equalTo("id", intent.getStringExtra("id")).findFirst()!!
-        activityFeedbackDetailBinding.tvDate.text = getFormattedDateWithTime(feedback.openTime)
-        activityFeedbackDetailBinding.tvMessage.text = if (TextUtils.isEmpty(feedback.message))
-            "N/A"
-        else
-            feedback.message
+        feedbackId = intent.getStringExtra("id")!!
         setUpReplies()
+
+        lifecycleScope.launch {
+            viewModel.feedback.collectLatest { fb ->
+                fb?.let {
+                    feedback = it
+                    activityFeedbackDetailBinding.tvDate.text = getFormattedDateWithTime(it.openTime)
+                    activityFeedbackDetailBinding.tvMessage.text =
+                        if (TextUtils.isEmpty(it.message)) "N/A" else it.message
+                    mAdapter = RvFeedbackAdapter(it.messageList, applicationContext)
+                    activityFeedbackDetailBinding.rvFeedbackReply.adapter = mAdapter
+                    updateForClosed()
+                }
+            }
+        }
+
+        activityFeedbackDetailBinding.closeFeedback.setOnClickListener {
+            viewModel.closeFeedback(feedbackId)
+        }
+        activityFeedbackDetailBinding.replyFeedback.setOnClickListener {
+            if (TextUtils.isEmpty(activityFeedbackDetailBinding.feedbackReplyEditText.text.toString().trim { it <= ' ' })) {
+                activityFeedbackDetailBinding.feedbackReplyEditText.error =
+                    getString(R.string.kindly_enter_reply_message)
+            } else {
+                val message = activityFeedbackDetailBinding.feedbackReplyEditText.text.toString().trim { it <= ' ' }
+                val obj = JsonObject().apply {
+                    addProperty("message", message)
+                    addProperty("time", Date().time.toString())
+                    addProperty("user", feedback?.owner ?: "")
+                }
+                viewModel.addReply(feedbackId, obj)
+                activityFeedbackDetailBinding.feedbackReplyEditText.setText(R.string.empty_text)
+                activityFeedbackDetailBinding.feedbackReplyEditText.clearFocus()
+            }
+        }
+
+        viewModel.loadFeedback(feedbackId)
     }
 
     private fun setUpReplies() {
         activityFeedbackDetailBinding.rvFeedbackReply.setHasFixedSize(true)
         layoutManager = LinearLayoutManager(this)
         activityFeedbackDetailBinding.rvFeedbackReply.layoutManager = layoutManager
-        mAdapter = RvFeedbackAdapter(feedback.messageList, applicationContext)
-        activityFeedbackDetailBinding.rvFeedbackReply.adapter = mAdapter
-        activityFeedbackDetailBinding.closeFeedback.setOnClickListener {
-            realm.executeTransactionAsync(Realm.Transaction { realm1: Realm ->
-                val feedback1 = realm1.where(RealmFeedback::class.java).equalTo("id", intent.getStringExtra("id")).findFirst()
-                feedback1?.status = "Closed" },
-                Realm.Transaction.OnSuccess { updateForClosed() })
-        }
-        activityFeedbackDetailBinding.replyFeedback.setOnClickListener {
-            if (TextUtils.isEmpty(activityFeedbackDetailBinding.feedbackReplyEditText.text.toString().trim { it <= ' ' })) {
-                activityFeedbackDetailBinding.feedbackReplyEditText.error = getString(R.string.kindly_enter_reply_message)
-            } else {
-                val message = activityFeedbackDetailBinding.feedbackReplyEditText.text.toString().trim { it <= ' ' }
-                val `object` = JsonObject()
-                `object`.addProperty("message", message)
-                `object`.addProperty("time", Date().time.toString() + "")
-                `object`.addProperty("user", feedback.owner + "")
-                val id = feedback.id
-                addReply(`object`, id)
-                mAdapter = RvFeedbackAdapter(feedback.messageList, applicationContext)
-                activityFeedbackDetailBinding.rvFeedbackReply.adapter = mAdapter
-                activityFeedbackDetailBinding.feedbackReplyEditText.setText(R.string.empty_text)
-                activityFeedbackDetailBinding.feedbackReplyEditText.clearFocus()
-            }
-        }
     }
 
     private fun updateForClosed() {
-        if (feedback.status.equals("Closed", ignoreCase = true)) {
+        if (feedback?.status.equals("Closed", ignoreCase = true)) {
             activityFeedbackDetailBinding.closeFeedback.isEnabled = false
             activityFeedbackDetailBinding.replyFeedback.isEnabled = false
             activityFeedbackDetailBinding.feedbackReplyEditText.visibility = View.INVISIBLE
@@ -109,32 +112,9 @@ class FeedbackDetailActivity : AppCompatActivity() {
         finish()
     }
 
-    private fun addReply(obj: JsonObject?, id: String?) {
-        realm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
-            val feedback = realm.where(RealmFeedback::class.java).equalTo("id", id).findFirst()
-            if (feedback != null) {
-                val con = Gson()
-                val msgArray = con.fromJson(feedback.messages, JsonArray::class.java)
-                msgArray.add(obj)
-                feedback.setMessages(msgArray)
-            }
-        }, Realm.Transaction.OnSuccess {
-            updateForClosed()
-            mAdapter = RvFeedbackAdapter(feedback.messageList, applicationContext)
-            activityFeedbackDetailBinding.rvFeedbackReply.adapter = mAdapter
-        })
-    }
-
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) finish()
         return super.onOptionsItemSelected(item)
-    }
-
-    override fun onDestroy() {
-        if (::realm.isInitialized && !realm.isClosed) {
-            realm.close()
-        }
-        super.onDestroy()
     }
 
     inner class RvFeedbackAdapter(private val replyList: List<FeedbackReply>?, var context: Context) : RecyclerView.Adapter<ReplyViewHolder>() {

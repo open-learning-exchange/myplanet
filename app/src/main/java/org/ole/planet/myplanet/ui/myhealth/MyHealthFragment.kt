@@ -39,7 +39,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
@@ -49,6 +51,7 @@ import org.ole.planet.myplanet.model.RealmMyHealthPojo
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -68,6 +71,8 @@ class MyHealthFragment : Fragment() {
     lateinit var syncManager: SyncManager
     @Inject
     lateinit var databaseService: DatabaseService
+    private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
+    private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private var _binding: FragmentVitalSignBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
@@ -120,7 +125,7 @@ class MyHealthFragment : Fragment() {
     private fun startSyncManager() {
         syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded && !requireActivity().isFinishing) {
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
                         customProgressDialog?.setText(getString(R.string.syncing_health_data))
@@ -130,7 +135,7 @@ class MyHealthFragment : Fragment() {
             }
 
             override fun onSyncComplete() {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
@@ -141,7 +146,7 @@ class MyHealthFragment : Fragment() {
             }
 
             override fun onSyncFailed(msg: String?) {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
@@ -177,6 +182,7 @@ class MyHealthFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         view.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
+        setupRealtimeSync()
         alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(context))
         binding.txtDob.hint = "yyyy-MM-dd'"
 
@@ -224,6 +230,19 @@ class MyHealthFragment : Fragment() {
         }
 
         binding.txtDob.text = if (TextUtils.isEmpty(userModel?.dob)) getString(R.string.birth_date) else getFormattedDate(userModel?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+    }
+
+    private fun setupRealtimeSync() {
+        realtimeSyncListener = object : BaseRealtimeSyncListener() {
+            override fun onTableDataUpdated(update: TableDataUpdate) {
+                if (update.table == "health" && update.shouldRefreshUI) {
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        refreshHealthData()
+                    }
+                }
+            }
+        }
+        syncCoordinator.addListener(realtimeSyncListener)
     }
 
     private fun getHealthRecords(memberId: String?) {
@@ -417,6 +436,9 @@ class MyHealthFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        if (::realtimeSyncListener.isInitialized) {
+            syncCoordinator.removeListener(realtimeSyncListener)
+        }
         _binding = null
         super.onDestroyView()
     }

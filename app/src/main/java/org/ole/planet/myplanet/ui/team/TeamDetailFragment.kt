@@ -20,8 +20,10 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMemberCount
@@ -32,6 +34,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.ApplicantsPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.CalendarPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.ChatPage
@@ -64,7 +67,11 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     @Inject
     lateinit var uploadManager: UploadManager
     
-    private lateinit var fragmentTeamDetailBinding: FragmentTeamDetailBinding
+    private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
+    private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
+
+    private var _binding: FragmentTeamDetailBinding? = null
+    private val binding get() = _binding!!
     private var directTeamName: String? = null
     private var directTeamType: String? = null
     private var directTeamId: String? = null
@@ -83,7 +90,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     private fun selectPage(pageId: String?, smoothScroll: Boolean = false) {
-        pageIndexById(pageId)?.let { fragmentTeamDetailBinding.viewPager2.setCurrentItem(it, smoothScroll) }
+        pageIndexById(pageId)?.let { binding.viewPager2.setCurrentItem(it, smoothScroll) }
     }
 
     private fun buildPages(isMyTeam: Boolean): List<TeamPageConfig> {
@@ -114,7 +121,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentTeamDetailBinding = FragmentTeamDetailBinding.inflate(inflater, container, false)
+        _binding = FragmentTeamDetailBinding.inflate(inflater, container, false)
         directTeamId = requireArguments().getString("teamId")
         directTeamName = requireArguments().getString("teamName")
         directTeamType = requireArguments().getString("teamType")
@@ -138,7 +145,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
         setupTeamDetails(isMyTeam, user)
 
-        return fragmentTeamDetailBinding.root
+        return binding.root
     }
 
     private fun startTeamSync() {
@@ -162,7 +169,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     private fun startSyncManager() {
         syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded && !requireActivity().isFinishing) {
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
                         customProgressDialog?.setText(requireContext().getString(R.string.syncing_team_data))
@@ -172,7 +179,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
             }
 
             override fun onSyncComplete() {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
@@ -183,12 +190,12 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
             }
 
             override fun onSyncFailed(msg: String?) {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
 
-                        Snackbar.make(fragmentTeamDetailBinding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
+                        Snackbar.make(binding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
                             .setAction("Retry") { startTeamSync() }
                             .show()
                     }
@@ -204,7 +211,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     private fun setupTeamDetails(isMyTeam: Boolean, user: RealmUserModel?) {
-        fragmentTeamDetailBinding.root.post {
+        binding.root.post {
             if (isAdded && !requireActivity().isFinishing) {
                 val targetPageId = arguments?.getString("navigateToPage")
                     ?: team?._id?.let { teamLastPage[it] }
@@ -212,8 +219,8 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
             }
         }
 
-        fragmentTeamDetailBinding.title.text = getEffectiveTeamName()
-        fragmentTeamDetailBinding.subtitle.text = getEffectiveTeamType()
+        binding.title.text = getEffectiveTeamName()
+        binding.subtitle.text = getEffectiveTeamType()
 
         if (!isMyTeam) {
             setupNonMyTeamButtons(user)
@@ -222,27 +229,27 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         }
 
         if(getJoinedMemberCount(team!!._id.toString(), mRealm) <= 1 && isMyTeam){
-            fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
+            binding.btnLeave.visibility = View.GONE
         }
     }
 
     private fun setupViewPager(isMyTeam: Boolean, restorePageId: String? = null) {
         pageConfigs = buildPages(isMyTeam)
-        fragmentTeamDetailBinding.viewPager2.isSaveEnabled = true
-        fragmentTeamDetailBinding.viewPager2.id = View.generateViewId()
-        fragmentTeamDetailBinding.viewPager2.adapter = TeamPagerAdapter(
+        binding.viewPager2.isSaveEnabled = true
+        binding.viewPager2.id = View.generateViewId()
+        binding.viewPager2.adapter = TeamPagerAdapter(
             requireActivity(),
             pageConfigs,
             team?._id,
             this
         )
-        TabLayoutMediator(fragmentTeamDetailBinding.tabLayout, fragmentTeamDetailBinding.viewPager2) { tab, position ->
-            tab.text = (fragmentTeamDetailBinding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
+        TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
+            tab.text = (binding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
         }.attach()
 
         selectPage(restorePageId, false)
 
-        fragmentTeamDetailBinding.viewPager2.registerOnPageChangeCallback(
+        binding.viewPager2.registerOnPageChangeCallback(
             object : ViewPager2.OnPageChangeCallback() {
                 override fun onPageSelected(position: Int) {
                     team?._id?.let { teamId ->
@@ -256,28 +263,28 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     private fun setupNonMyTeamButtons(user: RealmUserModel?) {
-        fragmentTeamDetailBinding.btnAddDoc.isEnabled = false
-        fragmentTeamDetailBinding.btnAddDoc.visibility = View.GONE
-        fragmentTeamDetailBinding.btnLeave.isEnabled = true
-        fragmentTeamDetailBinding.btnLeave.visibility = View.VISIBLE
+        binding.btnAddDoc.isEnabled = false
+        binding.btnAddDoc.visibility = View.GONE
+        binding.btnLeave.isEnabled = true
+        binding.btnLeave.visibility = View.VISIBLE
 
         if (user?.id?.startsWith("guest") == true){
-            fragmentTeamDetailBinding.btnLeave.isEnabled = false
-            fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
+            binding.btnLeave.isEnabled = false
+            binding.btnLeave.visibility = View.GONE
         }
 
         val currentTeam = team
         if (currentTeam != null && !currentTeam._id.isNullOrEmpty()) {
             val isUserRequested = currentTeam.requested(user?.id, mRealm)
             if (isUserRequested) {
-                fragmentTeamDetailBinding.btnLeave.text = getString(R.string.requested)
-                fragmentTeamDetailBinding.btnLeave.isEnabled = false
+                binding.btnLeave.text = getString(R.string.requested)
+                binding.btnLeave.isEnabled = false
             } else {
-                fragmentTeamDetailBinding.btnLeave.text = getString(R.string.join)
-                fragmentTeamDetailBinding.btnLeave.setOnClickListener {
+                binding.btnLeave.text = getString(R.string.join)
+                binding.btnLeave.setOnClickListener {
                     RealmMyTeam.requestToJoin(currentTeam._id!!, user, mRealm, team?.teamType)
-                    fragmentTeamDetailBinding.btnLeave.text = getString(R.string.requested)
-                    fragmentTeamDetailBinding.btnLeave.isEnabled = false
+                    binding.btnLeave.text = getString(R.string.requested)
+                    binding.btnLeave.isEnabled = false
                     syncTeamActivities(requireContext(), uploadManager)
                 }
             }
@@ -287,23 +294,23 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     private fun setupMyTeamButtons(user: RealmUserModel?) {
-        fragmentTeamDetailBinding.btnAddDoc.isEnabled = true
-        fragmentTeamDetailBinding.btnAddDoc.visibility = View.VISIBLE
-        fragmentTeamDetailBinding.btnLeave.isEnabled = true
-        fragmentTeamDetailBinding.btnLeave.visibility = View.VISIBLE
+        binding.btnAddDoc.isEnabled = true
+        binding.btnAddDoc.visibility = View.VISIBLE
+        binding.btnLeave.isEnabled = true
+        binding.btnLeave.visibility = View.VISIBLE
 
-        fragmentTeamDetailBinding.btnLeave.setOnClickListener {
+        binding.btnLeave.setOnClickListener {
             AlertDialog.Builder(requireContext()).setMessage(R.string.confirm_exit)
                 .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
                     team?.leave(user, mRealm)
                     Utilities.toast(activity, getString(R.string.left_team))
                     val lastPageId = team?._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
                     setupViewPager(false, lastPageId)
-                    fragmentTeamDetailBinding.llActionButtons.visibility = View.GONE
+                    binding.llActionButtons.visibility = View.GONE
                 }.setNegativeButton(R.string.no, null).show()
         }
 
-        fragmentTeamDetailBinding.btnAddDoc.setOnClickListener {
+        binding.btnAddDoc.setOnClickListener {
             MainApplication.showDownload = true
             selectPage(DocumentsPage.id)
             MainApplication.showDownload = false
@@ -325,13 +332,13 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                     val lastPageId = team?._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
                     setupViewPager(isMyTeam, lastPageId)
 
-                    fragmentTeamDetailBinding.title.text = getEffectiveTeamName()
-                    fragmentTeamDetailBinding.subtitle.text = getEffectiveTeamType()
+                    binding.title.text = getEffectiveTeamName()
+                    binding.subtitle.text = getEffectiveTeamType()
 
                     if(getJoinedMemberCount(team!!._id.toString(), mRealm) <= 1 && isMyTeam){
-                        fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
+                        binding.btnLeave.visibility = View.GONE
                     } else {
-                        fragmentTeamDetailBinding.btnLeave.visibility = View.VISIBLE
+                        binding.btnLeave.visibility = View.VISIBLE
                     }
                 }
             }
@@ -342,14 +349,15 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
     override fun onMemberChanged() {
         if(getJoinedMemberCount("${team?._id}", mRealm) <= 1){
-            fragmentTeamDetailBinding.btnLeave.visibility = View.GONE
+            binding.btnLeave.visibility = View.GONE
         } else{
-            fragmentTeamDetailBinding.btnLeave.visibility = View.VISIBLE
+            binding.btnLeave.visibility = View.VISIBLE
         }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupRealtimeSync()
         createTeamLog()
     }
 
@@ -381,8 +389,29 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         }
     }
 
+    private fun setupRealtimeSync() {
+        realtimeSyncListener = object : BaseRealtimeSyncListener() {
+            override fun onTableDataUpdated(update: TableDataUpdate) {
+                if (update.table == "teams" && update.shouldRefreshUI) {
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        refreshTeamData()
+                    }
+                }
+            }
+        }
+        syncCoordinator.addListener(realtimeSyncListener)
+    }
+
     private fun shouldQueryRealm(teamId: String): Boolean {
         return teamId.isNotEmpty()
+    }
+
+    override fun onDestroyView() {
+        if (::realtimeSyncListener.isInitialized) {
+            syncCoordinator.removeListener(realtimeSyncListener)
+        }
+        super.onDestroyView()
+        _binding = null
     }
 
     override fun onDestroy() {

@@ -706,7 +706,7 @@
     <string name="return_to_the_home_tab_to_access_mycourses">\n\n Return to the Home tab to access myCourses.\n</string>
     <string name="go_to_mycourses">Go To MyCourses</string>
     <string name="and">"And "</string>
-    <string name="more_course_s">" more course(s)...\n"</string>
+    <string name="more_course_s">" more course(s)…\n"</string>
     <string name="retake_test">Retake Test [%d]</string>
     <string name="do_you_want_to_join_this_course">Do you want to join this course?</string>
     <string name="join_this_course">Join this course</string>
@@ -868,11 +868,11 @@
     <string name="planet_server_not_reachable">Planet server not reachable.</string>
     <string name="select_language">select language</string>
     <string name="thank_you">Thank You!</string>
-    <string name="please_wait">Please wait...</string>
+    <string name="please_wait">Please wait…</string>
     <string name="update_later">Update Later</string>
-    <string name="checking_version">Checking version....</string>
+    <string name="checking_version">Checking version…</string>
     <string name="please_enter_your_password">Please enter your password</string>
-    <string name="downloading">"Downloading.... "</string>
+    <string name="downloading">"Downloading… "</string>
     <string name="pin_is_required">Pin is required.</string>
     <string name="invalid_url">Invalid Url</string>
     <string name="please_enter_valid_url_to_continue">Please enter valid url to continue.</string>
@@ -1371,6 +1371,7 @@
     <string name="syncing_team_data">Syncing team data…</string>
     <string name="syncing_chat_history">Syncing chat history…</string>
     <string name="syncing_courses_data">Syncing courses data…</string>
+    <string name="loading_courses">Loading courses…</string>
     <string name="syncing_feedback">Syncing feedback…</string>
     <string name="syncing_health_data">Syncing health data…</string>
     <string name="syncing_resources">Syncing resources…</string>

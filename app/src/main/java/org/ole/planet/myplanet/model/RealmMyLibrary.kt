@@ -299,7 +299,7 @@ open class RealmMyLibrary : RealmObject() {
                         if (key.indexOf("/") < 0) {
                             resourceRemoteAddress = "${settings.getString("couchdbURL", "http://")}/resources/$resourceId/$key"
                             resourceLocalAddress = key
-                            resourceOffline = FileUtils.checkFileExist(resourceRemoteAddress)
+                            resourceOffline = FileUtils.checkFileExist(context, resourceRemoteAddress)
                         }
                     }
                 }

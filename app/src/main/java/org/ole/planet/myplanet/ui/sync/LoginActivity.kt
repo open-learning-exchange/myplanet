@@ -43,8 +43,8 @@ import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.userprofile.TeamListAdapter
 import org.ole.planet.myplanet.utilities.AuthHelper
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
-import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils
 import org.ole.planet.myplanet.utilities.ThemeManager
@@ -65,7 +65,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
         lblLastSyncDate = binding.lblLastSyncDate
         btnSignIn = binding.btnSignin
         syncIcon = binding.syncIcon
@@ -83,7 +83,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         binding.tvAvailableSpace.text = buildString {
             append(getString(R.string.available_space_colon))
             append(" ")
-            append(availableOverTotalMemoryFormattedString)
+            append(FileUtils.availableOverTotalMemoryFormattedString(this@LoginActivity))
         }
         changeLogoColor()
         declareElements()
@@ -146,6 +146,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
 
         getTeamMembers()
+        loadSavedProfileImage()
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -441,8 +442,16 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         binding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
         binding.recyclerView.isVerticalScrollBarEnabled = true
 
-        binding.recyclerView.post {
-            mAdapter?.notifyDataSetChanged()
+    }
+
+    private fun loadSavedProfileImage() {
+        val lastUserWithImage = prefData.getSavedUsers().lastOrNull { !it.image.isNullOrEmpty() }
+        lastUserWithImage?.image?.let { image ->
+            Glide.with(this)
+                .load(image)
+                .placeholder(R.drawable.profile)
+                .error(R.drawable.profile)
+                .into(binding.userProfile)
         }
     }
 

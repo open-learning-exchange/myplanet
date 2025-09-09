@@ -1388,5 +1388,6 @@
     <string name="failed_to_delete_report">Échec de la suppression du rapport. Veuillez réessayer</string>
     <string name="delete_report">Supprimer le rapport</string>
     <string name="checking_server_availability">vérification de la disponibilité du serveur…</string>
+    <string name="loading_courses">Chargement des cours…</string>
 
 </resources>
