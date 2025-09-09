@@ -146,6 +146,7 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         }
 
         getTeamMembers()
+        loadSavedProfileImage()
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -441,6 +442,17 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
         binding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
         binding.recyclerView.isVerticalScrollBarEnabled = true
 
+    }
+
+    private fun loadSavedProfileImage() {
+        val lastUserWithImage = prefData.getSavedUsers().lastOrNull { !it.image.isNullOrEmpty() }
+        lastUserWithImage?.image?.let { image ->
+            Glide.with(this)
+                .load(image)
+                .placeholder(R.drawable.profile)
+                .error(R.drawable.profile)
+                .into(binding.userProfile)
+        }
     }
 
     override fun onItemClick(user: User) {
