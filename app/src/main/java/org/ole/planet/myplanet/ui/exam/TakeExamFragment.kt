@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
+import android.widget.Button
 import android.widget.RadioButton
 import android.widget.Toast
 import androidx.core.content.ContextCompat
@@ -156,6 +157,9 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                     currentQuestion?.type.equals("textarea", ignoreCase = true) -> {
                 fragmentTakeExamBinding.etAnswer.text.toString().isNotEmpty()
             }
+            currentQuestion?.type.equals("ratingScale", ignoreCase = true) -> {
+                ans.isNotEmpty()
+            }
             else -> false
         }
     }
@@ -231,6 +235,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         fragmentTakeExamBinding.etAnswer.visibility = View.GONE
         fragmentTakeExamBinding.groupChoices.visibility = View.GONE
         fragmentTakeExamBinding.llCheckbox.visibility = View.GONE
+        fragmentTakeExamBinding.llRatingScale.visibility = View.GONE
         clearAnswer()
 
         loadSavedAnswer()
@@ -251,6 +256,11 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 fragmentTakeExamBinding.llCheckbox.visibility = View.VISIBLE
                 fragmentTakeExamBinding.etAnswer.visibility = View.GONE
                 showCheckBoxes(question, ans)
+            }
+            question?.type.equals("ratingScale", ignoreCase = true) -> {
+                fragmentTakeExamBinding.llRatingScale.visibility = View.VISIBLE
+                fragmentTakeExamBinding.etAnswer.visibility = View.GONE
+                setupRatingScale(ans)
             }
         }
         fragmentTakeExamBinding.tvHeader.text = question?.header
@@ -273,6 +283,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 currentQuestion?.type.equals("selectMultiple", ignoreCase = true) -> loadSelectMultipleSavedAnswer(savedAnswer)
                 currentQuestion?.type.equals("input", ignoreCase = true) ||
                         currentQuestion?.type.equals("textarea", ignoreCase = true) -> loadTextSavedAnswer(savedAnswer)
+                currentQuestion?.type.equals("ratingScale", ignoreCase = true) -> loadRatingScaleSavedAnswer(savedAnswer)
             }
         }
     }
@@ -329,10 +340,73 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         fragmentTakeExamBinding.etAnswer.setText(ans)
     }
 
+    private fun loadRatingScaleSavedAnswer(savedAnswer: RealmAnswer) {
+        ans = savedAnswer.value ?: ""
+        if (ans.isNotEmpty()) {
+            selectRatingValue(ans.toIntOrNull() ?: 1)
+        }
+    }
+
+    private var selectedRatingButton: Button? = null
+    
+    private fun setupRatingScale(oldAnswer: String) {
+        val ratingButtons = listOf(
+            fragmentTakeExamBinding.rbRating1,
+            fragmentTakeExamBinding.rbRating2,
+            fragmentTakeExamBinding.rbRating3,
+            fragmentTakeExamBinding.rbRating4,
+            fragmentTakeExamBinding.rbRating5,
+            fragmentTakeExamBinding.rbRating6,
+            fragmentTakeExamBinding.rbRating7,
+            fragmentTakeExamBinding.rbRating8,
+            fragmentTakeExamBinding.rbRating9
+        )
+        
+        ratingButtons.forEachIndexed { index, button ->
+            button.setOnClickListener {
+                selectedRatingButton?.isSelected = false
+
+                button.isSelected = true
+                selectedRatingButton = button
+                ans = (index + 1).toString()
+                
+                updateNavButtons()
+            }
+        }
+
+        if (oldAnswer.isNotEmpty()) {
+            selectRatingValue(oldAnswer.toIntOrNull() ?: 1)
+        }
+    }
+    
+    private fun selectRatingValue(value: Int) {
+        val ratingButtons = listOf(
+            fragmentTakeExamBinding.rbRating1,
+            fragmentTakeExamBinding.rbRating2,
+            fragmentTakeExamBinding.rbRating3,
+            fragmentTakeExamBinding.rbRating4,
+            fragmentTakeExamBinding.rbRating5,
+            fragmentTakeExamBinding.rbRating6,
+            fragmentTakeExamBinding.rbRating7,
+            fragmentTakeExamBinding.rbRating8,
+            fragmentTakeExamBinding.rbRating9
+        )
+
+        selectedRatingButton?.isSelected = false
+        
+        if (value in 1..9) {
+            val button = ratingButtons[value - 1]
+            button.isSelected = true
+            selectedRatingButton = button
+        }
+    }
+
     private fun clearAnswer() {
         ans = ""
         fragmentTakeExamBinding.etAnswer.setText(R.string.empty_text)
         listAns?.clear()
+        selectedRatingButton?.isSelected = false
+        selectedRatingButton = null
     }
 
     private fun setButtonText() {
