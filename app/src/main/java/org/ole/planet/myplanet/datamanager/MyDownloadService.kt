@@ -9,7 +9,6 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.IBinder
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -148,8 +147,10 @@ class MyDownloadService : Service() {
                         val contentLength = responseBody.contentLength()
                         if (contentLength > 0 && !checkStorage(contentLength)) {
                             downloadFile(responseBody, url)
-                        } else if (contentLength <= 0) {
-                            downloadFailed("Invalid file size: Content-Length=$contentLength", fromSync)
+                        } else if (contentLength == -1L) {
+                            downloadFile(responseBody, url)
+                        } else if (contentLength == 0L) {
+                            downloadFailed("Empty file: Content-Length=$contentLength", fromSync)
                         }
                     } catch (e: Exception) {
                         downloadFailed("Storage check failed: ${e.localizedMessage ?: "Unknown error"}", fromSync)
@@ -187,15 +188,6 @@ class MyDownloadService : Service() {
     }
 
     private fun downloadFailed(message: String, fromSync: Boolean) {
-        val currentUrl = urls.getOrNull(currentIndex) ?: "Unknown URL"
-        val fileName = getFileNameFromUrl(currentUrl)
-        
-        // Log detailed error information
-        Log.d(
-            "Download Error",
-            "File: $fileName\nURL: $currentUrl\nError: $message\nProgress: ${currentIndex + 1}/$totalDownloadsCount\nFrom Sync: $fromSync",
-        )
-        
         notificationBuilder?.apply {
             setContentText("Error: $message (${currentIndex + 1}/$totalDownloadsCount)")
             notificationManager?.notify(ONGOING_NOTIFICATION_ID, build())
@@ -237,19 +229,26 @@ class MyDownloadService : Service() {
 
                         if (readCount > 0) {
                             total += readCount
-                            totalFileSize = (fileSize / 1024.0).toInt()
                             val current = (total / 1024.0).roundToInt().toDouble()
-                            val progress = (total * 100 / fileSize).toInt()
                             val currentTime = System.currentTimeMillis() - startTime
 
                             val download = Download().apply {
                                 fileName = getFileNameFromUrl(url)
-                                totalFileSize = this@MyDownloadService.totalFileSize
+                            }
+
+                            if (fileSize > 0) {
+                                totalFileSize = (fileSize / 1024.0).toInt()
+                                val progress = (total * 100 / fileSize).toInt()
+                                this@MyDownloadService.totalFileSize = totalFileSize
+                                download.totalFileSize = totalFileSize
+                                download.progress = progress
+                            } else {
+                                download.totalFileSize = 0
+                                download.progress = -1
                             }
 
                             if (currentTime > 1000 * timeCount) {
                                 download.currentFileSize = current.toInt()
-                                download.progress = progress
                                 sendNotification(download)
                                 timeCount++
                             }
