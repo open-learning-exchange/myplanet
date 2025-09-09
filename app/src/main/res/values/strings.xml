@@ -1041,6 +1041,10 @@
     <string name="community_leaders">Community Leaders</string>
     <string name="services">Services</string>
     <string name="survey_taken">Survey taken</string>
+    <plurals name="survey_taken_count">
+        <item quantity="one">Survey taken %d time</item>
+        <item quantity="other">Survey taken %d times</item>
+    </plurals>
     <string name="times">times</string>
     <string name="time">time</string>
     <string name="ai_chat">AI Chat</string>
@@ -1104,6 +1108,11 @@
     <string name="no_team_resources">team resources not available</string>
     <string name="no_tasks">tasks not available</string>
     <string name="no_join_request_available">no join request available</string>
+    <string name="no_description_available">No description available</string>
+    <string name="no_links_available">No links available</string>
+    <string name="user_requested_to_join_team">%1$s has requested to join %2$s</string>
+    <string name="join_request_prefix">Join Request:</string>
+    <string name="new_request_to_join">New request to join %s</string>
     <string name="no_news">news not available</string>
     <string name="no_surveys">surveys not available</string>
     <string name="edit_image">edit profile image</string>
