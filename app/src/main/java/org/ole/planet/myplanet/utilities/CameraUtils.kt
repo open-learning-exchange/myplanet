@@ -81,8 +81,6 @@ object CameraUtils {
         cameraDevice = null
         imageReader?.close()
         imageReader = null
-        sessionExecutor?.shutdown()
-        sessionExecutor = null
     }
 
     @JvmStatic
@@ -137,15 +135,18 @@ object CameraUtils {
             val surface = Surface(texture)
             val captureRequestBuilder = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
             captureRequestBuilder.addTarget(surface)
+            val executor = Executors.newSingleThreadExecutor().also { sessionExecutor = it }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 val outputConfigurations = listOf(OutputConfiguration(surface))
-                val executor = sessionExecutor ?: Executors.newSingleThreadExecutor().also { sessionExecutor = it }
                 val stateCallback = object : CameraCaptureSession.StateCallback() {
                     override fun onConfigured(session: CameraCaptureSession) {
                         if (cameraDevice == null) return
                         captureSession = session
                         try {
-                            captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
+                            captureRequestBuilder.set(
+                                CaptureRequest.CONTROL_AF_MODE,
+                                CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE
+                            )
                             captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, backgroundHandler)
                         } catch (e: CameraAccessException) {
                             e.printStackTrace()
@@ -153,6 +154,13 @@ object CameraUtils {
                     }
 
                     override fun onConfigureFailed(session: CameraCaptureSession) {}
+
+                    override fun onClosed(session: CameraCaptureSession) {
+                        executor.shutdown()
+                        if (sessionExecutor == executor) {
+                            sessionExecutor = null
+                        }
+                    }
                 }
 
                 val sessionConfiguration = SessionConfiguration(SessionConfiguration.SESSION_REGULAR, outputConfigurations, executor, stateCallback)
@@ -160,19 +168,32 @@ object CameraUtils {
                 cameraDevice?.createCaptureSession(sessionConfiguration)
             } else {
                 @Suppress("DEPRECATION")
-                cameraDevice?.createCaptureSession(listOf(surface), object : CameraCaptureSession.StateCallback() {
-                    override fun onConfigured(session: CameraCaptureSession) {
-                        if (cameraDevice == null) return
-                        captureSession = session
-                        try {
-                            captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
-                            captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, backgroundHandler)
-                        } catch (e: CameraAccessException) {
-                            e.printStackTrace()
+                cameraDevice?.createCaptureSession(
+                    listOf(surface),
+                    object : CameraCaptureSession.StateCallback() {
+                        override fun onConfigured(session: CameraCaptureSession) {
+                            if (cameraDevice == null) return
+                            captureSession = session
+                            try {
+                                captureRequestBuilder.set(
+                                    CaptureRequest.CONTROL_AF_MODE,
+                                    CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE
+                                )
+                                captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, backgroundHandler)
+                            } catch (e: CameraAccessException) {
+                                e.printStackTrace()
+                            }
                         }
-                    }
 
-                    override fun onConfigureFailed(session: CameraCaptureSession) {} },
+                        override fun onConfigureFailed(session: CameraCaptureSession) {}
+
+                        override fun onClosed(session: CameraCaptureSession) {
+                            executor.shutdown()
+                            if (sessionExecutor == executor) {
+                                sessionExecutor = null
+                            }
+                        }
+                    },
                     backgroundHandler
                 )
             }
