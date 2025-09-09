@@ -93,7 +93,7 @@ class RatingViewModel @Inject constructor(
             try {
                 _submitState.value = SubmitState.Submitting
 
-                databaseService.executeTransactionAsync { realm ->
+                databaseService.executeTransactionAsync({ realm ->
                     var ratingObject = realm.where(RealmRating::class.java)
                         .equalTo("type", type)
                         .equalTo("userId", userId)
@@ -112,10 +112,14 @@ class RatingViewModel @Inject constructor(
                         .findFirst()
 
                     setRatingData(ratingObject, userModelCopy, type, itemId, title, rating, comment)
-                }
-
-                _submitState.value = SubmitState.Success
-                loadRatingData(type, itemId, userId)
+                }, {
+                    _submitState.value = SubmitState.Success
+                    loadRatingData(type, itemId, userId)
+                }, { error ->
+                    _submitState.value = SubmitState.Error(
+                        error.message ?: "Failed to submit rating"
+                    )
+                })
             } catch (e: Exception) {
                 _submitState.value = SubmitState.Error(e.message ?: "Failed to submit rating")
             }
