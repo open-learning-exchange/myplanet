@@ -267,13 +267,14 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun addRemoveCourse() {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        if (currentCourse?.userId?.contains(userModel?.id) == true) {
-            currentCourse?.removeUserId(userModel?.id)
-            onRemove(mRealm, "courses", userModel?.id, courseId)
-        } else {
-            currentCourse?.setUserId(userModel?.id)
-            onAdd(mRealm, "courses", userModel?.id, courseId)
+        mRealm.executeTransaction { realm ->
+            if (currentCourse?.userId?.contains(userModel?.id) == true) {
+                currentCourse?.removeUserId(userModel?.id)
+                onRemove(realm, "courses", userModel?.id, courseId)
+            } else {
+                currentCourse?.setUserId(userModel?.id)
+                onAdd(realm, "courses", userModel?.id, courseId)
+            }
         }
         Utilities.toast(activity, "course ${(if (currentCourse?.userId?.contains(userModel?.id) == true) {
             getString(R.string.added_to)
