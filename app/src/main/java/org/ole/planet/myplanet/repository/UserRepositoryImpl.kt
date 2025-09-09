@@ -20,11 +20,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getCurrentUser(): RealmUserModel? {
-        return withRealm { realm ->
-            realm.where(RealmUserModel::class.java)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
-        }
+        return findFirst(RealmUserModel::class.java)
     }
 
     override suspend fun getUserById(userId: String): RealmUserModel? {

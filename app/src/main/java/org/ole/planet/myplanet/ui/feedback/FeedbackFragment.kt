@@ -8,16 +8,11 @@ import android.widget.RadioButton
 import android.widget.Toast
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Date
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentFeedbackBinding
-import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -87,29 +82,16 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
         }
         val urgent = rbUrgent.text.toString()
         val type = rbType.text.toString()
-        val arguments = arguments
-        val feedback = if (arguments != null) {
-            val argumentArray = getArgumentArray(message)
-            saveData(urgent, type, argumentArray)
-        } else {
-            saveData(urgent, type, message)
-        }
+        val item = arguments?.getString("item")
+        val state = arguments?.getString("state")
+        val feedback = feedbackRepository.createFeedback(user, urgent, type, message, item, state)
         viewLifecycleOwner.lifecycleScope.launch {
             feedbackRepository.saveFeedback(feedback)
             Utilities.toast(activity, R.string.feedback_saved.toString())
         }
         Toast.makeText(activity, R.string.thank_you_your_feedback_has_been_submitted, Toast.LENGTH_SHORT).show()
-        if (mListener != null) {
-            mListener?.onFeedbackSubmitted()
-        }
-    }
-
-    private fun getArgumentArray(message: String?): Array<String?> {
-        val argumentArray = arrayOfNulls<String>(3)
-        argumentArray[0] = message
-        argumentArray[1] = requireArguments().getString("item")
-        argumentArray[2] = requireArguments().getString("state")
-        return argumentArray
+        mListener?.onFeedbackSubmitted()
+        dismiss()
     }
 
     private fun clearError() {
@@ -118,51 +100,4 @@ class FeedbackFragment : DialogFragment(), View.OnClickListener {
         binding.tlMessage.error = ""
     }
 
-    private fun saveData(urgent: String, type: String, message: String): RealmFeedback {
-        val feedback = RealmFeedback()
-        feedback.id = UUID.randomUUID().toString()
-        feedback.title = "Question regarding /"
-        feedback.openTime = Date().time
-        feedback.url = "/"
-        feedback.owner = user
-        feedback.source = user
-        feedback.status = "Open"
-        feedback.priority = urgent
-        feedback.type = type
-        feedback.parentCode = "dev"
-        val `object` = JsonObject()
-        `object`.addProperty("message", message)
-        `object`.addProperty("time", Date().time.toString() + "")
-        `object`.addProperty("user", user + "")
-        val msgArray = JsonArray()
-        msgArray.add(`object`)
-        feedback.setMessages(msgArray)
-        dismiss()
-        return feedback
-    }
-
-    private fun saveData(urgent: String, type: String, argumentArray: Array<String?>): RealmFeedback {
-        val feedback = RealmFeedback()
-        feedback.id = UUID.randomUUID().toString()
-        feedback.title = "Question regarding /" + argumentArray[2]
-        feedback.openTime = Date().time
-        feedback.url = "/" + argumentArray[2]
-        feedback.owner = user
-        feedback.source = user
-        feedback.status = "Open"
-        feedback.priority = urgent
-        feedback.type = type
-        feedback.parentCode = "dev"
-        feedback.state = argumentArray[2]
-        feedback.item = argumentArray[1]
-        val `object` = JsonObject()
-        `object`.addProperty("message", argumentArray[0])
-        `object`.addProperty("time", Date().time.toString() + "")
-        `object`.addProperty("user", user + "")
-        val msgArray = JsonArray()
-        msgArray.add(`object`)
-        feedback.setMessages(msgArray)
-        dismiss()
-        return feedback
-    }
 }

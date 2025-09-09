@@ -473,6 +473,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             tvSelected.visibility = View.GONE
             btnArchive.visibility = View.GONE
         } else {
+            etSearch.visibility = View.VISIBLE
+            requireView().findViewById<View>(R.id.filter).visibility = View.VISIBLE
             val allMyCourses = adapterCourses.getCourseList().all { it?.isMyCourse == true }
             if (userModel?.isGuest() == false) {
                 selectAll.visibility = if (allMyCourses) View.GONE else View.VISIBLE
