@@ -6,6 +6,7 @@ import io.realm.Sort
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
+import kotlinx.coroutines.runBlocking
 
 abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
     var isMyCourseLib: Boolean = false
@@ -23,27 +24,11 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
                 RealmMyLibrary.getOurLibrary(model?.id, mRealm.where(c).equalTo("isPrivate", false).findAll().toList()) as List<LI>
             }
             else -> {
-                val myLibItems = getMyLibItems(c as Class<out RealmModel>)
-                val results: List<RealmMyCourse> = mRealm.where(RealmMyCourse::class.java)
-                    .isNotEmpty("courseTitle")
-                    .findAll()
-                    .toList()
-                val ourCourseItems = RealmMyCourse.getOurCourse(model?.id, results)
-
                 when (c) {
                     RealmMyCourse::class.java -> {
-                        val combinedList = mutableListOf<RealmMyCourse>()
-                        (myLibItems as List<RealmMyCourse>).forEach { course ->
-                            course.isMyCourse = true
-                            combinedList.add(course)
-                        }
-                        ourCourseItems.forEach { course ->
-                            if (!combinedList.any { it.id == course.id }) {
-                                course.isMyCourse = false
-                                combinedList.add(course)
-                            }
-                        }
-                        combinedList as List<LI>
+                        val userId = model?.id
+                        val courses = runBlocking { courseRepository.getEnrolledCourses(userId ?: "") }
+                        courses as List<LI>
                     }
                     else -> {
                         throw IllegalArgumentException("Unsupported class: ${c.simpleName}")
@@ -66,26 +51,29 @@ abstract class BaseRecyclerParentFragment<LI> : BaseResourceFragment() {
                 RealmMyLibrary.getOurLibrary(model?.id, mRealm.where(c).equalTo("isPrivate", false).sort(orderBy ?: "", sort).findAll().toList()) as List<LI>
             }
             else -> {
-                val results = mRealm.where(RealmMyCourse::class.java).sort(orderBy ?: "", sort).findAll().toList() as List<RealmMyCourse>
-                RealmMyCourse.getOurCourse(model?.id, results) as List<LI>
+                val userId = model?.id
+                val courses = runBlocking { courseRepository.getEnrolledCourses(userId ?: "") }
+                courses as List<LI>
             }
         }
     }
     @Suppress("UNCHECKED_CAST")
     private fun <T : RealmModel> getMyLibItems(c: Class<T>, orderBy: String? = null): List<LI> {
-        val query = mRealm.where(c)
-        val realmResults = if (orderBy != null) {
-            query.sort(orderBy).findAll()
-        } else {
-            query.findAll()
-        }
-        val results: List<T> = realmResults.toList()
         return when (c) {
             RealmMyLibrary::class.java -> {
+                val query = mRealm.where(c)
+                val realmResults = if (orderBy != null) {
+                    query.sort(orderBy).findAll()
+                } else {
+                    query.findAll()
+                }
+                val results: List<T> = realmResults.toList()
                 RealmMyLibrary.getMyLibraryByUserId(model?.id, results as? List<RealmMyLibrary> ?: emptyList()) as List<LI>
             }
             RealmMyCourse::class.java -> {
-                RealmMyCourse.getMyCourseByUserId(model?.id, results as? List<RealmMyCourse> ?: emptyList()) as List<LI>
+                val userId = model?.id
+                val courses = runBlocking { courseRepository.getEnrolledCourses(userId ?: "") }
+                courses as List<LI>
             }
             else -> throw IllegalArgumentException("Unsupported class: ${c.simpleName}")
         }
