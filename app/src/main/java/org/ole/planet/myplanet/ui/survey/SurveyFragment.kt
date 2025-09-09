@@ -99,9 +99,13 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
             override fun onSyncStarted() {
                 viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded && !requireActivity().isFinishing) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText("Syncing surveys...")
-                        customProgressDialog?.show()
+                        if (customProgressDialog == null) {
+                            customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                            customProgressDialog?.setText("Syncing surveys...")
+                        }
+                        if (customProgressDialog?.isShowing != true) {
+                            customProgressDialog?.show()
+                        }
                     }
                 }
             }
@@ -322,6 +326,8 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         if (::realtimeSyncHelper.isInitialized) {
             realtimeSyncHelper.cleanup()
         }
+        customProgressDialog?.dismiss()
+        customProgressDialog = null
         super.onDestroyView()
         _binding = null
     }
