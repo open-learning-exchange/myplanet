@@ -147,8 +147,10 @@ class MyDownloadService : Service() {
                         val contentLength = responseBody.contentLength()
                         if (contentLength > 0 && !checkStorage(contentLength)) {
                             downloadFile(responseBody, url)
-                        } else if (contentLength <= 0) {
-                            downloadFailed("Invalid file size", fromSync)
+                        } else if (contentLength == -1L) {
+                            downloadFile(responseBody, url)
+                        } else if (contentLength == 0L) {
+                            downloadFailed("Empty file: Content-Length=$contentLength", fromSync)
                         }
                     } catch (e: Exception) {
                         downloadFailed("Storage check failed: ${e.localizedMessage ?: "Unknown error"}", fromSync)
@@ -227,19 +229,26 @@ class MyDownloadService : Service() {
 
                         if (readCount > 0) {
                             total += readCount
-                            totalFileSize = (fileSize / 1024.0).toInt()
                             val current = (total / 1024.0).roundToInt().toDouble()
-                            val progress = (total * 100 / fileSize).toInt()
                             val currentTime = System.currentTimeMillis() - startTime
 
                             val download = Download().apply {
                                 fileName = getFileNameFromUrl(url)
-                                totalFileSize = this@MyDownloadService.totalFileSize
+                            }
+
+                            if (fileSize > 0) {
+                                totalFileSize = (fileSize / 1024.0).toInt()
+                                val progress = (total * 100 / fileSize).toInt()
+                                this@MyDownloadService.totalFileSize = totalFileSize
+                                download.totalFileSize = totalFileSize
+                                download.progress = progress
+                            } else {
+                                download.totalFileSize = 0
+                                download.progress = -1
                             }
 
                             if (currentTime > 1000 * timeCount) {
                                 download.currentFileSize = current.toInt()
-                                download.progress = progress
                                 sendNotification(download)
                                 timeCount++
                             }
