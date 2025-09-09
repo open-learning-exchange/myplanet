@@ -98,4 +98,3 @@ class SubmissionRepositoryImpl @Inject constructor(
         delete(RealmSubmission::class.java, "id", id)
     }
 }
-
