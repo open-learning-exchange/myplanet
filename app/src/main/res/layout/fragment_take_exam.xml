@@ -129,7 +129,6 @@
                             android:gravity="center"
                             android:orientation="vertical"
                             android:visibility="gone" />
-                        
                         <LinearLayout
                             android:id="@+id/ll_rating_scale"
                             android:layout_width="match_parent"
@@ -139,7 +138,7 @@
                             android:orientation="vertical"
                             android:padding="@dimen/padding_large"
                             android:visibility="gone">
-                            
+
                             <LinearLayout
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
@@ -152,7 +151,7 @@
                                     android:layout_height="wrap_content"
                                     android:orientation="horizontal"
                                     android:layout_marginBottom="8dp">
-                                    
+
                                     <Button
                                         android:id="@+id/rb_rating_1"
                                         android:layout_width="60dp"
@@ -163,7 +162,6 @@
                                         android:textColor="@color/daynight_textColor"
                                         android:textSize="16sp"
                                         android:textStyle="bold" />
-                                    
                                     <Button
                                         android:id="@+id/rb_rating_2"
                                         android:layout_width="60dp"
@@ -174,7 +172,6 @@
                                         android:textColor="@color/daynight_textColor"
                                         android:textSize="16sp"
                                         android:textStyle="bold" />
-                                    
                                     <Button
                                         android:id="@+id/rb_rating_3"
                                         android:layout_width="60dp"
@@ -191,7 +188,7 @@
                                     android:layout_height="wrap_content"
                                     android:orientation="horizontal"
                                     android:layout_marginBottom="8dp">
-                                    
+
                                     <Button
                                         android:id="@+id/rb_rating_4"
                                         android:layout_width="60dp"
@@ -202,7 +199,6 @@
                                         android:textColor="@color/daynight_textColor"
                                         android:textSize="16sp"
                                         android:textStyle="bold" />
-                                    
                                     <Button
                                         android:id="@+id/rb_rating_5"
                                         android:layout_width="60dp"
@@ -213,7 +209,6 @@
                                         android:textColor="@color/daynight_textColor"
                                         android:textSize="16sp"
                                         android:textStyle="bold" />
-                                    
                                     <Button
                                         android:id="@+id/rb_rating_6"
                                         android:layout_width="60dp"
@@ -229,7 +224,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:orientation="horizontal">
-                                    
+
                                     <Button
                                         android:id="@+id/rb_rating_7"
                                         android:layout_width="60dp"
@@ -240,7 +235,6 @@
                                         android:textColor="@color/daynight_textColor"
                                         android:textSize="16sp"
                                         android:textStyle="bold" />
-                                    
                                     <Button
                                         android:id="@+id/rb_rating_8"
                                         android:layout_width="60dp"
@@ -251,7 +245,6 @@
                                         android:textColor="@color/daynight_textColor"
                                         android:textSize="16sp"
                                         android:textStyle="bold" />
-                                    
                                     <Button
                                         android:id="@+id/rb_rating_9"
                                         android:layout_width="60dp"
