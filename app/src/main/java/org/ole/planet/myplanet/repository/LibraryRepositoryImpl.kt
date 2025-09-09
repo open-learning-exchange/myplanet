@@ -17,6 +17,16 @@ class LibraryRepositoryImpl @Inject constructor(
         return findByField(RealmMyLibrary::class.java, "id", id)
     }
 
+    override suspend fun getLibraryItemByResourceId(resourceId: String): RealmMyLibrary? {
+        return findByField(RealmMyLibrary::class.java, "_id", resourceId)
+    }
+
+    override suspend fun getLibraryItemsByLocalAddress(localAddress: String): List<RealmMyLibrary> {
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("resourceLocalAddress", localAddress)
+        }
+    }
+
     override suspend fun getOfflineLibraryItems(): List<RealmMyLibrary> {
         return queryList(RealmMyLibrary::class.java) {
             equalTo("resourceOffline", true)
