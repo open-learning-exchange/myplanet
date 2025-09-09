@@ -29,7 +29,7 @@ open class RealmTag : RealmObject() {
     }
 
     override fun toString(): String {
-        return name!!
+        return name.orEmpty()
     }
 
     companion object {

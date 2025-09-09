@@ -19,12 +19,12 @@ class ProgressBroadcastReceiver : BroadcastReceiver() {
                 @Suppress("DEPRECATION")
                 intent.getParcelableExtra("download")
             }
-            if (onProgressChange != null) {
-                onProgressChange!!.onProgressChange(
+            if (onProgressChange != null && download != null) {
+                onProgressChange?.onProgressChange(
                     String.format(
                         Locale.getDefault(),
                         "Downloading file %d/%d KB\n%d%% Completed.",
-                        download!!.currentFileSize, download.totalFileSize, download.progress
+                        download.currentFileSize, download.totalFileSize, download.progress
                     )
                 )
             }

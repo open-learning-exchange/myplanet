@@ -324,6 +324,7 @@ internal class AdapterCourses(
         if (map.containsKey(currentList[position]!!.courseId)) {
             val `object` = map[currentList[position]!!.courseId]
             CourseRatingUtils.showRating(
+                context,
                 `object`,
                 viewHolder.rowCourseBinding.rating,
                 viewHolder.rowCourseBinding.timesRated,
