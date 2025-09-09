@@ -412,7 +412,7 @@ abstract class BaseResourceFragment : Fragment() {
             
             libraryItems.forEach { libraryItem ->
                 if (libraryItem?.userId?.contains(profileDbHandler.userModel?.id) == false) {
-                    libraryItem.setUserId(profileDbHandler.userModel?.id)
+                    libraryItem.setUserId(profileDbHandler.userModel?.id, mRealm)
                     RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.userModel?.id, libraryItem.resourceId)
                 }
             }

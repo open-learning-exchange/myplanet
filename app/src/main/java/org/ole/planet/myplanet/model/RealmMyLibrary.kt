@@ -102,20 +102,31 @@ open class RealmMyLibrary : RealmObject() {
             this@toJsonArray?.forEach { add(it) }
         }
     }
-    fun setUserId(userId: String?) {
+    fun setUserId(userId: String?, realm: Realm? = null) {
         if (userId.isNullOrBlank()) return
 
-        if (this.userId == null) {
-            this.userId = RealmList()
+        val executeInTransaction = realm != null && !realm.isInTransaction
+        
+        if (executeInTransaction) {
+            realm.beginTransaction()
         }
-        if (!this.userId!!.contains(userId)) {
-            if (isManaged && !realm.isInTransaction) {
-                realm.executeTransaction { realm ->
-                    this.userId?.add(userId)
-                }
-            } else {
+        
+        try {
+            if (this.userId == null) {
+                this.userId = RealmList()
+            }
+            if (!this.userId!!.contains(userId)) {
                 this.userId?.add(userId)
             }
+            
+            if (executeInTransaction) {
+                realm.commitTransaction()
+            }
+        } catch (e: Exception) {
+            if (executeInTransaction && realm.isInTransaction) {
+                realm.cancelTransaction()
+            }
+            throw e
         }
     }
     fun isResourceOffline(): Boolean {
