@@ -178,11 +178,13 @@ class AdapterResource(
     fun toggleTitleSortOrder() {
         isTitleAscending = !isTitleAscending
         updateList(sortLibraryListByTitle())
+        notifyDataSetChanged()
     }
 
     fun toggleSortOrder() {
         isAscending = !isAscending
         updateList(sortLibraryList())
+        notifyDataSetChanged()
     }
 
     private fun sortLibraryListByTitle(): List<RealmMyLibrary?> {
