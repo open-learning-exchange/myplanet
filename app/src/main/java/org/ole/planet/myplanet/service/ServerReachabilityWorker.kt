@@ -176,11 +176,9 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
     }
 
     private fun hasPendingSubmissions(): Boolean {
-        var hasPending = false
-        try {
-            val realm = databaseService.realmInstance
-            hasPending = realm.use { r ->
-                val submissions = r.where(RealmSubmission::class.java)
+        return try {
+            databaseService.withRealm { realm ->
+                val submissions = realm.where(RealmSubmission::class.java)
                     .equalTo("isUpdated", true)
                     .or()
                     .isEmpty("_id")
@@ -189,26 +187,23 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
             }
         } catch (e: Exception) {
             e.printStackTrace()
+            false
         }
-        return hasPending
     }
 
     private fun hasPendingExamResults(): Boolean {
-        var hasPending = false
-        var examResultCount: Int
-        try {
-            val realm = databaseService.realmInstance
-            hasPending = realm.use { r ->
-                val submissions = r.where(RealmSubmission::class.java).findAll()
-                examResultCount = submissions.count { submission ->
+        return try {
+            databaseService.withRealm { realm ->
+                val submissions = realm.where(RealmSubmission::class.java).findAll()
+                val examResultCount = submissions.count { submission ->
                     (submission.answers?.size ?: 0) > 0
                 }
                 examResultCount > 0
             }
         } catch (e: Exception) {
             e.printStackTrace()
+            false
         }
-        return hasPending
     }
 
     private suspend fun uploadSubmissions() {

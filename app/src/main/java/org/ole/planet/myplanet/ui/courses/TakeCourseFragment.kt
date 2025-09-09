@@ -284,11 +284,11 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun getCourseProgress(): Int {
-        val realm = databaseService.realmInstance
-        val user = UserProfileDbHandler(requireActivity()).userModel
-        val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
-        val courseProgress = courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt
-        return courseProgress ?: 0
+        return databaseService.withRealm { realm ->
+            val user = UserProfileDbHandler(requireActivity()).userModel
+            val courseProgressMap = RealmCourseProgress.getCourseProgress(realm, user?.id)
+            courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
+        }
     }
 
     private fun checkSurveyCompletion() {
