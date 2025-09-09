@@ -13,7 +13,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -32,7 +31,6 @@ class RatingFragment : DialogFragment() {
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var viewModel: RatingViewModel
-    lateinit var mRealm: Realm
     var model: RealmUserModel? = null
     var id: String? = ""
     var type: String? = ""
@@ -55,15 +53,18 @@ class RatingFragment : DialogFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentRatingBinding.inflate(inflater, container, false)
-        mRealm = databaseService.realmInstance
         settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        model = mRealm.where(RealmUserModel::class.java)
-            .equalTo("id", settings.getString("userId", "")).findFirst()
+        databaseService.withRealm { realm ->
+            model = realm.where(RealmUserModel::class.java)
+                .equalTo("id", settings.getString("userId", ""))
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }
+        }
         
         setupUI()
         observeViewModel()
@@ -142,9 +143,6 @@ class RatingFragment : DialogFragment() {
     }
 
     override fun onDestroyView() {
-        if (::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
         _binding = null
         super.onDestroyView()
     }
