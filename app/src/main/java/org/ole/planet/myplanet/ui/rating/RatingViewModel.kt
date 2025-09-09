@@ -47,35 +47,34 @@ class RatingViewModel @Inject constructor(
             try {
                 _ratingState.value = RatingUiState.Loading
                 
-                val realm = databaseService.realmInstance
-                val existingRating = realm.where(RealmRating::class.java)
-                    .equalTo("type", type)
-                    .equalTo("userId", userId)
-                    .equalTo("item", itemId)
-                    .findFirst()
+                databaseService.withRealm { realm ->
+                    val existingRating = realm.where(RealmRating::class.java)
+                        .equalTo("type", type)
+                        .equalTo("userId", userId)
+                        .equalTo("item", itemId)
+                        .findFirst()
 
-                val allRatings = realm.where(RealmRating::class.java)
-                    .equalTo("type", type)
-                    .equalTo("item", itemId)
-                    .findAll()
-                
-                val totalRatings = allRatings.size
-                val averageRating = if (totalRatings > 0) {
-                    allRatings.sumOf { it.rate }.toFloat() / totalRatings
-                } else {
-                    0f
+                    val allRatings = realm.where(RealmRating::class.java)
+                        .equalTo("type", type)
+                        .equalTo("item", itemId)
+                        .findAll()
+
+                    val totalRatings = allRatings.size
+                    val averageRating = if (totalRatings > 0) {
+                        allRatings.sumOf { it.rate }.toFloat() / totalRatings
+                    } else {
+                        0f
+                    }
+
+                    val userRating = existingRating?.rate
+
+                    _ratingState.value = RatingUiState.Success(
+                        existingRating = existingRating,
+                        averageRating = averageRating,
+                        totalRatings = totalRatings,
+                        userRating = userRating
+                    )
                 }
-                
-                val userRating = existingRating?.rate
-                
-                _ratingState.value = RatingUiState.Success(
-                    existingRating = existingRating,
-                    averageRating = averageRating,
-                    totalRatings = totalRatings,
-                    userRating = userRating
-                )
-                
-                realm.close()
             } catch (e: Exception) {
                 _ratingState.value = RatingUiState.Error(e.message ?: "Failed to load rating data")
             }
