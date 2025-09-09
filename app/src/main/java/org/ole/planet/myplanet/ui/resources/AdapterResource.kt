@@ -109,6 +109,7 @@ class AdapterResource(
             if (ratingMap.containsKey(libraryList[position]?.resourceId)) {
                 val `object` = ratingMap[libraryList[position]?.resourceId]
                 CourseRatingUtils.showRating(
+                    context,
                     `object`,
                     holder.rowLibraryBinding.rating,
                     holder.rowLibraryBinding.timesRated,
