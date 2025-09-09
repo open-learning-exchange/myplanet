@@ -93,39 +93,29 @@ class RatingViewModel @Inject constructor(
             try {
                 _submitState.value = SubmitState.Submitting
 
-                databaseService.realmInstance.use { realm ->
-                    realm.executeTransactionAsync(
-                        { backgroundRealm ->
-                            var ratingObject = backgroundRealm.where(RealmRating::class.java)
-                                .equalTo("type", type)
-                                .equalTo("userId", userId)
-                                .equalTo("item", itemId)
-                                .findFirst()
+                databaseService.executeTransactionAsync { realm ->
+                    var ratingObject = realm.where(RealmRating::class.java)
+                        .equalTo("type", type)
+                        .equalTo("userId", userId)
+                        .equalTo("item", itemId)
+                        .findFirst()
 
-                            if (ratingObject == null) {
-                                ratingObject = backgroundRealm.createObject(
-                                    RealmRating::class.java,
-                                    UUID.randomUUID().toString()
-                                )
-                            }
+                    if (ratingObject == null) {
+                        ratingObject = realm.createObject(
+                            RealmRating::class.java,
+                            UUID.randomUUID().toString()
+                        )
+                    }
 
-                            val userModelCopy = backgroundRealm.where(RealmUserModel::class.java)
-                                .equalTo("id", userId)
-                                .findFirst()
+                    val userModelCopy = realm.where(RealmUserModel::class.java)
+                        .equalTo("id", userId)
+                        .findFirst()
 
-                            setRatingData(ratingObject, userModelCopy, type, itemId, title, rating, comment)
-                        },
-                        {
-                            _submitState.value = SubmitState.Success
-                            loadRatingData(type, itemId, userId)
-                        },
-                        { error ->
-                            _submitState.value = SubmitState.Error(
-                                error.message ?: "Failed to submit rating"
-                            )
-                        }
-                    )
+                    setRatingData(ratingObject, userModelCopy, type, itemId, title, rating, comment)
                 }
+
+                _submitState.value = SubmitState.Success
+                loadRatingData(type, itemId, userId)
             } catch (e: Exception) {
                 _submitState.value = SubmitState.Error(e.message ?: "Failed to submit rating")
             }
