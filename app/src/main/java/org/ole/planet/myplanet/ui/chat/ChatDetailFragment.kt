@@ -423,6 +423,7 @@ class ChatDetailFragment : Fragment() {
     private fun getLatestRev(id: String): String? {
         return try {
             databaseService.withRealm { realm ->
+                realm.refresh()
                 realm.where(RealmChatHistory::class.java)
                     .equalTo("_id", id)
                     .findAll()
