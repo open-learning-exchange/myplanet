@@ -43,7 +43,10 @@ class AdapterResource(
     private var ratingChangeListener: OnRatingChangeListener? = null
     private var isAscending = true
     private var isTitleAscending = false
+    private var sortType = SortType.DATE
     var userModel: RealmUserModel ?= null
+
+    private enum class SortType { DATE, TITLE }
 
     init {
         if (context is OnHomeItemClickListener) {
@@ -60,7 +63,11 @@ class AdapterResource(
     }
 
     fun setLibraryList(libraryList: List<RealmMyLibrary?>) {
-        updateList(libraryList)
+        val sortedList = when (sortType) {
+            SortType.TITLE -> sortLibraryListByTitle(libraryList)
+            SortType.DATE -> sortLibraryList(libraryList)
+        }
+        updateList(sortedList)
     }
 
     fun setListener(listener: OnLibraryItemSelected?) {
@@ -176,28 +183,32 @@ class AdapterResource(
     }
 
     fun toggleTitleSortOrder() {
+        sortType = SortType.TITLE
         isTitleAscending = !isTitleAscending
         updateList(sortLibraryListByTitle())
     }
 
     fun toggleSortOrder() {
+        sortType = SortType.DATE
         isAscending = !isAscending
         updateList(sortLibraryList())
     }
 
-    private fun sortLibraryListByTitle(): List<RealmMyLibrary?> {
+    private fun sortLibraryListByTitle(list: List<RealmMyLibrary?> = libraryList): List<RealmMyLibrary?> {
+        val comparator = compareBy<RealmMyLibrary?> { it?.title?.lowercase(Locale.ROOT) ?: "" }
         return if (isTitleAscending) {
-            libraryList.sortedBy { it?.title?.lowercase(Locale.ROOT) }
+            list.sortedWith(comparator)
         } else {
-            libraryList.sortedByDescending { it?.title?.lowercase(Locale.ROOT) }
+            list.sortedWith(comparator.reversed())
         }
     }
 
-    private fun sortLibraryList(): List<RealmMyLibrary?> {
+    private fun sortLibraryList(list: List<RealmMyLibrary?> = libraryList): List<RealmMyLibrary?> {
+        val comparator = compareBy<RealmMyLibrary?> { it?.createdDate ?: 0L }
         return if (isAscending) {
-            libraryList.sortedBy { it?.createdDate }
+            list.sortedWith(comparator)
         } else {
-            libraryList.sortedByDescending { it?.createdDate }
+            list.sortedWith(comparator.reversed())
         }
     }
 
