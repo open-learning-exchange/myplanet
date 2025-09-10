@@ -2,20 +2,22 @@ package org.ole.planet.myplanet.ui.team.teamMember
 
 import android.content.res.Configuration
 import android.widget.Toast
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseMemberFragment
 import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.model.RealmNews
 
 class JoinedMemberFragment : BaseMemberFragment() {
     private var memberChangeListener: MemberChangeListener = object : MemberChangeListener {
@@ -103,33 +105,41 @@ class JoinedMemberFragment : BaseMemberFragment() {
         }
 
     private fun handleRemoveMember(member: JoinedMemberData) {
-        databaseService.withRealm { realm ->
-            val currentUserId = user?.id
-            if (currentUserId != member.user.id) {
-                member.user.id?.let { removeMember(realm, it) }
-                memberChangeListener.onMemberChanged()
-            } else {
-                val nextOfKin = getNextOfKin(realm)
-                if (nextOfKin != null && nextOfKin.id != null) {
-                    makeLeader(realm, nextOfKin.id!!)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val canRemove = databaseService.withRealmAsync { realm ->
+                val currentUserId = user?.id
+                if (currentUserId != member.user.id) {
                     member.user.id?.let { removeMember(realm, it) }
-                    memberChangeListener.onMemberChanged()
+                    true
                 } else {
-                    Toast.makeText(requireContext(), R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
-                    return@withRealm
+                    val nextOfKin = getNextOfKin(realm)
+                    if (nextOfKin != null && nextOfKin.id != null) {
+                        makeLeader(realm, nextOfKin.id!!)
+                        member.user.id?.let { removeMember(realm, it) }
+                        true
+                    } else {
+                        false
+                    }
                 }
             }
+            if (canRemove) {
+                memberChangeListener.onMemberChanged()
+                refreshMembers()
+            } else {
+                Toast.makeText(requireContext(), R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
+            }
         }
-        refreshMembers()
     }
 
     private fun handleMakeLeader(userId: String) {
-        databaseService.withRealm { realm ->
-            makeLeader(realm, userId)
+        viewLifecycleOwner.lifecycleScope.launch {
+            databaseService.withRealmAsync { realm ->
+                makeLeader(realm, userId)
+            }
+            Toast.makeText(requireContext(), getString(R.string.leader_selected), Toast.LENGTH_SHORT).show()
+            memberChangeListener.onMemberChanged()
+            refreshMembers()
         }
-        Toast.makeText(requireContext(), getString(R.string.leader_selected), Toast.LENGTH_SHORT).show()
-        memberChangeListener.onMemberChanged()
-        refreshMembers()
     }
 
     private fun refreshMembers() {
