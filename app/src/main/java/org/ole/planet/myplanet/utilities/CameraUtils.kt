@@ -75,7 +75,13 @@ object CameraUtils {
     }
 
     private fun closeCamera() {
-        captureSession?.close()
+        try {
+            captureSession?.close()
+        } catch (e: CameraAccessException) {
+            if (e.reason != CameraAccessException.CAMERA_DISCONNECTED) {
+                e.printStackTrace()
+            }
+        }
         captureSession = null
         cameraDevice?.close()
         cameraDevice = null
