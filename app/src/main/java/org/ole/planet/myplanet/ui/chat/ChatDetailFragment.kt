@@ -51,6 +51,7 @@ import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
@@ -79,6 +80,8 @@ class ChatDetailFragment : Fragment() {
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var chatApiHelper: ChatApiHelper
+    @Inject
+    lateinit var userRepository: UserRepository
     private val gson = Gson()
     private val serverUrlMapper = ServerUrlMapper()
     private val jsonMediaType = "application/json".toMediaTypeOrNull()
@@ -113,10 +116,8 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun initChatComponents() {
-        user = databaseService.withRealm { realm ->
-            realm.where(RealmUserModel::class.java)
-                .equalTo("id", settings.getString("userId", ""))
-                .findFirst()?.let { realm.copyFromRealm(it) }
+        viewLifecycleOwner.lifecycleScope.launch {
+            user = userRepository.getCurrentUser()
         }
         mAdapter = ChatAdapter(requireContext(), binding.recyclerGchat)
         binding.recyclerGchat.apply {
@@ -426,7 +427,7 @@ class ChatDetailFragment : Fragment() {
                 realm.where(RealmChatHistory::class.java)
                     .equalTo("_id", id)
                     .findAll()
-                    .maxByOrNull { rev -> rev._rev?.split("-")?.get(0)?.toIntOrNull() ?: 0 }
+                    .maxByOrNull { rev -> rev._rev?.split("-")?.getOrNull(0)?.toIntOrNull() ?: 0 }
                     ?._rev
             }
         } catch (e: Exception) {
@@ -533,7 +534,9 @@ class ChatDetailFragment : Fragment() {
         databaseService.withRealm { realm ->
             try {
                 addConversationToChatHistory(realm, id, query, chatResponse, _rev)
-                realm.commitTransaction()
+                if (realm.isInTransaction) {
+                    realm.commitTransaction()
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
                 if (realm.isInTransaction) {
