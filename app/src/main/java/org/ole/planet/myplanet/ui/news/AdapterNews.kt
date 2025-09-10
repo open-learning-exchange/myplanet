@@ -30,7 +30,6 @@ import com.google.gson.JsonObject
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
-import io.realm.Sort
 import java.io.File
 import java.util.Calendar
 import java.util.Locale
@@ -164,7 +163,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
                 resetViews(viewHolder)
 
-                updateReplyCount(viewHolder = viewHolder, getReplies(news), position)
+                updateReplyCount(viewHolder, news, position)
 
                 val userModel = configureUser(viewHolder, news)
                 showShareButton(viewHolder, news)
@@ -442,16 +441,20 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         return team?.userId == currentUser?._id
     }
 
-    private fun getReplies(finalNews: RealmNews?): List<RealmNews> = mRealm.where(RealmNews::class.java)
-        .sort("time", Sort.DESCENDING)
-        .equalTo("replyTo", finalNews?.id, Case.INSENSITIVE)
-        .findAll()
+    private fun getReplyCount(news: RealmNews?): Int {
+        mRealm.refresh()
+        return mRealm.where(RealmNews::class.java)
+            .equalTo("replyTo", news?.id, Case.INSENSITIVE)
+            .findAll()
+            .size
+    }
 
-    private fun updateReplyCount(viewHolder: ViewHolderNews, replies: List<RealmNews>, position: Int) {
+    private fun updateReplyCount(viewHolder: ViewHolderNews, news: RealmNews?, position: Int) {
+        val replyCount = getReplyCount(news)
         with(viewHolder.rowNewsBinding) {
-            btnShowReply.text = String.format(Locale.getDefault(),"(%d)", replies.size)
+            btnShowReply.text = String.format(Locale.getDefault(), "(%d)", replyCount)
             btnShowReply.setTextColor(context.getColor(R.color.daynight_textColor))
-            val visible = replies.isNotEmpty() && !(position == 0 && parentNews != null) && canReply()
+            val visible = replyCount > 0 && !(position == 0 && parentNews != null) && canReply()
             btnShowReply.visibility = if (visible) View.VISIBLE else View.GONE
         }
     }
@@ -504,8 +507,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
             viewHolder.rowNewsBinding.btnReply.visibility = View.GONE
         }
 
-        val replies = getReplies(finalNews)
-        updateReplyCount(viewHolder, replies, position)
+        updateReplyCount(viewHolder, finalNews, position)
 
         viewHolder.rowNewsBinding.btnShowReply.setOnClickListener {
             sharedPreferences?.setRepliedNewsId(finalNews?.id)
