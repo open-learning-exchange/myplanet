@@ -2,12 +2,12 @@ package org.ole.planet.myplanet.ui.userprofile
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.UserListItemBinding
 import org.ole.planet.myplanet.model.User
+import org.ole.planet.myplanet.utilities.DiffUtils
 
 class TeamListAdapter(
     private var membersList: MutableList<User>,
@@ -39,8 +39,16 @@ class TeamListAdapter(
     }
 
     fun updateList(newUserList: MutableList<User>) {
-        val diffCallback = TeamListDiffCallback(membersList, newUserList)
-        val diffResult = DiffUtil.calculateDiff(diffCallback)
+        val diffResult = DiffUtils.calculateDiff(
+            membersList,
+            newUserList,
+            areItemsTheSame = { old, new -> old.name == new.name },
+            areContentsTheSame = { old, new ->
+                old.name == new.name &&
+                    old.fullName == new.fullName &&
+                    old.image == new.image
+            }
+        )
         membersList.clear()
         membersList.addAll(newUserList)
         diffResult.dispatchUpdatesTo(this)
@@ -63,33 +71,4 @@ class TeamListAdapter(
         }
     }
     
-    private class TeamListDiffCallback(
-        private val oldList: List<User>,
-        private val newList: List<User>
-    ) : DiffUtil.Callback() {
-        
-        override fun getOldListSize(): Int = oldList.size
-        
-        override fun getNewListSize(): Int = newList.size
-        
-        override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-            return try {
-                oldList[oldItemPosition].name == newList[newItemPosition].name
-            } catch (e: Exception) {
-                false
-            }
-        }
-        
-        override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-            return try {
-                val oldItem = oldList[oldItemPosition]
-                val newItem = newList[newItemPosition]
-                oldItem.name == newItem.name &&
-                    oldItem.fullName == newItem.fullName &&
-                    oldItem.image == newItem.image
-            } catch (e: Exception) {
-                false
-            }
-        }
-    }
 }
