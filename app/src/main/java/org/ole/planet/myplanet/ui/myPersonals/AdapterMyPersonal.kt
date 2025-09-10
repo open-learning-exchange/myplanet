@@ -8,7 +8,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
 import java.io.File
@@ -21,6 +20,7 @@ import org.ole.planet.myplanet.ui.myPersonals.AdapterMyPersonal.ViewHolderMyPers
 import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
 import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
 import org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utilities.Utilities
@@ -35,8 +35,17 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
     }
     
     fun updateList(newList: List<RealmMyPersonal>) {
-        val diffCallback = MyPersonalDiffCallback(list, newList)
-        val diffResult = DiffUtil.calculateDiff(diffCallback)
+        val diffResult = DiffUtils.calculateDiff(
+            list,
+            newList,
+            areItemsTheSame = { old, new -> old._id == new._id },
+            areContentsTheSame = { old, new ->
+                old.title == new.title &&
+                    old.description == new.description &&
+                    old.date == new.date &&
+                    old.path == new.path
+            }
+        )
         list.clear()
         list.addAll(newList)
         diffResult.dispatchUpdatesTo(this)
@@ -132,35 +141,4 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
         return list.size
     }
     class ViewHolderMyPersonal(rowMyPersonalBinding: RowMyPersonalBinding) : RecyclerView.ViewHolder(rowMyPersonalBinding.root)
-    
-    private class MyPersonalDiffCallback(
-        private val oldList: List<RealmMyPersonal>,
-        private val newList: List<RealmMyPersonal>
-    ) : DiffUtil.Callback() {
-        
-        override fun getOldListSize(): Int = oldList.size
-        
-        override fun getNewListSize(): Int = newList.size
-        
-        override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-            return try {
-                oldList[oldItemPosition]._id == newList[newItemPosition]._id
-            } catch (e: Exception) {
-                false
-            }
-        }
-        
-        override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-            return try {
-                val oldItem = oldList[oldItemPosition]
-                val newItem = newList[newItemPosition]
-                oldItem.title == newItem.title &&
-                    oldItem.description == newItem.description &&
-                    oldItem.date == newItem.date &&
-                    oldItem.path == newItem.path
-            } catch (e: Exception) {
-                false
-            }
-        }
-    }
 }

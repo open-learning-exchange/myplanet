@@ -22,6 +22,7 @@ import androidx.appcompat.view.ContextThemeWrapper
 import androidx.appcompat.widget.AppCompatRatingBar
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
@@ -46,6 +47,7 @@ import org.ole.planet.myplanet.utilities.ResourceOpener
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 abstract class BaseContainerFragment : BaseResourceFragment() {
@@ -167,20 +169,20 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             return
         }
 
-        val resource = mRealm.where(RealmMyLibrary::class.java)
-            .equalTo("_id", items.resourceId)
-            .findFirst()
-        val downloadUrls = resource?.attachments
-            ?.mapNotNull { attachment ->
-                attachment.name?.let { name ->
-                    createAttachmentDir(items.resourceId, name)
-                    UrlUtils.getUrl("${items.resourceId}", name)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val resource = items.resourceId?.let { libraryRepository.getLibraryItemByResourceId(it) }
+            val downloadUrls = resource?.attachments
+                ?.mapNotNull { attachment ->
+                    attachment.name?.let { name ->
+                        createAttachmentDir(items.resourceId, name)
+                        UrlUtils.getUrl("${items.resourceId}", name)
+                    }
                 }
-            }
-            ?.toCollection(ArrayList()) ?: arrayListOf()
+                ?.toCollection(ArrayList()) ?: arrayListOf()
 
-        if (downloadUrls.isNotEmpty()) {
-            startDownloadWithAutoOpen(downloadUrls, items)
+            if (downloadUrls.isNotEmpty()) {
+                startDownloadWithAutoOpen(downloadUrls, items)
+            }
         }
     }
 
@@ -194,23 +196,25 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     private fun openNonHtmlResource(items: RealmMyLibrary) {
-        val matchingItems = mRealm.where(RealmMyLibrary::class.java)
-            .equalTo("resourceLocalAddress", items.resourceLocalAddress)
-            .findAll()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val matchingItems = items.resourceLocalAddress?.let {
+                libraryRepository.getLibraryItemsByLocalAddress(it)
+            } ?: emptyList()
 
-        val offlineItem = matchingItems.firstOrNull { it.isResourceOffline() }
-        if (offlineItem != null) {
-            ResourceOpener.openFileType(requireActivity(), offlineItem, "offline", profileDbHandler)
-            return
-        }
+            val offlineItem = matchingItems.firstOrNull { it.isResourceOffline() }
+            if (offlineItem != null) {
+                ResourceOpener.openFileType(requireActivity(), offlineItem, "offline", profileDbHandler)
+                return@launch
+            }
 
-        when {
-            items.isResourceOffline() -> ResourceOpener.openFileType(requireActivity(), items, "offline", profileDbHandler)
-            FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4" -> ResourceOpener.openFileType(requireActivity(), items, "online", profileDbHandler)
-            else -> {
-                val arrayList = arrayListOf(UrlUtils.getUrl(items))
-                startDownloadWithAutoOpen(arrayList, items)
-                profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
+            when {
+                items.isResourceOffline() -> ResourceOpener.openFileType(requireActivity(), items, "offline", profileDbHandler)
+                FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4" -> ResourceOpener.openFileType(requireActivity(), items, "online", profileDbHandler)
+                else -> {
+                    val arrayList = arrayListOf(UrlUtils.getUrl(items))
+                    startDownloadWithAutoOpen(arrayList, items)
+                    profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
+                }
             }
         }
     }

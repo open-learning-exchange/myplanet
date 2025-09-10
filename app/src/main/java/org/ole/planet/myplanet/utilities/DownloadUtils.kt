@@ -111,7 +111,8 @@ object DownloadUtils {
         val channel = if (forWorker) WORKER_CHANNEL else COMPLETION_CHANNEL
         createChannels(context)
         val text = if (hadErrors) {
-            context.getString(R.string.download_progress_with_errors, completed, total)
+            val errorMessage = context.getString(R.string.download_progress_with_errors, completed, total)
+            errorMessage
         } else {
             context.getString(R.string.download_progress, completed, total)
         }
