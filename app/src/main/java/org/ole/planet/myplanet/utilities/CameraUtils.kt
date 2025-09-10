@@ -61,10 +61,10 @@ object CameraUtils {
             captureSession?.abortCaptures()
             captureSession?.capture(captureBuilder!!.build(), captureCallback, null)
         } catch (e: CameraAccessException) {
-            when (e.reason) {
-                CameraAccessException.CAMERA_DISCONNECTED -> {
-                    reopenCamera(context)
-                }
+            if (e.reason == CameraAccessException.CAMERA_DISCONNECTED) {
+                reopenCamera(context)
+            } else {
+                e.printStackTrace()
             }
         }
     }
@@ -126,7 +126,11 @@ object CameraUtils {
                 }
             }, null)
         } catch (e: CameraAccessException) {
-            e.printStackTrace()
+            if (e.reason == CameraAccessException.CAMERA_DISCONNECTED) {
+                reopenCamera(context)
+            } else {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -148,7 +152,11 @@ object CameraUtils {
                             captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
                             captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, backgroundHandler)
                         } catch (e: CameraAccessException) {
-                            e.printStackTrace()
+                            if (e.reason == CameraAccessException.CAMERA_DISCONNECTED) {
+                                reopenCamera(context)
+                            } else {
+                                e.printStackTrace()
+                            }
                         }
                     }
 
@@ -168,7 +176,11 @@ object CameraUtils {
                             captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
                             captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, backgroundHandler)
                         } catch (e: CameraAccessException) {
-                            e.printStackTrace()
+                            if (e.reason == CameraAccessException.CAMERA_DISCONNECTED) {
+                                reopenCamera(context)
+                            } else {
+                                e.printStackTrace()
+                            }
                         }
                     }
 
@@ -177,7 +189,11 @@ object CameraUtils {
                 )
             }
         } catch (e: CameraAccessException) {
-            e.printStackTrace()
+            if (e.reason == CameraAccessException.CAMERA_DISCONNECTED) {
+                reopenCamera(context)
+            } else {
+                e.printStackTrace()
+            }
         }
     }
 
