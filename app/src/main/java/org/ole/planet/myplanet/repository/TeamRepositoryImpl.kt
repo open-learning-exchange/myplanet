@@ -4,6 +4,7 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmTeamTask
 
 class TeamRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -24,6 +25,10 @@ class TeamRepositoryImpl @Inject constructor(
         return queryList(RealmMyTeam::class.java) {
             equalTo("teamId", teamId)
         }.mapNotNull { it.resourceId?.takeIf { id -> id.isNotBlank() } }
+    }
+
+    override suspend fun deleteTask(taskId: String) {
+        delete(RealmTeamTask::class.java, "id", taskId)
     }
 }
 
