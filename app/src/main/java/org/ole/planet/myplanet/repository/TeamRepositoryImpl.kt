@@ -20,6 +20,15 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun isMember(userId: String?, teamId: String): Boolean {
+        userId ?: return false
+        return queryList(RealmMyTeam::class.java) {
+            equalTo("userId", userId)
+            equalTo("teamId", teamId)
+            equalTo("docType", "membership")
+        }.isNotEmpty()
+    }
+
     private suspend fun getResourceIds(teamId: String): List<String> {
         return queryList(RealmMyTeam::class.java) {
             equalTo("teamId", teamId)

@@ -4,5 +4,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 
 interface TeamRepository {
     suspend fun getTeamResources(teamId: String): List<RealmMyLibrary>
+
+    suspend fun isMember(userId: String?, teamId: String): Boolean
 }
 
