@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.DiffUtils as DiffUtilExtensions
 
 class AdapterNotification(
@@ -75,20 +76,18 @@ class AdapterNotification(
                 "task" -> {
                     val datePattern = Pattern.compile("\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s\\d{1,2},\\s\\w+\\s\\d{4}\\b")
                     val matcher = datePattern.matcher(notification.message)
-
                     if (matcher.find()) {
                         val taskTitle = notification.message.substring(0, matcher.start()).trim()
                         val dateValue = notification.message.substring(matcher.start()).trim()
-                        return formatTaskNotification(context, taskTitle, dateValue)
+                        formatTaskNotification(context, taskTitle, dateValue)
                     } else {
-                        "INVALID"
+                        notification.message
                     }
                 }
                 "resource" -> {
-                    val resourceCount = notification.message.toIntOrNull()
-                    resourceCount?.let {
-                        context.getString(R.string.resource_notification, it)
-                    } ?: "INVALID"
+                    notification.message.toIntOrNull()?.let { count ->
+                        context.getString(R.string.resource_notification, count)
+                    } ?: notification.message
                 }
                 "storage" -> {
                     val storageValue = notification.message.replace("%", "").toIntOrNull()
@@ -98,20 +97,28 @@ class AdapterNotification(
                             it <= 40 -> context.getString(R.string.storage_running_low) + " ${it}%"
                             else -> context.getString(R.string.storage_available) + " ${it}%"
                         }
-                    } ?: "INVALID"
+                    } ?: notification.message
                 }
                 "join_request" -> {
-                    val teamId = notification.relatedId
-                    val teamName = databaseService.withRealm { realm ->
-                        realm.where(RealmMyTeam::class.java)
-                            .equalTo("_id", teamId)
-                            .findFirst()?.name
-                    } ?: "Unknown Team"
-                    val message = notification.message
-                    if (message.isNotEmpty()) {
-                        "<b>Join Request:</b> $message"
-                    } else {
-                        "<b>Join Request:</b> New request to join $teamName"
+                    databaseService.withRealm { realm ->
+                        val joinRequest = realm.where(RealmMyTeam::class.java)
+                            .equalTo("_id", notification.relatedId)
+                            .equalTo("docType", "request")
+                            .findFirst()
+                        val team = joinRequest?.teamId?.let { tid ->
+                            realm.where(RealmMyTeam::class.java)
+                                .equalTo("_id", tid)
+                                .findFirst()
+                        }
+                        val requester = joinRequest?.userId?.let { uid ->
+                            realm.where(RealmUserModel::class.java)
+                                .equalTo("id", uid)
+                                .findFirst()
+                        }
+                        val requesterName = requester?.name ?: "Unknown User"
+                        val teamName = team?.name ?: "Unknown Team"
+                        "<b>${context.getString(R.string.join_request_prefix)}</b> " +
+                            context.getString(R.string.user_requested_to_join_team, requesterName, teamName)
                     }
                 }
                 else -> notification.message
@@ -134,5 +141,4 @@ class AdapterNotification(
             }
         }
     }
-
 }
