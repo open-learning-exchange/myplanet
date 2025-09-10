@@ -66,6 +66,16 @@ class SubmissionRepositoryImpl @Inject constructor(
         }.toMap()
     }
 
+    override suspend fun hasPendingSubmissions(): Boolean {
+        return withRealm { realm ->
+            realm.where(RealmSubmission::class.java)
+                .equalTo("isUpdated", true)
+                .or()
+                .isEmpty("_id")
+                .findFirst() != null
+        }
+    }
+
     override suspend fun getSubmissionById(id: String): RealmSubmission? {
         return findByField(RealmSubmission::class.java, "id", id)
     }

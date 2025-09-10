@@ -12,6 +12,7 @@ import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -20,6 +21,8 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.di.SubmissionRepositoryEntryPoint
+import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.NetworkUtils
@@ -27,6 +30,12 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 
 class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters) : CoroutineWorker(context, workerParams) {
     private val databaseService = DatabaseService(context)
+    private val submissionRepository: SubmissionRepository by lazy {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            SubmissionRepositoryEntryPoint::class.java
+        ).submissionRepository()
+    }
     companion object {
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "server_reachability_channel"
@@ -175,22 +184,6 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
         }
     }
 
-    private fun hasPendingSubmissions(): Boolean {
-        return try {
-            databaseService.withRealm { realm ->
-                val submissions = realm.where(RealmSubmission::class.java)
-                    .equalTo("isUpdated", true)
-                    .or()
-                    .isEmpty("_id")
-                    .findAll()
-                submissions.isNotEmpty()
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
-        }
-    }
-
     private fun hasPendingExamResults(): Boolean {
         return try {
             databaseService.withRealm { realm ->
@@ -208,7 +201,7 @@ class ServerReachabilityWorker(context: Context, workerParams: WorkerParameters)
 
     private suspend fun uploadSubmissions() {
         try {
-            if (hasPendingSubmissions()) {
+            if (submissionRepository.hasPendingSubmissions()) {
                 withContext(Dispatchers.IO) {
                     val uploadManager = UploadManager(applicationContext)
                     uploadManager.uploadSubmissions()
