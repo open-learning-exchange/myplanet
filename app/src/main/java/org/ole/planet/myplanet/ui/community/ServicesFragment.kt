@@ -5,11 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.lifecycle.lifecycleScope
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import io.realm.RealmResults
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentServicesBinding
@@ -42,17 +38,6 @@ class ServicesFragment : BaseTeamFragment() {
 
         val links = mRealm.where(RealmMyTeam::class.java)?.equalTo("docType", "link")?.findAll()
 
-        binding?.fab?.setOnClickListener {
-            val bottomSheetDialog: BottomSheetDialogFragment = AddLinkFragment()
-            bottomSheetDialog.show(childFragmentManager, "")
-            viewLifecycleOwner.lifecycleScope.launch {
-                delay(1000)
-                bottomSheetDialog.dialog?.setOnDismissListener {
-                    setRecyclerView(links)
-                }
-            }
-        }
-
         if (links?.size == 0) {
             binding?.llServices?.visibility = View.GONE
             binding?.tvNoLinks?.visibility = View.VISIBLE
@@ -76,12 +61,6 @@ class ServicesFragment : BaseTeamFragment() {
         )
         binding?.let { setMarkdownText(it.tvDescription, markdownContentWithLocalPaths) }
         setRecyclerView(links)
-
-        if (user?.isManager() == true || user?.isLeader() == true) {
-            binding?.fab?.show()
-        } else {
-            binding?.fab?.hide()
-        }
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
