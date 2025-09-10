@@ -15,23 +15,27 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import java.text.Normalizer
 import java.util.Locale
+import java.util.UUID
 
 @HiltViewModel
 class SurveyViewModel @Inject constructor(
     private val databaseService: DatabaseService,
     private val syncManager: SyncManager,
     @AppPreferences private val settings: SharedPreferences,
-    @ApplicationContext context: Context
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val prefManager = SharedPrefManager(context)
@@ -57,6 +61,15 @@ class SurveyViewModel @Inject constructor(
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
     val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
 
+    sealed class AdoptionState {
+        object Idle : AdoptionState()
+        object Success : AdoptionState()
+        data class Error(val message: String) : AdoptionState()
+    }
+
+    private val _adoptionState = MutableStateFlow<AdoptionState>(AdoptionState.Idle)
+    val adoptionState: StateFlow<AdoptionState> = _adoptionState.asStateFlow()
+
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -78,6 +91,105 @@ class SurveyViewModel @Inject constructor(
     fun setTeamShareAllowed(flag: Boolean) {
         currentIsTeamShareAllowed = flag
         refreshSurveys()
+    }
+
+    fun adoptSurvey(exam: RealmStepExam, teamId: String?) {
+        viewModelScope.launch {
+            val success = databaseService.executeTransactionWithResultAsync { realm ->
+                val userModel = realm.where(RealmUserModel::class.java)
+                    .equalTo("id", settings.getString("userId", ""))
+                    .findFirst()
+                val sParentCode = settings.getString("parentCode", "")
+                val planetCode = settings.getString("planetCode", "")
+
+                val parentJsonString = try {
+                    JSONObject().apply {
+                        put("_id", exam.id)
+                        put("name", exam.name)
+                        put("courseId", exam.courseId ?: "")
+                        put("sourcePlanet", exam.sourcePlanet ?: "")
+                        put("teamShareAllowed", exam.isTeamShareAllowed)
+                        put("noOfQuestions", exam.noOfQuestions)
+                        put("isFromNation", exam.isFromNation)
+                    }.toString()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    "{}"
+                }
+
+                val userJsonString = try {
+                    JSONObject().apply {
+                        put("doc", JSONObject().apply {
+                            put("_id", userModel?.id)
+                            put("name", userModel?.name)
+                            put("userId", userModel?.id ?: "")
+                            put("teamPlanetCode", planetCode ?: "")
+                            put("status", "active")
+                            put("type", "team")
+                            put("createdBy", userModel?.id ?: "")
+                        })
+
+                        if (isTeam && teamId != null) {
+                            put("membershipDoc", JSONObject().apply {
+                                put("teamId", teamId)
+                            })
+                        }
+                    }.toString()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    "{}"
+                }
+
+                val adoptionId = "${UUID.randomUUID()}"
+                val examId = exam.id
+                val userId = userModel?.id
+
+                val existingAdoption = realm.where(RealmSubmission::class.java)
+                    .equalTo("userId", userId)
+                    .equalTo("parentId", examId)
+                    .equalTo("status", "")
+                    .findFirst()
+
+                if (existingAdoption == null) {
+                    realm.createObject(RealmSubmission::class.java, adoptionId).apply {
+                        parentId = examId
+                        parent = parentJsonString
+                        this.userId = userId
+                        user = userJsonString
+                        type = "survey"
+                        status = ""
+                        uploaded = false
+                        source = planetCode ?: ""
+                        parentCode = sParentCode ?: ""
+                        startTime = System.currentTimeMillis()
+                        lastUpdateTime = System.currentTimeMillis()
+                        isUpdated = true
+
+                        if (isTeam && teamId != null) {
+                            membershipDoc = realm.createObject(RealmMembershipDoc::class.java).apply {
+                                this.teamId = teamId
+                            }
+                        }
+                    }
+                    true
+                } else {
+                    false
+                }
+            } ?: false
+
+            if (success) {
+                _adoptionState.value = AdoptionState.Success
+                refreshSurveys()
+            } else {
+                _adoptionState.value = AdoptionState.Error(
+                    context.getString(R.string.failed_to_adopt_survey)
+                )
+            }
+        }
+    }
+
+    fun resetAdoptionState() {
+        _adoptionState.value = AdoptionState.Idle
     }
 
     fun refreshSurveys() {

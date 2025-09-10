@@ -62,16 +62,15 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
         teamId = arguments?.getString("teamId", null)
         profileDbHandler = UserProfileDbHandler(requireContext())
         val userProfileModel = profileDbHandler.userModel
-        adapter = AdapterSurvey(requireActivity(), mRealm, userProfileModel?.id, isTeam, teamId, this, settings)
+        adapter = AdapterSurvey(requireActivity(), mRealm, userProfileModel?.id, isTeam, teamId, this)
 
         viewModel.init(isTeam, teamId)
         viewModel.startExamSync()
     }
 
 
-    override fun onSurveyAdopted() {
-        binding.rbTeamSurvey.isChecked = true
-        viewModel.setTeamShareAllowed(false)
+    override fun onAdoptRequested(exam: RealmStepExam, teamId: String?) {
+        viewModel.adoptSurvey(exam, teamId)
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> = adapter
@@ -128,6 +127,32 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), SurveyAdoptListen
                             "Sync failed: ${state.message}",
                             Snackbar.LENGTH_LONG
                         ).setAction("Retry") { viewModel.startExamSync() }.show()
+                    }
+                    else -> {}
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.adoptionState.collectLatest { state ->
+                when (state) {
+                    is SurveyViewModel.AdoptionState.Success -> {
+                        binding.rbTeamSurvey.isChecked = true
+                        viewModel.setTeamShareAllowed(false)
+                        Snackbar.make(
+                            binding.root,
+                            getString(R.string.survey_adopted_successfully),
+                            Snackbar.LENGTH_LONG
+                        ).show()
+                        viewModel.resetAdoptionState()
+                    }
+                    is SurveyViewModel.AdoptionState.Error -> {
+                        Snackbar.make(
+                            binding.root,
+                            state.message,
+                            Snackbar.LENGTH_LONG
+                        ).show()
+                        viewModel.resetAdoptionState()
                     }
                     else -> {}
                 }
