@@ -37,6 +37,11 @@ class TeamRepositoryImpl @Inject constructor(
         isEnterprise: Boolean,
         user: RealmUserModel
     ) {
+        val createdBy = user._id
+        val userId = user.id
+        val parentCode = user.parentCode
+        val planetCode = user.planetCode
+
         executeTransaction { realm ->
             val teamId = AndroidDecrypter.generateIv()
             val team = realm.createObject(RealmMyTeam::class.java, teamId)
@@ -52,20 +57,20 @@ class TeamRepositoryImpl @Inject constructor(
             }
             team.name = name
             team.description = map["desc"]
-            team.createdBy = user._id
+            team.createdBy = createdBy
             team.teamId = ""
             team.isPublic = isPublic
-            team.userId = user.id
-            team.parentCode = user.parentCode
-            team.teamPlanetCode = user.planetCode
+            team.userId = userId
+            team.parentCode = parentCode
+            team.teamPlanetCode = planetCode
             team.updated = true
 
             val teamMemberObj =
                 realm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
-            teamMemberObj.userId = user._id
+            teamMemberObj.userId = createdBy
             teamMemberObj.teamId = teamId
-            teamMemberObj.teamPlanetCode = user.planetCode
-            teamMemberObj.userPlanetCode = user.planetCode
+            teamMemberObj.teamPlanetCode = planetCode
+            teamMemberObj.userPlanetCode = planetCode
             teamMemberObj.docType = "membership"
             teamMemberObj.isLeader = true
             teamMemberObj.teamType = teamType
