@@ -17,7 +17,6 @@ import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
-import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -29,9 +28,9 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getMyTeamsByUserId
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
-import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
+import org.ole.planet.myplanet.repository.TeamRepository
 
 @AndroidEntryPoint
 class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
@@ -49,6 +48,8 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private var conditionApplied: Boolean = false
     @Inject
     lateinit var uploadManager: UploadManager
+    @Inject
+    lateinit var teamRepository: TeamRepository
     private val settings by lazy {
         requireActivity().getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     }
@@ -141,10 +142,22 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                         alertCreateTeamBinding.etName.error = getString(R.string.please_enter_a_name)
                     } else -> {
                         if (team == null) {
-                            createTeam(name,
-                                if (alertCreateTeamBinding.spnTeamType.selectedItemPosition == 0) "local" else "sync", map,
-                                alertCreateTeamBinding.switchPublic.isChecked
-                            )
+                            lifecycleScope.launch {
+                                teamRepository.createTeam(
+                                    name,
+                                    if (alertCreateTeamBinding.spnTeamType.selectedItemPosition == 0) "local" else "sync",
+                                    map,
+                                    alertCreateTeamBinding.switchPublic.isChecked,
+                                    TextUtils.equals(type, "enterprise"),
+                                    user!!
+                                )
+                                binding.etSearch.visibility = View.VISIBLE
+                                binding.tableTitle.visibility = View.VISIBLE
+                                Utilities.toast(activity, getString(R.string.team_created))
+                                setTeamList()
+                                // dialog won't close by default
+                                dialog.dismiss()
+                            }
                         } else {
                             if (!team.realm.isInTransaction) {
                                 team.realm.beginTransaction()
@@ -157,57 +170,18 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                             team.createdBy = userId
                             team.updated = true
                             team.realm.commitTransaction()
+                            binding.etSearch.visibility = View.VISIBLE
+                            binding.tableTitle.visibility = View.VISIBLE
+                            Utilities.toast(activity, getString(R.string.team_created))
+                            setTeamList()
+                            // dialog won't close by default
+                            dialog.dismiss()
                         }
-                        binding.etSearch.visibility = View.VISIBLE
-                        binding.tableTitle.visibility = View.VISIBLE
-                        Utilities.toast(activity, getString(R.string.team_created))
-                        setTeamList()
-                        // dialog won't close by default
-                        dialog.dismiss()
                     }
                 }
             }
         }
         dialog.show()
-    }
-
-    private fun createTeam(name: String?, type: String?, map: HashMap<String, String>, isPublic: Boolean) {
-        val user = UserProfileDbHandler(requireContext()).userModel!!
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        val teamId = AndroidDecrypter.generateIv()
-        val team = mRealm.createObject(RealmMyTeam::class.java, teamId)
-        team.status = "active"
-        team.createdDate = Date().time
-        if (TextUtils.equals(this.type, "enterprise")) {
-            team.type = "enterprise"
-            team.services = map["services"]
-            team.rules = map["rules"]
-        } else {
-            team.type = "team"
-            team.teamType = type
-        }
-        team.name = name
-        team.description = map["desc"]
-        team.createdBy = user._id
-        team.teamId = ""
-        team.isPublic = isPublic
-        team.userId = user.id
-        team.parentCode = user.parentCode
-        team.teamPlanetCode = user.planetCode
-        team.updated = true
-
-        //create member ship
-        val teamMemberObj = mRealm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
-        teamMemberObj.userId = user._id
-        teamMemberObj.teamId = teamId
-        teamMemberObj.teamPlanetCode = user.planetCode
-        teamMemberObj.userPlanetCode = user.planetCode
-        teamMemberObj.docType = "membership"
-        teamMemberObj.isLeader = true
-        teamMemberObj.teamType = type
-        teamMemberObj.updated = true
-
-        mRealm.commitTransaction()
     }
 
     override fun onResume() {
