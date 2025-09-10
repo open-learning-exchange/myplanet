@@ -55,7 +55,6 @@ class NewsFragment : BaseNewsFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentNewsBinding.inflate(inflater, container, false)
         llImage = binding.llImages
-        mRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
         setupUI(binding.newsFragmentParentLayout, requireActivity())
         if (user?.id?.startsWith("guest") == true) {
@@ -166,31 +165,32 @@ class NewsFragment : BaseNewsFragment() {
         binding.addNewsImage.visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, requireActivity())) View.VISIBLE else View.GONE
     }
 
-    private val newsList: List<RealmNews?> get() {
-        val allNews: List<RealmNews> = mRealm.where(RealmNews::class.java).isEmpty("replyTo")
-            .equalTo("docType", "message", Case.INSENSITIVE).findAll()
-        val list: MutableList<RealmNews?> = ArrayList()
-        for (news in allNews) {
-            if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("community", ignoreCase = true)) {
-                list.add(news)
-                continue
-            }
-            if (!TextUtils.isEmpty(news.viewIn)) {
-                val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
-                for (e in ar) {
-                    val ob = e.asJsonObject
-                    var userId = "${user?.planetCode}@${user?.parentCode}"
-                    if(userId.isEmpty() || userId=="@"){
-                        userId = settings?.getString("planetCode","")+"@"+settings?.getString("parentCode", "")
-                    }
-                    if (ob != null && ob.has("_id") && ob["_id"].asString.equals(userId, ignoreCase = true)) {
-                        list.add(news)
+    private val newsList: List<RealmNews?>
+        get() = databaseService.withRealm { realm ->
+            val allNews = realm.where(RealmNews::class.java).isEmpty("replyTo")
+                .equalTo("docType", "message", Case.INSENSITIVE).findAll()
+            val list: MutableList<RealmNews?> = ArrayList()
+            for (news in allNews) {
+                if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("community", ignoreCase = true)) {
+                    list.add(realm.copyFromRealm(news))
+                    continue
+                }
+                if (!TextUtils.isEmpty(news.viewIn)) {
+                    val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
+                    for (e in ar) {
+                        val ob = e.asJsonObject
+                        var userId = "${user?.planetCode}@${user?.parentCode}"
+                        if (userId.isEmpty() || userId == "@") {
+                            userId = settings?.getString("planetCode", "") + "@" + settings?.getString("parentCode", "")
+                        }
+                        if (ob != null && ob.has("_id") && ob["_id"].asString.equals(userId, ignoreCase = true)) {
+                            list.add(realm.copyFromRealm(news))
+                        }
                     }
                 }
             }
+            list
         }
-        return list
-    }
 
     override fun setData(list: List<RealmNews?>?) {
         if (!isAdded || list == null) return
@@ -207,9 +207,12 @@ class NewsFragment : BaseNewsFragment() {
                     }
                 }
             }
-            val lib: List<RealmMyLibrary?> = mRealm.where(RealmMyLibrary::class.java)
-                .`in`("_id", resourceIds.toTypedArray())
-                .findAll()
+            val lib: List<RealmMyLibrary?> = databaseService.withRealm { realm ->
+                realm.where(RealmMyLibrary::class.java)
+                    .`in`("_id", resourceIds.toTypedArray())
+                    .findAll()
+                    .let { realm.copyFromRealm(it) }
+            }
             getUrlsAndStartDownload(lib, ArrayList())
             val updatedListAsMutable: MutableList<RealmNews?> = list.toMutableList()
             val sortedList = updatedListAsMutable.sortedWith(compareByDescending { news ->
