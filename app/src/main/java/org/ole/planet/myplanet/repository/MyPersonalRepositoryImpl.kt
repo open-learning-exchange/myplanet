@@ -19,6 +19,7 @@ class MyPersonalRepositoryImpl @Inject constructor(
     ) {
         val personal = RealmMyPersonal().apply {
             id = UUID.randomUUID().toString()
+            _id = id
             this.title = title
             this.userId = userId
             this.userName = userName

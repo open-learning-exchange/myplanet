@@ -29,15 +29,17 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
     private lateinit var rowMyPersonalBinding: RowMyPersonalBinding
     private var realm: Realm? = null
     private var listener: OnSelectedMyPersonal? = null
-    
+
     fun setListener(listener: OnSelectedMyPersonal?) {
         this.listener = listener
     }
-    
+
     fun updateList(newList: List<RealmMyPersonal>) {
+        val safeOldList = realm?.copyFromRealm(list) ?: list
+        val safeNewList = realm?.copyFromRealm(newList) ?: newList
         val diffResult = DiffUtils.calculateDiff(
-            list,
-            newList,
+            safeOldList,
+            safeNewList,
             areItemsTheSame = { old, new -> old._id == new._id },
             areContentsTheSame = { old, new ->
                 old.title == new.title &&
@@ -47,7 +49,7 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
             }
         )
         list.clear()
-        list.addAll(newList)
+        list.addAll(safeNewList)
         diffResult.dispatchUpdatesTo(this)
     }
     
