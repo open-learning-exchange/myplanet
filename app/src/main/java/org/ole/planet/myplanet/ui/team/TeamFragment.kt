@@ -121,17 +121,20 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                                 alertCreateTeamBinding.switchPublic.isChecked
                             )
                         } else {
-                            if (!team.realm.isInTransaction) {
-                                team.realm.beginTransaction()
+                            mRealm.executeTransaction { realm ->
+                                val realmTeam = realm.where(RealmMyTeam::class.java)
+                                    .equalTo("_id", team._id)
+                                    .findFirst()
+                                realmTeam?.apply {
+                                    this.name = name
+                                    services = alertCreateTeamBinding.etServices.text.toString()
+                                    rules = alertCreateTeamBinding.etRules.text.toString()
+                                    limit = 12
+                                    description = alertCreateTeamBinding.etDescription.text.toString()
+                                    createdBy = userId
+                                    updated = true
+                                }
                             }
-                            team.name = name
-                            team.services = "${alertCreateTeamBinding.etServices.text}"
-                            team.rules = "${alertCreateTeamBinding.etRules.text}"
-                            team.limit = 12
-                            team.description = "${alertCreateTeamBinding.etDescription.text}"
-                            team.createdBy = userId
-                            team.updated = true
-                            team.realm.commitTransaction()
                         }
                         binding.etSearch.visibility = View.VISIBLE
                         binding.tableTitle.visibility = View.VISIBLE
