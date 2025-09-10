@@ -31,7 +31,6 @@ import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.ui.myhealth.UserListArrayAdapter
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.teamTask.AdapterTask.OnCompletedListener
@@ -40,7 +39,6 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 @AndroidEntryPoint
 class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     private var _binding: FragmentTeamTaskBinding? = null
@@ -52,8 +50,6 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     private var currentTab = R.id.btn_all
 
     private lateinit var adapterTask: AdapterTask
-    @Inject
-    lateinit var teamRepository: TeamRepository
     var listener = DatePickerDialog.OnDateSetListener { _: DatePicker?, year: Int, monthOfYear: Int, dayOfMonth: Int ->
             deadline = Calendar.getInstance()
             deadline?.set(Calendar.YEAR, year)
