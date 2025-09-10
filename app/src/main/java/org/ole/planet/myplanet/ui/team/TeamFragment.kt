@@ -172,7 +172,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     }
 
     private fun createTeam(name: String?, type: String?, map: HashMap<String, String>, isPublic: Boolean) {
-        val user = UserProfileDbHandler(requireContext()).userModel!!
+        val user = UserProfileDbHandler(requireContext()).userModel ?: return
         if (!mRealm.isInTransaction) mRealm.beginTransaction()
         val teamId = AndroidDecrypter.generateIv()
         val team = mRealm.createObject(RealmMyTeam::class.java, teamId)
@@ -230,9 +230,9 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                 var list: List<RealmMyTeam>
                 var conditionApplied = false
                 if(fromDashboard){
-                    list = teamList!!.filter {
+                    list = teamList?.filter {
                         it.name?.contains(charSequence.toString(), ignoreCase = true) == true
-                    }
+                    } ?: emptyList()
                 } else {
                     val query = mRealm.where(RealmMyTeam::class.java).isEmpty("teamId")
                         .notEqualTo("status", "archived")
@@ -279,7 +279,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     }
 
     private fun setTeamList() {
-        val list = teamList!!
+        val list = teamList ?: return
         adapterTeamList = activity?.let { AdapterTeamList(it, list, mRealm, childFragmentManager, uploadManager) } ?: return
         adapterTeamList.setType(type)
         adapterTeamList.setTeamListener(this@TeamFragment)
@@ -312,12 +312,13 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     }
 
     override fun onEditTeam(team: RealmMyTeam?) {
-        createTeamAlert(team!!)
+        team?.let { createTeamAlert(it) }
     }
 
     private fun updatedTeamList() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val sortedList = sortTeams(teamList!!)
+            val list = teamList ?: return@launch
+            val sortedList = sortTeams(list)
             val adapterTeamList = AdapterTeamList(activity as Context, sortedList, mRealm, childFragmentManager, uploadManager).apply {
                 setType(type)
                 setTeamListener(this@TeamFragment)
