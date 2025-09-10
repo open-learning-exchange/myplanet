@@ -196,7 +196,13 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
             currentList.indexOfFirst { it?.id == newsId }
         }
         if (index >= 0) {
-            notifyItemChanged(index)
+            val holder = recyclerView?.findViewHolderForAdapterPosition(index) as? ViewHolderNews
+            if (holder != null) {
+                val news = getNews(holder, index)
+                updateReplyCount(holder, news, index)
+            } else {
+                notifyItemChanged(index)
+            }
         }
     }
 
