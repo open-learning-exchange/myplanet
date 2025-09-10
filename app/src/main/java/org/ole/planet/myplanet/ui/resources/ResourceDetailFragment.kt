@@ -32,7 +32,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var _binding: FragmentLibraryDetailBinding? = null
     private val binding get() = _binding!!
     private var libraryId: String? = null
-    private lateinit var library: RealmMyLibrary
+    private var library: RealmMyLibrary? = null
     var userModel: RealmUserModel? = null
     private val fragmentScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,17 +59,19 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                             }
                             onAdd(backgroundRealm, "resources", userId, libraryId)
                         }
-                        library = backgroundLibrary?.let { backgroundRealm.copyFromRealm(it) }!!
+                        library = backgroundLibrary?.let { backgroundRealm.copyFromRealm(it) }
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
             }
             withContext(Dispatchers.Main) {
-                binding.btnDownload.setImageResource(R.drawable.ic_play)
-                if (!library.userId?.contains(profileDbHandler.userModel?.id)!!) {
-                    Utilities.toast(activity, getString(R.string.added_to_my_library))
-                    binding.btnRemove.setImageResource(R.drawable.close_x)
+                library?.let {
+                    binding.btnDownload.setImageResource(R.drawable.ic_play)
+                    if (!it.userId?.contains(profileDbHandler.userModel?.id)!!) {
+                        Utilities.toast(activity, getString(R.string.added_to_my_library))
+                        binding.btnRemove.setImageResource(R.drawable.close_x)
+                    }
                 }
             }
         }
@@ -84,33 +86,45 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 .equalTo("resourceId", libraryId)
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }
-        }!!
+        }
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        initRatingView("resource", library.resourceId, library.title, this@ResourceDetailFragment)
+        val lib = library
+        if (lib == null) {
+            Utilities.toast(activity, getString(R.string.resource_not_found_message))
+            val activity = requireActivity()
+            if (activity is AddResourceActivity) {
+                activity.finish()
+            } else {
+                NavigationHelper.popBackStack(parentFragmentManager)
+            }
+            return
+        }
+        initRatingView("resource", lib.resourceId, lib.title, this@ResourceDetailFragment)
         setLibraryData()
     }
 
     private fun setLibraryData() {
+        val lib = library ?: return
         with(binding) {
-            tvTitle.text = library.title
-            timesRated.text = requireContext().getString(R.string.num_total, library.timesRated)
-            setTextViewVisibility(tvAuthor, llAuthor, library.author)
-            setTextViewVisibility(tvPublished, llPublisher, library.publisher)
-            setTextViewVisibility(tvMedia, llMedia, library.mediaType)
-            setTextViewVisibility(tvSubject, llSubject, library.subjectsAsString)
-            setTextViewVisibility(tvLanguage, llLanguage, library.language)
-            setTextViewVisibility(tvLicense, llLicense, library.linkToLicense)
-            setTextViewVisibility(tvResource, llResource, listToString(library.resourceFor))
-            setTextViewVisibility(tvType, llType, library.resourceType)
+            tvTitle.text = lib.title
+            timesRated.text = requireContext().getString(R.string.num_total, lib.timesRated)
+            setTextViewVisibility(tvAuthor, llAuthor, lib.author)
+            setTextViewVisibility(tvPublished, llPublisher, lib.publisher)
+            setTextViewVisibility(tvMedia, llMedia, lib.mediaType)
+            setTextViewVisibility(tvSubject, llSubject, lib.subjectsAsString)
+            setTextViewVisibility(tvLanguage, llLanguage, lib.language)
+            setTextViewVisibility(tvLicense, llLicense, lib.linkToLicense)
+            setTextViewVisibility(tvResource, llResource, listToString(lib.resourceFor))
+            setTextViewVisibility(tvType, llType, lib.resourceType)
         }
         fragmentScope.launch {
             withContext(Dispatchers.Main) {
                 try {
-                    profileDbHandler.setResourceOpenCount(library)
+                    profileDbHandler.setResourceOpenCount(lib)
                 } catch (ex: Exception) {
                     ex.printStackTrace()
                 }
@@ -128,20 +142,21 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private fun setupDownloadButton() {
-        binding.btnDownload.visibility = if (TextUtils.isEmpty(library.resourceLocalAddress)) View.GONE else View.VISIBLE
+        val lib = library ?: return
+        binding.btnDownload.visibility = if (TextUtils.isEmpty(lib.resourceLocalAddress)) View.GONE else View.VISIBLE
         binding.btnDownload.setImageResource(
-            if (!library.resourceOffline || library.isResourceOffline()) {
+            if (!lib.resourceOffline || lib.isResourceOffline()) {
                 R.drawable.ic_eye
             } else {
                 R.drawable.ic_download
             })
         binding.btnDownload.contentDescription =
-            if (!library.resourceOffline || library.isResourceOffline()) {
+            if (!lib.resourceOffline || lib.isResourceOffline()) {
                 getString(R.string.view)
             } else {
                 getString(R.string.download)
             }
-        if (getFileExtension(library.resourceLocalAddress) == "mp4") {
+        if (getFileExtension(lib.resourceLocalAddress) == "mp4") {
             binding.btnDownload.setImageResource(R.drawable.ic_play)
         }
     }
@@ -156,14 +171,15 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private fun setClickListeners() {
+        val lib = library ?: return
         binding.btnDownload.setOnClickListener {
-            if (TextUtils.isEmpty(library.resourceLocalAddress)) {
+            if (TextUtils.isEmpty(lib.resourceLocalAddress)) {
                 Toast.makeText(activity, getString(R.string.link_not_available), Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
-            openResource(library)
+            openResource(lib)
         }
-        val isAdd = !library.userId?.contains(profileDbHandler.userModel?.id)!!
+        val isAdd = !lib.userId?.contains(profileDbHandler.userModel?.id)!!
         if (userModel?.isGuest() != true) {
             binding.btnRemove.setImageResource(
                 if (isAdd) {
@@ -229,10 +245,11 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     override fun onRatingChanged() {
-        val `object` = databaseService.withRealm { realm ->
-            getRatingsById(realm, "resource", library.resourceId, userModel?.id)
+        val lib = library ?: return
+        val obj = databaseService.withRealm { realm ->
+            getRatingsById(realm, "resource", lib.resourceId, userModel?.id)
         }
-        setRatings(`object`)
+        setRatings(obj)
     }
     override fun onDestroy() {
         fragmentScope.cancel()
