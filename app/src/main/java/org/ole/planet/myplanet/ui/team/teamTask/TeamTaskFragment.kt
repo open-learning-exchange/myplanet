@@ -17,6 +17,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.nex3z.togglebuttongroup.SingleSelectToggleGroup
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.RealmResults
 import io.realm.Sort
 import java.util.Calendar
@@ -38,7 +39,7 @@ import org.ole.planet.myplanet.utilities.TimeUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
-import dagger.hilt.android.AndroidEntryPoint
+
 @AndroidEntryPoint
 class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     private var _binding: FragmentTeamTaskBinding? = null
