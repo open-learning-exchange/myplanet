@@ -121,6 +121,22 @@ class FinanceFragment : BaseTeamFragment() {
             now[Calendar.MONTH],
             now[Calendar.DAY_OF_MONTH]
         )
+
+        if (!isFromDate) {
+            val fromDateText = binding.tvFromDateCalendar.text.toString()
+            if (fromDateText.isNotEmpty()) {
+                try {
+                    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                    val minDate = dateFormat.parse(fromDateText)?.time
+                    if (minDate != null) {
+                        datePickerDialog.datePicker.minDate = minDate
+                    }
+                } catch (e: ParseException) {
+                    e.printStackTrace()
+                }
+            }
+        }
+
         datePickerDialog.show()
     }
 
@@ -135,7 +151,18 @@ class FinanceFragment : BaseTeamFragment() {
         val fromDate = binding.tvFromDateCalendar.text.toString()
         val toDate = binding.etToDate.text.toString()
         if (fromDate.isNotEmpty() && toDate.isNotEmpty()) {
-            filterDataByDateRange(fromDate, toDate)
+            try {
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                val start = dateFormat.parse(fromDate)
+                val end = dateFormat.parse(toDate)
+                if (start != null && end != null && !end.before(start)) {
+                    filterDataByDateRange(fromDate, toDate)
+                } else {
+                    Utilities.toast(activity, getString(R.string.invalid_date_range))
+                }
+            } catch (e: ParseException) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -146,6 +173,11 @@ class FinanceFragment : BaseTeamFragment() {
 
             val start = dateFormat.parse(fromDate)?.time ?: throw IllegalArgumentException("Invalid fromDate format")
             val end = dateFormat.parse(toDate)?.time ?: throw IllegalArgumentException("Invalid toDate format")
+
+            if (end < start) {
+                Utilities.toast(activity, getString(R.string.invalid_date_range))
+                return
+            }
 
             list = mRealm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)

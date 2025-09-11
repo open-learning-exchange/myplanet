@@ -758,6 +758,7 @@
     <string name="note_is_required">La note est requise</string>
     <string name="amount_is_required">Le montant est requis</string>
     <string name="date_is_required">La date est requise</string>
+    <string name="invalid_date_range">La date de fin ne peut pas être antérieure à la date de début</string>
     <string name="transaction_added">Transaction ajoutée</string>
     <string name="thank_you_for_taking_this">Merci d\'avoir pris ce(s) "</string>
     <string name="we_wish_you_all_the_best">Nous vous souhaitons tout le meilleur.</string>

@@ -758,6 +758,7 @@
     <string name="note_is_required">الملاحظة مطلوبة</string>
     <string name="amount_is_required">المبلغ مطلوب</string>
     <string name="date_is_required">التاريخ مطلوب</string>
+    <string name="invalid_date_range">لا يمكن أن يكون تاريخ الانتهاء قبل تاريخ البدء</string>
     <string name="transaction_added">تمت إضافة المعاملة</string>
     <string name="thank_you_for_taking_this">"شكرًا لك على إجراء هذا "</string>
     <string name="we_wish_you_all_the_best">نتمنى لك كل التوفيق.</string>
