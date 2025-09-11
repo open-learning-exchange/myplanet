@@ -19,4 +19,3 @@ class NewsRepositoryImpl @Inject constructor(
         return news to replies
     }
 }
-
