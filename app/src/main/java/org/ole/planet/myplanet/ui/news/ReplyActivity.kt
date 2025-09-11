@@ -21,11 +21,11 @@ import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
 import io.realm.Realm
 import io.realm.RealmList
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
