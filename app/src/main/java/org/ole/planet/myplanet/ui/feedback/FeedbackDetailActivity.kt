@@ -50,7 +50,12 @@ class FeedbackDetailActivity : AppCompatActivity() {
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         setTitle(R.string.feedback)
-        feedbackId = intent.getStringExtra("id")!!
+        val id = intent.getStringExtra("id")
+        if (id.isNullOrEmpty()) {
+            finish()
+            return
+        }
+        feedbackId = id
         setUpReplies()
 
         lifecycleScope.launch {
