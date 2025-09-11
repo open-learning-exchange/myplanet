@@ -11,6 +11,8 @@ class NotificationRepositoryImpl @Inject constructor(
 ) : RealmRepository(databaseService), NotificationRepository {
 
     override suspend fun getUnreadCount(userId: String?): Int {
+        if (userId == null) return 0
+
         return withRealm { realm ->
             realm.where(RealmNotification::class.java)
                 .equalTo("userId", userId)
