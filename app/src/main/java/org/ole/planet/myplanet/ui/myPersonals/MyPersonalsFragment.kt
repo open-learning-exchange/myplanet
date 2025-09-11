@@ -22,7 +22,8 @@ import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
-    private lateinit var fragmentMyPersonalsBinding: FragmentMyPersonalsBinding
+    private var _binding: FragmentMyPersonalsBinding? = null
+    private val binding get() = _binding!!
     lateinit var mRealm: Realm
     private lateinit var pg: DialogUtils.CustomProgressDialog
     private var addResourceFragment: AddResourceFragment? = null
@@ -42,11 +43,11 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentMyPersonalsBinding = FragmentMyPersonalsBinding.inflate(inflater, container, false)
+        _binding = FragmentMyPersonalsBinding.inflate(inflater, container, false)
         pg = DialogUtils.getCustomProgressDialog(requireContext())
         mRealm = databaseService.realmInstance
-        fragmentMyPersonalsBinding.rvMypersonal.layoutManager = LinearLayoutManager(activity)
-        fragmentMyPersonalsBinding.addMyPersonal.setOnClickListener {
+        binding.rvMypersonal.layoutManager = LinearLayoutManager(activity)
+        binding.addMyPersonal.setOnClickListener {
             addResourceFragment = AddResourceFragment()
             val b = Bundle()
             b.putInt("type", 1)
@@ -54,7 +55,7 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
             addResourceFragment?.setMyPersonalsFragment(this)
             addResourceFragment?.show(childFragmentManager, getString(R.string.add_resource))
         }
-        return fragmentMyPersonalsBinding.root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -69,7 +70,7 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
         personalAdapter = AdapterMyPersonal(requireActivity(), realmMyPersonals.toMutableList())
         personalAdapter?.setListener(this)
         personalAdapter?.setRealm(mRealm)
-        fragmentMyPersonalsBinding.rvMypersonal.adapter = personalAdapter
+        binding.rvMypersonal.adapter = personalAdapter
         showNodata()
         mRealm.addChangeListener {
             updatePersonalList()
@@ -85,12 +86,17 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     }
 
     private fun showNodata() {
-        if (fragmentMyPersonalsBinding.rvMypersonal.adapter?.itemCount == 0) {
-            fragmentMyPersonalsBinding.tvNodata.visibility = View.VISIBLE
-            fragmentMyPersonalsBinding.tvNodata.setText(R.string.no_data_available_please_click_button_to_add_new_resource_in_mypersonal)
+        if (binding.rvMypersonal.adapter?.itemCount == 0) {
+            binding.tvNodata.visibility = View.VISIBLE
+            binding.tvNodata.setText(R.string.no_data_available_please_click_button_to_add_new_resource_in_mypersonal)
         } else {
-            fragmentMyPersonalsBinding.tvNodata.visibility = View.GONE
+            binding.tvNodata.visibility = View.GONE
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 
     override fun onDestroy() {
