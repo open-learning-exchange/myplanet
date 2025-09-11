@@ -13,18 +13,19 @@ import android.widget.LinearLayout
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
-import io.realm.Sort
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -48,6 +49,8 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private lateinit var newsAdapter: AdapterNews
     private val gson = Gson()
     var user: RealmUserModel? = null
+
+    private val viewModel: ReplyViewModel by viewModels()
     
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
@@ -81,15 +84,17 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     }
 
     private fun showData(id: String?) {
-        val news = mRealm.where(RealmNews::class.java).equalTo("id", id).findFirst()
-        val list: List<RealmNews?> = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING).equalTo("replyTo", id, Case.INSENSITIVE).findAll()
-        newsAdapter = AdapterNews(this, user, news, "", null, userProfileDbHandler)
-        newsAdapter.setListener(this)
-        newsAdapter.setmRealm(mRealm)
-        newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
-        newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
-        newsAdapter.updateList(list)
-        activityReplyBinding.rvReply.adapter = newsAdapter
+        id ?: return
+        lifecycleScope.launch {
+            val (news, list) = viewModel.getNewsWithReplies(id)
+            newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler)
+            newsAdapter.setListener(this@ReplyActivity)
+            newsAdapter.setmRealm(mRealm)
+            newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
+            newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
+            newsAdapter.updateList(list)
+            activityReplyBinding.rvReply.adapter = newsAdapter
+        }
     }
 
     override fun onResume() {
