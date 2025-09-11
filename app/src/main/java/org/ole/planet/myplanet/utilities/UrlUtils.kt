@@ -2,109 +2,148 @@ package org.ole.planet.myplanet.utilities
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.net.Uri
 import android.util.Base64
-import androidx.core.net.toUri
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
 object UrlUtils {
-    val header: String
-        get() {
-            val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val credentials = "${settings.getString("url_user", "")}:${settings.getString("url_pwd", "")}".toByteArray()
-            return "Basic ${Base64.encodeToString(credentials, Base64.NO_WRAP)}"
+    fun header(context: Context): String {
+        val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return header(settings)
+    }
+
+    fun header(settings: SharedPreferences): String {
+        val credentials = "${settings.getString("url_user", "")}:${settings.getString("url_pwd", "")}".toByteArray()
+        return "Basic ${Base64.encodeToString(credentials, Base64.NO_WRAP)}"
+    }
+
+    fun hostUrl(context: Context): String {
+        val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return hostUrl(settings)
+    }
+
+    fun hostUrl(settings: SharedPreferences): String {
+        var scheme = settings.getString("url_Scheme", "") ?: ""
+        var hostIp = settings.getString("url_Host", "") ?: ""
+        val isAlternativeUrl = settings.getBoolean("isAlternativeUrl", false)
+        val alternativeUrl = settings.getString("processedAlternativeUrl", "")
+
+        if (isAlternativeUrl && !alternativeUrl.isNullOrEmpty()) {
+            try {
+                val uri = Uri.parse(alternativeUrl)
+                hostIp = uri.host ?: hostIp
+                scheme = uri.scheme ?: scheme
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
 
-    val hostUrl: String
-        get() {
-            val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            var scheme = settings.getString("url_Scheme", "")
-            var hostIp = settings.getString("url_Host", "")
-            val isAlternativeUrl = settings.getBoolean("isAlternativeUrl", false)
-            val alternativeUrl = settings.getString("processedAlternativeUrl", "")
-
-            if (isAlternativeUrl && !alternativeUrl.isNullOrEmpty()) {
-                try {
-                    val uri = alternativeUrl.toUri()
-                    hostIp = uri.host ?: hostIp
-                    scheme = uri.scheme ?: scheme
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-
-            return if (hostIp?.endsWith(".org") == true || hostIp?.endsWith(".gt") == true) {
-                "$scheme://$hostIp/ml/"
-            } else {
-                "$scheme://$hostIp:5000/"
-            }
+        val builder = Uri.Builder().scheme(scheme)
+        return if (hostIp.endsWith(".org") || hostIp.endsWith(".gt")) {
+            builder.authority(hostIp).appendPath("ml").build().toString() + "/"
+        } else {
+            builder.authority("$hostIp:5000").build().toString() + "/"
         }
+    }
+
     fun baseUrl(settings: SharedPreferences): String {
-        var url = if (settings.getBoolean("isAlternativeUrl", false)) {
+        val url = if (settings.getBoolean("isAlternativeUrl", false)) {
             settings.getString("processedAlternativeUrl", "")
         } else {
             settings.getString("couchdbURL", "")
         }
-        if (url != null && url.endsWith("/db")) {
-            url = url.removeSuffix("/db")
-        }
-        return url ?: ""
+        return baseUrl(url ?: "")
     }
 
     fun dbUrl(settings: SharedPreferences): String {
         val base = baseUrl(settings)
-        return if (base.endsWith("/db")) base else "$base/db"
+        return dbUrl(base)
     }
 
     fun baseUrl(url: String): String {
-        return if (url.endsWith("/db")) url.removeSuffix("/db") else url
+        val uri = Uri.parse(url)
+        val segments = uri.pathSegments
+        return if (segments.lastOrNull() == "db") {
+            val newPath = if (segments.size > 1) "/" + segments.dropLast(1).joinToString("/") else null
+            uri.buildUpon().path(newPath).build().toString()
+        } else {
+            uri.toString()
+        }
     }
 
     fun dbUrl(url: String): String {
-        return if (url.endsWith("/db")) url else "$url/db"
+        val uri = Uri.parse(url)
+        return if (uri.pathSegments.lastOrNull() == "db") {
+            uri.toString()
+        } else {
+            uri.buildUpon().appendPath("db").build().toString()
+        }
     }
 
-    fun getUrl(library: RealmMyLibrary?): String {
-        return getUrl(library?.resourceId, library?.resourceLocalAddress)
+    fun getUrl(context: Context, library: RealmMyLibrary?): String {
+        return getUrl(context, library?.resourceId, library?.resourceLocalAddress)
     }
 
-    fun getUrl(id: String?, file: String?): String {
-        return "${getUrl()}/resources/$id/$file"
+    fun getUrl(context: Context, id: String?, file: String?): String {
+        return Uri.parse(getUrl(context)).buildUpon()
+            .appendPath("resources")
+            .appendPath(id ?: "")
+            .appendPath(file ?: "")
+            .build().toString()
     }
 
-    fun getUserImageUrl(userId: String?, imageName: String): String {
-        return "${getUrl()}/_users/$userId/$imageName"
+    fun getUserImageUrl(context: Context, userId: String?, imageName: String): String {
+        return Uri.parse(getUrl(context)).buildUpon()
+            .appendPath("_users")
+            .appendPath(userId ?: "")
+            .appendPath(imageName)
+            .build().toString()
     }
 
-    fun getUrl(): String {
+    fun getUrl(context: Context): String {
         val settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return dbUrl(settings)
     }
 
+    fun getUrl(settings: SharedPreferences): String {
+        return dbUrl(settings)
+    }
+
     fun getUpdateUrl(settings: SharedPreferences): String {
-        val url = baseUrl(settings)
-        return "$url/versions"
+        return Uri.parse(baseUrl(settings)).buildUpon()
+            .appendPath("versions")
+            .build().toString()
     }
 
     fun getChecksumUrl(settings: SharedPreferences): String {
-        val url = baseUrl(settings)
-        return "$url/fs/myPlanet.apk.sha256"
+        return Uri.parse(baseUrl(settings)).buildUpon()
+            .appendPath("fs")
+            .appendPath("myPlanet.apk.sha256")
+            .build().toString()
     }
 
     fun getHealthAccessUrl(settings: SharedPreferences): String {
-        val url = baseUrl(settings)
-        return String.format("%s/healthaccess?p=%s", url, settings.getString("serverPin", "0000"))
+        return Uri.parse(baseUrl(settings)).buildUpon()
+            .appendPath("healthaccess")
+            .appendQueryParameter("p", settings.getString("serverPin", "0000"))
+            .build().toString()
     }
 
     fun getApkVersionUrl(settings: SharedPreferences): String {
-        val url = baseUrl(settings)
-        return "$url/apkversion"
+        return Uri.parse(baseUrl(settings)).buildUpon()
+            .appendPath("apkversion")
+            .build().toString()
     }
 
-    fun getApkUpdateUrl(path: String?): String {
+    fun getApkUpdateUrl(context: Context, path: String?): String {
         val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val url = baseUrl(preferences)
-        return "$url$path"
+        return getApkUpdateUrl(preferences, path)
+    }
+
+    fun getApkUpdateUrl(settings: SharedPreferences, path: String?): String {
+        val builder = Uri.parse(baseUrl(settings)).buildUpon()
+        path?.let { builder.appendEncodedPath(it.removePrefix("/")) }
+        return builder.build().toString()
     }
 }
