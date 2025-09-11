@@ -167,7 +167,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private fun createSubmission() {
         mRealm.beginTransaction()
         try {
-            sub = createSubmission(null, mRealm)
+            sub = createSubmission(sub, mRealm)
             setParentId()
             sub?.userId = user?.id
             sub?.status = "pending"
