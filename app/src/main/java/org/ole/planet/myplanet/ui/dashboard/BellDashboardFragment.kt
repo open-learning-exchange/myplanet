@@ -50,7 +50,8 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.TimeUtils
 
 class BellDashboardFragment : BaseDashboardFragment() {
-    private lateinit var fragmentHomeBellBinding: FragmentHomeBellBinding
+    private var _binding: FragmentHomeBellBinding? = null
+    private val binding get() = _binding!!
     private var networkStatusJob: Job? = null
     private val viewModel: BellDashboardViewModel by viewModels()
     var user: RealmUserModel? = null
@@ -61,19 +62,19 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentHomeBellBinding = FragmentHomeBellBinding.inflate(inflater, container, false)
+        _binding = FragmentHomeBellBinding.inflate(inflater, container, false)
         user = UserProfileDbHandler(requireContext()).userModel
-        val view = fragmentHomeBellBinding.root
+        val view = binding.root
         initView(view)
         declareElements()
         onLoaded(view)
-        return fragmentHomeBellBinding.root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        fragmentHomeBellBinding.cardProfileBell.txtDate.text = TimeUtils.formatDate(Date().time, "")
-        fragmentHomeBellBinding.cardProfileBell.txtCommunityName.text = model?.planetCode
+        binding.cardProfileBell.txtDate.text = TimeUtils.formatDate(Date().time, "")
+        binding.cardProfileBell.txtCommunityName.text = model?.planetCode
         setupNetworkStatusMonitoring()
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         showBadges()
@@ -99,7 +100,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private fun setNetworkIndicatorColor(colorRes: Int) {
         if (isAdded && view?.isAttachedToWindow == true) {
             val color = ContextCompat.getColor(requireContext(), colorRes)
-            fragmentHomeBellBinding.cardProfileBell.imageView.borderColor = color
+            binding.cardProfileBell.imageView.borderColor = color
         }
     }
 
@@ -377,13 +378,13 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun showBadges() {
-        fragmentHomeBellBinding.cardProfileBell.llBadges.removeAllViews()
+        binding.cardProfileBell.llBadges.removeAllViews()
         val completedCourses = getCompletedCourses(mRealm, user?.id)
         completedCourses.forEachIndexed { index, course ->
             val rootView = requireActivity().findViewById<ViewGroup>(android.R.id.content)
             val star = LayoutInflater.from(activity).inflate(R.layout.image_start, rootView, false) as ImageView
             setColor(course.courseId, star)
-            fragmentHomeBellBinding.cardProfileBell.llBadges.addView(star)
+            binding.cardProfileBell.llBadges.addView(star)
             star.contentDescription = "${getString(R.string.completed_course)} ${course.courseTitle}"
             star.setOnClickListener {
                 openCourse(course, index)
@@ -423,7 +424,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun declareElements() {
-        fragmentHomeBellBinding.homeCardTeams.llHomeTeam.setOnClickListener {
+        binding.homeCardTeams.llHomeTeam.setOnClickListener {
             val fragment = TeamFragment().apply {
                 arguments = Bundle().apply {
                     putBoolean("fromDashboard", true)
@@ -431,23 +432,23 @@ class BellDashboardFragment : BaseDashboardFragment() {
             }
             homeItemClickListener?.openMyFragment(fragment)
         }
-        fragmentHomeBellBinding.homeCardLibrary.myLibraryImageButton.setOnClickListener {
+        binding.homeCardLibrary.myLibraryImageButton.setOnClickListener {
             if (user?.id?.startsWith("guest") == true) {
                 guestDialog(requireContext())
             } else {
                 homeItemClickListener?.openMyFragment(ResourcesFragment())
             }
         }
-        fragmentHomeBellBinding.homeCardCourses.myCoursesImageButton.setOnClickListener {
+        binding.homeCardCourses.myCoursesImageButton.setOnClickListener {
             if (user?.id?.startsWith("guest") == true) {
                 guestDialog(requireContext())
             } else {
                 homeItemClickListener?.openMyFragment(CoursesFragment())
             }
         }
-        fragmentHomeBellBinding.fabMyActivity.setOnClickListener { openHelperFragment(MyActivityFragment()) }
-        fragmentHomeBellBinding.cardProfileBell.fabFeedback.setOnClickListener { openHelperFragment(FeedbackListFragment()) }
-        fragmentHomeBellBinding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener?.openCallFragment(LifeFragment()) }
+        binding.fabMyActivity.setOnClickListener { openHelperFragment(MyActivityFragment()) }
+        binding.cardProfileBell.fabFeedback.setOnClickListener { openHelperFragment(FeedbackListFragment()) }
+        binding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener?.openCallFragment(LifeFragment()) }
     }
 
     private fun openHelperFragment(f: Fragment) {
@@ -461,5 +462,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
         networkStatusJob?.cancel()
         surveyReminderJob?.cancel()
         super.onDestroyView()
+        _binding = null
     }
 }

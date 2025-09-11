@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.datamanager.queryList
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 
@@ -19,55 +18,52 @@ class SubmissionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getSubmissionCountByUser(userId: String?): Int {
-        return queryList(RealmSubmission::class.java) {
+        return count(RealmSubmission::class.java) {
             equalTo("userId", userId)
             equalTo("type", "survey")
             equalTo("status", "pending")
-        }.size
+        }.toInt()
     }
 
     override suspend fun getSurveyTitlesFromSubmissions(
         submissions: List<RealmSubmission>
     ): List<String> {
-        return withRealm { realm ->
-            val examIds = submissions.mapNotNull { it.parentId?.split("@")?.firstOrNull() }
-            if (examIds.isEmpty()) {
-                emptyList()
-            } else {
-                val exams = realm.where(RealmStepExam::class.java)
-                    .`in`("id", examIds.toTypedArray())
-                    .findAll()
-                val examMap = exams.associate { it.id to (it.name ?: "") }
-                submissions.map { submission ->
-                    val examId = submission.parentId?.split("@")?.firstOrNull()
-                    examMap[examId] ?: ""
-                }
-            }
+        val examIds = submissions.mapNotNull { it.parentId?.split("@")?.firstOrNull() }
+        if (examIds.isEmpty()) {
+            return emptyList()
+        }
+
+        val exams = queryList(RealmStepExam::class.java) {
+            `in`("id", examIds.toTypedArray())
+        }
+        val examMap = exams.associate { it.id to (it.name ?: "") }
+
+        return submissions.map { submission ->
+            val examId = submission.parentId?.split("@")?.firstOrNull()
+            examMap[examId] ?: ""
         }
     }
 
     override suspend fun getExamMapForSubmissions(
         submissions: List<RealmSubmission>
     ): Map<String?, RealmStepExam> {
-        return withRealm { realm ->
-            val examIds = submissions.mapNotNull { sub ->
-                sub.parentId?.split("@")?.firstOrNull()
-            }.distinct()
+        val examIds = submissions.mapNotNull { sub ->
+            sub.parentId?.split("@")?.firstOrNull()
+        }.distinct()
 
-            if (examIds.isEmpty()) {
-                emptyMap()
-            } else {
-                val examMap = realm.queryList(RealmStepExam::class.java) {
-                    `in`("id", examIds.toTypedArray())
-                }.associateBy { it.id }
-
-                submissions.mapNotNull { sub ->
-                    val parentId = sub.parentId
-                    val examId = parentId?.split("@")?.firstOrNull()
-                    examMap[examId]?.let { parentId to it }
-                }.toMap()
-            }
+        if (examIds.isEmpty()) {
+            return emptyMap()
         }
+
+        val examMap = queryList(RealmStepExam::class.java) {
+            `in`("id", examIds.toTypedArray())
+        }.associateBy { it.id }
+
+        return submissions.mapNotNull { sub ->
+            val parentId = sub.parentId
+            val examId = parentId?.split("@")?.firstOrNull()
+            examMap[examId]?.let { parentId to it }
+        }.toMap()
     }
 
     override suspend fun getSubmissionById(id: String): RealmSubmission? {
