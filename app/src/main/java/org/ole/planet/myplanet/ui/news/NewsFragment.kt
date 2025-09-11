@@ -265,6 +265,12 @@ class NewsFragment : BaseNewsFragment() {
         changeLayoutManager(orientation, binding.rvNews)
     }
 
+    private fun scrollToTop() {
+        binding.rvNews.post {
+            binding.rvNews.scrollToPosition(0)
+        }
+    }
+
     private val observer: AdapterDataObserver = object : AdapterDataObserver() {
         override fun onChanged() {
             adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
@@ -302,6 +308,7 @@ class NewsFragment : BaseNewsFragment() {
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 searchFilteredList = applySearchFilter(labelFilteredList)
                 setData(searchFilteredList)
+                scrollToTop()
             }
             override fun afterTextChanged(s: Editable) {}
         })
@@ -332,6 +339,7 @@ class NewsFragment : BaseNewsFragment() {
                 labelFilteredList = applyLabelFilter(filteredNewsList)
                 searchFilteredList = applySearchFilter(labelFilteredList)
                 setData(searchFilteredList)
+                scrollToTop()
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
