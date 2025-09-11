@@ -302,6 +302,7 @@ class NewsFragment : BaseNewsFragment() {
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 searchFilteredList = applySearchFilter(labelFilteredList)
                 setData(searchFilteredList)
+                binding.rvNews.scrollToPosition(0)
             }
             override fun afterTextChanged(s: Editable) {}
         })
@@ -332,6 +333,7 @@ class NewsFragment : BaseNewsFragment() {
                 labelFilteredList = applyLabelFilter(filteredNewsList)
                 searchFilteredList = applySearchFilter(labelFilteredList)
                 setData(searchFilteredList)
+                binding.rvNews.scrollToPosition(0)
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
