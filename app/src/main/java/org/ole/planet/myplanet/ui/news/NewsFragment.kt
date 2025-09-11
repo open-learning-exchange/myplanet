@@ -88,6 +88,7 @@ class NewsFragment : BaseNewsFragment() {
             labelFilteredList = applyLabelFilter(filteredNewsList)
             searchFilteredList = applySearchFilter(labelFilteredList)
             setData(searchFilteredList)
+            scrollToTop()
         }
         
         etSearch = binding.root.findViewById(R.id.et_search)
@@ -130,6 +131,7 @@ class NewsFragment : BaseNewsFragment() {
         labelFilteredList = applyLabelFilter(filteredNewsList)
         searchFilteredList = applySearchFilter(labelFilteredList)
         setData(searchFilteredList)
+        scrollToTop()
         binding.btnSubmit.setOnClickListener {
             val message = binding.etMessage.text.toString().trim { it <= ' ' }
             if (message.isEmpty()) {
@@ -152,9 +154,7 @@ class NewsFragment : BaseNewsFragment() {
             labelFilteredList = applyLabelFilter(filteredNewsList)
             searchFilteredList = applySearchFilter(labelFilteredList)
             setData(searchFilteredList)
-            binding.rvNews.post {
-                binding.rvNews.smoothScrollToPosition(0)
-            }
+            scrollToTop()
         }
 
         binding.addNewsImage.setOnClickListener {
@@ -295,13 +295,20 @@ class NewsFragment : BaseNewsFragment() {
         }
         return news.time
     }
-    
+
+    private fun scrollToTop() {
+        binding.rvNews.post {
+            binding.rvNews.scrollToPosition(0)
+        }
+    }
+
     private fun setupSearchTextListener() {
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 searchFilteredList = applySearchFilter(labelFilteredList)
                 setData(searchFilteredList)
+                scrollToTop()
             }
             override fun afterTextChanged(s: Editable) {}
         })
@@ -332,6 +339,7 @@ class NewsFragment : BaseNewsFragment() {
                 labelFilteredList = applyLabelFilter(filteredNewsList)
                 searchFilteredList = applySearchFilter(labelFilteredList)
                 setData(searchFilteredList)
+                scrollToTop()
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
