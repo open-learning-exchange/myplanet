@@ -15,4 +15,3 @@ class ReplyViewModel @Inject constructor(
         return newsRepository.getNewsWithReplies(newsId)
     }
 }
-
