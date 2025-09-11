@@ -9,6 +9,8 @@ import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.Spinner
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import com.google.gson.Gson
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
@@ -68,9 +70,10 @@ class AddMyHealthActivity : AppCompatActivity() {
     }
 
     private fun createMyHealth() {
-        databaseService.withRealm { realm ->
-            realm.executeTransaction {
-                val userModel = it.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+        lifecycleScope.launch {
+            databaseService.executeTransactionAsync { realm ->
+                val userModel = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+                val oldProfile = myHealth?.profile
                 val health = RealmMyHealthProfile()
                 userModel?.firstName = "${binding.etFname.editText?.text}".trim { ch -> ch <= ' ' }
                 userModel?.middleName = "${binding.etMname.editText?.text}".trim { ch -> ch <= ' ' }
@@ -80,8 +83,18 @@ class AddMyHealthActivity : AppCompatActivity() {
                 userModel?.birthPlace = "${binding.etBirthplace.editText?.text}".trim { ch -> ch <= ' ' }
                 userModel?.phoneNumber = "${binding.etPhone.editText?.text}".trim { ch -> ch <= ' ' }
                 health.emergencyContactName = "${binding.etEmergency.editText?.text}".trim { ch -> ch <= ' ' }
-                health.emergencyContact = "${binding.etContact.editText?.text}".trim { ch -> ch <= ' ' }
-                health.emergencyContactType = "${binding.spnContactType.selectedItem}"
+                val emergencyContact = "${binding.etContact.editText?.text}".trim { ch -> ch <= ' ' }
+                health.emergencyContact = if (TextUtils.isEmpty(emergencyContact)) {
+                    oldProfile?.emergencyContact ?: ""
+                } else {
+                    emergencyContact
+                }
+                val emergencyContactType = "${binding.spnContactType.selectedItem}".trim { ch -> ch <= ' ' }
+                health.emergencyContactType = if (TextUtils.isEmpty(emergencyContactType)) {
+                    oldProfile?.emergencyContactType ?: ""
+                } else {
+                    emergencyContactType
+                }
                 health.specialNeeds = "${binding.etSpecialNeed.editText?.text}".trim { ch -> ch <= ' ' }
                 health.notes = "${binding.etOtherNeed.editText?.text}".trim { ch -> ch <= ' ' }
                 if (myHealth == null) {
@@ -91,12 +104,12 @@ class AddMyHealthActivity : AppCompatActivity() {
                     myHealth?.userKey = generateKey()
                 }
                 myHealth?.profile = health
-                var healthPojo = it.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
+                var healthPojo = realm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
                 if (healthPojo == null) {
-                    healthPojo = it.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
+                    healthPojo = realm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
                 }
                 if (healthPojo == null) {
-                    healthPojo = it.createObject(RealmMyHealthPojo::class.java, userId)
+                    healthPojo = realm.createObject(RealmMyHealthPojo::class.java, userId)
                 }
                 healthPojo.isUpdated = true
                 healthPojo.userId = userModel?._id
@@ -108,8 +121,8 @@ class AddMyHealthActivity : AppCompatActivity() {
                     e.printStackTrace()
                 }
             }
+            finish()
         }
-        finish()
     }
 
     private fun initViews() {
@@ -128,6 +141,15 @@ class AddMyHealthActivity : AppCompatActivity() {
                 )
                 val health = myHealth?.profile
                 binding.etEmergency.editText?.setText(health?.emergencyContactName)
+                binding.etContact.editText?.setText(health?.emergencyContact)
+                val contactTypes = resources.getStringArray(R.array.contact_type)
+                val contactType = health?.emergencyContactType
+                if (!contactType.isNullOrEmpty()) {
+                    val index = contactTypes.indexOf(contactType)
+                    if (index >= 0) {
+                        binding.spnContactType.setSelection(index)
+                    }
+                }
                 binding.etSpecialNeed.editText?.setText(health?.specialNeeds)
                 binding.etOtherNeed.editText?.setText(health?.notes)
             }
