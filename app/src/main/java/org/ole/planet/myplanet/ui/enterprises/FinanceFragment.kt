@@ -255,6 +255,7 @@ class FinanceFragment : BaseTeamFragment() {
     }
 
     private fun updatedFinanceList(results: RealmResults<RealmMyTeam>) {
+        if (view == null) return
         viewLifecycleOwner.lifecycleScope.launch {
             if (!results.isEmpty()) {
                 adapterFinance = AdapterFinance(requireActivity(), results)

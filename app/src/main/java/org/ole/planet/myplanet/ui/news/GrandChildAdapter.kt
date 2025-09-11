@@ -5,23 +5,18 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.utilities.DiffUtils
 
 class GrandChildAdapter(private val section: String, private val onClick: (RealmMyTeam) -> Unit) :
     ListAdapter<RealmMyTeam, GrandChildAdapter.GrandChildViewHolder>(
-        object : DiffUtil.ItemCallback<RealmMyTeam>() {
-            override fun areItemsTheSame(oldItem: RealmMyTeam, newItem: RealmMyTeam): Boolean {
-                return oldItem._id == newItem._id
-            }
-
-            override fun areContentsTheSame(oldItem: RealmMyTeam, newItem: RealmMyTeam): Boolean {
-                return oldItem.name == newItem.name
-            }
-        }
+        DiffUtils.itemCallback<RealmMyTeam>(
+            { old, new -> old._id == new._id },
+            { old, new -> old.name == new.name }
+        )
     ) {
     inner class GrandChildViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val textView: TextView = itemView.findViewById(R.id.textView)

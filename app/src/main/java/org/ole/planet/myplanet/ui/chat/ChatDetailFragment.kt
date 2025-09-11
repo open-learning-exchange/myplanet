@@ -27,7 +27,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
@@ -52,6 +51,7 @@ import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmChatHistory.Companion.addConversationToChatHistory
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
@@ -70,7 +70,6 @@ class ChatDetailFragment : Fragment() {
     private var currentID: String = ""
     private var aiName: String = ""
     private var aiModel: String = ""
-    private lateinit var mRealm: Realm
     var user: RealmUserModel? = null
     private var newsId: String? = null
     @Inject
@@ -81,6 +80,8 @@ class ChatDetailFragment : Fragment() {
     lateinit var databaseService: DatabaseService
     @Inject
     lateinit var chatApiHelper: ChatApiHelper
+    @Inject
+    lateinit var userRepository: UserRepository
     private val gson = Gson()
     private val serverUrlMapper = ServerUrlMapper()
     private val jsonMediaType = "application/json".toMediaTypeOrNull()
@@ -115,11 +116,8 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun initChatComponents() {
-        mRealm = databaseService.realmInstance
-        user = databaseService.withRealm { realm ->
-            realm.where(RealmUserModel::class.java)
-                .equalTo("id", settings.getString("userId", ""))
-                .findFirst()?.let { realm.copyFromRealm(it) }
+        viewLifecycleOwner.lifecycleScope.launch {
+            user = userRepository.getCurrentUser()
         }
         mAdapter = ChatAdapter(requireContext(), binding.recyclerGchat)
         binding.recyclerGchat.apply {
@@ -424,14 +422,14 @@ class ChatDetailFragment : Fragment() {
 
     private fun getLatestRev(id: String): String? {
         return try {
-            mRealm.refresh()
-            val realmChatHistory = mRealm.where(RealmChatHistory::class.java)
-                .equalTo("_id", id)
-                .findAll()
-                .maxByOrNull { rev -> rev._rev!!.split("-")[0].toIntOrNull() ?: 0 }
-
-            val rev = realmChatHistory?._rev
-            rev
+            databaseService.withRealm { realm ->
+                realm.refresh()
+                realm.where(RealmChatHistory::class.java)
+                    .equalTo("_id", id)
+                    .findAll()
+                    .maxByOrNull { rev -> rev._rev?.split("-")?.getOrNull(0)?.toIntOrNull() ?: 0 }
+                    ?._rev
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -489,18 +487,20 @@ class ChatDetailFragment : Fragment() {
 
     private fun saveNewChat(query: String, chatResponse: String, responseBody: ChatModel) {
         val jsonObject = buildChatHistoryObject(query, chatResponse, responseBody)
-
-        mRealm.executeTransactionAsync({ realm ->
-            RealmChatHistory.insert(realm, jsonObject)
-        }, {
-            if (isAdded && activity is DashboardActivity) {
-                (activity as DashboardActivity).refreshChatHistoryList()
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                databaseService.executeTransactionAsync { realm ->
+                    RealmChatHistory.insert(realm, jsonObject)
+                }
+                if (isAdded && activity is DashboardActivity) {
+                    (activity as DashboardActivity).refreshChatHistoryList()
+                }
+            } catch (e: Exception) {
+                if (isAdded) {
+                    Snackbar.make(binding.root, getString(R.string.failed_to_save_chat), Snackbar.LENGTH_LONG).show()
+                }
             }
-        }, {
-            if (isAdded) {
-                Snackbar.make(binding.root, getString(R.string.failed_to_save_chat), Snackbar.LENGTH_LONG).show()
-            }
-        })
+        }
     }
 
     private fun buildChatHistoryObject(query: String, chatResponse: String, responseBody: ChatModel): JsonObject =
@@ -534,7 +534,9 @@ class ChatDetailFragment : Fragment() {
         databaseService.withRealm { realm ->
             try {
                 addConversationToChatHistory(realm, id, query, chatResponse, _rev)
-                realm.commitTransaction()
+                if (realm.isInTransaction) {
+                    realm.commitTransaction()
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
                 if (realm.isInTransaction) {
@@ -555,9 +557,6 @@ class ChatDetailFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        if (::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
         val editor = settings.edit()
         if (settings.getBoolean("isAlternativeUrl", false)) {
             editor.putString("alternativeUrl", "")
