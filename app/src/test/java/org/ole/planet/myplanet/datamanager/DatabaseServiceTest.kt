@@ -4,14 +4,16 @@ import android.content.Context
 import io.mockk.*
 import io.realm.Realm
 import io.realm.RealmLog
+import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
-import io.realm.RealmObject
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.Assert.*
+
+open class TestModel(var id: String = "") : RealmObject()
 
 class DatabaseServiceTest {
     private lateinit var realm: Realm
@@ -109,8 +111,6 @@ class DatabaseServiceTest {
             runBlocking { service.executeTransactionWithResultAsync { 42 } }
         }
     }
-
-    open class TestModel(var id: String = "") : RealmObject()
 
     @Test
     fun queryList_returnsCopiedResults() {
