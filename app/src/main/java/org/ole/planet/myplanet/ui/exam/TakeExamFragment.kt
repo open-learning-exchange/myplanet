@@ -61,15 +61,27 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
         var q: RealmQuery<*> = mRealm.where(RealmSubmission::class.java)
             .equalTo("userId", user?.id)
-            .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) {
-                id + "@" + exam?.courseId
-            } else {
-                id
-            }).sort("startTime", Sort.DESCENDING)
+            .equalTo(
+                "parentId",
+                if (!TextUtils.isEmpty(exam?.courseId)) {
+                    id + "@" + exam?.courseId
+                } else {
+                    id
+                }
+            ).sort("startTime", Sort.DESCENDING)
         if (type == "exam") {
             q = q.equalTo("status", "pending")
         }
         sub = q.findFirst() as RealmSubmission?
+
+        if (sub?.status != "pending") {
+            sub?.id?.let {
+                requireActivity().getSharedPreferences("exam_prefs", Context.MODE_PRIVATE)
+                    .edit().remove("currentIndex_$it").apply()
+            }
+            sub = null
+        }
+
         val courseId = exam?.courseId
         isCertified = isCourseCertified(mRealm, courseId)
         if ((questions?.size ?: 0) > 0) {
@@ -110,14 +122,13 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun saveCurrentAnswer() {
+        if (currentIndex !in 0 until (questions?.size ?: 0)) return
         val type = questions?.get(currentIndex)?.type
         showTextInput(type)
         updateAnsDb()
     }
 
     private fun goToPreviousQuestion() {
-        saveCurrentAnswer()
-
         if (currentIndex > 0) {
             currentIndex--
             startExam(questions?.get(currentIndex))
@@ -126,8 +137,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun goToNextQuestion() {
-        saveCurrentAnswer()
-
         if (currentIndex < (questions?.size ?: 0) - 1) {
             currentIndex++
             startExam(questions?.get(currentIndex))
@@ -628,13 +637,24 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     override fun onPause() {
-        saveCurrentAnswer()
-        sub?.id?.let {
-            requireActivity()
-                .getSharedPreferences("exam_prefs", Context.MODE_PRIVATE)
-                .edit()
-                .putInt("currentIndex_$it", currentIndex)
-                .apply()
+        val questionCount = questions?.size ?: 0
+        if (currentIndex in 0 until questionCount) {
+            saveCurrentAnswer()
+            sub?.id?.let {
+                requireActivity()
+                    .getSharedPreferences("exam_prefs", Context.MODE_PRIVATE)
+                    .edit()
+                    .putInt("currentIndex_$it", currentIndex)
+                    .apply()
+            }
+        } else {
+            sub?.id?.let {
+                requireActivity()
+                    .getSharedPreferences("exam_prefs", Context.MODE_PRIVATE)
+                    .edit()
+                    .remove("currentIndex_$it")
+                    .apply()
+            }
         }
         super.onPause()
     }
