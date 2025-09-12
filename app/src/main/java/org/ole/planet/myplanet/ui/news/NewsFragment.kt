@@ -153,7 +153,7 @@ class NewsFragment : BaseNewsFragment() {
             searchFilteredList = applySearchFilter(labelFilteredList)
             setData(searchFilteredList)
             binding.rvNews.post {
-                binding.rvNews.smoothScrollToPosition(0)
+                scrollToTop()
             }
         }
 
