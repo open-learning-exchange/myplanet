@@ -60,10 +60,9 @@ class TeamPagerAdapter(
             else -> {}
         }
 
-        if (fragment.arguments == null) {
-            fragment.arguments = Bundle().apply { putString("id", teamId) }
-        } else if (!fragment.arguments!!.containsKey("id")) {
-            fragment.arguments!!.putString("id", teamId)
+        val args = fragment.arguments ?: Bundle().also { fragment.arguments = it }
+        if (!args.containsKey("id")) {
+            args.putString("id", teamId)
         }
 
         return fragment

@@ -21,7 +21,6 @@ import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import io.realm.RealmList
 import java.io.File
 import javax.inject.Inject
@@ -42,7 +41,6 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 @AndroidEntryPoint
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private lateinit var activityReplyBinding: ActivityReplyBinding
-    lateinit var mRealm: Realm
     @Inject
     lateinit var databaseService: DatabaseService
     var id: String? = null
@@ -65,7 +63,6 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, activityReplyBinding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
-        mRealm = databaseService.realmInstance
         title = "Reply"
         imageList = RealmList()
         id = intent.getStringExtra("id")
@@ -87,13 +84,15 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         id ?: return
         lifecycleScope.launch {
             val (news, list) = viewModel.getNewsWithReplies(id)
-            newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler)
-            newsAdapter.setListener(this@ReplyActivity)
-            newsAdapter.setmRealm(mRealm)
-            newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
-            newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
-            newsAdapter.updateList(list)
-            activityReplyBinding.rvReply.adapter = newsAdapter
+            databaseService.withRealm { realm ->
+                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler)
+                newsAdapter.setListener(this@ReplyActivity)
+                newsAdapter.setmRealm(realm)
+                newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
+                newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
+                newsAdapter.updateList(list)
+                activityReplyBinding.rvReply.adapter = newsAdapter
+            }
         }
     }
 
@@ -174,10 +173,6 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     }
 
     override fun onDestroy() {
-        if (::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.removeAllChangeListeners()
-            mRealm.close()
-        }
         super.onDestroy()
     }
 }

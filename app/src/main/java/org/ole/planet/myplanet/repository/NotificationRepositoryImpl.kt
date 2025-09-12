@@ -6,20 +6,17 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNotification
 
-class NotificationRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
-) : RealmRepository(databaseService), NotificationRepository {
+    class NotificationRepositoryImpl @Inject constructor(
+        databaseService: DatabaseService,
+    ) : RealmRepository(databaseService), NotificationRepository {
 
     override suspend fun getUnreadCount(userId: String?): Int {
         if (userId == null) return 0
 
-        return withRealm { realm ->
-            realm.where(RealmNotification::class.java)
-                .equalTo("userId", userId)
-                .equalTo("isRead", false)
-                .count()
-                .toInt()
-        }
+        return count(RealmNotification::class.java) {
+            equalTo("userId", userId)
+            equalTo("isRead", false)
+        }.toInt()
     }
 
     override suspend fun updateResourceNotification(userId: String?) {

@@ -7,21 +7,23 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
 import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
-import io.realm.Realm
 import java.util.Locale
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelected
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.RowLibraryBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.CourseRatingUtils
 import org.ole.planet.myplanet.utilities.DiffUtils
@@ -34,7 +36,7 @@ class AdapterResource(
     private val context: Context,
     private var libraryList: List<RealmMyLibrary?>,
     private var ratingMap: HashMap<String?, JsonObject>,
-    private val realm: Realm
+    private val tagRepository: TagRepository
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
     private val selectedItems: MutableList<RealmMyLibrary?> = ArrayList()
     private var listener: OnLibraryItemSelected? = null
@@ -157,17 +159,17 @@ class AdapterResource(
     private fun displayTagCloud(flexboxDrawable: FlexboxLayout, position: Int) {
         flexboxDrawable.removeAllViews()
         val chipCloud = ChipCloud(context, flexboxDrawable, config)
-        val tags: List<RealmTag> = realm.where(RealmTag::class.java).equalTo("db", "resources").equalTo("linkId", libraryList[position]?.id).findAll()
-        for (tag in tags) {
-            val parent = realm.where(RealmTag::class.java).equalTo("id", tag.tagId).findFirst()
-            try {
-                chipCloud.addChip(parent?.name)
-            } catch (err: Exception) {
-                chipCloud.addChip("--")
-            }
-            chipCloud.setListener { _: Int, _: Boolean, b1: Boolean ->
-                if (b1 && listener != null) {
-                    if (parent != null) {
+        val resourceId = libraryList[position]?.id ?: return
+        (context as? LifecycleOwner)?.lifecycleScope?.launch {
+            val tags = tagRepository.getTagsForResource(resourceId)
+            for (parent in tags) {
+                try {
+                    chipCloud.addChip(parent.name)
+                } catch (err: Exception) {
+                    chipCloud.addChip("--")
+                }
+                chipCloud.setListener { _: Int, _: Boolean, b1: Boolean ->
+                    if (b1 && listener != null) {
                         listener?.onTagClicked(parent)
                     }
                 }
