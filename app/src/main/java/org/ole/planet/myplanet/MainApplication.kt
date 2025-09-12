@@ -127,7 +127,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks {
             val sharedPreferences = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             with(sharedPreferences.edit()) {
                 putString("theme_mode", themeMode)
-                commit()
+                apply()
             }
             applyThemeMode(themeMode)
         }

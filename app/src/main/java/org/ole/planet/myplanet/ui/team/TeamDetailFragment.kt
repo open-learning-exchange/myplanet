@@ -228,8 +228,10 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
             setupMyTeamButtons(user)
         }
 
-        if(getJoinedMemberCount(team!!._id.toString(), mRealm) <= 1 && isMyTeam){
-            binding.btnLeave.visibility = View.GONE
+        team?._id?.let { id ->
+            if (getJoinedMemberCount(id, mRealm) <= 1 && isMyTeam) {
+                binding.btnLeave.visibility = View.GONE
+            }
         }
     }
 
@@ -274,22 +276,23 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         }
 
         val currentTeam = team
-        if (currentTeam != null && !currentTeam._id.isNullOrEmpty()) {
-            val isUserRequested = currentTeam.requested(user?.id, mRealm)
-            if (isUserRequested) {
+        val teamId = currentTeam?._id
+        if (teamId.isNullOrEmpty()) {
+            Utilities.toast(activity, getString(R.string.no_team_available))
+            return
+        }
+        val isUserRequested = currentTeam.requested(user?.id, mRealm)
+        if (isUserRequested) {
+            binding.btnLeave.text = getString(R.string.requested)
+            binding.btnLeave.isEnabled = false
+        } else {
+            binding.btnLeave.text = getString(R.string.join)
+            binding.btnLeave.setOnClickListener {
+                RealmMyTeam.requestToJoin(teamId, user, mRealm, team?.teamType)
                 binding.btnLeave.text = getString(R.string.requested)
                 binding.btnLeave.isEnabled = false
-            } else {
-                binding.btnLeave.text = getString(R.string.join)
-                binding.btnLeave.setOnClickListener {
-                    RealmMyTeam.requestToJoin(currentTeam._id!!, user, mRealm, team?.teamType)
-                    binding.btnLeave.text = getString(R.string.requested)
-                    binding.btnLeave.isEnabled = false
-                    syncTeamActivities(requireContext(), uploadManager)
-                }
+                syncTeamActivities(requireContext(), uploadManager)
             }
-        } else {
-            throw IllegalStateException("Team or team ID is null, cannot proceed.")
         }
     }
 
@@ -335,10 +338,12 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                     binding.title.text = getEffectiveTeamName()
                     binding.subtitle.text = getEffectiveTeamType()
 
-                    if(getJoinedMemberCount(team!!._id.toString(), mRealm) <= 1 && isMyTeam){
-                        binding.btnLeave.visibility = View.GONE
-                    } else {
-                        binding.btnLeave.visibility = View.VISIBLE
+                    team?._id?.let { id ->
+                        if (getJoinedMemberCount(id, mRealm) <= 1 && isMyTeam) {
+                            binding.btnLeave.visibility = View.GONE
+                        } else {
+                            binding.btnLeave.visibility = View.VISIBLE
+                        }
                     }
                 }
             }
