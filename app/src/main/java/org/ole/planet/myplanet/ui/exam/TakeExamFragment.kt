@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.exam
 
+import android.content.Context
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
@@ -72,7 +73,15 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         val courseId = exam?.courseId
         isCertified = isCourseCertified(mRealm, courseId)
         if ((questions?.size ?: 0) > 0) {
-            createSubmission()
+            if (sub == null) {
+                createSubmission()
+            } else {
+                val prefs = requireActivity().getSharedPreferences("exam_prefs", Context.MODE_PRIVATE)
+                val savedIndex = prefs.getInt("currentIndex_${sub?.id}", 0)
+                if (savedIndex in 0 until (questions?.size ?: 0)) {
+                    currentIndex = savedIndex
+                }
+            }
             startExam(questions?.get(currentIndex))
             updateNavButtons()
         } else {
@@ -616,6 +625,18 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             }
         }
         return false
+    }
+
+    override fun onPause() {
+        saveCurrentAnswer()
+        sub?.id?.let {
+            requireActivity()
+                .getSharedPreferences("exam_prefs", Context.MODE_PRIVATE)
+                .edit()
+                .putInt("currentIndex_$it", currentIndex)
+                .apply()
+        }
+        super.onPause()
     }
 
     override fun onDestroyView() {
