@@ -56,6 +56,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private val viewModel: BellDashboardViewModel by viewModels()
     var user: RealmUserModel? = null
     private var surveyReminderJob: Job? = null
+    private var surveyListDialog: AlertDialog? = null
 
     companion object {
         private const val PREF_SURVEY_REMINDERS = "survey_reminders"
@@ -351,7 +352,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
         recyclerView.layoutManager = LinearLayoutManager(requireActivity())
 
-        val alertDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+        surveyListDialog?.dismiss()
+        surveyListDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
             .setTitle(title)
             .setView(dialogView)
             .setPositiveButton(getString(R.string.ok)) { dialog, _ ->
@@ -365,15 +367,15 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val adapter = SurveyAdapter(surveyTitles, { position ->
             val selectedSurvey = pendingSurveys[position].id
             AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
-        }, alertDialog)
+        }, surveyListDialog!!)
 
         recyclerView.adapter = adapter
-        alertDialog.show()
-        alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
+        surveyListDialog?.show()
+        surveyListDialog?.window?.setBackgroundDrawableResource(R.color.card_bg)
 
-        alertDialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
-            showRemindLaterDialog(pendingSurveys, alertDialog)
-            if (dismissOnNeutral) alertDialog.dismiss()
+        surveyListDialog?.getButton(AlertDialog.BUTTON_NEUTRAL)?.setOnClickListener {
+            showRemindLaterDialog(pendingSurveys, surveyListDialog!!)
+            if (dismissOnNeutral) surveyListDialog?.dismiss()
         }
     }
 
@@ -458,9 +460,17 @@ class BellDashboardFragment : BaseDashboardFragment() {
         homeItemClickListener?.openCallFragment(f)
     }
 
+    override fun onPause() {
+        surveyListDialog?.dismiss()
+        surveyListDialog = null
+        super.onPause()
+    }
+
     override fun onDestroyView() {
+        surveyListDialog?.dismiss()
+        surveyListDialog = null
         networkStatusJob?.cancel()
-        surveyReminderJob?.cancel()
+       surveyReminderJob?.cancel()
         super.onDestroyView()
         _binding = null
     }
