@@ -88,6 +88,7 @@ class NewsFragment : BaseNewsFragment() {
             labelFilteredList = applyLabelFilter(filteredNewsList)
             searchFilteredList = applySearchFilter(labelFilteredList)
             setData(searchFilteredList)
+            scrollToTop()
         }
         
         etSearch = binding.root.findViewById(R.id.et_search)
@@ -152,9 +153,7 @@ class NewsFragment : BaseNewsFragment() {
             labelFilteredList = applyLabelFilter(filteredNewsList)
             searchFilteredList = applySearchFilter(labelFilteredList)
             setData(searchFilteredList)
-            binding.rvNews.post {
-                scrollToTop()
-            }
+            scrollToTop()
         }
 
         binding.addNewsImage.setOnClickListener {
