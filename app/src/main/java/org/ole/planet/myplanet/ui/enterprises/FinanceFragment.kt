@@ -51,6 +51,7 @@ class FinanceFragment : BaseTeamFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentFinanceBinding.inflate(inflater, container, false)
         date = Calendar.getInstance()
+        updateToDateState(false)
         binding.tvFromDateCalendar.setOnClickListener {
             showDatePickerDialog(isFromDate = true)
         }
@@ -60,11 +61,15 @@ class FinanceFragment : BaseTeamFragment() {
         }
 
         binding.etToDate.setOnClickListener {
-            showDatePickerDialog(isFromDate = false)
+            if (binding.tvFromDateCalendar.text.toString().isNotEmpty()) {
+                showDatePickerDialog(isFromDate = false)
+            }
         }
 
         binding.tvToDateCalendarIcon.setOnClickListener {
-            showDatePickerDialog(isFromDate = false)
+            if (binding.tvFromDateCalendar.text.toString().isNotEmpty()) {
+                showDatePickerDialog(isFromDate = false)
+            }
         }
 
 
@@ -85,6 +90,7 @@ class FinanceFragment : BaseTeamFragment() {
         binding.btnReset.setOnClickListener {
             binding.tvFromDateCalendar.setText("")
             binding.etToDate.setText("")
+            updateToDateState(false)
             list = mRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
                 .equalTo("teamId", teamId).equalTo("docType", "transaction")
                 .sort("date", Sort.DESCENDING).findAll()
@@ -111,6 +117,15 @@ class FinanceFragment : BaseTeamFragment() {
 
                 if (isFromDate) {
                     binding.tvFromDateCalendar.setText(formattedDate)
+                    val toDateText = binding.etToDate.text.toString()
+                    if (toDateText.isNotEmpty()) {
+                        val fromDateMillis = selectedDate.timeInMillis
+                        val toDateMillis = parseDate(toDateText)?.timeInMillis
+                        if (toDateMillis != null && toDateMillis < fromDateMillis) {
+                            binding.etToDate.setText("")
+                        }
+                    }
+                    updateToDateState(true)
                 } else {
                     binding.etToDate.setText(formattedDate)
                 }
@@ -121,6 +136,16 @@ class FinanceFragment : BaseTeamFragment() {
             now[Calendar.MONTH],
             now[Calendar.DAY_OF_MONTH]
         )
+
+        if (!isFromDate) {
+            val fromDateText = binding.tvFromDateCalendar.text.toString()
+            if (fromDateText.isNotEmpty()) {
+                val fromDate = parseDate(fromDateText)
+                if (fromDate != null) {
+                    datePickerDialog.datePicker.minDate = fromDate.timeInMillis
+                }
+            }
+        }
         datePickerDialog.show()
     }
 
@@ -128,6 +153,29 @@ class FinanceFragment : BaseTeamFragment() {
     private fun Calendar.formatToString(pattern: String): String {
         val dateFormat = SimpleDateFormat(pattern, Locale.getDefault())
         return dateFormat.format(this.time)
+    }
+
+    private fun updateToDateState(enabled: Boolean) {
+        binding.etToDate.isEnabled = enabled
+        binding.tvToDateCalendarIcon.isEnabled = enabled
+        binding.etToDate.alpha = if (enabled) 1.0f else 0.5f
+        binding.tvToDateCalendarIcon.alpha = if (enabled) 1.0f else 0.5f
+    }
+
+    private fun parseDate(dateString: String): Calendar? {
+        return try {
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val date = dateFormat.parse(dateString)
+            if (date != null) {
+                Calendar.getInstance().apply {
+                    time = date
+                }
+            } else {
+                null
+            }
+        } catch (e: ParseException) {
+            null
+        }
     }
 
 
