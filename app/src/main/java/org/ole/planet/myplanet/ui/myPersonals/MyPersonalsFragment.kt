@@ -8,12 +8,10 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSelectedMyPersonal
 import org.ole.planet.myplanet.databinding.FragmentMyPersonalsBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -28,15 +26,12 @@ import org.ole.planet.myplanet.repository.MyPersonalRepository
 class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     private var _binding: FragmentMyPersonalsBinding? = null
     private val binding get() = _binding!!
-    lateinit var mRealm: Realm
     private lateinit var pg: DialogUtils.CustomProgressDialog
     private var addResourceFragment: AddResourceFragment? = null
     private var personalAdapter: AdapterMyPersonal? = null
     
     @Inject
     lateinit var uploadManager: UploadManager
-    @Inject
-    lateinit var databaseService: DatabaseService
     @Inject
     lateinit var myPersonalRepository: MyPersonalRepository
     fun refreshFragment() {
@@ -51,7 +46,6 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentMyPersonalsBinding.inflate(inflater, container, false)
         pg = DialogUtils.getCustomProgressDialog(requireContext())
-        mRealm = databaseService.realmInstance
         binding.rvMypersonal.layoutManager = LinearLayoutManager(activity)
         binding.addMyPersonal.setOnClickListener {
             addResourceFragment = AddResourceFragment()
@@ -73,7 +67,16 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
         val model = UserProfileDbHandler(requireContext()).userModel
         personalAdapter = AdapterMyPersonal(requireActivity(), mutableListOf())
         personalAdapter?.setListener(this)
-        personalAdapter?.setRealm(mRealm)
+        personalAdapter?.onDelete = { personal ->
+            viewLifecycleOwner.lifecycleScope.launch {
+                personal.id?.let { myPersonalRepository.deletePersonalResource(it) }
+            }
+        }
+        personalAdapter?.onEdit = { personal, title, desc ->
+            viewLifecycleOwner.lifecycleScope.launch {
+                personal.id?.let { myPersonalRepository.updatePersonalResource(it, title, desc) }
+            }
+        }
         binding.rvMypersonal.adapter = personalAdapter
         viewLifecycleOwner.lifecycleScope.launch {
             myPersonalRepository.getPersonalResources(model?.id).collectLatest { realmMyPersonals ->
@@ -96,13 +99,6 @@ class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-    }
-
-    override fun onDestroy() {
-        if (::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
-        super.onDestroy()
     }
 
     override fun onUpload(personal: RealmMyPersonal?) {
