@@ -12,7 +12,7 @@ import org.ole.planet.myplanet.model.RealmTag
 
 class SearchRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    private val gson: Gson
+    private val gson: Gson,
 ) : RealmRepository(databaseService), SearchRepository {
 
     override suspend fun saveSearchActivity(
@@ -24,8 +24,9 @@ class SearchRepositoryImpl @Inject constructor(
         gradeLevel: String,
         subjectLevel: String
     ) {
+        val activityId = generateActivityId()
         val activity = RealmSearchActivity().apply {
-            id = UUID.randomUUID().toString()
+            id = activityId
             user = userId ?: ""
             time = Calendar.getInstance().timeInMillis
             createdOn = userPlanetCode ?: ""
@@ -45,5 +46,13 @@ class SearchRepositoryImpl @Inject constructor(
         }
 
         save(activity)
+    }
+
+    private suspend fun generateActivityId(): String {
+        var newId: String
+        do {
+            newId = UUID.randomUUID().toString()
+        } while (findByField(RealmSearchActivity::class.java, "id", newId) != null)
+        return newId
     }
 }
