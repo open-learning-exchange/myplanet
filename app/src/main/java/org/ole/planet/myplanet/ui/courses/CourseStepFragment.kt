@@ -8,7 +8,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import io.realm.Realm
 import java.util.Date
 import java.util.UUID
 import org.ole.planet.myplanet.MainApplication
@@ -35,7 +34,6 @@ import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
-    private lateinit var cRealm: Realm
     private lateinit var step: RealmCourseStep
     private lateinit var resources: List<RealmMyLibrary>
     private lateinit var stepExams: List<RealmStepExam>
@@ -52,7 +50,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentCourseStepBinding = FragmentCourseStepBinding.inflate(inflater, container, false)
-        cRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
         fragmentCourseStepBinding.btnTakeTest.visibility = View.VISIBLE
         fragmentCourseStepBinding.btnTakeSurvey.visibility = View.VISIBLE
@@ -60,37 +57,51 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private fun saveCourseProgress() {
-        if (!cRealm.isInTransaction) cRealm.beginTransaction()
-        var courseProgress = cRealm.where(RealmCourseProgress::class.java).equalTo("courseId", step.courseId).equalTo("userId", user?.id).equalTo("stepNum", stepNumber).findFirst()
-        if (courseProgress == null) {
-            courseProgress = cRealm.createObject(RealmCourseProgress::class.java, UUID.randomUUID().toString())
-            courseProgress.createdDate = Date().time
+        databaseService.withRealm { realm ->
+            if (!realm.isInTransaction) realm.beginTransaction()
+            var courseProgress = realm.where(RealmCourseProgress::class.java)
+                .equalTo("courseId", step.courseId)
+                .equalTo("userId", user?.id)
+                .equalTo("stepNum", stepNumber)
+                .findFirst()
+            if (courseProgress == null) {
+                courseProgress = realm.createObject(RealmCourseProgress::class.java, UUID.randomUUID().toString())
+                courseProgress.createdDate = Date().time
+            }
+            courseProgress?.courseId = step.courseId
+            courseProgress?.stepNum = stepNumber
+            if (stepExams.isEmpty()) {
+                courseProgress?.passed = true
+            }
+            courseProgress?.createdOn = user?.planetCode
+            courseProgress?.updatedDate = Date().time
+            courseProgress?.parentCode = user?.parentCode
+            courseProgress?.userId = user?.id
+            realm.commitTransaction()
         }
-        courseProgress?.courseId = step.courseId
-        courseProgress?.stepNum = stepNumber
-        if (stepExams.isEmpty()) {
-            courseProgress?.passed = true
-        }
-        courseProgress?.createdOn = user?.planetCode
-        courseProgress?.updatedDate = Date().time
-        courseProgress?.parentCode = user?.parentCode
-        courseProgress?.userId = user?.id
-        cRealm.commitTransaction()
     }
-
-    override fun onDestroy() {
-        if (this::cRealm.isInitialized && !cRealm.isClosed) {
-            cRealm.close()
-        }
-        super.onDestroy()
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        step = cRealm.where(RealmCourseStep::class.java).equalTo("id", stepId).findFirst()!!
-        resources = cRealm.where(RealmMyLibrary::class.java).equalTo("stepId", stepId).findAll()
-        stepExams = cRealm.where(RealmStepExam::class.java).equalTo("stepId", stepId).equalTo("type", "courses").findAll()
-        stepSurvey = cRealm.where(RealmStepExam::class.java).equalTo("stepId", stepId).equalTo("type", "surveys").findAll()
+        databaseService.withRealm { realm ->
+            step = realm.where(RealmCourseStep::class.java)
+                .equalTo("id", stepId)
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }!!
+            resources = realm.where(RealmMyLibrary::class.java)
+                .equalTo("stepId", stepId)
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+            stepExams = realm.where(RealmStepExam::class.java)
+                .equalTo("stepId", stepId)
+                .equalTo("type", "courses")
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+            stepSurvey = realm.where(RealmStepExam::class.java)
+                .equalTo("stepId", stepId)
+                .equalTo("type", "surveys")
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+        }
         fragmentCourseStepBinding.btnResources.text = getString(R.string.resources_size, resources.size)
         hideTestIfNoQuestion()
         fragmentCourseStepBinding.tvTitle.text = step.stepTitle
@@ -102,7 +113,10 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         )
         setMarkdownText(fragmentCourseStepBinding.description, markdownContentWithLocalPaths)
         fragmentCourseStepBinding.description.movementMethod = LinkMovementMethod.getInstance()
-        if (!isMyCourse(user?.id, step.courseId, cRealm)) {
+        val userHasCourse = databaseService.withRealm { realm ->
+            isMyCourse(user?.id, step.courseId, realm)
+        }
+        if (!userHasCourse) {
             fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
             fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
         }
@@ -118,7 +132,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 textWithSpans.removeSpan(urlSpan)
             }
         }
-        if (isVisible && isMyCourse(user?.id, step.courseId, cRealm)) {
+        if (isVisible && userHasCourse) {
             saveCourseProgress()
         }
     }
@@ -141,28 +155,36 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private fun existsSubmission(firstStepId: String?, submissionType: String): Boolean {
-        val questions = cRealm.where(RealmExamQuestion::class.java).equalTo("examId", firstStepId).findAll()
-        var isPresent = false
-        if (questions != null && questions.isNotEmpty()) {
-            val examId = questions[0]?.examId
-            val isSubmitted = step.courseId?.let { courseId ->
-                val parentId = "$examId@$courseId"
-                cRealm.where(RealmSubmission::class.java)
-                    .equalTo("userId", user?.id)
-                    .equalTo("parentId", parentId)
-                    .equalTo("type", submissionType)
-                    .findFirst() != null
-            } ?: false
-            isPresent = isSubmitted
+        return databaseService.withRealm { realm ->
+            val questions = realm.where(RealmExamQuestion::class.java)
+                .equalTo("examId", firstStepId)
+                .findAll()
+            if (questions.isNotEmpty()) {
+                val examId = questions[0]?.examId
+                step.courseId?.let { courseId ->
+                    val parentId = "$examId@$courseId"
+                    realm.where(RealmSubmission::class.java)
+                        .equalTo("userId", user?.id)
+                        .equalTo("parentId", parentId)
+                        .equalTo("type", submissionType)
+                        .findFirst() != null
+                } ?: false
+            } else {
+                false
+            }
         }
-        return isPresent
     }
 
     override fun setMenuVisibility(visible: Boolean) {
         super.setMenuVisibility(visible)
         try {
-            if (visible && isMyCourse(user?.id, step.courseId, cRealm)) {
-                saveCourseProgress()
+            if (visible) {
+                val userHasCourse = databaseService.withRealm { realm ->
+                    isMyCourse(user?.id, step.courseId, realm)
+                }
+                if (userHasCourse) {
+                    saveCourseProgress()
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -170,7 +192,14 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private fun setListeners() {
-        val notDownloadedResources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("stepId", stepId).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll()
+        val notDownloadedResources: List<RealmMyLibrary> = databaseService.withRealm { realm ->
+            realm.where(RealmMyLibrary::class.java)
+                .equalTo("stepId", stepId)
+                .equalTo("resourceOffline", false)
+                .isNotNull("resourceLocalAddress")
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+        }
         setResourceButton(notDownloadedResources, fragmentCourseStepBinding.btnResources)
         fragmentCourseStepBinding.btnTakeTest.setOnClickListener {
             if (stepExams.isNotEmpty()) {
@@ -189,7 +218,14 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 AdapterMySubmission.openSurvey(homeItemClickListener, stepSurvey[0].id, false, false, "")
             }
         }
-        val downloadedResources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("stepId", stepId).equalTo("resourceOffline", true).isNotNull("resourceLocalAddress").findAll()
+        val downloadedResources: List<RealmMyLibrary> = databaseService.withRealm { realm ->
+            realm.where(RealmMyLibrary::class.java)
+                .equalTo("stepId", stepId)
+                .equalTo("resourceOffline", true)
+                .isNotNull("resourceLocalAddress")
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+        }
         setOpenResourceButton(downloadedResources, fragmentCourseStepBinding.btnOpen)
         fragmentCourseStepBinding.btnResources.visibility = View.GONE
     }
