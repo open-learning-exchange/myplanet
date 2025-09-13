@@ -17,7 +17,6 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
@@ -33,6 +32,7 @@ import org.ole.planet.myplanet.databinding.FragmentUserInformationBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -46,8 +46,9 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     var dob: String? = ""
     @Inject
     lateinit var databaseService: DatabaseService
-    lateinit var mRealm: Realm
-    private var submissions: RealmSubmission? = null
+    @Inject
+    lateinit var submissionRepository: SubmissionRepository
+    private var submission: RealmSubmission? = null
     var userModel: RealmUserModel? = null
     var shouldHideElements: Boolean? = null
     @Inject
@@ -55,10 +56,11 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentUserInformationBinding = FragmentUserInformationBinding.inflate(inflater, container, false)
-        mRealm = databaseService.realmInstance
         userModel = UserProfileDbHandler(requireContext()).userModel
         if (!TextUtils.isEmpty(id)) {
-            submissions = mRealm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()
+            viewLifecycleOwner.lifecycleScope.launch {
+                submission = id?.let { submissionRepository.getSubmissionById(it) }
+            }
         }
         shouldHideElements = arguments?.getBoolean("shouldHideElements") == true
         initViews()
@@ -197,31 +199,34 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
         if (TextUtils.isEmpty(id)) {
             val userId = userModel?.id
-            mRealm.executeTransactionAsync({ realm ->
-                val model = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
-                if (model != null) {
-                    user.keySet().forEach { key ->
-                        when (key) {
-                            "firstName" -> model.firstName = user.get(key).asString
-                            "lastName" -> model.lastName = user.get(key).asString
-                            "middleName" -> model.middleName = user.get(key).asString
-                            "email" -> model.email = user.get(key).asString
-                            "language" -> model.language = user.get(key).asString
-                            "phoneNumber" -> model.phoneNumber = user.get(key).asString
-                            "birthDate" -> model.birthPlace = user.get(key).asString
-                            "level" -> model.level = user.get(key).asString
-                            "gender" -> model.gender = user.get(key).asString
-                            "age" -> model.age = user.get(key).asString
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    databaseService.executeTransactionAsync { realm ->
+                        val model = realm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+                        if (model != null) {
+                            user.keySet().forEach { key ->
+                                when (key) {
+                                    "firstName" -> model.firstName = user.get(key).asString
+                                    "lastName" -> model.lastName = user.get(key).asString
+                                    "middleName" -> model.middleName = user.get(key).asString
+                                    "email" -> model.email = user.get(key).asString
+                                    "language" -> model.language = user.get(key).asString
+                                    "phoneNumber" -> model.phoneNumber = user.get(key).asString
+                                    "birthDate" -> model.birthPlace = user.get(key).asString
+                                    "level" -> model.level = user.get(key).asString
+                                    "gender" -> model.gender = user.get(key).asString
+                                    "age" -> model.age = user.get(key).asString
+                                }
+                            }
+                            model.isUpdated = true
                         }
                     }
-                    model.isUpdated = true
+                    Utilities.toast(MainApplication.context, getString(R.string.user_profile_updated))
+                    if (isAdded) dialog?.dismiss()
+                } catch (_: Exception) {
+                    Utilities.toast(MainApplication.context, getString(R.string.unable_to_update_user))
+                    if (isAdded) dialog?.dismiss()
                 }
-            }, {
-                Utilities.toast(MainApplication.context, getString(R.string.user_profile_updated))
-                if (isAdded) dialog?.dismiss()
-            }) {
-                Utilities.toast(MainApplication.context, getString(R.string.unable_to_update_user))
-                if (isAdded) dialog?.dismiss()
             }
         } else {
             saveSubmission(user)
@@ -229,12 +234,18 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     }
 
     private fun saveSubmission(user: JsonObject) {
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        submissions?.user = user.toString()
-        submissions?.status = "complete"
-        mRealm.commitTransaction()
-        if (isAdded) {
-            dialog?.dismiss()
+        id?.let { submissionId ->
+            viewLifecycleOwner.lifecycleScope.launch {
+                val sub = submission ?: submissionRepository.getSubmissionById(submissionId)
+                sub?.let {
+                    it.user = user.toString()
+                    it.status = "complete"
+                    submissionRepository.saveSubmission(it)
+                }
+                if (isAdded) {
+                    dialog?.dismiss()
+                }
+            }
         }
     }
 
@@ -320,13 +331,6 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         dpd.setTitle(getString(R.string.select_date_of_birth))
         dpd.datePicker.maxDate = now.timeInMillis
         dpd.show()
-    }
-
-    override fun onDestroyView() {
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
-        super.onDestroyView()
     }
 
     override val key: String
