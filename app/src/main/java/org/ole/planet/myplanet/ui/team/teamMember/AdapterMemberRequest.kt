@@ -59,8 +59,16 @@ class AdapterMemberRequest(private val context: Context, private val list: Mutab
                 btnAccept.isEnabled = false
             }
 
-            btnAccept.setOnClickListener { handleClick(holder, true) }
-            btnReject.setOnClickListener { handleClick(holder, false) }
+            val isRequester = currentItem.id == currentUser.id
+            if (isRequester) {
+                btnAccept.isEnabled = false
+                btnReject.isEnabled = false
+                btnAccept.setOnClickListener(null)
+                btnReject.setOnClickListener(null)
+            } else {
+                btnAccept.setOnClickListener { handleClick(holder, true) }
+                btnReject.setOnClickListener { handleClick(holder, false) }
+            }
         }
     }
 
@@ -70,7 +78,9 @@ class AdapterMemberRequest(private val context: Context, private val list: Mutab
     private fun handleClick(holder: RecyclerView.ViewHolder, isAccepted: Boolean) {
         val adapterPosition = holder.bindingAdapterPosition
         if (adapterPosition != RecyclerView.NO_POSITION && adapterPosition < list.size) {
-            acceptReject(list[adapterPosition], isAccepted, adapterPosition)
+            val targetUser = list[adapterPosition]
+            if (targetUser.id == currentUser.id) return
+            acceptReject(targetUser, isAccepted, adapterPosition)
         }
         listener.onMemberChanged()
     }
