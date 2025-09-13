@@ -42,7 +42,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.CheckboxListView
-import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
+import org.ole.planet.myplanet.utilities.DialogUtils.getDialog
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utilities.Utilities
 
@@ -59,6 +59,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private var referenceArray: JsonArray? = null
     private var achievementArray: JsonArray? = null
     private var resourceArray: JsonArray? = null
+    private var referenceDialog: AlertDialog? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentEditAchievementBinding = FragmentEditAchievementBinding.inflate(inflater, container, false)
@@ -153,8 +154,9 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         )
         setPrevReference(ar, `object`)
         val alertReferenceView: View = alertReferenceBinding.root
-        val d = getAlertDialog(requireActivity(), getString(R.string.add_reference), alertReferenceView)
-        d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+        referenceDialog = getDialog(requireActivity(), getString(R.string.add_reference), alertReferenceView)
+        referenceDialog?.show()
+        referenceDialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
             val name = alertReferenceBinding.etName.text.toString().trim { it <= ' ' }
             if (name.isEmpty()) {
                 alertReferenceBinding.tlName.error = getString(R.string.name_is_required)
@@ -164,7 +166,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             if (referenceArray == null) referenceArray = JsonArray()
             referenceArray?.add(createReference(name, alertReferenceBinding.etRelationship, alertReferenceBinding.etPhone, alertReferenceBinding.etEmail))
             showReference()
-            d.dismiss()
+            referenceDialog?.dismiss()
         }
     }
 
@@ -320,6 +322,12 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         achievement?.setAchievements(achievementArray!!)
         achievement?.setReferences(referenceArray)
         achievement?.sendToNation = fragmentEditAchievementBinding.cbSendToNation.isChecked.toString() + ""
+    }
+
+    override fun onDestroyView() {
+        referenceDialog?.dismiss()
+        referenceDialog = null
+        super.onDestroyView()
     }
 
     override fun onDestroy() {
