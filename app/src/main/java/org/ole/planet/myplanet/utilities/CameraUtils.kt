@@ -39,16 +39,21 @@ object CameraUtils {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             return
         }
-        openCamera(context)
-        imageReader = ImageReader.newInstance(IMAGE_WIDTH, IMAGE_HEIGHT, ImageFormat.JPEG, 1)
-        imageReader?.setOnImageAvailableListener({ reader ->
-            val image = reader.acquireLatestImage()
-            val buffer = image.planes[0].buffer
-            val bytes = ByteArray(buffer.capacity())
-            buffer.get(bytes)
-            savePicture(bytes, callback)
-            image.close()
-        }, backgroundHandler)
+        try {
+            openCamera(context)
+            imageReader = ImageReader.newInstance(IMAGE_WIDTH, IMAGE_HEIGHT, ImageFormat.JPEG, 1)
+            imageReader?.setOnImageAvailableListener({ reader ->
+                val image = reader.acquireLatestImage()
+                val buffer = image.planes[0].buffer
+                val bytes = ByteArray(buffer.capacity())
+                buffer.get(bytes)
+                savePicture(bytes, callback)
+                image.close()
+            }, backgroundHandler)
+        } catch (e: CameraAccessException) {
+            e.printStackTrace()
+            return
+        }
 
         try {
             val captureBuilder = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)
@@ -71,7 +76,11 @@ object CameraUtils {
 
     private fun reopenCamera(context: Context) {
         closeCamera()
-        openCamera(context)
+        try {
+            openCamera(context)
+        } catch (e: CameraAccessException) {
+            e.printStackTrace()
+        }
     }
 
     private fun closeCamera() {
@@ -117,7 +126,6 @@ object CameraUtils {
                 }
 
                 override fun onDisconnected(camera: CameraDevice) {
-                    closeCamera()
                     reopenCamera(context)
                 }
 
