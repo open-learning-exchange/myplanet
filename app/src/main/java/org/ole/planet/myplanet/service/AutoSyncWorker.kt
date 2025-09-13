@@ -7,15 +7,14 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.work.Worker
 import androidx.work.WorkerParameters
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedFactory
-import dagger.assisted.AssistedInject
+import dagger.hilt.android.EntryPointAccessors
 import java.util.Date
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.SuccessListener
 import org.ole.planet.myplanet.callback.SyncListener
 import org.ole.planet.myplanet.datamanager.Service
 import org.ole.planet.myplanet.datamanager.Service.CheckVersionCallback
+import org.ole.planet.myplanet.di.AutoSyncEntryPoint
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
@@ -23,22 +22,23 @@ import org.ole.planet.myplanet.utilities.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AutoSyncWorker @AssistedInject constructor(
-    @Assisted private val context: Context,
-    @Assisted workerParams: WorkerParameters,
-    private val syncManager: SyncManager,
-    private val uploadManager: UploadManager,
-    private val uploadToShelfService: UploadToShelfService
+class AutoSyncWorker(
+    private val context: Context,
+    workerParams: WorkerParameters
 ) : Worker(context, workerParams), SyncListener, CheckVersionCallback, SuccessListener {
     
-    @AssistedFactory
-    interface Factory {
-        fun create(context: Context, workerParams: WorkerParameters): AutoSyncWorker
-    }
-    
     private lateinit var preferences: SharedPreferences
+    private lateinit var syncManager: SyncManager
+    private lateinit var uploadManager: UploadManager
+    private lateinit var uploadToShelfService: UploadToShelfService
+    
     override fun doWork(): Result {
         preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        
+        val entryPoint = EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java)
+        syncManager = entryPoint.syncManager()
+        uploadManager = entryPoint.uploadManager()
+        uploadToShelfService = entryPoint.uploadToShelfService()
         val lastSync = preferences.getLong("LastSync", 0)
         val currentTime = System.currentTimeMillis()
         val syncInterval = preferences.getInt("autoSyncInterval", 60 * 60)

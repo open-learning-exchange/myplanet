@@ -368,10 +368,13 @@ class MyHealthFragment : Fragment() {
             binding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes)
             binding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds)
             binding.txtBirthPlace.text = Utilities.checkNA(userModel?.birthPlace)
-            binding.txtEmergencyContact.text = getString(R.string.emergency_contact_details,
+            val contact = myHealths?.emergencyContact?.takeIf { it.isNotBlank() }
+            binding.txtEmergencyContact.text = getString(
+                R.string.emergency_contact_details,
                 Utilities.checkNA(myHealths?.emergencyContactName),
                 Utilities.checkNA(myHealths?.emergencyContactType),
-                Utilities.checkNA(myHealths?.emergencyContact)).trimIndent()
+                Utilities.checkNA(contact)
+            ).trimIndent()
 
             val list = getExaminations(mm)
 
