@@ -34,6 +34,8 @@ class LibraryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getLibraryListForUser(userId: String?): List<RealmMyLibrary> {
+        if (userId == null) return emptyList()
+
         val results = queryList(RealmMyLibrary::class.java) {
             equalTo("isPrivate", false)
         }
