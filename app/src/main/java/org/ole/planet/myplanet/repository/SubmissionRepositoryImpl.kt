@@ -14,6 +14,8 @@ class SubmissionRepositoryImpl @Inject constructor(
 ) : RealmRepository(databaseService), SubmissionRepository {
 
     override suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {
+        if (userId == null) return emptyList()
+
         return queryList(RealmSubmission::class.java) {
             equalTo("userId", userId)
             equalTo("status", "pending")
@@ -22,11 +24,13 @@ class SubmissionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getSubmissionCountByUser(userId: String?): Int {
-        return queryList(RealmSubmission::class.java) {
+        if (userId == null) return 0
+
+        return count(RealmSubmission::class.java) {
             equalTo("userId", userId)
             equalTo("type", "survey")
             equalTo("status", "pending")
-        }.size
+        }.toInt()
     }
 
     override suspend fun getSurveyTitlesFromSubmissions(
