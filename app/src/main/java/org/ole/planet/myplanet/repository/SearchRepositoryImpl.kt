@@ -12,7 +12,7 @@ import org.ole.planet.myplanet.model.RealmTag
 
 class SearchRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    private val gson: Gson
+    private val gson: Gson,
 ) : RealmRepository(databaseService), SearchRepository {
 
     override suspend fun saveSearchActivity(
@@ -24,14 +24,15 @@ class SearchRepositoryImpl @Inject constructor(
         gradeLevel: String,
         subjectLevel: String
     ) {
-        executeTransaction { realm ->
-            val activity = realm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
-            activity.user = userId ?: ""
-            activity.time = Calendar.getInstance().timeInMillis
-            activity.createdOn = userPlanetCode ?: ""
-            activity.parentCode = userParentCode ?: ""
-            activity.text = searchText
-            activity.type = "courses"
+        val activityId = generateActivityId()
+        val activity = RealmSearchActivity().apply {
+            id = activityId
+            user = userId ?: ""
+            time = Calendar.getInstance().timeInMillis
+            createdOn = userPlanetCode ?: ""
+            parentCode = userParentCode ?: ""
+            text = searchText
+            type = "courses"
 
             val filter = JsonObject()
             val tagsArray = JsonArray()
@@ -41,8 +42,17 @@ class SearchRepositoryImpl @Inject constructor(
             filter.add("tags", tagsArray)
             filter.addProperty("doc.gradeLevel", gradeLevel)
             filter.addProperty("doc.subjectLevel", subjectLevel)
-
-            activity.filter = gson.toJson(filter)
+            this.filter = gson.toJson(filter)
         }
+
+        save(activity)
+    }
+
+    private suspend fun generateActivityId(): String {
+        var newId: String
+        do {
+            newId = UUID.randomUUID().toString()
+        } while (findByField(RealmSearchActivity::class.java, "id", newId) != null)
+        return newId
     }
 }
