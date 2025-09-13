@@ -54,33 +54,41 @@ class UserProfileDbHandler @Inject constructor(
     }
 
     fun onLogin() {
+        onLoginAsync()
+    }
+
+    fun onLoginAsync(callback: (() -> Unit)? = null, onError: ((Throwable) -> Unit)? = null) {
         if (mRealm.isClosed) {
             mRealm = realmService.realmInstance
         }
 
-        if (!mRealm.isInTransaction) {
-            mRealm.beginTransaction()
-        } else {
-            try {
-                mRealm.commitTransaction()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                mRealm.cancelTransaction()
+        val model = userModel
+        val userId = model?.id
+        val userName = model?.name
+        val parentCode = model?.parentCode
+        val planetCode = model?.planetCode
+
+        mRealm.executeTransactionAsync(
+            { realm ->
+                val offlineActivities = realm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
+                offlineActivities.userId = userId
+                offlineActivities.userName = userName
+                offlineActivities.parentCode = parentCode
+                offlineActivities.createdOn = planetCode
+                offlineActivities.type = KEY_LOGIN
+                offlineActivities._rev = null
+                offlineActivities._id = null
+                offlineActivities.description = "Member login on offline application"
+                offlineActivities.loginTime = Date().time
+            },
+            {
+                callback?.invoke()
+            },
+            { error ->
+                error.printStackTrace()
+                onError?.invoke(error)
             }
-            mRealm.beginTransaction()
-        }
-        try {
-            val offlineActivities = mRealm.copyToRealm(createUser())
-            offlineActivities.type = KEY_LOGIN
-            offlineActivities._rev = null
-            offlineActivities._id = null
-            offlineActivities.description = "Member login on offline application"
-            offlineActivities.loginTime = Date().time
-            mRealm.commitTransaction()
-        } catch (e: Exception) {
-            mRealm.cancelTransaction()
-            throw e
-        }
+        )
     }
 
     fun logoutAsync() {
@@ -106,8 +114,8 @@ class UserProfileDbHandler @Inject constructor(
         }
     }
 
-    private fun createUser(): RealmOfflineActivity {
-        val offlineActivities = mRealm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
+    private fun createUser(realm: Realm = mRealm): RealmOfflineActivity {
+        val offlineActivities = realm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
         val model = userModel
         offlineActivities.userId = model?.id
         offlineActivities.userName = model?.name
