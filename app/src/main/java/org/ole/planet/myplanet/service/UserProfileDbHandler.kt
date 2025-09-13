@@ -159,13 +159,22 @@ class UserProfileDbHandler @Inject constructor(
             return
         }
 
-        if (!mRealm.isInTransaction) mRealm.beginTransaction()
-        val offlineActivities = mRealm.copyToRealm(createResourceUser(model))
-        offlineActivities.type = type
-        offlineActivities.title = item.title
-        offlineActivities.resourceId = item.resourceId
-        offlineActivities.time = Date().time
-        mRealm.commitTransaction()
+        val userName = model?.name
+        val parentCode = model?.parentCode
+        val planetCode = model?.planetCode
+        val itemTitle = item.title
+        val itemResourceId = item.resourceId
+
+        mRealm.executeTransactionAsync { realm ->
+            val offlineActivities = realm.createObject(RealmResourceActivity::class.java, "${UUID.randomUUID()}")
+            offlineActivities.user = userName
+            offlineActivities.parentCode = parentCode
+            offlineActivities.createdOn = planetCode
+            offlineActivities.type = type
+            offlineActivities.title = itemTitle
+            offlineActivities.resourceId = itemResourceId
+            offlineActivities.time = Date().time
+        }
     }
 
     private fun createResourceUser(model: RealmUserModel?): RealmResourceActivity {
