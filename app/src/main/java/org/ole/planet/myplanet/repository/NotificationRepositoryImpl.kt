@@ -11,6 +11,8 @@ import org.ole.planet.myplanet.model.RealmNotification
     ) : RealmRepository(databaseService), NotificationRepository {
 
     override suspend fun getUnreadCount(userId: String?): Int {
+        if (userId == null) return 0
+
         return count(RealmNotification::class.java) {
             equalTo("userId", userId)
             equalTo("isRead", false)
