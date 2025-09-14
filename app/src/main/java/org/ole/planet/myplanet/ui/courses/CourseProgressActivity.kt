@@ -27,7 +27,6 @@ class CourseProgressActivity : BaseActivity() {
     private lateinit var binding: ActivityCourseProgressBinding
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
-    lateinit var realm: Realm
     var user: RealmUserModel? = null
     lateinit var courseId: String
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,40 +36,48 @@ class CourseProgressActivity : BaseActivity() {
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
         initActionBar()
         courseId = intent.getStringExtra("courseId").toString()
-        realm = databaseService.realmInstance
         user = userProfileDbHandler.userModel
-        val courseProgress = RealmCourseProgress.getCourseProgress(realm, user?.id)
-        val progress = courseProgress[courseId]
-        val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
-        if (progress != null) {
-            val maxProgress = progress["max"].asInt
-            if (maxProgress != 0) {
-                binding.progressView.setProgress((progress["current"].asInt.toDouble() / maxProgress.toDouble() * 100).toInt(), true)
-            } else {
-                binding.progressView.setProgress(0, true)
+        databaseService.withRealm { realm ->
+            val courseProgress = RealmCourseProgress.getCourseProgress(realm, user?.id)
+            val progress = courseProgress[courseId]
+            val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
+            if (progress != null) {
+                val maxProgress = progress["max"].asInt
+                if (maxProgress != 0) {
+                    binding.progressView.setProgress((progress["current"].asInt.toDouble() / maxProgress.toDouble() * 100).toInt(), true)
+                } else {
+                    binding.progressView.setProgress(0, true)
+                }
             }
+            binding.tvCourse.text = course?.courseTitle
+            binding.tvProgress.text = getString(
+                R.string.course_progress,
+                courseProgress[courseId]?.get("current")?.asString,
+                courseProgress[courseId]?.get("max")?.asString
+            )
+            binding.rvProgress.layoutManager = GridLayoutManager(this, 4)
+            showProgress(realm)
         }
-        binding.tvCourse.text = course?.courseTitle
-        binding.tvProgress.text = getString(R.string.course_progress, courseProgress[courseId]?.get("current")?.asString, courseProgress[courseId]?.get("max")?.asString)
-        binding.rvProgress.layoutManager = GridLayoutManager(this, 4)
-        showProgress()
     }
 
-    private fun showProgress() {
+    private fun showProgress(realm: Realm) {
         val steps = realm.where(RealmCourseStep::class.java).contains("courseId", courseId).findAll()
         val array = JsonArray()
         steps.map {
             val ob = JsonObject()
             ob.addProperty("stepId", it.id)
             val exams = realm.where(RealmStepExam::class.java).equalTo("stepId", it.id).findAll()
-            getExamObject(exams, ob)
+            getExamObject(realm, exams, ob)
             array.add(ob)
         }
         binding.rvProgress.adapter = AdapterProgressGrid(this, array)
-
     }
 
-    private fun getExamObject(exams: RealmResults<RealmStepExam>, ob: JsonObject) {
+    private fun getExamObject(
+        realm: Realm,
+        exams: RealmResults<RealmStepExam>,
+        ob: JsonObject
+    ) {
         exams.forEach { it ->
             it.id?.let { it1 ->
                 realm.where(RealmSubmission::class.java).equalTo("userId", user?.id)
@@ -87,12 +94,5 @@ class CourseProgressActivity : BaseActivity() {
                 ob.addProperty("status", it.status)
             }
         }
-    }
-
-    override fun onDestroy() {
-        if (this::realm.isInitialized && !realm.isClosed) {
-            realm.close()
-        }
-        super.onDestroy()
     }
 }
