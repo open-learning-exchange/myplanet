@@ -1,15 +1,21 @@
 package org.ole.planet.myplanet.repository
 
+import android.text.TextUtils
+import java.util.Date
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
+import io.realm.Sort
 
 class SubmissionRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
 ) : RealmRepository(databaseService), SubmissionRepository {
 
     override suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {
+        if (userId == null) return emptyList()
+
         return queryList(RealmSubmission::class.java) {
             equalTo("userId", userId)
             equalTo("status", "pending")
@@ -18,6 +24,8 @@ class SubmissionRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getSubmissionCountByUser(userId: String?): Int {
+        if (userId == null) return 0
+
         return count(RealmSubmission::class.java) {
             equalTo("userId", userId)
             equalTo("type", "survey")
@@ -79,6 +87,37 @@ class SubmissionRepositoryImpl @Inject constructor(
     override suspend fun getSubmissionsByType(type: String): List<RealmSubmission> {
         return queryList(RealmSubmission::class.java) {
             equalTo("type", type)
+        }
+    }
+
+    override suspend fun createSurveySubmission(examId: String, userId: String?) {
+        withRealm { realm ->
+            val exam = realm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()
+            realm.executeTransaction { r ->
+                var sub = r.where(RealmSubmission::class.java)
+                    .equalTo("userId", userId)
+                    .equalTo(
+                        "parentId",
+                        if (!TextUtils.isEmpty(exam?.courseId)) {
+                            examId + "@" + exam?.courseId
+                        } else {
+                            examId
+                        },
+                    )
+                    .sort("lastUpdateTime", Sort.DESCENDING)
+                    .equalTo("status", "pending")
+                    .findFirst()
+                sub = createSubmission(sub, r)
+                sub.parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
+                    examId + "@" + exam?.courseId
+                } else {
+                    examId
+                }
+                sub.userId = userId
+                sub.type = "survey"
+                sub.status = "pending"
+                sub.startTime = Date().time
+            }
         }
     }
 
