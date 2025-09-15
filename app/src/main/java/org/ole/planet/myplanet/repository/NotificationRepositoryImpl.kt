@@ -45,5 +45,18 @@ class NotificationRepositoryImpl @Inject constructor(
             existingNotification?.let { delete(RealmNotification::class.java, "id", it.id) }
         }
     }
+
+    override suspend fun markNotificationsAsRead(notificationIds: List<String>) {
+        if (notificationIds.isEmpty()) return
+
+        executeTransaction { realm ->
+            notificationIds.distinct().forEach { id ->
+                realm.where(RealmNotification::class.java)
+                    .equalTo("id", id)
+                    .findFirst()
+                    ?.isRead = true
+            }
+        }
+    }
 }
 

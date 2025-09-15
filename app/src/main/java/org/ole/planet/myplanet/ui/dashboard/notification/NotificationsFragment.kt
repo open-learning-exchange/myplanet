@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
@@ -41,6 +42,8 @@ class NotificationsFragment : Fragment() {
     private val binding get() = _binding!!
     @Inject
     lateinit var databaseService: DatabaseService
+    @Inject
+    lateinit var notificationRepository: NotificationRepository
     private lateinit var adapter: AdapterNotification
     private lateinit var userId: String
     private var notificationUpdateListener: NotificationListener? = null
@@ -239,21 +242,13 @@ class NotificationsFragment : Fragment() {
     private fun markAllAsRead() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                databaseService.executeTransactionAsync { realm ->
-                    realm.where(RealmNotification::class.java)
-                        .equalTo("userId", userId)
-                        .equalTo("isRead", false)
-                        .findAll()
-                        .forEach { it.isRead = true }
-                }
-                adapter.updateNotifications(
-                    loadNotifications(
-                        userId,
-                        binding.status.selectedItem.toString().lowercase(),
-                    ),
-                )
-                updateMarkAllAsReadButtonVisibility()
-                updateUnreadCount()
+                val unreadNotificationIds = adapter.currentList
+                    .filterNot { it.isRead }
+                    .map { it.id }
+                    .distinct()
+
+                notificationRepository.markNotificationsAsRead(unreadNotificationIds)
+                refreshNotificationsList()
             } catch (e: Exception) {
                 Snackbar.make(binding.root, getString(R.string.failed_to_mark_as_read), Snackbar.LENGTH_LONG).show()
             }
