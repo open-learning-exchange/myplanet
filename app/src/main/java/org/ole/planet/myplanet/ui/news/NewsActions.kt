@@ -36,8 +36,6 @@ object NewsActions {
         val v = android.view.LayoutInflater.from(context).inflate(R.layout.alert_input, null)
         val tlInput = v.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.tl_input)
         val et = v.findViewById<EditText>(R.id.et_input)
-        v.findViewById<android.view.View>(R.id.ll_image).visibility =
-            if (Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, context)) android.view.View.VISIBLE else android.view.View.GONE
         val llImage = v.findViewById<LinearLayout>(R.id.ll_alert_image)
         v.findViewById<android.view.View>(R.id.add_news_image).setOnClickListener { listener?.addImage(llImage) }
         return EditDialogComponents(v, et, tlInput, llImage)

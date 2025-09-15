@@ -407,7 +407,6 @@
     <string name="tasks">Tareas</string>
     <string name="join_requests">Solicitudes de unión</string>
     <string name="add_image">Agregar imagen</string>
-    <string name="addImageToMessage">Beta agregar imagen al mensaje</string>
     <string name="clear_data">Borrar datos</string>
     <string name="reset_app">Restablecer aplicación</string>
     <string name="freeup_space">Liberar espacio en disco</string>

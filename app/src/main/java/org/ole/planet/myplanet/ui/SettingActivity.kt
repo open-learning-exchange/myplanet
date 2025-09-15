@@ -214,7 +214,6 @@ class SettingActivity : AppCompatActivity() {
 //            val rating = findPreference<SwitchPreference>("beta_rating")
 //            val myHealth = findPreference<SwitchPreference>("beta_myHealth")
 //            val healthWorker = findPreference<SwitchPreference>("beta_healthWorker")
-//            val newsAddImage = findPreference<SwitchPreference>("beta_addImageToMessage")
 
             if (beta != null) {
                 beta.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
