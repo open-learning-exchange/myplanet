@@ -7,41 +7,36 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import io.realm.Realm
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
-import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.utilities.Utilities
+
+data class JoinedMemberData(
+    val user: RealmUserModel,
+    val visitCount: Long,
+    val lastVisitDate: String,
+    val offlineVisits: String,
+    val profileLastVisit: String,
+    var isLeader: Boolean
+)
 
 class AdapterJoinedMember(
     private val context: Context,
-    private val list: MutableList<RealmUserModel>,
-    private val mRealm: Realm,
-    private val teamId: String,
-    private val Listener: MemberChangeListener
+    private val list: MutableList<JoinedMemberData>,
+    private var isLoggedInUserTeamLeader: Boolean,
+    private val actionListener: MemberActionListener
 ) : RecyclerView.Adapter<AdapterJoinedMember.ViewHolderUser>() {
 
-    private val currentUser: RealmUserModel = UserProfileDbHandler(context).userModel!!
-    private val profileDbHandler = UserProfileDbHandler(context)
-    private var teamLeaderId: String? = mRealm.where(RealmMyTeam::class.java)
-        .equalTo("teamId", teamId)
-        .equalTo("isLeader", true)
-        .findFirst()?.userId
+    interface MemberActionListener {
+        fun onRemoveMember(member: JoinedMemberData, position: Int)
+        fun onMakeLeader(member: JoinedMemberData)
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderUser {
         val binding = RowJoinedUserBinding.inflate(LayoutInflater.from(context), parent, false)
@@ -49,25 +44,19 @@ class AdapterJoinedMember(
     }
 
     override fun onBindViewHolder(holder: ViewHolderUser, position: Int) {
-        val member = list[position]
+        val memberData = list[position]
+        val member = memberData.user
         val binding = holder.binding
 
-        val lastVisitTimestamp = RealmTeamLog.getLastVisit(mRealm, member.name, teamId)
-        val lastVisitDate = if (lastVisitTimestamp != null) {
-            val sdf = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-            sdf.format(Date(lastVisitTimestamp))
-        } else {
-            context.getString(R.string.no_visit)
-        }
         binding.tvTitle.text = if (member.toString() == " ") member.name else member.toString()
         binding.tvDescription.text = context.getString(
             R.string.member_description,
             member.getRoleAsString(),
-            RealmTeamLog.getVisitCount(mRealm, member.name, teamId)
+            memberData.visitCount
         )
         binding.tvLastVisit.text = context.getString(
             R.string.last_visit,
-            lastVisitDate
+            memberData.lastVisitDate
         )
         Glide.with(binding.memberImage.context)
             .load(member.userImage)
@@ -75,16 +64,14 @@ class AdapterJoinedMember(
             .error(R.drawable.profile)
             .into(binding.memberImage)
 
-        if (teamLeaderId == member.id) {
+        if (memberData.isLeader) {
             binding.tvIsLeader.visibility = View.VISIBLE
             binding.tvIsLeader.text = context.getString(R.string.team_leader)
         } else {
             binding.tvIsLeader.visibility = View.GONE
         }
 
-        val isLoggedInUserTeamLeader = teamLeaderId != null && teamLeaderId == currentUser.id
-        val overflowMenuOptions = arrayOf(context.getString(R.string.remove), context.getString(R.string.make_leader))
-        checkUserAndShowOverflowMenu(binding, position, overflowMenuOptions, isLoggedInUserTeamLeader)
+        checkUserAndShowOverflowMenu(binding, position)
 
         holder.itemView.setOnClickListener {
             val activity = it.context as AppCompatActivity
@@ -97,30 +84,32 @@ class AdapterJoinedMember(
                 member.dob.toString().substringBefore("T"),
                 member.language.toString(),
                 member.phoneNumber.toString(),
-                profileDbHandler.getOfflineVisits(member).toString(),
-                profileDbHandler.getLastVisit(member),
+                memberData.offlineVisits,
+                memberData.profileLastVisit,
                 "${member.firstName} ${member.lastName}",
                 member.level.toString(),
                 member.userImage
             )
             NavigationHelper.replaceFragment(
                 activity.supportFragmentManager,
-                R.id.fragment_container, fragment,
+                R.id.fragment_container,
+                fragment,
                 addToBackStack = true
             )
         }
     }
 
-    @SuppressLint("NotifyDataSetChanged")
     private fun checkUserAndShowOverflowMenu(
         binding: RowJoinedUserBinding,
-        position: Int,
-        overflowMenuOptions: Array<String>,
-        isLoggedInUserTeamLeader: Boolean
+        position: Int
     ) {
         if (isLoggedInUserTeamLeader && list.size > 1) {
             binding.icMore.visibility = View.VISIBLE
             binding.icMore.setOnClickListener {
+                val overflowMenuOptions = arrayOf(
+                    context.getString(R.string.remove),
+                    context.getString(R.string.make_leader)
+                )
                 val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
                 val adapter = object : ArrayAdapter<CharSequence>(
                     context,
@@ -135,36 +124,9 @@ class AdapterJoinedMember(
                     }
                 }
                 builder.setAdapter(adapter) { _, i ->
-                    if (position >= 0 && position < list.size) {
-                        var userRemoved = false
-                        when (i) {
-                            0 -> {
-                                if (currentUser.id != list[position].id) {
-                                    reject(list[position], position)
-                                    userRemoved = true
-                                } else {
-                                    val nextOfKin = getNextOfKin()
-                                    if (nextOfKin != null) {
-                                        makeLeader(nextOfKin)
-                                        reject(list[position], position)
-                                        userRemoved = true
-                                    } else {
-                                        Toast.makeText(context, R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                                if (userRemoved) {
-                                    Listener.onMemberChanged()
-                                }
-                            }
-                            1 -> {
-                                makeLeader(list[position])
-                            }
-                            else -> {
-                                Toast.makeText(context, R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    } else {
-                        Toast.makeText(context, R.string.cannot_remove_user, Toast.LENGTH_SHORT).show()
+                    when (i) {
+                        0 -> actionListener.onRemoveMember(list[position], position)
+                        1 -> actionListener.onMakeLeader(list[position])
                     }
                 }.setNegativeButton(R.string.dismiss, null).show()
             }
@@ -173,92 +135,17 @@ class AdapterJoinedMember(
         }
     }
 
-    private fun getNextOfKin(): RealmUserModel? {
-        val members: List<RealmMyTeam> = mRealm.where(RealmMyTeam::class.java)
-            .equalTo("teamId", teamId)
-            .equalTo("isLeader", false)
-            .notEqualTo("status","archived")
-            .findAll()
-        
-        if (members.isEmpty()) {
-            return null
-        }
+    override fun getItemCount(): Int = list.size
 
-        var successorTeamMember: RealmMyTeam? = null
-        var maxVisitCount: Long = -1
-        
-        for (member in members) {
-            val user = mRealm.where(RealmUserModel::class.java).equalTo("id", member.userId).findFirst()
-            if (user != null) {
-                val visitCount = RealmTeamLog.getVisitCount(mRealm, user.name, teamId)
-                if (visitCount > maxVisitCount) {
-                    maxVisitCount = visitCount
-                    successorTeamMember = member
-                }
-            }
-        }
-        
-        return if (successorTeamMember != null) {
-            mRealm.where(RealmUserModel::class.java).equalTo("id", successorTeamMember.userId).findFirst()
-        } else {
-            null
-        }
-    }
-
-    private fun refreshList() {
-        val members = getJoinedMember(teamId, mRealm).toMutableList()
-        val leaderId = mRealm.where(RealmMyTeam::class.java)
-            .equalTo("teamId", teamId)
-            .equalTo("isLeader", true)
-            .findFirst()?.userId
-        val leader = members.find { it.id == leaderId }
-        if (leader != null) {
-            members.remove(leader)
-            members.add(0, leader)
-        }
+    @SuppressLint("NotifyDataSetChanged")
+    fun updateData(newList: MutableList<JoinedMemberData>, isLoggedInUserTeamLeader: Boolean) {
         list.clear()
-        list.addAll(members)
+        list.addAll(newList)
+        this.isLoggedInUserTeamLeader = isLoggedInUserTeamLeader
         notifyDataSetChanged()
     }
-
-    private fun makeLeader(userModel: RealmUserModel) {
-        val userId = userModel.id
-        mRealm.executeTransactionAsync({ realm ->
-            val currentLeader = realm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("isLeader", true)
-                .findFirst()
-            val newLeader = realm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("userId", userId)
-                .findFirst()
-            currentLeader?.isLeader = false
-            newLeader?.isLeader = true
-            teamLeaderId = newLeader?.userId
-        }, Realm.Transaction.OnSuccess {
-            notifyDataSetChanged()
-            Utilities.toast(context, context.getString(R.string.leader_selected))
-        })
-        refreshList()
-    }
-
-    private fun reject(userModel: RealmUserModel, position: Int) {
-        val userId = userModel.id
-        mRealm.executeTransactionAsync({ realm ->
-            val team = realm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("userId", userId)
-                .findFirst()
-            team?.deleteFromRealm()
-        }, Realm.Transaction.OnSuccess {
-            list.removeAt(position)
-            notifyItemRemoved(position)
-            notifyItemRangeChanged(position, list.size)
-        })
-    }
-
-    override fun getItemCount(): Int = list.size
 
     class ViewHolderUser(val binding: RowJoinedUserBinding) :
         RecyclerView.ViewHolder(binding.root)
 }
+

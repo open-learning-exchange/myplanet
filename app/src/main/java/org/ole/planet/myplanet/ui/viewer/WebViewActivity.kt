@@ -31,7 +31,7 @@ class WebViewActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityWebViewBinding = ActivityWebViewBinding.inflate(layoutInflater)
         setContentView(activityWebViewBinding.root)
-        EdgeToEdgeUtils.setupEdgeToEdgeWithNoPadding(this, activityWebViewBinding.root)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, activityWebViewBinding.root)
         val dataFromDeepLink = intent.dataString
         fromDeepLink = !TextUtils.isEmpty(dataFromDeepLink)
         val title: String? = intent.getStringExtra("title")

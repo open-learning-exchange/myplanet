@@ -20,7 +20,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -76,7 +75,7 @@ class AchievementFragment : BaseContainerFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentAchievementBinding.inflate(inflater, container, false)
         aRealm = databaseService.realmInstance
-        user = UserProfileDbHandler(MainApplication.context).userModel
+        user = UserProfileDbHandler(requireContext()).userModel
         binding.btnEdit.setOnClickListener {
             if (listener != null) listener?.openCallFragment(EditAchievementFragment())
         }
@@ -238,7 +237,7 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun createAchievementView(ob: JsonObject): View {
-        val binding = RowAchievementBinding.inflate(LayoutInflater.from(MainApplication.context))
+        val binding = RowAchievementBinding.inflate(LayoutInflater.from(requireContext()))
         val desc = getString("description", ob)
         binding.tvDescription.text = desc
         binding.tvDate.text = getString("date", ob)
@@ -266,7 +265,7 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun createResourceButton(lib: RealmMyLibrary): View {
-        val btnBinding = LayoutButtonPrimaryBinding.inflate(LayoutInflater.from(MainApplication.context))
+        val btnBinding = LayoutButtonPrimaryBinding.inflate(LayoutInflater.from(requireContext()))
         btnBinding.root.text = lib.title
         btnBinding.root.setCompoundDrawablesWithIntrinsicBounds(
             0,
@@ -285,9 +284,9 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun setupReferences() {
-        binding.rvOtherInfo.layoutManager = LinearLayoutManager(MainApplication.context)
+        binding.rvOtherInfo.layoutManager = LinearLayoutManager(requireContext())
         binding.rvOtherInfo.adapter =
-            AdapterOtherInfo(MainApplication.context, achievement?.references ?: RealmList())
+            AdapterOtherInfo(requireContext(), achievement?.references ?: RealmList())
     }
 
     private fun getLibraries(array: JsonArray): List<RealmMyLibrary> {
