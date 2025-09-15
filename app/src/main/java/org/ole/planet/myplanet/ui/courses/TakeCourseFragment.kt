@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -40,7 +41,7 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.isStepCompleted
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
+import org.ole.planet.myplanet.utilities.DialogUtils.getDialog
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -54,6 +55,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var steps: List<RealmCourseStep?>
     var position = 0
     private var currentStep = 0
+    private var joinDialog: AlertDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -153,9 +155,14 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 if (!isGuest && !containsUserId) {
                     binding.btnRemove.visibility = View.VISIBLE
                     binding.btnRemove.text = getString(R.string.join)
-                    getAlertDialog(requireActivity(), getString(R.string.do_you_want_to_join_this_course), getString(R.string.join_this_course)) { _: DialogInterface?, _: Int ->
+                    joinDialog = getDialog(
+                        requireActivity(),
+                        getString(R.string.do_you_want_to_join_this_course),
+                        getString(R.string.join_this_course)
+                    ) { _: DialogInterface?, _: Int ->
                         addRemoveCourse()
                     }
+                    joinDialog?.show()
                 } else {
                     binding.btnRemove.visibility = View.GONE
                 }
@@ -330,6 +337,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        joinDialog?.dismiss()
+        joinDialog = null
         _binding = null
         super.onDestroyView()
     }

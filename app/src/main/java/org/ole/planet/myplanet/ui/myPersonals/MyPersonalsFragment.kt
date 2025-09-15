@@ -10,19 +10,19 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
 import javax.inject.Inject
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSelectedMyPersonal
 import org.ole.planet.myplanet.databinding.FragmentMyPersonalsBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyPersonal
+import org.ole.planet.myplanet.repository.MyPersonalRepository
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.repository.MyPersonalRepository
 
 @AndroidEntryPoint
 class MyPersonalsFragment : Fragment(), OnSelectedMyPersonal {
