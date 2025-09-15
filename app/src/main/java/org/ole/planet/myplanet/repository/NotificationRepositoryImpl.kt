@@ -1,12 +1,12 @@
 package org.ole.planet.myplanet.repository
 
-import javax.inject.Inject
 import java.util.Date
+import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNotification
 
-    class NotificationRepositoryImpl @Inject constructor(
+class NotificationRepositoryImpl @Inject constructor(
         databaseService: DatabaseService,
     ) : RealmRepository(databaseService), NotificationRepository {
 

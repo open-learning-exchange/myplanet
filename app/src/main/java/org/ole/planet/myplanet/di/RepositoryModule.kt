@@ -23,10 +23,10 @@ import org.ole.planet.myplanet.repository.RatingRepository
 import org.ole.planet.myplanet.repository.RatingRepositoryImpl
 import org.ole.planet.myplanet.repository.SearchRepository
 import org.ole.planet.myplanet.repository.SearchRepositoryImpl
-import org.ole.planet.myplanet.repository.TagRepository
-import org.ole.planet.myplanet.repository.TagRepositoryImpl
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.SubmissionRepositoryImpl
+import org.ole.planet.myplanet.repository.TagRepository
+import org.ole.planet.myplanet.repository.TagRepositoryImpl
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.TeamRepositoryImpl
 import org.ole.planet.myplanet.repository.UserRepository
