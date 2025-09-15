@@ -17,6 +17,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import io.realm.Realm
+import io.realm.RealmResults
 import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
@@ -64,6 +66,8 @@ class ChatHistoryListFragment : Fragment() {
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
+    private var realmInstance: Realm? = null
+    private var chatHistoryResults: RealmResults<RealmChatHistory>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -113,6 +117,7 @@ class ChatHistoryListFragment : Fragment() {
             }
         }
 
+        observeChatHistoryChanges()
         refreshChatHistoryList()
 
         binding.searchBar.addTextChangedListener(object : TextWatcher {
@@ -232,15 +237,46 @@ class ChatHistoryListFragment : Fragment() {
     }
 
     fun refreshChatHistoryList() {
-        val list = databaseService.withRealm { realm ->
-            realm.copyFromRealm(
-                realm.where(RealmChatHistory::class.java)
-                    .equalTo("user", user?.name)
-                    .sort("id", Sort.DESCENDING)
-                    .findAll()
-            )
-        }
+        val list = getChatHistoryList()
+        applyChatHistoryList(list)
+    }
 
+    private fun observeChatHistoryChanges() {
+        realmInstance = Realm.getDefaultInstance()
+        val userName = user?.name
+        chatHistoryResults = realmInstance?.where(RealmChatHistory::class.java)
+            ?.equalTo("user", userName)
+            ?.sort("lastUsed", Sort.DESCENDING)
+            ?.findAllAsync()
+
+        chatHistoryResults?.addChangeListener { results, _ ->
+            val realm = realmInstance ?: return@addChangeListener
+            if (!results.isValid || !results.isLoaded) {
+                return@addChangeListener
+            }
+            val updatedList = realm.copyFromRealm(results)
+            applyChatHistoryList(updatedList)
+        }
+    }
+
+    private fun getChatHistoryList(): List<RealmChatHistory> {
+        val realm = realmInstance
+        val results = chatHistoryResults
+        return if (realm != null && results != null && results.isLoaded && results.isValid) {
+            realm.copyFromRealm(results)
+        } else {
+            databaseService.withRealm { databaseRealm ->
+                databaseRealm.copyFromRealm(
+                    databaseRealm.where(RealmChatHistory::class.java)
+                        .equalTo("user", user?.name)
+                        .sort("lastUsed", Sort.DESCENDING)
+                        .findAll(),
+                )
+            }
+        }
+    }
+
+    private fun applyChatHistoryList(list: List<RealmChatHistory>) {
         val adapter = binding.recyclerView.adapter as? ChatHistoryListAdapter
         if (adapter == null) {
             val newAdapter = ChatHistoryListAdapter(requireContext(), list, this, databaseService, settings)
@@ -256,15 +292,12 @@ class ChatHistoryListFragment : Fragment() {
             binding.recyclerView.adapter = newAdapter
         } else {
             adapter.updateChatHistory(list)
-            binding.searchBar.visibility = View.VISIBLE
-            binding.recyclerView.visibility = View.VISIBLE
         }
 
+        val hasData = list.isNotEmpty()
+        binding.searchBar.visibility = if (hasData) View.VISIBLE else View.GONE
+        binding.recyclerView.visibility = if (hasData) View.VISIBLE else View.GONE
         showNoData(binding.noChats, list.size, "chatHistory")
-        if (list.isEmpty()) {
-            binding.searchBar.visibility = View.GONE
-            binding.recyclerView.visibility = View.GONE
-        }
     }
 
     private fun setupRealtimeSync() {
@@ -284,6 +317,10 @@ class ChatHistoryListFragment : Fragment() {
         if (::realtimeSyncListener.isInitialized) {
             syncCoordinator.removeListener(realtimeSyncListener)
         }
+        chatHistoryResults?.removeAllChangeListeners()
+        chatHistoryResults = null
+        realmInstance?.close()
+        realmInstance = null
         _binding = null
         super.onDestroyView()
     }

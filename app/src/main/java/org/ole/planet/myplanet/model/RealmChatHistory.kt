@@ -50,14 +50,24 @@ open class RealmChatHistory : RealmObject() {
             return conversations
         }
 
-        fun addConversationToChatHistory(mRealm: Realm, chatHistoryId: String?, query: String?, response: String?, newRev: String?) {
-            val chatHistory = mRealm.where(RealmChatHistory::class.java).equalTo("_id", chatHistoryId).findFirst()
+        fun addConversationToChatHistory(
+            mRealm: Realm,
+            chatHistoryId: String?,
+            query: String?,
+            response: String?,
+            newRev: String?,
+        ) {
+            val chatHistory = mRealm.where(RealmChatHistory::class.java)
+                .equalTo("_id", chatHistoryId)
+                .findFirst()
             if (chatHistory != null) {
-                if (!mRealm.isInTransaction) {
-                    mRealm.beginTransaction()
-                }
+                var startedTransaction = false
                 try {
-                    val conversation = Conversation()
+                    if (!mRealm.isInTransaction) {
+                        mRealm.beginTransaction()
+                        startedTransaction = true
+                    }
+                    val conversation = mRealm.createObject(Conversation::class.java)
                     conversation.query = query
                     conversation.response = response
                     if (chatHistory.conversations == null) {
@@ -68,10 +78,14 @@ open class RealmChatHistory : RealmObject() {
                     if (!newRev.isNullOrEmpty()) {
                         chatHistory._rev = newRev
                     }
-                    mRealm.copyToRealmOrUpdate(chatHistory)
+                    if (startedTransaction && mRealm.isInTransaction) {
+                        mRealm.commitTransaction()
+                    }
                 } catch (e: Exception) {
-                    mRealm.cancelTransaction()
-                    e.printStackTrace()
+                    if (startedTransaction && mRealm.isInTransaction) {
+                        mRealm.cancelTransaction()
+                    }
+                    throw e
                 }
             }
         }
