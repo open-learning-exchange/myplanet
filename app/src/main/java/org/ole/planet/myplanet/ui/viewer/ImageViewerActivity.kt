@@ -20,7 +20,7 @@ class ImageViewerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityImageViewerBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtils.setupEdgeToEdgeWithNoPadding(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
         renderImageFile()
     }
 

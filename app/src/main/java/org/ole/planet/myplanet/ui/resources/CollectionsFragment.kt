@@ -8,19 +8,18 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.fragment.app.DialogFragment
+import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import java.util.Locale
 import javax.inject.Inject
 import kotlin.collections.ArrayList
-import kotlin.collections.HashMap
-import kotlin.collections.List
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.TagClickListener
 import org.ole.planet.myplanet.databinding.FragmentCollectionsBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.utilities.KeyboardUtils
 
 @AndroidEntryPoint
@@ -28,8 +27,7 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
     private var _binding: FragmentCollectionsBinding? = null
     private val binding get() = _binding!!
     @Inject
-    lateinit var databaseService: DatabaseService
-    private lateinit var mRealm: Realm
+    lateinit var tagRepository: TagRepository
     private lateinit var list: List<RealmTag>
     private var filteredList: ArrayList<RealmTag> = ArrayList()
     private lateinit var adapter: TagExpandableAdapter
@@ -45,7 +43,6 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentCollectionsBinding.inflate(inflater, container, false)
-        mRealm = databaseService.realmInstance
         KeyboardUtils.hideSoftKeyboard(requireActivity())
         return binding.root
     }
@@ -85,28 +82,16 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
     }
 
     private fun setListAdapter() {
-        list = mRealm.where(RealmTag::class.java).equalTo("db", dbType).isNotEmpty("name").equalTo("isAttached", false).findAll()
-
-        selectedItemsList = ArrayList(recentList)
-        val allTags = mRealm.where(RealmTag::class.java).findAll()
-        val childMap = HashMap<String, List<RealmTag>>()
-        allTags.forEach { t -> createChildMap(childMap, t) }
-        binding.listTags.setGroupIndicator(null)
-        adapter = TagExpandableAdapter(list, childMap, selectedItemsList)
-        adapter.setSelectMultiple(true)
-        adapter.setClickListener(this)
-        binding.listTags.setAdapter(adapter)
-        binding.btnOk.visibility = View.VISIBLE
-    }
-
-    private fun createChildMap(childMap: HashMap<String, List<RealmTag>>, t: RealmTag) {
-        t.attachedTo?.forEach { s ->
-            val l: MutableList<RealmTag> = ArrayList()
-            if (childMap.containsKey(s)) {
-                childMap[s]?.let { l.addAll(it) }
-            }
-            if (!l.contains(t)) l.add(t)
-            childMap[s] = l
+        viewLifecycleOwner.lifecycleScope.launch {
+            list = tagRepository.getTags(dbType)
+            selectedItemsList = ArrayList(recentList)
+            val childMap = tagRepository.buildChildMap()
+            binding.listTags.setGroupIndicator(null)
+            adapter = TagExpandableAdapter(list, childMap, selectedItemsList)
+            adapter.setSelectMultiple(true)
+            adapter.setClickListener(this@CollectionsFragment)
+            binding.listTags.setAdapter(adapter)
+            binding.btnOk.visibility = View.VISIBLE
         }
     }
 
@@ -132,11 +117,8 @@ class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagIte
     }
 
     override fun onDestroyView() {
-        if (::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
-        _binding = null
         super.onDestroyView()
+        _binding = null
     }
 
     companion object {

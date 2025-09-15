@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -40,12 +41,13 @@ import org.ole.planet.myplanet.model.RealmSubmission.Companion.isStepCompleted
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
-import org.ole.planet.myplanet.utilities.DialogUtils.getAlertDialog
+import org.ole.planet.myplanet.utilities.DialogUtils.getDialog
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnClickListener {
-    private lateinit var fragmentTakeCourseBinding: FragmentTakeCourseBinding
+    private var _binding: FragmentTakeCourseBinding? = null
+    private val binding get() = _binding!!
     @Inject
     lateinit var databaseService: DatabaseService
     lateinit var mRealm: Realm
@@ -53,6 +55,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var steps: List<RealmCourseStep?>
     var position = 0
     private var currentStep = 0
+    private var joinDialog: AlertDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,63 +68,63 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentTakeCourseBinding = FragmentTakeCourseBinding.inflate(inflater, container, false)
+        _binding = FragmentTakeCourseBinding.inflate(inflater, container, false)
         mRealm = databaseService.realmInstance
         userModel = UserProfileDbHandler(requireContext()).userModel
         currentCourse = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
-        return fragmentTakeCourseBinding.root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        fragmentTakeCourseBinding.tvCourseTitle.text = currentCourse?.courseTitle
+        binding.tvCourseTitle.text = currentCourse?.courseTitle
         steps = getCourseSteps(mRealm, courseId)
         if (steps.isEmpty()) {
-            fragmentTakeCourseBinding.nextStep.visibility = View.GONE
-            fragmentTakeCourseBinding.previousStep.visibility = View.GONE
+            binding.nextStep.visibility = View.GONE
+            binding.previousStep.visibility = View.GONE
         }
 
         currentStep = getCourseProgress()
         position = if (currentStep > 0) currentStep  else 0
         setNavigationButtons()
-        fragmentTakeCourseBinding.viewPager2.adapter =
+        binding.viewPager2.adapter =
             CoursesPagerAdapter(
                 this@TakeCourseFragment,
                 courseId,
                 getCourseStepIds(mRealm, courseId)
             )
 
-        fragmentTakeCourseBinding.viewPager2.isUserInputEnabled = false
-        fragmentTakeCourseBinding.viewPager2.setCurrentItem(position, false)
+        binding.viewPager2.isUserInputEnabled = false
+        binding.viewPager2.setCurrentItem(position, false)
 
         updateStepDisplay(position)
 
         if (position == 0) {
-            fragmentTakeCourseBinding.previousStep.visibility = View.GONE
+            binding.previousStep.visibility = View.GONE
         }
         setCourseData()
         setListeners()
         checkSurveyCompletion()
-        fragmentTakeCourseBinding.backButton.setOnClickListener {
+        binding.backButton.setOnClickListener {
             NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
         }
     }
 
     override fun onResume() {
         super.onResume()
-        updateStepDisplay(fragmentTakeCourseBinding.viewPager2.currentItem)
+        updateStepDisplay(binding.viewPager2.currentItem)
     }
 
     private fun setListeners() {
-        fragmentTakeCourseBinding.nextStep.setOnClickListener(this)
-        fragmentTakeCourseBinding.previousStep.setOnClickListener(this)
-        fragmentTakeCourseBinding.btnRemove.setOnClickListener(this)
-        fragmentTakeCourseBinding.finishStep.setOnClickListener(this)
-        fragmentTakeCourseBinding.courseProgress.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
+        binding.nextStep.setOnClickListener(this)
+        binding.previousStep.setOnClickListener(this)
+        binding.btnRemove.setOnClickListener(this)
+        binding.finishStep.setOnClickListener(this)
+        binding.courseProgress.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
                 val currentProgress = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
                 if (b && i <= currentProgress + 1) {
-                    fragmentTakeCourseBinding.viewPager2.currentItem = i
+                    binding.viewPager2.currentItem = i
                 }
             }
 
@@ -132,31 +135,36 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     private fun updateStepDisplay(position: Int) {
         val currentPosition = position
-        fragmentTakeCourseBinding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", currentPosition, steps.size)
+        binding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", currentPosition, steps.size)
 
         val currentProgress = getCurrentProgress(steps, mRealm, userModel?.id, courseId)
         if (currentProgress < steps.size) {
-            fragmentTakeCourseBinding.courseProgress.secondaryProgress = currentProgress + 1
+            binding.courseProgress.secondaryProgress = currentProgress + 1
         }
-        fragmentTakeCourseBinding.courseProgress.progress = currentProgress
+        binding.courseProgress.progress = currentProgress
     }
 
     private fun setCourseData() {
         val isGuest = userModel?.isGuest() == true
         val containsUserId = currentCourse?.userId?.contains(userModel?.id) == true
         val stepsSize = steps.size
-        val currentItem = fragmentTakeCourseBinding.viewPager2.currentItem
+        val currentItem = binding.viewPager2.currentItem
 
         lifecycleScope.launch {
             withContext(Dispatchers.Main) {
                 if (!isGuest && !containsUserId) {
-                    fragmentTakeCourseBinding.btnRemove.visibility = View.VISIBLE
-                    fragmentTakeCourseBinding.btnRemove.text = getString(R.string.join)
-                    getAlertDialog(requireActivity(), getString(R.string.do_you_want_to_join_this_course), getString(R.string.join_this_course)) { _: DialogInterface?, _: Int ->
+                    binding.btnRemove.visibility = View.VISIBLE
+                    binding.btnRemove.text = getString(R.string.join)
+                    joinDialog = getDialog(
+                        requireActivity(),
+                        getString(R.string.do_you_want_to_join_this_course),
+                        getString(R.string.join_this_course)
+                    ) { _: DialogInterface?, _: Int ->
                         addRemoveCourse()
                     }
+                    joinDialog?.show()
                 } else {
-                    fragmentTakeCourseBinding.btnRemove.visibility = View.GONE
+                    binding.btnRemove.visibility = View.GONE
                 }
             }
             
@@ -175,17 +183,17 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             }
 
             withContext(Dispatchers.Main) {
-                fragmentTakeCourseBinding.courseProgress.max = stepsSize
+                binding.courseProgress.max = stepsSize
 
                 if (containsUserId) {
                     if(position != currentCourse?.courseSteps?.size){
-                        fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
+                        binding.nextStep.visibility = View.VISIBLE
                     }
-                    fragmentTakeCourseBinding.courseProgress.visibility = View.VISIBLE
+                    binding.courseProgress.visibility = View.VISIBLE
                 } else {
-                    fragmentTakeCourseBinding.nextStep.visibility = View.GONE
-                    fragmentTakeCourseBinding.previousStep.visibility = View.GONE
-                    fragmentTakeCourseBinding.courseProgress.visibility = View.GONE
+                    binding.nextStep.visibility = View.GONE
+                    binding.previousStep.visibility = View.GONE
+                    binding.courseProgress.visibility = View.GONE
                 }
             }
         }
@@ -197,9 +205,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         if (position > 0) {
             if (position - 1 < steps.size) changeNextButtonState(position)
         } else {
-            fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
-            fragmentTakeCourseBinding.nextStep.isClickable = true
-            fragmentTakeCourseBinding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
+            binding.nextStep.visibility = View.VISIBLE
+            binding.nextStep.isClickable = true
+            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
         }
 
         updateStepDisplay(position)
@@ -207,40 +215,40 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     private fun changeNextButtonState(position: Int) {
         if (isStepCompleted(mRealm, steps[position - 1]?.id, userModel?.id)) {
-            fragmentTakeCourseBinding.nextStep.isClickable = true
-            fragmentTakeCourseBinding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
+            binding.nextStep.isClickable = true
+            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
         } else {
-            fragmentTakeCourseBinding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
-            fragmentTakeCourseBinding.nextStep.isClickable = false
+            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
+            binding.nextStep.isClickable = false
         }
     }
 
     override fun onPageScrollStateChanged(state: Int) {}
 
     private fun onClickNext() {
-        fragmentTakeCourseBinding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem, currentCourse?.courseSteps?.size)
-        if (fragmentTakeCourseBinding.viewPager2.currentItem == currentCourse?.courseSteps?.size) {
-            fragmentTakeCourseBinding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
-            fragmentTakeCourseBinding.nextStep.visibility = View.GONE
-            fragmentTakeCourseBinding.finishStep.visibility = View.VISIBLE
+        binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", binding.viewPager2.currentItem, currentCourse?.courseSteps?.size)
+        if (binding.viewPager2.currentItem == currentCourse?.courseSteps?.size) {
+            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
+            binding.nextStep.visibility = View.GONE
+            binding.finishStep.visibility = View.VISIBLE
         }else{
-            fragmentTakeCourseBinding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
-            fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
-            fragmentTakeCourseBinding.finishStep.visibility = View.GONE
+            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
+            binding.nextStep.visibility = View.VISIBLE
+            binding.finishStep.visibility = View.GONE
 
         }
     }
 
     private fun onClickPrevious() {
-        fragmentTakeCourseBinding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", fragmentTakeCourseBinding.viewPager2.currentItem - 1, currentCourse?.courseSteps?.size)
-        if (fragmentTakeCourseBinding.viewPager2.currentItem - 1 == 0) {
-            fragmentTakeCourseBinding.previousStep.visibility = View.GONE
-            fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
-            fragmentTakeCourseBinding.finishStep.visibility = View.GONE
+        binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", binding.viewPager2.currentItem - 1, currentCourse?.courseSteps?.size)
+        if (binding.viewPager2.currentItem - 1 == 0) {
+            binding.previousStep.visibility = View.GONE
+            binding.nextStep.visibility = View.VISIBLE
+            binding.finishStep.visibility = View.GONE
         }else{
-            fragmentTakeCourseBinding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
-            fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
-            fragmentTakeCourseBinding.finishStep.visibility = View.GONE
+            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
+            binding.nextStep.visibility = View.VISIBLE
+            binding.finishStep.visibility = View.GONE
         }
     }
 
@@ -248,8 +256,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         when (view.id) {
             R.id.next_step -> {
                 if (isValidClickRight) {
-                    fragmentTakeCourseBinding.viewPager2.currentItem += 1
-                    fragmentTakeCourseBinding.previousStep.visibility = View.VISIBLE
+                    binding.viewPager2.currentItem += 1
+                    binding.previousStep.visibility = View.VISIBLE
                 }
                 onClickNext()
             }
@@ -257,7 +265,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             R.id.previous_step -> {
                 onClickPrevious()
                 if (isValidClickLeft) {
-                    fragmentTakeCourseBinding.viewPager2.currentItem -= 1
+                    binding.viewPager2.currentItem -= 1
                 }
             }
 
@@ -301,12 +309,12 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         }
 
         if (hasUnfinishedSurvey && courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
-            fragmentTakeCourseBinding.finishStep.setOnClickListener {
+            binding.finishStep.setOnClickListener {
                 Toast.makeText(context, getString(R.string.please_complete_survey), Toast.LENGTH_SHORT).show() }
         } else {
-            fragmentTakeCourseBinding.finishStep.isEnabled = true
-            fragmentTakeCourseBinding.finishStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
-            fragmentTakeCourseBinding.finishStep.setOnClickListener {
+            binding.finishStep.isEnabled = true
+            binding.finishStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
+            binding.finishStep.setOnClickListener {
                 NavigationHelper.popBackStack(requireActivity().supportFragmentManager)
             }
         }
@@ -314,26 +322,29 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     private fun setNavigationButtons(){
         if(position == currentCourse?.courseSteps?.size){
-            fragmentTakeCourseBinding.nextStep.visibility = View.GONE
-            fragmentTakeCourseBinding.finishStep.visibility = View.VISIBLE
+            binding.nextStep.visibility = View.GONE
+            binding.finishStep.visibility = View.VISIBLE
         } else {
-            fragmentTakeCourseBinding.nextStep.visibility = View.VISIBLE
-            fragmentTakeCourseBinding.finishStep.visibility = View.GONE
+            binding.nextStep.visibility = View.VISIBLE
+            binding.finishStep.visibility = View.GONE
         }
 
     }
 
     override fun onDestroyView() {
-        fragmentTakeCourseBinding.courseProgress.setOnSeekBarChangeListener(null)
+        binding.courseProgress.setOnSeekBarChangeListener(null)
         lifecycleScope.coroutineContext.cancelChildren()
         if (this::mRealm.isInitialized && !mRealm.isClosed) {
             mRealm.close()
         }
+        joinDialog?.dismiss()
+        joinDialog = null
+        _binding = null
         super.onDestroyView()
     }
 
-    private val isValidClickRight: Boolean get() = fragmentTakeCourseBinding.viewPager2.adapter != null && fragmentTakeCourseBinding.viewPager2.currentItem < fragmentTakeCourseBinding.viewPager2.adapter?.itemCount!!
-    private val isValidClickLeft: Boolean get() = fragmentTakeCourseBinding.viewPager2.adapter != null && fragmentTakeCourseBinding.viewPager2.currentItem > 0
+    private val isValidClickRight: Boolean get() = binding.viewPager2.adapter != null && binding.viewPager2.currentItem < binding.viewPager2.adapter?.itemCount!!
+    private val isValidClickLeft: Boolean get() = binding.viewPager2.adapter != null && binding.viewPager2.currentItem > 0
 
     companion object {
         var courseId: String? = null

@@ -654,10 +654,20 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     fun onLogin() {
         val handler = UserProfileDbHandler(this)
-        handler.onLogin()
+        handler.onLoginAsync(
+            callback = {
+                runOnUiThread {
+                    editor.putBoolean(Constants.KEY_LOGIN, true).commit()
+                    openDashboard()
+                }
+            },
+            onError = { error ->
+                runOnUiThread {
+                    Utilities.toast(this, "Login failed: ${error.message}")
+                }
+            }
+        )
         handler.onDestroy()
-        editor.putBoolean(Constants.KEY_LOGIN, true).commit()
-        openDashboard()
 
         isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
@@ -768,6 +778,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onCheckingVersion() {
+        val lastCheckTime = settings.getLong("last_version_check_timestamp", 0)
+        val currentTime = System.currentTimeMillis()
+        val twentyFourHoursInMillis = 24 * 60 * 60 * 1000
+
+        if (currentTime - lastCheckTime < twentyFourHoursInMillis) {
+            return
+        }
+
         customProgressDialog.setText(getString(R.string.checking_version))
         customProgressDialog.show()
     }
