@@ -1,17 +1,28 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.Context
+import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.datamanager.ApiClient.client
+import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
 
 class TeamRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val userProfileDbHandler: UserProfileDbHandler,
+    private val uploadManager: UploadManager,
 ) : RealmRepository(databaseService), TeamRepository {
 
     override suspend fun getTeamResources(teamId: String): List<RealmMyLibrary> {
@@ -57,6 +68,41 @@ class TeamRepositoryImpl @Inject constructor(
         return queryList(RealmMyTeam::class.java) {
             equalTo("teamId", teamId)
         }.mapNotNull { it.resourceId?.takeIf { id -> id.isNotBlank() } }
+    }
+
+    override fun syncTeamActivities() {
+        val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val updateUrl = "${settings.getString("serverURL", "")}" 
+        val serverUrlMapper = ServerUrlMapper()
+        val mapping = serverUrlMapper.processUrl(updateUrl)
+
+        MainApplication.applicationScope.launch(Dispatchers.IO) {
+            val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
+            val alternativeAvailable =
+                mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
+
+            if (!primaryAvailable && alternativeAvailable) {
+                mapping.alternativeUrl?.let { alternativeUrl ->
+                    val uri = updateUrl.toUri()
+                    val editor = settings.edit()
+                    serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
+                }
+            }
+
+            try {
+                uploadTeamActivities()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private suspend fun uploadTeamActivities() {
+        uploadManager.uploadTeams()
+        val apiInterface = client?.create(ApiInterface::class.java)
+        executeTransaction { realm ->
+            uploadManager.uploadTeamActivities(realm, apiInterface)
+        }
     }
 }
 

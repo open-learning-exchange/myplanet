@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.model
 
-import android.content.Context
 import android.content.SharedPreferences
-import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -12,22 +10,11 @@ import io.realm.RealmObject
 import io.realm.RealmResults
 import io.realm.annotations.PrimaryKey
 import java.util.Date
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.datamanager.ApiClient.client
-import org.ole.planet.myplanet.datamanager.ApiInterface
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utilities.DownloadUtils.openDownloadService
 import org.ole.planet.myplanet.utilities.JsonUtils
-import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.UrlUtils.getUrl
 
 open class RealmMyTeam : RealmObject() {
@@ -258,52 +245,6 @@ open class RealmMyTeam : RealmObject() {
             team.teamPlanetCode = userModel?.planetCode
             team.userPlanetCode = userModel?.planetCode
             mRealm.commitTransaction()
-        }
-
-        @JvmStatic
-        fun syncTeamActivities(context: Context, uploadManager: UploadManager) {
-            val settings = MainApplication.context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            val updateUrl = "${settings.getString("serverURL", "")}"
-            val serverUrlMapper = ServerUrlMapper()
-            val mapping = serverUrlMapper.processUrl(updateUrl)
-
-            CoroutineScope(Dispatchers.IO).launch {
-                val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
-                val alternativeAvailable =
-                    mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
-
-                if (!primaryAvailable && alternativeAvailable) {
-                    mapping.alternativeUrl.let { alternativeUrl ->
-                        val uri = updateUrl.toUri()
-                        val editor = settings.edit()
-                        serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
-                    }
-                }
-
-                withContext(Dispatchers.Main) {
-                    uploadTeamActivities(context, uploadManager)
-                }
-            }
-        }
-
-        private fun uploadTeamActivities(context: Context, uploadManager: UploadManager) {
-            MainApplication.applicationScope.launch {
-                try {
-                    withContext(Dispatchers.IO) {
-                        uploadManager.uploadTeams()
-                    }
-                    withContext(Dispatchers.IO) {
-                        val apiInterface = client?.create(ApiInterface::class.java)
-                        DatabaseService(context).withRealm { realm ->
-                            realm.executeTransaction { transactionRealm ->
-                                uploadManager.uploadTeamActivities(transactionRealm, apiInterface)
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
         }
 
         @JvmStatic

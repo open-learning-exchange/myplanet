@@ -10,12 +10,18 @@ import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.databinding.RowMemberRequestBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UploadManager
+import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterMemberRequest(private val context: Context, private val list: MutableList<RealmUserModel>, private val mRealm: Realm, private val currentUser: RealmUserModel, private val listener: MemberChangeListener, private val uploadManager: UploadManager) : RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser>() {
+class AdapterMemberRequest(
+    private val context: Context,
+    private val list: MutableList<RealmUserModel>,
+    private val mRealm: Realm,
+    private val currentUser: RealmUserModel,
+    private val listener: MemberChangeListener,
+    private val teamRepository: TeamRepository,
+) : RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser>() {
     private lateinit var rowMemberRequestBinding: RowMemberRequestBinding
     private var teamId: String? = null
     private lateinit var team: RealmMyTeam
@@ -96,7 +102,7 @@ class AdapterMemberRequest(private val context: Context, private val list: Mutab
                 }
             }
         }, {
-            syncTeamActivities(context, uploadManager)
+            teamRepository.syncTeamActivities()
             listener.onMemberChanged()
         }, { error ->
             list.add(position, userModel)

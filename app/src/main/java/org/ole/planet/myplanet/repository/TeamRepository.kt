@@ -8,5 +8,6 @@ interface TeamRepository {
     suspend fun isMember(userId: String?, teamId: String): Boolean
     suspend fun deleteTask(taskId: String)
     suspend fun upsertTask(task: RealmTeamTask)
+    fun syncTeamActivities()
 }
 
