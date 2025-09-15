@@ -7,11 +7,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -20,14 +22,13 @@ import org.ole.planet.myplanet.databinding.FragmentLibraryDetailBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.listToString
 import org.ole.planet.myplanet.model.RealmRating.Companion.getRatingsById
-import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
-import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.FileUtils.getFileExtension
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var _binding: FragmentLibraryDetailBinding? = null
     private val binding get() = _binding!!
@@ -50,16 +51,11 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             withContext(Dispatchers.IO) {
                 try {
-                    databaseService.withRealm { backgroundRealm ->
-                        val backgroundLibrary = backgroundRealm.where(RealmMyLibrary::class.java)
-                            .equalTo("resourceId", libraryId).findFirst()
-                        if (backgroundLibrary != null && backgroundLibrary.userId?.contains(userId) != true) {
-                            backgroundRealm.executeTransaction {
-                                backgroundLibrary.setUserId(userId)
-                            }
-                            onAdd(backgroundRealm, "resources", userId, libraryId)
-                        }
-                        library = backgroundLibrary?.let { backgroundRealm.copyFromRealm(it) }!!
+                    val backgroundLibrary = libraryRepository.getLibraryByResourceId(libraryId!!)
+                    if (backgroundLibrary != null && backgroundLibrary.userId?.contains(userId) != true && userId != null) {
+                        library = libraryRepository.updateUserLibrary(libraryId!!, userId, true)!!
+                    } else if (backgroundLibrary != null) {
+                        library = backgroundLibrary
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -79,11 +75,8 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         super.onCreateView(inflater, container, savedInstanceState)
         _binding = FragmentLibraryDetailBinding.inflate(inflater, container, false)
         userModel = UserProfileDbHandler(requireContext()).userModel!!
-        library = databaseService.withRealm { realm ->
-            realm.where(RealmMyLibrary::class.java)
-                .equalTo("resourceId", libraryId)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
+        library = runBlocking {
+            libraryRepository.getLibraryByResourceId(libraryId!!)
         }!!
         return binding.root
     }
@@ -186,25 +179,8 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             fragmentScope.launch {
                 withContext(Dispatchers.IO) {
                     try {
-                        databaseService.withRealm { backgroundRealm ->
-                            val backgroundLibrary = backgroundRealm.where(RealmMyLibrary::class.java)
-                                .equalTo("resourceId", libraryId).findFirst()
-
-                            if (backgroundLibrary != null) {
-                                backgroundRealm.executeTransaction {
-                                    if (isAdd) {
-                                        backgroundLibrary.setUserId(userId)
-                                    } else {
-                                        backgroundLibrary.removeUserId(userId)
-                                    }
-                                }
-                                if (isAdd) {
-                                    onAdd(backgroundRealm, "resources", userId, libraryId)
-                                } else {
-                                    onRemove(backgroundRealm, "resources", userId, libraryId)
-                                }
-                                library = backgroundRealm.copyFromRealm(backgroundLibrary)
-                            }
+                        if (userId != null) {
+                            library = libraryRepository.updateUserLibrary(libraryId!!, userId, isAdd)!!
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()

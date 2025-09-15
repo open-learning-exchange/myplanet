@@ -3,10 +3,13 @@ package org.ole.planet.myplanet.ui.team
 import android.os.Bundle
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Realm
+import javax.inject.Inject
+import kotlinx.coroutines.runBlocking
 import org.ole.planet.myplanet.base.BaseNewsFragment
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.TeamRepository
 
 private val Realm.isOpen: Boolean
     get() = !isClosed
@@ -16,6 +19,8 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
     var user: RealmUserModel? = null
     lateinit var teamId: String
     var team: RealmMyTeam? = null
+    @Inject
+    lateinit var teamRepository: TeamRepository
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,12 +50,8 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
 
     override fun setData(list: List<RealmNews?>?) {}
 
-    fun isMember(): Boolean {
-        return mRealm.where(RealmMyTeam::class.java)
-            .equalTo("userId", user?.id)
-            .equalTo("teamId", teamId)
-            .equalTo("docType", "membership")
-            .count() > 0
+    fun isMember(): Boolean = runBlocking {
+        teamRepository.isMember(user?.id, teamId)
     }
 
     private fun shouldQueryTeamFromRealm(): Boolean {
