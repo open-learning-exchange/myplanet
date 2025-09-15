@@ -11,14 +11,13 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Case
-import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCommunityBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.news.ReplyActivity
@@ -29,9 +28,12 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
     private var _binding: FragmentCommunityBinding? = null
     private val binding get() = _binding!!
     private var newList: List<RealmNews> = emptyList()
-    
+
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+
+    @Inject
+    lateinit var newsRepository: NewsRepository
     override fun addImage(llImage: LinearLayout?) {}
     override fun onNewsItemClick(news: RealmNews?) {}
     override fun clearImages() {}
@@ -55,16 +57,17 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
         binding.btnLibrary.setOnClickListener {
             homeItemClickListener?.openCallFragment(ResourcesFragment())
         }
-        databaseService.withRealm { realm ->
-            newList = realm.where(RealmNews::class.java).equalTo("docType", "message", Case.INSENSITIVE)
-                .equalTo("viewableBy", "community", Case.INSENSITIVE)
-                .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE).isEmpty("replyTo")
-                .sort("time", Sort.DESCENDING).findAll()
-                .let { realm.copyFromRealm(it) }
-        }
         val orientation = resources.configuration.orientation
         changeLayoutManager(orientation)
-        updatedNewsList(newList)
+        val planetCode = user?.planetCode
+        if (planetCode != null) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                newList = newsRepository.getCommunityNews(planetCode)
+                updatedNewsList(newList)
+            }
+        } else {
+            updatedNewsList(emptyList())
+        }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
