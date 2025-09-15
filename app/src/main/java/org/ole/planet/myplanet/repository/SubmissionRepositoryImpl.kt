@@ -1,13 +1,13 @@
 package org.ole.planet.myplanet.repository
 
 import android.text.TextUtils
+import io.realm.Sort
 import java.util.Date
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
-import io.realm.Sort
 
 class SubmissionRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
