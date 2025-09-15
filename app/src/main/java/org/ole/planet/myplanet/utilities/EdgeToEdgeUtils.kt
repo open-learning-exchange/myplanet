@@ -99,23 +99,6 @@ object EdgeToEdgeUtils {
     }
 
     /**
-     * Sets up edge-to-edge with no padding (for activities that handle insets manually)
-     */
-    fun setupEdgeToEdgeWithNoPadding(
-        activity: Activity,
-        rootView: View,
-        lightStatusBar: Boolean = true,
-        lightNavigationBar: Boolean = true
-    ) {
-        configureEdgeToEdge(activity, rootView, lightStatusBar, lightNavigationBar)
-
-        ViewCompat.setOnApplyWindowInsetsListener(rootView) { _, windowInsets ->
-            // Return windowInsets without consuming them, allowing child views to handle
-            windowInsets
-        }
-    }
-
-    /**
      * Sets up edge-to-edge with keyboard handling
      */
     fun setupEdgeToEdgeWithKeyboard(
