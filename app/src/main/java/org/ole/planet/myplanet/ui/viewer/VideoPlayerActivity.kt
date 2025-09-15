@@ -60,7 +60,7 @@ class VideoPlayerActivity : AppCompatActivity(), AuthSessionUpdater.AuthCallback
         super.onCreate(savedInstanceState)
         binding = ActivityExoPlayerVideoBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtils.setupEdgeToEdgeWithNoPadding(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
 
         val extras = intent.extras
         videoType = extras?.getString("videoType")

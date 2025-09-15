@@ -23,10 +23,10 @@ import org.ole.planet.myplanet.repository.RatingRepository
 import org.ole.planet.myplanet.repository.RatingRepositoryImpl
 import org.ole.planet.myplanet.repository.SearchRepository
 import org.ole.planet.myplanet.repository.SearchRepositoryImpl
-import org.ole.planet.myplanet.repository.TagRepository
-import org.ole.planet.myplanet.repository.TagRepositoryImpl
 import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.repository.SubmissionRepositoryImpl
+import org.ole.planet.myplanet.repository.TagRepository
+import org.ole.planet.myplanet.repository.TagRepositoryImpl
 import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.repository.TeamRepositoryImpl
 import org.ole.planet.myplanet.repository.UserRepository
@@ -38,11 +38,11 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindCourseRepository(impl: CourseRepositoryImpl): CourseRepository
+    abstract fun bindCourseProgressRepository(impl: CourseProgressRepositoryImpl): CourseProgressRepository
 
     @Binds
     @Singleton
-    abstract fun bindCourseProgressRepository(impl: CourseProgressRepositoryImpl): CourseProgressRepository
+    abstract fun bindCourseRepository(impl: CourseRepositoryImpl): CourseRepository
 
     @Binds
     @Singleton
@@ -78,13 +78,13 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindTagRepository(impl: TagRepositoryImpl): TagRepository
+
+    @Binds
+    @Singleton
     abstract fun bindTeamRepository(impl: TeamRepositoryImpl): TeamRepository
 
     @Binds
     @Singleton
     abstract fun bindUserRepository(impl: UserRepositoryImpl): UserRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindTagRepository(impl: TagRepositoryImpl): TagRepository
 }

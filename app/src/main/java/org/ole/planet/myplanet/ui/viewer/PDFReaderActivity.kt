@@ -43,7 +43,7 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         super.onCreate(savedInstanceState)
         binding = ActivityPdfreaderBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtils.setupEdgeToEdgeWithNoPadding(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
         audioRecorderService = AudioRecorderService().setAudioRecordListener(this)
         audioRecorderService.setCaller(this, this)
         if (intent.hasExtra("resourceId")) {
