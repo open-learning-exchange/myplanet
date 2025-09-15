@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
+import org.ole.planet.myplanet.utilities.TimeUtils.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
@@ -86,7 +87,7 @@ class UserDetailFragment : Fragment() {
         list.add(Detail("Language", user.language!!))
         list.add(Detail("Level", user.level!!))
         list.add(Detail("Number of Visits", db!!.offlineVisits.toString() + ""))
-        list.add(Detail("Last Login", Utilities.getRelativeTime(db.lastVisit!!)))
+        list.add(Detail("Last Login", getRelativeTime(db.lastVisit!!)))
         return list
     }
 

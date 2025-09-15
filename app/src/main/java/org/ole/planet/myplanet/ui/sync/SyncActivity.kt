@@ -94,8 +94,8 @@ import org.ole.planet.myplanet.utilities.NotificationUtils.cancelAll
 import org.ole.planet.myplanet.utilities.ServerConfigUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.UrlUtils
+import org.ole.planet.myplanet.utilities.TimeUtils.getRelativeTime
 import org.ole.planet.myplanet.utilities.Utilities
-import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
 
 @AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
