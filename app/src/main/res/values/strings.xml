@@ -407,7 +407,6 @@
     <string name="tasks">Tasks</string>
     <string name="join_requests">Join Requests</string>
     <string name="add_image">Add Image</string>
-    <string name="addImageToMessage">beta add image to message</string>
     <string name="clear_data">clear data</string>
     <string name="reset_app">reset app</string>
     <string name="freeup_space">free-up disk space</string>
