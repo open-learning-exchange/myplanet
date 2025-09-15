@@ -70,6 +70,7 @@ class TeamRepositoryImpl @Inject constructor(
 
     override suspend fun requestToJoin(teamId: String, user: RealmUserModel?, teamType: String?) {
         val userId = user?.id ?: return
+        val userPlanetCode = user?.planetCode
         if (teamId.isBlank()) return
         executeTransaction { realm ->
             val request = realm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
@@ -79,8 +80,8 @@ class TeamRepositoryImpl @Inject constructor(
             request.userId = userId
             request.teamId = teamId
             request.updated = true
-            request.teamPlanetCode = user.planetCode
-            request.userPlanetCode = user.planetCode
+            request.teamPlanetCode = userPlanetCode
+            request.userPlanetCode = userPlanetCode
         }
     }
 
