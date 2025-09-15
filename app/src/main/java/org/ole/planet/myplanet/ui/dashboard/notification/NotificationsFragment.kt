@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.TasksPage
+import org.ole.planet.myplanet.utilities.NotificationUtils
 
 @AndroidEntryPoint
 class NotificationsFragment : Fragment() {
@@ -239,19 +240,12 @@ class NotificationsFragment : Fragment() {
     private fun markAllAsRead() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                databaseService.executeTransactionAsync { realm ->
-                    realm.where(RealmNotification::class.java)
-                        .equalTo("userId", userId)
-                        .equalTo("isRead", false)
-                        .findAll()
-                        .forEach { it.isRead = true }
+                val unreadNotifications = loadNotifications(userId, "unread")
+                unreadNotifications.forEach { notification ->
+                    markAsReadById(notification.id)
+                    NotificationUtils.getInstance(requireContext()).clearNotification(notification.id)
                 }
-                adapter.updateNotifications(
-                    loadNotifications(
-                        userId,
-                        binding.status.selectedItem.toString().lowercase(),
-                    ),
-                )
+                refreshNotificationsList()
                 updateMarkAllAsReadButtonVisibility()
                 updateUnreadCount()
             } catch (e: Exception) {
