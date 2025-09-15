@@ -9,12 +9,12 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Realm
 import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSelectedMyPersonal
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.RowMyPersonalBinding
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.ui.myPersonals.AdapterMyPersonal.ViewHolderMyPersonal
 import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
@@ -25,9 +25,12 @@ import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterMyPersonal(private val context: Context, private var list: MutableList<RealmMyPersonal>) : RecyclerView.Adapter<ViewHolderMyPersonal>() {
+class AdapterMyPersonal(
+    private val context: Context,
+    private val databaseService: DatabaseService,
+    private var list: MutableList<RealmMyPersonal>
+) : RecyclerView.Adapter<ViewHolderMyPersonal>() {
     private lateinit var rowMyPersonalBinding: RowMyPersonalBinding
-    private var realm: Realm? = null
     private var listener: OnSelectedMyPersonal? = null
 
     fun setListener(listener: OnSelectedMyPersonal?) {
@@ -35,7 +38,7 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
     }
 
     fun updateList(newList: List<RealmMyPersonal>) {
-        val safeNewList = realm?.copyFromRealm(newList) ?: newList
+        val safeNewList = newList
         val diffResult = DiffUtils.calculateDiff(
             list,
             safeNewList,
@@ -51,12 +54,8 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
         list.addAll(safeNewList)
         diffResult.dispatchUpdatesTo(this)
     }
-    
+
     fun getList(): List<RealmMyPersonal> = list
-    fun setRealm(realm: Realm?) {
-        this.realm = realm
-        list = realm?.copyFromRealm(list)?.toMutableList() ?: list
-    }
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyPersonal {
         rowMyPersonalBinding = RowMyPersonalBinding.inflate(LayoutInflater.from(context), parent, false)
         return ViewHolderMyPersonal(rowMyPersonalBinding)
@@ -69,13 +68,19 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
             AlertDialog.Builder(context, R.style.AlertDialogTheme)
                 .setMessage(R.string.delete_record)
                 .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                    if (realm?.isInTransaction != true) realm?.beginTransaction()
-                    val personal = realm?.where(RealmMyPersonal::class.java)
-                        ?.equalTo("_id", list[position]._id)?.findFirst()
-                    personal?.deleteFromRealm()
-                    realm?.commitTransaction()
-                    updateList(realm?.where(RealmMyPersonal::class.java)?.findAll()?.toList() ?: emptyList())
-                    listener?.onAddedResource()
+                    databaseService.withRealm { realm ->
+                        realm.executeTransaction { transactionRealm ->
+                            transactionRealm.where(RealmMyPersonal::class.java)
+                                .equalTo("_id", list[position]._id)
+                                .findFirst()
+                                ?.deleteFromRealm()
+                        }
+                        val updatedList = realm.where(RealmMyPersonal::class.java).findAll()
+                        realm.copyFromRealm(updatedList)
+                    }.let { updatedList ->
+                        updateList(updatedList)
+                        listener?.onAddedResource()
+                    }
                 }.setNegativeButton(R.string.cancel, null).show()
         }
         rowMyPersonalBinding.imgEdit.setOnClickListener {
@@ -129,12 +134,20 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
                     Utilities.toast(context, R.string.please_enter_title.toString())
                     return@setPositiveButton
                 }
-                if (!realm?.isInTransaction!!) realm?.beginTransaction()
-                personal.description = desc
-                personal.title = title
-                realm?.commitTransaction()
-                updateList(realm?.where(RealmMyPersonal::class.java)?.findAll()?.toList() ?: emptyList())
-                listener?.onAddedResource()
+                databaseService.withRealm { realm ->
+                    realm.executeTransaction { transactionRealm ->
+                        val managedPersonal = transactionRealm.where(RealmMyPersonal::class.java)
+                            .equalTo("_id", personal._id)
+                            .findFirst()
+                        managedPersonal?.description = desc
+                        managedPersonal?.title = title
+                    }
+                    val updatedList = realm.where(RealmMyPersonal::class.java).findAll()
+                    realm.copyFromRealm(updatedList)
+                }.let { updatedList ->
+                    updateList(updatedList)
+                    listener?.onAddedResource()
+                }
             }
             .setNegativeButton(R.string.cancel, null)
             .show()
