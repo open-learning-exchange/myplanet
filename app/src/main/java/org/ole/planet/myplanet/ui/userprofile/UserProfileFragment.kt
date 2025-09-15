@@ -195,13 +195,14 @@ class UserProfileFragment : Fragment() {
                 override fun onLoadFailed(
                     e: GlideException?,
                     model: Any?,
-                    target: Target<Drawable>?,
+                    target: Target<Drawable>,
                     isFirstResource: Boolean
                 ): Boolean {
-                    if (!isAdded || _binding == null) {
+                    if (!isAdded) {
                         return true
                     }
-                    _binding?.image?.apply {
+                    val currentBinding = _binding ?: return true
+                    currentBinding.image.apply {
                         visibility = View.VISIBLE
                         setImageResource(R.drawable.profile)
                     }
