@@ -29,15 +29,16 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
     private lateinit var rowMyPersonalBinding: RowMyPersonalBinding
     private var realm: Realm? = null
     private var listener: OnSelectedMyPersonal? = null
-    
+
     fun setListener(listener: OnSelectedMyPersonal?) {
         this.listener = listener
     }
-    
+
     fun updateList(newList: List<RealmMyPersonal>) {
+        val safeNewList = realm?.copyFromRealm(newList) ?: newList
         val diffResult = DiffUtils.calculateDiff(
             list,
-            newList,
+            safeNewList,
             areItemsTheSame = { old, new -> old._id == new._id },
             areContentsTheSame = { old, new ->
                 old.title == new.title &&
@@ -47,13 +48,14 @@ class AdapterMyPersonal(private val context: Context, private var list: MutableL
             }
         )
         list.clear()
-        list.addAll(newList)
+        list.addAll(safeNewList)
         diffResult.dispatchUpdatesTo(this)
     }
     
     fun getList(): List<RealmMyPersonal> = list
     fun setRealm(realm: Realm?) {
         this.realm = realm
+        list = realm?.copyFromRealm(list)?.toMutableList() ?: list
     }
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyPersonal {
         rowMyPersonalBinding = RowMyPersonalBinding.inflate(LayoutInflater.from(context), parent, false)

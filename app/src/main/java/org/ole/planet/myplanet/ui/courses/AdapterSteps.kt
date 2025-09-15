@@ -5,13 +5,17 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Realm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowStepsBinding
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmStepExam
 
-class AdapterSteps(private val context: Context, private val list: List<RealmCourseStep>, private val realm: Realm) : RecyclerView.Adapter<AdapterSteps.ViewHolder>() {
+class AdapterSteps(
+    private val context: Context,
+    private val list: List<RealmCourseStep>,
+    private val databaseService: DatabaseService
+) : RecyclerView.Adapter<AdapterSteps.ViewHolder>() {
     private val descriptionVisibilityList: MutableList<Boolean> = ArrayList()
     private var currentlyVisiblePosition = RecyclerView.NO_POSITION
 
@@ -48,9 +52,13 @@ class AdapterSteps(private val context: Context, private val list: List<RealmCou
             val step = list[position]
             rowStepsBinding.tvTitle.text = step.stepTitle
             var size = 0
-            val exam = realm.where(RealmStepExam::class.java).equalTo("stepId", step.id).findFirst()
-            if (exam != null) {
-                size = exam.noOfQuestions
+            databaseService.withRealm { realm ->
+                val exam = realm.where(RealmStepExam::class.java)
+                    .equalTo("stepId", step.id)
+                    .findFirst()
+                if (exam != null) {
+                    size = exam.noOfQuestions
+                }
             }
             rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, size)
             if (descriptionVisibilityList[position]) {

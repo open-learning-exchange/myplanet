@@ -26,6 +26,7 @@ import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity.Companion.hasInstallPermission
@@ -47,7 +48,6 @@ import org.ole.planet.myplanet.utilities.ResourceOpener
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.UrlUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 abstract class BaseContainerFragment : BaseResourceFragment() {

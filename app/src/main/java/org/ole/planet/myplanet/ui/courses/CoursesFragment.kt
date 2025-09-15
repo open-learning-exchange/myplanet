@@ -186,6 +186,13 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
     }
 
+    private fun getFullCourseList(): List<RealmMyCourse?> {
+        val courseList: List<RealmMyCourse?> = getList(RealmMyCourse::class.java)
+            .filterIsInstance<RealmMyCourse?>()
+            .filter { !it?.courseTitle.isNullOrBlank() }
+        return courseList.sortedWith(compareBy({ it?.isMyCourse }, { it?.courseTitle }))
+    }
+
     private fun refreshCoursesData() {
         if (!isAdded || requireActivity().isFinishing) return
 
@@ -283,11 +290,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 if (!etSearch.isFocused) return
                 val query = s.toString().trim()
                 if (query.isEmpty()) {
-                    val courseList = filterCourseByTag(query, searchTags)
-                    val sortedCourseList = courseList.sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
-                    adapterCourses.setOriginalCourseList(sortedCourseList)
-                }
-                else {
+                    adapterCourses.setCourseList(getFullCourseList())
+                    scrollToTop()
+                    showNoData(tvMessage, adapterCourses.itemCount, "courses")
+                } else {
                     adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
                     scrollToTop()
                     showNoData(tvMessage, adapterCourses.itemCount, "courses")
@@ -482,7 +488,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             }
             gradeLevel = if (spnGrade.selectedItem.toString() == "All") "" else spnGrade.selectedItem.toString()
             subjectLevel = if (spnSubject.selectedItem.toString() == "All") "" else spnSubject.selectedItem.toString()
-            adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
+            if (etSearch.text.toString().isEmpty() && searchTags.isEmpty() && gradeLevel.isEmpty() && subjectLevel.isEmpty()) {
+                adapterCourses.setCourseList(getFullCourseList())
+            } else {
+                adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
+            }
             scrollToTop()
             showNoFilter(tvMessage, adapterCourses.itemCount)
         }
@@ -495,7 +505,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             searchTags.clear()
             etSearch.setText(R.string.empty_text)
             tvSelected.text = context?.getString(R.string.empty_text)
-            adapterCourses.setCourseList(filterCourseByTag("", searchTags))
+            adapterCourses.setCourseList(getFullCourseList())
             scrollToTop()
             showNoData(tvMessage, adapterCourses.itemCount, "courses")
             spnGrade.setSelection(0)
@@ -597,7 +607,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     override fun onOkClicked(list: List<RealmTag>?) {
         if (list?.isEmpty() == true) {
             searchTags.clear()
-            adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
+            if (etSearch.text.toString().isEmpty() && gradeLevel.isEmpty() && subjectLevel.isEmpty()) {
+                adapterCourses.setCourseList(getFullCourseList())
+            } else {
+                adapterCourses.setCourseList(filterCourseByTag(etSearch.text.toString(), searchTags))
+            }
             scrollToTop()
             showNoData(tvMessage, adapterCourses.itemCount, "courses")
         } else {

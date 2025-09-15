@@ -13,6 +13,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
 import javax.inject.Inject
 import kotlin.collections.ArrayList
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.TagClickListener
@@ -20,7 +21,6 @@ import org.ole.planet.myplanet.databinding.FragmentCollectionsBinding
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.repository.TagRepository
 import org.ole.planet.myplanet.utilities.KeyboardUtils
-import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class CollectionsFragment : DialogFragment(), TagExpandableAdapter.OnClickTagItem, CompoundButton.OnCheckedChangeListener {
