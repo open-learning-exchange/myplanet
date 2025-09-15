@@ -29,9 +29,9 @@ private data class PooledRealm(
 
 class RealmConnectionPool(
     private val context: Context,
+    private val databaseService: DatabaseService,
     private val config: RealmPoolConfig = RealmPoolConfig()
 ) {
-    private val databaseService = DatabaseService(context)
     private val threadLocalConnections = ThreadLocal<Realm?>()
     private val availableConnections = ConcurrentLinkedQueue<PooledRealm>()
     private val allConnections = mutableMapOf<String, PooledRealm>()
@@ -247,9 +247,13 @@ class RealmPoolManager private constructor() {
     private var connectionPool: RealmConnectionPool? = null
     private val mutex = Mutex()
     
-    suspend fun initializePool(context: Context, config: RealmPoolConfig = RealmPoolConfig()) = mutex.withLock {
+    suspend fun initializePool(
+        context: Context,
+        databaseService: DatabaseService,
+        config: RealmPoolConfig = RealmPoolConfig()
+    ) = mutex.withLock {
         if (connectionPool == null) {
-            connectionPool = RealmConnectionPool(context, config)
+            connectionPool = RealmConnectionPool(context, databaseService, config)
         }
     }
     
