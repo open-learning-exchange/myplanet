@@ -57,36 +57,44 @@ open class RealmChatHistory : RealmObject() {
             response: String?,
             newRev: String?,
         ) {
-            val chatHistory = mRealm.where(RealmChatHistory::class.java)
+            if (chatHistoryId.isNullOrBlank() || mRealm.isClosed) {
+                return
+            }
+
+            if (mRealm.isInTransaction) {
+                appendConversation(mRealm, chatHistoryId, query, response, newRev)
+            } else {
+                mRealm.executeTransaction { realm ->
+                    appendConversation(realm, chatHistoryId, query, response, newRev)
+                }
+            }
+        }
+
+        private fun appendConversation(
+            realm: Realm,
+            chatHistoryId: String,
+            query: String?,
+            response: String?,
+            newRev: String?,
+        ) {
+            val chatHistory = realm.where(RealmChatHistory::class.java)
                 .equalTo("_id", chatHistoryId)
                 .findFirst()
-            if (chatHistory != null) {
-                var startedTransaction = false
-                try {
-                    if (!mRealm.isInTransaction) {
-                        mRealm.beginTransaction()
-                        startedTransaction = true
-                    }
-                    val conversation = mRealm.createObject(Conversation::class.java)
-                    conversation.query = query
-                    conversation.response = response
-                    if (chatHistory.conversations == null) {
-                        chatHistory.conversations = RealmList()
-                    }
-                    chatHistory.conversations?.add(conversation)
-                    chatHistory.lastUsed = Date().time
-                    if (!newRev.isNullOrEmpty()) {
-                        chatHistory._rev = newRev
-                    }
-                    if (startedTransaction && mRealm.isInTransaction) {
-                        mRealm.commitTransaction()
-                    }
-                } catch (e: Exception) {
-                    if (startedTransaction && mRealm.isInTransaction) {
-                        mRealm.cancelTransaction()
-                    }
-                    throw e
-                }
+                ?: return
+
+            val conversation = realm.createObject(Conversation::class.java)
+            conversation.query = query
+            conversation.response = response
+
+            val conversations = chatHistory.conversations ?: RealmList()
+            if (chatHistory.conversations == null) {
+                chatHistory.conversations = conversations
+            }
+            conversations.add(conversation)
+
+            chatHistory.lastUsed = Date().time
+            if (!newRev.isNullOrEmpty()) {
+                chatHistory._rev = newRev
             }
         }
     }

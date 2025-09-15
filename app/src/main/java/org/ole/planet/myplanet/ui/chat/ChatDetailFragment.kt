@@ -531,16 +531,15 @@ class ChatDetailFragment : Fragment() {
         }
 
     private fun continueConversationRealm(id: String, query: String, chatResponse: String) {
-        databaseService.withRealm { realm ->
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
-                addConversationToChatHistory(realm, id, query, chatResponse, _rev)
-                if (realm.isInTransaction) {
-                    realm.commitTransaction()
+                databaseService.executeTransactionAsync { realm ->
+                    addConversationToChatHistory(realm, id, query, chatResponse, _rev)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                if (realm.isInTransaction) {
-                    realm.cancelTransaction()
+                if (isAdded) {
+                    Snackbar.make(binding.root, getString(R.string.failed_to_save_chat), Snackbar.LENGTH_LONG).show()
                 }
             }
         }
