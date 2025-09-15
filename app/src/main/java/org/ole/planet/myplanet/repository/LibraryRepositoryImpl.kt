@@ -4,6 +4,8 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
+import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
+import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 
 class LibraryRepositoryImpl @Inject constructor(
     databaseService: DatabaseService
@@ -21,6 +23,10 @@ class LibraryRepositoryImpl @Inject constructor(
         return findByField(RealmMyLibrary::class.java, "_id", resourceId)
     }
 
+    override suspend fun getLibraryByResourceId(resourceId: String): RealmMyLibrary? {
+        return findByField(RealmMyLibrary::class.java, "resourceId", resourceId)
+    }
+
     override suspend fun getLibraryItemsByLocalAddress(localAddress: String): List<RealmMyLibrary> {
         return queryList(RealmMyLibrary::class.java) {
             equalTo("resourceLocalAddress", localAddress)
@@ -34,6 +40,8 @@ class LibraryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getLibraryListForUser(userId: String?): List<RealmMyLibrary> {
+        if (userId == null) return emptyList()
+
         val results = queryList(RealmMyLibrary::class.java) {
             equalTo("isPrivate", false)
         }
@@ -64,6 +72,32 @@ class LibraryRepositoryImpl @Inject constructor(
         executeTransaction { realm ->
             RealmRemovedLog.onAdd(realm, "resources", userId, resourceId)
         }
+    }
+
+    override suspend fun updateUserLibrary(
+        resourceId: String,
+        userId: String,
+        isAdd: Boolean,
+    ): RealmMyLibrary? {
+        executeTransaction { realm ->
+            realm.where(RealmMyLibrary::class.java)
+                .equalTo("resourceId", resourceId)
+                .findFirst()?.let { library ->
+                    if (isAdd) {
+                        library.setUserId(userId)
+                    } else {
+                        library.removeUserId(userId)
+                    }
+                }
+        }
+        withRealm { realm ->
+            if (isAdd) {
+                onAdd(realm, "resources", userId, resourceId)
+            } else {
+                onRemove(realm, "resources", userId, resourceId)
+            }
+        }
+        return getLibraryByResourceId(resourceId)
     }
 
     override suspend fun deleteLibraryItem(id: String) {

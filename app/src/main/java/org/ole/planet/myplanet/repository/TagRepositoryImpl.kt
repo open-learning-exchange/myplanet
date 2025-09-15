@@ -30,5 +30,23 @@ class TagRepositoryImpl @Inject constructor(
         }
         return childMap
     }
+
+    override suspend fun getTagsForResource(resourceId: String): List<RealmTag> {
+        return withRealm { realm ->
+            val links = realm.where(RealmTag::class.java)
+                .equalTo("db", "resources")
+                .equalTo("linkId", resourceId)
+                .findAll()
+            val parents = mutableListOf<RealmTag>()
+            links.forEach { tag ->
+                realm.where(RealmTag::class.java)
+                    .equalTo("id", tag.tagId)
+                    .findFirst()?.let { parent ->
+                        parents.add(realm.copyFromRealm(parent))
+                    }
+            }
+            parents
+        }
+    }
 }
 
