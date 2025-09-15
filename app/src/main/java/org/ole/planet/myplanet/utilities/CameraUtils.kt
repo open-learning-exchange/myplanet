@@ -90,8 +90,6 @@ object CameraUtils {
         cameraDevice = null
         imageReader?.close()
         imageReader = null
-        sessionExecutor?.shutdown()
-        sessionExecutor = null
     }
 
     @JvmStatic
@@ -161,6 +159,15 @@ object CameraUtils {
                     }
 
                     override fun onConfigureFailed(session: CameraCaptureSession) {}
+
+                    override fun onClosed(session: CameraCaptureSession) {
+                        if (!executor.isShutdown) {
+                            executor.shutdown()
+                        }
+                        if (sessionExecutor == executor) {
+                            sessionExecutor = null
+                        }
+                    }
                 }
 
                 val sessionConfiguration = SessionConfiguration(SessionConfiguration.SESSION_REGULAR, outputConfigurations, executor, stateCallback)
