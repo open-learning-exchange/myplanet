@@ -32,6 +32,10 @@ object TimeUtils {
         DateTimeFormatter.ofPattern("EEE dd, MMMM yyyy", defaultLocale).withZone(ZoneId.systemDefault())
     }
 
+    private val fallbackDateFormatter by lazy {
+        DateTimeFormatter.ofPattern("dd, MMMM yyyy", defaultLocale).withZone(ZoneId.systemDefault())
+    }
+
     fun getFormattedDate(date: Long?): String =
         try {
             val instant = date?.let { Instant.ofEpochMilli(it) } ?: Instant.now()
@@ -129,12 +133,11 @@ object TimeUtils {
 
     fun parseDate(dateString: String): Long? =
         try {
-            val localDate = try {
+            val localDate = runCatching {
                 LocalDate.parse(dateString, dateOnlyFormatter)
-            } catch (_: Exception) {
-                val fallbackFormatter = DateTimeFormatter.ofPattern("dd, MMMM yyyy", defaultLocale)
-                LocalDate.parse(dateString, fallbackFormatter)
-            }
+            }.recoverCatching {
+                LocalDate.parse(dateString, fallbackDateFormatter)
+            }.getOrThrow()
             localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         } catch (e: Exception) {
             e.printStackTrace()
