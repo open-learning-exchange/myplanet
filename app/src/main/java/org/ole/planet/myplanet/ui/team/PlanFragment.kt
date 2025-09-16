@@ -97,6 +97,14 @@ class PlanFragment : BaseTeamFragment() {
         binding.etRules.setText(team.rules)
         binding.etDescription.setText(team.description)
         binding.etName.setText(team.name)
+
+        val teamTypePosition = when (team.teamType) {
+            "local" -> 0
+            "sync" -> 1
+            else -> 0
+        }
+        binding.spnTeamType.setSelection(teamTypePosition)
+        binding.switchPublic.isChecked = team.isPublic
     }
 
     private fun handleSaveButtonClick(binding: AlertCreateTeamBinding, activity: FragmentActivity, context: Context, realm: Realm, team: RealmMyTeam, dialog: AlertDialog) {
@@ -112,7 +120,13 @@ class PlanFragment : BaseTeamFragment() {
         val servicesToSave = binding.etServices.text.toString()
         val rulesToSave = binding.etRules.text.toString()
         val descriptionToSave = binding.etDescription.text.toString()
-        
+        val teamType = when (binding.spnTeamType.selectedItemPosition) {
+            0 -> "local"
+            1 -> "sync"
+            else -> ""
+        }
+        val isPublic = binding.switchPublic.isChecked
+
         realm.executeTransactionAsync({ r ->
             val realmTeam = r.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
             realmTeam?.let {
@@ -120,6 +134,8 @@ class PlanFragment : BaseTeamFragment() {
                 it.services = servicesToSave
                 it.rules = rulesToSave
                 it.description = descriptionToSave
+                it.teamType = teamType
+                it.isPublic = isPublic
                 it.createdBy = userId
                 it.updated = true
             }
