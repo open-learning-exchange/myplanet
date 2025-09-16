@@ -404,7 +404,7 @@ class UserProfileFragment : Fragment() {
     private fun createStatsMap(): LinkedHashMap<String, String?> {
         return linkedMapOf(
             getString(R.string.community_name) to Utilities.checkNA(model?.planetCode),
-            getString(R.string.last_login) to handler.lastVisit?.let { Utilities.getRelativeTime(it) },
+            getString(R.string.last_login) to handler.lastVisit?.let { TimeUtils.getRelativeTime(it) },
             getString(R.string.total_visits_overall) to handler.offlineVisits.toString(),
             getString(R.string.most_opened_resource) to Utilities.checkNA(handler.maxOpenedResource),
             getString(R.string.number_of_resources_opened) to Utilities.checkNA(handler.numberOfResourceOpen)
