@@ -33,12 +33,6 @@ class LibraryRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getOfflineLibraryItems(): List<RealmMyLibrary> {
-        return queryList(RealmMyLibrary::class.java) {
-            equalTo("resourceOffline", true)
-        }
-    }
-
     override suspend fun getLibraryListForUser(userId: String?): List<RealmMyLibrary> {
         if (userId == null) return emptyList()
 
