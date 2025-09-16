@@ -23,6 +23,10 @@ class UserRepositoryImpl @Inject constructor(
         return findFirst(RealmUserModel::class.java)
     }
 
+    override suspend fun getCurrentUser(userId: String): RealmUserModel? {
+        return getUserById(userId)
+    }
+
     override suspend fun getUserById(userId: String): RealmUserModel? {
         return findByField(RealmUserModel::class.java, "id", userId)
     }
