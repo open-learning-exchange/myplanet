@@ -88,7 +88,7 @@ class NotificationsFragment : Fragment() {
         }
 
         adapter = AdapterNotification(
-            databaseService,
+            notificationRepository,
             notifications,
             onMarkAsReadClick = { notificationId ->
                 markAsReadById(notificationId)
