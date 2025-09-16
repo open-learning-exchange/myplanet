@@ -3,11 +3,12 @@ package org.ole.planet.myplanet.datamanager
 import android.content.Context
 import io.mockk.Runs
 import io.mockk.clearAllMocks
+import io.mockk.capture
 import io.mockk.every
-import io.mockk.firstArg
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.realm.Realm
@@ -91,9 +92,9 @@ class DatabaseServiceTest {
     @Test
     fun executeTransactionWithResultAsync_successReturnsResult() = runBlocking {
         every { realm.isClosed } returns false
-        every { realm.executeTransaction(any()) } answers {
-            val t = firstArg<Realm.Transaction>()
-            t.execute(realm)
+        val transactionSlot = slot<Realm.Transaction>()
+        every { realm.executeTransaction(capture(transactionSlot)) } answers {
+            transactionSlot.captured.execute(realm)
         }
 
         val result = service.executeTransactionWithResultAsync { 42 }
