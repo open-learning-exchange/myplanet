@@ -13,13 +13,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentRatingBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.Utilities
@@ -29,11 +27,8 @@ class RatingFragment : DialogFragment() {
     private var _binding: FragmentRatingBinding? = null
     private val binding get() = _binding!!
     @Inject
-    lateinit var databaseService: DatabaseService
-    @Inject
     lateinit var viewModel: RatingViewModel
-    lateinit var mRealm: Realm
-    var model: RealmUserModel? = null
+    private var currentUser: RealmUserModel? = null
     var id: String? = ""
     var type: String? = ""
     var title: String? = ""
@@ -55,16 +50,12 @@ class RatingFragment : DialogFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentRatingBinding.inflate(inflater, container, false)
-        mRealm = databaseService.realmInstance
         settings = requireActivity().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        model = mRealm.where(RealmUserModel::class.java)
-            .equalTo("id", settings.getString("userId", "")).findFirst()
-        
         setupUI()
         observeViewModel()
         loadRatingData()
@@ -107,7 +98,15 @@ class RatingFragment : DialogFragment() {
                 }
             }
         }
-        
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.userState.collect { user ->
+                    currentUser = user
+                }
+            }
+        }
+
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.submitState.collect { state ->
@@ -142,9 +141,6 @@ class RatingFragment : DialogFragment() {
     }
 
     override fun onDestroyView() {
-        if (::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
         _binding = null
         super.onDestroyView()
     }
@@ -154,7 +150,7 @@ class RatingFragment : DialogFragment() {
         val rating = binding.ratingBar.rating
         val userId = settings.getString("userId", "") ?: ""
         
-        if (type != null && id != null && title != null && model != null && userId.isNotEmpty()) {
+        if (type != null && id != null && title != null && currentUser != null && userId.isNotEmpty()) {
             viewModel.submitRating(
                 type = type!!,
                 itemId = id!!,
