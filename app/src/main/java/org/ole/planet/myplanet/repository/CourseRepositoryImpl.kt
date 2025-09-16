@@ -39,11 +39,8 @@ class CourseRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateMyCourseFlag(courseIds: List<String>, isMyCourse: Boolean) {
-        executeTransaction { realm ->
-            realm.where(RealmMyCourse::class.java)
-                .`in`("courseId", courseIds.toTypedArray())
-                .findAll()
-                .forEach { it.isMyCourse = isMyCourse }
-        }
+        updateAll(RealmMyCourse::class.java, {
+            `in`("courseId", courseIds.toTypedArray())
+        }) { it.isMyCourse = isMyCourse }
     }
 }

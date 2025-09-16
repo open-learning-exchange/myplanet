@@ -82,6 +82,19 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         }
     }
 
+    protected suspend fun <T : RealmObject> updateAll(
+        clazz: Class<T>,
+        builder: RealmQuery<T>.() -> Unit,
+        updater: (T) -> Unit,
+    ) {
+        executeTransaction { realm ->
+            realm.where(clazz)
+                .apply(builder)
+                .findAll()
+                .forEach { updater(it) }
+        }
+    }
+
     protected suspend fun <T : RealmObject, V : Any> delete(
         clazz: Class<T>,
         fieldName: String,
