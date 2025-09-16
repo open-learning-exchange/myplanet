@@ -409,15 +409,25 @@ class ChatDetailFragment : Fragment() {
         json.toRequestBody(jsonMediaType)
 
     private fun createContinueChatRequest(message: String, aiProvider: AiProvider, id: String, rev: String): RequestBody {
-        val continueChatData = ContinueChatModel(data = Data("${user?.name}", message, aiProvider, id, rev), save = true)
+        val continueChatData =
+            ContinueChatModel(data = Data(resolveCurrentUserName(), message, aiProvider, id, rev), save = true)
         val jsonContent = gson.toJson(continueChatData)
         return jsonRequestBody(jsonContent)
     }
 
     private fun createChatRequest(message: String, aiProvider: AiProvider): RequestBody {
-        val chatData = ChatRequestModel(data = ContentData("${user?.name}", message, aiProvider), save = true)
+        val chatData = ChatRequestModel(
+            data = ContentData(resolveCurrentUserName(), message, aiProvider),
+            save = true
+        )
         val jsonContent = gson.toJson(chatData)
         return jsonRequestBody(jsonContent)
+    }
+
+    private fun resolveCurrentUserName(): String {
+        return user?.name?.takeIf { it.isNotBlank() }
+            ?: settings.getString("name", "")?.takeIf { it.isNotBlank() }
+            ?: ""
     }
 
     private fun getLatestRev(id: String): String? {
@@ -516,7 +526,7 @@ class ChatDetailFragment : Fragment() {
             addProperty("_rev", responseBody.couchDBResponse?.rev ?: "")
             addProperty("_id", responseBody.couchDBResponse?.id ?: "")
             addProperty("aiProvider", aiName)
-            addProperty("user", user?.name)
+            addProperty("user", resolveCurrentUserName())
             addProperty("title", query)
             addProperty("createdTime", Date().time)
             addProperty("updatedDate", "")

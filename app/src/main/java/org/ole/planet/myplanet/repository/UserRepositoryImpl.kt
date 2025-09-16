@@ -20,6 +20,10 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getCurrentUser(): RealmUserModel? {
+        val userId = preferences.getString("userId", null)
+        if (!userId.isNullOrBlank()) {
+            getUserById(userId)?.let { return it }
+        }
         return findFirst(RealmUserModel::class.java)
     }
 
