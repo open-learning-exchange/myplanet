@@ -14,12 +14,13 @@ import androidx.core.graphics.toColorInt
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
+import kotlinx.coroutines.runBlocking
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemTeamListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
@@ -27,7 +28,14 @@ import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.TimeUtils
 
-class AdapterTeamList(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm, private val fragmentManager: FragmentManager, private val uploadManager: UploadManager) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
+class AdapterTeamList(
+    private val context: Context,
+    private val list: List<RealmMyTeam>,
+    private val mRealm: Realm,
+    private val fragmentManager: FragmentManager,
+    private val uploadManager: UploadManager,
+    private val teamRepository: TeamRepository,
+) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private lateinit var itemTeamListBinding: ItemTeamListBinding
     private var type: String? = ""
     private var teamListener: OnClickTeamItem? = null
@@ -63,8 +71,12 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
             name.text = team.name
             noOfVisits.text = context.getString(R.string.number_placeholder, RealmTeamLog.getVisitByTeam(mRealm, team._id))
 
-            val isMyTeam = team.isMyTeam(user?.id, mRealm)
-            showActionButton(isMyTeam, team, user)
+            val teamId = team._id
+            val userId = user?.id
+            val isMyTeam = isMemberOfTeam(teamId, userId)
+            val isTeamLeader = isUserTeamLeader(teamId, userId)
+            val hasPendingRequest = hasPendingRequest(teamId, userId)
+            showActionButton(isMyTeam, isTeamLeader, hasPendingRequest, team, user)
 
             root.setOnClickListener {
                 val activity = context as? AppCompatActivity ?: return@setOnClickListener
@@ -91,12 +103,18 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
             }
 
             joinLeave.setOnClickListener {
-                handleJoinLeaveClick(isMyTeam, team, user)
+                handleJoinLeaveClick(team, user)
             }
         }
     }
 
-    private fun ItemTeamListBinding.showActionButton(isMyTeam: Boolean, team: RealmMyTeam, user: RealmUserModel?) {
+    private fun ItemTeamListBinding.showActionButton(
+        isMyTeam: Boolean,
+        isTeamLeader: Boolean,
+        hasPendingRequest: Boolean,
+        team: RealmMyTeam,
+        user: RealmUserModel?,
+    ) {
         if (isMyTeam) {
             name.setTypeface(null, Typeface.BOLD)
         } else {
@@ -105,8 +123,9 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         when {
             user?.isGuest() == true -> joinLeave.visibility = View.GONE
 
-            isMyTeam && RealmMyTeam.getTeamLeader(team._id, mRealm) != user?.id -> {
+            isMyTeam && !isTeamLeader -> {
                 joinLeave.apply {
+                    isEnabled = true
                     contentDescription = "${context.getString(R.string.leave)} ${team.name}"
                     visibility = View.VISIBLE
                     setImageResource(R.drawable.logout)
@@ -114,7 +133,7 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                 }
             }
 
-            !isMyTeam && team.requested(user?.id, mRealm) -> {
+            !isMyTeam && hasPendingRequest -> {
                 joinLeave.apply {
                     isEnabled = false
                     contentDescription = "${context.getString(R.string.requested)} ${team.name}"
@@ -134,8 +153,9 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
                 }
             }
 
-            RealmMyTeam.getTeamLeader(team._id, mRealm) == user?.id -> {
+            isTeamLeader -> {
                 joinLeave.apply {
+                    isEnabled = true
                     contentDescription = "${context.getString(R.string.edit)} ${team.name}"
                     visibility = View.VISIBLE
                     setImageResource(R.drawable.ic_edit)
@@ -147,22 +167,25 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         }
     }
 
-    private fun handleJoinLeaveClick(isMyTeam: Boolean, team: RealmMyTeam, user: RealmUserModel?) {
+    private fun handleJoinLeaveClick(team: RealmMyTeam, user: RealmUserModel?) {
+        val teamId = team._id
+        val userId = user?.id
+        val isMyTeam = isMemberOfTeam(teamId, userId)
         if (isMyTeam) {
-            if (RealmMyTeam.isTeamLeader(team._id, user?.id, mRealm)) {
+            if (isUserTeamLeader(teamId, userId)) {
                 teamListener?.onEditTeam(team)
             } else {
                 AlertDialog.Builder(context, R.style.CustomAlertDialog).setMessage(R.string.confirm_exit)
                     .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                        team.leave(user, mRealm)
+                        leaveTeam(team, userId)
                         updateList()
                     }.setNegativeButton(R.string.no, null).show()
             }
         } else {
-            RealmMyTeam.requestToJoin(team._id, user, mRealm, team.teamType)
+            requestToJoin(team, user)
             updateList()
         }
-        syncTeamActivities(context, uploadManager)
+        syncTeamActivities()
     }
 
     private fun updateList() {
@@ -172,14 +195,43 @@ class AdapterTeamList(private val context: Context, private val list: List<Realm
         val validTeams = list.filter { it.status?.isNotEmpty() == true }
         filteredList = validTeams.sortedWith(compareByDescending<RealmMyTeam> { team ->
             when {
-                userId != null && RealmMyTeam.isTeamLeader(team._id, userId, mRealm) -> 3
-                team.isMyTeam(userId, mRealm) -> 2
+                isUserTeamLeader(team._id, userId) -> 3
+                isMemberOfTeam(team._id, userId) -> 2
                 else -> 1
             }
         }.thenByDescending { team ->
             RealmTeamLog.getVisitByTeam(mRealm, team._id)
         })
         notifyDataSetChanged()
+    }
+
+    private fun isMemberOfTeam(teamId: String?, userId: String?): Boolean {
+        if (teamId.isNullOrBlank()) return false
+        return runBlocking { teamRepository.isMember(userId, teamId) }
+    }
+
+    private fun isUserTeamLeader(teamId: String?, userId: String?): Boolean {
+        if (teamId.isNullOrBlank()) return false
+        return runBlocking { teamRepository.isTeamLeader(teamId, userId) }
+    }
+
+    private fun hasPendingRequest(teamId: String?, userId: String?): Boolean {
+        if (teamId.isNullOrBlank()) return false
+        return runBlocking { teamRepository.hasPendingRequest(teamId, userId) }
+    }
+
+    private fun requestToJoin(team: RealmMyTeam, user: RealmUserModel?) {
+        val teamId = team._id ?: return
+        runBlocking { teamRepository.requestToJoin(teamId, user, team.teamType) }
+    }
+
+    private fun leaveTeam(team: RealmMyTeam, userId: String?) {
+        val teamId = team._id ?: return
+        runBlocking { teamRepository.leaveTeam(teamId, userId) }
+    }
+
+    private fun syncTeamActivities() {
+        runBlocking { teamRepository.syncTeamActivities(context, uploadManager) }
     }
 
     private fun getBundle(team: RealmMyTeam): Bundle {
