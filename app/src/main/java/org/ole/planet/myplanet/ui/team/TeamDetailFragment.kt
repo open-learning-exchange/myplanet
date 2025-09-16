@@ -82,6 +82,8 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
     private var pageConfigs: List<TeamPageConfig> = emptyList()
+    private var tabMediator: TabLayoutMediator? = null
+    private var pageChangeCallback: ViewPager2.OnPageChangeCallback? = null
 
     private fun pageIndexById(pageId: String?): Int? {
         pageId ?: return null
@@ -236,32 +238,40 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     private fun setupViewPager(isMyTeam: Boolean, restorePageId: String? = null) {
+        pageChangeCallback?.let { binding.viewPager2.unregisterOnPageChangeCallback(it) }
+        pageChangeCallback = null
+        tabMediator?.detach()
+        tabMediator = null
+
+        binding.viewPager2.adapter = null
+
         pageConfigs = buildPages(isMyTeam)
         binding.viewPager2.isSaveEnabled = true
         binding.viewPager2.id = View.generateViewId()
-        binding.viewPager2.adapter = TeamPagerAdapter(
-            requireActivity(),
+        val adapter = TeamPagerAdapter(
+            this,
             pageConfigs,
             team?._id,
             this
         )
-        TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
-            tab.text = (binding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
-        }.attach()
+        binding.viewPager2.adapter = adapter
+        tabMediator = TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
+            tab.text = adapter.getPageTitle(position)
+        }.also { it.attach() }
 
         selectPage(restorePageId, false)
 
-        binding.viewPager2.registerOnPageChangeCallback(
-            object : ViewPager2.OnPageChangeCallback() {
-                override fun onPageSelected(position: Int) {
-                    team?._id?.let { teamId ->
-                        pageConfigs.getOrNull(position)?.id?.let { pageId ->
-                            teamLastPage[teamId] = pageId
-                        }
+        val callback = object : ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                team?._id?.let { teamId ->
+                    pageConfigs.getOrNull(position)?.id?.let { pageId ->
+                        teamLastPage[teamId] = pageId
                     }
                 }
             }
-        )
+        }
+        pageChangeCallback = callback
+        binding.viewPager2.registerOnPageChangeCallback(callback)
     }
 
     private fun setupNonMyTeamButtons(user: RealmUserModel?) {
@@ -412,6 +422,11 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     }
 
     override fun onDestroyView() {
+        pageChangeCallback?.let { binding.viewPager2.unregisterOnPageChangeCallback(it) }
+        pageChangeCallback = null
+        tabMediator?.detach()
+        tabMediator = null
+        binding.viewPager2.adapter = null
         if (::realtimeSyncListener.isInitialized) {
             syncCoordinator.removeListener(realtimeSyncListener)
         }

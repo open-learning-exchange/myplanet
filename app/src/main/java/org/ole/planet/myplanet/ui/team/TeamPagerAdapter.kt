@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.team
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.MemberChangeListener
@@ -18,21 +17,21 @@ import org.ole.planet.myplanet.ui.team.teamMember.MembersFragment
 import org.ole.planet.myplanet.ui.team.teamResource.TeamResourceFragment
 
 class TeamPagerAdapter(
-    private val fm: FragmentActivity,
+    private val host: Fragment,
     private val pages: List<TeamPageConfig>,
     private val teamId: String?,
     private val memberChangeListener: MemberChangeListener
-) : FragmentStateAdapter(fm) {
+) : FragmentStateAdapter(host) {
 
     override fun getItemCount(): Int = pages.size
 
     fun getPageTitle(position: Int): CharSequence =
-        fm.getString(pages[position].titleRes)
+        host.getString(pages[position].titleRes)
 
-    override fun getItemId(position: Int): Long = position.toLong()
+    override fun getItemId(position: Int): Long = pages[position].id.hashCode().toLong()
 
     override fun containsItem(itemId: Long): Boolean =
-        itemId in 0 until pages.size
+        pages.any { it.id.hashCode().toLong() == itemId }
 
     override fun createFragment(position: Int): Fragment {
         val page = pages[position]
