@@ -6,7 +6,6 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.CoroutineScope
@@ -18,6 +17,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemAiResponseMessageBinding
 import org.ole.planet.myplanet.databinding.ItemUserMessageBinding
 import org.ole.planet.myplanet.utilities.DiffUtils
+import org.ole.planet.myplanet.utilities.Utilities
 
 class ChatAdapter(val context: Context, private val recyclerView: RecyclerView) :
     ListAdapter<String, RecyclerView.ViewHolder>(
@@ -104,7 +104,11 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView) 
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         val clip = ClipData.newPlainText("copied Text", text)
         clipboard.setPrimaryClip(clip)
-        Toast.makeText(context, context.getString(R.string.copied_to_clipboard), Toast.LENGTH_SHORT).show()
+        Utilities.toast(
+            context,
+            context.getString(R.string.copied_to_clipboard),
+            android.widget.Toast.LENGTH_SHORT
+        )
     }
 
     fun addQuery(query: String) {
