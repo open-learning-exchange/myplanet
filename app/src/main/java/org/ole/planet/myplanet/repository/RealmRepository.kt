@@ -5,11 +5,12 @@ import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.datamanager.applyEqualTo
 import org.ole.planet.myplanet.datamanager.findCopyByField
@@ -100,9 +101,26 @@ open class RealmRepository(private val databaseService: DatabaseService) {
 
     protected fun <T> withRealmFlow(block: suspend (Realm, ProducerScope<T>) -> Unit): Flow<T> =
         callbackFlow {
-            databaseService.withRealm { realm ->
-                runBlocking { block(realm, this@callbackFlow) }
+            val job =
+                launch {
+                    val realm = Realm.getDefaultInstance()
+                    try {
+                        block(realm, this@callbackFlow)
+                    } finally {
+                        if (!realm.isClosed) {
+                            realm.close()
+                        }
+                    }
+                }
+
+            job.invokeOnCompletion { cause ->
+                when {
+                    cause == null -> channel.close()
+                    cause !is CancellationException -> channel.close(cause)
+                }
             }
+
+            awaitClose { job.cancel() }
         }
 
     protected suspend fun executeTransaction(transaction: (Realm) -> Unit) {
