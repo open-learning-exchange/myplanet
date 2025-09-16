@@ -157,9 +157,9 @@
                                         android:layout_width="60dp"
                                         android:layout_height="60dp"
                                         android:layout_marginEnd="8dp"
-                                        android:background="@drawable/bg_rating_button"
+                                        android:background="@drawable/bg_rating_button_1"
                                         android:text="1"
-                                        android:textColor="@color/daynight_textColor"
+                                        android:textColor="@color/rating_button_text_color"
                                         android:textSize="16sp"
                                         android:textStyle="bold" />
                                     <Button
@@ -167,18 +167,18 @@
                                         android:layout_width="60dp"
                                         android:layout_height="60dp"
                                         android:layout_marginEnd="8dp"
-                                        android:background="@drawable/bg_rating_button"
+                                        android:background="@drawable/bg_rating_button_2"
                                         android:text="2"
-                                        android:textColor="@color/daynight_textColor"
+                                        android:textColor="@color/rating_button_text_color"
                                         android:textSize="16sp"
                                         android:textStyle="bold" />
                                     <Button
                                         android:id="@+id/rb_rating_3"
                                         android:layout_width="60dp"
                                         android:layout_height="60dp"
-                                        android:background="@drawable/bg_rating_button"
+                                        android:background="@drawable/bg_rating_button_3"
                                         android:text="3"
-                                        android:textColor="@color/daynight_textColor"
+                                        android:textColor="@color/rating_button_text_color"
                                         android:textSize="16sp"
                                         android:textStyle="bold" />
                                 </LinearLayout>
@@ -194,9 +194,9 @@
                                         android:layout_width="60dp"
                                         android:layout_height="60dp"
                                         android:layout_marginEnd="8dp"
-                                        android:background="@drawable/bg_rating_button"
+                                        android:background="@drawable/bg_rating_button_4"
                                         android:text="4"
-                                        android:textColor="@color/daynight_textColor"
+                                        android:textColor="@color/rating_button_text_color"
                                         android:textSize="16sp"
                                         android:textStyle="bold" />
                                     <Button
@@ -204,18 +204,18 @@
                                         android:layout_width="60dp"
                                         android:layout_height="60dp"
                                         android:layout_marginEnd="8dp"
-                                        android:background="@drawable/bg_rating_button"
+                                        android:background="@drawable/bg_rating_button_5"
                                         android:text="5"
-                                        android:textColor="@color/daynight_textColor"
+                                        android:textColor="@color/rating_button_text_color"
                                         android:textSize="16sp"
                                         android:textStyle="bold" />
                                     <Button
                                         android:id="@+id/rb_rating_6"
                                         android:layout_width="60dp"
                                         android:layout_height="60dp"
-                                        android:background="@drawable/bg_rating_button"
+                                        android:background="@drawable/bg_rating_button_6"
                                         android:text="6"
-                                        android:textColor="@color/daynight_textColor"
+                                        android:textColor="@color/rating_button_text_color"
                                         android:textSize="16sp"
                                         android:textStyle="bold" />
                                 </LinearLayout>
@@ -230,9 +230,9 @@
                                         android:layout_width="60dp"
                                         android:layout_height="60dp"
                                         android:layout_marginEnd="8dp"
-                                        android:background="@drawable/bg_rating_button"
+                                        android:background="@drawable/bg_rating_button_7"
                                         android:text="7"
-                                        android:textColor="@color/daynight_textColor"
+                                        android:textColor="@color/rating_button_text_color"
                                         android:textSize="16sp"
                                         android:textStyle="bold" />
                                     <Button
@@ -240,18 +240,18 @@
                                         android:layout_width="60dp"
                                         android:layout_height="60dp"
                                         android:layout_marginEnd="8dp"
-                                        android:background="@drawable/bg_rating_button"
+                                        android:background="@drawable/bg_rating_button_8"
                                         android:text="8"
-                                        android:textColor="@color/daynight_textColor"
+                                        android:textColor="@color/rating_button_text_color"
                                         android:textSize="16sp"
                                         android:textStyle="bold" />
                                     <Button
                                         android:id="@+id/rb_rating_9"
                                         android:layout_width="60dp"
                                         android:layout_height="60dp"
-                                        android:background="@drawable/bg_rating_button"
+                                        android:background="@drawable/bg_rating_button_9"
                                         android:text="9"
-                                        android:textColor="@color/daynight_textColor"
+                                        android:textColor="@color/rating_button_text_color"
                                         android:textSize="16sp"
                                         android:textStyle="bold" />
                                 </LinearLayout>

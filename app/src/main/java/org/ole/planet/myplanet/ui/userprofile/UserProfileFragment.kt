@@ -178,23 +178,48 @@ class UserProfileFragment : Fragment() {
     }
 
     private fun loadProfileImage() {
-        model?.userImage.let {
-            Glide.with(requireContext())
-                .load(it)
-                .apply(RequestOptions().placeholder(R.drawable.profile).error(R.drawable.profile))
-                .listener(object : RequestListener<Drawable> {
-                    override fun onLoadFailed(e: GlideException?, model: Any?, target: Target<Drawable>, isFirstResource: Boolean): Boolean {
-                        binding.image.setImageResource(R.drawable.profile)
-                        return false
-                    }
+        val binding = _binding ?: return
+        val profileImageUrl = model?.userImage
 
-                    override fun onResourceReady(resource: Drawable, model: Any, target: Target<Drawable>?, dataSource: DataSource, isFirstResource: Boolean): Boolean {
-                        return false
-                    }
-
-                })
-                .into(binding.image)
+        if (profileImageUrl.isNullOrBlank()) {
+            binding.image.setImageResource(R.drawable.profile)
+            return
         }
+
+        if (!isAdded) return
+
+        Glide.with(this)
+            .load(profileImageUrl)
+            .apply(RequestOptions().placeholder(R.drawable.profile).error(R.drawable.profile))
+            .listener(object : RequestListener<Drawable> {
+                override fun onLoadFailed(
+                    e: GlideException?,
+                    model: Any?,
+                    target: Target<Drawable>,
+                    isFirstResource: Boolean
+                ): Boolean {
+                    if (!isAdded) {
+                        return true
+                    }
+                    val currentBinding = _binding ?: return true
+                    currentBinding.image.apply {
+                        visibility = View.VISIBLE
+                        setImageResource(R.drawable.profile)
+                    }
+                    return true
+                }
+
+                override fun onResourceReady(
+                    resource: Drawable,
+                    model: Any,
+                    target: Target<Drawable>?,
+                    dataSource: DataSource,
+                    isFirstResource: Boolean
+                ): Boolean {
+                    return false
+                }
+            })
+            .into(binding.image)
     }
 
     private fun openEditProfileDialog() {
