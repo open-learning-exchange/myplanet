@@ -2,20 +2,18 @@ package org.ole.planet.myplanet.datamanager
 
 import android.content.Context
 import io.mockk.Runs
+import io.mockk.any
 import io.mockk.clearAllMocks
-import io.mockk.capture
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.slot
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
-import io.realm.log.LogLevel
 import io.realm.log.RealmLog
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -35,7 +33,7 @@ class DatabaseServiceTest {
         mockkStatic(RealmLog::class)
         realm = mockk(relaxed = true)
         every { Realm.init(any()) } just Runs
-        every { RealmLog.setLevel(any<LogLevel>()) } just Runs
+        every { RealmLog.setLevel(any()) } just Runs
         every { Realm.setDefaultConfiguration(any()) } just Runs
         every { Realm.getDefaultInstance() } returns realm
         every { realm.close() } just Runs
@@ -92,9 +90,8 @@ class DatabaseServiceTest {
     @Test
     fun executeTransactionWithResultAsync_successReturnsResult() = runBlocking {
         every { realm.isClosed } returns false
-        val transactionSlot = slot<Realm.Transaction>()
-        every { realm.executeTransaction(capture(transactionSlot)) } answers {
-            transactionSlot.captured.execute(realm)
+        every { realm.executeTransaction(any()) } answers {
+            arg<Realm.Transaction>(0).execute(realm)
         }
 
         val result = service.executeTransactionWithResultAsync { 42 }
