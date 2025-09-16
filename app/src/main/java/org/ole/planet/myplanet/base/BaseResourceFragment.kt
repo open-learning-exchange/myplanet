@@ -326,6 +326,15 @@ abstract class BaseResourceFragment : Fragment() {
         bManager.registerReceiver(resourceNotFoundReceiver, resourceNotFoundFilter)
     }
 
+    private fun unregisterReceiver() {
+        val fragmentActivity = activity ?: return
+        val bManager = LocalBroadcastManager.getInstance(fragmentActivity)
+        bManager.unregisterReceiver(receiver)
+        bManager.unregisterReceiver(broadcastReceiver)
+        bManager.unregisterReceiver(stateReceiver)
+        bManager.unregisterReceiver(resourceNotFoundReceiver)
+    }
+
     suspend fun getLibraryList(mRealm: Realm): List<RealmMyLibrary> {
         return libraryRepository.getLibraryListForUser(
             settings.getString("userId", "--")
@@ -341,11 +350,12 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onPause() {
         super.onPause()
-        val bManager = LocalBroadcastManager.getInstance(requireActivity())
-        bManager.unregisterReceiver(receiver)
-        bManager.unregisterReceiver(broadcastReceiver)
-        bManager.unregisterReceiver(stateReceiver)
-        bManager.unregisterReceiver(resourceNotFoundReceiver)
+        unregisterReceiver()
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        homeItemClickListener = null
     }
 
     fun removeFromShelf(`object`: RealmObject) {

@@ -165,9 +165,6 @@ class LoginActivity : SyncActivity(), TeamListAdapter.OnItemClickListener {
     }
 
     private fun declareElements() {
-        if (!defaultPref.contains("beta_addImageToMessage")) {
-            defaultPref.edit { putBoolean("beta_addImageToMessage", true) }
-        }
         binding.customDeviceName.text = getCustomDeviceName()
         btnSignIn.setOnClickListener {
             if (getUrl() != "/db") {
