@@ -62,6 +62,9 @@ class NewsFragment : BaseNewsFragment() {
         }
         binding.btnNewVoice.setOnClickListener {
             binding.llAddNews.visibility = if (binding.llAddNews.isVisible) {
+                binding.etMessage.setText("")
+                binding.tlMessage.error = null
+                clearImages()
                 View.GONE
             } else {
                 View.VISIBLE
@@ -161,7 +164,6 @@ class NewsFragment : BaseNewsFragment() {
             val openFolderIntent = FileUtils.openOleFolder(requireContext())
             openFolderLauncher.launch(openFolderIntent)
         }
-        binding.addNewsImage.visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, requireActivity())) View.VISIBLE else View.GONE
     }
 
     private val newsList: List<RealmNews?>

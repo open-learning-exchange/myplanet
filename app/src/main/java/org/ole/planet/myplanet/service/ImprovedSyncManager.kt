@@ -82,7 +82,7 @@ class ImprovedSyncManager @Inject constructor(
     )
     
     suspend fun initialize() {
-        poolManager.initializePool(context)
+        poolManager.initializePool(context, databaseService)
     }
     
     fun start(

@@ -407,7 +407,6 @@
     <string name="tasks">المهام</string>
     <string name="join_requests">طلبات الانضمام</string>
     <string name="add_image">إضافة صورة</string>
-    <string name="addImageToMessage">إضافة صورة للرسالة (بيتا)</string>
     <string name="clear_data">مسح البيانات</string>
     <string name="reset_app">إعادة تعيين التطبيق</string>
     <string name="freeup_space">تحرير مساحة القرص</string>
