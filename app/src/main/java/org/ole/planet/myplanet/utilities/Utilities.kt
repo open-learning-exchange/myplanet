@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.utilities
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.text.format.DateUtils
 import android.util.Log
 import android.util.Patterns
 import android.webkit.MimeTypeMap
@@ -45,13 +44,6 @@ object Utilities {
 
     fun checkNA(s: String?): String {
         return if (s.isNullOrEmpty()) "N/A" else s
-    }
-
-    fun getRelativeTime(timestamp: Long): String {
-        val timeNow = System.currentTimeMillis()
-        return if (timestamp < timeNow) {
-            DateUtils.getRelativeTimeSpanString(timestamp, timeNow, 0).toString()
-        } else "Just now"
     }
 
     fun getUserName(settings: SharedPreferences): String {

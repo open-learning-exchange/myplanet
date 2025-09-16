@@ -101,7 +101,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             getCourseSteps(realm, courses?.courseId).let { realm.copyFromRealm(it) }
         }
         binding.stepsList.layoutManager = LinearLayoutManager(activity)
-        binding.stepsList.adapter = AdapterSteps(requireActivity(), steps, databaseService)
+        binding.stepsList.adapter = AdapterSteps(requireActivity(), steps, submissionRepository)
     }
 
     override fun onRatingChanged() {

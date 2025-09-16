@@ -4,4 +4,5 @@ import org.ole.planet.myplanet.model.RealmNews
 
 interface NewsRepository {
     suspend fun getNewsWithReplies(newsId: String): Pair<RealmNews?, List<RealmNews>>
+    suspend fun getCommunityNews(planetCode: String): List<RealmNews>
 }
