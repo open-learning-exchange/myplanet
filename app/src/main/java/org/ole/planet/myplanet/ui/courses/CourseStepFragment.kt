@@ -8,13 +8,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import java.util.Date
-import java.util.UUID
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCourseStepBinding
-import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.isMyCourse
@@ -57,27 +56,20 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private fun saveCourseProgress() {
-        databaseService.withRealm { realm ->
-            if (!realm.isInTransaction) realm.beginTransaction()
-            var courseProgress = realm.where(RealmCourseProgress::class.java)
-                .equalTo("courseId", step.courseId)
-                .equalTo("userId", user?.id)
-                .equalTo("stepNum", stepNumber)
-                .findFirst()
-            if (courseProgress == null) {
-                courseProgress = realm.createObject(RealmCourseProgress::class.java, UUID.randomUUID().toString())
-                courseProgress.createdDate = Date().time
+        val courseId = step.courseId ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            val existingProgress = courseProgressRepository.getCourseProgress(user?.id)[courseId]
+            val passed = if (stepExams.isEmpty()) {
+                true
+            } else {
+                existingProgress?.passed ?: false
             }
-            courseProgress?.courseId = step.courseId
-            courseProgress?.stepNum = stepNumber
-            if (stepExams.isEmpty()) {
-                courseProgress?.passed = true
-            }
-            courseProgress?.createdOn = user?.planetCode
-            courseProgress?.updatedDate = Date().time
-            courseProgress?.parentCode = user?.parentCode
-            courseProgress?.userId = user?.id
-            realm.commitTransaction()
+            courseProgressRepository.saveProgress(
+                courseId = courseId,
+                userId = user?.id,
+                stepNum = stepNumber,
+                passed = passed
+            )
         }
     }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
