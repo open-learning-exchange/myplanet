@@ -236,11 +236,6 @@ class ChatHistoryListFragment : Fragment() {
         }
     }
 
-    fun refreshChatHistoryList() {
-        val list = getChatHistoryList()
-        applyChatHistoryList(list)
-    }
-
     private fun observeChatHistoryChanges() {
         realmInstance = Realm.getDefaultInstance()
         val userName = user?.name
@@ -250,30 +245,29 @@ class ChatHistoryListFragment : Fragment() {
             ?.findAllAsync()
 
         chatHistoryResults?.addChangeListener { results, _ ->
-            val realm = realmInstance ?: return@addChangeListener
             if (!results.isValid || !results.isLoaded) {
                 return@addChangeListener
             }
-            val updatedList = realm.copyFromRealm(results)
-            applyChatHistoryList(updatedList)
+            refreshChatHistoryList()
         }
     }
 
-    private fun getChatHistoryList(): List<RealmChatHistory> {
-        val realm = realmInstance
-        val results = chatHistoryResults
-        return if (realm != null && results != null && results.isLoaded && results.isValid) {
-            realm.copyFromRealm(results)
-        } else {
-            databaseService.withRealm { databaseRealm ->
-                databaseRealm.copyFromRealm(
-                    databaseRealm.where(RealmChatHistory::class.java)
-                        .equalTo("user", user?.name)
-                        .sort("lastUsed", Sort.DESCENDING)
-                        .findAll(),
-                )
-            }
+    fun refreshChatHistoryList() {
+        val userName = user?.name
+        if (userName.isNullOrEmpty()) {
+            applyChatHistoryList(emptyList())
+            return
         }
+
+        val list = databaseService.withRealm { databaseRealm ->
+            databaseRealm.copyFromRealm(
+                databaseRealm.where(RealmChatHistory::class.java)
+                    .equalTo("user", userName)
+                    .sort("lastUsed", Sort.DESCENDING)
+                    .findAll(),
+            )
+        }
+        applyChatHistoryList(list)
     }
 
     private fun applyChatHistoryList(list: List<RealmChatHistory>) {

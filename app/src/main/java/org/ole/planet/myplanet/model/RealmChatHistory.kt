@@ -82,15 +82,15 @@ open class RealmChatHistory : RealmObject() {
                 .findFirst()
                 ?: return
 
-            val conversation = realm.createObject(Conversation::class.java)
-            conversation.query = query
-            conversation.response = response
+            val managedConversation = realm.copyToRealm(Conversation().apply {
+                this.query = query
+                this.response = response
+            })
 
-            val conversations = chatHistory.conversations ?: RealmList()
-            if (chatHistory.conversations == null) {
-                chatHistory.conversations = conversations
+            val conversations = chatHistory.conversations ?: RealmList<Conversation>().also {
+                chatHistory.conversations = it
             }
-            conversations.add(conversation)
+            conversations.add(managedConversation)
 
             chatHistory.lastUsed = Date().time
             if (!newRev.isNullOrEmpty()) {
