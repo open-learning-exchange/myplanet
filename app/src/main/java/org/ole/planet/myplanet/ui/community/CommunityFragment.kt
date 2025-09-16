@@ -11,14 +11,14 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Case
-import io.realm.Sort
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCommunityBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.NewsRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.news.ReplyActivity
@@ -29,13 +29,16 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
     private var _binding: FragmentCommunityBinding? = null
     private val binding get() = _binding!!
     private var newList: List<RealmNews> = emptyList()
-    
+    private var loadNewsJob: Job? = null
+
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+
+    @Inject
+    lateinit var newsRepository: NewsRepository
     override fun addImage(llImage: LinearLayout?) {}
     override fun onNewsItemClick(news: RealmNews?) {}
     override fun clearImages() {}
-    override fun onDataChanged() {}
 
     override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
         if (news != null) {
@@ -55,22 +58,19 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
         binding.btnLibrary.setOnClickListener {
             homeItemClickListener?.openCallFragment(ResourcesFragment())
         }
-        databaseService.withRealm { realm ->
-            newList = realm.where(RealmNews::class.java).equalTo("docType", "message", Case.INSENSITIVE)
-                .equalTo("viewableBy", "community", Case.INSENSITIVE)
-                .equalTo("createdOn", user?.planetCode, Case.INSENSITIVE).isEmpty("replyTo")
-                .sort("time", Sort.DESCENDING).findAll()
-                .let { realm.copyFromRealm(it) }
-        }
         val orientation = resources.configuration.orientation
         changeLayoutManager(orientation)
-        updatedNewsList(newList)
+        loadCommunityNews()
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         val orientation = newConfig.orientation
         changeLayoutManager(orientation)
+    }
+
+    override fun onDataChanged() {
+        loadCommunityNews()
     }
 
     private fun changeLayoutManager(orientation: Int) {
@@ -81,10 +81,20 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
         }
     }
 
+    private fun loadCommunityNews() {
+        val planetCode = user?.planetCode
+        loadNewsJob?.cancel()
+        loadNewsJob = viewLifecycleOwner.lifecycleScope.launch {
+            newList = planetCode?.let { newsRepository.getCommunityNews(it) } ?: emptyList()
+            updatedNewsList(newList)
+        }
+    }
+
     private fun updatedNewsList(updatedList: List<RealmNews>) {
         viewLifecycleOwner.lifecycleScope.launch {
             val updatedListAsMutable: MutableList<RealmNews?> = updatedList.toMutableList()
             val adapter = activity?.let { AdapterNews(it, user, null, "", null, userProfileDbHandler) }
+            adapter?.setmRealm(mRealm)
             adapter?.setListener(this@CommunityFragment)
             adapter?.setFromLogin(requireArguments().getBoolean("fromLogin", false))
             adapter?.updateList(updatedListAsMutable)
@@ -95,6 +105,7 @@ class CommunityFragment : BaseContainerFragment(), AdapterNews.OnNewsItemClickLi
 
     override fun onDestroyView() {
         super.onDestroyView()
+        loadNewsJob?.cancel()
         _binding = null
     }
 }
