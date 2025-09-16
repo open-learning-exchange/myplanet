@@ -23,7 +23,7 @@ class MarkdownViewerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMarkdownViewerBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtils.setupEdgeToEdgeWithNoPadding(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
         renderMarkdownFile()
     }
 

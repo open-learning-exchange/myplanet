@@ -22,7 +22,7 @@ class CSVViewerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityCsvviewerBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtils.setupEdgeToEdgeWithNoPadding(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
         renderCSVFile()
     }
 
