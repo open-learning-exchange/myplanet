@@ -10,8 +10,8 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.databinding.FragmentLifeBinding
+import kotlinx.coroutines.runBlocking
 import org.ole.planet.myplanet.model.RealmMyLife
-import org.ole.planet.myplanet.model.RealmMyLife.Companion.getMyLifeByUserId
 import org.ole.planet.myplanet.ui.mylife.helper.OnStartDragListener
 import org.ole.planet.myplanet.ui.mylife.helper.SimpleItemTouchHelperCallback
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
@@ -36,8 +36,15 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     }
 
     override fun getAdapter(): RecyclerView.Adapter<*> {
-        val myLifeList = getMyLifeByUserId(mRealm, model?.id)
-        adapterMyLife = AdapterMyLife(requireContext(), myLifeList, mRealm, this)
+        val userId = model?.id
+        val myLifeList = runBlocking { myLifeRepository.getMyLifeByUserId(userId) }
+        adapterMyLife = AdapterMyLife(
+            requireContext(),
+            myLifeList.toMutableList(),
+            userId,
+            myLifeRepository,
+            this,
+        )
         return adapterMyLife
     }
 

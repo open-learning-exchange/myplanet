@@ -13,6 +13,8 @@ import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.repository.FeedbackRepositoryImpl
 import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.LibraryRepositoryImpl
+import org.ole.planet.myplanet.repository.MyLifeRepository
+import org.ole.planet.myplanet.repository.MyLifeRepositoryImpl
 import org.ole.planet.myplanet.repository.MyPersonalRepository
 import org.ole.planet.myplanet.repository.MyPersonalRepositoryImpl
 import org.ole.planet.myplanet.repository.NewsRepository
@@ -51,6 +53,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindLibraryRepository(impl: LibraryRepositoryImpl): LibraryRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMyLifeRepository(impl: MyLifeRepositoryImpl): MyLifeRepository
 
     @Binds
     @Singleton

@@ -26,6 +26,7 @@ import io.realm.Sort
 import java.util.Calendar
 import java.util.UUID
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.NotificationCallback
 import org.ole.planet.myplanet.callback.SyncListener
@@ -246,17 +247,17 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     private fun myLifeListInit(flexboxLayout: FlexboxLayout) {
-        val dbMylife: MutableList<RealmMyLife> = ArrayList()
-        val rawMylife: List<RealmMyLife> = RealmMyLife.getMyLifeByUserId(mRealm, settings)
-        for (item in rawMylife) if (item.isVisible) dbMylife.add(item)
-        for ((itemCnt, items) in dbMylife.withIndex()) {
+        val userId = settings.getString("userId", "--")
+        val visibleMyLife = runBlocking { myLifeRepository.getMyLifeByUserId(userId) }
+            .filter { it.isVisible }
+        for ((itemCnt, items) in visibleMyLife.withIndex()) {
             flexboxLayout.addView(getLayout(itemCnt, items), params)
         }
     }
 
     private fun setUpMyLife(userId: String?) {
         val realm = databaseService.realmInstance
-        val realmObjects = RealmMyLife.getMyLifeByUserId(mRealm, settings)
+        val realmObjects = runBlocking { myLifeRepository.getMyLifeByUserId(userId) }
         if (realmObjects.isEmpty()) {
             if (!realm.isInTransaction) {
                 realm.beginTransaction()
