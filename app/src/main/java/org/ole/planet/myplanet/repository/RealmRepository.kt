@@ -6,6 +6,7 @@ import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -45,7 +46,11 @@ open class RealmRepository(private val databaseService: DatabaseService) {
                 }
             results.addChangeListener(listener)
             scope.trySend(realm.queryList(clazz, builder))
-            scope.awaitClose { results.removeChangeListener(listener) }
+            try {
+                awaitCancellation()
+            } finally {
+                results.removeChangeListener(listener)
+            }
         }
 
     protected suspend fun <T : RealmObject, V : Any> findByField(
