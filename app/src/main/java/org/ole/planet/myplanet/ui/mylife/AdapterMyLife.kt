@@ -154,8 +154,11 @@ class AdapterMyLife(
         override fun onItemClear(viewHolder: RecyclerView.ViewHolder?) {
             itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.daynight_grey))
             if (viewHolder != null) {
-                if (!myLifeList[viewHolder.bindingAdapterPosition].isVisible) {
-                    (viewHolder as ViewHolderMyLife?)?.rvItemContainer?.alpha = hide
+                val adapterPosition = viewHolder.bindingAdapterPosition
+                if (adapterPosition != RecyclerView.NO_POSITION && adapterPosition in myLifeList.indices) {
+                    if (!myLifeList[adapterPosition].isVisible) {
+                        (viewHolder as ViewHolderMyLife?)?.rvItemContainer?.alpha = hide
+                    }
                 }
             }
         }
