@@ -124,19 +124,8 @@ class AdapterMyLife(
 
         MainApplication.applicationScope.launch(Dispatchers.IO) {
             myLifeRepository.updateWeight(toPosition + 1, movedItem._id, userId)
-            reloadData()
         }
         return true
-    }
-
-    private suspend fun reloadData() {
-        val currentUserId = userId ?: return
-        val updatedList = myLifeRepository.getMyLifeByUserId(currentUserId)
-        withContext(Dispatchers.Main) {
-            myLifeList.clear()
-            myLifeList.addAll(updatedList)
-            notifyDataSetChanged()
-        }
     }
 
     internal inner class ViewHolderMyLife(itemView: View) : RecyclerView.ViewHolder(itemView),
