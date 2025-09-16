@@ -52,7 +52,7 @@ class RatingViewModel @Inject constructor(
             try {
                 _ratingState.value = RatingUiState.Loading
 
-                _userState.value = userRepository.getCurrentUser(userId)
+                _userState.value = userRepository.getUserById(userId)
 
                 databaseService.withRealm { realm ->
                     val existingRating = realm.where(RealmRating::class.java)
