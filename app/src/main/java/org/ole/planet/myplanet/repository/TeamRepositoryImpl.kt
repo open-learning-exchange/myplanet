@@ -30,6 +30,24 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam? {
+        if (id.isBlank()) return null
+        return withRealm { realm ->
+            val teamByDocumentId = realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", id)
+                .findFirst()
+
+            if (teamByDocumentId != null) {
+                realm.copyFromRealm(teamByDocumentId)
+            } else {
+                realm.where(RealmMyTeam::class.java)
+                    .equalTo("teamId", id)
+                    .findFirst()
+                    ?.let { realm.copyFromRealm(it) }
+            }
+        }
+    }
+
     override suspend fun isMember(userId: String?, teamId: String): Boolean {
         userId ?: return false
         return queryList(RealmMyTeam::class.java) {
