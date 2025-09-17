@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import java.util.Date
@@ -10,7 +9,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 
@@ -116,10 +114,6 @@ class TeamRepositoryImpl @Inject constructor(
             task.sync = Gson().toJson(syncObj)
         }
         save(task)
-    }
-
-    override suspend fun syncTeamActivities(context: Context, uploadManager: UploadManager) {
-        RealmMyTeam.syncTeamActivities(context, uploadManager)
     }
 
     private suspend fun getResourceIds(teamId: String): List<String> {

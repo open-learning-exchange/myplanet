@@ -231,7 +231,7 @@ class AdapterTeamList(
     }
 
     private fun syncTeamActivities() {
-        runBlocking { teamRepository.syncTeamActivities(context, uploadManager) }
+        RealmMyTeam.syncTeamActivities(context, uploadManager)
     }
 
     private fun getBundle(team: RealmMyTeam): Bundle {
