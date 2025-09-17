@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.datamanager
 
 import android.content.Context
+import io.mockk.MockKMatcherScope.Companion.any
 import io.mockk.Runs
-import io.mockk.any
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.just
