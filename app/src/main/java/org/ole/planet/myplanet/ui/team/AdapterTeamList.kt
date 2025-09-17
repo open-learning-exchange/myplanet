@@ -14,14 +14,15 @@ import androidx.core.graphics.toColorInt
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.Realm
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemTeamListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.repository.TeamRepository
-import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
@@ -33,7 +34,6 @@ class AdapterTeamList(
     private val list: List<RealmMyTeam>,
     private val mRealm: Realm,
     private val fragmentManager: FragmentManager,
-    private val uploadManager: UploadManager,
     private val teamRepository: TeamRepository,
 ) : RecyclerView.Adapter<AdapterTeamList.ViewHolderTeam>() {
     private lateinit var itemTeamListBinding: ItemTeamListBinding
@@ -231,7 +231,9 @@ class AdapterTeamList(
     }
 
     private fun syncTeamActivities() {
-        runBlocking { teamRepository.syncTeamActivities(context, uploadManager) }
+        MainApplication.applicationScope.launch {
+            teamRepository.syncTeamActivities(context)
+        }
     }
 
     private fun getBundle(team: RealmMyTeam): Bundle {
