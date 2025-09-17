@@ -252,6 +252,13 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
                 binding.llCheckbox.visibility = View.VISIBLE
                 binding.etAnswer.visibility = View.GONE
                 showCheckBoxes(question, ans)
+                for (i in 0 until binding.llCheckbox.childCount) {
+                    val child = binding.llCheckbox.getChildAt(i)
+                    if (child is CompoundButton) {
+                        val choiceText = child.text.toString()
+                        child.isChecked = listAns?.containsKey(choiceText) == true
+                    }
+                }
             }
             question?.type.equals("ratingScale", ignoreCase = true) -> {
                 binding.llRatingScale.visibility = View.VISIBLE
@@ -306,6 +313,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     private fun loadSelectMultipleSavedAnswer(savedAnswer: RealmAnswer) {
         var hasOtherOption = false
         var otherText = ""
+        listAns?.clear()
 
         savedAnswer.valueChoices?.forEach { choiceJson ->
             try {
@@ -606,8 +614,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             listAns?.remove("${compoundButton.text}")
         }
     }
-
-    
 
     private fun isOtherOptionSelected(): Boolean {
         for (i in 0 until binding.llCheckbox.childCount) {
