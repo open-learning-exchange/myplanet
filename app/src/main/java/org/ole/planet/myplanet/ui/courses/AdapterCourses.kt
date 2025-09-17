@@ -131,8 +131,15 @@ class AdapterCourses(
         dispatchDiff(sortedList)
     }
 
-    fun setProgressMap(progressMap: HashMap<String?, JsonObject>?) {
-        this.progressMap = progressMap
+    fun setProgressMap(progressMap: Map<String?, JsonObject>) {
+        this.progressMap = HashMap(progressMap)
+        notifyDataSetChanged()
+    }
+
+    fun updateRatingMap(ratings: Map<String?, JsonObject>) {
+        map.clear()
+        map.putAll(ratings)
+        notifyDataSetChanged()
     }
 
     fun setListener(listener: OnCourseItemSelected?) {

@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.repository
 
-import org.ole.planet.myplanet.model.RealmCourseProgress
+import com.google.gson.JsonObject
 
 interface CourseProgressRepository {
-    suspend fun getCourseProgress(userId: String?): Map<String, RealmCourseProgress>
+    suspend fun getCourseProgress(userId: String?): Map<String?, JsonObject>
 }
