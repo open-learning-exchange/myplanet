@@ -36,6 +36,12 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private lateinit var library: RealmMyLibrary
     var userModel: RealmUserModel? = null
     private val fragmentScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
+    private suspend fun fetchLibrary(libraryId: String): RealmMyLibrary? {
+        return libraryRepository.getLibraryItemById(libraryId)
+            ?: libraryRepository.getLibraryItemByResourceId(libraryId)
+            ?: libraryRepository.getAllLibraryItems().firstOrNull { it.resourceId == libraryId }
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -51,7 +57,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             withContext(Dispatchers.IO) {
                 try {
-                    val backgroundLibrary = libraryRepository.getLibraryByResourceId(libraryId!!)
+                    val backgroundLibrary = fetchLibrary(libraryId!!)
                     if (backgroundLibrary != null && backgroundLibrary.userId?.contains(userId) != true && userId != null) {
                         library = libraryRepository.updateUserLibrary(libraryId!!, userId, true)!!
                     } else if (backgroundLibrary != null) {
@@ -76,7 +82,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         _binding = FragmentLibraryDetailBinding.inflate(inflater, container, false)
         userModel = UserProfileDbHandler(requireContext()).userModel!!
         library = runBlocking {
-            libraryRepository.getLibraryByResourceId(libraryId!!)
+            fetchLibrary(libraryId!!)
         }!!
         return binding.root
     }

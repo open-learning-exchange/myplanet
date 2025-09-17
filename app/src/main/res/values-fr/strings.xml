@@ -37,7 +37,6 @@
     <string name="menu_home">Accueil</string>
     <string name="menu_library">Bibliothèque</string>
     <string name="menu_courses">Cours</string>
-    <string name="menu_meetups">Rencontres</string>
     <string name="menu_surveys">Sondages</string>
     <string name="menu_logout">Déconnexion</string>
     <string name="menu_feedback">Retour d\'information</string>

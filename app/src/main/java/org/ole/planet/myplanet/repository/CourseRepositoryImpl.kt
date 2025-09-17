@@ -12,12 +12,6 @@ class CourseRepositoryImpl @Inject constructor(
         return queryList(RealmMyCourse::class.java)
     }
 
-    override suspend fun getEnrolledCourses(userId: String): List<RealmMyCourse> {
-        return queryList(RealmMyCourse::class.java) {
-            equalTo("userId", userId)
-        }
-    }
-
     override suspend fun updateMyCourseFlag(courseId: String, isMyCourse: Boolean) {
         update(RealmMyCourse::class.java, "courseId", courseId) { it.isMyCourse = isMyCourse }
     }
