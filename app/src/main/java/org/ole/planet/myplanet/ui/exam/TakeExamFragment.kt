@@ -107,8 +107,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun goToPreviousQuestion() {
-        saveCurrentAnswer()
-
         if (currentIndex > 0) {
             currentIndex--
             startExam(questions?.get(currentIndex))
@@ -117,8 +115,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun goToNextQuestion() {
-        saveCurrentAnswer()
-
         if (currentIndex < (questions?.size ?: 0) - 1) {
             currentIndex++
             startExam(questions?.get(currentIndex))
@@ -590,7 +586,12 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             binding.etAnswer.text.clear()
         }
 
-        addAnswer(compoundButton)
+        val choiceId = compoundButton.tag as? String
+        if (compoundButton is RadioButton) {
+            ans = choiceId ?: selectedText
+        } else {
+            listAns?.put(selectedText, choiceId ?: selectedText)
+        }
     }
 
     private fun handleUnchecked(compoundButton: CompoundButton) {
@@ -605,6 +606,8 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             listAns?.remove("${compoundButton.text}")
         }
     }
+
+    
 
     private fun isOtherOptionSelected(): Boolean {
         for (i in 0 until binding.llCheckbox.childCount) {
