@@ -27,12 +27,10 @@ import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMemberCount
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
-import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.ApplicantsPage
@@ -64,9 +62,6 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     @Inject
     lateinit var syncManager: SyncManager
 
-    @Inject
-    lateinit var uploadManager: UploadManager
-    
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
 
@@ -291,7 +286,9 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                 RealmMyTeam.requestToJoin(teamId, user, mRealm, team?.teamType)
                 binding.btnLeave.text = getString(R.string.requested)
                 binding.btnLeave.isEnabled = false
-                syncTeamActivities(requireContext(), uploadManager)
+                viewLifecycleOwner.lifecycleScope.launch {
+                    teamRepository.syncTeamActivities(requireContext())
+                }
             }
         }
     }
