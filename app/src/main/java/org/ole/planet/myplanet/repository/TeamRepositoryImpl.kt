@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.utilities.AndroidDecrypter
 class TeamRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val userProfileDbHandler: UserProfileDbHandler,
+    private val gson: Gson,
 ) : RealmRepository(databaseService), TeamRepository {
 
     override suspend fun getTeamResources(teamId: String): List<RealmMyLibrary> {
@@ -106,14 +107,14 @@ class TeamRepositoryImpl @Inject constructor(
     override suspend fun upsertTask(task: RealmTeamTask) {
         if (task.link.isNullOrBlank()) {
             val linkObj = JsonObject().apply { addProperty("teams", task.teamId) }
-            task.link = Gson().toJson(linkObj)
+            task.link = gson.toJson(linkObj)
         }
         if (task.sync.isNullOrBlank()) {
             val syncObj = JsonObject().apply {
                 addProperty("type", "local")
                 addProperty("planetCode", userProfileDbHandler.userModel?.planetCode)
             }
-            task.sync = Gson().toJson(syncObj)
+            task.sync = gson.toJson(syncObj)
         }
         save(task)
     }
