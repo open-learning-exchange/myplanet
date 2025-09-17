@@ -1,17 +1,31 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.Context
+import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import java.util.Date
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.datamanager.ApiClient.client
+import org.ole.planet.myplanet.datamanager.ApiInterface
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.utilities.AndroidDecrypter
+import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utilities.ServerUrlMapper
 
 class TeamRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val userProfileDbHandler: UserProfileDbHandler,
+    private val uploadManager: UploadManager,
 ) : RealmRepository(databaseService), TeamRepository {
 
     override suspend fun getTeamResources(teamId: String): List<RealmMyLibrary> {
@@ -34,6 +48,66 @@ class TeamRepositoryImpl @Inject constructor(
         }.isNotEmpty()
     }
 
+    override suspend fun getTeamLeaderId(teamId: String): String? {
+        if (teamId.isBlank()) return null
+        return withRealm { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", teamId)
+                .equalTo("isLeader", true)
+                .findFirst()?.userId
+        }
+    }
+
+    override suspend fun isTeamLeader(teamId: String, userId: String?): Boolean {
+        if (teamId.isBlank() || userId.isNullOrBlank()) return false
+        return count(RealmMyTeam::class.java) {
+            equalTo("teamId", teamId)
+            equalTo("docType", "membership")
+            equalTo("userId", userId)
+            equalTo("isLeader", true)
+        } > 0
+    }
+
+    override suspend fun hasPendingRequest(teamId: String, userId: String?): Boolean {
+        if (teamId.isBlank() || userId.isNullOrBlank()) return false
+        return count(RealmMyTeam::class.java) {
+            equalTo("docType", "request")
+            equalTo("teamId", teamId)
+            equalTo("userId", userId)
+        } > 0
+    }
+
+    override suspend fun requestToJoin(teamId: String, user: RealmUserModel?, teamType: String?) {
+        val userId = user?.id ?: return
+        val userPlanetCode = user?.planetCode
+        if (teamId.isBlank()) return
+        executeTransaction { realm ->
+            val request = realm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
+            request.docType = "request"
+            request.createdDate = Date().time
+            request.teamType = teamType
+            request.userId = userId
+            request.teamId = teamId
+            request.updated = true
+            request.teamPlanetCode = userPlanetCode
+            request.userPlanetCode = userPlanetCode
+        }
+    }
+
+    override suspend fun leaveTeam(teamId: String, userId: String?) {
+        if (teamId.isBlank() || userId.isNullOrBlank()) return
+        executeTransaction { realm ->
+            val memberships = realm.where(RealmMyTeam::class.java)
+                .equalTo("userId", userId)
+                .equalTo("teamId", teamId)
+                .equalTo("docType", "membership")
+                .findAll()
+            memberships.forEach { member ->
+                member?.deleteFromRealm()
+            }
+        }
+    }
+
     override suspend fun deleteTask(taskId: String) {
         delete(RealmTeamTask::class.java, "id", taskId)
     }
@@ -51,6 +125,46 @@ class TeamRepositoryImpl @Inject constructor(
             task.sync = Gson().toJson(syncObj)
         }
         save(task)
+    }
+
+    override suspend fun syncTeamActivities(context: Context) {
+        val applicationContext = context.applicationContext
+        val settings = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val updateUrl = settings.getString("serverURL", "") ?: ""
+        val serverUrlMapper = ServerUrlMapper()
+        val mapping = serverUrlMapper.processUrl(updateUrl)
+
+        val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
+        val alternativeAvailable =
+            mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
+
+        if (!primaryAvailable && alternativeAvailable) {
+            mapping.alternativeUrl?.let { alternativeUrl ->
+                val uri = updateUrl.toUri()
+                val editor = settings.edit()
+                serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, settings)
+            }
+        }
+
+        uploadTeamActivities()
+    }
+
+    private suspend fun uploadTeamActivities() {
+        try {
+            withContext(Dispatchers.IO) {
+                uploadManager.uploadTeams()
+            }
+            val apiInterface = client?.create(ApiInterface::class.java)
+            withContext(Dispatchers.IO) {
+                withRealm { realm ->
+                    realm.executeTransaction { transactionRealm ->
+                        uploadManager.uploadTeamActivities(transactionRealm, apiInterface)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private suspend fun getResourceIds(teamId: String): List<String> {

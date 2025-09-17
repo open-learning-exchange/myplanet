@@ -74,6 +74,10 @@ class SubmissionRepositoryImpl @Inject constructor(
         }.toMap()
     }
 
+    override suspend fun getExamQuestionCount(stepId: String): Int {
+        return findByField(RealmStepExam::class.java, "stepId", stepId)?.noOfQuestions ?: 0
+    }
+
     override suspend fun getSubmissionById(id: String): RealmSubmission? {
         return findByField(RealmSubmission::class.java, "id", id)
     }
@@ -81,12 +85,6 @@ class SubmissionRepositoryImpl @Inject constructor(
     override suspend fun getSubmissionsByUserId(userId: String): List<RealmSubmission> {
         return queryList(RealmSubmission::class.java) {
             equalTo("userId", userId)
-        }
-    }
-
-    override suspend fun getSubmissionsByType(type: String): List<RealmSubmission> {
-        return queryList(RealmSubmission::class.java) {
-            equalTo("type", type)
         }
     }
 
@@ -129,7 +127,4 @@ class SubmissionRepositoryImpl @Inject constructor(
         update(RealmSubmission::class.java, "id", id, updater)
     }
 
-    override suspend fun deleteSubmission(id: String) {
-        delete(RealmSubmission::class.java, "id", id)
-    }
 }
