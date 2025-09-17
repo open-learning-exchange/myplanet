@@ -24,25 +24,26 @@ class SearchRepositoryImpl @Inject constructor(
         gradeLevel: String,
         subjectLevel: String
     ) {
-        executeTransaction { realm ->
-            val activity = realm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
-            activity.user = userId ?: ""
-            activity.time = Calendar.getInstance().timeInMillis
-            activity.createdOn = userPlanetCode ?: ""
-            activity.parentCode = userParentCode ?: ""
-            activity.text = searchText
-            activity.type = "courses"
-
-            val filter = JsonObject()
+        val filter = JsonObject().apply {
             val tagsArray = JsonArray()
             tags.forEach { tag ->
                 tagsArray.add(tag.name)
             }
-            filter.add("tags", tagsArray)
-            filter.addProperty("doc.gradeLevel", gradeLevel)
-            filter.addProperty("doc.subjectLevel", subjectLevel)
-
-            activity.filter = gson.toJson(filter)
+            add("tags", tagsArray)
+            addProperty("doc.gradeLevel", gradeLevel)
+            addProperty("doc.subjectLevel", subjectLevel)
         }
+
+        val activity = RealmSearchActivity(UUID.randomUUID().toString()).apply {
+            user = userId ?: ""
+            time = Calendar.getInstance().timeInMillis
+            createdOn = userPlanetCode ?: ""
+            parentCode = userParentCode ?: ""
+            text = searchText
+            type = "courses"
+            this.filter = gson.toJson(filter)
+        }
+
+        save(activity)
     }
 }

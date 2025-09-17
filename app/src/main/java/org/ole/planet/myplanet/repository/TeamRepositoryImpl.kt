@@ -72,17 +72,18 @@ class TeamRepositoryImpl @Inject constructor(
         val userId = user?.id ?: return
         val userPlanetCode = user?.planetCode
         if (teamId.isBlank()) return
-        executeTransaction { realm ->
-            val request = realm.createObject(RealmMyTeam::class.java, AndroidDecrypter.generateIv())
-            request.docType = "request"
-            request.createdDate = Date().time
-            request.teamType = teamType
-            request.userId = userId
-            request.teamId = teamId
-            request.updated = true
-            request.teamPlanetCode = userPlanetCode
-            request.userPlanetCode = userPlanetCode
+        val request = RealmMyTeam().apply {
+            _id = AndroidDecrypter.generateIv()
+            docType = "request"
+            createdDate = Date().time
+            teamType = teamType
+            this.userId = userId
+            this.teamId = teamId
+            updated = true
+            teamPlanetCode = userPlanetCode
+            userPlanetCode = userPlanetCode
         }
+        save(request)
     }
 
     override suspend fun leaveTeam(teamId: String, userId: String?) {
