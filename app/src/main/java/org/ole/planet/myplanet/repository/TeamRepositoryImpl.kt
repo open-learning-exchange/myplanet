@@ -40,6 +40,17 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getTeamLinks(): List<RealmMyTeam> {
+        return queryList(RealmMyTeam::class.java) {
+            equalTo("docType", "link")
+        }
+    }
+
+    override suspend fun getTeamById(teamId: String): RealmMyTeam? {
+        if (teamId.isBlank()) return null
+        return findByField(RealmMyTeam::class.java, "_id", teamId)
+    }
+
     override suspend fun isMember(userId: String?, teamId: String): Boolean {
         userId ?: return false
         return queryList(RealmMyTeam::class.java) {
