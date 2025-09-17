@@ -118,6 +118,13 @@ class TeamRepositoryImpl @Inject constructor(
         save(task)
     }
 
+    override suspend fun assignTask(taskId: String, assigneeId: String?) {
+        update(RealmTeamTask::class.java, "id", taskId) { task ->
+            task.assignee = assigneeId
+            task.isUpdated = true
+        }
+    }
+
     override suspend fun syncTeamActivities(context: Context, uploadManager: UploadManager) {
         RealmMyTeam.syncTeamActivities(context, uploadManager)
     }
