@@ -76,12 +76,12 @@ class TeamRepositoryImpl @Inject constructor(
             _id = AndroidDecrypter.generateIv()
             docType = "request"
             createdDate = Date().time
-            teamType = teamType
+            this.teamType = teamType
             this.userId = userId
             this.teamId = teamId
             updated = true
-            teamPlanetCode = userPlanetCode
-            userPlanetCode = userPlanetCode
+            this.teamPlanetCode = userPlanetCode
+            this.userPlanetCode = userPlanetCode
         }
         save(request)
     }
