@@ -42,20 +42,8 @@ class TeamRepositoryImpl @Inject constructor(
 
     override suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam? {
         if (id.isBlank()) return null
-        return withRealm { realm ->
-            val teamByDocumentId = realm.where(RealmMyTeam::class.java)
-                .equalTo("_id", id)
-                .findFirst()
-
-            if (teamByDocumentId != null) {
-                realm.copyFromRealm(teamByDocumentId)
-            } else {
-                realm.where(RealmMyTeam::class.java)
-                    .equalTo("teamId", id)
-                    .findFirst()
-                    ?.let { realm.copyFromRealm(it) }
-            }
-        }
+        return findByField(RealmMyTeam::class.java, "_id", id)
+            ?: findByField(RealmMyTeam::class.java, "teamId", id)
     }
 
     override suspend fun getTeamLinks(): List<RealmMyTeam> {
@@ -80,12 +68,10 @@ class TeamRepositoryImpl @Inject constructor(
 
     override suspend fun getTeamLeaderId(teamId: String): String? {
         if (teamId.isBlank()) return null
-        return withRealm { realm ->
-            realm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("isLeader", true)
-                .findFirst()?.userId
-        }
+        return queryList(RealmMyTeam::class.java) {
+            equalTo("teamId", teamId)
+            equalTo("isLeader", true)
+        }.firstOrNull()?.userId
     }
 
     override suspend fun isTeamLeader(teamId: String, userId: String?): Boolean {
