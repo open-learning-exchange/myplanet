@@ -60,7 +60,9 @@ class NotificationRepositoryImpl @Inject constructor(
                 "unread" -> equalTo("isRead", false)
             }
             sort("createdAt", Sort.DESCENDING)
-        }.filter { it.message.isNotEmpty() && it.message != "INVALID" }
+        }
+            .filter { it.message.isNotEmpty() && it.message != "INVALID" }
+            .distinctBy { it.id }
     }
 
     override suspend fun markAsRead(notificationId: String) {
