@@ -370,6 +370,11 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             filter.visibility = View.GONE
             clearTags.visibility = View.GONE
             tvDelete?.visibility = View.GONE
+        } else {
+            selectAll.visibility = View.VISIBLE
+            etSearch.visibility = View.VISIBLE
+            binding.btnCollections.visibility = View.VISIBLE
+            filter.visibility = View.VISIBLE
         }
     }
 
@@ -524,6 +529,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         b["mediums"] = mediums
         b["levels"] = levels
         return b
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshResourcesData()
+        selectAll.isChecked = false
     }
 
     override fun onPause() {

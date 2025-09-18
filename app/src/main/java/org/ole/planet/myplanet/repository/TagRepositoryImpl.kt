@@ -32,21 +32,22 @@ class TagRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getTagsForResource(resourceId: String): List<RealmTag> {
-        return withRealm { realm ->
-            val links = realm.where(RealmTag::class.java)
-                .equalTo("db", "resources")
-                .equalTo("linkId", resourceId)
-                .findAll()
-            val parents = mutableListOf<RealmTag>()
-            links.forEach { tag ->
-                realm.where(RealmTag::class.java)
-                    .equalTo("id", tag.tagId)
-                    .findFirst()?.let { parent ->
-                        parents.add(realm.copyFromRealm(parent))
-                    }
-            }
-            parents
+        val links = queryList(RealmTag::class.java) {
+            equalTo("db", "resources")
+            equalTo("linkId", resourceId)
         }
+        if (links.isEmpty()) {
+            return emptyList()
+        }
+        val parents = mutableListOf<RealmTag>()
+        for (link in links) {
+            val tagId = link.tagId ?: continue
+            val parent = findByField(RealmTag::class.java, "id", tagId)
+            if (parent != null) {
+                parents.add(parent)
+            }
+        }
+        return parents
     }
 }
 

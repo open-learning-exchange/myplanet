@@ -94,7 +94,7 @@ class NotificationsFragment : Fragment() {
         refreshUnreadCountCache()
 
         adapter = AdapterNotification(
-            databaseService,
+            notificationRepository,
             notifications,
             onMarkAsReadClick = { notificationId ->
                 markAsReadById(notificationId)

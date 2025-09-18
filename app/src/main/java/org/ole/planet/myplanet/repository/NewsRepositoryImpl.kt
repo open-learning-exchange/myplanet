@@ -18,4 +18,14 @@ class NewsRepositoryImpl @Inject constructor(
         }
         return news to replies
     }
+
+    override suspend fun getCommunityNews(planetCode: String): List<RealmNews> {
+        return queryList(RealmNews::class.java) {
+            equalTo("docType", "message", Case.INSENSITIVE)
+            equalTo("viewableBy", "community", Case.INSENSITIVE)
+            equalTo("createdOn", planetCode, Case.INSENSITIVE)
+            isEmpty("replyTo")
+            sort("time", Sort.DESCENDING)
+        }
+    }
 }

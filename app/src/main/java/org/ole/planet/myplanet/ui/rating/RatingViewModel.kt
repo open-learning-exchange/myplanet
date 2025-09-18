@@ -13,9 +13,11 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.UserRepository
 
 class RatingViewModel @Inject constructor(
-    private val databaseService: DatabaseService
+    private val databaseService: DatabaseService,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _ratingState = MutableStateFlow<RatingUiState>(RatingUiState.Loading)
@@ -23,6 +25,9 @@ class RatingViewModel @Inject constructor(
 
     private val _submitState = MutableStateFlow<SubmitState>(SubmitState.Idle)
     val submitState: StateFlow<SubmitState> = _submitState.asStateFlow()
+
+    private val _userState = MutableStateFlow<RealmUserModel?>(null)
+    val userState: StateFlow<RealmUserModel?> = _userState.asStateFlow()
 
     sealed class RatingUiState {
         object Loading : RatingUiState()
@@ -46,7 +51,9 @@ class RatingViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 _ratingState.value = RatingUiState.Loading
-                
+
+                _userState.value = userRepository.getUserById(userId)
+
                 databaseService.withRealm { realm ->
                     val existingRating = realm.where(RealmRating::class.java)
                         .equalTo("type", type)
@@ -76,6 +83,7 @@ class RatingViewModel @Inject constructor(
                     )
                 }
             } catch (e: Exception) {
+                _userState.value = null
                 _ratingState.value = RatingUiState.Error(e.message ?: "Failed to load rating data")
             }
         }

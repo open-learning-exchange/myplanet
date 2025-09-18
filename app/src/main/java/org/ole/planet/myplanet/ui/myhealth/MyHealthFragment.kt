@@ -246,9 +246,18 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun getHealthRecords(memberId: String?) {
-        userId = memberId
-        userModel = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
-        binding.lblHealthName.text = userModel?.getFullName()
+        val normalizedId = memberId?.trim()
+        userId = normalizedId
+        userModel = if (normalizedId.isNullOrEmpty()) {
+            null
+        } else {
+            mRealm.where(RealmUserModel::class.java)
+                .equalTo("id", normalizedId)
+                .or()
+                .equalTo("_id", normalizedId)
+                .findFirst()
+        }
+        binding.lblHealthName.text = userModel?.getFullName() ?: getString(R.string.empty_text)
         binding.addNewRecord.setOnClickListener {
             startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId))
         }
@@ -345,12 +354,28 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun showRecords() {
+        val currentUser = userModel
+        if (currentUser == null) {
+            binding.layoutUserDetail.visibility = View.GONE
+            binding.tvMessage.visibility = View.VISIBLE
+            binding.tvMessage.text = getString(R.string.health_record_not_available)
+            binding.txtOtherNeed.text = getString(R.string.empty_text)
+            binding.txtSpecialNeeds.text = getString(R.string.empty_text)
+            binding.txtBirthPlace.text = getString(R.string.empty_text)
+            binding.txtEmergencyContact.text = getString(R.string.empty_text)
+            binding.rvRecords.adapter = null
+            binding.rvRecords.visibility = View.GONE
+            binding.tvNoRecords.visibility = View.VISIBLE
+            binding.tvDataPlaceholder.visibility = View.GONE
+            return
+        }
+
         binding.layoutUserDetail.visibility = View.VISIBLE
         binding.tvMessage.visibility = View.GONE
-        binding.txtFullName.text = getString(R.string.three_strings, userModel?.firstName, userModel?.middleName, userModel?.lastName)
-        binding.txtEmail.text = Utilities.checkNA(userModel?.email!!)
-        binding.txtLanguage.text = Utilities.checkNA(userModel?.language!!)
-        binding.txtDob.text = Utilities.checkNA(userModel?.dob!!)
+        binding.txtFullName.text = getString(R.string.three_strings, currentUser.firstName, currentUser.middleName, currentUser.lastName)
+        binding.txtEmail.text = Utilities.checkNA(currentUser.email)
+        binding.txtLanguage.text = Utilities.checkNA(currentUser.language)
+        binding.txtDob.text = Utilities.checkNA(currentUser.dob)
         var mh = mRealm.where(RealmMyHealthPojo::class.java).equalTo("_id", userId).findFirst()
         if (mh == null) {
             mh = mRealm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
@@ -367,7 +392,7 @@ class MyHealthFragment : Fragment() {
             val myHealths = mm.profile
             binding.txtOtherNeed.text = Utilities.checkNA(myHealths?.notes)
             binding.txtSpecialNeeds.text = Utilities.checkNA(myHealths?.specialNeeds)
-            binding.txtBirthPlace.text = Utilities.checkNA(userModel?.birthPlace)
+            binding.txtBirthPlace.text = Utilities.checkNA(currentUser.birthPlace)
             val contact = myHealths?.emergencyContact?.takeIf { it.isNotBlank() }
             binding.txtEmergencyContact.text = getString(
                 R.string.emergency_contact_details,
@@ -383,7 +408,7 @@ class MyHealthFragment : Fragment() {
                 binding.tvNoRecords.visibility = View.GONE
                 binding.tvDataPlaceholder.visibility = View.VISIBLE
 
-                val adap = AdapterHealthExamination(requireActivity(), list, mh, userModel)
+                val adap = AdapterHealthExamination(requireActivity(), list, mh, currentUser)
                 adap.setmRealm(mRealm)
                 binding.rvRecords.apply {
                     layoutManager = LinearLayoutManager(activity, LinearLayoutManager.HORIZONTAL, false)
