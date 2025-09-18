@@ -5,17 +5,18 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import io.realm.RealmResults
+import androidx.lifecycle.lifecycleScope
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentServicesBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.model.RealmMyTeam
 
 class ServicesFragment : BaseTeamFragment() {
     private var binding: FragmentServicesBinding? = null
@@ -33,17 +34,7 @@ class ServicesFragment : BaseTeamFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
         super.onViewCreated(view, savedInstanceState)
-        mRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
-
-        val links = mRealm.where(RealmMyTeam::class.java)?.equalTo("docType", "link")?.findAll()
-
-        if (links?.size == 0) {
-            binding?.llServices?.visibility = View.GONE
-            binding?.tvNoLinks?.visibility = View.VISIBLE
-        } else {
-            binding?.llServices?.visibility = View.VISIBLE
-        }
 
         val description = team?.description ?: ""
         if (description.isEmpty()) {
@@ -60,7 +51,19 @@ class ServicesFragment : BaseTeamFragment() {
             350
         )
         binding?.let { setMarkdownText(it.tvDescription, markdownContentWithLocalPaths) }
-        setRecyclerView(links)
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val links = teamRepository.getTeamLinks()
+            val currentBinding = binding ?: return@launch
+            if (links.isEmpty()) {
+                currentBinding.llServices.visibility = View.GONE
+                currentBinding.tvNoLinks.visibility = View.VISIBLE
+            } else {
+                currentBinding.llServices.visibility = View.VISIBLE
+                currentBinding.tvNoLinks.visibility = View.GONE
+            }
+            setRecyclerView(links)
+        }
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
@@ -70,22 +73,23 @@ class ServicesFragment : BaseTeamFragment() {
         llImage?.removeAllViews()
     }
 
-    private fun setRecyclerView(links: RealmResults<RealmMyTeam>?) {
+    private fun setRecyclerView(links: List<RealmMyTeam>) {
         val parent = binding?.llServices ?: return
         parent.removeAllViews()
-        links?.forEach { team ->
+        links.forEach { team ->
             val b: TextView = LayoutInflater.from(activity).inflate(R.layout.button_single, parent, false) as TextView
             b.setPadding(8, 8, 8, 8)
             b.text = team.title
             b.setOnClickListener {
                 val route = team.route?.split("/")
-                if (route != null) {
-                    if (route.size >= 3) {
-                        val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", route[3])?.findFirst()
-                        val isMyTeam = teamObject?.isMyTeam(user?.id, mRealm) == true
+                if (route != null && route.size >= 4) {
+                    val teamId = route[3]
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val teamObject = teamRepository.getTeamById(teamId)
+                        val isMyTeam = teamRepository.isMember(user?.id, teamId)
 
                         val f = TeamDetailFragment.newInstance(
-                            teamId = route[3],
+                            teamId = teamId,
                             teamName = teamObject?.name ?: "",
                             teamType = teamObject?.type ?: "",
                             isMyTeam = isMyTeam
