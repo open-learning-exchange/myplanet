@@ -18,7 +18,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Case
 import io.realm.Realm
 import java.util.Date
 import java.util.concurrent.TimeUnit
@@ -33,7 +32,6 @@ import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -155,22 +153,25 @@ class BellDashboardFragment : BaseDashboardFragment() {
         if (checkScheduledReminders()) {
             return
         }
-        val pendingSurveys = getPendingSurveys(user?.id, mRealm)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val pendingSurveys = submissionRepository.getUniquePendingSurveys(user?.id)
 
-        if (pendingSurveys.isNotEmpty()) {
-            val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
-            val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
-            if (preferences.contains("reminder_time_$surveyIds")) {
-                return
+            if (pendingSurveys.isNotEmpty()) {
+                val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
+                val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
+                if (preferences.contains("reminder_time_$surveyIds")) {
+                    return@launch
+                }
+                val title = getString(
+                    R.string.surveys_to_complete,
+                    pendingSurveys.size,
+                    if (pendingSurveys.size > 1) "surveys" else "survey"
+                )
+                val surveyTitles = submissionRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
+                showSurveyListDialog(pendingSurveys, title, surveyTitles)
+            } else {
+                checkScheduledReminders()
             }
-            val title = getString(
-                R.string.surveys_to_complete,
-                pendingSurveys.size,
-                if (pendingSurveys.size > 1) "surveys" else "survey"
-            )
-            showSurveyListDialog(pendingSurveys, title)
-        } else {
-            checkScheduledReminders()
         }
     }
 
@@ -300,54 +301,25 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun showPendingSurveysReminder(pendingSurveys: List<RealmSubmission>) {
-        val title = getString(
-            R.string.reminder_surveys_to_complete,
-            pendingSurveys.size,
-            if (pendingSurveys.size > 1) "surveys" else "survey"
-        )
-        showSurveyListDialog(pendingSurveys, title, dismissOnNeutral = true)
-    }
+        if (pendingSurveys.isEmpty()) return
 
-    private fun getPendingSurveys(userId: String?, realm: Realm): List<RealmSubmission> {
-        val pendingSurveys = realm.where(RealmSubmission::class.java).equalTo("userId", userId)
-            .equalTo("type", "survey").equalTo("status", "pending", Case.INSENSITIVE).findAll()
-
-        val uniqueSurveyMap = mutableMapOf<String, RealmSubmission>()
-
-        pendingSurveys.forEach { submission ->
-            val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
-
-            val exam = realm.where(RealmStepExam::class.java)
-                .equalTo("id", examId)
-                .findFirst()
-
-            if (exam != null && !uniqueSurveyMap.containsKey(examId)) {
-                uniqueSurveyMap[examId] = submission
-            }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val title = getString(
+                R.string.reminder_surveys_to_complete,
+                pendingSurveys.size,
+                if (pendingSurveys.size > 1) "surveys" else "survey"
+            )
+            val surveyTitles = submissionRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
+            showSurveyListDialog(pendingSurveys, title, surveyTitles, dismissOnNeutral = true)
         }
-
-        return uniqueSurveyMap.values.toList()
-    }
-
-    private fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>, realm: Realm): List<String> {
-        val titles = mutableListOf<String>()
-        submissions.forEach { submission ->
-            val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
-            val exam = realm.where(RealmStepExam::class.java)
-                .equalTo("id", examId)
-                .findFirst()
-            exam?.name?.let { titles.add(it) }
-        }
-        return titles
     }
 
     private fun showSurveyListDialog(
         pendingSurveys: List<RealmSubmission>,
         title: String,
+        surveyTitles: List<String>,
         dismissOnNeutral: Boolean = false
     ) {
-        val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)
-
         val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
         val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
         recyclerView.layoutManager = LinearLayoutManager(requireActivity())

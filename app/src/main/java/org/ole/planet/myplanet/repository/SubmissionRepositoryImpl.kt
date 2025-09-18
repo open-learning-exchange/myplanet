@@ -23,6 +23,34 @@ class SubmissionRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getUniquePendingSurveys(userId: String?): List<RealmSubmission> {
+        if (userId == null) return emptyList()
+
+        val pendingSurveys = getPendingSurveys(userId)
+        if (pendingSurveys.isEmpty()) return emptyList()
+
+        val examIds = pendingSurveys.mapNotNull { submission ->
+            submission.parentId?.split("@")?.firstOrNull()
+        }.distinct()
+
+        if (examIds.isEmpty()) return emptyList()
+
+        val exams = queryList(RealmStepExam::class.java) {
+            `in`("id", examIds.toTypedArray())
+        }
+        val validExamIds = exams.mapNotNull { it.id }.toSet()
+
+        val uniqueSurveys = linkedMapOf<String, RealmSubmission>()
+        pendingSurveys.forEach { submission ->
+            val examId = submission.parentId?.split("@")?.firstOrNull()
+            if (examId != null && validExamIds.contains(examId) && !uniqueSurveys.containsKey(examId)) {
+                uniqueSurveys[examId] = submission
+            }
+        }
+
+        return uniqueSurveys.values.toList()
+    }
+
     override suspend fun getSubmissionCountByUser(userId: String?): Int {
         if (userId == null) return 0
 
