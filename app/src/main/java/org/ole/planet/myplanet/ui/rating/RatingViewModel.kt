@@ -80,6 +80,8 @@ class RatingViewModel @Inject constructor(
                     return@launch
                 }
 
+                _userState.value = user
+
                 val summary = ratingRepository.submitRating(
                     type = type,
                     itemId = itemId,
@@ -93,6 +95,8 @@ class RatingViewModel @Inject constructor(
                 _submitState.value = SubmitState.Success
             } catch (e: Exception) {
                 _submitState.value = SubmitState.Error(e.message ?: "Failed to submit rating")
+            } finally {
+                _submitState.value = SubmitState.Idle
             }
         }
     }
