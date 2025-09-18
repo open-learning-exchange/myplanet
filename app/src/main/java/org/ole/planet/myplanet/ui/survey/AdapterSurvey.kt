@@ -1,27 +1,21 @@
 package org.ole.planet.myplanet.ui.survey
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.snackbar.Snackbar
 import io.realm.Realm
-import java.util.UUID
-import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.SurveyAdoptListener
 import org.ole.planet.myplanet.databinding.RowSurveyBinding
 import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSubmissionByTeam
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getNoOfSubmissionByUser
 import org.ole.planet.myplanet.model.RealmSubmission.Companion.getRecentSubmissionDate
-import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.submission.AdapterMySubmission
 import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
@@ -32,12 +26,10 @@ class AdapterSurvey(
     private val userId: String?,
     private val isTeam: Boolean,
     val teamId: String?,
-    private val surveyAdoptListener: SurveyAdoptListener,
-    private val settings: SharedPreferences
+    private val surveyAdoptListener: SurveyAdoptListener
 ) : RecyclerView.Adapter<AdapterSurvey.ViewHolderSurvey>() {
     private var examList: List<RealmStepExam> = emptyList()
     private var listener: OnHomeItemClickListener? = null
-    private val adoptedSurveyIds = mutableSetOf<String>()
     private var isTitleAscending = true
     private var sortType = SurveySortType.DATE_DESC
 
@@ -137,7 +129,7 @@ class AdapterSurvey(
                     val shouldAdopt = exam.isTeamShareAllowed && !isTeamSubmission
 
                     if (shouldAdopt) {
-                        adoptSurvey(exam, teamId)
+                        surveyAdoptListener.onAdoptRequested(exam, teamId)
                     } else {
                         AdapterMySubmission.openSurvey(listener, exam.id, false, isTeam, teamId)
                     }
@@ -177,95 +169,6 @@ class AdapterSurvey(
             }
         }
 
-        fun adoptSurvey(exam: RealmStepExam, teamId: String?) {
-            val userModel = UserProfileDbHandler(context).userModel
-            val sParentCode = settings.getString("parentCode", "")
-            val planetCode = settings.getString("planetCode", "")
-
-            val parentJsonString = try {
-                JSONObject().apply {
-                    put("_id", exam.id)
-                    put("name", exam.name)
-                    put("courseId", exam.courseId ?: "")
-                    put("sourcePlanet", exam.sourcePlanet ?: "")
-                    put("teamShareAllowed", exam.isTeamShareAllowed)
-                    put("noOfQuestions", exam.noOfQuestions)
-                    put("isFromNation", exam.isFromNation)
-                }.toString()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                "{}"
-            }
-
-            val userJsonString = try {
-                JSONObject().apply {
-                    put("doc", JSONObject().apply {
-                        put("_id", userModel?.id)
-                        put("name", userModel?.name)
-                        put("userId", userModel?.id ?: "")
-                        put("teamPlanetCode", planetCode ?: "")
-                        put("status", "active")
-                        put("type", "team")
-                        put("createdBy", userModel?.id ?: "")
-                    })
-
-                    if (isTeam && teamId != null) {
-                        put("membershipDoc", JSONObject().apply {
-                            put("teamId", teamId)
-                        })
-                    }
-                }.toString()
-            } catch (e: Exception) {
-                e.printStackTrace()
-                "{}"
-            }
-
-            val adoptionId = "${UUID.randomUUID()}"
-            val examId = exam.id
-            val userId = userModel?.id
-
-            mRealm.executeTransactionAsync({ realm ->
-                val existingAdoption = realm.where(RealmSubmission::class.java)
-                    .equalTo("userId", userId)
-                    .equalTo("parentId", examId)
-                    .equalTo("status", "")
-                    .findFirst()
-
-                if (existingAdoption == null) {
-                    realm.createObject(RealmSubmission::class.java, adoptionId).apply {
-                        parentId = examId
-                        parent = parentJsonString
-                        this.userId = userId
-                        user = userJsonString
-                        type = "survey"
-                        status = ""
-                        uploaded = false
-                        source = planetCode ?: ""
-                        parentCode = sParentCode ?: ""
-                        startTime = System.currentTimeMillis()
-                        lastUpdateTime = System.currentTimeMillis()
-                        isUpdated = true
-
-                        if (isTeam && teamId != null) {
-                            membershipDoc = realm.createObject(RealmMembershipDoc::class.java).apply {
-                                this.teamId = teamId
-                            }
-                        }
-                    }
-                }
-            }, {
-                adoptedSurveyIds.add("$examId")
-                val position = examList.indexOfFirst { it.id == examId }
-                if (position != -1) {
-                    notifyItemChanged(position)
-                }
-
-                Snackbar.make(binding.root, context.getString(R.string.survey_adopted_successfully), Snackbar.LENGTH_LONG).show()
-                surveyAdoptListener.onSurveyAdopted()
-            }, {
-                Snackbar.make(binding.root, context.getString(R.string.failed_to_adopt_survey), Snackbar.LENGTH_LONG).show()
-            })
-        }
     }
 }
 
