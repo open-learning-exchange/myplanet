@@ -89,8 +89,15 @@ class CourseProgressActivity : BaseActivity() {
                     examId = it.parentId!!.split("@")[0]
                 }
                 val questions = realm.where(RealmExamQuestion::class.java).equalTo("examId", examId).findAll()
-                ob.addProperty("completed", questions.size == answers.size)
-                ob.addProperty("percentage", (answers.size.div(questions.size)) * 100)
+                val questionCount = questions.size
+                if (questionCount == 0) {
+                    ob.addProperty("completed", false)
+                    ob.addProperty("percentage", 0)
+                } else {
+                    ob.addProperty("completed", answers.size == questionCount)
+                    val percentage = (answers.size.toDouble() / questionCount) * 100
+                    ob.addProperty("percentage", percentage)
+                }
                 ob.addProperty("status", it.status)
             }
         }
