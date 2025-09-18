@@ -53,15 +53,27 @@ class FeedbackRepositoryImpl @Inject constructor(
         return feedback
     }
 
-    override fun getFeedback(userModel: RealmUserModel?): Flow<List<RealmFeedback>> =
-        queryListFlow(RealmFeedback::class.java) {
-            if (userModel?.isManager() == true) {
+    override fun getFeedback(userModel: RealmUserModel?): Flow<List<RealmFeedback>> {
+        val isManager = try {
+            userModel?.isManager() == true
+        } catch (_: IllegalStateException) {
+            false
+        }
+        val ownerName = try {
+            userModel?.name
+        } catch (_: IllegalStateException) {
+            null
+        }
+
+        return queryListFlow(RealmFeedback::class.java) {
+            if (isManager) {
                 sort("openTime", Sort.DESCENDING)
             } else {
-                equalTo("owner", userModel?.name)
+                equalTo("owner", ownerName)
                 sort("openTime", Sort.DESCENDING)
             }
         }
+    }
 
     override suspend fun getFeedbackById(id: String?): RealmFeedback? {
         return id?.let { findByField(RealmFeedback::class.java, "id", it) }
