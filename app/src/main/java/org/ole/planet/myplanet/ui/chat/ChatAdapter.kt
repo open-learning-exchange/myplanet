@@ -65,6 +65,7 @@ class ChatAdapter(val context: Context, private val recyclerView: RecyclerView) 
         private val coroutineScope: CoroutineScope
     ) : RecyclerView.ViewHolder(textAiMessageBinding.root) {
         fun bind(response: String, responseSource: Int,  shouldAnimate: Boolean, markAnimated: () -> Unit) {
+            textAiMessageBinding.textGchatMessageOther.visibility = View.VISIBLE
             if (responseSource == RESPONSE_SOURCE_NETWORK) {
                 if (shouldAnimate) {
                     textAiMessageBinding.textGchatMessageOther.text = context.getString(R.string.empty_text)

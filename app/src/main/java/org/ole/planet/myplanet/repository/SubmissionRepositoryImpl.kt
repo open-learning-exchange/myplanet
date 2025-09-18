@@ -116,12 +116,6 @@ class SubmissionRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getSubmissionsByType(type: String): List<RealmSubmission> {
-        return queryList(RealmSubmission::class.java) {
-            equalTo("type", type)
-        }
-    }
-
     override suspend fun createSurveySubmission(examId: String, userId: String?) {
         withRealm { realm ->
             val exam = realm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()
@@ -161,7 +155,4 @@ class SubmissionRepositoryImpl @Inject constructor(
         update(RealmSubmission::class.java, "id", id, updater)
     }
 
-    override suspend fun deleteSubmission(id: String) {
-        delete(RealmSubmission::class.java, "id", id)
-    }
 }

@@ -33,17 +33,12 @@ abstract class BaseTeamFragment : BaseNewsFragment() {
 
         if (shouldQueryTeamFromRealm()) {
             team = try {
-                mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-                    ?: throw IllegalArgumentException("Team not found for ID: $teamId")
+                runBlocking {
+                    teamRepository.getTeamByDocumentIdOrTeamId(teamId)
+                } ?: throw IllegalArgumentException("Team not found for ID: $teamId")
             } catch (e: IllegalArgumentException) {
                 e.printStackTrace()
-                try {
-                    mRealm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findFirst()
-                        ?: throw IllegalArgumentException("Team not found for ID: $teamId")
-                } catch (e: IllegalArgumentException) {
-                    e.printStackTrace()
-                    return
-                }
+                return
             }
         }
     }
