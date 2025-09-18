@@ -11,6 +11,21 @@ data class TaskNotificationMetadata(
     val teamName: String?,
 )
 
+data class SurveyNotificationDestination(
+    val examId: String,
+)
+
+data class TaskNotificationDestination(
+    val teamId: String,
+    val teamName: String?,
+    val teamType: String?,
+)
+
+data class JoinRequestNotificationDestination(
+    val teamId: String,
+    val teamName: String?,
+)
+
 interface NotificationRepository {
     suspend fun getUnreadCount(userId: String?): Int
     suspend fun updateResourceNotification(userId: String?)
@@ -19,4 +34,7 @@ interface NotificationRepository {
     suspend fun markAllAsRead(userId: String)
     suspend fun getJoinRequestMetadata(joinRequestId: String?): JoinRequestNotificationMetadata?
     suspend fun getTaskNotificationMetadata(taskTitle: String): TaskNotificationMetadata?
+    suspend fun getSurveyNotificationDestination(examTitle: String?): SurveyNotificationDestination?
+    suspend fun getTaskNotificationDestination(taskId: String?): TaskNotificationDestination?
+    suspend fun getJoinRequestDestination(joinRequestId: String?): JoinRequestNotificationDestination?
 }

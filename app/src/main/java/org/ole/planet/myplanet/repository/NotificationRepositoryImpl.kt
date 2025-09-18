@@ -7,6 +7,8 @@ import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
+import org.json.JSONObject
+import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserModel
 
@@ -124,6 +126,55 @@ class NotificationRepositoryImpl @Inject constructor(
                 TaskNotificationMetadata(teamName)
             }
         }
+    }
+
+    override suspend fun getSurveyNotificationDestination(examTitle: String?): SurveyNotificationDestination? {
+        val normalizedTitle = examTitle?.takeUnless { it.isBlank() } ?: return null
+        val exam = findByField(RealmStepExam::class.java, "name", normalizedTitle)
+        val examId = exam?.id?.takeUnless { it.isNullOrBlank() }
+        return examId?.let { SurveyNotificationDestination(it) }
+    }
+
+    override suspend fun getTaskNotificationDestination(taskId: String?): TaskNotificationDestination? {
+        val normalizedTaskId = taskId?.takeUnless { it.isBlank() } ?: return null
+        val task =
+            findByField(RealmTeamTask::class.java, "id", normalizedTaskId)
+                ?: findByField(RealmTeamTask::class.java, "_id", normalizedTaskId)
+                ?: return null
+
+        val teamId = task.teamId?.takeUnless { it.isNullOrBlank() } ?: extractTeamId(task.link) ?: return null
+        val team = findByField(RealmMyTeam::class.java, "_id", teamId)
+
+        return TaskNotificationDestination(
+            teamId = teamId,
+            teamName = team?.name,
+            teamType = team?.type,
+        )
+    }
+
+    override suspend fun getJoinRequestDestination(joinRequestId: String?): JoinRequestNotificationDestination? {
+        val rawId = joinRequestId?.takeUnless { it.isBlank() } ?: return null
+        val sanitizedId = rawId.removePrefix("join_request_")
+
+        val joinRequest = queryList(RealmMyTeam::class.java) {
+            equalTo("_id", sanitizedId)
+            equalTo("docType", "request")
+        }.firstOrNull() ?: return null
+
+        val teamId = joinRequest.teamId?.takeUnless { it.isNullOrBlank() } ?: return null
+        val team = findByField(RealmMyTeam::class.java, "_id", teamId)
+
+        return JoinRequestNotificationDestination(
+            teamId = teamId,
+            teamName = team?.name,
+        )
+    }
+
+    private fun extractTeamId(link: String?): String? {
+        if (link.isNullOrBlank()) return null
+        return runCatching { JSONObject(link).optString("teams") }
+            .getOrNull()
+            ?.takeUnless { it.isNullOrBlank() }
     }
 }
 
