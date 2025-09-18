@@ -8,6 +8,7 @@ import org.ole.planet.myplanet.model.RealmUserModel
 
 interface TeamRepository {
     suspend fun getTeamResources(teamId: String): List<RealmMyLibrary>
+    suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam?
     suspend fun getTeamLinks(): List<RealmMyTeam>
     suspend fun getTeamById(teamId: String): RealmMyTeam?
     suspend fun isMember(userId: String?, teamId: String): Boolean
