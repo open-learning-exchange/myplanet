@@ -140,6 +140,7 @@ class AdapterJoinedMember(
     fun updateData(newList: MutableList<JoinedMemberData>, isLoggedInUserTeamLeader: Boolean) {
         val oldList = list.toList()
         val updatedList = newList.toList()
+        val wasLoggedInUserTeamLeader = this.isLoggedInUserTeamLeader
 
         val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
             override fun getOldListSize(): Int = oldList.size
@@ -155,6 +156,10 @@ class AdapterJoinedMember(
             override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
                 val oldMember = oldList[oldItemPosition]
                 val newMember = updatedList[newItemPosition]
+                if (wasLoggedInUserTeamLeader != isLoggedInUserTeamLeader) {
+                    return false
+                }
+
                 return oldMember.visitCount == newMember.visitCount &&
                     oldMember.lastVisitDate == newMember.lastVisitDate &&
                     oldMember.offlineVisits == newMember.offlineVisits &&
