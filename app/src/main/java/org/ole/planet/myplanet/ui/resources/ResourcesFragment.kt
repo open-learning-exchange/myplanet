@@ -571,23 +571,36 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun saveSearchActivity() {
-        if (filterApplied()) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            val activity = mRealm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
-            activity.user = model?.name!!
-            activity.time = Calendar.getInstance().timeInMillis
-            activity.createdOn = model?.planetCode!!
-            activity.parentCode = model?.parentCode!!
-            activity.text = "${etSearch.text}"
-            activity.type = "resources"
-            val filter = JsonObject()
-            filter.add("tags", getTagsArray(searchTags))
-            filter.add("subjects", getJsonArrayFromList(subjects))
-            filter.add("language", getJsonArrayFromList(languages))
-            filter.add("level", getJsonArrayFromList(levels))
-            filter.add("mediaType", getJsonArrayFromList(mediums))
-            activity.filter = Gson().toJson(filter)
-            mRealm.commitTransaction()
+        if (!filterApplied()) {
+            return
+        }
+
+        val userName = model?.name ?: return
+        val planetCode = model?.planetCode ?: return
+        val parentCode = model?.parentCode ?: return
+        val searchText = etSearch.text?.toString().orEmpty()
+        val filter = JsonObject().apply {
+            add("tags", getTagsArray(searchTags))
+            add("subjects", getJsonArrayFromList(subjects))
+            add("language", getJsonArrayFromList(languages))
+            add("level", getJsonArrayFromList(levels))
+            add("mediaType", getJsonArrayFromList(mediums))
+        }
+        val filterPayload = Gson().toJson(filter)
+        val createdAt = Calendar.getInstance().timeInMillis
+        val activityId = UUID.randomUUID().toString()
+
+        lifecycleScope.launch {
+            databaseService.executeTransactionAsync { realm ->
+                val activity = realm.createObject(RealmSearchActivity::class.java, activityId)
+                activity.user = userName
+                activity.time = createdAt
+                activity.createdOn = planetCode
+                activity.parentCode = parentCode
+                activity.text = searchText
+                activity.type = "resources"
+                activity.filter = filterPayload
+            }
         }
     }
 
