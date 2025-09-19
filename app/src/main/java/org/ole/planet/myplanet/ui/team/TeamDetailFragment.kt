@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
+import io.realm.Realm
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
@@ -128,19 +129,28 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
         if (shouldQueryRealm(teamId)) {
             if (teamId.isNotEmpty()) {
-                team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+                team = findTeamByIdentifier(mRealm, teamId)
                     ?: throw IllegalArgumentException("Team not found for ID: $teamId")
             }
         } else {
             val effectiveTeamId = directTeamId ?: teamId
             if (effectiveTeamId.isNotEmpty()) {
-                team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", effectiveTeamId).findFirst()
+                team = findTeamByIdentifier(mRealm, effectiveTeamId)
             }
         }
 
         setupTeamDetails(isMyTeam, user)
 
         return binding.root
+    }
+
+    private fun findTeamByIdentifier(realm: Realm, identifier: String): RealmMyTeam? {
+        return realm.where(RealmMyTeam::class.java)
+            .equalTo("_id", identifier)
+            .findFirst()
+            ?: realm.where(RealmMyTeam::class.java)
+                .equalTo("teamId", identifier)
+                .findFirst()
     }
 
     private fun startTeamSync() {
@@ -326,7 +336,7 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
             val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
 
             if (teamId.isNotEmpty()) {
-                val updatedTeam = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+                val updatedTeam = findTeamByIdentifier(mRealm, teamId)
                 if (updatedTeam != null) {
                     team = updatedTeam
                     val lastPageId = team?._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
