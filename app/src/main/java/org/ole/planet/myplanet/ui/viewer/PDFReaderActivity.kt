@@ -4,7 +4,6 @@ import android.graphics.pdf.PdfRenderer
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.text.TextUtils
-import android.util.Log
 import android.view.View
 import android.widget.ImageView
 import android.widget.Toast
@@ -83,12 +82,10 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
                 val bitmap = createBitmap(page.width, page.height)
                 page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
 
-                // Create ImageView to display the PDF page
                 val imageView = ImageView(this)
                 imageView.setImageBitmap(bitmap)
                 imageView.scaleType = ImageView.ScaleType.FIT_CENTER
 
-                // Replace placeholder with ImageView
                 binding.pdfPlaceholder.visibility = View.GONE
                 val parent = binding.pdfPlaceholder.parent as android.view.ViewGroup
                 parent.addView(imageView, android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, 0))
@@ -100,7 +97,6 @@ class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
             } catch (e: Exception) {
                 e.printStackTrace()
                 Toast.makeText(applicationContext, getString(R.string.unable_to_load) + fileName, Toast.LENGTH_LONG).show()
-                Log.d("PDFReaderActivity", "Error rendering PDF: ${e.message}" )
             }
         } else {
             Toast.makeText(applicationContext, "File not found: $fileName", Toast.LENGTH_LONG)
