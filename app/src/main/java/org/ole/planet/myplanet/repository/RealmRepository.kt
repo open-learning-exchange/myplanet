@@ -56,9 +56,13 @@ open class RealmRepository(private val databaseService: DatabaseService) {
             realm.findCopyByField(clazz, fieldName, value)
         }
 
-    protected suspend fun <T : RealmObject> findFirst(clazz: Class<T>): T? =
+    protected suspend fun <T : RealmObject> findFirst(
+        clazz: Class<T>,
+        builder: RealmQuery<T>.() -> Unit = {},
+    ): T? =
         withRealm { realm ->
             realm.where(clazz)
+                .apply(builder)
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }
         }
