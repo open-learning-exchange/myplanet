@@ -12,7 +12,6 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getRequestedMember
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 @AndroidEntryPoint
@@ -20,9 +19,6 @@ class MembersFragment : BaseMemberFragment() {
 
     private lateinit var currentUser: RealmUserModel
     private lateinit var memberChangeListener: MemberChangeListener
-
-    @Inject
-    lateinit var uploadManager: UploadManager
 
     fun setMemberChangeListener(listener: MemberChangeListener) {
         this.memberChangeListener = listener
@@ -43,8 +39,14 @@ class MembersFragment : BaseMemberFragment() {
         get() = getRequestedMember(teamId, mRealm)
 
     override val adapter: RecyclerView.Adapter<*>
-        get() = AdapterMemberRequest(requireActivity(), list.toMutableList(),
-            mRealm, currentUser, memberChangeListener, uploadManager).apply { setTeamId(teamId) }
+        get() = AdapterMemberRequest(
+            requireActivity(),
+            list.toMutableList(),
+            mRealm,
+            currentUser,
+            memberChangeListener,
+            teamRepository,
+        ).apply { setTeamId(teamId) }
 
     override val layoutManager: RecyclerView.LayoutManager
         get() {

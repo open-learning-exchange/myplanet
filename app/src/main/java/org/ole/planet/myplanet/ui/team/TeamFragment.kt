@@ -28,7 +28,6 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getMyTeamsByUserId
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.repository.TeamRepository
-import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants
@@ -50,8 +49,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private var teamList: RealmResults<RealmMyTeam>? = null
     private lateinit var adapterTeamList: AdapterTeamList
     private var conditionApplied: Boolean = false
-    @Inject
-    lateinit var uploadManager: UploadManager
     private val settings by lazy {
         requireActivity().getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
     }
@@ -259,7 +256,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                         sortedList,
                         mRealm,
                         childFragmentManager,
-                        uploadManager,
                         teamRepository,
                     )
                     adapterTeamList.setTeamListener(this@TeamFragment)
@@ -289,7 +285,7 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
     private fun setTeamList() {
         val list = teamList ?: return
         adapterTeamList = activity?.let {
-            AdapterTeamList(it, list, mRealm, childFragmentManager, uploadManager, teamRepository)
+            AdapterTeamList(it, list, mRealm, childFragmentManager, teamRepository)
         } ?: return
         adapterTeamList.setType(type)
         adapterTeamList.setTeamListener(this@TeamFragment)
@@ -334,7 +330,6 @@ class TeamFragment : Fragment(), AdapterTeamList.OnClickTeamItem {
                 sortedList,
                 mRealm,
                 childFragmentManager,
-                uploadManager,
                 teamRepository,
             ).apply {
                 setType(type)
