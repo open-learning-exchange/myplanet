@@ -77,10 +77,6 @@
             android:name=".ui.courses.CourseProgressActivity"
             android:theme="@style/AppTheme" />
         <activity
-            android:name=".ui.news.NewsDetailActivity"
-            android:label="@string/title_activity_news_detail"
-            android:theme="@style/MyMaterialTheme.NoActionBar" />
-        <activity
             android:name=".ui.myhealth.AddMyHealthActivity"
             android:theme="@style/AppTheme" />
         <activity
