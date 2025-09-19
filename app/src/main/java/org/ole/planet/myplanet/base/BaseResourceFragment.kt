@@ -92,7 +92,7 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     private fun showProgressDialog() {
-        activity?.runOnUiThread {
+        viewLifecycleOwner.lifecycleScope.launch {
             if (isFragmentActive()) {
                 prgDialog.show()
             }
@@ -326,6 +326,15 @@ abstract class BaseResourceFragment : Fragment() {
         bManager.registerReceiver(resourceNotFoundReceiver, resourceNotFoundFilter)
     }
 
+    private fun unregisterReceiver() {
+        val fragmentActivity = activity ?: return
+        val bManager = LocalBroadcastManager.getInstance(fragmentActivity)
+        bManager.unregisterReceiver(receiver)
+        bManager.unregisterReceiver(broadcastReceiver)
+        bManager.unregisterReceiver(stateReceiver)
+        bManager.unregisterReceiver(resourceNotFoundReceiver)
+    }
+
     suspend fun getLibraryList(mRealm: Realm): List<RealmMyLibrary> {
         return libraryRepository.getLibraryListForUser(
             settings.getString("userId", "--")
@@ -341,11 +350,12 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onPause() {
         super.onPause()
-        val bManager = LocalBroadcastManager.getInstance(requireActivity())
-        bManager.unregisterReceiver(receiver)
-        bManager.unregisterReceiver(broadcastReceiver)
-        bManager.unregisterReceiver(stateReceiver)
-        bManager.unregisterReceiver(resourceNotFoundReceiver)
+        unregisterReceiver()
+    }
+
+    override fun onDetach() {
+        super.onDetach()
+        homeItemClickListener = null
     }
 
     fun removeFromShelf(`object`: RealmObject) {
@@ -375,39 +385,84 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun addToLibrary(libraryItems: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>) {
-        selectedItems.forEach { index ->
-            val item = libraryItems[index]
-            if (item?.userId?.contains(profileDbHandler.userModel?.id) == false) {
-                if (!mRealm.isInTransaction) mRealm.beginTransaction()
-                item.setUserId(profileDbHandler.userModel?.id)
-                RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.userModel?.id, item.resourceId)
+        if (!isRealmInitialized()) return
+        
+        try {
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
             }
+            
+            selectedItems.forEach { index ->
+                val item = libraryItems[index]
+                if (item?.userId?.contains(profileDbHandler.userModel?.id) == false) {
+                    item.setUserId(profileDbHandler.userModel?.id)
+                    RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.userModel?.id, item.resourceId)
+                }
+            }
+            
+            if (mRealm.isInTransaction) {
+                mRealm.commitTransaction()
+            }
+        } catch (e: Exception) {
+            if (mRealm.isInTransaction) {
+                mRealm.cancelTransaction()
+            }
+            throw e
         }
         Utilities.toast(activity, getString(R.string.added_to_my_library))
     }
 
     fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
-        libraryItems.forEach { libraryItem ->
-            if (libraryItem?.userId?.contains(profileDbHandler.userModel?.id) == false) {
-                if (!mRealm.isInTransaction) {
-                    mRealm.beginTransaction()
-                }
-                libraryItem.setUserId(profileDbHandler.userModel?.id)
-                RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.userModel?.id, libraryItem.resourceId)
+        if (!isRealmInitialized()) return
+        
+        try {
+            if (!mRealm.isInTransaction) {
+                mRealm.beginTransaction()
             }
+            
+            libraryItems.forEach { libraryItem ->
+                if (libraryItem?.userId?.contains(profileDbHandler.userModel?.id) == false) {
+                    libraryItem.setUserId(profileDbHandler.userModel?.id, mRealm)
+                    RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.userModel?.id, libraryItem.resourceId)
+                }
+            }
+            
+            if (mRealm.isInTransaction) {
+                mRealm.commitTransaction()
+            }
+        } catch (e: Exception) {
+            if (mRealm.isInTransaction) {
+                mRealm.cancelTransaction()
+            }
+            throw e
         }
         Utilities.toast(activity, getString(R.string.added_to_my_library))
     }
 
     override fun onDestroy() {
-        if (isRealmInitialized()) {
-            mRealm.removeAllChangeListeners()
-            if (mRealm.isInTransaction) {
-                mRealm.cancelTransaction()
-            }
-            mRealm.close()
-        }
+        cleanupRealm()
         super.onDestroy()
+    }
+
+    private fun cleanupRealm() {
+        if (isRealmInitialized()) {
+            try {
+                mRealm.removeAllChangeListeners()
+                if (mRealm.isInTransaction) {
+                    try {
+                        mRealm.commitTransaction()
+                    } catch (e: Exception) {
+                        mRealm.cancelTransaction()
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                if (!mRealm.isClosed) {
+                    mRealm.close()
+                }
+            }
+        }
     }
 
     companion object {

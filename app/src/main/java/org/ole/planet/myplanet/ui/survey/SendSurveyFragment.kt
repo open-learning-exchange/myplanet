@@ -7,33 +7,31 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.ListView
+import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
-import io.realm.Sort
-import java.util.Date
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDialogFragment
 import org.ole.planet.myplanet.databinding.FragmentSendSurveyBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.createSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.SubmissionRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class SendSurveyFragment : BaseDialogFragment() {
     private lateinit var fragmentSendSurveyBinding: FragmentSendSurveyBinding
-    lateinit var mRealm: Realm
+    private var users: List<RealmUserModel> = emptyList()
     @Inject
-    lateinit var databaseService: DatabaseService
+    lateinit var submissionRepository: SubmissionRepository
+    @Inject
+    lateinit var userRepository: UserRepository
     override val key: String
         get() = "surveyId"
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         fragmentSendSurveyBinding = FragmentSendSurveyBinding.inflate(inflater, container, false)
-        mRealm = databaseService.realmInstance
         if (TextUtils.isEmpty(id)) {
             dismiss()
             return fragmentSendSurveyBinding.root
@@ -42,33 +40,21 @@ class SendSurveyFragment : BaseDialogFragment() {
         return fragmentSendSurveyBinding.root
     }
 
-    private fun createSurveySubmission(userId: String?) {
-        val mRealm = databaseService.realmInstance
-        val exam = mRealm.where(RealmStepExam::class.java).equalTo("id", id).findFirst()
-        mRealm.beginTransaction()
-        var sub = mRealm.where(RealmSubmission::class.java).equalTo("userId", userId)
-            .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) id + "@" + exam?.courseId else id)
-            .sort("lastUpdateTime", Sort.DESCENDING).equalTo("status", "pending").findFirst()
-        sub = createSubmission(sub, mRealm)
-        sub.parentId = if (!TextUtils.isEmpty(exam?.courseId)) id + "@" + exam?.courseId else id
-        sub.userId = userId
-        sub.type = "survey"
-        sub.status = "pending"
-        sub.startTime = Date().time
-        mRealm.commitTransaction()
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val users: List<RealmUserModel> = mRealm.where(RealmUserModel::class.java).findAll()
-        initListView(users)
+        viewLifecycleOwner.lifecycleScope.launch {
+            users = userRepository.getAllUsers()
+            initListView(users)
+        }
         fragmentSendSurveyBinding.sendSurvey.setOnClickListener {
-            for (i in fragmentSendSurveyBinding.listUsers.selectedItemsList.indices) {
-                val u = users[i]
-                createSurveySubmission(u.id)
+            viewLifecycleOwner.lifecycleScope.launch {
+                for (i in fragmentSendSurveyBinding.listUsers.selectedItemsList.indices) {
+                    val u = users[i]
+                    submissionRepository.createSurveySubmission(id!!, u.id)
+                }
+                Utilities.toast(activity, getString(R.string.survey_sent_to_users))
+                dismiss()
             }
-            Utilities.toast(activity, getString(R.string.survey_sent_to_users))
-            dismiss()
         }
     }
 
@@ -77,4 +63,5 @@ class SendSurveyFragment : BaseDialogFragment() {
         fragmentSendSurveyBinding.listUsers.choiceMode = ListView.CHOICE_MODE_MULTIPLE
         fragmentSendSurveyBinding.listUsers.adapter = adapter
     }
+
 }

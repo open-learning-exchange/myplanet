@@ -17,9 +17,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import java.io.File
+import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 
 class WebViewActivity : AppCompatActivity() {
     private lateinit var activityWebViewBinding: ActivityWebViewBinding
@@ -30,7 +31,7 @@ class WebViewActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         activityWebViewBinding = ActivityWebViewBinding.inflate(layoutInflater)
         setContentView(activityWebViewBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityWebViewBinding.root)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, activityWebViewBinding.root)
         val dataFromDeepLink = intent.dataString
         fromDeepLink = !TextUtils.isEmpty(dataFromDeepLink)
         val title: String? = intent.getStringExtra("title")
@@ -64,14 +65,35 @@ class WebViewActivity : AppCompatActivity() {
 
     private fun setupWebView() {
         activityWebViewBinding.contentWebView.wv.settings.apply {
-            javaScriptEnabled = true
-            javaScriptCanOpenWindowsAutomatically = true
-            allowFileAccess = true
+            // Only enable JavaScript for local resources that need it
+            val isLocalResource = intent.getStringExtra("RESOURCE_ID") != null
+            javaScriptEnabled = isLocalResource
+            javaScriptCanOpenWindowsAutomatically = false
+            
+            // File access settings - only allow for local resources
+            allowFileAccess = isLocalResource
+            allowContentAccess = false
+            allowFileAccessFromFileURLs = false
+            allowUniversalAccessFromFileURLs = false
+            
+            // Safe settings
             domStorageEnabled = true
-            allowContentAccess = true
-            allowFileAccessFromFileURLs = true
-            allowUniversalAccessFromFileURLs = true
             defaultTextEncodingName = "utf-8"
+            
+            // Security settings
+            setSupportZoom(false)
+            builtInZoomControls = false
+            displayZoomControls = false
+            
+            // Disable geolocation
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
+                setGeolocationEnabled(false)
+            }
+            
+            // Disable save password
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN_MR2) {
+                setSavePassword(false)
+            }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val nightModeFlags = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
@@ -97,6 +119,14 @@ class WebViewActivity : AppCompatActivity() {
         activityWebViewBinding.contentWebView.wv.webViewClient = object : WebViewClient() {
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
+                
+                // Validate URL before loading
+                if (!isUrlSafe(url)) {
+                    view.stopLoading()
+                    finish()
+                    return
+                }
+                
                 if (!url.startsWith("file://") && url.endsWith("/eng/")) {
                     finish()
                 }
@@ -106,6 +136,13 @@ class WebViewActivity : AppCompatActivity() {
                     val i = url.toUri()
                     activityWebViewBinding.contentWebView.webSource.text = i.host
                 }
+            }
+            
+            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                val url = request?.url?.toString() ?: return true
+                
+                // Use our comprehensive URL safety check
+                return !isUrlSafe(url) // Block unsafe URLs, allow safe ones
             }
 
             override fun onPageFinished(view: WebView, url: String) {
@@ -164,6 +201,59 @@ class WebViewActivity : AppCompatActivity() {
         cookieManager.removeAllCookies(null)
         cookieManager.flush()
     }
+    
+    private fun isUrlSafe(url: String): Boolean {
+        return try {
+            val uri = url.toUri()
+            when {
+                // Allow HTTPS URLs
+                uri.scheme == "https" -> true
+                
+                // Allow HTTP URLs only for trusted Planet servers
+                uri.scheme == "http" -> isTrustedPlanetServer(uri.host)
+                
+                // Allow file URLs only for local resources and only from app's directory
+                uri.scheme == "file" -> {
+                    val resourceId = intent.getStringExtra("RESOURCE_ID")
+                    if (resourceId != null) {
+                        val appDir = getExternalFilesDir(null)?.absolutePath ?: ""
+                        url.startsWith("file://$appDir")
+                    } else {
+                        false
+                    }
+                }
+                // Block everything else
+                else -> false
+            }
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
+    private fun isTrustedPlanetServer(host: String?): Boolean {
+        if (host == null) return false
+
+        val trustedUrls = listOfNotNull(
+            BuildConfig.PLANET_LEARNING_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_GUATEMALA_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_SANPABLO_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_SANPABLO_CLONE_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_EARTH_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_SOMALIA_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_VI_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_XELA_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_URIUR_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_URIUR_CLONE_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_RUIRU_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_EMBAKASI_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_EMBAKASI_CLONE_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_CAMBRIDGE_URL.takeIf { it.isNotEmpty() }
+        )
+
+        return trustedUrls.any { url ->
+            host == url || host.endsWith(".$url")
+        }
+    }
 
     private fun setListeners() {
         activityWebViewBinding.contentWebView.wv.webChromeClient = object : WebChromeClient() {
@@ -179,12 +269,30 @@ class WebViewActivity : AppCompatActivity() {
             }
 
             override fun onReceivedTitle(view: WebView, title: String) {
-                activityWebViewBinding.contentWebView.webTitle.text = title
-                super.onReceivedTitle(view, title)
+                val sanitizedTitle = title.take(100).filter { it.isLetterOrDigit() || it.isWhitespace() || it in ".,!?-_" }
+                activityWebViewBinding.contentWebView.webTitle.text = sanitizedTitle
+                super.onReceivedTitle(view, sanitizedTitle)
             }
 
             override fun onConsoleMessage(message: String?, lineNumber: Int, sourceID: String?) {
-                super.onConsoleMessage(message, lineNumber, sourceID)
+                if (BuildConfig.DEBUG) {
+                    super.onConsoleMessage(message, lineNumber, sourceID)
+                }
+            }
+
+            override fun onShowFileChooser(
+                webView: WebView?,
+                filePathCallback: android.webkit.ValueCallback<Array<android.net.Uri>>?,
+                fileChooserParams: FileChooserParams?
+            ): Boolean {
+                return false
+            }
+
+            override fun onGeolocationPermissionsShowPrompt(
+                origin: String?,
+                callback: android.webkit.GeolocationPermissions.Callback?
+            ) {
+                callback?.invoke(origin, false, false)
             }
         }
     }

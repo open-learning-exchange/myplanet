@@ -37,7 +37,6 @@
     <string name="menu_home">Inicio</string>
     <string name="menu_library">Nuestra biblioteca</string>
     <string name="menu_courses">Nuestros cursos</string>
-    <string name="menu_meetups">Reuniones</string>
     <string name="menu_surveys">Encuestas</string>
     <string name="menu_logout">Cerrar sesión</string>
     <string name="menu_feedback">Comentario</string>
@@ -407,7 +406,6 @@
     <string name="tasks">Tareas</string>
     <string name="join_requests">Solicitudes de unión</string>
     <string name="add_image">Agregar imagen</string>
-    <string name="addImageToMessage">Beta agregar imagen al mensaje</string>
     <string name="clear_data">Borrar datos</string>
     <string name="reset_app">Restablecer aplicación</string>
     <string name="freeup_space">Liberar espacio en disco</string>
@@ -1041,6 +1039,10 @@
     <string name="community_leaders">Líderes comunitarios</string>
     <string name="services">Servicios</string>
     <string name="survey_taken">Encuesta realizada</string>
+    <plurals name="survey_taken_count">
+        <item quantity="one">Encuesta realizada %d vez</item>
+        <item quantity="other">Encuesta realizada %d veces</item>
+    </plurals>
     <string name="times">veces</string>
     <string name="time">tiempo</string>
     <string name="ai_chat">Chat IA</string>
@@ -1104,6 +1106,11 @@
     <string name="no_team_resources">recursos de equipo no disponibles</string>
     <string name="no_tasks">tareas no disponibles</string>
     <string name="no_join_request_available">no hay solicitud de unirse disponible</string>
+    <string name="no_description_available">No hay descripción disponible</string>
+    <string name="no_links_available">No hay enlaces disponibles</string>
+    <string name="user_requested_to_join_team">%1$s ha solicitado unirse a %2$s</string>
+    <string name="join_request_prefix">Solicitud de Unión:</string>
+    <string name="new_request_to_join">Nueva solicitud para unirse a %s</string>
     <string name="no_news">noticias no disponibles</string>
     <string name="no_surveys">encuestas no disponibles</string>
     <string name="edit_image">editar imagen de perfil</string>
@@ -1140,6 +1147,7 @@
     <string name="message_placeholder">%s</string>
     <string name="reports">informes</string>
     <string name="number_placeholder">%d</string>
+    <string name="float_placeholder">%.1f</string>
     <string name="date_range">%1$s a %2$s</string>
     <string name="string_range">%1$s - %2$s</string>
     <string name="team_financial_report">Informe financiero de %s</string>
@@ -1158,7 +1166,6 @@
     <string name="visit_count">%1$s (%2$d %3$s)</string>
     <string name="two_strings">%1$s %2$s</string>
     <string name="three_strings">%1$s %2$s %3$s</string>
-    <string name="download_sync_files">descargar archivos de sincronización</string>
     <string name="member_description">%1$s (%2$d visitas)</string>
     <string name="dark_mode">Modo oscuro</string>
     <string name="last_visit">Última visita: %1$s</string>
@@ -1379,5 +1386,6 @@
     <string name="failed_to_delete_report">Error al eliminar el informe. Por favor, inténtalo de nuevo</string>
     <string name="delete_report">Eliminar informe</string>
     <string name="checking_server_availability">verificando disponibilidad del servidor…</string>
+    <string name="loading_courses">Cargando cursos…</string>
 
 </resources>

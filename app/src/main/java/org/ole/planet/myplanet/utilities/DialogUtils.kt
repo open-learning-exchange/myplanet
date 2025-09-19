@@ -123,13 +123,18 @@ object DialogUtils {
     }
 
     @JvmStatic
-    fun getAlertDialog(context: Context, message: String, pos: String, listener: DialogInterface.OnClickListener?): AlertDialog {
+    fun getDialog(
+        context: Context,
+        message: String,
+        pos: String,
+        listener: DialogInterface.OnClickListener?
+    ): AlertDialog {
         return AlertDialog.Builder(ContextThemeWrapper(context, R.style.CustomAlertDialog))
             .setMessage(message)
             .setIcon(R.drawable.courses)
             .setPositiveButton(pos, listener)
             .setNegativeButton(R.string.button_cancel, null)
-            .show()
+            .create()
     }
 
     @JvmStatic
@@ -142,14 +147,14 @@ object DialogUtils {
     }
 
     @JvmStatic
-    fun getAlertDialog(context: Context, title: String, v: View): AlertDialog {
+    fun getDialog(context: Context, title: String, v: View): AlertDialog {
         return AlertDialog.Builder(ContextThemeWrapper(context, R.style.CustomAlertDialog))
             .setTitle(title)
             .setIcon(R.drawable.ic_edit)
             .setView(v)
             .setPositiveButton(R.string.submit, null)
             .setNegativeButton(R.string.cancel, null)
-            .show()
+            .create()
     }
 
     @JvmStatic
@@ -167,9 +172,9 @@ object DialogUtils {
 
     @JvmStatic
     fun startDownloadUpdate(context: Context, path: String, progressDialog: CustomProgressDialog?) {
-        Service(MainApplication.context).checkCheckSum(object : Service.ChecksumCallback {
+        Service(context.applicationContext).checkCheckSum(object : Service.ChecksumCallback {
             override fun onMatch() {
-                Utilities.toast(MainApplication.context, context.getString(R.string.apk_already_exists))
+                Utilities.toast(context, context.getString(R.string.apk_already_exists))
                 FileUtils.installApk(context, path)
             }
 

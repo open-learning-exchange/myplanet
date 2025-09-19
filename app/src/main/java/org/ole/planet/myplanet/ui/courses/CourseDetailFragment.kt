@@ -6,7 +6,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
-import io.realm.Realm
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -25,7 +24,6 @@ import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var _binding: FragmentCourseDetailBinding? = null
     private val binding get() = _binding!!
-    private lateinit var cRealm: Realm
     var courses: RealmMyCourse? = null
     var user: RealmUserModel? = null
     var id: String? = null
@@ -38,8 +36,12 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentCourseDetailBinding.inflate(inflater, container, false)
-        cRealm = databaseService.realmInstance
-        courses = cRealm.where(RealmMyCourse::class.java).equalTo("courseId", id).findFirst()
+        courses = databaseService.withRealm { realm ->
+            realm.where(RealmMyCourse::class.java)
+                .equalTo("courseId", id)
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }
+        }
         user = UserProfileDbHandler(requireContext()).userModel
         return binding.root
     }
@@ -62,11 +64,26 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             350
         )
         setMarkdownText(binding.description, markdownContentWithLocalPaths)
-        binding.noOfExams.text = context?.getString(R.string.number_placeholder, getNoOfExam(cRealm, id))
-        val resources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("courseId", id).equalTo("resourceOffline", false).isNotNull("resourceLocalAddress").findAll()
-        setResourceButton(resources, binding.btnResources)
-        val downloadedResources: List<RealmMyLibrary> = cRealm.where(RealmMyLibrary::class.java).equalTo("resourceOffline", true).equalTo("courseId", id).isNotNull("resourceLocalAddress").findAll()
-        setOpenResourceButton(downloadedResources, binding.btnOpen)
+        databaseService.withRealm { realm ->
+            binding.noOfExams.text = context?.getString(
+                R.string.number_placeholder,
+                getNoOfExam(realm, id)
+            )
+            val resources: List<RealmMyLibrary> = realm.where(RealmMyLibrary::class.java)
+                .equalTo("courseId", id)
+                .equalTo("resourceOffline", false)
+                .isNotNull("resourceLocalAddress")
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+            setResourceButton(resources, binding.btnResources)
+            val downloadedResources: List<RealmMyLibrary> = realm.where(RealmMyLibrary::class.java)
+                .equalTo("resourceOffline", true)
+                .equalTo("courseId", id)
+                .isNotNull("resourceLocalAddress")
+                .findAll()
+                .let { realm.copyFromRealm(it) }
+            setOpenResourceButton(downloadedResources, binding.btnOpen)
+        }
         onRatingChanged()
         setStepsList()
     }
@@ -80,14 +97,18 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private fun setStepsList() {
-        val steps = getCourseSteps(cRealm, courses?.courseId)
+        val steps = databaseService.withRealm { realm ->
+            getCourseSteps(realm, courses?.courseId).let { realm.copyFromRealm(it) }
+        }
         binding.stepsList.layoutManager = LinearLayoutManager(activity)
-        binding.stepsList.adapter = AdapterSteps(requireActivity(), steps, cRealm)
+        binding.stepsList.adapter = AdapterSteps(requireActivity(), steps, submissionRepository)
     }
 
     override fun onRatingChanged() {
-        val `object` = getRatingsById(cRealm, "course", courses?.courseId, user?.id)
-        setRatings(`object`)
+        databaseService.withRealm { realm ->
+            val `object` = getRatingsById(realm, "course", courses?.courseId, user?.id)
+            setRatings(`object`)
+        }
     }
 
     override fun onDownloadComplete() {
@@ -96,9 +117,6 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     override fun onDestroyView() {
-        if (this::cRealm.isInitialized && !cRealm.isClosed) {
-            cRealm.close()
-        }
         _binding = null
         super.onDestroyView()
     }

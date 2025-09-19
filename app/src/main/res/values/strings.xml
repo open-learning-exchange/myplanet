@@ -37,7 +37,6 @@
     <string name="menu_home">Home</string>
     <string name="menu_library">Library</string>
     <string name="menu_courses">Courses</string>
-    <string name="menu_meetups">Meetups</string>
     <string name="menu_surveys">Surveys</string>
     <string name="menu_logout">Logout</string>
     <string name="menu_feedback">Feedback</string>
@@ -407,7 +406,6 @@
     <string name="tasks">Tasks</string>
     <string name="join_requests">Join Requests</string>
     <string name="add_image">Add Image</string>
-    <string name="addImageToMessage">beta add image to message</string>
     <string name="clear_data">clear data</string>
     <string name="reset_app">reset app</string>
     <string name="freeup_space">free-up disk space</string>
@@ -706,7 +704,7 @@
     <string name="return_to_the_home_tab_to_access_mycourses">\n\n Return to the Home tab to access myCourses.\n</string>
     <string name="go_to_mycourses">Go To MyCourses</string>
     <string name="and">"And "</string>
-    <string name="more_course_s">" more course(s)...\n"</string>
+    <string name="more_course_s">" more course(s)…\n"</string>
     <string name="retake_test">Retake Test [%d]</string>
     <string name="do_you_want_to_join_this_course">Do you want to join this course?</string>
     <string name="join_this_course">Join this course</string>
@@ -868,11 +866,11 @@
     <string name="planet_server_not_reachable">Planet server not reachable.</string>
     <string name="select_language">select language</string>
     <string name="thank_you">Thank You!</string>
-    <string name="please_wait">Please wait...</string>
+    <string name="please_wait">Please wait…</string>
     <string name="update_later">Update Later</string>
-    <string name="checking_version">Checking version....</string>
+    <string name="checking_version">Checking version…</string>
     <string name="please_enter_your_password">Please enter your password</string>
-    <string name="downloading">"Downloading.... "</string>
+    <string name="downloading">"Downloading… "</string>
     <string name="pin_is_required">Pin is required.</string>
     <string name="invalid_url">Invalid Url</string>
     <string name="please_enter_valid_url_to_continue">Please enter valid url to continue.</string>
@@ -1041,6 +1039,10 @@
     <string name="community_leaders">Community Leaders</string>
     <string name="services">Services</string>
     <string name="survey_taken">Survey taken</string>
+    <plurals name="survey_taken_count">
+        <item quantity="one">Survey taken %d time</item>
+        <item quantity="other">Survey taken %d times</item>
+    </plurals>
     <string name="times">times</string>
     <string name="time">time</string>
     <string name="ai_chat">AI Chat</string>
@@ -1104,6 +1106,11 @@
     <string name="no_team_resources">team resources not available</string>
     <string name="no_tasks">tasks not available</string>
     <string name="no_join_request_available">no join request available</string>
+    <string name="no_description_available">No description available</string>
+    <string name="no_links_available">No links available</string>
+    <string name="user_requested_to_join_team">%1$s has requested to join %2$s</string>
+    <string name="join_request_prefix">Join Request:</string>
+    <string name="new_request_to_join">New request to join %s</string>
     <string name="no_news">news not available</string>
     <string name="no_surveys">surveys not available</string>
     <string name="edit_image">edit profile image</string>
@@ -1362,6 +1369,7 @@
     <string name="syncing_team_data">Syncing team data…</string>
     <string name="syncing_chat_history">Syncing chat history…</string>
     <string name="syncing_courses_data">Syncing courses data…</string>
+    <string name="loading_courses">Loading courses…</string>
     <string name="syncing_feedback">Syncing feedback…</string>
     <string name="syncing_health_data">Syncing health data…</string>
     <string name="syncing_resources">Syncing resources…</string>

@@ -36,8 +36,6 @@ object NewsActions {
         val v = android.view.LayoutInflater.from(context).inflate(R.layout.alert_input, null)
         val tlInput = v.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.tl_input)
         val et = v.findViewById<EditText>(R.id.et_input)
-        v.findViewById<android.view.View>(R.id.ll_image).visibility =
-            if (Constants.showBetaFeature(Constants.KEY_NEWSADDIMAGE, context)) android.view.View.VISIBLE else android.view.View.GONE
         val llImage = v.findViewById<LinearLayout>(R.id.ll_alert_image)
         v.findViewById<android.view.View>(R.id.add_news_image).setOnClickListener { listener?.addImage(llImage) }
         return EditDialogComponents(v, et, tlInput, llImage)
@@ -169,19 +167,39 @@ object NewsActions {
             list.removeAt(position)
         }
         if (teamName.isNotEmpty() || ar.size() < 2) {
-            news?.let {
-                deleteChildPosts(realm, it.id, list)
-                it.deleteFromRealm()
+            news?.let { newsItem ->
+                deleteChildPosts(realm, newsItem.id, list)
+
+                val managedNews = if (newsItem.isManaged) {
+                    newsItem
+                } else {
+                    realm.where(RealmNews::class.java)
+                        .equalTo("id", newsItem.id)
+                        .findFirst()
+                }
+                
+                managedNews?.deleteFromRealm()
             }
         } else {
-            val filtered = JsonArray().apply {
-                ar.forEach { elem ->
-                    if (!elem.asJsonObject.has("sharedDate")) {
-                        add(elem)
+            news?.let { newsItem ->
+                val filtered = JsonArray().apply {
+                    ar.forEach { elem ->
+                        if (!elem.asJsonObject.has("sharedDate")) {
+                            add(elem)
+                        }
                     }
                 }
+                
+                val managedNews = if (newsItem.isManaged) {
+                    newsItem
+                } else {
+                    realm.where(RealmNews::class.java)
+                        .equalTo("id", newsItem.id)
+                        .findFirst()
+                }
+                
+                managedNews?.viewIn = Gson().toJson(filtered)
             }
-            news?.viewIn = Gson().toJson(filtered)
         }
         realm.commitTransaction()
         listener?.onDataChanged()

@@ -104,7 +104,7 @@ fun SyncActivity.refreshServerList() {
         serverListAddresses,
         settings.getString("pinnedServerUrl", null),
     )
-    serverAddressAdapter?.updateList(filteredList)
+    serverAddressAdapter?.submitList(filteredList)
 
     val pinnedUrl = settings.getString("serverURL", "")
     val pinnedIndex = filteredList.indexOfFirst {
@@ -137,12 +137,13 @@ fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: Mate
     val storedPin = settings.getString("serverPin", null)
     val urlWithoutProtocol = storedUrl?.replace(Regex("^https?://"), "")
 
+    val filteredList = ServerConfigUtils.getFilteredList(
+        showAdditionalServers,
+        serverListAddresses,
+        settings.getString("pinnedServerUrl", null),
+    )
+
     serverAddressAdapter = ServerAddressAdapter(
-        ServerConfigUtils.getFilteredList(
-            showAdditionalServers,
-            serverListAddresses,
-            settings.getString("pinnedServerUrl", null),
-        ),
         { serverListAddress ->
             val actualUrl = serverListAddress.url.replace(Regex("^https?://"), "")
             binding.inputServerUrl.setText(actualUrl)
@@ -164,6 +165,8 @@ fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: Mate
         },
         urlWithoutProtocol,
     )
+
+    serverAddressAdapter?.submitList(filteredList)
 
     serverAddresses.adapter = serverAddressAdapter
 

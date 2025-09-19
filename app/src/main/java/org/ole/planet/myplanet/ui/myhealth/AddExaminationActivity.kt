@@ -29,13 +29,14 @@ import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmMyHealthPojo
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.ui.myhealth.RealmExamination
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.decrypt
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.encrypt
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utilities.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.DimenUtils.dpToPx
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getBoolean
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.TimeUtils.getAge
@@ -73,7 +74,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         super.onCreate(savedInstanceState)
         binding = ActivityAddExaminationBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, binding.root)
         supportActionBar?.setHomeButtonEnabled(true)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         customDiag = HashSet()
@@ -87,6 +88,12 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             pojo = mRealm.where(RealmMyHealthPojo::class.java).equalTo("userId", userId).findFirst()
         }
         user = mRealm.where(RealmUserModel::class.java).equalTo("id", userId).findFirst()
+        if (user != null && (user?.key == null || user?.iv == null)) {
+            if (!mRealm.isInTransaction) mRealm.beginTransaction()
+            user?.key = generateKey()
+            user?.iv = generateIv()
+            mRealm.commitTransaction()
+        }
         if (pojo != null && !TextUtils.isEmpty(pojo?.data)) {
             health = gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
         }
@@ -276,7 +283,9 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         examination?.isHasInfo = hasInfo
         pojo?.isUpdated = true
         try {
-            examination?.data = encrypt(gson.toJson(sign), user?.key!!, user?.iv!!)
+            val key = user?.key ?: generateKey().also { user?.key = it }
+            val iv = user?.iv ?: generateIv().also { user?.iv = it }
+            examination?.data = encrypt(gson.toJson(sign), key, iv)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -366,7 +375,11 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
                 pojo?.userId = user?._id
             }
             health?.lastExamination = Date().time
-            pojo?.data = encrypt(gson.toJson(health), user?.key, user?.iv)
+            val userKey = user?.key
+            val userIv = user?.iv
+            if (userKey != null && userIv != null) {
+                pojo?.data = encrypt(gson.toJson(health), userKey, userIv)
+            }
         } catch (e: Exception) {
             e.printStackTrace()
             Utilities.toast(this, getString(R.string.unable_to_add_health_record))

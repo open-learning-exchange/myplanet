@@ -37,7 +37,6 @@
     <string name="menu_home">الرئيسية</string>
     <string name="menu_library">المكتبة</string>
     <string name="menu_courses">الدورات</string>
-    <string name="menu_meetups">التجمعات</string>
     <string name="menu_surveys">الاستبيانات</string>
     <string name="menu_logout">تسجيل الخروج</string>
     <string name="menu_feedback">ملاحظات</string>
@@ -407,7 +406,6 @@
     <string name="tasks">المهام</string>
     <string name="join_requests">طلبات الانضمام</string>
     <string name="add_image">إضافة صورة</string>
-    <string name="addImageToMessage">إضافة صورة للرسالة (بيتا)</string>
     <string name="clear_data">مسح البيانات</string>
     <string name="reset_app">إعادة تعيين التطبيق</string>
     <string name="freeup_space">تحرير مساحة القرص</string>
@@ -1041,6 +1039,10 @@
     <string name="community_leaders">قادة المجتمع</string>
     <string name="services">الخدمات</string>
     <string name="survey_taken">تم أخذ الاستبيان</string>
+    <plurals name="survey_taken_count">
+        <item quantity="one">تم أخذ الاستبيان %d مرة</item>
+        <item quantity="other">تم أخذ الاستبيان %d مرات</item>
+    </plurals>
     <string name="times">مرات</string>
     <string name="time">الوقت</string>
     <string name="ai_chat">AI Chat</string>
@@ -1104,6 +1106,11 @@
     <string name="no_team_resources">لا تتوفر موارد الفريق</string>
     <string name="no_tasks">لا تتوفر مهام</string>
     <string name="no_join_request_available">لا تتوفر طلبات الانضمام</string>
+    <string name="no_description_available">لا تتوفر وصف</string>
+    <string name="no_links_available">لا تتوفر روابط</string>
+    <string name="user_requested_to_join_team">%1$s قد طلب الانضمام إلى %2$s</string>
+    <string name="join_request_prefix">طلب الانضمام:</string>
+    <string name="new_request_to_join">طلب جديد للانضمام إلى %s</string>
     <string name="no_news">لا تتوفر أخبار</string>
     <string name="no_surveys">لا تتوفر استطلاعات</string>
     <string name="edit_image">تحرير صورة الملف الشخصي</string>
@@ -1379,5 +1386,6 @@
     <string name="failed_to_delete_report">فشل في حذف التقرير. الرجاء المحاولة مرة أخرى</string>
     <string name="delete_report">حذف التقرير</string>
     <string name="checking_server_availability">فحص توفر الخادم…</string>
+    <string name="loading_courses">جارٍ تحميل الدورات…</string>
 
 </resources>

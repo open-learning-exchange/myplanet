@@ -18,7 +18,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Case
 import io.realm.Realm
 import java.util.Date
 import java.util.concurrent.TimeUnit
@@ -33,7 +32,6 @@ import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
@@ -50,30 +48,32 @@ import org.ole.planet.myplanet.utilities.ServerUrlMapper
 import org.ole.planet.myplanet.utilities.TimeUtils
 
 class BellDashboardFragment : BaseDashboardFragment() {
-    private lateinit var fragmentHomeBellBinding: FragmentHomeBellBinding
+    private var _binding: FragmentHomeBellBinding? = null
+    private val binding get() = _binding!!
     private var networkStatusJob: Job? = null
     private val viewModel: BellDashboardViewModel by viewModels()
     var user: RealmUserModel? = null
     private var surveyReminderJob: Job? = null
+    private var surveyListDialog: AlertDialog? = null
 
     companion object {
         private const val PREF_SURVEY_REMINDERS = "survey_reminders"
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentHomeBellBinding = FragmentHomeBellBinding.inflate(inflater, container, false)
+        _binding = FragmentHomeBellBinding.inflate(inflater, container, false)
         user = UserProfileDbHandler(requireContext()).userModel
-        val view = fragmentHomeBellBinding.root
+        val view = binding.root
         initView(view)
         declareElements()
         onLoaded(view)
-        return fragmentHomeBellBinding.root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        fragmentHomeBellBinding.cardProfileBell.txtDate.text = TimeUtils.formatDate(Date().time, "")
-        fragmentHomeBellBinding.cardProfileBell.txtCommunityName.text = model?.planetCode
+        binding.cardProfileBell.txtDate.text = TimeUtils.formatDate(Date().time, "")
+        binding.cardProfileBell.txtCommunityName.text = model?.planetCode
         setupNetworkStatusMonitoring()
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         showBadges()
@@ -98,8 +98,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun setNetworkIndicatorColor(colorRes: Int) {
         if (isAdded && view?.isAttachedToWindow == true) {
-            fragmentHomeBellBinding.cardProfileBell.imageView.borderColor =
-                ContextCompat.getColor(requireContext(), colorRes)
+            val color = ContextCompat.getColor(requireContext(), colorRes)
+            binding.cardProfileBell.imageView.borderColor = color
         }
     }
 
@@ -107,18 +107,27 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val serverCheckPrimary = lifecycleScope.async(Dispatchers.IO) {
             viewModel.checkServerConnection(mapping.primaryUrl)
         }
-        val serverCheckAlternative = mapping.alternativeUrl?.let {
-            lifecycleScope.async(Dispatchers.IO) { viewModel.checkServerConnection(it) }
-        }
 
         val primaryAvailable = serverCheckPrimary.await()
-        val alternativeAvailable = serverCheckAlternative?.await() == true
-        return primaryAvailable || alternativeAvailable
+
+        if (primaryAvailable) {
+            return true
+        }
+
+        mapping.alternativeUrl?.let {
+            val serverCheckAlternative = lifecycleScope.async(Dispatchers.IO) {
+                viewModel.checkServerConnection(it)
+            }
+            val alternativeAvailable = serverCheckAlternative.await()
+            return alternativeAvailable
+        }
+
+        return false
     }
 
     private suspend fun handleConnectingState() {
         setNetworkIndicatorColor(R.color.md_yellow_600)
-        val updateUrl = settings?.getString("serverURL", "") ?: return
+        val updateUrl = settings.getString("serverURL", "") ?: return
         val mapping = ServerUrlMapper().processUrl(updateUrl)
         try {
             val reachable = isServerReachable(mapping)
@@ -144,22 +153,25 @@ class BellDashboardFragment : BaseDashboardFragment() {
         if (checkScheduledReminders()) {
             return
         }
-        val pendingSurveys = getPendingSurveys(user?.id, mRealm)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val pendingSurveys = submissionRepository.getUniquePendingSurveys(user?.id)
 
-        if (pendingSurveys.isNotEmpty()) {
-            val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
-            val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
-            if (preferences.contains("reminder_time_$surveyIds")) {
-                return
+            if (pendingSurveys.isNotEmpty()) {
+                val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
+                val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
+                if (preferences.contains("reminder_time_$surveyIds")) {
+                    return@launch
+                }
+                val title = getString(
+                    R.string.surveys_to_complete,
+                    pendingSurveys.size,
+                    if (pendingSurveys.size > 1) "surveys" else "survey"
+                )
+                val surveyTitles = submissionRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
+                showSurveyListDialog(pendingSurveys, title, surveyTitles)
+            } else {
+                checkScheduledReminders()
             }
-            val title = getString(
-                R.string.surveys_to_complete,
-                pendingSurveys.size,
-                if (pendingSurveys.size > 1) "surveys" else "survey"
-            )
-            showSurveyListDialog(pendingSurveys, title)
-        } else {
-            checkScheduledReminders()
         }
     }
 
@@ -289,59 +301,31 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun showPendingSurveysReminder(pendingSurveys: List<RealmSubmission>) {
-        val title = getString(
-            R.string.reminder_surveys_to_complete,
-            pendingSurveys.size,
-            if (pendingSurveys.size > 1) "surveys" else "survey"
-        )
-        showSurveyListDialog(pendingSurveys, title, dismissOnNeutral = true)
-    }
+        if (pendingSurveys.isEmpty()) return
 
-    private fun getPendingSurveys(userId: String?, realm: Realm): List<RealmSubmission> {
-        val pendingSurveys = realm.where(RealmSubmission::class.java).equalTo("userId", userId)
-            .equalTo("type", "survey").equalTo("status", "pending", Case.INSENSITIVE).findAll()
-
-        val uniqueSurveyMap = mutableMapOf<String, RealmSubmission>()
-
-        pendingSurveys.forEach { submission ->
-            val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
-
-            val exam = realm.where(RealmStepExam::class.java)
-                .equalTo("id", examId)
-                .findFirst()
-
-            if (exam != null && !uniqueSurveyMap.containsKey(examId)) {
-                uniqueSurveyMap[examId] = submission
-            }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val title = getString(
+                R.string.reminder_surveys_to_complete,
+                pendingSurveys.size,
+                if (pendingSurveys.size > 1) "surveys" else "survey"
+            )
+            val surveyTitles = submissionRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
+            showSurveyListDialog(pendingSurveys, title, surveyTitles, dismissOnNeutral = true)
         }
-
-        return uniqueSurveyMap.values.toList()
-    }
-
-    private fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>, realm: Realm): List<String> {
-        val titles = mutableListOf<String>()
-        submissions.forEach { submission ->
-            val examId = submission.parentId?.split("@")?.firstOrNull() ?: ""
-            val exam = realm.where(RealmStepExam::class.java)
-                .equalTo("id", examId)
-                .findFirst()
-            exam?.name?.let { titles.add(it) }
-        }
-        return titles
     }
 
     private fun showSurveyListDialog(
         pendingSurveys: List<RealmSubmission>,
         title: String,
+        surveyTitles: List<String>,
         dismissOnNeutral: Boolean = false
     ) {
-        val surveyTitles = getSurveyTitlesFromSubmissions(pendingSurveys, mRealm)
-
         val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
         val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
         recyclerView.layoutManager = LinearLayoutManager(requireActivity())
 
-        val alertDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+        surveyListDialog?.dismiss()
+        surveyListDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
             .setTitle(title)
             .setView(dialogView)
             .setPositiveButton(getString(R.string.ok)) { dialog, _ ->
@@ -355,26 +339,26 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val adapter = SurveyAdapter(surveyTitles, { position ->
             val selectedSurvey = pendingSurveys[position].id
             AdapterMySubmission.openSurvey(homeItemClickListener, selectedSurvey, true, false, "")
-        }, alertDialog)
+        }, surveyListDialog!!)
 
         recyclerView.adapter = adapter
-        alertDialog.show()
-        alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
+        surveyListDialog?.show()
+        surveyListDialog?.window?.setBackgroundDrawableResource(R.color.card_bg)
 
-        alertDialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
-            showRemindLaterDialog(pendingSurveys, alertDialog)
-            if (dismissOnNeutral) alertDialog.dismiss()
+        surveyListDialog?.getButton(AlertDialog.BUTTON_NEUTRAL)?.setOnClickListener {
+            showRemindLaterDialog(pendingSurveys, surveyListDialog!!)
+            if (dismissOnNeutral) surveyListDialog?.dismiss()
         }
     }
 
     private fun showBadges() {
-        fragmentHomeBellBinding.cardProfileBell.llBadges.removeAllViews()
+        binding.cardProfileBell.llBadges.removeAllViews()
         val completedCourses = getCompletedCourses(mRealm, user?.id)
         completedCourses.forEachIndexed { index, course ->
             val rootView = requireActivity().findViewById<ViewGroup>(android.R.id.content)
             val star = LayoutInflater.from(activity).inflate(R.layout.image_start, rootView, false) as ImageView
             setColor(course.courseId, star)
-            fragmentHomeBellBinding.cardProfileBell.llBadges.addView(star)
+            binding.cardProfileBell.llBadges.addView(star)
             star.contentDescription = "${getString(R.string.completed_course)} ${course.courseTitle}"
             star.setOnClickListener {
                 openCourse(course, index)
@@ -414,7 +398,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun declareElements() {
-        fragmentHomeBellBinding.homeCardTeams.llHomeTeam.setOnClickListener {
+        binding.homeCardTeams.llHomeTeam.setOnClickListener {
             val fragment = TeamFragment().apply {
                 arguments = Bundle().apply {
                     putBoolean("fromDashboard", true)
@@ -422,23 +406,23 @@ class BellDashboardFragment : BaseDashboardFragment() {
             }
             homeItemClickListener?.openMyFragment(fragment)
         }
-        fragmentHomeBellBinding.homeCardLibrary.myLibraryImageButton.setOnClickListener {
+        binding.homeCardLibrary.myLibraryImageButton.setOnClickListener {
             if (user?.id?.startsWith("guest") == true) {
                 guestDialog(requireContext())
             } else {
                 homeItemClickListener?.openMyFragment(ResourcesFragment())
             }
         }
-        fragmentHomeBellBinding.homeCardCourses.myCoursesImageButton.setOnClickListener {
+        binding.homeCardCourses.myCoursesImageButton.setOnClickListener {
             if (user?.id?.startsWith("guest") == true) {
                 guestDialog(requireContext())
             } else {
                 homeItemClickListener?.openMyFragment(CoursesFragment())
             }
         }
-        fragmentHomeBellBinding.fabMyActivity.setOnClickListener { openHelperFragment(MyActivityFragment()) }
-        fragmentHomeBellBinding.cardProfileBell.fabFeedback.setOnClickListener { openHelperFragment(FeedbackListFragment()) }
-        fragmentHomeBellBinding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener?.openCallFragment(LifeFragment()) }
+        binding.fabMyActivity.setOnClickListener { openHelperFragment(MyActivityFragment()) }
+        binding.cardProfileBell.fabFeedback.setOnClickListener { openHelperFragment(FeedbackListFragment()) }
+        binding.homeCardMyLife.myLifeImageButton.setOnClickListener { homeItemClickListener?.openCallFragment(LifeFragment()) }
     }
 
     private fun openHelperFragment(f: Fragment) {
@@ -448,9 +432,18 @@ class BellDashboardFragment : BaseDashboardFragment() {
         homeItemClickListener?.openCallFragment(f)
     }
 
+    override fun onPause() {
+        surveyListDialog?.dismiss()
+        surveyListDialog = null
+        super.onPause()
+    }
+
     override fun onDestroyView() {
+        surveyListDialog?.dismiss()
+        surveyListDialog = null
         networkStatusJob?.cancel()
-        surveyReminderJob?.cancel()
+       surveyReminderJob?.cancel()
         super.onDestroyView()
+        _binding = null
     }
 }

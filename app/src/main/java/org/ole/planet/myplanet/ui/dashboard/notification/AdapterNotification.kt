@@ -8,18 +8,17 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import java.util.regex.Pattern
+import kotlinx.coroutines.runBlocking
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNotificationsBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
-import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.repository.NotificationRepository
 import org.ole.planet.myplanet.utilities.DiffUtils as DiffUtilExtensions
 
 class AdapterNotification(
-    private val databaseService: DatabaseService,
+    private val notificationRepository: NotificationRepository,
     notifications: List<RealmNotification>,
-    private val onMarkAsReadClick: (Int) -> Unit,
+    private val onMarkAsReadClick: (String) -> Unit,
     private val onNotificationClick: (RealmNotification) -> Unit
 ) : ListAdapter<RealmNotification, AdapterNotification.ViewHolderNotifications>(
     DiffUtilExtensions.itemCallback(
@@ -39,7 +38,7 @@ class AdapterNotification(
 
     override fun onBindViewHolder(holder: ViewHolderNotifications, position: Int) {
         val notification = getItem(position)
-        holder.bind(notification, position)
+        holder.bind(notification)
     }
 
     fun updateNotifications(newNotifications: List<RealmNotification>) {
@@ -49,7 +48,7 @@ class AdapterNotification(
     inner class ViewHolderNotifications(private val rowNotificationsBinding: RowNotificationsBinding) :
         RecyclerView.ViewHolder(rowNotificationsBinding.root) {
 
-        fun bind(notification: RealmNotification, position: Int) {
+        fun bind(notification: RealmNotification) {
             val context = rowNotificationsBinding.root.context
             val currentNotification = formatNotificationMessage(notification, context)
             rowNotificationsBinding.title.text = Html.fromHtml(currentNotification, Html.FROM_HTML_MODE_LEGACY)
@@ -60,7 +59,7 @@ class AdapterNotification(
                 rowNotificationsBinding.btnMarkAsRead.visibility = View.VISIBLE
                 rowNotificationsBinding.root.alpha = 1.0f
                 rowNotificationsBinding.btnMarkAsRead.setOnClickListener {
-                    onMarkAsReadClick(position)
+                    onMarkAsReadClick(notification.id)
                 }
             }
 
@@ -75,20 +74,18 @@ class AdapterNotification(
                 "task" -> {
                     val datePattern = Pattern.compile("\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s\\d{1,2},\\s\\w+\\s\\d{4}\\b")
                     val matcher = datePattern.matcher(notification.message)
-
                     if (matcher.find()) {
                         val taskTitle = notification.message.substring(0, matcher.start()).trim()
                         val dateValue = notification.message.substring(matcher.start()).trim()
-                        return formatTaskNotification(context, taskTitle, dateValue)
+                        formatTaskNotification(context, taskTitle, dateValue)
                     } else {
-                        "INVALID"
+                        notification.message
                     }
                 }
                 "resource" -> {
-                    val resourceCount = notification.message.toIntOrNull()
-                    resourceCount?.let {
-                        context.getString(R.string.resource_notification, it)
-                    } ?: "INVALID"
+                    notification.message.toIntOrNull()?.let { count ->
+                        context.getString(R.string.resource_notification, count)
+                    } ?: notification.message
                 }
                 "storage" -> {
                     val storageValue = notification.message.replace("%", "").toIntOrNull()
@@ -98,41 +95,30 @@ class AdapterNotification(
                             it <= 40 -> context.getString(R.string.storage_running_low) + " ${it}%"
                             else -> context.getString(R.string.storage_available) + " ${it}%"
                         }
-                    } ?: "INVALID"
+                    } ?: notification.message
                 }
                 "join_request" -> {
-                    val teamId = notification.relatedId
-                    val teamName = databaseService.withRealm { realm ->
-                        realm.where(RealmMyTeam::class.java)
-                            .equalTo("_id", teamId)
-                            .findFirst()?.name
-                    } ?: "Unknown Team"
-                    val message = notification.message
-                    if (message.isNotEmpty()) {
-                        "<b>Join Request:</b> $message"
-                    } else {
-                        "<b>Join Request:</b> New request to join $teamName"
+                    val metadata = runBlocking {
+                        notificationRepository.getJoinRequestMetadata(notification.relatedId)
                     }
+                    val requesterName = metadata?.requesterName ?: "Unknown User"
+                    val teamName = metadata?.teamName ?: "Unknown Team"
+                    "<b>${context.getString(R.string.join_request_prefix)}</b> " +
+                        context.getString(R.string.user_requested_to_join_team, requesterName, teamName)
                 }
                 else -> notification.message
             }
         }
 
         private fun formatTaskNotification(context: Context, taskTitle: String, dateValue: String): String {
-            return databaseService.withRealm { realm ->
-                val taskObj = realm.where(RealmTeamTask::class.java)
-                    .equalTo("title", taskTitle)
-                    .findFirst()
-                val team = realm.where(RealmMyTeam::class.java)
-                    .equalTo("_id", taskObj?.teamId)
-                    .findFirst()
-                if (team?.name != null) {
-                    "<b>${team.name}</b>: ${context.getString(R.string.task_notification, taskTitle, dateValue)}"
-                } else {
-                    context.getString(R.string.task_notification, taskTitle, dateValue)
-                }
+            val metadata = runBlocking { notificationRepository.getTaskNotificationMetadata(taskTitle) }
+            val message = context.getString(R.string.task_notification, taskTitle, dateValue)
+            val teamName = metadata?.teamName
+            return if (!teamName.isNullOrEmpty()) {
+                "<b>${teamName}</b>: $message"
+            } else {
+                message
             }
         }
     }
-
 }

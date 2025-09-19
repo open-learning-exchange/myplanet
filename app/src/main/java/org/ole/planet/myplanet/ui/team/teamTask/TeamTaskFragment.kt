@@ -14,15 +14,16 @@ import android.widget.TextView
 import android.widget.TimePicker
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.gson.Gson
-import com.google.gson.JsonObject
 import com.nex3z.togglebuttongroup.SingleSelectToggleGroup
+import dagger.hilt.android.AndroidEntryPoint
 import io.realm.RealmResults
 import io.realm.Sort
 import java.util.Calendar
 import java.util.Date
 import java.util.UUID
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertTaskBinding
 import org.ole.planet.myplanet.databinding.AlertUsersSpinnerBinding
@@ -39,8 +40,10 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
-    private lateinit var fragmentTeamTaskBinding: FragmentTeamTaskBinding
+    private var _binding: FragmentTeamTaskBinding? = null
+    private val binding get() = _binding!!
     private var deadline: Calendar? = null
     private var datePicker: TextView? = null
     var list: List<RealmTeamTask>? = null
@@ -72,12 +75,16 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         timePickerDialog.show()
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentTeamTaskBinding = FragmentTeamTaskBinding.inflate(inflater, container, false)
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentTeamTaskBinding.inflate(inflater, container, false)
         if (!isMember()) {
-            fragmentTeamTaskBinding.fab.visibility = View.GONE
+            binding.fab.visibility = View.GONE
         }
-        fragmentTeamTaskBinding.fab.setOnClickListener { showTaskAlert(null) }
+        binding.fab.setOnClickListener { showTaskAlert(null) }
         teamTaskList = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId)
             .notEqualTo("status", "archived").findAllAsync()
 
@@ -85,7 +92,7 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
             updatedTeamTaskList(results)
         }
 
-        return fragmentTeamTaskBinding.root
+        return binding.root
     }
 
     private fun showTaskAlert(t: RealmTeamTask?) {
@@ -128,7 +135,6 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                 Utilities.toast(activity, getString(R.string.deadline_is_required))
             } else {
                 createOrUpdateTask(task, desc, t)
-                setAdapter()
                 alertDialog.dismiss()
             }
         }
@@ -136,41 +142,39 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     }
 
     private fun createOrUpdateTask(task: String, desc: String, teamTask: RealmTeamTask?) {
-        var realmTeamTask = teamTask
-        val isCreate = realmTeamTask == null
-        if (!mRealm.isInTransaction) {
-            mRealm.beginTransaction()
+        val isCreate = teamTask == null
+        val realmTeamTask = teamTask?.let { mRealm.copyFromRealm(it) } ?: RealmTeamTask().apply {
+            id = UUID.randomUUID().toString()
         }
-        if (realmTeamTask == null) {
-            realmTeamTask = mRealm.createObject(RealmTeamTask::class.java, "${UUID.randomUUID()}")
+        realmTeamTask.title = task
+        realmTeamTask.description = desc
+        realmTeamTask.deadline = deadline?.timeInMillis!!
+        realmTeamTask.teamId = teamId
+        realmTeamTask.isUpdated = true
+        lifecycleScope.launch {
+            teamRepository.upsertTask(realmTeamTask)
+            if (binding.rvTask.adapter != null) {
+                binding.rvTask.adapter?.notifyDataSetChanged()
+                showNoData(binding.tvNodata, binding.rvTask.adapter?.itemCount, "tasks")
+            }
+            setAdapter()
+            Utilities.toast(
+                activity,
+                String.format(
+                    getString(R.string.task_s_successfully),
+                    if (isCreate) getString(R.string.added) else getString(R.string.updated)
+                )
+            )
         }
-        realmTeamTask?.title = task
-        realmTeamTask?.description = desc
-        realmTeamTask?.deadline = deadline?.timeInMillis!!
-        realmTeamTask?.teamId = teamId
-        realmTeamTask?.isUpdated = true
-        val ob = JsonObject()
-        ob.addProperty("teams", teamId)
-        realmTeamTask?.link = Gson().toJson(ob)
-        val obSync = JsonObject()
-        obSync.addProperty("type", "local")
-        obSync.addProperty("planetCode", user?.planetCode)
-        realmTeamTask?.sync = Gson().toJson(obSync)
-        mRealm.commitTransaction()
-        if (fragmentTeamTaskBinding.rvTask.adapter != null) {
-            fragmentTeamTaskBinding.rvTask.adapter?.notifyDataSetChanged()
-            showNoData(fragmentTeamTaskBinding.tvNodata, fragmentTeamTaskBinding.rvTask.adapter?.itemCount, "tasks")
-        }
-        Utilities.toast(activity, String.format(getString(R.string.task_s_successfully), if (isCreate) getString(R.string.added) else getString(R.string.updated)))
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        fragmentTeamTaskBinding.rvTask.layoutManager = LinearLayoutManager(activity)
+        binding.rvTask.layoutManager = LinearLayoutManager(activity)
         list = mRealm.where(RealmTeamTask::class.java).equalTo("teamId", teamId).findAll()
         setAdapter()
-        showNoData(fragmentTeamTaskBinding.tvNodata, list?.size,"tasks")
-        fragmentTeamTaskBinding.taskToggle.setOnCheckedChangeListener { _: SingleSelectToggleGroup?, checkedId: Int ->
+        showNoData(binding.tvNodata, list?.size, "tasks")
+        binding.taskToggle.setOnCheckedChangeListener { _: SingleSelectToggleGroup?, checkedId: Int ->
             currentTab = checkedId
             when (checkedId) {
                 R.id.btn_my -> {
@@ -224,14 +228,14 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                 }
             }
             if (list!!.isEmpty()){
-                showNoData(fragmentTeamTaskBinding.tvNodata, list?.size, "tasks")
+                showNoData(binding.tvNodata, list?.size, "tasks")
             }
             else {
-                showNoData(fragmentTeamTaskBinding.tvNodata, list?.size, "")
+                showNoData(binding.tvNodata, list?.size, "")
             }
             adapterTask = AdapterTask(requireContext(), mRealm, list, !isMember())
             adapterTask.setListener(this)
-            fragmentTeamTaskBinding.rvTask.adapter = adapterTask
+            binding.rvTask.adapter = adapterTask
         }
     }
 
@@ -249,14 +253,13 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
     }
 
     override fun onDelete(task: RealmTeamTask?) {
-        if (!mRealm.isInTransaction) {
-            mRealm.beginTransaction()
+        val taskId = task?.id ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            teamRepository.deleteTask(taskId)
+            Utilities.toast(activity, getString(R.string.task_deleted_successfully))
+            setAdapter()
+            showNoData(binding.tvNodata, binding.rvTask.adapter?.itemCount, "tasks")
         }
-        task?.deleteFromRealm()
-        Utilities.toast(activity, getString(R.string.task_deleted_successfully))
-        mRealm.commitTransaction()
-        setAdapter()
-        showNoData(fragmentTeamTaskBinding.tvNodata, fragmentTeamTaskBinding.rvTask.adapter?.itemCount, "tasks")
     }
 
     override fun onClickMore(realmTeamTask: RealmTeamTask?) {
@@ -279,23 +282,25 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                     return@setPositiveButton
                 }
                 val user = selectedItem as RealmUserModel
-                val userId = user.id
-                if (!mRealm.isInTransaction) {
-                    mRealm.beginTransaction()
+                val taskId = realmTeamTask?.id
+                if (taskId.isNullOrBlank()) {
+                    Toast.makeText(context, R.string.no_tasks, Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
                 }
-                realmTeamTask?.assignee = userId
-                Utilities.toast(activity, getString(R.string.assign_task_to) + " " + user.name)
-                mRealm.commitTransaction()
-                adapter.notifyDataSetChanged()
-                setAdapter()
+                viewLifecycleOwner.lifecycleScope.launch {
+                    teamRepository.assignTask(taskId, user.id)
+                    Utilities.toast(activity, getString(R.string.assign_task_to) + " " + user.name)
+                    adapter.notifyDataSetChanged()
+                    setAdapter()
+                }
             }.show()
     }
 
     private fun updatedTeamTaskList(updatedList: RealmResults<RealmTeamTask>) {
-        activity?.runOnUiThread {
+        viewLifecycleOwner.lifecycleScope.launch {
             adapterTask = AdapterTask(requireContext(), mRealm, updatedList, !isMember())
-            adapterTask.setListener(this)
-            fragmentTeamTaskBinding.rvTask.adapter = adapterTask
+            adapterTask.setListener(this@TeamTaskFragment)
+            binding.rvTask.adapter = adapterTask
             adapterTask.notifyDataSetChanged()
         }
     }
@@ -304,10 +309,11 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
         teamTaskList?.removeAllChangeListeners()
         teamTaskList = null
         list = null
-        fragmentTeamTaskBinding.rvTask.adapter = null
+        binding.rvTask.adapter = null
         if (isRealmInitialized()) {
             mRealm.close()
         }
+        _binding = null
         super.onDestroyView()
     }
 }

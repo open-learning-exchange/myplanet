@@ -5,22 +5,24 @@ import android.text.TextUtils
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.github.barteksc.pdfviewer.listener.OnLoadCompleteListener
 import com.github.barteksc.pdfviewer.listener.OnPageChangeListener
 import com.github.barteksc.pdfviewer.listener.OnPageErrorListener
 import com.github.barteksc.pdfviewer.scroll.DefaultScrollHandle
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityPdfreaderBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.repository.LibraryRepository
+import org.ole.planet.myplanet.repository.MyPersonalRepository
 import org.ole.planet.myplanet.service.AudioRecorderService
 import org.ole.planet.myplanet.service.AudioRecorderService.AudioRecordListener
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.NotificationUtils.cancelAll
@@ -33,20 +35,24 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
     private lateinit var audioRecorderService: AudioRecorderService
     private var fileName: String? = null
     @Inject
-    lateinit var databaseService: DatabaseService
+    lateinit var myPersonalRepository: MyPersonalRepository
+    @Inject
+    lateinit var libraryRepository: LibraryRepository
     private lateinit var library: RealmMyLibrary
-    private lateinit var mRealm: Realm
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityPdfreaderBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
         audioRecorderService = AudioRecorderService().setAudioRecordListener(this)
         audioRecorderService.setCaller(this, this)
-        mRealm = databaseService.realmInstance
         if (intent.hasExtra("resourceId")) {
             val resourceID = intent.getStringExtra("resourceId")
-            library = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceID).findFirst()!!
+            lifecycleScope.launch {
+                resourceID?.let {
+                    library = libraryRepository.getLibraryItemById(it)!!
+                }
+            }
         }
         renderPdfFile()
         binding.fabRecord.setOnClickListener { audioRecorderService.onRecordClicked()}
@@ -97,32 +103,28 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         Utilities.toast(this, getString(R.string.recording_stopped))
         cancelAll(this)
         updateTranslation(outputFile)
-        AddResourceFragment.showAlert(this, outputFile, databaseService)
+        AddResourceFragment.showAlert(this, outputFile, myPersonalRepository)
         binding.fabRecord.setImageResource(R.drawable.ic_mic)
     }
 
     private fun updateTranslation(outputFile: String?) {
         if (this::library.isInitialized) {
-            if (!mRealm.isInTransaction) mRealm.beginTransaction()
-            library.translationAudioPath = outputFile
-            mRealm.commitTransaction()
-            Utilities.toast(this, getString(R.string.audio_file_saved_in_database))
+            lifecycleScope.launch {
+                libraryRepository.updateLibraryItem(library.id!!) {
+                    it.translationAudioPath = outputFile
+                }
+                library.translationAudioPath = outputFile
+                Utilities.toast(
+                    this@PDFReaderActivity,
+                    getString(R.string.audio_file_saved_in_database)
+                )
+            }
         }
     }
 
     override fun onDestroy() {
         if (this::audioRecorderService.isInitialized && audioRecorderService.isRecording()) {
             audioRecorderService.stopRecording()
-        }
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            if (mRealm.isInTransaction) {
-                try {
-                    mRealm.commitTransaction()
-                } catch (e: Exception) {
-                    mRealm.cancelTransaction()
-                }
-            }
-            mRealm.close()
         }
         super.onDestroy()
     }

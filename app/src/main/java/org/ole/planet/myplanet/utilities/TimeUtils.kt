@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utilities
 
+import android.text.format.DateUtils
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -32,6 +33,17 @@ object TimeUtils {
         DateTimeFormatter.ofPattern("EEE dd, MMMM yyyy", defaultLocale).withZone(ZoneId.systemDefault())
     }
 
+    private val fallbackDateFormatter by lazy {
+        DateTimeFormatter.ofPattern("dd, MMMM yyyy", defaultLocale).withZone(ZoneId.systemDefault())
+    }
+
+    fun getRelativeTime(timestamp: Long): String {
+        val timeNow = System.currentTimeMillis()
+        return if (timestamp < timeNow) {
+            DateUtils.getRelativeTimeSpanString(timestamp, timeNow, 0).toString()
+        } else "Just now"
+    }
+
     fun getFormattedDate(date: Long?): String =
         try {
             val instant = date?.let { Instant.ofEpochMilli(it) } ?: Instant.now()
@@ -59,8 +71,9 @@ object TimeUtils {
             ""
         }
 
-    fun getAge(date: String): Int =
-        try {
+    fun getAge(date: String): Int {
+        return try {
+            if (date.isBlank()) return 0
             val cleaned = date.replace("T", " ").replace(".000Z", "")
             val dob =
                 try {
@@ -76,6 +89,7 @@ object TimeUtils {
             e.printStackTrace()
             0
         }
+    }
 
     fun getFormattedDate(
         stringDate: String?,
@@ -127,12 +141,11 @@ object TimeUtils {
 
     fun parseDate(dateString: String): Long? =
         try {
-            val localDate = try {
+            val localDate = runCatching {
                 LocalDate.parse(dateString, dateOnlyFormatter)
-            } catch (_: Exception) {
-                val fallbackFormatter = DateTimeFormatter.ofPattern("dd, MMMM yyyy", defaultLocale)
-                LocalDate.parse(dateString, fallbackFormatter)
-            }
+            }.recoverCatching {
+                LocalDate.parse(dateString, fallbackDateFormatter)
+            }.getOrThrow()
             localDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
         } catch (e: Exception) {
             e.printStackTrace()

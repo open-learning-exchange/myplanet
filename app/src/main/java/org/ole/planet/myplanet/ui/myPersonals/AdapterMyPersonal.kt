@@ -20,19 +20,42 @@ import org.ole.planet.myplanet.ui.myPersonals.AdapterMyPersonal.ViewHolderMyPers
 import org.ole.planet.myplanet.ui.viewer.ImageViewerActivity
 import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
 import org.ole.planet.myplanet.ui.viewer.VideoPlayerActivity
+import org.ole.planet.myplanet.utilities.DiffUtils
 import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.TimeUtils.getFormattedDate
 import org.ole.planet.myplanet.utilities.Utilities
 
-class AdapterMyPersonal(private val context: Context, private val list: List<RealmMyPersonal>) : RecyclerView.Adapter<ViewHolderMyPersonal>() {
+class AdapterMyPersonal(private val context: Context, private var list: MutableList<RealmMyPersonal>) : RecyclerView.Adapter<ViewHolderMyPersonal>() {
     private lateinit var rowMyPersonalBinding: RowMyPersonalBinding
     private var realm: Realm? = null
     private var listener: OnSelectedMyPersonal? = null
+
     fun setListener(listener: OnSelectedMyPersonal?) {
         this.listener = listener
     }
+
+    fun updateList(newList: List<RealmMyPersonal>) {
+        val safeNewList = realm?.copyFromRealm(newList) ?: newList
+        val diffResult = DiffUtils.calculateDiff(
+            list,
+            safeNewList,
+            areItemsTheSame = { old, new -> old._id == new._id },
+            areContentsTheSame = { old, new ->
+                old.title == new.title &&
+                    old.description == new.description &&
+                    old.date == new.date &&
+                    old.path == new.path
+            }
+        )
+        list.clear()
+        list.addAll(safeNewList)
+        diffResult.dispatchUpdatesTo(this)
+    }
+    
+    fun getList(): List<RealmMyPersonal> = list
     fun setRealm(realm: Realm?) {
         this.realm = realm
+        list = realm?.copyFromRealm(list)?.toMutableList() ?: list
     }
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyPersonal {
         rowMyPersonalBinding = RowMyPersonalBinding.inflate(LayoutInflater.from(context), parent, false)
@@ -51,7 +74,7 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
                         ?.equalTo("_id", list[position]._id)?.findFirst()
                     personal?.deleteFromRealm()
                     realm?.commitTransaction()
-                    notifyDataSetChanged()
+                    updateList(realm?.where(RealmMyPersonal::class.java)?.findAll()?.toList() ?: emptyList())
                     listener?.onAddedResource()
                 }.setNegativeButton(R.string.cancel, null).show()
         }
@@ -110,7 +133,7 @@ class AdapterMyPersonal(private val context: Context, private val list: List<Rea
                 personal.description = desc
                 personal.title = title
                 realm?.commitTransaction()
-                notifyDataSetChanged()
+                updateList(realm?.where(RealmMyPersonal::class.java)?.findAll()?.toList() ?: emptyList())
                 listener?.onAddedResource()
             }
             .setNegativeButton(R.string.cancel, null)

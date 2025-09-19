@@ -14,7 +14,6 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 import java.util.regex.Pattern
-import kotlin.text.isNotEmpty
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.datamanager.DownloadWorker
@@ -112,7 +111,8 @@ object DownloadUtils {
         val channel = if (forWorker) WORKER_CHANNEL else COMPLETION_CHANNEL
         createChannels(context)
         val text = if (hadErrors) {
-            context.getString(R.string.download_progress_with_errors, completed, total)
+            val errorMessage = context.getString(R.string.download_progress_with_errors, completed, total)
+            errorMessage
         } else {
             context.getString(R.string.download_progress, completed, total)
         }
@@ -126,20 +126,15 @@ object DownloadUtils {
     }
     @JvmStatic
     fun downloadAllFiles(dbMyLibrary: List<RealmMyLibrary?>): ArrayList<String> {
-        val urls = ArrayList<String>()
-        for (i in dbMyLibrary.indices) {
-            urls.add(UrlUtils.getUrl(dbMyLibrary[i]))
-        }
-        return urls
+        return ArrayList(dbMyLibrary.map { UrlUtils.getUrl(it) })
     }
 
     @JvmStatic
-    fun downloadFiles(dbMyLibrary: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>): ArrayList<String> {
-        val urls = ArrayList<String>()
-        for (i in selectedItems.indices) {
-            urls.add(UrlUtils.getUrl(dbMyLibrary[selectedItems[i]]))
-        }
-        return urls
+    fun downloadFiles(
+        dbMyLibrary: List<RealmMyLibrary?>,
+        selectedItems: ArrayList<Int>
+    ): ArrayList<String> {
+        return ArrayList(selectedItems.map { UrlUtils.getUrl(dbMyLibrary[it]) })
     }
 
     @RequiresApi(Build.VERSION_CODES.S)

@@ -6,18 +6,33 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Realm
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemTeamGridBinding
 import org.ole.planet.myplanet.databinding.LayoutUserListBinding
+import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.utilities.DiffUtils
 
-class AdapterTeam(private val context: Context, private val list: List<RealmMyTeam>, private val mRealm: Realm) : RecyclerView.Adapter<AdapterTeam.ViewHolderTeam>() {
+class AdapterTeam(
+    private val context: Context,
+    teams: List<RealmMyTeam>,
+    private val databaseService: DatabaseService,
+) : ListAdapter<RealmMyTeam, AdapterTeam.ViewHolderTeam>(
+    DiffUtils.itemCallback(
+        areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
+        areContentsTheSame = { oldItem, newItem -> oldItem.name == newItem.name }
+    )
+) {
     private var teamSelectedListener: OnTeamSelectedListener? = null
     private var listener: OnUserSelectedListener? = context as? OnUserSelectedListener
     private var users: List<RealmUserModel> = emptyList()
+
+    init {
+        submitList(teams)
+    }
 
     interface OnTeamSelectedListener {
         fun onSelectedTeam(team: RealmMyTeam)
@@ -33,7 +48,7 @@ class AdapterTeam(private val context: Context, private val list: List<RealmMyTe
     }
 
     override fun onBindViewHolder(holder: ViewHolderTeam, position: Int) {
-        val team = list[position]
+        val team = getItem(position)
         holder.itemTeamGridBinding.title.text = team.name
         holder.itemView.setOnClickListener {
             teamSelectedListener?.onSelectedTeam(team) ?: showUserList(team)
@@ -42,13 +57,17 @@ class AdapterTeam(private val context: Context, private val list: List<RealmMyTe
 
     private fun showUserList(realmMyTeam: RealmMyTeam) {
         val layoutUserListBinding = LayoutUserListBinding.inflate(LayoutInflater.from(context))
-        users = RealmMyTeam.getUsers(realmMyTeam._id, mRealm, "")
-        setListAdapter(layoutUserListBinding.listUser, users)
+        databaseService.withRealm { realm ->
+            users = realm.copyFromRealm(RealmMyTeam.getUsers(realmMyTeam._id, realm, ""))
+            setListAdapter(layoutUserListBinding.listUser, users)
+        }
         layoutUserListBinding.etSearch.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                users = RealmMyTeam.filterUsers(realmMyTeam._id, "$s", mRealm)
-                setListAdapter(layoutUserListBinding.listUser, users)
+                databaseService.withRealm { realm ->
+                    users = realm.copyFromRealm(RealmMyTeam.filterUsers(realmMyTeam._id, "$s", realm))
+                    setListAdapter(layoutUserListBinding.listUser, users)
+                }
             }
             override fun afterTextChanged(s: android.text.Editable) {}
         })
@@ -66,7 +85,9 @@ class AdapterTeam(private val context: Context, private val list: List<RealmMyTe
         lv.adapter = adapter
     }
 
-    override fun getItemCount(): Int = list.size
+    fun updateTeams(newTeams: List<RealmMyTeam>) {
+        submitList(newTeams)
+    }
 
     interface OnUserSelectedListener {
         fun onSelectedUser(userModel: RealmUserModel)

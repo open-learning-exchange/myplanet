@@ -50,7 +50,7 @@ object ExamSubmissionUtils {
                         answer.mistakes = answer.mistakes + 1
                     }
                 }
-                updateSubmissionStatus(realmSubmission, index, total, type)
+                updateSubmissionStatus(r, realmSubmission, index, total, type)
             }
         }
 
@@ -77,16 +77,28 @@ object ExamSubmissionUtils {
     }
 
     private fun updateSubmissionStatus(
+        realm: Realm,
         submission: RealmSubmission?,
         index: Int,
         total: Int,
         type: String,
     ) {
         submission?.lastUpdateTime = Date().time
-        submission?.status = if (index == total - 1) {
-            if (type == "survey") "complete" else "requires grading"
-        } else {
-            "pending"
+        val isFinal = index == total - 1
+        submission?.status = when {
+            isFinal && type == "survey" -> "complete"
+            isFinal -> "requires grading"
+            else -> "pending"
+        }
+
+        if (isFinal && type == "survey" && submission != null) {
+            realm.where(RealmSubmission::class.java)
+                .equalTo("userId", submission.userId)
+                .equalTo("parentId", submission.parentId)
+                .equalTo("status", "pending")
+                .notEqualTo("id", submission.id)
+                .findAll()
+                .forEach { it.status = "complete" }
         }
     }
 
@@ -139,7 +151,7 @@ object ExamSubmissionUtils {
     ) {
         answer.value = ""
         answer.valueChoices = RealmList<String>().apply {
-            listAns?.forEach { (text, id) ->
+            listAns?.toMap()?.forEach { (text, id) ->
                 if (id == "other" && otherVisible && !otherText.isNullOrEmpty()) {
                     add("""{"id":"other","text":"$otherText"}""")
                 } else {

@@ -5,15 +5,26 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.Realm
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowStepsBinding
 import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.repository.SubmissionRepository
 
-class AdapterSteps(private val context: Context, private val list: List<RealmCourseStep>, private val realm: Realm) : RecyclerView.Adapter<AdapterSteps.ViewHolder>() {
+class AdapterSteps(
+    private val context: Context,
+    private val list: List<RealmCourseStep>,
+    private val submissionRepository: SubmissionRepository
+) : RecyclerView.Adapter<AdapterSteps.ViewHolder>() {
     private val descriptionVisibilityList: MutableList<Boolean> = ArrayList()
     private var currentlyVisiblePosition = RecyclerView.NO_POSITION
+    private val job = SupervisorJob()
+    private val coroutineScope = CoroutineScope(job + Dispatchers.Main)
 
     init {
         for (i in list.indices) {
@@ -35,6 +46,8 @@ class AdapterSteps(private val context: Context, private val list: List<RealmCou
     }
 
     inner class ViewHolder(private val rowStepsBinding: RowStepsBinding) : RecyclerView.ViewHolder(rowStepsBinding.root) {
+        private var loadJob: Job? = null
+
         init {
             itemView.setOnClickListener {
                 val position = bindingAdapterPosition
@@ -47,17 +60,34 @@ class AdapterSteps(private val context: Context, private val list: List<RealmCou
         fun bind(position: Int) {
             val step = list[position]
             rowStepsBinding.tvTitle.text = step.stepTitle
-            var size = 0
-            val exam = realm.where(RealmStepExam::class.java).equalTo("stepId", step.id).findFirst()
-            if (exam != null) {
-                size = exam.noOfQuestions
+            rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, 0)
+            loadJob?.cancel()
+
+            val stepId = step.id
+            if (!stepId.isNullOrEmpty()) {
+                val currentPosition = position
+                loadJob = coroutineScope.launch {
+                    val size = submissionRepository.getExamQuestionCount(stepId)
+                    if (bindingAdapterPosition == RecyclerView.NO_POSITION) {
+                        return@launch
+                    }
+                    val adapterPosition = bindingAdapterPosition
+                    val currentStepId = list.getOrNull(adapterPosition)?.id
+                    if (currentStepId == stepId && currentPosition == adapterPosition) {
+                        rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, size)
+                    }
+                }
             }
-            rowStepsBinding.tvDescription.text = context.getString(R.string.test_size, size)
             if (descriptionVisibilityList[position]) {
                 rowStepsBinding.tvDescription.visibility = View.VISIBLE
             } else {
                 rowStepsBinding.tvDescription.visibility = View.GONE
             }
+        }
+
+        fun clear() {
+            loadJob?.cancel()
+            loadJob = null
         }
     }
 
@@ -69,5 +99,15 @@ class AdapterSteps(private val context: Context, private val list: List<RealmCou
         descriptionVisibilityList[position] = !descriptionVisibilityList[position]
         notifyItemChanged(position)
         currentlyVisiblePosition = if (descriptionVisibilityList[position]) position else RecyclerView.NO_POSITION
+    }
+
+    override fun onViewRecycled(holder: ViewHolder) {
+        super.onViewRecycled(holder)
+        holder.clear()
+    }
+
+    override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView)
+        job.cancelChildren()
     }
 }

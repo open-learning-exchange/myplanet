@@ -10,7 +10,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityTextfileViewerBinding
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils
 
 class TextFileViewerActivity : AppCompatActivity() {
@@ -20,7 +20,7 @@ class TextFileViewerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityTextfileViewerBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
         renderTextFile()
     }
 

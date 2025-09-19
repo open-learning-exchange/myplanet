@@ -6,62 +6,43 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import io.realm.RealmResults
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentServicesBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.ui.team.TeamDetailFragment
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.model.RealmMyTeam
 
 class ServicesFragment : BaseTeamFragment() {
-    private lateinit var fragmentServicesBinding: FragmentServicesBinding
+    private var binding: FragmentServicesBinding? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentServicesBinding = FragmentServicesBinding.inflate(inflater, container, false)
-        return fragmentServicesBinding.root
+        binding = FragmentServicesBinding.inflate(inflater, container, false)
+        return binding!!.root
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        binding = null
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 
         super.onViewCreated(view, savedInstanceState)
-        mRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireActivity()).userModel
-
-        val links = mRealm.where(RealmMyTeam::class.java)?.equalTo("docType", "link")?.findAll()
-
-        fragmentServicesBinding.fab.setOnClickListener {
-            val bottomSheetDialog: BottomSheetDialogFragment = AddLinkFragment()
-            bottomSheetDialog.show(childFragmentManager, "")
-            viewLifecycleOwner.lifecycleScope.launch {
-                delay(1000)
-                bottomSheetDialog.dialog?.setOnDismissListener {
-                    setRecyclerView(links)
-                }
-            }
-        }
-
-        if (links?.size == 0) {
-            fragmentServicesBinding.llServices.visibility = View.GONE
-            fragmentServicesBinding.tvNoLinks.visibility = View.VISIBLE
-        } else {
-            fragmentServicesBinding.llServices.visibility = View.VISIBLE
-        }
 
         val description = team?.description ?: ""
         if (description.isEmpty()) {
-            fragmentServicesBinding.tvDescription.visibility = View.GONE
-            fragmentServicesBinding.tvNoDescription.visibility = View.VISIBLE
+            binding?.tvDescription?.visibility = View.GONE
+            binding?.tvNoDescription?.visibility = View.VISIBLE
         } else {
-            fragmentServicesBinding.tvDescription.visibility = View.VISIBLE
-            fragmentServicesBinding.tvNoDescription.visibility = View.GONE
+            binding?.tvDescription?.visibility = View.VISIBLE
+            binding?.tvNoDescription?.visibility = View.GONE
         }
         val markdownContentWithLocalPaths = prependBaseUrlToImages(
             description,
@@ -69,13 +50,19 @@ class ServicesFragment : BaseTeamFragment() {
             600,
             350
         )
-        setMarkdownText(fragmentServicesBinding.tvDescription, markdownContentWithLocalPaths)
-        setRecyclerView(links)
+        binding?.let { setMarkdownText(it.tvDescription, markdownContentWithLocalPaths) }
 
-        if (user?.isManager() == true || user?.isLeader() == true) {
-            fragmentServicesBinding.fab.show()
-        } else {
-            fragmentServicesBinding.fab.hide()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val links = teamRepository.getTeamLinks()
+            val currentBinding = binding ?: return@launch
+            if (links.isEmpty()) {
+                currentBinding.llServices.visibility = View.GONE
+                currentBinding.tvNoLinks.visibility = View.VISIBLE
+            } else {
+                currentBinding.llServices.visibility = View.VISIBLE
+                currentBinding.tvNoLinks.visibility = View.GONE
+            }
+            setRecyclerView(links)
         }
     }
 
@@ -86,21 +73,23 @@ class ServicesFragment : BaseTeamFragment() {
         llImage?.removeAllViews()
     }
 
-    private fun setRecyclerView(links: RealmResults<RealmMyTeam>?) {
-        fragmentServicesBinding.llServices.removeAllViews()
-        links?.forEach { team ->
-            val b: TextView = LayoutInflater.from(activity).inflate(R.layout.button_single, fragmentServicesBinding.llServices, false) as TextView
+    private fun setRecyclerView(links: List<RealmMyTeam>) {
+        val parent = binding?.llServices ?: return
+        parent.removeAllViews()
+        links.forEach { team ->
+            val b: TextView = LayoutInflater.from(activity).inflate(R.layout.button_single, parent, false) as TextView
             b.setPadding(8, 8, 8, 8)
             b.text = team.title
             b.setOnClickListener {
                 val route = team.route?.split("/")
-                if (route != null) {
-                    if (route.size >= 3) {
-                        val teamObject = mRealm.where(RealmMyTeam::class.java)?.equalTo("_id", route[3])?.findFirst()
-                        val isMyTeam = teamObject?.isMyTeam(user?.id, mRealm) == true
+                if (route != null && route.size >= 4) {
+                    val teamId = route[3]
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val teamObject = teamRepository.getTeamById(teamId)
+                        val isMyTeam = teamRepository.isMember(user?.id, teamId)
 
                         val f = TeamDetailFragment.newInstance(
-                            teamId = route[3],
+                            teamId = teamId,
                             teamName = teamObject?.name ?: "",
                             teamType = teamObject?.type ?: "",
                             isMyTeam = isMyTeam
@@ -110,7 +99,7 @@ class ServicesFragment : BaseTeamFragment() {
                     }
                 }
             }
-            fragmentServicesBinding.llServices.addView(b)
+            parent.addView(b)
         }
     }
 }

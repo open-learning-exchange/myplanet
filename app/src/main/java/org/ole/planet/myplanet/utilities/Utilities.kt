@@ -2,20 +2,17 @@ package org.ole.planet.myplanet.utilities
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.os.Handler
-import android.os.Looper
-import android.text.format.DateUtils
 import android.util.Log
 import android.util.Patterns
 import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.core.graphics.toColorInt
-import androidx.core.net.toUri
 import fisk.chipcloud.ChipCloudConfig
 import java.math.BigInteger
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 
 object Utilities {
 
@@ -31,7 +28,7 @@ object Utilities {
     @JvmStatic
     fun toast(context: Context?, s: String?, duration: Int = Toast.LENGTH_LONG) {
         context ?: return
-        Handler(Looper.getMainLooper()).post {
+        MainApplication.applicationScope.launch(Dispatchers.Main) {
             Toast.makeText(context, s, duration).show()
         }
     }
@@ -47,13 +44,6 @@ object Utilities {
 
     fun checkNA(s: String?): String {
         return if (s.isNullOrEmpty()) "N/A" else s
-    }
-
-    fun getRelativeTime(timestamp: Long): String {
-        val timeNow = System.currentTimeMillis()
-        return if (timestamp < timeNow) {
-            DateUtils.getRelativeTimeSpanString(timestamp, timeNow, 0).toString()
-        } else "Just now"
     }
 
     fun getUserName(settings: SharedPreferences): String {

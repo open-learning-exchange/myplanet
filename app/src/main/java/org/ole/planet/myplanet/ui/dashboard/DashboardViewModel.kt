@@ -3,17 +3,11 @@ package org.ole.planet.myplanet.ui.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.realm.Realm
-import java.util.Date
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.base.BaseResourceFragment
-import org.ole.planet.myplanet.datamanager.DatabaseService
-import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
@@ -23,7 +17,6 @@ import org.ole.planet.myplanet.repository.UserRepository
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
-    private val databaseService: DatabaseService,
     private val userRepository: UserRepository,
     private val libraryRepository: LibraryRepository,
     private val courseRepository: CourseRepository,
@@ -68,49 +61,11 @@ class DashboardViewModel @Inject constructor(
     }
 
     suspend fun updateResourceNotification(userId: String?) {
-        try {
-            databaseService.executeTransactionAsync { realm ->
-                val resourceCount = BaseResourceFragment.getLibraryList(realm, userId).size
-                if (resourceCount > 0) {
-                    val existingNotification = realm.where(RealmNotification::class.java)
-                        .equalTo("userId", userId)
-                        .equalTo("type", "resource")
-                        .findFirst()
-
-                    if (existingNotification != null) {
-                        existingNotification.message = "$resourceCount"
-                        existingNotification.relatedId = "$resourceCount"
-                    } else {
-                        createNotificationIfNotExists(realm, "resource", "$resourceCount", "$resourceCount", userId)
-                    }
-                } else {
-                    realm.where(RealmNotification::class.java)
-                        .equalTo("userId", userId)
-                        .equalTo("type", "resource")
-                        .findFirst()?.deleteFromRealm()
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        notificationRepository.updateResourceNotification(userId)
     }
 
-    fun createNotificationIfNotExists(realm: Realm, type: String, message: String, relatedId: String?, userId: String?) {
-        val existingNotification = realm.where(RealmNotification::class.java)
-            .equalTo("userId", userId)
-            .equalTo("type", type)
-            .equalTo("relatedId", relatedId)
-            .findFirst()
-
-        if (existingNotification == null) {
-            realm.createObject(RealmNotification::class.java, "${UUID.randomUUID()}").apply {
-                this.userId = userId ?: ""
-                this.type = type
-                this.message = message
-                this.relatedId = relatedId
-                this.createdAt = Date()
-            }
-        }
+    suspend fun createNotificationIfNotExists(type: String, message: String, relatedId: String?, userId: String?) {
+        notificationRepository.ensureNotification(type, message, relatedId, userId)
     }
 
     suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {

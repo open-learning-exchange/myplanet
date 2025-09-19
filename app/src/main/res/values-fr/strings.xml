@@ -37,7 +37,6 @@
     <string name="menu_home">Accueil</string>
     <string name="menu_library">Bibliothèque</string>
     <string name="menu_courses">Cours</string>
-    <string name="menu_meetups">Rencontres</string>
     <string name="menu_surveys">Sondages</string>
     <string name="menu_logout">Déconnexion</string>
     <string name="menu_feedback">Retour d\'information</string>
@@ -407,7 +406,6 @@
     <string name="tasks">Tâches</string>
     <string name="join_requests">Demandes de participation</string>
     <string name="add_image">Ajouter une image</string>
-    <string name="addImageToMessage">Bêta Ajouter une image au message</string>
     <string name="clear_data">Effacer les données</string>
     <string name="reset_app">Réinitialiser l\'application</string>
     <string name="freeup_space">Libérer de l\'espace disque</string>
@@ -1041,6 +1039,10 @@
     <string name="community_leaders">Dirigeants de communauté</string>
     <string name="services">Services</string>
     <string name="survey_taken">Enquête effectuée</string>
+    <plurals name="survey_taken_count">
+        <item quantity="one">Enquête effectuée %d fois</item>
+        <item quantity="other">Enquête effectuée %d fois</item>
+    </plurals>
     <string name="times">fois</string>
     <string name="time">temps</string>
     <string name="ai_chat">AI Chat</string>
@@ -1104,6 +1106,11 @@
     <string name="no_team_resources">aucune ressource d\'équipe disponible</string>
     <string name="no_tasks">aucune tâche disponible</string>
     <string name="no_join_request_available">aucune demande de rejoindre disponible</string>
+    <string name="no_description_available">Aucune description disponible</string>
+    <string name="no_links_available">Aucun lien disponible</string>
+    <string name="user_requested_to_join_team">%1$s a demandé à rejoindre %2$s</string>
+    <string name="join_request_prefix">Demande d\'adhésion :</string>
+    <string name="new_request_to_join">Nouvelle demande pour rejoindre %s</string>
     <string name="no_news">aucune nouvelle disponible</string>
     <string name="no_surveys">aucun sondage disponible</string>
     <string name="edit_image">modifier l\'image de profil</string>
@@ -1379,5 +1386,6 @@
     <string name="failed_to_delete_report">Échec de la suppression du rapport. Veuillez réessayer</string>
     <string name="delete_report">Supprimer le rapport</string>
     <string name="checking_server_availability">vérification de la disponibilité du serveur…</string>
+    <string name="loading_courses">Chargement des cours…</string>
 
 </resources>

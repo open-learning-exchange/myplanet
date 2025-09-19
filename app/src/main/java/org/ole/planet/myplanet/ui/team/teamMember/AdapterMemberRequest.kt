@@ -10,12 +10,20 @@ import org.ole.planet.myplanet.callback.MemberChangeListener
 import org.ole.planet.myplanet.databinding.RowMemberRequestBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMember
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 import org.ole.planet.myplanet.model.RealmUserModel
-import org.ole.planet.myplanet.service.UploadManager
+import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.repository.TeamRepository
 import org.ole.planet.myplanet.utilities.Utilities
+import kotlinx.coroutines.launch
 
-class AdapterMemberRequest(private val context: Context, private val list: MutableList<RealmUserModel>, private val mRealm: Realm, private val currentUser: RealmUserModel, private val listener: MemberChangeListener, private val uploadManager: UploadManager) : RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser>() {
+class AdapterMemberRequest(
+    private val context: Context,
+    private val list: MutableList<RealmUserModel>,
+    private val mRealm: Realm,
+    private val currentUser: RealmUserModel,
+    private val listener: MemberChangeListener,
+    private val teamRepository: TeamRepository,
+) : RecyclerView.Adapter<AdapterMemberRequest.ViewHolderUser>() {
     private lateinit var rowMemberRequestBinding: RowMemberRequestBinding
     private var teamId: String? = null
     private lateinit var team: RealmMyTeam
@@ -54,27 +62,33 @@ class AdapterMemberRequest(private val context: Context, private val list: Mutab
                 btnAccept.isEnabled = false
             }
 
-            if(isGuestUser() || !isTeamLeader()){
+            if(isGuestUser()){
                 btnReject.isEnabled = false
                 btnAccept.isEnabled = false
             }
 
-            btnAccept.setOnClickListener { handleClick(holder, true) }
-            btnReject.setOnClickListener { handleClick(holder, false) }
+            val isRequester = currentItem.id == currentUser.id
+            if (isRequester) {
+                btnAccept.isEnabled = false
+                btnReject.isEnabled = false
+                btnAccept.setOnClickListener(null)
+                btnReject.setOnClickListener(null)
+            } else {
+                btnAccept.setOnClickListener { handleClick(holder, true) }
+                btnReject.setOnClickListener { handleClick(holder, false) }
+            }
         }
     }
 
     private fun isGuestUser() = currentUser.id?.startsWith("guest") == true
 
-    fun isTeamLeader(): Boolean {
-        if(teamId==null)return false
-        return team.userId == currentUser._id
-    }
 
     private fun handleClick(holder: RecyclerView.ViewHolder, isAccepted: Boolean) {
         val adapterPosition = holder.bindingAdapterPosition
         if (adapterPosition != RecyclerView.NO_POSITION && adapterPosition < list.size) {
-            acceptReject(list[adapterPosition], isAccepted, adapterPosition)
+            val targetUser = list[adapterPosition]
+            if (targetUser.id == currentUser.id) return
+            acceptReject(targetUser, isAccepted, adapterPosition)
         }
         listener.onMemberChanged()
     }
@@ -100,7 +114,9 @@ class AdapterMemberRequest(private val context: Context, private val list: Mutab
                 }
             }
         }, {
-            syncTeamActivities(context, uploadManager)
+            MainApplication.applicationScope.launch {
+                teamRepository.syncTeamActivities(context)
+            }
             listener.onMemberChanged()
         }, { error ->
             list.add(position, userModel)

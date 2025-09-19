@@ -20,12 +20,13 @@ import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
+import org.ole.planet.myplanet.callback.BaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.SyncListener
+import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.FragmentAchievementBinding
 import org.ole.planet.myplanet.databinding.LayoutButtonPrimaryBinding
 import org.ole.planet.myplanet.databinding.RowAchievementBinding
@@ -34,6 +35,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
+import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.utilities.DialogUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
@@ -54,6 +56,8 @@ class AchievementFragment : BaseContainerFragment() {
     
     @Inject
     lateinit var syncManager: SyncManager
+    private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
+    private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
     private val serverUrl: String
         get() = settings.getString("serverURL", "") ?: ""
 
@@ -71,7 +75,7 @@ class AchievementFragment : BaseContainerFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentAchievementBinding.inflate(inflater, container, false)
         aRealm = databaseService.realmInstance
-        user = UserProfileDbHandler(MainApplication.context).userModel
+        user = UserProfileDbHandler(requireContext()).userModel
         binding.btnEdit.setOnClickListener {
             if (listener != null) listener?.openCallFragment(EditAchievementFragment())
         }
@@ -79,6 +83,9 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     override fun onDestroyView() {
+        if (::realtimeSyncListener.isInitialized) {
+            syncCoordinator.removeListener(realtimeSyncListener)
+        }
         _binding = null
         super.onDestroyView()
     }
@@ -104,7 +111,7 @@ class AchievementFragment : BaseContainerFragment() {
     private fun startSyncManager() {
         syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded && !requireActivity().isFinishing) {
                         customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
                         customProgressDialog?.setText(getString(R.string.syncing_achievements))
@@ -114,7 +121,7 @@ class AchievementFragment : BaseContainerFragment() {
             }
 
             override fun onSyncComplete() {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
@@ -125,7 +132,7 @@ class AchievementFragment : BaseContainerFragment() {
             }
 
             override fun onSyncFailed(msg: String?) {
-                activity?.runOnUiThread {
+                viewLifecycleOwner.lifecycleScope.launch {
                     if (isAdded) {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
@@ -169,6 +176,7 @@ class AchievementFragment : BaseContainerFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupRealtimeSync()
         setupUserData()
         loadInitialAchievementData()
     }
@@ -194,6 +202,19 @@ class AchievementFragment : BaseContainerFragment() {
         }
     }
 
+    private fun setupRealtimeSync() {
+        realtimeSyncListener = object : BaseRealtimeSyncListener() {
+            override fun onTableDataUpdated(update: TableDataUpdate) {
+                if (update.table == "achievements" && update.shouldRefreshUI) {
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        refreshAchievementData()
+                    }
+                }
+            }
+        }
+        syncCoordinator.addListener(realtimeSyncListener)
+    }
+
     private fun setupAchievementHeader(a: RealmAchievement) {
         binding.tvGoals.text = a.goals
         binding.tvPurpose.text = a.purpose
@@ -216,7 +237,7 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun createAchievementView(ob: JsonObject): View {
-        val binding = RowAchievementBinding.inflate(LayoutInflater.from(MainApplication.context))
+        val binding = RowAchievementBinding.inflate(LayoutInflater.from(requireContext()))
         val desc = getString("description", ob)
         binding.tvDescription.text = desc
         binding.tvDate.text = getString("date", ob)
@@ -244,7 +265,7 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun createResourceButton(lib: RealmMyLibrary): View {
-        val btnBinding = LayoutButtonPrimaryBinding.inflate(LayoutInflater.from(MainApplication.context))
+        val btnBinding = LayoutButtonPrimaryBinding.inflate(LayoutInflater.from(requireContext()))
         btnBinding.root.text = lib.title
         btnBinding.root.setCompoundDrawablesWithIntrinsicBounds(
             0,
@@ -263,9 +284,9 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun setupReferences() {
-        binding.rvOtherInfo.layoutManager = LinearLayoutManager(MainApplication.context)
+        binding.rvOtherInfo.layoutManager = LinearLayoutManager(requireContext())
         binding.rvOtherInfo.adapter =
-            AdapterOtherInfo(MainApplication.context, achievement?.references ?: RealmList())
+            AdapterOtherInfo(requireContext(), achievement?.references ?: RealmList())
     }
 
     private fun getLibraries(array: JsonArray): List<RealmMyLibrary> {
@@ -277,6 +298,7 @@ class AchievementFragment : BaseContainerFragment() {
         }
         return libraries
     }
+
 
     override fun onDestroy() {
         customProgressDialog?.dismiss()

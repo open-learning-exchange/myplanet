@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
-import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.JsonUtils.getString
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 
@@ -55,7 +55,6 @@ class NewsFragment : BaseNewsFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentNewsBinding.inflate(inflater, container, false)
         llImage = binding.llImages
-        mRealm = databaseService.realmInstance
         user = UserProfileDbHandler(requireContext()).userModel
         setupUI(binding.newsFragmentParentLayout, requireActivity())
         if (user?.id?.startsWith("guest") == true) {
@@ -63,6 +62,9 @@ class NewsFragment : BaseNewsFragment() {
         }
         binding.btnNewVoice.setOnClickListener {
             binding.llAddNews.visibility = if (binding.llAddNews.isVisible) {
+                binding.etMessage.setText("")
+                binding.tlMessage.error = null
+                clearImages()
                 View.GONE
             } else {
                 View.VISIBLE
@@ -89,6 +91,7 @@ class NewsFragment : BaseNewsFragment() {
             labelFilteredList = applyLabelFilter(filteredNewsList)
             searchFilteredList = applySearchFilter(labelFilteredList)
             setData(searchFilteredList)
+            scrollToTop()
         }
         
         etSearch = binding.root.findViewById(R.id.et_search)
@@ -153,41 +156,42 @@ class NewsFragment : BaseNewsFragment() {
             labelFilteredList = applyLabelFilter(filteredNewsList)
             searchFilteredList = applySearchFilter(labelFilteredList)
             setData(searchFilteredList)
+            scrollToTop()
         }
 
         binding.addNewsImage.setOnClickListener {
             llImage = binding.llImages
-            val openFolderIntent = openOleFolder()
+            val openFolderIntent = FileUtils.openOleFolder(requireContext())
             openFolderLauncher.launch(openFolderIntent)
         }
-        binding.addNewsImage.visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, requireActivity())) View.VISIBLE else View.GONE
     }
 
-    private val newsList: List<RealmNews?> get() {
-        val allNews: List<RealmNews> = mRealm.where(RealmNews::class.java).isEmpty("replyTo")
-            .equalTo("docType", "message", Case.INSENSITIVE).findAll()
-        val list: MutableList<RealmNews?> = ArrayList()
-        for (news in allNews) {
-            if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("community", ignoreCase = true)) {
-                list.add(news)
-                continue
-            }
-            if (!TextUtils.isEmpty(news.viewIn)) {
-                val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
-                for (e in ar) {
-                    val ob = e.asJsonObject
-                    var userId = "${user?.planetCode}@${user?.parentCode}"
-                    if(userId.isEmpty() || userId=="@"){
-                        userId = settings?.getString("planetCode","")+"@"+settings?.getString("parentCode", "")
-                    }
-                    if (ob != null && ob.has("_id") && ob["_id"].asString.equals(userId, ignoreCase = true)) {
-                        list.add(news)
+    private val newsList: List<RealmNews?>
+        get() = databaseService.withRealm { realm ->
+            val allNews = realm.where(RealmNews::class.java).isEmpty("replyTo")
+                .equalTo("docType", "message", Case.INSENSITIVE).findAll()
+            val list: MutableList<RealmNews?> = ArrayList()
+            for (news in allNews) {
+                if (!TextUtils.isEmpty(news.viewableBy) && news.viewableBy.equals("community", ignoreCase = true)) {
+                    list.add(realm.copyFromRealm(news))
+                    continue
+                }
+                if (!TextUtils.isEmpty(news.viewIn)) {
+                    val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
+                    for (e in ar) {
+                        val ob = e.asJsonObject
+                        var userId = "${user?.planetCode}@${user?.parentCode}"
+                        if (userId.isEmpty() || userId == "@") {
+                            userId = settings?.getString("planetCode", "") + "@" + settings?.getString("parentCode", "")
+                        }
+                        if (ob != null && ob.has("_id") && ob["_id"].asString.equals(userId, ignoreCase = true)) {
+                            list.add(realm.copyFromRealm(news))
+                        }
                     }
                 }
             }
+            list
         }
-        return list
-    }
 
     override fun setData(list: List<RealmNews?>?) {
         if (!isAdded || list == null) return
@@ -204,21 +208,24 @@ class NewsFragment : BaseNewsFragment() {
                     }
                 }
             }
-            val lib: List<RealmMyLibrary?> = mRealm.where(RealmMyLibrary::class.java)
-                .`in`("_id", resourceIds.toTypedArray())
-                .findAll()
+            val lib: List<RealmMyLibrary?> = databaseService.withRealm { realm ->
+                realm.where(RealmMyLibrary::class.java)
+                    .`in`("_id", resourceIds.toTypedArray())
+                    .findAll()
+                    .let { realm.copyFromRealm(it) }
+            }
             getUrlsAndStartDownload(lib, ArrayList())
             val updatedListAsMutable: MutableList<RealmNews?> = list.toMutableList()
             val sortedList = updatedListAsMutable.sortedWith(compareByDescending { news ->
                 getSortDate(news)
             })
-            adapterNews = AdapterNews(requireActivity(), sortedList.toMutableList(), user, null, "", null, userProfileDbHandler)
+            adapterNews = AdapterNews(requireActivity(), user, null, "", null, userProfileDbHandler)
 
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
             adapterNews?.setListener(this)
             adapterNews?.registerAdapterDataObserver(observer)
-
+            adapterNews?.updateList(sortedList)
             binding.rvNews.adapter = adapterNews
         } else {
             (binding.rvNews.adapter as? AdapterNews)?.updateList(list)
@@ -259,6 +266,12 @@ class NewsFragment : BaseNewsFragment() {
         changeLayoutManager(orientation, binding.rvNews)
     }
 
+    private fun scrollToTop() {
+        binding.rvNews.post {
+            binding.rvNews.scrollToPosition(0)
+        }
+    }
+
     private val observer: AdapterDataObserver = object : AdapterDataObserver() {
         override fun onChanged() {
             adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, "news") }
@@ -296,6 +309,7 @@ class NewsFragment : BaseNewsFragment() {
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 searchFilteredList = applySearchFilter(labelFilteredList)
                 setData(searchFilteredList)
+                scrollToTop()
             }
             override fun afterTextChanged(s: Editable) {}
         })
@@ -326,6 +340,7 @@ class NewsFragment : BaseNewsFragment() {
                 labelFilteredList = applyLabelFilter(filteredNewsList)
                 searchFilteredList = applySearchFilter(labelFilteredList)
                 setData(searchFilteredList)
+                scrollToTop()
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
@@ -426,6 +441,10 @@ class NewsFragment : BaseNewsFragment() {
 
     override fun onDestroyView() {
         updatedNewsList?.removeAllChangeListeners()
+        updatedNewsList = null
+        if (isRealmInitialized()) {
+            mRealm.close()
+        }
         _binding = null
         super.onDestroyView()
     }

@@ -11,8 +11,6 @@ import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -48,6 +46,7 @@ import io.realm.RealmObject
 import io.realm.RealmResults
 import kotlin.math.ceil
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -89,8 +88,8 @@ import org.ole.planet.myplanet.ui.userprofile.BecomeMemberActivity
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
 import org.ole.planet.myplanet.utilities.DialogUtils.guestDialog
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
-import org.ole.planet.myplanet.utilities.FileUtils.totalAvailableMemoryRatio
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NotificationUtils
@@ -153,7 +152,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun initViews() {
         binding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
         setupUI(binding.activityDashboardParentLayout, this@DashboardActivity)
         setSupportActionBar(binding.myToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
@@ -319,7 +318,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         if (!doubleBackToExitPressedOnce) {
                             doubleBackToExitPressedOnce = true
                             toast(MainApplication.context, getString(R.string.press_back_again_to_exit))
-                            Handler(Looper.getMainLooper()).postDelayed({ doubleBackToExitPressedOnce = false }, 2000)
+                            lifecycleScope.launch {
+                                delay(2000)
+                                doubleBackToExitPressedOnce = false
+                            }
                         } else {
                             val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
                             if (!BuildConfig.LITE && fragment is BaseContainerFragment) {
@@ -408,9 +410,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
 
-            Handler(Looper.getMainLooper()).postDelayed({
+            lifecycleScope.launch {
+                delay(1000)
                 isFromNotificationAction = false
-            }, 1000)
+            }
         }
     }
     
@@ -527,28 +530,24 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                                 fragment.refreshNotificationsList()
                             }
                         } else {
-                            Handler(Looper.getMainLooper()).postDelayed({
-                                lifecycleScope.launch {
+                            lifecycleScope.launch {
+                                delay(300)
+                                try {
+                                    mRealm.refresh()
+                                    val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+                                    onNotificationCountUpdated(unreadCount)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    delay(300)
                                     try {
                                         mRealm.refresh()
                                         val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
                                         onNotificationCountUpdated(unreadCount)
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                        Handler(Looper.getMainLooper()).postDelayed({
-                                            lifecycleScope.launch {
-                                                try {
-                                                    mRealm.refresh()
-                                                    val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
-                                                    onNotificationCountUpdated(unreadCount)
-                                                } catch (e2: Exception) {
-                                                    e2.printStackTrace()
-                                                }
-                                            }
-                                        }, 300)
+                                    } catch (e2: Exception) {
+                                        e2.printStackTrace()
                                     }
                                 }
-                            }, 300)
+                            }
                         }
                     } else {
                         android.util.Log.w("DashboardActivity", "SystemNotificationReceiver: User ID is null")
@@ -586,14 +585,15 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
             try {
                 dashboardViewModel.updateResourceNotification(userId)
-                databaseService.realmInstance.use { backgroundRealm ->
-                    backgroundRealm.executeTransaction { realm ->
-                        val createdNotifications = createNotifications(realm, userId)
-                        newNotifications.addAll(createdNotifications)
-                    }
-
-                    unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+                val backgroundRealm = databaseService.realmInstance
+                try {
+                    val createdNotifications = createNotifications(backgroundRealm, userId)
+                    newNotifications.addAll(createdNotifications)
+                } finally {
+                    backgroundRealm.close()
                 }
+
+                unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -706,12 +706,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun createNotifications(realm: Realm, userId: String?): List<NotificationUtils.NotificationConfig> {
+    private suspend fun createNotifications(realm: Realm, userId: String?): List<NotificationUtils.NotificationConfig> {
         val newNotifications = mutableListOf<NotificationUtils.NotificationConfig>()
         createSurveyDatabaseNotifications(realm, userId)
         createTaskDatabaseNotifications(realm, userId)
         createStorageDatabaseNotifications(realm, userId)
         createJoinRequestDatabaseNotifications(realm, userId)
+
+        realm.refresh()
 
         val unreadNotifications = realm.where(RealmNotification::class.java)
             .equalTo("userId", userId)
@@ -762,7 +764,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun createSurveyDatabaseNotifications(realm: Realm, userId: String?) {
+    private suspend fun createSurveyDatabaseNotifications(realm: Realm, userId: String?) {
         val pendingSurveys = realm.where(RealmSubmission::class.java)
             .equalTo("userId", userId)
             .equalTo("status", "pending")
@@ -776,11 +778,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 .findFirst()
                 ?.name
         }.forEach { title ->
-            dashboardViewModel.createNotificationIfNotExists(realm, "survey", title, title, userId)
+            dashboardViewModel.createNotificationIfNotExists("survey", title, title, userId)
         }
     }
 
-    private fun createTaskDatabaseNotifications(realm: Realm, userId: String?) {
+    private suspend fun createTaskDatabaseNotifications(realm: Realm, userId: String?) {
         val tasks = realm.where(RealmTeamTask::class.java)
             .notEqualTo("status", "archived")
             .equalTo("completed", false)
@@ -789,7 +791,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         tasks.forEach { task ->
             dashboardViewModel.createNotificationIfNotExists(
-                realm,
                 "task",
                 "${task.title} ${formatDate(task.deadline)}",
                 task.id,
@@ -798,16 +799,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun createStorageDatabaseNotifications(realm: Realm, userId: String?) {
-        val storageRatio = totalAvailableMemoryRatio
+    private suspend fun createStorageDatabaseNotifications(realm: Realm, userId: String?) {
+        val storageRatio = FileUtils.totalAvailableMemoryRatio(this)
         if (storageRatio > 85) {
-            dashboardViewModel.createNotificationIfNotExists(realm, "storage", "$storageRatio%", "storage", userId)
+            dashboardViewModel.createNotificationIfNotExists("storage", "$storageRatio%", "storage", userId)
         }
 
-        dashboardViewModel.createNotificationIfNotExists(realm, "storage", "90%", "storage_test", userId)
+        dashboardViewModel.createNotificationIfNotExists("storage", "90%", "storage_test", userId)
     }
 
-    private fun createJoinRequestDatabaseNotifications(realm: Realm, userId: String?) {
+    private suspend fun createJoinRequestDatabaseNotifications(realm: Realm, userId: String?) {
         val teamLeaderMemberships = realm.where(RealmMyTeam::class.java)
             .equalTo("userId", userId)
             .equalTo("docType", "membership")
@@ -831,10 +832,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
                 val requesterName = requester?.name ?: "Unknown User"
                 val teamName = team?.name ?: "Unknown Team"
-                val message = "$requesterName has requested to join $teamName"
+                val message = getString(R.string.user_requested_to_join_team, requesterName, teamName)
 
                 dashboardViewModel.createNotificationIfNotExists(
-                    realm, "join_request", message, joinRequest._id, userId
+                    "join_request", message, joinRequest._id, userId
                 )
             }
         }
@@ -1045,7 +1046,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         when (selectedMenuId) {
             R.string.menu_myplanet -> openCallFragment(BellDashboardFragment())
             R.string.menu_library -> openCallFragment(ResourcesFragment())
-            R.string.menu_meetups -> {}
             R.string.menu_surveys -> openCallFragment(SurveyFragment())
             R.string.menu_courses -> openCallFragment(CoursesFragment())
             R.string.menu_community -> openCallFragment(CommunityTabFragment())
@@ -1227,17 +1227,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         if (intent?.action == "REFRESH_NOTIFICATION_BADGE") {
             val userId = user?.id
             if (userId != null) {
-                Handler(Looper.getMainLooper()).postDelayed({
-                    lifecycleScope.launch {
-                        try {
-                            mRealm.refresh()
-                            val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
-                            onNotificationCountUpdated(unreadCount)
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
+                lifecycleScope.launch {
+                    delay(100)
+                    try {
+                        mRealm.refresh()
+                        val unreadCount = dashboardViewModel.getUnreadNotificationsSize(userId)
+                        onNotificationCountUpdated(unreadCount)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
-                }, 100)
+                }
             }
         }
     }

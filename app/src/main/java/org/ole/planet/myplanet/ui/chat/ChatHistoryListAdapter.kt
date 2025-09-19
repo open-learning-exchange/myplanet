@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.Gson
 import io.realm.Case
@@ -28,6 +29,7 @@ import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.ui.news.ExpandableListAdapter
 import org.ole.planet.myplanet.ui.news.GrandChildAdapter
+import org.ole.planet.myplanet.utilities.DiffUtils
 
 class ChatHistoryListAdapter(
     var context: Context,
@@ -35,10 +37,24 @@ class ChatHistoryListAdapter(
     private val fragment: ChatHistoryListFragment,
     private val databaseService: DatabaseService,
     private val settings: SharedPreferences
-) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+) : ListAdapter<RealmChatHistory, ChatHistoryListAdapter.ViewHolderChat>(
+    DiffUtils.itemCallback(
+        areItemsTheSame = { oldItem, newItem ->
+            val oldId = oldItem._id
+            val newId = newItem._id
+            oldId != null && newId != null && oldId == newId
+        },
+        areContentsTheSame = { oldItem, newItem ->
+            oldItem._rev == newItem._rev &&
+                oldItem.lastUsed == newItem.lastUsed &&
+                oldItem.title == newItem.title &&
+                oldItem.conversations?.firstOrNull()?.query ==
+                newItem.conversations?.firstOrNull()?.query
+        }
+    )
+) {
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
     private var chatHistoryItemClickListener: ChatHistoryItemClickListener? = null
-    private var filteredChatHistory: List<RealmChatHistory> = chatHistory
     private var chatTitle: String? = ""
     private lateinit var expandableListAdapter: ExpandableListAdapter
     private lateinit var expandableTitleList: List<String>
@@ -48,7 +64,7 @@ class ChatHistoryListAdapter(
 
     init {
         chatHistory = chatHistory.sortedByDescending { it.lastUsed }
-        filteredChatHistory = chatHistory
+        submitList(chatHistory)
     }
 
     interface ChatHistoryItemClickListener {
@@ -60,14 +76,14 @@ class ChatHistoryListAdapter(
     }
 
     fun filter(query: String) {
-        filteredChatHistory = chatHistory.filter { chat ->
+        val filteredChatHistory = chatHistory.filter { chat ->
             if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
                 chat.conversations?.get(0)?.query?.contains(query, ignoreCase = true) == true
             } else {
-                chat.title?.contains(query, ignoreCase = true) ==true
+                chat.title?.contains(query, ignoreCase = true) == true
             }
         }
-        notifyDataSetChanged()
+        submitList(filteredChatHistory)
     }
 
     private fun normalizeText(str: String): String {
@@ -75,16 +91,16 @@ class ChatHistoryListAdapter(
             .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
     }
 
-    fun search(s: String, isFullSearch: Boolean, isQuestion: Boolean){
-        if(isFullSearch){
+    fun search(s: String, isFullSearch: Boolean, isQuestion: Boolean) {
+        val results = if (isFullSearch) {
             FullConvoSearch(s, isQuestion)
         } else {
             searchByTitle(s)
         }
-        notifyDataSetChanged()
+        submitList(results)
     }
 
-    private fun FullConvoSearch(s: String, isQuestion: Boolean){
+    private fun FullConvoSearch(s: String, isQuestion: Boolean): List<RealmChatHistory> {
         var conversation: String?
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQuery = normalizeText(s)
@@ -94,30 +110,28 @@ class ChatHistoryListAdapter(
         val containsQuery = mutableListOf<RealmChatHistory>()
 
         for (chat in chatHistory) {
-            if(chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
+            if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
                 for (i in 0 until chat.conversations!!.size) {
-                    conversation = if(isQuestion){
+                    conversation = if (isQuestion) {
                         chat.conversations?.get(i)?.query?.let { normalizeText(it) }
-                    } else{
+                    } else {
                         chat.conversations?.get(i)?.response?.let { normalizeText(it) }
                     }
-                    if(conversation == null) continue
+                    if (conversation == null) continue
                     if (conversation.startsWith(normalizedQuery, ignoreCase = true)) {
-                        if(i == 0) inTitleStartQuery.add(chat)
-                        else startsWithQuery.add(chat)
+                        if (i == 0) inTitleStartQuery.add(chat) else startsWithQuery.add(chat)
                         break
                     } else if (queryParts.all { conversation.contains(normalizeText(it), ignoreCase = true) }) {
-                        if(i == 0) inTitleContainsQuery.add(chat)
-                        else containsQuery.add(chat)
+                        if (i == 0) inTitleContainsQuery.add(chat) else containsQuery.add(chat)
                         break
                     }
                 }
             }
         }
-        filteredChatHistory = inTitleStartQuery+ inTitleContainsQuery + startsWithQuery + containsQuery
+        return inTitleStartQuery + inTitleContainsQuery + startsWithQuery + containsQuery
     }
 
-    private fun searchByTitle(s: String) {
+    private fun searchByTitle(s: String): List<RealmChatHistory> {
         var title: String?
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQuery = normalizeText(s)
@@ -125,22 +139,22 @@ class ChatHistoryListAdapter(
         val containsQuery = mutableListOf<RealmChatHistory>()
 
         for (chat in chatHistory) {
-            if(chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
+            if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
                 title = chat.conversations?.get(0)?.query?.let { normalizeText(it) }
             } else {
                 title = chat.title?.let { normalizeText(it) }
             }
-            if(title == null) continue
+            if (title == null) continue
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                 startsWithQuery.add(chat)
             } else if (queryParts.all { title.contains(normalizeText(it), ignoreCase = true) }) {
                 containsQuery.add(chat)
             }
         }
-        filteredChatHistory = startsWithQuery + containsQuery
+        return startsWithQuery + containsQuery
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderChat {
         rowChatHistoryBinding = RowChatHistoryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         databaseService.withRealm { realm ->
             val userId = settings.getString("userId", "")
@@ -160,47 +174,42 @@ class ChatHistoryListAdapter(
         return ViewHolderChat(rowChatHistoryBinding)
     }
 
-    override fun getItemCount(): Int {
-        return filteredChatHistory.size
-    }
-
     fun updateChatHistory(newChatHistory: List<RealmChatHistory>) {
         chatHistory = newChatHistory.sortedByDescending { it.lastUsed }
-        filteredChatHistory = chatHistory
-        notifyDataSetChanged()
+        submitList(chatHistory)
     }
 
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        val viewHolderChat = holder as ViewHolderChat
-        if (filteredChatHistory[position].conversations != null && filteredChatHistory[position].conversations?.isNotEmpty() == true) {
-            viewHolderChat.rowChatHistoryBinding.chatTitle.text = filteredChatHistory[position].conversations?.get(0)?.query
-            viewHolderChat.rowChatHistoryBinding.chatTitle.contentDescription = filteredChatHistory[position].conversations?.get(0)?.query
-            chatTitle = filteredChatHistory[position].conversations?.get(0)?.query
+    override fun onBindViewHolder(holder: ViewHolderChat, position: Int) {
+        val item = getItem(position)
+        if (item.conversations != null && item.conversations?.isNotEmpty() == true) {
+            holder.rowChatHistoryBinding.chatTitle.text = item.conversations?.get(0)?.query
+            holder.rowChatHistoryBinding.chatTitle.contentDescription = item.conversations?.get(0)?.query
+            chatTitle = item.conversations?.get(0)?.query
         } else {
-            viewHolderChat.rowChatHistoryBinding.chatTitle.text = filteredChatHistory[position].title
-            viewHolderChat.rowChatHistoryBinding.chatTitle.contentDescription = filteredChatHistory[position].title
-            chatTitle = filteredChatHistory[position].title
+            holder.rowChatHistoryBinding.chatTitle.text = item.title
+            holder.rowChatHistoryBinding.chatTitle.contentDescription = item.title
+            chatTitle = item.title
         }
 
-        viewHolderChat.rowChatHistoryBinding.root.setOnClickListener {
-            viewHolderChat.rowChatHistoryBinding.chatCardView.contentDescription = chatTitle
+        holder.rowChatHistoryBinding.root.setOnClickListener {
+            holder.rowChatHistoryBinding.chatCardView.contentDescription = chatTitle
             chatHistoryItemClickListener?.onChatHistoryItemClicked(
-                filteredChatHistory[position].conversations?.toList(),
-                "${filteredChatHistory[position]._id}",
-                filteredChatHistory[position]._rev,
-                filteredChatHistory[position].aiProvider
+                item.conversations?.toList(),
+                "${item._id}",
+                item._rev,
+                item.aiProvider
             )
         }
 
         val isInNewsList = newsList.any { newsItem ->
-            newsItem.newsId == filteredChatHistory[position]._id
+            newsItem.newsId == item._id
         }
 
         if (isInNewsList) {
-            viewHolderChat.rowChatHistoryBinding.shareChat.setImageResource(R.drawable.baseline_check_24)
+            holder.rowChatHistoryBinding.shareChat.setImageResource(R.drawable.baseline_check_24)
         } else {
-            viewHolderChat.rowChatHistoryBinding.shareChat.setImageResource(R.drawable.baseline_share_24)
-            viewHolderChat.rowChatHistoryBinding.shareChat.setOnClickListener {
+            holder.rowChatHistoryBinding.shareChat.setImageResource(R.drawable.baseline_share_24)
+            holder.rowChatHistoryBinding.shareChat.setOnClickListener {
                 val chatShareDialogBinding = ChatShareDialogBinding.inflate(LayoutInflater.from(context))
                 var dialog: AlertDialog? = null
 
@@ -225,9 +234,9 @@ class ChatHistoryListAdapter(
                             )
 
                             if (expandableDetailList[expandableTitleList[groupPosition]]?.get(childPosition) == context.getString(R.string.teams)) {
-                                showGrandChildRecyclerView(teamList, context.getString(R.string.teams), filteredChatHistory[position])
+                                showGrandChildRecyclerView(teamList, context.getString(R.string.teams), item)
                             } else {
-                                showGrandChildRecyclerView(enterpriseList, context.getString(R.string.enterprises), filteredChatHistory[position])
+                                showGrandChildRecyclerView(enterpriseList, context.getString(R.string.enterprises), item)
                             }
                         }
                     } else {
@@ -238,7 +247,7 @@ class ChatHistoryListAdapter(
                             val community = realm.where(RealmMyTeam::class.java)
                                 .equalTo("_id", teamId)
                                 .findFirst()?.let { realm.copyFromRealm(it) }
-                            showEditTextAndShareButton(community, context.getString(R.string.community), filteredChatHistory[position])
+                            showEditTextAndShareButton(community, context.getString(R.string.community), item)
                         }
                     }
                     dialog?.dismiss()
@@ -270,12 +279,13 @@ class ChatHistoryListAdapter(
             context.getString(R.string.enterprises)
         }
 
-        val grandChildAdapter = GrandChildAdapter(items, section) { selectedItem ->
+        val grandChildAdapter = GrandChildAdapter(section) { selectedItem ->
             showEditTextAndShareButton(selectedItem, section, realmChatHistory)
             dialog?.dismiss()
         }
         grandChildDialogBinding.recyclerView.layoutManager = LinearLayoutManager(context)
         grandChildDialogBinding.recyclerView.adapter = grandChildAdapter
+        grandChildAdapter.submitList(items)
 
         val builder = AlertDialog.Builder(context, R.style.CustomAlertDialog)
         builder.setView(grandChildDialogBinding.root)

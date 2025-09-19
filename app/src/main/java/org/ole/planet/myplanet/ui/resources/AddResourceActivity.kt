@@ -11,35 +11,32 @@ import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import io.realm.RealmList
 import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
-import kotlin.toString
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createFromResource
-import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.CheckboxListView
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 @AndroidEntryPoint
 class AddResourceActivity : AppCompatActivity() {
     @Inject
-    lateinit var databaseService: DatabaseService
-    @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
+    @Inject
+    lateinit var libraryRepository: LibraryRepository
     private lateinit var binding: ActivityAddResourceBinding
-    private lateinit var mRealm: Realm
     var userModel: RealmUserModel? = null
     var subjects: RealmList<String>? = null
     var levels: RealmList<String>? = null
@@ -55,7 +52,7 @@ class AddResourceActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding = ActivityAddResourceBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, binding.root)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, binding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
         userModel = userProfileDbHandler.userModel
@@ -63,15 +60,7 @@ class AddResourceActivity : AppCompatActivity() {
         levels = RealmList()
         subjects = RealmList()
         resourceFor = RealmList()
-        mRealm = databaseService.realmInstance
         initializeViews()
-    }
-
-    override fun onDestroy() {
-        if (this::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
-        super.onDestroy()
     }
 
     private fun initializeViews() {
@@ -97,18 +86,18 @@ class AddResourceActivity : AppCompatActivity() {
         val title = binding.etTitle.text.toString().trim { it <= ' ' }
         if (!validate(title)) return
         val id = UUID.randomUUID().toString()
-        mRealm.executeTransactionAsync(Realm.Transaction { realm: Realm ->
-            val resource = realm.createObject(RealmMyLibrary::class.java, id)
-            resource.title = title
-            createResource(resource, id)
-        }, Realm.Transaction.OnSuccess {
-            val myObject = mRealm.where(RealmMyLibrary::class.java)
-                .equalTo("resourceId", id).findFirst()
-            createFromResource(myObject, mRealm, userModel?.id)
-            onAdd(mRealm, "resources", userModel?.id, id)
+        val resource = RealmMyLibrary().apply {
+            this.id = id
+            this.title = title
+            createResource(this, id)
+            setUserId(userModel?.id)
+        }
+        lifecycleScope.launch {
+            libraryRepository.saveLibraryItem(resource)
+            libraryRepository.markResourceAdded(userModel?.id, id)
             toast(this@AddResourceActivity, getString(R.string.added_to_my_library))
-            navigateToResourceDetail(myObject?.resourceId)
-        })
+            navigateToResourceDetail(id)
+        }
     }
 
     private fun navigateToResourceDetail(libraryId: String?) {

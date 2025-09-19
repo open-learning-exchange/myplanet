@@ -33,14 +33,14 @@ import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.ui.news.AdapterNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
-import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Constants.showBetaFeature
-import org.ole.planet.myplanet.utilities.FileUtils.openOleFolder
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
 
 @AndroidEntryPoint
 class DiscussionListFragment : BaseTeamFragment() {
-    private lateinit var fragmentDiscussionListBinding: FragmentDiscussionListBinding
+    private var _binding: FragmentDiscussionListBinding? = null
+    private val binding get() = _binding!!
     private var updatedNewsList: RealmResults<RealmNews>? = null
     
     @Inject
@@ -48,8 +48,8 @@ class DiscussionListFragment : BaseTeamFragment() {
     private var filteredNewsList: List<RealmNews?> = listOf()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentDiscussionListBinding = FragmentDiscussionListBinding.inflate(inflater, container, false)
-        fragmentDiscussionListBinding.addMessage.setOnClickListener { showAddMessage() }
+        _binding = FragmentDiscussionListBinding.inflate(inflater, container, false)
+        binding.addMessage.setOnClickListener { showAddMessage() }
 
         if (shouldQueryTeamFromRealm()) {
             team = try {
@@ -68,11 +68,11 @@ class DiscussionListFragment : BaseTeamFragment() {
             }
         }
         if (user?.id?.startsWith("guest") == true) {
-            fragmentDiscussionListBinding.addMessage.visibility = View.GONE
-        }else if(isMember()) {
-            fragmentDiscussionListBinding.addMessage.visibility = View.VISIBLE
-        } else if(team?.isPublic == true && !isMember()) {
-            fragmentDiscussionListBinding.addMessage.visibility = View.VISIBLE
+            binding.addMessage.visibility = View.GONE
+        } else if (isMember()) {
+            binding.addMessage.visibility = View.VISIBLE
+        } else if (team?.isPublic == true && !isMember()) {
+            binding.addMessage.visibility = View.VISIBLE
         }
         updatedNewsList = mRealm.where(RealmNews::class.java).isEmpty("replyTo").sort("time", Sort.DESCENDING).findAllAsync()
 
@@ -80,7 +80,7 @@ class DiscussionListFragment : BaseTeamFragment() {
             filteredNewsList = filterNewsList(results)
             setData(filteredNewsList)
         }
-        return fragmentDiscussionListBinding.root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -96,7 +96,7 @@ class DiscussionListFragment : BaseTeamFragment() {
             }
             notification?.lastCount = count
         }
-        changeLayoutManager(resources.configuration.orientation, fragmentDiscussionListBinding.rvDiscussion)
+        changeLayoutManager(resources.configuration.orientation, binding.rvDiscussion)
         showRecyclerView(realmNewsList)
     }
 
@@ -166,80 +166,48 @@ class DiscussionListFragment : BaseTeamFragment() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        changeLayoutManager(newConfig.orientation, fragmentDiscussionListBinding.rvDiscussion)
+        changeLayoutManager(newConfig.orientation, binding.rvDiscussion)
     }
 
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
-        val existingAdapter = fragmentDiscussionListBinding.rvDiscussion.adapter
+        val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
             val adapterNews = activity?.let {
-                realmNewsList?.let { list ->
-                    AdapterNews(it, list.toMutableList(), user, null, getEffectiveTeamName(), teamId, userProfileDbHandler)
-                }
+                AdapterNews(it, user, null, getEffectiveTeamName(), teamId, userProfileDbHandler)
             }
             adapterNews?.setmRealm(mRealm)
             adapterNews?.setListener(this)
             if (!isMember()) adapterNews?.setNonTeamMember(true)
-            fragmentDiscussionListBinding.rvDiscussion.adapter = adapterNews
+            realmNewsList?.let { adapterNews?.updateList(it) }
+            binding.rvDiscussion.adapter = adapterNews
             adapterNews?.let {
-                showNoData(fragmentDiscussionListBinding.tvNodata, it.itemCount, "discussions")
+                showNoData(binding.tvNodata, it.itemCount, "discussions")
             }
         } else {
             (existingAdapter as? AdapterNews)?.let { adapter ->
                 realmNewsList?.let {
                     adapter.updateList(it)
-                    showNoData(fragmentDiscussionListBinding.tvNodata, adapter.itemCount, "discussions")
+                    showNoData(binding.tvNodata, adapter.itemCount, "discussions")
                 }
             }
         }
     }
 
     private fun showAddMessage() {
-        val binding = AlertInputBinding.inflate(layoutInflater)
-        val layout = binding.tlInput
-        binding.addNewsImage.setOnClickListener {
-            llImage = binding.llImage
-            val openFolderIntent = openOleFolder()
+        val inputBinding = AlertInputBinding.inflate(layoutInflater)
+        val layout = inputBinding.tlInput
+        inputBinding.addNewsImage.setOnClickListener {
+            llImage = inputBinding.llImage
+            val openFolderIntent = FileUtils.openOleFolder(requireContext())
             openFolderLauncher.launch(openFolderIntent)
         }
-        binding.llImage.visibility = if (showBetaFeature(Constants.KEY_NEWSADDIMAGE, requireContext())) View.VISIBLE else View.GONE
         layout.hint = getString(R.string.enter_message)
         layout.editText?.setHintTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-        binding.custMsg.text = getString(R.string.add_message)
+        inputBinding.custMsg.text = getString(R.string.add_message)
 
         val dialog = AlertDialog.Builder(requireActivity(), R.style.CustomAlertDialog)
-            .setView(binding.root)
-            .setPositiveButton(getString(R.string.save)) { _: DialogInterface?, _: Int ->
-                val msg = "${layout.editText?.text}".trim { it <= ' ' }
-                if (msg.isEmpty()) {
-                    Utilities.toast(activity, getString(R.string.message_is_required))
-                    return@setPositiveButton
-                }
-                val map = HashMap<String?, String>()
-                map["viewInId"] = getEffectiveTeamId()
-                map["viewInSection"] = "teams"
-                map["message"] = msg
-                map["messageType"] = getEffectiveTeamType()
-                map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
-                map["name"] = getEffectiveTeamName()
-                
-                lifecycleScope.launch(Dispatchers.IO) {
-                    user?.let { userModel ->
-                        databaseService.withRealmAsync { realm ->
-                            createNews(map, realm, userModel, imageList)
-                        }
-                        withContext(Dispatchers.Main) {
-                            fragmentDiscussionListBinding.rvDiscussion.adapter?.notifyDataSetChanged()
-                            setData(news)
-                            fragmentDiscussionListBinding.rvDiscussion.scrollToPosition(0)
-                        }
-                    }
-                }
-                
-                layout.editText?.text?.clear()
-                imageList.clear()
-                llImage?.removeAllViews()
-            }
+            .setView(inputBinding.root)
+            .setPositiveButton(getString(R.string.save), null)
             .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
                 layout.editText?.text?.clear()
                 imageList.clear()
@@ -247,6 +215,45 @@ class DiscussionListFragment : BaseTeamFragment() {
                 dialog.dismiss()
             }
             .create()
+
+        dialog.setOnShowListener {
+            val saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            saveButton.setOnClickListener {
+                val msg = "${layout.editText?.text}".trim { it <= ' ' }
+                if (msg.isEmpty()) {
+                    Utilities.toast(activity, getString(R.string.message_is_required))
+                    return@setOnClickListener
+                }
+
+                val map = HashMap<String?, String>()
+                map["viewInId"] = getEffectiveTeamId()
+                map["viewInSection"] = "teams"
+                map["message"] = msg
+                map["messageType"] = getEffectiveTeamType()
+                map["messagePlanetCode"] = team?.teamPlanetCode ?: ""
+                map["name"] = getEffectiveTeamName()
+
+                lifecycleScope.launch(Dispatchers.IO) {
+                    user?.let { userModel ->
+                        databaseService.withRealmAsync { realm ->
+                            createNews(map, realm, userModel, imageList)
+                        }
+                        withContext(Dispatchers.Main) {
+                            this@DiscussionListFragment.binding.rvDiscussion.adapter?.notifyDataSetChanged()
+                            setData(news)
+                            this@DiscussionListFragment.binding.rvDiscussion.post {
+                                this@DiscussionListFragment.binding.rvDiscussion.smoothScrollToPosition(0)
+                            }
+                        }
+                    }
+                }
+
+                layout.editText?.text?.clear()
+                imageList.clear()
+                llImage?.removeAllViews()
+                dialog.dismiss()
+            }
+        }
 
         dialog.show()
     }
@@ -261,6 +268,7 @@ class DiscussionListFragment : BaseTeamFragment() {
         if (isRealmInitialized()) {
             mRealm.close()
         }
+        _binding = null
         super.onDestroyView()
     }
 

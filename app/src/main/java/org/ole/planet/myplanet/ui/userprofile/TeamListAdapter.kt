@@ -7,6 +7,7 @@ import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.UserListItemBinding
 import org.ole.planet.myplanet.model.User
+import org.ole.planet.myplanet.utilities.DiffUtils
 
 class TeamListAdapter(
     private var membersList: MutableList<User>,
@@ -25,8 +26,11 @@ class TeamListAdapter(
         holder.bindView(membersList[position])
 
         holder.itemView.setOnClickListener {
-            val member = membersList[position]
-            onItemClickListener.onItemClick(member)
+            val currentPosition = holder.bindingAdapterPosition
+            if (currentPosition != RecyclerView.NO_POSITION) {
+                val member = membersList[currentPosition]
+                onItemClickListener.onItemClick(member)
+            }
         }
     }
 
@@ -35,9 +39,22 @@ class TeamListAdapter(
     }
 
     fun updateList(newUserList: MutableList<User>) {
-        membersList = newUserList
-        notifyDataSetChanged()
+        val diffResult = DiffUtils.calculateDiff(
+            membersList,
+            newUserList,
+            areItemsTheSame = { old, new -> old.name == new.name },
+            areContentsTheSame = { old, new ->
+                old.name == new.name &&
+                    old.fullName == new.fullName &&
+                    old.image == new.image
+            }
+        )
+        membersList.clear()
+        membersList.addAll(newUserList)
+        diffResult.dispatchUpdatesTo(this)
     }
+    
+    fun getList(): List<User> = membersList
 
     class ViewHolder(private val binding: UserListItemBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bindView(account: User) {
@@ -53,4 +70,5 @@ class TeamListAdapter(
                 .into(binding.userProfile)
         }
     }
+    
 }

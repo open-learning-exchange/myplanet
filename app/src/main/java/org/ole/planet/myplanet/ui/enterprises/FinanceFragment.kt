@@ -1,3 +1,4 @@
+
 package org.ole.planet.myplanet.ui.enterprises
 
 import android.content.DialogInterface
@@ -7,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.DatePicker
 import androidx.appcompat.app.AlertDialog
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import io.realm.Realm
 import io.realm.RealmResults
@@ -16,6 +18,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddTransactionBinding
 import org.ole.planet.myplanet.databinding.FragmentFinanceBinding
@@ -26,7 +29,8 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utilities.Utilities
 
 class FinanceFragment : BaseTeamFragment() {
-    private lateinit var fragmentFinanceBinding: FragmentFinanceBinding
+    private var _binding: FragmentFinanceBinding? = null
+    private val binding get() = _binding!!
     private lateinit var addTransactionBinding: AddTransactionBinding
     private var adapterFinance: AdapterFinance? = null
     var date: Calendar? = null
@@ -45,22 +49,27 @@ class FinanceFragment : BaseTeamFragment() {
         }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentFinanceBinding = FragmentFinanceBinding.inflate(inflater, container, false)
+        _binding = FragmentFinanceBinding.inflate(inflater, container, false)
         date = Calendar.getInstance()
-        fragmentFinanceBinding.tvFromDateCalendar.setOnClickListener {
+        updateToDateState(false)
+        binding.tvFromDateCalendar.setOnClickListener {
             showDatePickerDialog(isFromDate = true)
         }
 
-        fragmentFinanceBinding.tvFromDateCalendarIcon.setOnClickListener {
+        binding.tvFromDateCalendarIcon.setOnClickListener {
             showDatePickerDialog(isFromDate = true)
         }
 
-        fragmentFinanceBinding.etToDate.setOnClickListener {
-            showDatePickerDialog(isFromDate = false)
+        binding.etToDate.setOnClickListener {
+            if (binding.tvFromDateCalendar.text.toString().isNotEmpty()) {
+                showDatePickerDialog(isFromDate = false)
+            }
         }
 
-        fragmentFinanceBinding.tvToDateCalendarIcon.setOnClickListener {
-            showDatePickerDialog(isFromDate = false)
+        binding.tvToDateCalendarIcon.setOnClickListener {
+            if (binding.tvFromDateCalendar.text.toString().isNotEmpty()) {
+                showDatePickerDialog(isFromDate = false)
+            }
         }
 
 
@@ -71,23 +80,24 @@ class FinanceFragment : BaseTeamFragment() {
             updatedFinanceList(results)
         }
 
-        fragmentFinanceBinding.llDate.setOnClickListener {
-            fragmentFinanceBinding.imgDate.rotation += 180
+        binding.llDate.setOnClickListener {
+            binding.imgDate.rotation += 180
             val sortOrder = if (isAsc) Sort.DESCENDING else Sort.ASCENDING
             val sortedResults: RealmResults<RealmMyTeam> = list!!.sort("date", sortOrder)
             updatedFinanceList(sortedResults)
             isAsc = !isAsc
         }
-        fragmentFinanceBinding.btnReset.setOnClickListener {
-            fragmentFinanceBinding.tvFromDateCalendar.setText("")
-            fragmentFinanceBinding.etToDate.setText("")
+        binding.btnReset.setOnClickListener {
+            binding.tvFromDateCalendar.setText("")
+            binding.etToDate.setText("")
+            updateToDateState(false)
             list = mRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
                 .equalTo("teamId", teamId).equalTo("docType", "transaction")
                 .sort("date", Sort.DESCENDING).findAll()
             updatedFinanceList(list as RealmResults<RealmMyTeam>)
-            showNoData(fragmentFinanceBinding.tvNodata, adapterFinance?.itemCount, "finances")
+            showNoData(binding.tvNodata, adapterFinance?.itemCount, "finances")
         }
-        return fragmentFinanceBinding.root
+        return binding.root
     }
 
     private fun showDatePickerDialog(isFromDate: Boolean) {
@@ -106,9 +116,18 @@ class FinanceFragment : BaseTeamFragment() {
                 val formattedDate = selectedDate.formatToString("yyyy-MM-dd")
 
                 if (isFromDate) {
-                    fragmentFinanceBinding.tvFromDateCalendar.setText(formattedDate)
+                    binding.tvFromDateCalendar.setText(formattedDate)
+                    val toDateText = binding.etToDate.text.toString()
+                    if (toDateText.isNotEmpty()) {
+                        val fromDateMillis = selectedDate.timeInMillis
+                        val toDateMillis = parseDate(toDateText)?.timeInMillis
+                        if (toDateMillis != null && toDateMillis < fromDateMillis) {
+                            binding.etToDate.setText("")
+                        }
+                    }
+                    updateToDateState(true)
                 } else {
-                    fragmentFinanceBinding.etToDate.setText(formattedDate)
+                    binding.etToDate.setText(formattedDate)
                 }
 
                 filterIfBothDatesSelected()
@@ -117,6 +136,16 @@ class FinanceFragment : BaseTeamFragment() {
             now[Calendar.MONTH],
             now[Calendar.DAY_OF_MONTH]
         )
+
+        if (!isFromDate) {
+            val fromDateText = binding.tvFromDateCalendar.text.toString()
+            if (fromDateText.isNotEmpty()) {
+                val fromDate = parseDate(fromDateText)
+                if (fromDate != null) {
+                    datePickerDialog.datePicker.minDate = fromDate.timeInMillis
+                }
+            }
+        }
         datePickerDialog.show()
     }
 
@@ -126,10 +155,33 @@ class FinanceFragment : BaseTeamFragment() {
         return dateFormat.format(this.time)
     }
 
+    private fun updateToDateState(enabled: Boolean) {
+        binding.etToDate.isEnabled = enabled
+        binding.tvToDateCalendarIcon.isEnabled = enabled
+        binding.etToDate.alpha = if (enabled) 1.0f else 0.5f
+        binding.tvToDateCalendarIcon.alpha = if (enabled) 1.0f else 0.5f
+    }
+
+    private fun parseDate(dateString: String): Calendar? {
+        return try {
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val date = dateFormat.parse(dateString)
+            if (date != null) {
+                Calendar.getInstance().apply {
+                    time = date
+                }
+            } else {
+                null
+            }
+        } catch (e: ParseException) {
+            null
+        }
+    }
+
 
     private fun filterIfBothDatesSelected() {
-        val fromDate = fragmentFinanceBinding.tvFromDateCalendar.text.toString()
-        val toDate = fragmentFinanceBinding.etToDate.text.toString()
+        val fromDate = binding.tvFromDateCalendar.text.toString()
+        val toDate = binding.etToDate.text.toString()
         if (fromDate.isNotEmpty() && toDate.isNotEmpty()) {
             filterDataByDateRange(fromDate, toDate)
         }
@@ -163,16 +215,16 @@ class FinanceFragment : BaseTeamFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         if (user?.isManager() == true || user?.isLeader() == true) {
-            fragmentFinanceBinding.addTransaction.visibility = View.VISIBLE
+            binding.addTransaction.visibility = View.VISIBLE
         } else {
-            fragmentFinanceBinding.addTransaction.visibility = View.GONE
+            binding.addTransaction.visibility = View.GONE
         }
-        fragmentFinanceBinding.addTransaction.setOnClickListener { addTransaction() }
+        binding.addTransaction.setOnClickListener { addTransaction() }
         list = mRealm.where(RealmMyTeam::class.java).notEqualTo("status", "archived")
             .equalTo("teamId", teamId).equalTo("docType", "transaction")
             .sort("date", Sort.DESCENDING).findAll()
         updatedFinanceList(list as RealmResults<RealmMyTeam>)
-        showNoData(fragmentFinanceBinding.tvNodata, list?.size, "finances")
+        showNoData(binding.tvNodata, list?.size, "finances")
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
@@ -192,10 +244,10 @@ class FinanceFragment : BaseTeamFragment() {
             }
         }
         val total = credit - debit
-        fragmentFinanceBinding.tvDebit.text = getString(R.string.number_placeholder, debit)
-        fragmentFinanceBinding.tvCredit.text = getString(R.string.number_placeholder, credit)
-        fragmentFinanceBinding.tvBalance.text = getString(R.string.number_placeholder, total)
-        if (total >= 0) fragmentFinanceBinding.balanceCaution.visibility = View.GONE
+        binding.tvDebit.text = getString(R.string.number_placeholder, debit)
+        binding.tvCredit.text = getString(R.string.number_placeholder, credit)
+        binding.tvBalance.text = getString(R.string.number_placeholder, total)
+        if (total >= 0) binding.balanceCaution.visibility = View.GONE
     }
 
     private fun addTransaction() {
@@ -216,7 +268,7 @@ class FinanceFragment : BaseTeamFragment() {
                     }, Realm.Transaction.OnSuccess {
                         Utilities.toast(activity, getString(R.string.transaction_added))
                         adapterFinance?.notifyDataSetChanged()
-                        showNoData(fragmentFinanceBinding.tvNodata, adapterFinance?.itemCount, "finances")
+                        showNoData(binding.tvNodata, adapterFinance?.itemCount, "finances")
                     })
                 }
             }.setNegativeButton("Cancel", null).show()
@@ -251,24 +303,24 @@ class FinanceFragment : BaseTeamFragment() {
     }
 
     private fun updatedFinanceList(results: RealmResults<RealmMyTeam>) {
-        activity?.runOnUiThread {
+        if (view == null) return
+        viewLifecycleOwner.lifecycleScope.launch {
             if (!results.isEmpty()) {
                 adapterFinance = AdapterFinance(requireActivity(), results)
-                fragmentFinanceBinding.rvFinance.layoutManager = LinearLayoutManager(activity)
-                fragmentFinanceBinding.rvFinance.adapter = adapterFinance
+                binding.rvFinance.layoutManager = LinearLayoutManager(activity)
+                binding.rvFinance.adapter = adapterFinance
                 adapterFinance?.notifyDataSetChanged()
                 calculateTotal(results)
-            } else if(fragmentFinanceBinding.tvFromDateCalendar.text.isNullOrEmpty()
-                && fragmentFinanceBinding.etToDate.text.isNullOrEmpty()) {
-                fragmentFinanceBinding.rvFinance.adapter = null
-                fragmentFinanceBinding.dataLayout.visibility= View.GONE
-                fragmentFinanceBinding.tvNodata.visibility= View.VISIBLE
-            }else{
+            } else if (binding.tvFromDateCalendar.text.isNullOrEmpty()
+                && binding.etToDate.text.isNullOrEmpty()) {
+                binding.rvFinance.adapter = null
+                binding.dataLayout.visibility = View.GONE
+                binding.tvNodata.visibility = View.VISIBLE
+            } else {
                 calculateTotal(results)
-                fragmentFinanceBinding.dataLayout.visibility= View.VISIBLE
-                fragmentFinanceBinding.tvNodata.visibility= View.VISIBLE
-                fragmentFinanceBinding.rvFinance.adapter = null
-
+                binding.dataLayout.visibility = View.VISIBLE
+                binding.tvNodata.visibility = View.VISIBLE
+                binding.rvFinance.adapter = null
             }
         }
     }
@@ -279,6 +331,7 @@ class FinanceFragment : BaseTeamFragment() {
         if (isRealmInitialized()) {
             mRealm.close()
         }
+        _binding = null
         super.onDestroyView()
     }
 }

@@ -13,18 +13,18 @@ import android.widget.LinearLayout
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Case
-import io.realm.Realm
 import io.realm.RealmList
-import io.realm.Sort
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.datamanager.DatabaseService
@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.news.AdapterNews.OnNewsItemClickListener
-import org.ole.planet.myplanet.utilities.EdgeToEdgeUtil
+import org.ole.planet.myplanet.utilities.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utilities.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utilities.FileUtils.getImagePath
 import org.ole.planet.myplanet.utilities.FileUtils.getRealPathFromURI
@@ -41,13 +41,14 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getString
 @AndroidEntryPoint
 open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     private lateinit var activityReplyBinding: ActivityReplyBinding
-    lateinit var mRealm: Realm
     @Inject
     lateinit var databaseService: DatabaseService
     var id: String? = null
     private lateinit var newsAdapter: AdapterNews
     private val gson = Gson()
     var user: RealmUserModel? = null
+
+    private val viewModel: ReplyViewModel by viewModels()
     
     @Inject
     lateinit var userProfileDbHandler: UserProfileDbHandler
@@ -59,10 +60,9 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         super.onCreate(savedInstanceState)
         activityReplyBinding = ActivityReplyBinding.inflate(layoutInflater)
         setContentView(activityReplyBinding.root)
-        EdgeToEdgeUtil.setupEdgeToEdge(this, activityReplyBinding.root)
+        EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, activityReplyBinding.root)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setHomeButtonEnabled(true)
-        mRealm = databaseService.realmInstance
         title = "Reply"
         imageList = RealmList()
         id = intent.getStringExtra("id")
@@ -81,14 +81,19 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     }
 
     private fun showData(id: String?) {
-        val news = mRealm.where(RealmNews::class.java).equalTo("id", id).findFirst()
-        val list: List<RealmNews?> = mRealm.where(RealmNews::class.java).sort("time", Sort.DESCENDING).equalTo("replyTo", id, Case.INSENSITIVE).findAll()
-        newsAdapter = AdapterNews(this, list.toMutableList(), user, news, "", null, userProfileDbHandler)
-        newsAdapter.setListener(this)
-        newsAdapter.setmRealm(mRealm)
-        newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
-        newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
-        activityReplyBinding.rvReply.adapter = newsAdapter
+        id ?: return
+        lifecycleScope.launch {
+            val (news, list) = viewModel.getNewsWithReplies(id)
+            databaseService.withRealm { realm ->
+                newsAdapter = AdapterNews(this@ReplyActivity, user, news, "", null, userProfileDbHandler)
+                newsAdapter.setListener(this@ReplyActivity)
+                newsAdapter.setmRealm(realm)
+                newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
+                newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))
+                newsAdapter.updateList(list)
+                activityReplyBinding.rvReply.adapter = newsAdapter
+            }
+        }
     }
 
     override fun onResume() {
@@ -168,10 +173,6 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     }
 
     override fun onDestroy() {
-        if (::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.removeAllChangeListeners()
-            mRealm.close()
-        }
         super.onDestroy()
     }
 }

@@ -37,7 +37,6 @@
     <string name="menu_home">Guriga</string>
     <string name="menu_library">maktabada</string>
     <string name="menu_courses">Koorsooyin</string>
-    <string name="menu_meetups">Kulamo</string>
     <string name="menu_surveys">Sahaminta</string>
     <string name="menu_logout">ka bax</string>
     <string name="menu_feedback">jawaab celin</string>
@@ -407,7 +406,6 @@
     <string name="tasks">Hawlgalaha</string>
     <string name="join_requests">Su\'aasha xubinaha</string>
     <string name="add_image">Kudar Sawir</string>
-    <string name="addImageToMessage">Beta Ku dar sawir fariin</string>
     <string name="clear_data">Tirtir Data</string>
     <string name="reset_app">Isku day App-ka</string>
     <string name="freeup_space">Bac Wadatid xogta diiskaga</string>
@@ -1041,6 +1039,10 @@
     <string name="community_leaders">Hogaamiyayaasha bulshada</string>
     <string name="services">adeegyo</string>
     <string name="survey_taken">Soo dhaweyn laga qaadayo</string>
+    <plurals name="survey_taken_count">
+        <item quantity="one">Sahan ayaa la qaaday %d jeer</item>
+        <item quantity="other">Sahan ayaa la qaaday %d jeer</item>
+    </plurals>
     <string name="times">magaalada</string>
     <string name="time">waqtiga</string>
     <string name="ai_chat">AI Chat</string>
@@ -1104,6 +1106,11 @@
     <string name="no_team_resources">ilaha kooxiga ma jiraan</string>
     <string name="no_tasks">tallabada ma jiraan</string>
     <string name="no_join_request_available">ma jirto codsi qaadasho</string>
+    <string name="no_description_available">Sharaxaad lama heli karo</string>
+    <string name="no_links_available">Isku xirka lama heli karo</string>
+    <string name="user_requested_to_join_team">%1$s ayaa codsaday ku biirista %2$s</string>
+    <string name="join_request_prefix">Codsi ku biirid:</string>
+    <string name="new_request_to_join">Codsi cusub oo lagu biirayo %s</string>
     <string name="no_news">warka ma jiraan</string>
     <string name="no_surveys">saamayn ma jiraan</string>
     <string name="edit_image">tubinta sawirka xogta muuqaalka</string>
@@ -1379,5 +1386,6 @@
     <string name="failed_to_delete_report">Ku guuldareystay tirtiridda warbixinta. Fadlan isku day mar kale</string>
     <string name="delete_report">Tirtir warbixinta</string>
     <string name="checking_server_availability">la hubiyo helitaanka serverka…</string>
+    <string name="loading_courses">Koorsada ayaa la rarayaa…</string>
 
 </resources>

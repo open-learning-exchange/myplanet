@@ -7,12 +7,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
-import io.realm.Realm
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -21,22 +22,26 @@ import org.ole.planet.myplanet.databinding.FragmentLibraryDetailBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.listToString
 import org.ole.planet.myplanet.model.RealmRating.Companion.getRatingsById
-import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onAdd
-import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.onRemove
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.ui.navigation.NavigationHelper
 import org.ole.planet.myplanet.utilities.FileUtils.getFileExtension
 import org.ole.planet.myplanet.utilities.Utilities
 
+@AndroidEntryPoint
 class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var _binding: FragmentLibraryDetailBinding? = null
     private val binding get() = _binding!!
     private var libraryId: String? = null
-    private lateinit var lRealm: Realm
     private lateinit var library: RealmMyLibrary
     var userModel: RealmUserModel? = null
     private val fragmentScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
+    private suspend fun fetchLibrary(libraryId: String): RealmMyLibrary? {
+        return libraryRepository.getLibraryItemById(libraryId)
+            ?: libraryRepository.getLibraryItemByResourceId(libraryId)
+            ?: libraryRepository.getAllLibraryItems().firstOrNull { it.resourceId == libraryId }
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -52,15 +57,11 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             withContext(Dispatchers.IO) {
                 try {
-                    databaseService.withRealm { backgroundRealm ->
-                        val backgroundLibrary = backgroundRealm.where(RealmMyLibrary::class.java)
-                            .equalTo("resourceId", libraryId).findFirst()
-                        if (backgroundLibrary != null && !backgroundLibrary.userId?.contains(userId)!!) {
-                            if (!backgroundRealm.isInTransaction) backgroundRealm.beginTransaction()
-                            backgroundLibrary.setUserId(userId)
-                            onAdd(backgroundRealm, "resources", userId, libraryId)
-                            backgroundRealm.commitTransaction()
-                        }
+                    val backgroundLibrary = fetchLibrary(libraryId!!)
+                    if (backgroundLibrary != null && backgroundLibrary.userId?.contains(userId) != true && userId != null) {
+                        library = libraryRepository.updateUserLibrary(libraryId!!, userId, true)!!
+                    } else if (backgroundLibrary != null) {
+                        library = backgroundLibrary
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -79,9 +80,10 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         super.onCreateView(inflater, container, savedInstanceState)
         _binding = FragmentLibraryDetailBinding.inflate(inflater, container, false)
-        lRealm = databaseService.realmInstance
         userModel = UserProfileDbHandler(requireContext()).userModel!!
-        library = lRealm.where(RealmMyLibrary::class.java).equalTo("resourceId", libraryId).findFirst()!!
+        library = runBlocking {
+            fetchLibrary(libraryId!!)
+        }!!
         return binding.root
     }
 
@@ -183,21 +185,8 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             fragmentScope.launch {
                 withContext(Dispatchers.IO) {
                     try {
-                        databaseService.withRealm { backgroundRealm ->
-                            val backgroundLibrary = backgroundRealm.where(RealmMyLibrary::class.java)
-                                .equalTo("resourceId", libraryId).findFirst()
-
-                            if (backgroundLibrary != null) {
-                                if (!backgroundRealm.isInTransaction) backgroundRealm.beginTransaction()
-                                if (isAdd) {
-                                    backgroundLibrary.setUserId(userId)
-                                    onAdd(backgroundRealm, "resources", userId, libraryId)
-                                } else {
-                                    backgroundLibrary.removeUserId(userId)
-                                    onRemove(backgroundRealm, "resources", userId, libraryId)
-                                }
-                                backgroundRealm.commitTransaction()
-                            }
+                        if (userId != null) {
+                            library = libraryRepository.updateUserLibrary(libraryId!!, userId, isAdd)!!
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -222,14 +211,13 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     override fun onRatingChanged() {
-        val `object` = getRatingsById(lRealm, "resource", library.resourceId, userModel?.id)
+        val `object` = databaseService.withRealm { realm ->
+            getRatingsById(realm, "resource", library.resourceId, userModel?.id)
+        }
         setRatings(`object`)
     }
     override fun onDestroy() {
         fragmentScope.cancel()
-        if (this::lRealm.isInitialized && !lRealm.isClosed) {
-            lRealm.close()
-        }
         try {
             if (!mRealm.isClosed) {
                 mRealm.close()

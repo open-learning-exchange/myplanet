@@ -22,9 +22,11 @@ import androidx.appcompat.view.ContextThemeWrapper
 import androidx.appcompat.widget.AppCompatRatingBar
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.PermissionActivity.Companion.hasInstallPermission
@@ -78,13 +80,13 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
     fun setRatings(`object`: JsonObject?) {
         if (`object` != null) {
-            CourseRatingUtils.showRating(`object`, rating, timesRated, ratingBar)
+            CourseRatingUtils.showRating(requireContext(), `object`, rating, timesRated, ratingBar)
         }
     }
     fun getUrlsAndStartDownload(lib: List<RealmMyLibrary?>, urls: ArrayList<String>) {
         for (library in lib) {
             val url = UrlUtils.getUrl(library)
-            if (!FileUtils.checkFileExist(url) && !TextUtils.isEmpty(url)) {
+            if (!FileUtils.checkFileExist(requireContext(), url) && !TextUtils.isEmpty(url)) {
                 urls.add(url)
             }
         }
@@ -102,11 +104,12 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     override fun onDownloadComplete() {
         super.onDownloadComplete()
         if (shouldAutoOpenAfterDownload && pendingAutoOpenLibrary != null) {
-            val library = pendingAutoOpenLibrary!!
-            shouldAutoOpenAfterDownload = false
-            pendingAutoOpenLibrary = null
-            if (library.isResourceOffline() || FileUtils.checkFileExist(UrlUtils.getUrl(library))) {
-                ResourceOpener.openFileType(requireActivity(), library, "offline", profileDbHandler)
+            pendingAutoOpenLibrary?.let { library ->
+                shouldAutoOpenAfterDownload = false
+                pendingAutoOpenLibrary = null
+                if (library.isResourceOffline() || FileUtils.checkFileExist(requireContext(), UrlUtils.getUrl(library))) {
+                    ResourceOpener.openFileType(requireActivity(), library, "offline", profileDbHandler)
+                }
             }
         }
     }
@@ -122,7 +125,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 true
             }
             val userModel = UserProfileDbHandler(context).userModel
-            if (!userModel?.isGuest()!!) {
+            if (userModel?.isGuest() == false) {
                 setOnClickListener {
                     homeItemClickListener?.showRatingDialog(type, id, title, listener)
                 }
@@ -166,20 +169,20 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             return
         }
 
-        val resource = mRealm.where(RealmMyLibrary::class.java)
-            .equalTo("_id", items.resourceId)
-            .findFirst()
-        val downloadUrls = resource?.attachments
-            ?.mapNotNull { attachment ->
-                attachment.name?.let { name ->
-                    createAttachmentDir(items.resourceId, name)
-                    UrlUtils.getUrl("${items.resourceId}", name)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val resource = items.resourceId?.let { libraryRepository.getLibraryItemByResourceId(it) }
+            val downloadUrls = resource?.attachments
+                ?.mapNotNull { attachment ->
+                    attachment.name?.let { name ->
+                        createAttachmentDir(items.resourceId, name)
+                        UrlUtils.getUrl("${items.resourceId}", name)
+                    }
                 }
-            }
-            ?.toCollection(ArrayList()) ?: arrayListOf()
+                ?.toCollection(ArrayList()) ?: arrayListOf()
 
-        if (downloadUrls.isNotEmpty()) {
-            startDownloadWithAutoOpen(downloadUrls, items)
+            if (downloadUrls.isNotEmpty()) {
+                startDownloadWithAutoOpen(downloadUrls, items)
+            }
         }
     }
 
@@ -193,23 +196,25 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     }
 
     private fun openNonHtmlResource(items: RealmMyLibrary) {
-        val matchingItems = mRealm.where(RealmMyLibrary::class.java)
-            .equalTo("resourceLocalAddress", items.resourceLocalAddress)
-            .findAll()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val matchingItems = items.resourceLocalAddress?.let {
+                libraryRepository.getLibraryItemsByLocalAddress(it)
+            } ?: emptyList()
 
-        val offlineItem = matchingItems.firstOrNull { it.isResourceOffline() }
-        if (offlineItem != null) {
-            ResourceOpener.openFileType(requireActivity(), offlineItem, "offline", profileDbHandler)
-            return
-        }
+            val offlineItem = matchingItems.firstOrNull { it.isResourceOffline() }
+            if (offlineItem != null) {
+                ResourceOpener.openFileType(requireActivity(), offlineItem, "offline", profileDbHandler)
+                return@launch
+            }
 
-        when {
-            items.isResourceOffline() -> ResourceOpener.openFileType(requireActivity(), items, "offline", profileDbHandler)
-            FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4" -> ResourceOpener.openFileType(requireActivity(), items, "online", profileDbHandler)
-            else -> {
-                val arrayList = arrayListOf(UrlUtils.getUrl(items))
-                startDownloadWithAutoOpen(arrayList, items)
-                profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
+            when {
+                items.isResourceOffline() -> ResourceOpener.openFileType(requireActivity(), items, "offline", profileDbHandler)
+                FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4" -> ResourceOpener.openFileType(requireActivity(), items, "online", profileDbHandler)
+                else -> {
+                    val arrayList = arrayListOf(UrlUtils.getUrl(items))
+                    startDownloadWithAutoOpen(arrayList, items)
+                    profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
+                }
             }
         }
     }
@@ -298,11 +303,11 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         ResourceOpener.openFileType(requireActivity(), items, videoType, profileDbHandler)
     }
 
-    private fun showResourceList(downloadedResources: List<RealmMyLibrary>?) {
+    private fun showResourceList(downloadedResources: List<RealmMyLibrary>) {
         val builderSingle = AlertDialog.Builder(ContextThemeWrapper(requireActivity(), R.style.CustomAlertDialog))
         builderSingle.setTitle(getString(R.string.select_resource_to_open))
         val arrayAdapter: ArrayAdapter<RealmMyLibrary?> = object : ArrayAdapter<RealmMyLibrary?>(
-            requireActivity(), android.R.layout.select_dialog_item, downloadedResources!!
+            requireActivity(), android.R.layout.select_dialog_item, downloadedResources
         ) {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 var view = convertView

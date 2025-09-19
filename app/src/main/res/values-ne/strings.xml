@@ -37,7 +37,6 @@
     <string name="menu_home">होम</string>
     <string name="menu_library">पुस्तकालय</string>
     <string name="menu_courses">पाठ्यक्रमहरू</string>
-    <string name="menu_meetups">मिठिङहरू</string>
     <string name="menu_surveys">सर्वेक्षणहरू</string>
     <string name="menu_logout">लगआउट</string>
     <string name="menu_feedback">प्रतिक्रिया</string>
@@ -407,7 +406,6 @@
     <string name="tasks">कार्यहरू</string>
     <string name="join_requests">सम्मिलित गर्न अनुरोधहरू</string>
     <string name="add_image">तस्वीर थप्नुहोस्</string>
-    <string name="addImageToMessage">बेटा मेसेजमा तस्वीर थप्नुहोस्</string>
     <string name="clear_data">डाटा हटाउनुहोस्</string>
     <string name="reset_app">अनुप्रयोग रिसेट गर्नुहोस्</string>
     <string name="freeup_space">डिस्क स्थान खाली पार्नुहोस्</string>
@@ -1041,6 +1039,10 @@
     <string name="community_leaders">सामुदायिक नेताहरू</string>
     <string name="services">सेवाहरू</string>
     <string name="survey_taken">सर्वेक्षण लिइएको</string>
+    <plurals name="survey_taken_count">
+        <item quantity="one">सर्वेक्षण %d पटक लिइयो</item>
+        <item quantity="other">सर्वेक्षण %d पटक लिइयो</item>
+    </plurals>
     <string name="times">पल्टीहरू</string>
     <string name="time">समय</string>
     <string name="ai_chat">AI Chat</string>
@@ -1104,6 +1106,11 @@
     <string name="no_team_resources">कुनै टिम स्रोतहरू उपलब्ध छैनन्</string>
     <string name="no_tasks">कुनै कामहरू उपलब्ध छैनन्</string>
     <string name="no_join_request_available">सामिल हुने अनुरोध उपलब्ध छैन</string>
+    <string name="no_description_available">विवरण उपलब्ध छैन</string>
+    <string name="no_links_available">लिङ्कहरू उपलब्ध छैनन्</string>
+    <string name="user_requested_to_join_team">%1$s ले %2$s मा सामेल हुन अनुरोध गरेको छ</string>
+    <string name="join_request_prefix">सामेल हुने अनुरोध:</string>
+    <string name="new_request_to_join">%s मा सामेल हुने नयाँ अनुरोध</string>
     <string name="no_news">समाचार उपलब्ध छैन</string>
     <string name="no_surveys">सर्वेक्षण उपलब्ध छैन</string>
     <string name="edit_image">प्रोफाइल तस्वीर सम्पादन गर्नुहोस्</string>
@@ -1379,5 +1386,6 @@
     <string name="failed_to_delete_report">प्रतिवेदन मेटाउन असफल भयो। कृपया फेरि प्रयास गर्नुहोस्</string>
     <string name="delete_report">प्रतिवेदन मेटाउनुहोस्</string>
     <string name="checking_server_availability">सर्भर उपलब्धता जाँच गर्दै…</string>
+    <string name="loading_courses">पाठ्यक्रमहरू लोड हुँदैछन्…</string>
 
 </resources>

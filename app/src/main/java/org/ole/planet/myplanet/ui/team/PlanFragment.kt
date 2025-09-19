@@ -9,7 +9,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.lifecycleScope
 import io.realm.Realm
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
@@ -20,12 +22,13 @@ import org.ole.planet.myplanet.utilities.TimeUtils.formatDate
 import org.ole.planet.myplanet.utilities.Utilities
 
 class PlanFragment : BaseTeamFragment() {
-    private lateinit var fragmentPlanBinding: FragmentPlanBinding
+    private var _binding: FragmentPlanBinding? = null
+    private val binding get() = _binding!!
     private var isEnterprise: Boolean = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentPlanBinding = FragmentPlanBinding.inflate(inflater, container, false)
-        return fragmentPlanBinding.root
+        _binding = FragmentPlanBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -35,16 +38,16 @@ class PlanFragment : BaseTeamFragment() {
         val isMyTeam = RealmMyTeam.isTeamLeader(team?._id, user?.id, mRealm)
         isEnterprise = team?.type?.equals("enterprise", ignoreCase = true) == true
 
-        fragmentPlanBinding.btnAddPlan.text = if (isEnterprise) {
+        binding.btnAddPlan.text = if (isEnterprise) {
             getString(R.string.edit_mission_and_services)
         } else {
             getString(R.string.edit_plan)
         }
 
-        fragmentPlanBinding.btnAddPlan.isVisible = isMyTeam
-        fragmentPlanBinding.btnAddPlan.isEnabled = isMyTeam
+        binding.btnAddPlan.isVisible = isMyTeam
+        binding.btnAddPlan.isEnabled = isMyTeam
 
-        fragmentPlanBinding.btnAddPlan.setOnClickListener {
+        binding.btnAddPlan.setOnClickListener {
             if (isMyTeam) {
                 editTeam()
             }
@@ -94,6 +97,14 @@ class PlanFragment : BaseTeamFragment() {
         binding.etRules.setText(team.rules)
         binding.etDescription.setText(team.description)
         binding.etName.setText(team.name)
+
+        val teamTypePosition = when (team.teamType) {
+            "local" -> 0
+            "sync" -> 1
+            else -> 0
+        }
+        binding.spnTeamType.setSelection(teamTypePosition)
+        binding.switchPublic.isChecked = team.isPublic
     }
 
     private fun handleSaveButtonClick(binding: AlertCreateTeamBinding, activity: FragmentActivity, context: Context, realm: Realm, team: RealmMyTeam, dialog: AlertDialog) {
@@ -109,7 +120,13 @@ class PlanFragment : BaseTeamFragment() {
         val servicesToSave = binding.etServices.text.toString()
         val rulesToSave = binding.etRules.text.toString()
         val descriptionToSave = binding.etDescription.text.toString()
-        
+        val teamType = when (binding.spnTeamType.selectedItemPosition) {
+            0 -> "local"
+            1 -> "sync"
+            else -> ""
+        }
+        val isPublic = binding.switchPublic.isChecked
+
         realm.executeTransactionAsync({ r ->
             val realmTeam = r.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
             realmTeam?.let {
@@ -117,18 +134,20 @@ class PlanFragment : BaseTeamFragment() {
                 it.services = servicesToSave
                 it.rules = rulesToSave
                 it.description = descriptionToSave
+                it.teamType = teamType
+                it.isPublic = isPublic
                 it.createdBy = userId
                 it.updated = true
             }
         }, {
-            activity.runOnUiThread {
+            viewLifecycleOwner.lifecycleScope.launch {
                 updateUIWithTeamData(team)
-                Utilities.toast(activity, context.getString(R.string.added_successfully))
+                Utilities.toast(requireContext(), context.getString(R.string.added_successfully))
                 dialog.dismiss()
             }
         }, {
-            activity.runOnUiThread {
-                Utilities.toast(activity, context.getString(R.string.failed_to_add_please_retry))
+            viewLifecycleOwner.lifecycleScope.launch {
+                Utilities.toast(requireContext(), context.getString(R.string.failed_to_add_please_retry))
             }
         })
     }
@@ -153,8 +172,8 @@ class PlanFragment : BaseTeamFragment() {
             missionText + servicesText + rulesText
         }
 
-        fragmentPlanBinding.tvDescription.text = Html.fromHtml(finalText, Html.FROM_HTML_MODE_LEGACY)
-        fragmentPlanBinding.tvDate.text = getString(
+        binding.tvDescription.text = Html.fromHtml(finalText, Html.FROM_HTML_MODE_LEGACY)
+        binding.tvDate.text = getString(
             R.string.two_strings,
             getString(R.string.created_on),
             updatedTeam.createdDate?.let { formatDate(it) }
@@ -170,5 +189,10 @@ class PlanFragment : BaseTeamFragment() {
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
+    }
+
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
     }
 }

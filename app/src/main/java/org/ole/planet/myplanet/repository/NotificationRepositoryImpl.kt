@@ -1,20 +1,177 @@
 package org.ole.planet.myplanet.repository
 
+import io.realm.Sort
+import java.util.Date
 import javax.inject.Inject
 import org.ole.planet.myplanet.datamanager.DatabaseService
+import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.RealmUserModel
 
 class NotificationRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
 ) : RealmRepository(databaseService), NotificationRepository {
 
     override suspend fun getUnreadCount(userId: String?): Int {
-        return withRealm { realm ->
+        if (userId == null) return 0
+
+        return count(RealmNotification::class.java) {
+            equalTo("userId", userId)
+            equalTo("isRead", false)
+        }.toInt()
+    }
+
+    override suspend fun updateResourceNotification(userId: String?) {
+        userId ?: return
+
+        val resourceCount = queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", false)
+        }.count { it.needToUpdate() && it.userId?.contains(userId) == true }
+
+        val existingNotification = findByField(RealmNotification::class.java, "userId", userId)
+            ?.takeIf { it.type == "resource" }
+
+        if (resourceCount > 0) {
+            val notification = existingNotification?.apply {
+                message = "$resourceCount"
+                relatedId = "$resourceCount"
+            } ?: RealmNotification().apply {
+                this.userId = userId
+                this.type = "resource"
+                this.message = "$resourceCount"
+                this.relatedId = "$resourceCount"
+                this.createdAt = Date()
+            }
+            save(notification)
+        } else {
+            existingNotification?.let { delete(RealmNotification::class.java, "id", it.id) }
+        }
+    }
+
+    override suspend fun ensureNotification(
+        type: String,
+        message: String,
+        relatedId: String?,
+        userId: String?,
+    ) {
+        val ownerId = userId ?: ""
+        val trimmedMessage = message.trim()
+        val notificationId = buildNotificationId(type, relatedId, ownerId, trimmedMessage)
+
+        if (trimmedMessage.isEmpty()) {
+            delete(RealmNotification::class.java, "id", notificationId)
+            return
+        }
+
+        val existingNotification = findByField(RealmNotification::class.java, "id", notificationId)
+        val now = Date()
+
+        val notification = existingNotification?.apply {
+            if (this.message != trimmedMessage) {
+                this.message = trimmedMessage
+                this.createdAt = now
+            }
+            this.type = type
+            this.relatedId = relatedId
+            this.userId = ownerId
+        } ?: RealmNotification().apply {
+            id = notificationId
+            this.userId = ownerId
+            this.type = type
+            this.message = trimmedMessage
+            this.relatedId = relatedId
+            this.createdAt = now
+        }
+
+        save(notification)
+    }
+
+    override suspend fun getNotifications(userId: String, filter: String): List<RealmNotification> {
+        return queryList(RealmNotification::class.java) {
+            equalTo("userId", userId)
+            when (filter) {
+                "read" -> equalTo("isRead", true)
+                "unread" -> equalTo("isRead", false)
+            }
+            sort("createdAt", Sort.DESCENDING)
+        }.filter { it.message.isNotEmpty() && it.message != "INVALID" }
+    }
+
+    override suspend fun markAsRead(notificationId: String) {
+        update(RealmNotification::class.java, "id", notificationId) { it.isRead = true }
+    }
+
+    override suspend fun markAllAsRead(userId: String) {
+        executeTransaction { realm ->
             realm.where(RealmNotification::class.java)
                 .equalTo("userId", userId)
                 .equalTo("isRead", false)
-                .count()
-                .toInt()
+                .findAll()
+                .forEach { it.isRead = true }
+        }
+    }
+
+    override suspend fun getJoinRequestMetadata(joinRequestId: String?): JoinRequestNotificationMetadata? {
+        val rawId = joinRequestId?.takeUnless { it.isBlank() } ?: return null
+        val sanitizedId = rawId.removePrefix("join_request_")
+
+        return withRealm { realm ->
+            val joinRequest = realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", sanitizedId)
+                .equalTo("docType", "request")
+                .findFirst()
+
+            joinRequest?.let {
+                val teamName = it.teamId?.let { teamId ->
+                    realm.where(RealmMyTeam::class.java)
+                        .equalTo("_id", teamId)
+                        .findFirst()
+                        ?.name
+                }
+
+                val requesterName = it.userId?.let { userId ->
+                    realm.where(RealmUserModel::class.java)
+                        .equalTo("id", userId)
+                        .findFirst()
+                        ?.name
+                }
+
+                JoinRequestNotificationMetadata(requesterName, teamName)
+            }
+        }
+    }
+
+    override suspend fun getTaskNotificationMetadata(taskTitle: String): TaskNotificationMetadata? {
+        if (taskTitle.isBlank()) return null
+
+        return withRealm { realm ->
+            val task = realm.where(RealmTeamTask::class.java)
+                .equalTo("title", taskTitle)
+                .findFirst()
+
+            task?.let {
+                val teamName = it.teamId?.let { teamId ->
+                    realm.where(RealmMyTeam::class.java)
+                        .equalTo("_id", teamId)
+                        .findFirst()
+                        ?.name
+                }
+
+                TaskNotificationMetadata(teamName)
+            }
         }
     }
 }
+
+private fun buildNotificationId(
+    type: String,
+    relatedId: String?,
+    userId: String,
+    message: String,
+): String {
+    val relatedKey = relatedId?.takeUnless { it.isBlank() } ?: message
+    return listOf(userId, type, relatedKey).joinToString(":")
+}
+

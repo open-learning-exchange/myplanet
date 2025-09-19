@@ -85,7 +85,7 @@ import org.ole.planet.myplanet.utilities.DialogUtils.showSnack
 import org.ole.planet.myplanet.utilities.DialogUtils.showWifiSettingDialog
 import org.ole.planet.myplanet.utilities.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utilities.DownloadUtils.openDownloadService
-import org.ole.planet.myplanet.utilities.FileUtils.availableOverTotalMemoryFormattedString
+import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.LocaleHelper
 import org.ole.planet.myplanet.utilities.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utilities.NetworkUtils.getCustomDeviceName
@@ -94,9 +94,8 @@ import org.ole.planet.myplanet.utilities.NotificationUtils.cancelAll
 import org.ole.planet.myplanet.utilities.ServerConfigUtils
 import org.ole.planet.myplanet.utilities.SharedPrefManager
 import org.ole.planet.myplanet.utilities.UrlUtils
-import org.ole.planet.myplanet.utilities.FileUtils
 import org.ole.planet.myplanet.utilities.Utilities
-import org.ole.planet.myplanet.utilities.Utilities.getRelativeTime
+import org.ole.planet.myplanet.utilities.TimeUtils
 
 @AndroidEntryPoint
 abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVersionCallback,
@@ -235,7 +234,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     private fun clearInternalStorage() {
-        val myDir = File(FileUtils.SD_PATH)
+        val myDir = File(FileUtils.getOlePath(this))
         if (myDir.isDirectory) {
             val children = myDir.list()
             if (children != null) {
@@ -336,7 +335,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         return if (lastSynced == 0L) {
             " Never Synced"
         } else {
-            getRelativeTime(lastSynced)
+            TimeUtils.getRelativeTime(lastSynced)
         }
     }
 
@@ -473,16 +472,15 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 var attempt = 0
-                Realm.getDefaultInstance().use { realm ->
-                    while (true) {
-                        realm.refresh()
-                        val realmResults = realm.where(RealmUserModel::class.java).findAll()
-                        if (realmResults.isNotEmpty()) {
-                            break
-                        }
-                        attempt++
-                        delay(1000)
+                while (true) {
+                    val hasUser = databaseService.withRealm { realm ->
+                        realm.where(RealmUserModel::class.java).findAll().isNotEmpty()
                     }
+                    if (hasUser) {
+                        break
+                    }
+                    attempt++
+                    delay(1000)
                 }
 
                 withContext(Dispatchers.Main) {
@@ -531,11 +529,11 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                     val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
                     if (betaAutoDownload) {
                         withContext(Dispatchers.IO) {
-                            val downloadRealm = Realm.getDefaultInstance()
-                            try {
-                                backgroundDownload(downloadAllFiles(getAllLibraryList(downloadRealm)), activityContext)
-                            } finally {
-                                downloadRealm.close()
+                            databaseService.withRealm { realm ->
+                                backgroundDownload(
+                                    downloadAllFiles(getAllLibraryList(realm)),
+                                    activityContext
+                                )
                             }
                         }
                     }
@@ -555,14 +553,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     private fun updateUIWithNewLanguage() {
         try {
             if (::lblLastSyncDate.isInitialized) {
-                lblLastSyncDate.text = getString(R.string.last_sync, getRelativeTime(Date().time))
+                lblLastSyncDate.text = getString(R.string.last_sync, TimeUtils.getRelativeTime(Date().time))
             }
 
             lblVersion.text = getString(R.string.app_version)
             tvAvailableSpace.text = buildString {
                 append(getString(R.string.available_space_colon))
                 append(" ")
-                append(availableOverTotalMemoryFormattedString)
+                append(FileUtils.availableOverTotalMemoryFormattedString(this@SyncActivity))
             }
 
             inputName.hint = getString(R.string.hint_name)
@@ -607,7 +605,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
                 lblLastSyncDate.text = getString(R.string.last_synced_never)
             } else {
                 val lastSyncMillis = settings.getLong(getString(R.string.last_syncs), 0)
-                var relativeTime = getRelativeTime(lastSyncMillis)
+                var relativeTime = TimeUtils.getRelativeTime(lastSyncMillis)
 
                 if (relativeTime.matches(Regex("^\\d{1,2} seconds ago$"))) {
                     relativeTime = getString(R.string.a_few_seconds_ago)
@@ -656,10 +654,20 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
 
     fun onLogin() {
         val handler = UserProfileDbHandler(this)
-        handler.onLogin()
+        handler.onLoginAsync(
+            callback = {
+                runOnUiThread {
+                    editor.putBoolean(Constants.KEY_LOGIN, true).commit()
+                    openDashboard()
+                }
+            },
+            onError = { error ->
+                runOnUiThread {
+                    Utilities.toast(this, "Login failed: ${error.message}")
+                }
+            }
+        )
         handler.onDestroy()
-        editor.putBoolean(Constants.KEY_LOGIN, true).commit()
-        openDashboard()
 
         isNetworkConnectedFlow.onEach { isConnected ->
             if (isConnected) {
@@ -751,7 +759,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
         }
         editor.putLong("lastUsageUploaded", Date().time).apply()
         if (::lblLastSyncDate.isInitialized) {
-            lblLastSyncDate.text = getString(R.string.message_placeholder, "${getString(R.string.last_sync, getRelativeTime(Date().time))} >>")
+            lblLastSyncDate.text = getString(R.string.message_placeholder, "${getString(R.string.last_sync, TimeUtils.getRelativeTime(Date().time))} >>")
         }
         syncFailed = false
     }
@@ -770,6 +778,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), SyncListener, CheckVers
     }
 
     override fun onCheckingVersion() {
+        val lastCheckTime = settings.getLong("last_version_check_timestamp", 0)
+        val currentTime = System.currentTimeMillis()
+        val twentyFourHoursInMillis = 24 * 60 * 60 * 1000
+
+        if (currentTime - lastCheckTime < twentyFourHoursInMillis) {
+            return
+        }
+
         customProgressDialog.setText(getString(R.string.checking_version))
         customProgressDialog.show()
     }

@@ -43,22 +43,22 @@ class DatabaseService(context: Context) {
     suspend fun executeTransactionAsync(transaction: (Realm) -> Unit) {
         withContext(Dispatchers.IO) {
             withRealmInstance { realm ->
-                realm.executeTransaction { transaction(it) }
+                try {
+                    if (realm.isClosed) {
+                        return@withRealmInstance
+                    }
+                    realm.executeTransaction { transaction(it) }
+                } catch (e: IllegalStateException) {
+                    if (e.message?.contains("non-existing write transaction") == true ||
+                        e.message?.contains("not currently in a transaction") == true) {
+                        return@withRealmInstance
+                    }
+                    throw e
+                }
             }
         }
     }
 
-    suspend fun <T> executeTransactionWithResultAsync(transaction: (Realm) -> T): T? {
-        return withContext(Dispatchers.IO) {
-            withRealmInstance { realm ->
-                var result: T? = null
-                realm.executeTransaction {
-                    result = transaction(it)
-                }
-                result
-            }
-        }
-    }
 }
 
 fun <T : RealmModel> Realm.queryList(

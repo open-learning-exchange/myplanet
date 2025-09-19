@@ -7,12 +7,12 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.CompoundButton
 import android.widget.RadioButton
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
-import androidx.core.widget.NestedScrollView
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -20,11 +20,9 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmQuery
 import io.realm.Sort
-import java.util.Date
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeExamBinding
-import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCertification.Companion.isCourseCertified
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMembershipDoc
@@ -38,25 +36,35 @@ import org.ole.planet.myplanet.utilities.JsonUtils.getStringAsJsonArray
 import org.ole.planet.myplanet.utilities.KeyboardUtils.hideSoftKeyboard
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 import org.ole.planet.myplanet.utilities.Utilities.toast
+import java.util.Date
 
 class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButton.OnCheckedChangeListener, ImageCaptureCallback {
-    private lateinit var fragmentTakeExamBinding: FragmentTakeExamBinding
+    private var _binding: FragmentTakeExamBinding? = null
+    private val binding get() = _binding!!
     private var isCertified = false
-    var container: NestedScrollView? = null
     private val gson = Gson()
+
+    private val answerCache = mutableMapOf<String, AnswerData>()
+
+    data class AnswerData(
+        var singleAnswer: String = "",
+        var multipleAnswers: HashMap<String, String> = HashMap(),
+        var otherText: String = ""
+    )
+
     override fun onCreateView(inflater: LayoutInflater, parent: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentTakeExamBinding = FragmentTakeExamBinding.inflate(inflater, parent, false)
+        _binding = FragmentTakeExamBinding.inflate(inflater, parent, false)
         listAns = HashMap()
         val dbHandler = UserProfileDbHandler(requireActivity())
         user = dbHandler.userModel
-        return fragmentTakeExamBinding.root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         initExam()
         questions = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam?.id).findAll()
-        fragmentTakeExamBinding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
+        binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
         var q: RealmQuery<*> = mRealm.where(RealmSubmission::class.java)
             .equalTo("userId", user?.id)
             .equalTo("parentId", if (!TextUtils.isEmpty(exam?.courseId)) {
@@ -70,44 +78,79 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         sub = q.findFirst() as RealmSubmission?
         val courseId = exam?.courseId
         isCertified = isCourseCertified(mRealm, courseId)
+
         if ((questions?.size ?: 0) > 0) {
+            clearAllExistingAnswers()
             createSubmission()
             startExam(questions?.get(currentIndex))
             updateNavButtons()
         } else {
-            container?.visibility = View.GONE
-            fragmentTakeExamBinding.btnSubmit.visibility = View.GONE
-            fragmentTakeExamBinding.tvQuestionCount.setText(R.string.no_questions)
-            Snackbar.make(fragmentTakeExamBinding.tvQuestionCount, R.string.no_questions_available, Snackbar.LENGTH_LONG).show()
+            binding.container.visibility = View.GONE
+            binding.btnSubmit.visibility = View.GONE
+            binding.tvQuestionCount.setText(R.string.no_questions)
+            Snackbar.make(binding.tvQuestionCount, R.string.no_questions_available, Snackbar.LENGTH_LONG).show()
         }
 
-        fragmentTakeExamBinding.btnBack.setOnClickListener {
+        binding.btnBack.setOnClickListener {
             saveCurrentAnswer()
             goToPreviousQuestion()
         }
-        fragmentTakeExamBinding.btnNext.setOnClickListener {
+        binding.btnNext.setOnClickListener {
             saveCurrentAnswer()
             goToNextQuestion()
         }
 
-        fragmentTakeExamBinding.etAnswer.addTextChangedListener(object : TextWatcher {
+
+        binding.etAnswer.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
+                val currentQuestion = questions?.get(currentIndex)
+                currentQuestion?.id?.let { questionId ->
+                    val answerData = answerCache.getOrPut(questionId) { AnswerData() }
+                    when (currentQuestion.type) {
+                        "input", "textarea" -> {
+                            answerData.singleAnswer = s.toString()
+                        }
+                        else -> {
+                            answerData.otherText = s.toString()
+                        }
+                    }
+                }
                 updateNavButtons()
             }
         })
     }
 
     private fun saveCurrentAnswer() {
-        val type = questions?.get(currentIndex)?.type
-        showTextInput(type)
+        val currentQuestion = questions?.get(currentIndex) ?: return
+        val questionId = currentQuestion.id ?: return
+
+        val answerData = answerCache.getOrPut(questionId) { AnswerData() }
+
+        when (currentQuestion.type) {
+            "select", "ratingScale" -> {
+                answerData.singleAnswer = ans
+                if (binding.etAnswer.isVisible) {
+                    answerData.otherText = binding.etAnswer.text.toString()
+                }
+            }
+            "selectMultiple" -> {
+                answerData.multipleAnswers.clear()
+                listAns?.let { answerData.multipleAnswers.putAll(it) }
+                if (binding.etAnswer.isVisible) {
+                    answerData.otherText = binding.etAnswer.text.toString()
+                }
+            }
+            "input", "textarea" -> {
+                answerData.singleAnswer = binding.etAnswer.text.toString()
+            }
+        }
+
         updateAnsDb()
     }
 
     private fun goToPreviousQuestion() {
-        saveCurrentAnswer()
-
         if (currentIndex > 0) {
             currentIndex--
             startExam(questions?.get(currentIndex))
@@ -116,8 +159,6 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun goToNextQuestion() {
-        saveCurrentAnswer()
-
         if (currentIndex < (questions?.size ?: 0) - 1) {
             currentIndex++
             startExam(questions?.get(currentIndex))
@@ -126,35 +167,42 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun updateNavButtons() {
-        fragmentTakeExamBinding.btnBack.visibility = if (currentIndex == 0) View.GONE else View.VISIBLE
+        binding.btnBack.visibility = if (currentIndex == 0) View.GONE else View.VISIBLE
         val isLastQuestion = currentIndex == (questions?.size ?: 0) - 1
         val isCurrentQuestionAnswered = isQuestionAnswered()
 
-        fragmentTakeExamBinding.btnNext.visibility = if (isLastQuestion || !isCurrentQuestionAnswered) View.GONE else View.VISIBLE
+        binding.btnNext.visibility = if (isLastQuestion || !isCurrentQuestionAnswered) View.GONE else View.VISIBLE
 
         setButtonText()
     }
 
     private fun isQuestionAnswered(): Boolean {
         val currentQuestion = questions?.get(currentIndex)
-        val singleOtherOptionSelected = ans == "other"
-        val multipleOtherOptionSelected = listAns?.containsKey("Other")
-        val otherOptionSelected = singleOtherOptionSelected || multipleOtherOptionSelected == true
-        val otherNotAnswered = fragmentTakeExamBinding.etAnswer.text.toString().isEmpty()
-        if(currentQuestion?.hasOtherOption == true && otherOptionSelected && otherNotAnswered){
+        val questionId = currentQuestion?.id ?: return false
+        val answerData = answerCache[questionId]
+
+        val singleOtherOptionSelected = ans == "other" || answerData?.singleAnswer == "other"
+        val multipleOtherOptionSelected = listAns?.containsKey("Other") == true ||
+                answerData?.multipleAnswers?.containsKey("Other") == true
+        val otherOptionSelected = singleOtherOptionSelected || multipleOtherOptionSelected
+        val otherText = answerData?.otherText ?: binding.etAnswer.text.toString()
+
+        if (currentQuestion.hasOtherOption && otherOptionSelected && otherText.isEmpty()) {
             return false
         }
 
-        return when {
-            currentQuestion?.type.equals("select", ignoreCase = true) -> {
-                ans.isNotEmpty()
+        return when (currentQuestion.type) {
+            "select" -> {
+                ans.isNotEmpty() || answerData?.singleAnswer?.isNotEmpty() == true
             }
-            currentQuestion?.type.equals("selectMultiple", ignoreCase = true) -> {
-                listAns?.isNotEmpty() == true
+            "selectMultiple" -> {
+                listAns?.isNotEmpty() == true || answerData?.multipleAnswers?.isNotEmpty() == true
             }
-            currentQuestion?.type.equals("input", ignoreCase = true) ||
-                    currentQuestion?.type.equals("textarea", ignoreCase = true) -> {
-                fragmentTakeExamBinding.etAnswer.text.toString().isNotEmpty()
+            "input", "textarea" -> {
+                binding.etAnswer.text.toString().isNotEmpty() || answerData?.singleAnswer?.isNotEmpty() == true
+            }
+            "ratingScale" -> {
+                ans.isNotEmpty() || answerData?.singleAnswer?.isNotEmpty() == true
             }
             else -> false
         }
@@ -175,7 +223,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             }
 
             currentIndex = 0
-            if (isTeam == true && teamId != null) {
+            if (isTeam && teamId != null) {
                 addTeamInformation(mRealm)
             }
             mRealm.commitTransaction()
@@ -224,122 +272,153 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     override fun startExam(question: RealmExamQuestion?) {
-        fragmentTakeExamBinding.tvQuestionCount.text = getString(R.string.Q, currentIndex + 1, questions?.size)
+        binding.tvQuestionCount.text = getString(R.string.Q, currentIndex + 1, questions?.size)
         setButtonText()
-        fragmentTakeExamBinding.groupChoices.removeAllViews()
-        fragmentTakeExamBinding.llCheckbox.removeAllViews()
-        fragmentTakeExamBinding.etAnswer.visibility = View.GONE
-        fragmentTakeExamBinding.groupChoices.visibility = View.GONE
-        fragmentTakeExamBinding.llCheckbox.visibility = View.GONE
-        clearAnswer()
+        binding.groupChoices.removeAllViews()
+        binding.llCheckbox.removeAllViews()
+        binding.etAnswer.visibility = View.GONE
+        binding.groupChoices.visibility = View.GONE
+        binding.llCheckbox.visibility = View.GONE
+        binding.llRatingScale.visibility = View.GONE
 
-        loadSavedAnswer()
+        loadSavedAnswer(question)
 
         when {
             question?.type.equals("select", ignoreCase = true) -> {
-                fragmentTakeExamBinding.groupChoices.visibility = View.VISIBLE
-                fragmentTakeExamBinding.etAnswer.visibility = View.GONE
+                binding.groupChoices.visibility = View.VISIBLE
                 selectQuestion(question, ans)
             }
             question?.type.equals("input", ignoreCase = true) ||
                     question?.type.equals("textarea", ignoreCase = true) -> {
                 question?.type?.let {
-                    setMarkdownViewAndShowInput(fragmentTakeExamBinding.etAnswer, it, ans)
+                    setMarkdownViewAndShowInput(binding.etAnswer, it, ans)
                 }
             }
             question?.type.equals("selectMultiple", ignoreCase = true) -> {
-                fragmentTakeExamBinding.llCheckbox.visibility = View.VISIBLE
-                fragmentTakeExamBinding.etAnswer.visibility = View.GONE
+                binding.llCheckbox.visibility = View.VISIBLE
                 showCheckBoxes(question, ans)
+                for (i in 0 until binding.llCheckbox.childCount) {
+                    val child = binding.llCheckbox.getChildAt(i)
+                    if (child is CompoundButton) {
+                        val choiceText = child.text.toString()
+                        child.isChecked = listAns?.containsKey(choiceText) == true
+                    }
+                }
+            }
+            question?.type.equals("ratingScale", ignoreCase = true) -> {
+                binding.llRatingScale.visibility = View.VISIBLE
+                setupRatingScale(ans)
             }
         }
-        fragmentTakeExamBinding.tvHeader.text = question?.header
-        question?.body?.let { setMarkdownText(fragmentTakeExamBinding.tvBody, it) }
-        fragmentTakeExamBinding.btnSubmit.setOnClickListener(this)
+        binding.tvHeader.text = question?.header
+        question?.body?.let { setMarkdownText(binding.tvBody, it) }
+        binding.btnSubmit.setOnClickListener(this)
 
         updateNavButtons()
     }
 
-    private fun loadSavedAnswer() {
-        ans = ""
-        listAns?.clear()
+    private fun loadSavedAnswer(question: RealmExamQuestion?) {
+        val questionId = question?.id ?: return
+        val answerData = answerCache[questionId]
 
-        val currentQuestion = questions?.get(currentIndex)
-        val savedAnswer = sub?.answers?.find { it.questionId == currentQuestion?.id }
-
-        if (savedAnswer != null) {
-            when {
-                currentQuestion?.type.equals("select", ignoreCase = true) -> loadSelectSavedAnswer(savedAnswer)
-                currentQuestion?.type.equals("selectMultiple", ignoreCase = true) -> loadSelectMultipleSavedAnswer(savedAnswer)
-                currentQuestion?.type.equals("input", ignoreCase = true) ||
-                        currentQuestion?.type.equals("textarea", ignoreCase = true) -> loadTextSavedAnswer(savedAnswer)
-            }
-        }
-    }
-
-    private fun loadSelectSavedAnswer(savedAnswer: RealmAnswer) {
-        ans = savedAnswer.valueChoices?.firstOrNull()?.let {
-            try {
-                val jsonObject = gson.fromJson(it, JsonObject::class.java)
-                val id = jsonObject.get("id").asString
-                val text = jsonObject.get("text").asString
-
-                if (id == "other") {
-                    fragmentTakeExamBinding.etAnswer.setText(text)
-                    fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
+        if (answerData != null) {
+            when (question.type) {
+                "select", "ratingScale" -> {
+                    ans = answerData.singleAnswer
+                    if (answerData.otherText.isNotEmpty()) {
+                        binding.etAnswer.setText(answerData.otherText)
+                        if (ans == "other") {
+                            binding.etAnswer.visibility = View.VISIBLE
+                        }
+                    }
                 }
-                id
-            } catch (e: Exception) {
-                e.printStackTrace()
-                savedAnswer.value ?: ""
-            }
-        } ?: savedAnswer.value ?: ""
-    }
-
-    private fun loadSelectMultipleSavedAnswer(savedAnswer: RealmAnswer) {
-        var hasOtherOption = false
-        var otherText = ""
-
-        savedAnswer.valueChoices?.forEach { choiceJson ->
-            try {
-                val jsonObject = gson.fromJson(choiceJson, JsonObject::class.java)
-                val id = jsonObject.get("id").asString
-                val text = jsonObject.get("text").asString
-
-                if (id == "other") {
-                    hasOtherOption = true
-                    otherText = text
-                    listAns?.put("Other", id)
-                } else {
-                    listAns?.put(text, id)
+                "selectMultiple" -> {
+                    listAns?.clear()
+                    listAns?.putAll(answerData.multipleAnswers)
+                    if (answerData.otherText.isNotEmpty()) {
+                        binding.etAnswer.setText(answerData.otherText)
+                        if (listAns?.containsKey("Other") == true) {
+                            binding.etAnswer.visibility = View.VISIBLE
+                        }
+                    }
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
+                "input", "textarea" -> {
+                    ans = answerData.singleAnswer
+                    binding.etAnswer.setText(ans)
+                }
             }
-        }
-
-        if (hasOtherOption) {
-            fragmentTakeExamBinding.etAnswer.setText(otherText)
-            fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
+        } else {
+            clearAnswer()
         }
     }
 
-    private fun loadTextSavedAnswer(savedAnswer: RealmAnswer) {
-        ans = savedAnswer.value ?: ""
-        fragmentTakeExamBinding.etAnswer.setText(ans)
+    private var selectedRatingButton: Button? = null
+    
+    private fun setupRatingScale(oldAnswer: String) {
+        val ratingButtons = listOf(
+            binding.rbRating1,
+            binding.rbRating2,
+            binding.rbRating3,
+            binding.rbRating4,
+            binding.rbRating5,
+            binding.rbRating6,
+            binding.rbRating7,
+            binding.rbRating8,
+            binding.rbRating9
+        )
+        
+        ratingButtons.forEachIndexed { index, button ->
+            button.setOnClickListener {
+                selectedRatingButton?.isSelected = false
+
+                button.isSelected = true
+                selectedRatingButton = button
+                ans = (index + 1).toString()
+                
+                updateNavButtons()
+            }
+        }
+
+        if (oldAnswer.isNotEmpty()) {
+            selectRatingValue(oldAnswer.toIntOrNull() ?: 1)
+        }
+    }
+    
+    private fun selectRatingValue(value: Int) {
+        val ratingButtons = listOf(
+            binding.rbRating1,
+            binding.rbRating2,
+            binding.rbRating3,
+            binding.rbRating4,
+            binding.rbRating5,
+            binding.rbRating6,
+            binding.rbRating7,
+            binding.rbRating8,
+            binding.rbRating9
+        )
+
+        selectedRatingButton?.isSelected = false
+        
+        if (value in 1..9) {
+            val button = ratingButtons[value - 1]
+            button.isSelected = true
+            selectedRatingButton = button
+        }
     }
 
     private fun clearAnswer() {
         ans = ""
-        fragmentTakeExamBinding.etAnswer.setText(R.string.empty_text)
+        binding.etAnswer.setText("")
         listAns?.clear()
+        selectedRatingButton?.isSelected = false
+        selectedRatingButton = null
     }
 
     private fun setButtonText() {
         if (currentIndex == (questions?.size?.minus(1) ?: 0)) {
-            fragmentTakeExamBinding.btnSubmit.setText(R.string.finish)
+            binding.btnSubmit.setText(R.string.finish)
         } else {
-            fragmentTakeExamBinding.btnSubmit.setText(R.string.submit)
+            binding.btnSubmit.setText(R.string.submit)
         }
     }
 
@@ -382,15 +461,15 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
 
     private fun addRadioButton(choice: String, oldAnswer: String) {
         val inflater = LayoutInflater.from(activity)
-        val rdBtn = inflater.inflate(R.layout.item_radio_btn, fragmentTakeExamBinding.groupChoices, false) as RadioButton
+        val rdBtn = inflater.inflate(R.layout.item_radio_btn, binding.groupChoices, false) as RadioButton
         rdBtn.text = choice
         rdBtn.isChecked = choice == oldAnswer
         rdBtn.setOnCheckedChangeListener(this)
-        fragmentTakeExamBinding.groupChoices.addView(rdBtn)
+        binding.groupChoices.addView(rdBtn)
 
         if (choice.equals("Other", ignoreCase = true) && choice == oldAnswer) {
-            fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
-            fragmentTakeExamBinding.etAnswer.setText(oldAnswer)
+            binding.etAnswer.visibility = View.VISIBLE
+            binding.etAnswer.setText(oldAnswer)
         }
     }
 
@@ -399,13 +478,11 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             LayoutInflater.from(activity)
                 .inflate(
                     R.layout.item_radio_btn,
-                    fragmentTakeExamBinding.groupChoices, false
+                    binding.groupChoices, false
                 ) as RadioButton
         } else {
             LayoutInflater.from(activity)
-                .inflate(
-                    R.layout.item_checkbox, null
-                ) as CompoundButton
+                .inflate(R.layout.item_checkbox, null) as CompoundButton
         }
         val choiceText = getString("text", choice)
         val choiceId = getString("id", choice)
@@ -422,32 +499,32 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         rdBtn.setOnCheckedChangeListener(this)
         if (isRadio) {
             rdBtn.id = View.generateViewId()
-            fragmentTakeExamBinding.groupChoices.addView(rdBtn)
+            binding.groupChoices.addView(rdBtn)
         } else {
             rdBtn.setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
             rdBtn.buttonTintList = ContextCompat.getColorStateList(requireContext(), R.color.daynight_textColor)
-            fragmentTakeExamBinding.llCheckbox.addView(rdBtn)
+            binding.llCheckbox.addView(rdBtn)
         }
 
         if (choiceText.equals("Other", ignoreCase = true) && rdBtn.isChecked) {
-            fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
+            binding.etAnswer.visibility = View.VISIBLE
         }
     }
 
     override fun onClick(view: View) {
         if (view.id == R.id.btn_submit) {
             if (questions != null && currentIndex in 0 until (questions?.size ?: 0)) {
-                val type = questions?.get(currentIndex)?.type
-                showTextInput(type)
+                saveCurrentAnswer()
+
                 if (!isQuestionAnswered()) {
-                    toast(activity,getString(R.string.please_select_write_your_answer_to_continue), Toast.LENGTH_SHORT)
+                    toast(activity, getString(R.string.please_select_write_your_answer_to_continue), Toast.LENGTH_SHORT)
                     return
                 }
 
                 val cont = updateAnsDb()
 
                 if (this.type == "exam" && !cont) {
-                    Snackbar.make(fragmentTakeExamBinding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
+                    Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
                     return
                 }
 
@@ -468,17 +545,11 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         }
     }
 
-    private fun showTextInput(type: String?) {
-        if (type.equals("input", ignoreCase = true) || type.equals("textarea", ignoreCase = true) ||
-            (fragmentTakeExamBinding.etAnswer.isVisible)) {
-            ans = fragmentTakeExamBinding.etAnswer.text.toString()
-        }
-    }
 
     private fun updateAnsDb(): Boolean {
         val currentQuestion = questions?.get(currentIndex) ?: return true
-        val otherText = if (fragmentTakeExamBinding.etAnswer.isVisible) {
-            fragmentTakeExamBinding.etAnswer.text.toString()
+        val otherText = if (binding.etAnswer.isVisible) {
+            binding.etAnswer.text.toString()
         } else {
             null
         }
@@ -489,7 +560,7 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             ans,
             listAns,
             otherText,
-            fragmentTakeExamBinding.etAnswer.isVisible,
+            binding.etAnswer.isVisible,
             type ?: "exam",
             currentIndex,
             questions?.size ?: 0
@@ -502,6 +573,19 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         } else {
             handleUnchecked(compoundButton)
         }
+
+        val currentQuestion = questions?.get(currentIndex)
+        currentQuestion?.id?.let { questionId ->
+            val answerData = answerCache.getOrPut(questionId) { AnswerData() }
+
+            if (currentQuestion.type == "selectMultiple") {
+                answerData.multipleAnswers.clear()
+                listAns?.let { answerData.multipleAnswers.putAll(it) }
+            } else if (currentQuestion.type == "select") {
+                answerData.singleAnswer = ans
+            }
+        }
+
         updateNavButtons()
     }
 
@@ -509,14 +593,19 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
         val selectedText = "${compoundButton.text}"
 
         if (selectedText.equals("Other", ignoreCase = true)) {
-            fragmentTakeExamBinding.etAnswer.visibility = View.VISIBLE
-            fragmentTakeExamBinding.etAnswer.requestFocus()
+            binding.etAnswer.visibility = View.VISIBLE
+            binding.etAnswer.requestFocus()
         } else if (!isOtherOptionSelected()) {
-            fragmentTakeExamBinding.etAnswer.visibility = View.GONE
-            fragmentTakeExamBinding.etAnswer.text.clear()
+            binding.etAnswer.visibility = View.GONE
+            binding.etAnswer.text.clear()
         }
 
-        addAnswer(compoundButton)
+        val choiceId = compoundButton.tag as? String
+        if (compoundButton is RadioButton) {
+            ans = choiceId ?: selectedText
+        } else {
+            listAns?.put(selectedText, choiceId ?: selectedText)
+        }
     }
 
     private fun handleUnchecked(compoundButton: CompoundButton) {
@@ -524,8 +613,8 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             val selectedText = "${compoundButton.text}"
 
             if (selectedText.equals("Other", ignoreCase = true)) {
-                fragmentTakeExamBinding.etAnswer.visibility = View.GONE
-                fragmentTakeExamBinding.etAnswer.text.clear()
+                binding.etAnswer.visibility = View.GONE
+                binding.etAnswer.text.clear()
             }
 
             listAns?.remove("${compoundButton.text}")
@@ -533,8 +622,8 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
     }
 
     private fun isOtherOptionSelected(): Boolean {
-        for (i in 0 until fragmentTakeExamBinding.llCheckbox.childCount) {
-            val child = fragmentTakeExamBinding.llCheckbox.getChildAt(i)
+        for (i in 0 until binding.llCheckbox.childCount) {
+            val child = binding.llCheckbox.getChildAt(i)
             if (child is CompoundButton &&
                 child.text.toString().equals("Other", ignoreCase = true) &&
                 child.isChecked) {
@@ -542,5 +631,48 @@ class TakeExamFragment : BaseExamFragment(), View.OnClickListener, CompoundButto
             }
         }
         return false
+    }
+
+    private fun clearAllExistingAnswers() {
+        try {
+            mRealm.executeTransaction { realm ->
+                val parentIdToSearch = if (!TextUtils.isEmpty(exam?.courseId)) {
+                    "${exam?.id ?: id}@${exam?.courseId}"
+                } else {
+                    exam?.id ?: id
+                }
+
+                val allSubmissions = realm.where(RealmSubmission::class.java)
+                    .equalTo("userId", user?.id)
+                    .equalTo("parentId", parentIdToSearch)
+                    .findAll()
+
+                allSubmissions.forEach { submission ->
+                    submission.answers?.deleteAllFromRealm()
+                    submission.deleteFromRealm()
+                }
+            }
+
+            answerCache.clear()
+            clearAnswer()
+            ans = ""
+            listAns?.clear()
+
+            sub = null
+        } catch (e: Exception) {
+            e.printStackTrace()
+            answerCache.clear()
+            clearAnswer()
+            ans = ""
+            listAns?.clear()
+            sub = null
+        }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        saveCurrentAnswer()
+        selectedRatingButton = null
+        _binding = null
     }
 }

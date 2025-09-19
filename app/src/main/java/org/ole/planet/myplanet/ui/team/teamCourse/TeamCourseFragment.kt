@@ -11,20 +11,35 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 
 class TeamCourseFragment : BaseTeamFragment() {
-    private lateinit var fragmentTeamCourseBinding: FragmentTeamCourseBinding
+    private var _binding: FragmentTeamCourseBinding? = null
+    private val binding get() = _binding!!
+    private var adapterTeamCourse: AdapterTeamCourse? = null
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentTeamCourseBinding = FragmentTeamCourseBinding.inflate(inflater, container, false)
-        return fragmentTeamCourseBinding.root
+        _binding = FragmentTeamCourseBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupCoursesList()
+    }
+    
+    private fun setupCoursesList() {
         val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
-        val adapterTeamCourse = settings?.let { AdapterTeamCourse(requireActivity(), courses, mRealm, teamId, it) }
-        fragmentTeamCourseBinding.rvCourse.layoutManager = LinearLayoutManager(activity)
-        fragmentTeamCourseBinding.rvCourse.adapter = adapterTeamCourse
-        if (adapterTeamCourse != null) {
-            showNoData(fragmentTeamCourseBinding.tvNodata, adapterTeamCourse.itemCount, "teamCourses")
+        adapterTeamCourse = settings?.let { AdapterTeamCourse(requireActivity(), courses.toMutableList(), mRealm, teamId, it) }
+        binding.rvCourse.layoutManager = LinearLayoutManager(activity)
+        binding.rvCourse.adapter = adapterTeamCourse
+        adapterTeamCourse?.let {
+            showNoData(binding.tvNodata, it.itemCount, "teamCourses")
+        }
+    }
+    
+    fun updateCoursesList() {
+        val courses = mRealm.where(RealmMyCourse::class.java).`in`("id", team?.courses?.toTypedArray<String>()).findAll()
+        adapterTeamCourse?.updateList(courses)
+        adapterTeamCourse?.let {
+            showNoData(binding.tvNodata, it.itemCount, "teamCourses")
         }
     }
 
@@ -32,5 +47,10 @@ class TeamCourseFragment : BaseTeamFragment() {
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
+    }
+
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
     }
 }

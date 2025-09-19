@@ -102,14 +102,31 @@ open class RealmMyLibrary : RealmObject() {
             this@toJsonArray?.forEach { add(it) }
         }
     }
-    fun setUserId(userId: String?) {
+    fun setUserId(userId: String?, realm: Realm? = null) {
         if (userId.isNullOrBlank()) return
 
-        if (this.userId == null) {
-            this.userId = RealmList()
+        val executeInTransaction = realm != null && !realm.isInTransaction
+        
+        if (executeInTransaction) {
+            realm.beginTransaction()
         }
-        if (!this.userId!!.contains(userId)) {
-            this.userId?.add(userId)
+        
+        try {
+            if (this.userId == null) {
+                this.userId = RealmList()
+            }
+            if (!this.userId!!.contains(userId)) {
+                this.userId?.add(userId)
+            }
+            
+            if (executeInTransaction) {
+                realm.commitTransaction()
+            }
+        } catch (e: Exception) {
+            if (executeInTransaction && realm.isInTransaction) {
+                realm.cancelTransaction()
+            }
+            throw e
         }
     }
     fun isResourceOffline(): Boolean {
@@ -299,7 +316,7 @@ open class RealmMyLibrary : RealmObject() {
                         if (key.indexOf("/") < 0) {
                             resourceRemoteAddress = "${settings.getString("couchdbURL", "http://")}/resources/$resourceId/$key"
                             resourceLocalAddress = key
-                            resourceOffline = FileUtils.checkFileExist(resourceRemoteAddress)
+                            resourceOffline = FileUtils.checkFileExist(context, resourceRemoteAddress)
                         }
                     }
                 }

@@ -2,41 +2,36 @@ package org.ole.planet.myplanet.ui.submission
 
 import android.os.Bundle
 import android.text.Editable
-import android.text.TextUtils
 import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Case
-import io.realm.Realm
-import io.realm.RealmQuery
-import io.realm.Sort
 import javax.inject.Inject
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
-import org.ole.planet.myplanet.datamanager.DatabaseService
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmStepExam.Companion.getIds
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmission.Companion.getExamMap
 import org.ole.planet.myplanet.model.RealmUserModel
+import org.ole.planet.myplanet.repository.SubmissionRepository
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 
 @AndroidEntryPoint
 class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     private var _binding: FragmentMySubmissionBinding? = null
     private val binding get() = _binding!!
-    lateinit var mRealm: Realm
     @Inject
-    lateinit var databaseService: DatabaseService
+    lateinit var submissionRepository: SubmissionRepository
     var type: String? = ""
     var exams: HashMap<String?, RealmStepExam>? = null
     private var submissions: List<RealmSubmission>? = null
+    private var allSubmissions: List<RealmSubmission> = emptyList()
     var user: RealmUserModel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,14 +48,16 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        mRealm = databaseService.realmInstance
         binding.rvMysurvey.layoutManager = LinearLayoutManager(activity)
         binding.rvMysurvey.addItemDecoration(
             DividerItemDecoration(activity, DividerItemDecoration.VERTICAL)
         )
-        submissions = mRealm.where(RealmSubmission::class.java).findAll()
-        exams = getExamMap(mRealm, submissions)
-        setData("")
+        viewLifecycleOwner.lifecycleScope.launch {
+            val subs = submissionRepository.getSubmissionsByUserId(user?.id ?: "")
+            allSubmissions = subs
+            exams = HashMap(submissionRepository.getExamMapForSubmissions(subs))
+            setData("")
+        }
         binding.etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
@@ -94,45 +91,31 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
     }
 
     private fun setData(s: String) {
-        val q: RealmQuery<RealmSubmission>? = when (type) {
-            "survey" -> mRealm.where(RealmSubmission::class.java)
-                .equalTo("userId", user?.id)
-                .equalTo("type", "survey")
-                .sort("lastUpdateTime", Sort.DESCENDING)
+        var filtered = allSubmissions
 
-            "survey_submission" -> mRealm.where(RealmSubmission::class.java)
-                .equalTo("userId", user?.id)
-                .notEqualTo("status", "pending")
-                .equalTo("type", "survey")
-                .sort("lastUpdateTime", Sort.DESCENDING)
+        filtered = when (type) {
+            "survey" -> filtered.filter { it.userId == user?.id && it.type == "survey" }
+            "survey_submission" -> filtered.filter {
+                it.userId == user?.id && it.type == "survey" && it.status != "pending"
+            }
+            else -> filtered.filter { it.userId == user?.id && it.type != "survey" }
+        }.sortedByDescending { it.lastUpdateTime ?: 0 }
 
-            else -> mRealm.where(RealmSubmission::class.java)
-                .equalTo("userId", user?.id)
-                .notEqualTo("type", "survey")
-                .sort("lastUpdateTime", Sort.DESCENDING)
+        if (s.isNotEmpty()) {
+            val examIds = exams?.filter { (_, exam) ->
+                exam?.name?.contains(s, ignoreCase = true) == true
+            }?.keys ?: emptySet()
+            filtered = filtered.filter { examIds.contains(it.parentId) }
         }
 
-        if (!TextUtils.isEmpty(s)) {
-            val ex: List<RealmStepExam> = mRealm.where(RealmStepExam::class.java)
-                .contains("name", s, Case.INSENSITIVE).findAll()
-            q?.`in`("parentId", getIds(ex))
-        }
+        val uniqueSubmissions = filtered
+            .groupBy { it.parentId }
+            .mapValues { entry -> entry.value.maxByOrNull { it.lastUpdateTime ?: 0 } }
+            .values
+            .filterNotNull()
+            .toList()
 
-        if (q != null) {
-            // Get all submissions first
-            val allSubmissions = q.findAll().mapNotNull { it as? RealmSubmission }
-
-            // Group submissions by parentId (the survey/exam they belong to)
-            // Then take only the most recent submission for each unique parentId
-            val uniqueSubmissions = allSubmissions
-                .groupBy { it.parentId }
-                .mapValues { entry -> entry.value.maxByOrNull { it.lastUpdateTime ?: 0 } }
-                .values
-                .filterNotNull()
-                .toList()
-
-            submissions = uniqueSubmissions
-        }
+        submissions = uniqueSubmissions
 
         val adapter = AdapterMySubmission(requireActivity(), submissions, exams)
         val itemCount = adapter.itemCount
@@ -158,15 +141,11 @@ class MySubmissionFragment : Fragment(), CompoundButton.OnCheckedChangeListener 
             }
         }
 
-        adapter.setmRealm(mRealm)
         adapter.setType(type)
         binding.rvMysurvey.adapter = adapter
     }
 
     override fun onDestroyView() {
-        if (::mRealm.isInitialized && !mRealm.isClosed) {
-            mRealm.close()
-        }
         _binding = null
         super.onDestroyView()
     }

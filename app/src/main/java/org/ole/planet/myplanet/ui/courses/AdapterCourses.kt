@@ -17,7 +17,6 @@ import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import io.realm.Realm
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnCourseItemSelected
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -80,12 +79,12 @@ class AdapterCourses(
             areItemsTheSame = { old, new -> old?.id == new?.id },
             areContentsTheSame = { old, new ->
                 old?.courseTitle == new?.courseTitle &&
-                    old?.description == new?.description &&
-                    old?.gradeLevel == new?.gradeLevel &&
-                    old?.subjectLevel == new?.subjectLevel &&
-                    old?.createdDate == new?.createdDate &&
-                    old?.isMyCourse == new?.isMyCourse &&
-                    old?.getNumberOfSteps() == new?.getNumberOfSteps()
+                        old?.description == new?.description &&
+                        old?.gradeLevel == new?.gradeLevel &&
+                        old?.subjectLevel == new?.subjectLevel &&
+                        old?.createdDate == new?.createdDate &&
+                        old?.isMyCourse == new?.isMyCourse &&
+                        old?.getNumberOfSteps() == new?.getNumberOfSteps()
             }
         )
         courseList = newList
@@ -286,23 +285,23 @@ class AdapterCourses(
 
     fun selectAllItems(selectAll: Boolean) {
         selectedItems.clear()
-        
+
         if (selectAll) {
             val selectableCourses = courseList.filterNotNull().filter { !it.isMyCourse }
             selectedItems.addAll(selectableCourses)
         }
-        
+
         val updatedPositions = mutableListOf<Int>()
         courseList.forEachIndexed { index, course ->
             if (course != null && !course.isMyCourse) {
                 updatedPositions.add(index)
             }
         }
-        
+
         updatedPositions.forEach { position ->
             notifyItemChanged(position)
         }
-        
+
         listener?.onSelectedListChange(selectedItems)
     }
 
@@ -337,6 +336,7 @@ class AdapterCourses(
         if (map.containsKey(courseList[position]!!.courseId)) {
             val `object` = map[courseList[position]!!.courseId]
             CourseRatingUtils.showRating(
+                context,
                 `object`,
                 viewHolder.rowCourseBinding.rating,
                 viewHolder.rowCourseBinding.timesRated,
@@ -376,17 +376,6 @@ class AdapterCourses(
         return courseList.size
     }
 
-    fun updateCourseList(newCourseList: List<RealmMyCourse?>) {
-        selectedItems.clear()
-        dispatchDiff(newCourseList)
-    }
-
-    fun setRatingMap(newRatingMap: HashMap<String?, JsonObject>) {
-        this.map.clear()
-        this.map.putAll(newRatingMap)
-        notifyItemRangeChanged(0, courseList.size)
-    }
-
     internal inner class ViewHoldercourse(val rowCourseBinding: RowCourseBinding) :
         RecyclerView.ViewHolder(rowCourseBinding.root) {
         private var adapterPosition = 0
@@ -421,5 +410,4 @@ class AdapterCourses(
             adapterPosition = position
         }
     }
-
 }
