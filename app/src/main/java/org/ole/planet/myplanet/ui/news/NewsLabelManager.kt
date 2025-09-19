@@ -9,13 +9,18 @@ import io.realm.RealmList
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.utilities.Constants
 import org.ole.planet.myplanet.utilities.Utilities
 import java.util.concurrent.atomic.AtomicBoolean
 
-class NewsLabelManager(private val context: Context, private val realm: Realm, private val currentUser: RealmUserModel?) {
-    fun setupAddLabelMenu(binding: RowNewsBinding, news: RealmNews?) {
+class NewsLabelManager(private val context: Context, private val realm: Realm) {
+    fun setupAddLabelMenu(binding: RowNewsBinding, news: RealmNews?, canManageLabels: Boolean) {
+        binding.btnAddLabel.setOnClickListener(null)
+        binding.btnAddLabel.isEnabled = canManageLabels
+        if (!canManageLabels) {
+            return
+        }
+
         binding.btnAddLabel.setOnClickListener {
             val usedLabels = news?.labels?.toSet() ?: emptySet()
             val availableLabels = Constants.LABELS.filterValues { it !in usedLabels }
@@ -60,7 +65,7 @@ class NewsLabelManager(private val context: Context, private val realm: Realm, p
                             }
                             news?.labels = newLabels
                             Utilities.toast(context, context.getString(R.string.label_added))
-                            news?.let { showChips(binding, it) }
+                            news?.let { showChips(binding, it, canManageLabels) }
                         }
                     }, { error ->
                         error.printStackTrace()
@@ -73,19 +78,18 @@ class NewsLabelManager(private val context: Context, private val realm: Realm, p
         }
     }
 
-    fun showChips(binding: RowNewsBinding, news: RealmNews) {
-        val isOwner = (news.userId == currentUser?.id)
+    fun showChips(binding: RowNewsBinding, news: RealmNews, canManageLabels: Boolean) {
         binding.fbChips.removeAllViews()
 
         for (label in news.labels ?: emptyList()) {
             val chipConfig = Utilities.getCloudConfig().apply {
-                selectMode(if (isOwner) ChipCloud.SelectMode.close else ChipCloud.SelectMode.none)
+                selectMode(if (canManageLabels) ChipCloud.SelectMode.close else ChipCloud.SelectMode.none)
             }
 
             val chipCloud = ChipCloud(context, binding.fbChips, chipConfig)
             chipCloud.addChip(getLabel(label))
 
-            if (isOwner) {
+            if (canManageLabels) {
                 chipCloud.setDeleteListener { _: Int, labelText: String? ->
                     val selectedLabel = Constants.LABELS[labelText]
                     val newsId = news.id
@@ -115,7 +119,7 @@ class NewsLabelManager(private val context: Context, private val realm: Realm, p
                                     managedLabels?.forEach { add(it) }
                                 }
                                 news.labels = newLabels
-                                showChips(binding, news)
+                                showChips(binding, news, canManageLabels)
                             }
                         }, { error ->
                             error.printStackTrace()
@@ -124,10 +128,19 @@ class NewsLabelManager(private val context: Context, private val realm: Realm, p
                 }
             }
         }
-        updateAddLabelVisibility(binding, news)
+        updateAddLabelVisibility(binding, news, canManageLabels)
     }
 
-    private fun updateAddLabelVisibility(binding: RowNewsBinding, news: RealmNews?) {
+    private fun updateAddLabelVisibility(
+        binding: RowNewsBinding,
+        news: RealmNews?,
+        canManageLabels: Boolean,
+    ) {
+        if (!canManageLabels) {
+            binding.btnAddLabel.visibility = View.GONE
+            return
+        }
+
         val usedLabels = news?.labels?.toSet() ?: emptySet()
         val labels = Constants.LABELS.values.toSet()
         binding.btnAddLabel.visibility =
