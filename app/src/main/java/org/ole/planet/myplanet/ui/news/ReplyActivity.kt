@@ -160,7 +160,11 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
             val ob = gson.fromJson(img, JsonObject::class.java)
             val inflater = LayoutInflater.from(this).inflate(R.layout.image_thumb, llImage, false)
             val imgView = inflater.findViewById<ImageView>(R.id.thumb)
-            Glide.with(this).load(File(getString("imageUrl", ob))).into(imgView)
+            Glide.with(this)
+                .load(File(getString("imageUrl", ob)))
+                .placeholder(R.drawable.ic_loading)
+                .error(R.drawable.ic_loading)
+                .into(imgView)
             llImage?.addView(inflater)
         }
         newsAdapter.setImageList(imageList)
