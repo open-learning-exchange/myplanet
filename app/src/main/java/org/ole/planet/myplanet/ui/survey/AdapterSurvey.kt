@@ -48,18 +48,12 @@ class AdapterSurvey(
     }
 
     fun updateData(newList: List<RealmStepExam>) {
-        val diffResult = DiffUtils.calculateDiff(
-            examList,
-            newList,
-            areItemsTheSame = { old, new -> old.id == new.id },
-            areContentsTheSame = { old, new -> old == new }
-        )
-        examList = newList
-        diffResult.dispatchUpdatesTo(this)
+        dispatchDiff(examList, newList)
     }
 
     fun updateDataAfterSearch(newList: List<RealmStepExam>) {
-        if (examList.isEmpty()) {
+        val oldList = examList
+        val sortedList = if (oldList.isEmpty()) {
             sortSurveyList(false, newList)
         } else {
             when (sortType) {
@@ -68,11 +62,14 @@ class AdapterSurvey(
                 SurveySortType.TITLE -> sortSurveyListByName(isTitleAscending, newList)
             }
         }
-        notifyDataSetChanged()
+        dispatchDiff(oldList, sortedList)
     }
 
-    private fun sortSurveyList(isAscend: Boolean, list: List<RealmStepExam> = examList) {
-        examList = if (isAscend) {
+    private fun sortSurveyList(
+        isAscend: Boolean,
+        list: List<RealmStepExam> = examList
+    ): List<RealmStepExam> {
+        return if (isAscend) {
             list.sortedBy { it.createdDate }
         } else {
             list.sortedByDescending { it.createdDate }
@@ -81,12 +78,16 @@ class AdapterSurvey(
 
     fun sortByDate(isAscend: Boolean) {
         sortType = if (isAscend) SurveySortType.DATE_ASC else SurveySortType.DATE_DESC
-        sortSurveyList(isAscend)
-        notifyDataSetChanged()
+        val oldList = examList
+        val sortedList = sortSurveyList(isAscend)
+        dispatchDiff(oldList, sortedList)
     }
 
-    private fun sortSurveyListByName(isAscend: Boolean, list: List<RealmStepExam> = examList) {
-        examList = if (isAscend) {
+    private fun sortSurveyListByName(
+        isAscend: Boolean,
+        list: List<RealmStepExam> = examList
+    ): List<RealmStepExam> {
+        return if (isAscend) {
             list.sortedBy { it.name?.lowercase() }
         } else {
             list.sortedByDescending { it.name?.lowercase() }
@@ -96,8 +97,23 @@ class AdapterSurvey(
     fun toggleTitleSortOrder() {
         sortType = SurveySortType.TITLE
         isTitleAscending = !isTitleAscending
-        sortSurveyListByName(isTitleAscending)
-        notifyDataSetChanged()
+        val oldList = examList
+        val sortedList = sortSurveyListByName(isTitleAscending)
+        dispatchDiff(oldList, sortedList)
+    }
+
+    private fun dispatchDiff(
+        oldList: List<RealmStepExam>,
+        newList: List<RealmStepExam>
+    ) {
+        val diffResult = DiffUtils.calculateDiff(
+            oldList,
+            newList,
+            areItemsTheSame = { old, new -> old.id == new.id },
+            areContentsTheSame = { old, new -> old == new }
+        )
+        examList = newList
+        diffResult.dispatchUpdatesTo(this)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderSurvey {
