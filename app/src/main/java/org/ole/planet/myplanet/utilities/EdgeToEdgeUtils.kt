@@ -63,42 +63,6 @@ object EdgeToEdgeUtils {
     }
 
     /**
-     * Sets up edge-to-edge with only top padding (for activities with bottom navigation)
-     */
-    fun setupEdgeToEdgeWithTopPadding(
-        activity: Activity,
-        rootView: View,
-        lightStatusBar: Boolean = true,
-        lightNavigationBar: Boolean = true
-    ) {
-        configureEdgeToEdge(activity, rootView, lightStatusBar, lightNavigationBar)
-
-        ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(insets.left, insets.top, insets.right, 0)
-            WindowInsetsCompat.CONSUMED
-        }
-    }
-
-    /**
-     * Sets up edge-to-edge with only bottom padding (for activities with toolbar)
-     */
-    fun setupEdgeToEdgeWithBottomPadding(
-        activity: Activity,
-        rootView: View,
-        lightStatusBar: Boolean = true,
-        lightNavigationBar: Boolean = true
-    ) {
-        configureEdgeToEdge(activity, rootView, lightStatusBar, lightNavigationBar)
-
-        ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(insets.left, 0, insets.right, insets.bottom)
-            WindowInsetsCompat.CONSUMED
-        }
-    }
-
-    /**
      * Sets up edge-to-edge with keyboard handling
      */
     fun setupEdgeToEdgeWithKeyboard(
