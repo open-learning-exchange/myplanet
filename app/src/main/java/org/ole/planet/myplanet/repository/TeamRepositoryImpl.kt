@@ -157,6 +157,13 @@ class TeamRepositoryImpl @Inject constructor(
         save(task)
     }
 
+    override suspend fun assignTask(taskId: String, assigneeId: String?) {
+        update(RealmTeamTask::class.java, "id", taskId) { task ->
+            task.assignee = assigneeId
+            task.isUpdated = true
+        }
+    }
+
     override suspend fun syncTeamActivities(context: Context) {
         val applicationContext = context.applicationContext
         val settings = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
