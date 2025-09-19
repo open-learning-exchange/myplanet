@@ -84,8 +84,11 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         return if (idx >= 0) idx else null
     }
 
-    private fun selectPage(pageId: String?, smoothScroll: Boolean = false) {
-        pageIndexById(pageId)?.let { binding.viewPager2.setCurrentItem(it, smoothScroll) }
+    private fun selectPage(pageId: String?, smoothScroll: Boolean = true) {
+        val index = pageIndexById(pageId)
+        index?.let {
+            binding.viewPager2.setCurrentItem(it, smoothScroll)
+        }
     }
 
     private fun buildPages(isMyTeam: Boolean): List<TeamPageConfig> {
@@ -232,16 +235,33 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
     private fun setupViewPager(isMyTeam: Boolean, restorePageId: String? = null) {
         pageConfigs = buildPages(isMyTeam)
-        binding.viewPager2.isSaveEnabled = true
-        binding.viewPager2.id = View.generateViewId()
+        binding.viewPager2.apply {
+            isSaveEnabled = false
+            offscreenPageLimit = 2
+            isUserInputEnabled = true
+            setPageTransformer { page, position ->
+                page.alpha = 1.0f - kotlin.math.abs(position)
+            }
+        }
+
+        if (binding.viewPager2.id == View.NO_ID) {
+            binding.viewPager2.id = View.generateViewId()
+        }
+
+        binding.viewPager2.adapter = null
         binding.viewPager2.adapter = TeamPagerAdapter(
             requireActivity(),
             pageConfigs,
             team?._id,
             this
         )
+        binding.tabLayout.tabMode = com.google.android.material.tabs.TabLayout.MODE_SCROLLABLE
+        binding.tabLayout.isInlineLabel = true
+
         TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
-            tab.text = (binding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
+            val title = (binding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
+            val pageConfig = pageConfigs.getOrNull(position)
+            tab.text = title
         }.attach()
 
         selectPage(restorePageId, false)
@@ -249,9 +269,11 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         binding.viewPager2.registerOnPageChangeCallback(
             object : ViewPager2.OnPageChangeCallback() {
                 override fun onPageSelected(position: Int) {
+                    val pageConfig = pageConfigs.getOrNull(position)
+                    val pageId = pageConfig?.id
                     team?._id?.let { teamId ->
-                        pageConfigs.getOrNull(position)?.id?.let { pageId ->
-                            teamLastPage[teamId] = pageId
+                        pageId?.let {
+                            teamLastPage[teamId] = it
                         }
                     }
                 }
