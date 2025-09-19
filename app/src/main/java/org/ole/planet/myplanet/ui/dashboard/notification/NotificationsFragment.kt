@@ -217,6 +217,7 @@ class NotificationsFragment : Fragment() {
     }
 
     private fun updateMarkAllAsReadButtonVisibility() {
+        val binding = _binding ?: return
         binding.btnMarkAllAsRead.visibility = if (unreadCountCache > 0) View.VISIBLE else View.GONE
     }
 
