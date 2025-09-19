@@ -321,31 +321,40 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     private fun refreshTeamData() {
         if (!isAdded || requireActivity().isFinishing) return
 
-        try {
-            val teamId = requireArguments().getString("id") ?: directTeamId ?: ""
-            val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val teamId = requireArguments().getString("id") ?: directTeamId ?: ""
+                val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
 
-            if (teamId.isNotEmpty()) {
-                val updatedTeam = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-                if (updatedTeam != null) {
-                    team = updatedTeam
-                    val lastPageId = team?._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
-                    setupViewPager(isMyTeam, lastPageId)
+                if (teamId.isNotEmpty()) {
+                    val hasDirectIds = requireArguments().containsKey("teamId")
+                    val updatedTeam = if (hasDirectIds) {
+                        teamRepository.getTeamByDocumentIdOrTeamId(teamId)
+                    } else {
+                        teamRepository.getTeamById(teamId)
+                    }
 
-                    binding.title.text = getEffectiveTeamName()
-                    binding.subtitle.text = getEffectiveTeamType()
+                    updatedTeam?.let { detachedTeam ->
+                        team = detachedTeam
+                        val lastPageId = detachedTeam._id?.let { teamLastPage[it] }
+                            ?: arguments?.getString("navigateToPage")
+                        setupViewPager(isMyTeam, lastPageId)
 
-                    team?._id?.let { id ->
-                        if (getJoinedMemberCount(id, mRealm) <= 1 && isMyTeam) {
-                            binding.btnLeave.visibility = View.GONE
-                        } else {
-                            binding.btnLeave.visibility = View.VISIBLE
+                        binding.title.text = getEffectiveTeamName()
+                        binding.subtitle.text = getEffectiveTeamType()
+
+                        detachedTeam._id?.let { id ->
+                            if (getJoinedMemberCount(id, mRealm) <= 1 && isMyTeam) {
+                                binding.btnLeave.visibility = View.GONE
+                            } else {
+                                binding.btnLeave.visibility = View.VISIBLE
+                            }
                         }
                     }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 
