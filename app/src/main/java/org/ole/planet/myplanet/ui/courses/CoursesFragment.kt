@@ -6,6 +6,7 @@ import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
@@ -61,6 +62,8 @@ import org.ole.planet.myplanet.utilities.SharedPrefManager
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelected, TagClickListener, RealtimeSyncMixin {
 
     companion object {
+        private const val TAG = "CoursesFragment"
+
         fun newInstance(isMyCourseLib: Boolean): CoursesFragment {
             val fragment = CoursesFragment()
             val args = Bundle()
@@ -707,5 +710,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             realtimeSyncHelper.cleanup()
         }
         super.onDestroyView()
+    }
+
+    override fun logDownloadDialog(message: String) {
+        Log.d(TAG, message)
     }
 }

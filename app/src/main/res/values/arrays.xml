@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="my_courses_download_snooze_labels">
+        <item>@string/download_dialog_snooze_option_one_hour</item>
+        <item>@string/download_dialog_snooze_option_six_hours</item>
+        <item>@string/download_dialog_snooze_option_one_day</item>
+        <item>@string/download_dialog_snooze_option_three_days</item>
+    </string-array>
+    <integer-array name="my_courses_download_snooze_durations">
+        <item>3600000</item>
+        <item>21600000</item>
+        <item>86400000</item>
+        <item>259200000</item>
+    </integer-array>
+</resources>

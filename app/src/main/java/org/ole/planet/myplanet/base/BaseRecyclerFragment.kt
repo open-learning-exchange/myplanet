@@ -38,6 +38,12 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Utilities.toast
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
+    companion object {
+        private const val KEY_MY_COURSES_DOWNLOAD_SNOOZE_UNTIL = "my_courses_download_dialog_snooze_until"
+        private const val KEY_MY_COURSES_DOWNLOAD_SNOOZE_INDEX = "my_courses_download_dialog_snooze_index"
+        private const val DEFAULT_SNOOZE_INDEX = 2
+    }
+
     var subjects: MutableSet<String> = mutableSetOf()
     var languages: MutableSet<String> = mutableSetOf()
     var mediums: MutableSet<String> = mutableSetOf()
@@ -91,13 +97,124 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         val adapter = getAdapter()
         recyclerView.adapter = adapter
         if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
-            resources?.let { showDownloadDialog(it) }
+            resources?.let { pendingResources ->
+                if (shouldShowMyCoursesDownloadDialog()) {
+                    logDownloadDialog(
+                        "showDownloadDialog pending=${pendingResources.size}"
+                    )
+                    showDownloadDialog(pendingResources)
+                } else {
+                    val snoozeUntil = settings.getLong(KEY_MY_COURSES_DOWNLOAD_SNOOZE_UNTIL, 0L)
+                    logDownloadDialog(
+                        "skipDownloadDialog snoozedUntil=$snoozeUntil pending=${pendingResources.size}"
+                    )
+                }
+            }
         } else if (isMyCourseLib && courseLib == null && !isSurvey) {
             viewLifecycleOwner.lifecycleScope.launch {
                 showDownloadDialog(getLibraryList(mRealm))
             }
         }
         return v
+    }
+
+    private fun shouldApplyMyCoursesSnooze(): Boolean {
+        return isMyCourseLib && courseLib == "courses"
+    }
+
+    private fun shouldShowMyCoursesDownloadDialog(): Boolean {
+        if (!shouldApplyMyCoursesSnooze()) {
+            return true
+        }
+        val snoozeUntil = settings.getLong(KEY_MY_COURSES_DOWNLOAD_SNOOZE_UNTIL, 0L)
+        val now = System.currentTimeMillis()
+        val shouldShow = now >= snoozeUntil
+        if (!shouldShow) {
+            logDownloadDialog("dialogSnoozed now=$now snoozeUntil=$snoozeUntil")
+        }
+        return shouldShow
+    }
+
+    private fun applyMyCoursesSnooze(durationMillis: Long) {
+        if (!shouldApplyMyCoursesSnooze()) return
+        val snoozeUntil = System.currentTimeMillis() + durationMillis
+        settings.edit().putLong(KEY_MY_COURSES_DOWNLOAD_SNOOZE_UNTIL, snoozeUntil).apply()
+        logDownloadDialog("snoozeApplied duration=$durationMillis snoozeUntil=$snoozeUntil")
+    }
+
+    private fun clearMyCoursesSnooze() {
+        if (!shouldApplyMyCoursesSnooze()) return
+        settings.edit().remove(KEY_MY_COURSES_DOWNLOAD_SNOOZE_UNTIL).apply()
+        logDownloadDialog("snoozeCleared")
+    }
+
+    override fun getDownloadDialogSnoozeOptions(): DownloadDialogSnoozeOptions? {
+        if (!shouldApplyMyCoursesSnooze()) {
+            return super.getDownloadDialogSnoozeOptions()
+        }
+        val context = context ?: return null
+        val labels = context.resources.getStringArray(R.array.my_courses_download_snooze_labels).toList()
+        val durations = context.resources.getIntArray(R.array.my_courses_download_snooze_durations).map { it.toLong() }
+        if (labels.isEmpty() || labels.size != durations.size) {
+            logDownloadDialog("invalidSnoozeConfig labels=${labels.size} durations=${durations.size}")
+            return null
+        }
+        val savedIndex = settings.getInt(KEY_MY_COURSES_DOWNLOAD_SNOOZE_INDEX, DEFAULT_SNOOZE_INDEX)
+        var currentIndex = savedIndex.coerceIn(labels.indices)
+        return DownloadDialogSnoozeOptions(
+            label = getString(R.string.download_dialog_snooze_label),
+            intervalLabels = labels,
+            intervalValuesMillis = durations,
+            initialSelection = currentIndex,
+            onSelectionChanged = { index ->
+                if (index in labels.indices) {
+                    currentIndex = index
+                    settings.edit().putInt(KEY_MY_COURSES_DOWNLOAD_SNOOZE_INDEX, index).apply()
+                    logDownloadDialog("snoozeIntervalChanged index=$index duration=${durations[index]}")
+                }
+            },
+            onSnooze = { duration ->
+                val appliedDuration = durations.getOrNull(currentIndex) ?: duration
+                applyMyCoursesSnooze(appliedDuration)
+            }
+        )
+    }
+
+    override fun onDownloadDialogShown() {
+        super.onDownloadDialogShown()
+        if (shouldApplyMyCoursesSnooze()) {
+            logDownloadDialog("dialogShown pending=${resources?.size ?: 0}")
+        }
+    }
+
+    override fun onDownloadDialogPositiveAction() {
+        super.onDownloadDialogPositiveAction()
+        if (shouldApplyMyCoursesSnooze()) {
+            clearMyCoursesSnooze()
+            logDownloadDialog("downloadSelectedStarted")
+        }
+    }
+
+    override fun onDownloadDialogNeutralAction() {
+        super.onDownloadDialogNeutralAction()
+        if (shouldApplyMyCoursesSnooze()) {
+            clearMyCoursesSnooze()
+            logDownloadDialog("downloadAllStarted")
+        }
+    }
+
+    override fun onDownloadDialogNegativeAction() {
+        super.onDownloadDialogNegativeAction()
+        if (shouldApplyMyCoursesSnooze()) {
+            logDownloadDialog("dialogSnoozed")
+        }
+    }
+
+    override fun onDownloadDialogCancelled() {
+        super.onDownloadDialogCancelled()
+        if (shouldApplyMyCoursesSnooze()) {
+            logDownloadDialog("dialogCancelled")
+        }
     }
 
     private fun initDeleteButton() {

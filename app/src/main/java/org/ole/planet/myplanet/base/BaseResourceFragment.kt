@@ -13,8 +13,10 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.ListView
+import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
@@ -146,6 +148,20 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
+    protected open fun getDownloadDialogSnoozeOptions(): DownloadDialogSnoozeOptions? = null
+
+    protected open fun onDownloadDialogShown() {}
+
+    protected open fun onDownloadDialogPositiveAction() {}
+
+    protected open fun onDownloadDialogNeutralAction() {}
+
+    protected open fun onDownloadDialogNegativeAction() {}
+
+    protected open fun onDownloadDialogCancelled() {}
+
+    protected open fun logDownloadDialog(message: String) {}
+
     protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
         if (!isAdded) return
         Service(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
@@ -160,6 +176,51 @@ abstract class BaseResourceFragment : Fragment() {
                     val rootView = fragmentActivity.findViewById<ViewGroup>(android.R.id.content)
                     convertView = inflater.inflate(R.layout.my_library_alertdialog, rootView, false)
 
+                    val snoozeOptions = getDownloadDialogSnoozeOptions()
+                    var selectedSnoozeIndex = snoozeOptions?.initialSelection ?: 0
+
+                    val snoozeLabel: TextView? = convertView?.findViewById(R.id.snoozeLabel)
+                    val snoozeSpinner: Spinner? = convertView?.findViewById(R.id.snoozeSpinner)
+
+                    if (snoozeOptions != null && snoozeOptions.intervalLabels.isNotEmpty() &&
+                        snoozeOptions.intervalValuesMillis.size == snoozeOptions.intervalLabels.size
+                    ) {
+                        snoozeLabel?.apply {
+                            visibility = View.VISIBLE
+                            text = snoozeOptions.label
+                        }
+
+                        snoozeSpinner?.apply {
+                            visibility = View.VISIBLE
+                            adapter = ArrayAdapter(
+                                fragmentActivity,
+                                android.R.layout.simple_spinner_item,
+                                snoozeOptions.intervalLabels
+                            ).also { arrayAdapter ->
+                                arrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                            }
+                            setSelection(selectedSnoozeIndex)
+                            onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                                override fun onItemSelected(
+                                    parent: AdapterView<*>?,
+                                    view: View?,
+                                    position: Int,
+                                    id: Long
+                                ) {
+                                    if (position in snoozeOptions.intervalValuesMillis.indices) {
+                                        selectedSnoozeIndex = position
+                                        snoozeOptions.onSelectionChanged(position)
+                                    }
+                                }
+
+                                override fun onNothingSelected(parent: AdapterView<*>?) {}
+                            }
+                        }
+                    } else {
+                        snoozeLabel?.visibility = View.GONE
+                        snoozeSpinner?.visibility = View.GONE
+                    }
+
                     val alertDialogBuilder = AlertDialog.Builder(fragmentActivity, R.style.AlertDialogTheme)
                     alertDialogBuilder.setView(convertView)
                         .setTitle(R.string.download_suggestion)
@@ -167,16 +228,53 @@ abstract class BaseResourceFragment : Fragment() {
                             lv?.selectedItemsList?.let {
                                 addToLibrary(dbMyLibrary, it)
                                 downloadFiles(dbMyLibrary, it)
-                            }?.let { startDownload(it) }
+                            }?.let {
+                                startDownload(it)
+                                onDownloadDialogPositiveAction()
+                            }
                         }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
                             lv?.selectedItemsList?.let {
                                 addAllToLibrary(dbMyLibrary)
                             }
                             startDownload(downloadAllFiles(dbMyLibrary))
-                        }.setNegativeButton(R.string.txt_cancel, null)
+                            onDownloadDialogNeutralAction()
+                        }
+
+                    val negativeButtonText = if (snoozeOptions != null) {
+                        R.string.remind_me_later
+                    } else {
+                        R.string.txt_cancel
+                    }
+
+                    var snoozeHandled = false
+
+                    alertDialogBuilder.setNegativeButton(negativeButtonText) { dialog: DialogInterface, _: Int ->
+                        if (snoozeOptions != null && selectedSnoozeIndex in snoozeOptions.intervalValuesMillis.indices) {
+                            snoozeOptions.onSnooze(
+                                snoozeOptions.intervalValuesMillis[selectedSnoozeIndex]
+                            )
+                            snoozeHandled = true
+                        }
+                        onDownloadDialogNegativeAction()
+                        dialog.dismiss()
+                    }
+
                     val alertDialog = alertDialogBuilder.create()
                     createListView(dbMyLibrary, alertDialog)
+                    if (snoozeOptions != null) {
+                        alertDialog.setOnCancelListener {
+                            if (!snoozeHandled && selectedSnoozeIndex in snoozeOptions.intervalValuesMillis.indices) {
+                                snoozeOptions.onSnooze(
+                                    snoozeOptions.intervalValuesMillis[selectedSnoozeIndex]
+                                )
+                                snoozeHandled = true
+                            }
+                            onDownloadDialogCancelled()
+                        }
+                    }
+
                     alertDialog.show()
+                    onDownloadDialogShown()
                     alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv?.selectedItemsList?.size ?: 0) > 0
                 }
             }
@@ -306,6 +404,15 @@ abstract class BaseResourceFragment : Fragment() {
         }
         lv?.adapter = adapter
     }
+
+    protected data class DownloadDialogSnoozeOptions(
+        val label: String,
+        val intervalLabels: List<String>,
+        val intervalValuesMillis: List<Long>,
+        val initialSelection: Int,
+        val onSelectionChanged: (Int) -> Unit,
+        val onSnooze: (Long) -> Unit
+    )
 
     private fun registerReceiver() {
         val bManager = LocalBroadcastManager.getInstance(requireActivity())

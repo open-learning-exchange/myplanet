@@ -52,6 +52,12 @@
     <string name="download_selected">Download Selected</string>
     <string name="txt_cancel">Cancel</string>
     <string name="download_all">Download All</string>
+    <string name="remind_me_later">Remind me later</string>
+    <string name="download_dialog_snooze_label">Remind me again in:</string>
+    <string name="download_dialog_snooze_option_one_hour">1 hour</string>
+    <string name="download_dialog_snooze_option_six_hours">6 hours</string>
+    <string name="download_dialog_snooze_option_one_day">1 day</string>
+    <string name="download_dialog_snooze_option_three_days">3 days</string>
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="add_to_mycourse">Add to my courses</string>
     <string name="join_selected">Join Selected</string>
