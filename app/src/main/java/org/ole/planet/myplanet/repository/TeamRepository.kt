@@ -16,6 +16,7 @@ interface TeamRepository {
     suspend fun hasPendingRequest(teamId: String, userId: String?): Boolean
     suspend fun requestToJoin(teamId: String, user: RealmUserModel?, teamType: String?)
     suspend fun leaveTeam(teamId: String, userId: String?)
+    suspend fun addResourceLinks(teamId: String, resources: List<RealmMyLibrary>, user: RealmUserModel?)
     suspend fun deleteTask(taskId: String)
     suspend fun upsertTask(task: RealmTeamTask)
     suspend fun assignTask(taskId: String, assigneeId: String?)

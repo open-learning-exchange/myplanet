@@ -13,14 +13,12 @@ import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.UUID
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.TeamPageListener
 import org.ole.planet.myplanet.databinding.FragmentTeamResourceBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.team.BaseTeamFragment
 import org.ole.planet.myplanet.utilities.CheckboxListView
@@ -90,23 +88,12 @@ class TeamResourceFragment : BaseTeamFragment(), TeamPageListener, ResourceUpdat
 
             alertDialogBuilder.setView(myLibraryAlertdialogBinding.root)
                 .setPositiveButton(R.string.add) { _: DialogInterface?, _: Int ->
-
-                    if (!mRealm.isInTransaction) {
-                        mRealm.beginTransaction()
+                    val selectedResources = myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList
+                        .map { index -> availableLibraries[index] }
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        teamRepository.addResourceLinks(teamId, selectedResources, user)
+                        showLibraryList()
                     }
-                    for (se in myLibraryAlertdialogBinding.alertDialogListView.selectedItemsList) {
-                        val team = mRealm.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
-                        team.teamId = teamId
-                        team.title = availableLibraries[se].title
-                        team.status = user!!.parentCode
-                        team.resourceId = availableLibraries[se]._id
-                        team.docType = "resourceLink"
-                        team.updated = true
-                        team.teamType = "local"
-                        team.teamPlanetCode = user!!.planetCode
-                    }
-                    mRealm.commitTransaction()
-                    showLibraryList()
                 }.setNegativeButton(R.string.cancel, null)
 
             val alertDialog = alertDialogBuilder.create()
