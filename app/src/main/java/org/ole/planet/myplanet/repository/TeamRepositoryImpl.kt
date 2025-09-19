@@ -165,6 +165,29 @@ class TeamRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun updateTeamDetails(
+        teamId: String,
+        name: String,
+        description: String,
+        services: String,
+        rules: String,
+        teamType: String,
+        isPublic: Boolean,
+        createdBy: String,
+    ) {
+        if (teamId.isBlank()) return
+        update(RealmMyTeam::class.java, "_id", teamId) { team ->
+            team.name = name
+            team.description = description
+            team.services = services
+            team.rules = rules
+            team.teamType = teamType
+            team.isPublic = isPublic
+            team.createdBy = createdBy.takeIf { it.isNotBlank() }
+            team.updated = true
+        }
+    }
+
     override suspend fun syncTeamActivities(context: Context) {
         val applicationContext = context.applicationContext
         val settings = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
