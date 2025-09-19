@@ -60,7 +60,7 @@ open class RealmRepository(private val databaseService: DatabaseService) {
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
     ): T? =
-        withRealm { realm ->
+        databaseService.withRealmAsync { realm ->
             realm.where(clazz)
                 .apply(builder)
                 .findFirst()
