@@ -50,6 +50,44 @@ class NotificationRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun ensureNotification(
+        type: String,
+        message: String,
+        relatedId: String?,
+        userId: String?,
+    ) {
+        val ownerId = userId ?: ""
+        val trimmedMessage = message.trim()
+        val notificationId = buildNotificationId(type, relatedId, ownerId, trimmedMessage)
+
+        if (trimmedMessage.isEmpty()) {
+            delete(RealmNotification::class.java, "id", notificationId)
+            return
+        }
+
+        val existingNotification = findByField(RealmNotification::class.java, "id", notificationId)
+        val now = Date()
+
+        val notification = existingNotification?.apply {
+            if (this.message != trimmedMessage) {
+                this.message = trimmedMessage
+                this.createdAt = now
+            }
+            this.type = type
+            this.relatedId = relatedId
+            this.userId = ownerId
+        } ?: RealmNotification().apply {
+            id = notificationId
+            this.userId = ownerId
+            this.type = type
+            this.message = trimmedMessage
+            this.relatedId = relatedId
+            this.createdAt = now
+        }
+
+        save(notification)
+    }
+
     override suspend fun getNotifications(userId: String, filter: String): List<RealmNotification> {
         return queryList(RealmNotification::class.java) {
             equalTo("userId", userId)
@@ -125,5 +163,15 @@ class NotificationRepositoryImpl @Inject constructor(
             }
         }
     }
+}
+
+private fun buildNotificationId(
+    type: String,
+    relatedId: String?,
+    userId: String,
+    message: String,
+): String {
+    val relatedKey = relatedId?.takeUnless { it.isBlank() } ?: message
+    return listOf(userId, type, relatedKey).joinToString(":")
 }
 
