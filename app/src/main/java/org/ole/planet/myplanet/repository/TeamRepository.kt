@@ -19,5 +19,6 @@ interface TeamRepository {
     suspend fun leaveTeam(teamId: String, userId: String?)
     suspend fun deleteTask(taskId: String)
     suspend fun upsertTask(task: RealmTeamTask)
+    suspend fun assignTask(taskId: String, assigneeId: String?)
     suspend fun syncTeamActivities(context: Context)
 }

@@ -151,7 +151,7 @@ object ExamSubmissionUtils {
     ) {
         answer.value = ""
         answer.valueChoices = RealmList<String>().apply {
-            listAns?.forEach { (text, id) ->
+            listAns?.toMap()?.forEach { (text, id) ->
                 if (id == "other" && otherVisible && !otherText.isNullOrEmpty()) {
                     add("""{"id":"other","text":"$otherText"}""")
                 } else {
