@@ -163,10 +163,6 @@ class SyncErrorRecovery {
         return circuitBreakers.mapValues { it.value.getState() }
     }
     
-    fun resetCircuitBreaker(tableName: String) {
-        circuitBreakers.remove(tableName)
-    }
-    
     fun resetAllCircuitBreakers() {
         circuitBreakers.clear()
     }

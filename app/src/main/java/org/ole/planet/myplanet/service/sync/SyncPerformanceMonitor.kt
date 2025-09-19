@@ -218,17 +218,6 @@ class SyncPerformanceMonitor(private val context: Context) {
         // Parse and add to historicalMetrics if needed
     }
     
-    fun clearMetrics() {
-        historicalMetrics.clear()
-        currentMetrics.clear()
-        _realTimeMetrics.value = emptyMap()
-        
-        // Clear saved metrics
-        val keysToRemove = preferences.all.keys.filter { it.startsWith("sync_metrics_") }
-        preferences.edit {
-            keysToRemove.forEach { remove(it) }
-        }
-    }
 }
 
 class SyncTracker(

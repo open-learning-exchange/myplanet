@@ -190,36 +190,42 @@ class ChatHistoryListFragment : Fragment() {
     private fun startSyncManager() {
         syncManager.start(object : SyncListener {
             override fun onSyncStarted() {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded && !requireActivity().isFinishing) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText(getString(R.string.syncing_chat_history))
-                        customProgressDialog?.show()
+                if (view != null && isAdded) {
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        if (isAdded && !requireActivity().isFinishing) {
+                            customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                            customProgressDialog?.setText(getString(R.string.syncing_chat_history))
+                            customProgressDialog?.show()
+                        }
                     }
                 }
             }
 
             override fun onSyncComplete() {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-                        prefManager.setChatHistorySynced(true)
+                if (view != null && isAdded) {
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        if (isAdded) {
+                            customProgressDialog?.dismiss()
+                            customProgressDialog = null
+                            prefManager.setChatHistorySynced(true)
 
-                        refreshChatHistoryList()
+                            refreshChatHistoryList()
+                        }
                     }
                 }
             }
 
             override fun onSyncFailed(msg: String?) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-                        refreshChatHistoryList()
+                if (view != null && isAdded) {
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        if (isAdded) {
+                            customProgressDialog?.dismiss()
+                            customProgressDialog = null
+                            refreshChatHistoryList()
 
-                        Snackbar.make(binding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
-                            .setAction("Retry") { startChatHistorySync() }.show()
+                            Snackbar.make(binding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
+                                .setAction("Retry") { startChatHistorySync() }.show()
+                        }
                     }
                 }
             } }, "full", listOf("chat_history"))
