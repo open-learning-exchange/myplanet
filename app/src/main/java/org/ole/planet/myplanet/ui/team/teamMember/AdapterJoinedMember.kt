@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.team.teamMember
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
@@ -10,6 +9,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.R
@@ -137,12 +137,36 @@ class AdapterJoinedMember(
 
     override fun getItemCount(): Int = list.size
 
-    @SuppressLint("NotifyDataSetChanged")
     fun updateData(newList: MutableList<JoinedMemberData>, isLoggedInUserTeamLeader: Boolean) {
+        val oldList = list.toList()
+        val updatedList = newList.toList()
+
+        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = oldList.size
+
+            override fun getNewListSize(): Int = updatedList.size
+
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                val oldMember = oldList[oldItemPosition].user.id
+                val newMember = updatedList[newItemPosition].user.id
+                return oldMember == newMember
+            }
+
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                val oldMember = oldList[oldItemPosition]
+                val newMember = updatedList[newItemPosition]
+                return oldMember.visitCount == newMember.visitCount &&
+                    oldMember.lastVisitDate == newMember.lastVisitDate &&
+                    oldMember.offlineVisits == newMember.offlineVisits &&
+                    oldMember.profileLastVisit == newMember.profileLastVisit &&
+                    oldMember.isLeader == newMember.isLeader
+            }
+        })
+
         list.clear()
-        list.addAll(newList)
+        list.addAll(updatedList)
         this.isLoggedInUserTeamLeader = isLoggedInUserTeamLeader
-        notifyDataSetChanged()
+        diffResult.dispatchUpdatesTo(this)
     }
 
     class ViewHolderUser(val binding: RowJoinedUserBinding) :
