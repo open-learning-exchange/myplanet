@@ -122,7 +122,9 @@ class PlanFragment : BaseTeamFragment() {
 
         val userId = UserProfileDbHandler(activity).userModel?._id
         val createdBy = userId.orEmpty()
-        val teamId = team._id ?: run {
+        val teamIdentifier = team._id?.takeIf { it.isNotBlank() }
+            ?: team.teamId?.takeIf { it.isNotBlank() }
+        if (teamIdentifier == null) {
             Utilities.toast(activity, context.getString(R.string.failed_to_add_please_retry))
             return
         }
@@ -138,8 +140,8 @@ class PlanFragment : BaseTeamFragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                teamRepository.updateTeamDetails(
-                    teamId = teamId,
+                val wasUpdated = teamRepository.updateTeamDetails(
+                    teamId = teamIdentifier,
                     name = name,
                     description = descriptionToSave,
                     services = servicesToSave,
@@ -149,20 +151,28 @@ class PlanFragment : BaseTeamFragment() {
                     createdBy = createdBy,
                 )
 
-                val updatedTeam = (this@PlanFragment.team?.takeIf { it._id == teamId } ?: team).apply {
-                    this.name = name
-                    this.services = servicesToSave
-                    this.rules = rulesToSave
-                    this.description = descriptionToSave
-                    this.teamType = teamType
-                    this.isPublic = isPublic
-                    this.createdBy = createdBy.takeIf { it.isNotBlank() }
-                    this.updated = true
+                if (wasUpdated) {
+                    val refreshedTeam = teamRepository.getTeamByDocumentIdOrTeamId(teamIdentifier)
+                        ?: (this@PlanFragment.team ?: team)
+
+                    refreshedTeam.apply {
+                        this.name = name
+                        this.services = servicesToSave
+                        this.rules = rulesToSave
+                        this.description = descriptionToSave
+                        this.teamType = teamType
+                        this.isPublic = isPublic
+                        this.createdBy = createdBy.takeIf { it.isNotBlank() } ?: this.createdBy
+                        this.updated = true
+                    }
+
+                    this@PlanFragment.team = refreshedTeam
+                    updateUIWithTeamData(refreshedTeam)
+                    Utilities.toast(requireContext(), context.getString(R.string.added_successfully))
+                    dialog.dismiss()
+                } else {
+                    Utilities.toast(requireContext(), context.getString(R.string.failed_to_add_please_retry))
                 }
-                this@PlanFragment.team = updatedTeam
-                updateUIWithTeamData(updatedTeam)
-                Utilities.toast(requireContext(), context.getString(R.string.added_successfully))
-                dialog.dismiss()
             } catch (e: Exception) {
                 Utilities.toast(requireContext(), context.getString(R.string.failed_to_add_please_retry))
             }

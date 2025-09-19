@@ -5,6 +5,7 @@ import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import java.util.Date
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -174,18 +175,27 @@ class TeamRepositoryImpl @Inject constructor(
         teamType: String,
         isPublic: Boolean,
         createdBy: String,
-    ) {
-        if (teamId.isBlank()) return
-        update(RealmMyTeam::class.java, "_id", teamId) { team ->
+    ): Boolean {
+        if (teamId.isBlank()) return false
+        val updated = AtomicBoolean(false)
+        val applyUpdates: (RealmMyTeam) -> Unit = { team ->
             team.name = name
             team.description = description
             team.services = services
             team.rules = rules
             team.teamType = teamType
             team.isPublic = isPublic
-            team.createdBy = createdBy.takeIf { it.isNotBlank() }
+            team.createdBy = createdBy.takeIf { it.isNotBlank() } ?: team.createdBy
             team.updated = true
+            updated.set(true)
         }
+
+        update(RealmMyTeam::class.java, "_id", teamId, applyUpdates)
+        if (!updated.get()) {
+            update(RealmMyTeam::class.java, "teamId", teamId, applyUpdates)
+        }
+
+        return updated.get()
     }
 
     override suspend fun syncTeamActivities(context: Context) {

@@ -29,6 +29,6 @@ interface TeamRepository {
         teamType: String,
         isPublic: Boolean,
         createdBy: String,
-    )
+    ): Boolean
     suspend fun syncTeamActivities(context: Context)
 }
