@@ -11,12 +11,10 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.repository.CourseProgressRepository
 import org.ole.planet.myplanet.repository.CourseRepository
 import org.ole.planet.myplanet.repository.LibraryRepository
 import org.ole.planet.myplanet.repository.RatingRepository
-import org.ole.planet.myplanet.repository.SearchRepository
 import org.ole.planet.myplanet.repository.UserRepository
 
 @HiltViewModel
@@ -25,8 +23,7 @@ class CoursesViewModel @Inject constructor(
     private val libraryRepository: LibraryRepository,
     private val userRepository: UserRepository,
     private val ratingRepository: RatingRepository,
-    private val courseProgressRepository: CourseProgressRepository,
-    private val searchRepository: SearchRepository
+    private val courseProgressRepository: CourseProgressRepository
 ) : ViewModel() {
 
     private val _coursesState = MutableStateFlow<CoursesUiState>(CoursesUiState.Loading)
@@ -105,30 +102,6 @@ class CoursesViewModel @Inject constructor(
     }
 
     // Ratings and course progress retrieval are handled by repositories
-
-    suspend fun saveSearchActivity(
-        userId: String?,
-        userPlanetCode: String?,
-        userParentCode: String?,
-        searchText: String,
-        tags: List<RealmTag>,
-        gradeLevel: String,
-        subjectLevel: String
-    ) {
-        try {
-            searchRepository.saveSearchActivity(
-                userId,
-                userPlanetCode,
-                userParentCode,
-                searchText,
-                tags,
-                gradeLevel,
-                subjectLevel
-            )
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
 
     fun setSyncState(state: SyncState) {
         _syncState.value = state
