@@ -23,11 +23,14 @@
             android:textStyle="bold" />
 
 
-        <com.github.barteksc.pdfviewer.PDFView
-            android:id="@+id/pdfView"
+        <TextView
+            android:id="@+id/pdfPlaceholder"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
+            android:gravity="center"
+            android:text="PDF will open in MuPDF viewer"
+            android:textSize="16sp"
             android:padding="@dimen/padding_normal" />
 
     </LinearLayout>
