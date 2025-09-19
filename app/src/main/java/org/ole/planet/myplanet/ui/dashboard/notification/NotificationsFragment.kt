@@ -217,6 +217,7 @@ class NotificationsFragment : Fragment() {
     }
 
     private fun updateMarkAllAsReadButtonVisibility() {
+        val binding = _binding ?: return
         binding.btnMarkAllAsRead.visibility = if (unreadCountCache > 0) View.VISIBLE else View.GONE
     }
 
@@ -251,6 +252,7 @@ class NotificationsFragment : Fragment() {
         backgroundAction: suspend () -> Set<String>,
     ) {
         viewLifecycleOwner.lifecycleScope.launch {
+            val binding = _binding ?: return@launch
             val selectedFilter = binding.status.selectedItem.toString().lowercase()
             val previousList = adapter.currentList.toList()
             val previousUnreadCount = unreadCountCache
@@ -287,15 +289,27 @@ class NotificationsFragment : Fragment() {
                     val notificationManager = NotificationUtils.getInstance(appContext)
                     idsToClear.forEach { notificationManager.clearNotification(it) }
                 }
+                if (_binding == null) {
+                    return@launch
+                }
             } catch (e: Exception) {
                 unreadCountCache = previousUnreadCount
                 if (notificationIdsForUi.isNotEmpty()) {
                     adapter.submitList(previousList)
-                    binding.emptyData.visibility = if (previousList.isEmpty()) View.VISIBLE else View.GONE
+                    _binding?.let { currentBinding ->
+                        currentBinding.emptyData.visibility =
+                            if (previousList.isEmpty()) View.VISIBLE else View.GONE
+                    }
                 }
                 updateMarkAllAsReadButtonVisibility()
                 updateUnreadCount()
-                Snackbar.make(binding.root, getString(R.string.failed_to_mark_as_read), Snackbar.LENGTH_LONG).show()
+                _binding?.let { currentBinding ->
+                    Snackbar.make(
+                        currentBinding.root,
+                        getString(R.string.failed_to_mark_as_read),
+                        Snackbar.LENGTH_LONG,
+                    ).show()
+                }
             }
         }
     }
