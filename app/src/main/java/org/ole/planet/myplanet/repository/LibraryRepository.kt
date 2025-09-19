@@ -13,4 +13,5 @@ interface LibraryRepository {
     suspend fun markResourceAdded(userId: String?, resourceId: String)
     suspend fun updateUserLibrary(resourceId: String, userId: String, isAdd: Boolean): RealmMyLibrary?
     suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit)
+    suspend fun markResourceOfflineByLocalAddress(localAddress: String)
 }
