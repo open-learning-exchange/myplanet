@@ -87,7 +87,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         list = mutableListOf()
         mRealm = databaseService.realmInstance
         profileDbHandler = UserProfileDbHandler(requireActivity())
-        model = profileDbHandler.userModel
+        model = profileDbHandler?.userModel
         val adapter = getAdapter()
         recyclerView.adapter = adapter
         if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
@@ -125,12 +125,14 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
                     val myObject = mRealm.where(RealmMyLibrary::class.java)
                         .equalTo("resourceId", `object`.resourceId).findFirst()
                     createFromResource(myObject, mRealm, model?.id)
-                    onAdd(mRealm, "resources", profileDbHandler.userModel?.id, myObject?.resourceId)
+                    val userId = profileDbHandler?.userModel?.id
+                    onAdd(mRealm, "resources", userId, myObject?.resourceId)
                     toast(activity, getString(R.string.added_to_my_library))
                 } else {
                     val myObject = getMyCourse(mRealm, (`object` as RealmMyCourse).courseId)
                     createMyCourse(myObject, mRealm, model?.id)
-                    onAdd(mRealm, "courses", profileDbHandler.userModel?.id, myObject?.courseId)
+                    val userId = profileDbHandler?.userModel?.id
+                    onAdd(mRealm, "courses", userId, myObject?.courseId)
                     toast(activity, getString(R.string.added_to_my_courses))
                 }
                 

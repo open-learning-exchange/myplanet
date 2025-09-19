@@ -53,8 +53,8 @@ class JoinedMemberFragment : BaseMemberFragment() {
                     getString(R.string.no_visit)
                 }
                 val visitCount = RealmTeamLog.getVisitCount(realm, member.name, teamId)
-                val offlineVisits = profileDbHandler.getOfflineVisits(member).toString()
-                val profileLastVisit = profileDbHandler.getLastVisit(member)
+                val offlineVisits = profileDbHandler?.getOfflineVisits(member)?.toString() ?: "0"
+                val profileLastVisit = profileDbHandler?.getLastVisit(member) ?: ""
                 JoinedMemberData(
                     member,
                     visitCount,

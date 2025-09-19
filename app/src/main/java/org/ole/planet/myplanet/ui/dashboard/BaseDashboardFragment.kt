@@ -71,10 +71,10 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     private lateinit var offlineActivitiesResults: RealmResults<RealmOfflineActivity>
     fun onLoaded(v: View) {
         profileDbHandler = UserProfileDbHandler(requireContext())
-        model = profileDbHandler.userModel
-        fullName = profileDbHandler.userModel?.getFullName()
+        model = profileDbHandler?.userModel
+        fullName = profileDbHandler?.userModel?.getFullName()
         if (fullName?.trim().isNullOrBlank()) {
-            fullName = profileDbHandler.userModel?.name
+            fullName = profileDbHandler?.userModel?.name
             v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.VISIBLE
             v.findViewById<LinearLayout>(R.id.ll_prompt).setOnClickListener {
                 if (!childFragmentManager.isStateSaved) {
@@ -103,11 +103,12 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
         }
 
         offlineActivitiesResults = mRealm.where(RealmOfflineActivity::class.java)
-            .equalTo("userName", profileDbHandler.userModel?.name)
+            .equalTo("userName", profileDbHandler?.userModel?.name)
             .equalTo("type", KEY_LOGIN)
             .findAllAsync()
         v.findViewById<TextView>(R.id.txtRole).text = getString(R.string.user_role, model?.getRoleAsString())
-        v.findViewById<TextView>(R.id.txtFullName).text =getString(R.string.user_name, fullName, profileDbHandler.offlineVisits)
+        val offlineVisits = profileDbHandler?.offlineVisits ?: 0
+        v.findViewById<TextView>(R.id.txtFullName).text =getString(R.string.user_name, fullName, offlineVisits)
     }
 
     override fun forceDownloadNewsImages() {
@@ -286,7 +287,8 @@ open class BaseDashboardFragment : BaseDashboardFragmentPlugin(), NotificationCa
     }
 
     override fun onDestroy() {
-        profileDbHandler.onDestroy()
+        profileDbHandler?.onDestroy()
+        profileDbHandler = null
         if (::myCoursesResults.isInitialized) {
             myCoursesResults.removeChangeListener(myCoursesChangeListener)
         }
