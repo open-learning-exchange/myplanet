@@ -136,7 +136,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
     fun setmRealm(mRealm: Realm?) {
         if (mRealm != null) {
             this.mRealm = mRealm
-            labelManager = NewsLabelManager(context, this.mRealm, currentUser)
+            labelManager = NewsLabelManager(context, this.mRealm)
         }
     }
 
@@ -146,7 +146,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         user = userProfileDbHandler.userModel
         settings = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         if (::mRealm.isInitialized) {
-            if (labelManager == null) labelManager = NewsLabelManager(context, mRealm, currentUser)
+            if (labelManager == null) labelManager = NewsLabelManager(context, mRealm)
         }
         return ViewHolderNews(rowNewsBinding)
     }
@@ -175,8 +175,9 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
 
                 loadImage(viewHolder.rowNewsBinding, news)
                 showReplyButton(viewHolder, news, position)
-                labelManager?.setupAddLabelMenu(viewHolder.rowNewsBinding, news)
-                news.let { labelManager?.showChips(viewHolder.rowNewsBinding, it) }
+                val canManageLabels = canAddLabel(news)
+                labelManager?.setupAddLabelMenu(viewHolder.rowNewsBinding, news, canManageLabels)
+                news.let { labelManager?.showChips(viewHolder.rowNewsBinding, it, canManageLabels) }
 
                 handleChat(viewHolder, news)
 
@@ -313,10 +314,8 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
                     notifyItemChanged(position)
                 }
             }
-            holder.rowNewsBinding.btnAddLabel.visibility = if (fromLogin || nonTeamMember) View.GONE else View.VISIBLE
         } else {
             holder.rowNewsBinding.imgEdit.visibility = View.GONE
-            holder.rowNewsBinding.btnAddLabel.visibility = View.GONE
         }
     }
 
@@ -424,7 +423,7 @@ class AdapterNews(var context: Context, private var currentUser: RealmUserModel?
         isLoggedInAndMember() && !isGuestUser()
 
     private fun canAddLabel(news: RealmNews?): Boolean =
-        isLoggedInAndMember() && (isOwner(news) || isTeamLeader() || isAdmin())
+        isLoggedInAndMember() && (isOwner(news) || isTeamLeader())
 
     private fun canShare(news: RealmNews?): Boolean =
         isLoggedInAndMember() && !news?.isCommunityNews!! && !isGuestUser()
