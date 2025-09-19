@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
@@ -23,6 +24,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.Markdown.prependBaseUrlToImages
 import org.ole.planet.myplanet.utilities.Markdown.setMarkdownText
 
+@AndroidEntryPoint
 class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var _binding: FragmentCourseDetailBinding? = null
     private val binding get() = _binding!!
