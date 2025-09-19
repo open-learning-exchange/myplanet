@@ -282,15 +282,17 @@ class TeamTaskFragment : BaseTeamFragment(), OnCompletedListener {
                     return@setPositiveButton
                 }
                 val user = selectedItem as RealmUserModel
-                val userId = user.id
-                if (!mRealm.isInTransaction) {
-                    mRealm.beginTransaction()
+                val taskId = realmTeamTask?.id
+                if (taskId.isNullOrBlank()) {
+                    Toast.makeText(context, R.string.no_tasks, Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
                 }
-                realmTeamTask?.assignee = userId
-                Utilities.toast(activity, getString(R.string.assign_task_to) + " " + user.name)
-                mRealm.commitTransaction()
-                adapter.notifyDataSetChanged()
-                setAdapter()
+                viewLifecycleOwner.lifecycleScope.launch {
+                    teamRepository.assignTask(taskId, user.id)
+                    Utilities.toast(activity, getString(R.string.assign_task_to) + " " + user.name)
+                    adapter.notifyDataSetChanged()
+                    setAdapter()
+                }
             }.show()
     }
 
