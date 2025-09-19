@@ -1,18 +1,16 @@
 package org.ole.planet.myplanet.ui.viewer
 
+import android.graphics.pdf.PdfRenderer
 import android.os.Bundle
+import android.os.ParcelFileDescriptor
 import android.text.TextUtils
 import android.view.View
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.graphics.createBitmap
 import androidx.lifecycle.lifecycleScope
-import com.github.barteksc.pdfviewer.listener.OnLoadCompleteListener
-import com.github.barteksc.pdfviewer.listener.OnPageChangeListener
-import com.github.barteksc.pdfviewer.listener.OnPageErrorListener
-import com.github.barteksc.pdfviewer.scroll.DefaultScrollHandle
 import dagger.hilt.android.AndroidEntryPoint
-import java.io.File
-import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityPdfreaderBinding
@@ -28,9 +26,11 @@ import org.ole.planet.myplanet.utilities.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utilities.NotificationUtils.cancelAll
 import org.ole.planet.myplanet.utilities.NotificationUtils.create
 import org.ole.planet.myplanet.utilities.Utilities
+import java.io.File
+import javax.inject.Inject
 
 @AndroidEntryPoint
-class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompleteListener, OnPageErrorListener, AudioRecordListener {
+class PDFReaderActivity : AppCompatActivity(), AudioRecordListener {
     private lateinit var binding: ActivityPdfreaderBinding
     private lateinit var audioRecorderService: AudioRecorderService
     private var fileName: String? = null
@@ -76,9 +76,24 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         val file = File(getExternalFilesDir(null), "ole/$fileName")
         if (file.exists()) {
             try {
-                binding.pdfView.fromFile(file).defaultPage(0)
-                    .enableAnnotationRendering(true).onLoad(this).onPageChange(this)
-                    .scrollHandle(DefaultScrollHandle(this)).load()
+                val fileDescriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+                val pdfRenderer = PdfRenderer(fileDescriptor)
+                val page = pdfRenderer.openPage(0)
+                val bitmap = createBitmap(page.width, page.height)
+                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+
+                val imageView = ImageView(this)
+                imageView.setImageBitmap(bitmap)
+                imageView.scaleType = ImageView.ScaleType.FIT_CENTER
+
+                binding.pdfPlaceholder.visibility = View.GONE
+                val parent = binding.pdfPlaceholder.parent as android.view.ViewGroup
+                parent.addView(imageView, android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, 0))
+                (imageView.layoutParams as android.widget.LinearLayout.LayoutParams).weight = 1f
+
+                page.close()
+                pdfRenderer.close()
+                fileDescriptor.close()
             } catch (e: Exception) {
                 e.printStackTrace()
                 Toast.makeText(applicationContext, getString(R.string.unable_to_load) + fileName, Toast.LENGTH_LONG).show()
@@ -89,9 +104,6 @@ class PDFReaderActivity : AppCompatActivity(), OnPageChangeListener, OnLoadCompl
         }
     }
 
-    override fun loadComplete(nbPages: Int) {}
-    override fun onPageChanged(page: Int, pageCount: Int) {}
-    override fun onPageError(page: Int, t: Throwable) {}
 
     override fun onRecordStarted() {
         Utilities.toast(this, getString(R.string.recording_started))
