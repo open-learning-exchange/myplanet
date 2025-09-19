@@ -12,7 +12,6 @@ interface TeamRepository {
     suspend fun getTeamLinks(): List<RealmMyTeam>
     suspend fun getTeamById(teamId: String): RealmMyTeam?
     suspend fun isMember(userId: String?, teamId: String): Boolean
-    suspend fun getTeamLeaderId(teamId: String): String?
     suspend fun isTeamLeader(teamId: String, userId: String?): Boolean
     suspend fun hasPendingRequest(teamId: String, userId: String?): Boolean
     suspend fun requestToJoin(teamId: String, user: RealmUserModel?, teamType: String?)

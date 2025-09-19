@@ -79,16 +79,6 @@ class TeamRepositoryImpl @Inject constructor(
         }.isNotEmpty()
     }
 
-    override suspend fun getTeamLeaderId(teamId: String): String? {
-        if (teamId.isBlank()) return null
-        return withRealm { realm ->
-            realm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("isLeader", true)
-                .findFirst()?.userId
-        }
-    }
-
     override suspend fun isTeamLeader(teamId: String, userId: String?): Boolean {
         if (teamId.isBlank() || userId.isNullOrBlank()) return false
         return count(RealmMyTeam::class.java) {
