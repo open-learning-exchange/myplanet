@@ -131,11 +131,4 @@ class RealtimeSyncCoordinator {
         return tableProgress.toMap()
     }
     
-    fun clearProgress() {
-        tableProgress.clear()
-    }
-    
-    fun clearTableProgress(table: String) {
-        tableProgress.remove(table)
-    }
 }
