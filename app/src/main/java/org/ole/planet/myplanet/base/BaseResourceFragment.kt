@@ -151,7 +151,7 @@ abstract class BaseResourceFragment : Fragment() {
         Service(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 if (!isAdded) return
-                val userId = profileDbHandler.userModel?.id
+                val userId = profileDbHandler?.userModel?.id
                 val librariesForDialog = if (userId.isNullOrBlank()) {
                     dbMyLibrary
                 } else {
