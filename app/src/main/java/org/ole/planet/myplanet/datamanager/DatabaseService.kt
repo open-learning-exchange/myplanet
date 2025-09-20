@@ -59,28 +59,6 @@ class DatabaseService(context: Context) {
         }
     }
 
-    suspend fun <T> executeTransactionWithResultAsync(transaction: (Realm) -> T): T? {
-        return withContext(Dispatchers.IO) {
-            withRealmInstance { realm ->
-                try {
-                    if (realm.isClosed) {
-                        return@withRealmInstance null
-                    }
-                    var result: T? = null
-                    realm.executeTransaction {
-                        result = transaction(it)
-                    }
-                    result
-                } catch (e: IllegalStateException) {
-                    if (e.message?.contains("non-existing write transaction") == true ||
-                        e.message?.contains("not currently in a transaction") == true) {
-                        return@withRealmInstance null
-                    }
-                    throw e
-                }
-            }
-        }
-    }
 }
 
 fun <T : RealmModel> Realm.queryList(

@@ -554,10 +554,14 @@ class SyncManager @Inject constructor(
         cancel(context, 111)
         isSyncing = false
         if (!betaSync) {
-            if (::mRealm.isInitialized && !mRealm.isClosed) {
-                mRealm.close()
-                td?.interrupt()
+            try {
+                if (::mRealm.isInitialized) {
+                    mRealm.close()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
+            td?.interrupt()
         } else {
             td?.interrupt()
         }

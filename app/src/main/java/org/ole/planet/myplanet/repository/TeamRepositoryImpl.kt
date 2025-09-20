@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.utilities.AndroidDecrypter
 import org.ole.planet.myplanet.utilities.Constants.PREFS_NAME
 import org.ole.planet.myplanet.utilities.ServerUrlMapper
+import java.util.UUID
 
 class TeamRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -42,20 +43,8 @@ class TeamRepositoryImpl @Inject constructor(
 
     override suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam? {
         if (id.isBlank()) return null
-        return withRealm { realm ->
-            val teamByDocumentId = realm.where(RealmMyTeam::class.java)
-                .equalTo("_id", id)
-                .findFirst()
-
-            if (teamByDocumentId != null) {
-                realm.copyFromRealm(teamByDocumentId)
-            } else {
-                realm.where(RealmMyTeam::class.java)
-                    .equalTo("teamId", id)
-                    .findFirst()
-                    ?.let { realm.copyFromRealm(it) }
-            }
-        }
+        return findByField(RealmMyTeam::class.java, "_id", id)
+            ?: findByField(RealmMyTeam::class.java, "teamId", id)
     }
 
     override suspend fun getTeamLinks(): List<RealmMyTeam> {
@@ -76,16 +65,6 @@ class TeamRepositoryImpl @Inject constructor(
             equalTo("teamId", teamId)
             equalTo("docType", "membership")
         }.isNotEmpty()
-    }
-
-    override suspend fun getTeamLeaderId(teamId: String): String? {
-        if (teamId.isBlank()) return null
-        return withRealm { realm ->
-            realm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("isLeader", true)
-                .findFirst()?.userId
-        }
     }
 
     override suspend fun isTeamLeader(teamId: String, userId: String?): Boolean {
@@ -134,6 +113,28 @@ class TeamRepositoryImpl @Inject constructor(
                 .findAll()
             memberships.forEach { member ->
                 member?.deleteFromRealm()
+            }
+        }
+    }
+
+    override suspend fun addResourceLinks(
+        teamId: String,
+        resources: List<RealmMyLibrary>,
+        user: RealmUserModel?,
+    ) {
+        if (teamId.isBlank() || resources.isEmpty() || user == null) return
+        executeTransaction { realm ->
+            resources.forEach { resource ->
+                val teamResource = realm.createObject(RealmMyTeam::class.java, UUID.randomUUID().toString())
+                teamResource.teamId = teamId
+                teamResource.title = resource.title
+                teamResource.status = user.parentCode
+                teamResource.resourceId = resource._id
+                teamResource.docType = "resourceLink"
+                teamResource.updated = true
+                teamResource.teamType = "local"
+                teamResource.teamPlanetCode = user.planetCode
+                teamResource.userPlanetCode = user.planetCode
             }
         }
     }
