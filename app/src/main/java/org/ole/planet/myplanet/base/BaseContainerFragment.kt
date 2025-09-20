@@ -108,7 +108,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 shouldAutoOpenAfterDownload = false
                 pendingAutoOpenLibrary = null
                 if (library.isResourceOffline() || FileUtils.checkFileExist(requireContext(), UrlUtils.getUrl(library))) {
-                    ResourceOpener.openFileType(requireActivity(), library, "offline", profileDbHandler)
+                    profileDbHandler?.let {
+                        ResourceOpener.openFileType(requireActivity(), library, "offline", it)
+                    }
                 }
             }
         }
@@ -124,7 +126,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                 }
                 true
             }
-            val userModel = UserProfileDbHandler(context).userModel
+            val userModel = profileDbHandler?.userModel
             if (userModel?.isGuest() == false) {
                 setOnClickListener {
                     homeItemClickListener?.showRatingDialog(type, id, title, listener)
@@ -203,17 +205,23 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
             val offlineItem = matchingItems.firstOrNull { it.isResourceOffline() }
             if (offlineItem != null) {
-                ResourceOpener.openFileType(requireActivity(), offlineItem, "offline", profileDbHandler)
+                profileDbHandler?.let {
+                    ResourceOpener.openFileType(requireActivity(), offlineItem, "offline", it)
+                }
                 return@launch
             }
 
             when {
-                items.isResourceOffline() -> ResourceOpener.openFileType(requireActivity(), items, "offline", profileDbHandler)
-                FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4" -> ResourceOpener.openFileType(requireActivity(), items, "online", profileDbHandler)
+                items.isResourceOffline() -> profileDbHandler?.let {
+                    ResourceOpener.openFileType(requireActivity(), items, "offline", it)
+                }
+                FileUtils.getFileExtension(items.resourceLocalAddress) == "mp4" -> profileDbHandler?.let {
+                    ResourceOpener.openFileType(requireActivity(), items, "online", it)
+                }
                 else -> {
                     val arrayList = arrayListOf(UrlUtils.getUrl(items))
                     startDownloadWithAutoOpen(arrayList, items)
-                    profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
+                    profileDbHandler?.setResourceOpenCount(items, KEY_RESOURCE_DOWNLOAD)
                 }
             }
         }
@@ -300,7 +308,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
     private fun openFileType(items: RealmMyLibrary, videoType: String) {
         dismissProgressDialog()
-        ResourceOpener.openFileType(requireActivity(), items, videoType, profileDbHandler)
+        profileDbHandler?.let {
+            ResourceOpener.openFileType(requireActivity(), items, videoType, it)
+        }
     }
 
     private fun showResourceList(downloadedResources: List<RealmMyLibrary>) {
@@ -372,6 +382,8 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
     override fun onDestroy() {
         dismissProgressDialog()
+        profileDbHandler?.onDestroy()
+        profileDbHandler = null
         super.onDestroy()
     }
 }

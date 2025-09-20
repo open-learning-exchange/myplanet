@@ -53,7 +53,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         super.onDownloadComplete()
         fragmentScope.launch {
             val userId = withContext(Dispatchers.Main) {
-                profileDbHandler.userModel?.id
+                profileDbHandler?.userModel?.id
             }
             withContext(Dispatchers.IO) {
                 try {
@@ -69,7 +69,8 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             withContext(Dispatchers.Main) {
                 binding.btnDownload.setImageResource(R.drawable.ic_play)
-                if (!library.userId?.contains(profileDbHandler.userModel?.id)!!) {
+                val currentUserId = profileDbHandler?.userModel?.id
+                if (currentUserId != null && library.userId?.contains(currentUserId) != true) {
                     Utilities.toast(activity, getString(R.string.added_to_my_library))
                     binding.btnRemove.setImageResource(R.drawable.close_x)
                 }
@@ -109,7 +110,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         fragmentScope.launch {
             withContext(Dispatchers.Main) {
                 try {
-                    profileDbHandler.setResourceOpenCount(library)
+                    profileDbHandler?.setResourceOpenCount(library)
                 } catch (ex: Exception) {
                     ex.printStackTrace()
                 }
@@ -162,7 +163,8 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             }
             openResource(library)
         }
-        val isAdd = !library.userId?.contains(profileDbHandler.userModel?.id)!!
+        val userId = profileDbHandler?.userModel?.id
+        val isAdd = userId?.let { library.userId?.contains(it) } != true
         if (userModel?.isGuest() != true) {
             binding.btnRemove.setImageResource(
                 if (isAdd) {
@@ -181,7 +183,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             binding.btnRemove.visibility = View.GONE
         }
         binding.btnRemove.setOnClickListener {
-            val userId = profileDbHandler.userModel?.id
+            val userId = profileDbHandler?.userModel?.id
             fragmentScope.launch {
                 withContext(Dispatchers.IO) {
                     try {
