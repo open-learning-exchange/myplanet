@@ -64,7 +64,7 @@ abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUserModel? = null
     protected lateinit var mRealm: Realm
-    lateinit var profileDbHandler: UserProfileDbHandler
+    var profileDbHandler: UserProfileDbHandler? = null
     var editor: SharedPreferences.Editor? = null
     var lv: CheckboxListView? = null
     var convertView: View? = null
@@ -151,7 +151,7 @@ abstract class BaseResourceFragment : Fragment() {
         Service(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 if (!isAdded) return
-                val userId = profileDbHandler.userModel?.id
+                val userId = profileDbHandler?.userModel?.id
                 val librariesForDialog = if (userId.isNullOrBlank()) {
                     dbMyLibrary
                 } else {
@@ -395,16 +395,18 @@ abstract class BaseResourceFragment : Fragment() {
     fun addToLibrary(libraryItems: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>) {
         if (!isRealmInitialized()) return
         
+        val userId = profileDbHandler?.userModel?.id ?: return
+
         try {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
-            
+
             selectedItems.forEach { index ->
                 val item = libraryItems[index]
-                if (item?.userId?.contains(profileDbHandler.userModel?.id) == false) {
-                    item.setUserId(profileDbHandler.userModel?.id)
-                    RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.userModel?.id, item.resourceId)
+                if (item?.userId?.contains(userId) == false) {
+                    item.setUserId(userId)
+                    RealmRemovedLog.onAdd(mRealm, "resources", userId, item.resourceId)
                 }
             }
             
@@ -423,15 +425,17 @@ abstract class BaseResourceFragment : Fragment() {
     fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
         if (!isRealmInitialized()) return
         
+        val userId = profileDbHandler?.userModel?.id ?: return
+
         try {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
-            
+
             libraryItems.forEach { libraryItem ->
-                if (libraryItem?.userId?.contains(profileDbHandler.userModel?.id) == false) {
-                    libraryItem.setUserId(profileDbHandler.userModel?.id, mRealm)
-                    RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.userModel?.id, libraryItem.resourceId)
+                if (libraryItem?.userId?.contains(userId) == false) {
+                    libraryItem.setUserId(userId, mRealm)
+                    RealmRemovedLog.onAdd(mRealm, "resources", userId, libraryItem.resourceId)
                 }
             }
             
@@ -448,6 +452,8 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     override fun onDestroy() {
+        profileDbHandler?.onDestroy()
+        profileDbHandler = null
         cleanupRealm()
         super.onDestroy()
     }
