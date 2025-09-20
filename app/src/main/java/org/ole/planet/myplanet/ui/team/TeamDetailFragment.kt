@@ -16,6 +16,7 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -129,17 +130,26 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         val user = UserProfileDbHandler(requireContext()).userModel
         mRealm = databaseService.realmInstance
 
-        if (shouldQueryRealm(teamId)) {
-            if (teamId.isNotEmpty()) {
-                team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-                    ?: throw IllegalArgumentException("Team not found for ID: $teamId")
+        val resolvedTeam = when {
+            shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
+                runBlocking { teamRepository.getTeamByDocumentIdOrTeamId(teamId) }
             }
-        } else {
-            val effectiveTeamId = directTeamId ?: teamId
-            if (effectiveTeamId.isNotEmpty()) {
-                team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", effectiveTeamId).findFirst()
+
+            else -> {
+                val effectiveTeamId = (directTeamId ?: "").ifEmpty { teamId }
+                if (effectiveTeamId.isNotEmpty()) {
+                    runBlocking { teamRepository.getTeamById(effectiveTeamId) }
+                } else {
+                    null
+                }
             }
         }
+
+        if (shouldQueryRealm(teamId) && resolvedTeam == null) {
+            throw IllegalArgumentException("Team not found for ID: $teamId")
+        }
+
+        resolvedTeam?.let { team = it }
 
         setupTeamDetails(isMyTeam, user)
 
@@ -340,29 +350,35 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         }
     }
 
-    private fun refreshTeamData() {
+    private suspend fun refreshTeamData() {
         if (!isAdded || requireActivity().isFinishing) return
 
         try {
-            val teamId = requireArguments().getString("id") ?: directTeamId ?: ""
+            val primaryTeamId = requireArguments().getString("id") ?: ""
+            val fallbackTeamId = directTeamId ?: ""
             val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
 
-            if (teamId.isNotEmpty()) {
-                val updatedTeam = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-                if (updatedTeam != null) {
-                    team = updatedTeam
-                    val lastPageId = team?._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
-                    setupViewPager(isMyTeam, lastPageId)
+            val updatedTeam = withContext(Dispatchers.IO) {
+                when {
+                    primaryTeamId.isNotEmpty() -> teamRepository.getTeamByDocumentIdOrTeamId(primaryTeamId)
+                    fallbackTeamId.isNotEmpty() -> teamRepository.getTeamById(fallbackTeamId)
+                    else -> null
+                }
+            }
 
-                    binding.title.text = getEffectiveTeamName()
-                    binding.subtitle.text = getEffectiveTeamType()
+            if (updatedTeam != null) {
+                team = updatedTeam
+                val lastPageId = team?._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
+                setupViewPager(isMyTeam, lastPageId)
 
-                    team?._id?.let { id ->
-                        if (getJoinedMemberCount(id, mRealm) <= 1 && isMyTeam) {
-                            binding.btnLeave.visibility = View.GONE
-                        } else {
-                            binding.btnLeave.visibility = View.VISIBLE
-                        }
+                binding.title.text = getEffectiveTeamName()
+                binding.subtitle.text = getEffectiveTeamType()
+
+                team?._id?.let { id ->
+                    if (getJoinedMemberCount(id, mRealm) <= 1 && isMyTeam) {
+                        binding.btnLeave.visibility = View.GONE
+                    } else {
+                        binding.btnLeave.visibility = View.VISIBLE
                     }
                 }
             }
