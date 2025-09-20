@@ -16,6 +16,7 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -27,12 +28,10 @@ import org.ole.planet.myplanet.callback.TableDataUpdate
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmMyTeam.Companion.getJoinedMemberCount
-import org.ole.planet.myplanet.model.RealmMyTeam.Companion.syncTeamActivities
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUserModel
 import org.ole.planet.myplanet.service.SyncManager
-import org.ole.planet.myplanet.service.UploadManager
 import org.ole.planet.myplanet.service.UserProfileDbHandler
 import org.ole.planet.myplanet.service.sync.RealtimeSyncCoordinator
 import org.ole.planet.myplanet.ui.team.TeamPageConfig.ApplicantsPage
@@ -64,9 +63,6 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
     @Inject
     lateinit var syncManager: SyncManager
 
-    @Inject
-    lateinit var uploadManager: UploadManager
-    
     private val syncCoordinator = RealtimeSyncCoordinator.getInstance()
     private lateinit var realtimeSyncListener: BaseRealtimeSyncListener
 
@@ -89,8 +85,11 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         return if (idx >= 0) idx else null
     }
 
-    private fun selectPage(pageId: String?, smoothScroll: Boolean = false) {
-        pageIndexById(pageId)?.let { binding.viewPager2.setCurrentItem(it, smoothScroll) }
+    private fun selectPage(pageId: String?, smoothScroll: Boolean = true) {
+        val index = pageIndexById(pageId)
+        index?.let {
+            binding.viewPager2.setCurrentItem(it, smoothScroll)
+        }
     }
 
     private fun buildPages(isMyTeam: Boolean): List<TeamPageConfig> {
@@ -131,17 +130,26 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         val user = UserProfileDbHandler(requireContext()).userModel
         mRealm = databaseService.realmInstance
 
-        if (shouldQueryRealm(teamId)) {
-            if (teamId.isNotEmpty()) {
-                team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-                    ?: throw IllegalArgumentException("Team not found for ID: $teamId")
+        val resolvedTeam = when {
+            shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
+                runBlocking { teamRepository.getTeamByDocumentIdOrTeamId(teamId) }
             }
-        } else {
-            val effectiveTeamId = directTeamId ?: teamId
-            if (effectiveTeamId.isNotEmpty()) {
-                team = mRealm.where(RealmMyTeam::class.java).equalTo("_id", effectiveTeamId).findFirst()
+
+            else -> {
+                val effectiveTeamId = (directTeamId ?: "").ifEmpty { teamId }
+                if (effectiveTeamId.isNotEmpty()) {
+                    runBlocking { teamRepository.getTeamById(effectiveTeamId) }
+                } else {
+                    null
+                }
             }
         }
+
+        if (shouldQueryRealm(teamId) && resolvedTeam == null) {
+            throw IllegalArgumentException("Team not found for ID: $teamId")
+        }
+
+        resolvedTeam?.let { team = it }
 
         setupTeamDetails(isMyTeam, user)
 
@@ -237,16 +245,33 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
 
     private fun setupViewPager(isMyTeam: Boolean, restorePageId: String? = null) {
         pageConfigs = buildPages(isMyTeam)
-        binding.viewPager2.isSaveEnabled = true
-        binding.viewPager2.id = View.generateViewId()
+        binding.viewPager2.apply {
+            isSaveEnabled = false
+            offscreenPageLimit = 2
+            isUserInputEnabled = true
+            setPageTransformer { page, position ->
+                page.alpha = 1.0f - kotlin.math.abs(position)
+            }
+        }
+
+        if (binding.viewPager2.id == View.NO_ID) {
+            binding.viewPager2.id = View.generateViewId()
+        }
+
+        binding.viewPager2.adapter = null
         binding.viewPager2.adapter = TeamPagerAdapter(
             requireActivity(),
             pageConfigs,
             team?._id,
             this
         )
+        binding.tabLayout.tabMode = com.google.android.material.tabs.TabLayout.MODE_SCROLLABLE
+        binding.tabLayout.isInlineLabel = true
+
         TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
-            tab.text = (binding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
+            val title = (binding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
+            val pageConfig = pageConfigs.getOrNull(position)
+            tab.text = title
         }.attach()
 
         selectPage(restorePageId, false)
@@ -254,9 +279,11 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         binding.viewPager2.registerOnPageChangeCallback(
             object : ViewPager2.OnPageChangeCallback() {
                 override fun onPageSelected(position: Int) {
+                    val pageConfig = pageConfigs.getOrNull(position)
+                    val pageId = pageConfig?.id
                     team?._id?.let { teamId ->
-                        pageConfigs.getOrNull(position)?.id?.let { pageId ->
-                            teamLastPage[teamId] = pageId
+                        pageId?.let {
+                            teamLastPage[teamId] = it
                         }
                     }
                 }
@@ -291,7 +318,9 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
                 RealmMyTeam.requestToJoin(teamId, user, mRealm, team?.teamType)
                 binding.btnLeave.text = getString(R.string.requested)
                 binding.btnLeave.isEnabled = false
-                syncTeamActivities(requireContext(), uploadManager)
+                viewLifecycleOwner.lifecycleScope.launch {
+                    teamRepository.syncTeamActivities(requireContext())
+                }
             }
         }
     }
@@ -321,29 +350,35 @@ class TeamDetailFragment : BaseTeamFragment(), MemberChangeListener {
         }
     }
 
-    private fun refreshTeamData() {
+    private suspend fun refreshTeamData() {
         if (!isAdded || requireActivity().isFinishing) return
 
         try {
-            val teamId = requireArguments().getString("id") ?: directTeamId ?: ""
+            val primaryTeamId = requireArguments().getString("id") ?: ""
+            val fallbackTeamId = directTeamId ?: ""
             val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
 
-            if (teamId.isNotEmpty()) {
-                val updatedTeam = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-                if (updatedTeam != null) {
-                    team = updatedTeam
-                    val lastPageId = team?._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
-                    setupViewPager(isMyTeam, lastPageId)
+            val updatedTeam = withContext(Dispatchers.IO) {
+                when {
+                    primaryTeamId.isNotEmpty() -> teamRepository.getTeamByDocumentIdOrTeamId(primaryTeamId)
+                    fallbackTeamId.isNotEmpty() -> teamRepository.getTeamById(fallbackTeamId)
+                    else -> null
+                }
+            }
 
-                    binding.title.text = getEffectiveTeamName()
-                    binding.subtitle.text = getEffectiveTeamType()
+            if (updatedTeam != null) {
+                team = updatedTeam
+                val lastPageId = team?._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
+                setupViewPager(isMyTeam, lastPageId)
 
-                    team?._id?.let { id ->
-                        if (getJoinedMemberCount(id, mRealm) <= 1 && isMyTeam) {
-                            binding.btnLeave.visibility = View.GONE
-                        } else {
-                            binding.btnLeave.visibility = View.VISIBLE
-                        }
+                binding.title.text = getEffectiveTeamName()
+                binding.subtitle.text = getEffectiveTeamType()
+
+                team?._id?.let { id ->
+                    if (getJoinedMemberCount(id, mRealm) <= 1 && isMyTeam) {
+                        binding.btnLeave.visibility = View.GONE
+                    } else {
+                        binding.btnLeave.visibility = View.VISIBLE
                     }
                 }
             }

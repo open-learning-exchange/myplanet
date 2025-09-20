@@ -23,10 +23,6 @@ class LibraryRepositoryImpl @Inject constructor(
         return findByField(RealmMyLibrary::class.java, "_id", resourceId)
     }
 
-    override suspend fun getLibraryByResourceId(resourceId: String): RealmMyLibrary? {
-        return findByField(RealmMyLibrary::class.java, "resourceId", resourceId)
-    }
-
     override suspend fun getLibraryItemsByLocalAddress(localAddress: String): List<RealmMyLibrary> {
         return queryList(RealmMyLibrary::class.java) {
             equalTo("resourceLocalAddress", localAddress)
@@ -41,13 +37,6 @@ class LibraryRepositoryImpl @Inject constructor(
         }
         return filterLibrariesNeedingUpdate(results)
             .filter { it.userId?.contains(userId) == true }
-    }
-
-    override suspend fun getAllLibraryList(): List<RealmMyLibrary> {
-        val results = queryList(RealmMyLibrary::class.java) {
-            equalTo("resourceOffline", false)
-        }
-        return filterLibrariesNeedingUpdate(results)
     }
 
     override suspend fun getCourseLibraryItems(courseIds: List<String>): List<RealmMyLibrary> {
@@ -91,11 +80,9 @@ class LibraryRepositoryImpl @Inject constructor(
                 onRemove(realm, "resources", userId, resourceId)
             }
         }
-        return getLibraryByResourceId(resourceId)
-    }
-
-    override suspend fun deleteLibraryItem(id: String) {
-        delete(RealmMyLibrary::class.java, "id", id)
+        return findByField(RealmMyLibrary::class.java, "resourceId", resourceId)
+            ?: getLibraryItemById(resourceId)
+            ?: getLibraryItemByResourceId(resourceId)
     }
 
     override suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit) {

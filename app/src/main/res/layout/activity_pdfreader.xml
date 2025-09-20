@@ -21,15 +21,14 @@
             android:textColor="@color/md_black_1000"
             android:textSize="@dimen/text_size_large"
             android:textStyle="bold" />
-
-
-        <com.github.barteksc.pdfviewer.PDFView
-            android:id="@+id/pdfView"
+        <TextView
+            android:id="@+id/pdfPlaceholder"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
+            android:gravity="center"
+            android:textSize="16sp"
             android:padding="@dimen/padding_normal" />
-
     </LinearLayout>
 
     <com.github.clans.fab.FloatingActionMenu
@@ -45,7 +44,6 @@
             android:src="@drawable/ic_mic"
             android:contentDescription="@string/record_audio"
             app:fab_label="Record Audio" />
-
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/fab_play"
             android:layout_width="wrap_content"
