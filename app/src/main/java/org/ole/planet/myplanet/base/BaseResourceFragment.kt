@@ -64,7 +64,7 @@ abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUserModel? = null
     protected lateinit var mRealm: Realm
-    lateinit var profileDbHandler: UserProfileDbHandler
+    var profileDbHandler: UserProfileDbHandler? = null
     var editor: SharedPreferences.Editor? = null
     var lv: CheckboxListView? = null
     var convertView: View? = null
@@ -151,7 +151,15 @@ abstract class BaseResourceFragment : Fragment() {
         Service(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 if (!isAdded) return
-                if (dbMyLibrary.isEmpty()) {
+                val userId = profileDbHandler.userModel?.id
+                val librariesForDialog = if (userId.isNullOrBlank()) {
+                    dbMyLibrary
+                } else {
+                    val userLibraries = dbMyLibrary.filter { it?.userId?.contains(userId) == true }
+                    if (userLibraries.isEmpty()) dbMyLibrary else userLibraries
+                }
+
+                if (librariesForDialog.isEmpty()) {
                     return
                 }
 
@@ -165,17 +173,17 @@ abstract class BaseResourceFragment : Fragment() {
                         .setTitle(R.string.download_suggestion)
                         .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                             lv?.selectedItemsList?.let {
-                                addToLibrary(dbMyLibrary, it)
-                                downloadFiles(dbMyLibrary, it)
+                                addToLibrary(librariesForDialog, it)
+                                downloadFiles(librariesForDialog, it)
                             }?.let { startDownload(it) }
                         }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
                             lv?.selectedItemsList?.let {
-                                addAllToLibrary(dbMyLibrary)
+                                addAllToLibrary(librariesForDialog)
                             }
-                            startDownload(downloadAllFiles(dbMyLibrary))
+                            startDownload(downloadAllFiles(librariesForDialog))
                         }.setNegativeButton(R.string.txt_cancel, null)
                     val alertDialog = alertDialogBuilder.create()
-                    createListView(dbMyLibrary, alertDialog)
+                    createListView(librariesForDialog, alertDialog)
                     alertDialog.show()
                     alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv?.selectedItemsList?.size ?: 0) > 0
                 }
@@ -387,16 +395,18 @@ abstract class BaseResourceFragment : Fragment() {
     fun addToLibrary(libraryItems: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>) {
         if (!isRealmInitialized()) return
         
+        val userId = profileDbHandler?.userModel?.id ?: return
+
         try {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
-            
+
             selectedItems.forEach { index ->
                 val item = libraryItems[index]
-                if (item?.userId?.contains(profileDbHandler.userModel?.id) == false) {
-                    item.setUserId(profileDbHandler.userModel?.id)
-                    RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.userModel?.id, item.resourceId)
+                if (item?.userId?.contains(userId) == false) {
+                    item.setUserId(userId)
+                    RealmRemovedLog.onAdd(mRealm, "resources", userId, item.resourceId)
                 }
             }
             
@@ -415,15 +425,17 @@ abstract class BaseResourceFragment : Fragment() {
     fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
         if (!isRealmInitialized()) return
         
+        val userId = profileDbHandler?.userModel?.id ?: return
+
         try {
             if (!mRealm.isInTransaction) {
                 mRealm.beginTransaction()
             }
-            
+
             libraryItems.forEach { libraryItem ->
-                if (libraryItem?.userId?.contains(profileDbHandler.userModel?.id) == false) {
-                    libraryItem.setUserId(profileDbHandler.userModel?.id, mRealm)
-                    RealmRemovedLog.onAdd(mRealm, "resources", profileDbHandler.userModel?.id, libraryItem.resourceId)
+                if (libraryItem?.userId?.contains(userId) == false) {
+                    libraryItem.setUserId(userId, mRealm)
+                    RealmRemovedLog.onAdd(mRealm, "resources", userId, libraryItem.resourceId)
                 }
             }
             
@@ -440,6 +452,8 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     override fun onDestroy() {
+        profileDbHandler?.onDestroy()
+        profileDbHandler = null
         cleanupRealm()
         super.onDestroy()
     }

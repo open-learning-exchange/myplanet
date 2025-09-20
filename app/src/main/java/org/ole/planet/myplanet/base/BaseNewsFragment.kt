@@ -99,7 +99,8 @@ abstract class BaseNewsFragment : BaseContainerFragment(), OnNewsItemClickListen
     }
 
     override fun onDestroy() {
-        profileDbHandler.onDestroy()
+        profileDbHandler?.onDestroy()
+        profileDbHandler = null
         super.onDestroy()
     }
 
