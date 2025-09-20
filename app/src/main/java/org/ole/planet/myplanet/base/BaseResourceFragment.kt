@@ -151,7 +151,15 @@ abstract class BaseResourceFragment : Fragment() {
         Service(requireContext()).isPlanetAvailable(object : PlanetAvailableListener {
             override fun isAvailable() {
                 if (!isAdded) return
-                if (dbMyLibrary.isEmpty()) {
+                val userId = profileDbHandler.userModel?.id
+                val librariesForDialog = if (userId.isNullOrBlank()) {
+                    dbMyLibrary
+                } else {
+                    val userLibraries = dbMyLibrary.filter { it?.userId?.contains(userId) == true }
+                    if (userLibraries.isEmpty()) dbMyLibrary else userLibraries
+                }
+
+                if (librariesForDialog.isEmpty()) {
                     return
                 }
 
@@ -165,17 +173,17 @@ abstract class BaseResourceFragment : Fragment() {
                         .setTitle(R.string.download_suggestion)
                         .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                             lv?.selectedItemsList?.let {
-                                addToLibrary(dbMyLibrary, it)
-                                downloadFiles(dbMyLibrary, it)
+                                addToLibrary(librariesForDialog, it)
+                                downloadFiles(librariesForDialog, it)
                             }?.let { startDownload(it) }
                         }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
                             lv?.selectedItemsList?.let {
-                                addAllToLibrary(dbMyLibrary)
+                                addAllToLibrary(librariesForDialog)
                             }
-                            startDownload(downloadAllFiles(dbMyLibrary))
+                            startDownload(downloadAllFiles(librariesForDialog))
                         }.setNegativeButton(R.string.txt_cancel, null)
                     val alertDialog = alertDialogBuilder.create()
-                    createListView(dbMyLibrary, alertDialog)
+                    createListView(librariesForDialog, alertDialog)
                     alertDialog.show()
                     alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv?.selectedItemsList?.size ?: 0) > 0
                 }
